@@ -1,0 +1,6 @@
+requests
+auth0-python
+pytest
+pytest-spec
+responses
+pygithub

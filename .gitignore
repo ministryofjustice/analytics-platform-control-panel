@@ -1,0 +1,6 @@
+venv
+.python-version
+.env
+.cache
+__pycache__
+*.sw?
