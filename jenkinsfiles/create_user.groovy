@@ -22,7 +22,7 @@ pipeline {
 
         stage ("Create platform user") {
             steps {
-                sh "create_user ${params.USERNAME} ${params.EMAIL} --fullname '${params.FULLNAME}'"
+                sh "scripts/create_user ${params.USERNAME} ${params.EMAIL} --fullname '${params.FULLNAME}'"
             }
         }
     }

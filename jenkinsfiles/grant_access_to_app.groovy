@@ -16,7 +16,7 @@ pipeline {
                 AUTH0_DOMAIN = "${PLATFORM_ENV}-analytics-moj.eu.auth0.com"
             }
             steps {
-                sh "grant_access ${params.APP_NAME} '${params.EMAILS}'"
+                sh "scripts/grant_access ${params.APP_NAME} '${params.EMAILS}'"
             }
         }
     }
