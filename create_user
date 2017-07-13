@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import subprocess
+
+from github import Github
+
+
+ANALYTICAL_SERVICES_ORG = 'moj-analytical-services'
+
+
+class UserNotOrgMember(Exception):
+    pass
+
+
+def create_user(username, email, env, fullname):
+
+    if not is_org_member(username, ANALYTICAL_SERVICES_ORG):
+        raise UserNotOrgMember(username)
+
+    username = username.lower()
+    init_user(username, email, env, fullname)
+    config_user(username)
+
+
+def is_org_member(username, org_name):
+    github = Github(os.environ.get('GITHUB_TOKEN'))
+    org = github.get_organization(org_name)
+    user = github.get_user(username)
+    return org.has_in_members(user)
+
+
+def init_user(username, email, env, fullname):
+    helm_upgrade(
+        'init-user-{username}'.format(username=username),
+        'charts/init-user',
+        '-f', 'chart-env-config/{env}/init-user.yml'.format(env=env),
+        '--set', 'Username={}'.format(username),
+        '--set', 'Email={}'.format(email),
+        '--set', 'Fullname={}'.format(fullname)
+    )
+
+
+def config_user(username):
+    helm_upgrade(
+        'config-user-{username}'.format(username=username),
+        'charts/config-user',
+        '--namespace', 'user-{username}'.format(username=username),
+        '--set', 'Username={username}'.format(username=username)
+    )
+
+
+def helm_upgrade(release, chart, *flags):
+    default_flags = ['--install', '--wait']
+    flags = list(flags) + default_flags
+    subprocess.run(['helm', 'upgrade', release, chart] + flags, check=True)
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        'username',
+        help='Username of user to create')
+
+    parser.add_argument(
+        'email',
+        help='Email address of user to create')
+
+    parser.add_argument(
+        '--env',
+        default=os.environ.get('PLATFORM_ENV', 'dev'),
+        help='Name of the platform environment, eg: dev, alpha')
+
+    parser.add_argument(
+        '--fullname',
+        default=os.environ.get('FULLNAME'),
+        help='Full name of user to create')
+
+    return parser.parse_args()
+
+
+def main():
+    args = get_args()
+    create_user(args.username, args.email, args.env, args.fullname)
+
+
+if __name__ == '__main__':
+    main()

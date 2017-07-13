@@ -1,25 +1,29 @@
-node {
+pipeline {
 
-    stage ("Git checkout") {
-        checkout scm
+    parameters {
+        string(name: 'USERNAME', description: 'Github username')
+        string(name: 'EMAIL', description: 'Email address of the user')
+        string(name: 'FULLNAME', description: 'Full name of the user')
     }
 
-    stage ("Decrypt secrets") {
-        withCredentials([
-            file(credentialsId: 'analytics-ops-gpg.key', variable: 'GPG_KEY')]) {
+    agent any
 
-            sh "git-crypt unlock ${GPG_KEY}"
+    stages {
+        environment {
+            GPG_KEY = credentials('analytics-ops-gpg.key')
+            GITHUB_TOKEN = credentials('GITHUB_TOKEN')
         }
-    }
 
-    stage ("Create platform user") {
-        withCredentials([
-            string(
-                credentialsId: 'GITHUB_TOKEN',
-                variable: 'GITHUB_TOKEN'
-            )
-        ]) {
-            sh "/usr/local/bin/create_user ${env.USERNAME} ${env.EMAIL} --env ${env.PLATFORM_ENV} --fullname \"${env.FULLNAME}\""
+        stage ("Decrypt secrets") {
+            steps {
+                sh "git-crypt unlock ${GPG_KEY}"
+            }
+        }
+
+        stage ("Create platform user") {
+            steps {
+                sh "create_user ${params.USERNAME} ${params.EMAIL} --fullname '${params.FULLNAME}'"
+            }
         }
     }
 }
