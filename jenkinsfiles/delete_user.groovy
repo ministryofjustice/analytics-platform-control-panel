@@ -1,10 +1,16 @@
-node {
+pipeline {
 
-    stage ("Git checkout") {
-        checkout scm
+    parameters {
+        string(name: 'USERNAME', description: 'Github username')
     }
 
-    stage ("Delete platform user") {
-        sh "jenkinsfiles/delete_user.sh ${env.USERNAME}"
+    agent any
+
+    stages {
+        stage ("Delete platform user") {
+            steps {
+                sh "scripts/delete_user ${params.USERNAME}"
+            }
+        }
     }
 }

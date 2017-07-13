@@ -4,3 +4,4 @@ venv
 .cache
 __pycache__
 *.sw?
+.ropeproject

@@ -1,18 +1,29 @@
-node {
+pipeline {
 
-    stage ("Git checkout") {
-        checkout scm
+    parameters {
+        string(name: 'USERNAME', description: 'Github username')
+        string(
+            name: 'DOCKER_TAG',
+            defaultValue: 'latest',
+            description: 'RStudio version image tag, from https://github.com/ministryofjustice/analytics-platform-rstudio/releases and https://quay.io/repository/mojanalytics/rstudio?tab=tags')
     }
 
-    stage ("Decrypt secrets") {
-        withCredentials([
-            file(credentialsId: 'analytics-ops-gpg.key', variable: 'GPG_KEY')]) {
+    agent any
 
-            sh "git-crypt unlock ${GPG_KEY}"
+    stages {
+        stage ("Decrypt secrets") {
+            environment {
+                GPG_KEY = credentials('analytics-ops-gpg.key')
+            }
+            steps {
+                sh "git-crypt unlock ${GPG_KEY}"
+            }
         }
-    }
 
-    stage ("Deploy RStudio for user") {
-        sh "jenkinsfiles/deploy_rstudio_for_user.sh ${env.PLATFORM_ENV} ${env.USERNAME} ${env.DOCKER_TAG}"
+        stage ("Deploy RStudio for user") {
+            steps {
+                sh "scripts/deploy_rstudio ${params.USERNAME} --tag=${params.DOCKER_TAG}"
+            }
+        }
     }
 }
