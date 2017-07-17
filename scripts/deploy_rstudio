@@ -21,7 +21,7 @@ def get_args():
         default=os.environ.get('PLATFORM_ENV', 'dev'),
         help='Name of the platform environment, eg: dev, alpha')
     parser.add_argument(
-        '--docker-tag',
+        '--tag',
         default='latest',
         help='RStudio image tag')
 
