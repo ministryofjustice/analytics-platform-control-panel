@@ -34,8 +34,8 @@ def is_org_member(username, org_name):
 def init_user(username, email, env, fullname):
     helm_upgrade(
         'init-user-{username}'.format(username=username),
-        'charts/init-user',
-        '-f', 'chart-env-config/{env}/init-user.yml'.format(env=env),
+        'mojanalytics/init-user',
+        '--set', 'NFSHostname=nfs.dev.mojanalytics.xyz',
         '--set', 'Username={}'.format(username),
         '--set', 'Email={}'.format(email),
         '--set', 'Fullname={}'.format(fullname)
