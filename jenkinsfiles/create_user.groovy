@@ -8,12 +8,12 @@ pipeline {
 
     agent any
 
-    stages {
-        environment {
-            GPG_KEY = credentials('analytics-ops-gpg.key')
-            GITHUB_TOKEN = credentials('GITHUB_TOKEN')
-        }
+    environment {
+        GPG_KEY = credentials('analytics-ops-gpg.key')
+        GITHUB_TOKEN = credentials('GITHUB_TOKEN')
+    }
 
+    stages {
         stage ("Decrypt secrets") {
             steps {
                 sh "git-crypt unlock ${GPG_KEY}"
