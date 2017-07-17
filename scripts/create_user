@@ -35,7 +35,7 @@ def init_user(username, email, env, fullname):
     helm_upgrade(
         'init-user-{username}'.format(username=username),
         'mojanalytics/init-user',
-        '--set', 'NFSHostname=nfs.dev.mojanalytics.xyz',
+        '--set', 'NFSHostname=nfs.{}.mojanalytics.xyz'.format(env=env),
         '--set', 'Username={}'.format(username),
         '--set', 'Email={}'.format(email),
         '--set', 'Fullname={}'.format(fullname)
@@ -45,7 +45,7 @@ def init_user(username, email, env, fullname):
 def config_user(username):
     helm_upgrade(
         'config-user-{username}'.format(username=username),
-        'charts/config-user',
+        'mojanalytics/config-user',
         '--namespace', 'user-{username}'.format(username=username),
         '--set', 'Username={username}'.format(username=username)
     )
