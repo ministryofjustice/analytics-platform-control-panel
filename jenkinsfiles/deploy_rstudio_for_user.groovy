@@ -12,17 +12,12 @@ pipeline {
 
     stages {
         stage ("Fetch config") {
-            steps {
-                git 'https://github.com/ministryofjustice/analytics-platform-config'
-            }
-        }
-
-        stage ("Decrypt secrets") {
             environment {
                 GPG_KEY = credentials('analytics-ops-gpg.key')
             }
             steps {
                 dir('config') {
+                    git 'https://github.com/ministryofjustice/analytics-platform-config'
                     sh "git-crypt unlock ${GPG_KEY}"
                 }
             }
