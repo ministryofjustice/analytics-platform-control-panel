@@ -32,7 +32,7 @@ def deploy_rstudio(username, env='dev', tag='latest'):
     helm_upgrade(
         '{username}-rstudio'.format(username=username.lower()),
         'mojanalytics/rstudio',
-        '-f', 'chart-env-config/{env}/rstudio.yml'.format(env=env),
+        '-f', 'config/chart-env-config/{env}/rstudio.yml'.format(env=env),
         '--set', 'Username={}'.format(username),
         '--set', 'AWS.IAMRole={env}_user_{username}'.format(
             env=env, username=username),
