@@ -12,7 +12,9 @@ pipeline {
 
     stages {
         stage ("Fetch config") {
-            git 'https://github.com/ministryofjustice/analytics-platform-config'
+            steps {
+                git 'https://github.com/ministryofjustice/analytics-platform-config'
+            }
         }
 
         stage ("Decrypt secrets") {
