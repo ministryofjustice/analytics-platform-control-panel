@@ -102,7 +102,9 @@ class AccessGranter(object):
             raise UnknownGroup(group_name)
 
         user_emails = [user['email'] for user in users]
-        print("Adding users to group {}: {}".format(group_name, user_emails))
+        print('Granting access to app "{}" to users: {}'.format(
+            group_name,
+            ', '.join(user_emails)))
         group.add_users(users)
 
 
