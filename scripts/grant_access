@@ -3,6 +3,7 @@
 import argparse
 import os
 import re
+import sys
 
 from moj_analytics.auth0_client import (
     Auth0,
@@ -13,7 +14,7 @@ from moj_analytics.auth0_client import (
 )
 
 
-DELIMITERS = re.compile(r'[,; ]')
+DELIMITERS = re.compile(r'[,; ]+')
 EMAIL_USER = re.compile(
     r"^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*\Z",
     re.IGNORECASE
@@ -46,13 +47,15 @@ class AccessGranter(object):
         self.invalid_emails = []
 
     def grant_users_access_to_app(self, emails, app_name):
-        self.add_users_to_group(self.get_users(emails), app_name)
+        emails = self.parse_emails(emails)
+        users = self.get_users(emails)
 
-        if self.invalid_emails:
+        self.add_users_to_group(users, app_name)
+
+        if list(filter(None, self.invalid_emails)):
             raise InvalidEmails(self.invalid_emails)
 
     def get_users(self, emails):
-        emails = self.parse_emails(emails)
         users = self.get_users_by_emails(emails)
         new_user_emails = set(emails) - set(user['email'] for user in users)
         return users + self.create_users(new_user_emails)
@@ -156,4 +159,26 @@ def valid_email(s):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+
+    except InvalidEmails as emails_error:
+        print(
+            'Some of the email addresses entered were not valid: {}'.format(
+                ', '.join(emails_error.args[0])),
+            file=sys.stderr)
+        sys.exit(1)
+
+    except NoUsers:
+        print(
+            'Failed to get or create specified users. Please try again later.',
+            file=sys.stderr)
+        sys.exit(2)
+
+    except UnknownGroup:
+        print(
+            'The app name was not recognized. This should be the first part of '
+            'the Shiny app URL, eg: shiny-app from '
+            'https://shiny-app.apps.alpha.mojanalytics.xyz',
+            file=sys.stderr)
+        sys.exit(3)
