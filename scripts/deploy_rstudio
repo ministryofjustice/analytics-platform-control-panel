@@ -7,7 +7,7 @@ import subprocess
 
 def main():
     args = get_args()
-    deploy_rstudio(args.username, args.env, args.tag)
+    deploy_rstudio(args.username.lower(), args.env, args.tag)
 
 
 def get_args():
@@ -30,7 +30,7 @@ def get_args():
 
 def deploy_rstudio(username, env='dev', tag='latest'):
     helm_upgrade(
-        '{username}-rstudio'.format(username=username.lower()),
+        '{username}-rstudio'.format(username=username),
         'mojanalytics/rstudio',
         '-f', 'config/chart-env-config/{env}/rstudio.yml'.format(env=env),
         '--set', 'Username={}'.format(username),
