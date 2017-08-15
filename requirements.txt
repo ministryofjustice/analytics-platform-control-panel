@@ -5,7 +5,6 @@ model_mommy
 requests
 auth0-python
 pytest
-pytest-django
 pytest-spec
 responses
 pygithub
