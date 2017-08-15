@@ -24,6 +24,7 @@ jobs:
           command: |
             . venv/bin/activate
             pytest moj_analytics
+            python manage.py test
       - store_artifacts:
           path: test-reports/
           destination: tr1
