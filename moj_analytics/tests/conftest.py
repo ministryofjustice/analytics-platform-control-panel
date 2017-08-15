@@ -36,16 +36,16 @@ def responses():
 def clear_previous(responses, method, url):
     match = None
 
-    for match in responses._urls:
+    for match in responses._matches:
 
-        if match['method'] == method and match['url'] == url:
+        if match.method == method and match.url == url:
             break
 
     else:
         match = None
 
     if match:
-        responses._urls.remove(match)
+        responses._matches.remove(match)
 
 
 def json_response(data, status=200, headers={}):
