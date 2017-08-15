@@ -1,6 +1,7 @@
 django
 djangorestframework
 psycopg2
+model_mommy
 requests
 auth0-python
 pytest
