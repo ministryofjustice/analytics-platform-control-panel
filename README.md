@@ -14,6 +14,7 @@ createdb controlpanel
 
 ```sh
 export DB_NAME=controlpanel
+export DEBUG=true
 ```
 
 ## Run migrations
