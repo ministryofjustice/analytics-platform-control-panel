@@ -1,7 +1,7 @@
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from control_panel_api.models import Project
+from control_panel_api.models import Project, User
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):

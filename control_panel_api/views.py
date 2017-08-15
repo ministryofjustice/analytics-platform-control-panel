@@ -1,7 +1,7 @@
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group
 from rest_framework import viewsets
 
-from control_panel_api.models import Project
+from control_panel_api.models import Project, User
 from control_panel_api.serializers import (
     GroupSerializer,
     ProjectSerializer,
@@ -10,7 +10,7 @@ from control_panel_api.serializers import (
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by('-date_joined')
+    queryset = User.objects.all()
     serializer_class = UserSerializer
 
 

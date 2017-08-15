@@ -86,6 +86,7 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = []
 
+AUTH_USER_MODEL = 'control_panel_api.User'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/

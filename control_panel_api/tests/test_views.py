@@ -6,8 +6,8 @@ from rest_framework.test import APITestCase
 
 class UserViewTest(APITestCase):
     def setUp(self):
-        mommy.make('auth.User')
-        self.user = mommy.make('auth.User', is_staff=True)
+        mommy.make('control_panel_api.User')
+        self.user = mommy.make('control_panel_api.User', is_staff=True)
         self.client.force_authenticate(self.user)
 
     def test_list(self):
