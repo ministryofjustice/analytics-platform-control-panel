@@ -1,6 +1,10 @@
+django
+djangorestframework
+psycopg2
 requests
 auth0-python
 pytest
+pytest-django
 pytest-spec
 responses
 pygithub
