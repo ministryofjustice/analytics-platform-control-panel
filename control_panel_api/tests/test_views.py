@@ -22,6 +22,8 @@ class UserViewTest(APITestCase):
         self.assertIn('url', response.data)
         self.assertIn('username', response.data)
         self.assertIn('groups', response.data)
+        self.assertIn('id', response.data)
+        self.assertEqual(5, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(reverse('user-detail', (self.user.id,)))
