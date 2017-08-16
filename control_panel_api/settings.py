@@ -114,3 +114,6 @@ REST_FRAMEWORK = {
     ],
     'PAGE_SIZE': 10
 }
+
+LOGIN_URL = 'rest_framework:login'
+LOGOUT_URL = 'rest_framework:logout'
