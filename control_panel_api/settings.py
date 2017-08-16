@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     # 'django.contrib.messages',
     'django.contrib.staticfiles',  # TODO - remove this?
+    'django_extensions',
     'rest_framework',
     'rest_framework_swagger',
     'control_panel_api',
@@ -110,7 +111,7 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAdminUser',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'PAGE_SIZE': 10
 }

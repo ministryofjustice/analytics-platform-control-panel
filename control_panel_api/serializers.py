@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from control_panel_api.models import Project, User
+from control_panel_api.models import App, User
 
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -16,7 +16,7 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'url', 'name')
 
 
-class ProjectSerializer(serializers.HyperlinkedModelSerializer):
+class AppSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = Project
-        fields = ('id', 'url', 'name', 'slug', 'repository')
+        model = App
+        fields = ('id', 'name', 'slug', 'repo_url')

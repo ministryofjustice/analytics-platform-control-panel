@@ -1,10 +1,10 @@
 from django.contrib.auth.models import Group
 from rest_framework import viewsets
 
-from control_panel_api.models import Project, User
+from control_panel_api.models import App, User
 from control_panel_api.serializers import (
     GroupSerializer,
-    ProjectSerializer,
+    AppSerializer,
     UserSerializer
 )
 
@@ -19,6 +19,6 @@ class GroupViewSet(viewsets.ModelViewSet):
     serializer_class = GroupSerializer
 
 
-class ProjectViewSet(viewsets.ModelViewSet):
-    queryset = Project.objects.all()
-    serializer_class = ProjectSerializer
+class AppViewSet(viewsets.ModelViewSet):
+    queryset = App.objects.all()
+    serializer_class = AppSerializer
