@@ -36,3 +36,7 @@ python manage.py runserver
 ```
 
 Go to http://localhost:8000/
+
+# Documentation
+
+You can see the documentation and interact with the API by visiting [http://localhost:8000/](http://localhost:8000/).
