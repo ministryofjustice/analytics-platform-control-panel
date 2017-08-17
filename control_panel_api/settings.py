@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     # 'django.contrib.messages',
     'django.contrib.staticfiles',  # TODO - remove this?
+    'django_extensions',
     'rest_framework',
     'rest_framework_swagger',
     'control_panel_api',
