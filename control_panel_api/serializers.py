@@ -19,4 +19,4 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
 class AppSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = App
-        fields = ('id', 'name', 'slug', 'repo_url')
+        fields = ('id', 'url', 'name', 'slug', 'repo_url')

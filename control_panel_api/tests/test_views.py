@@ -7,14 +7,13 @@ from rest_framework.test import APITestCase
 class AuthenticatedClientMixin(object):
     def setUp(self):
         super(AuthenticatedClientMixin, self).setUp()
-        self.client.force_login(mommy.make('control_panel_api.User'))
+        self.client.force_login(mommy.make('control_panel_api.User', is_staff=True))
 
 
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super(UserViewTest, self).setUp()
         self.fixture = mommy.make('control_panel_api.User')
-        self.client.force_authenticate(self.fixture)
 
     def test_list(self):
         response = self.client.get(reverse('user-list'))
@@ -65,10 +64,11 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertIn('id', response.data)
+        self.assertIn('url', response.data)
         self.assertIn('name', response.data)
         self.assertIn('slug', response.data)
         self.assertIn('repo_url', response.data)
-        self.assertEqual(4, len(response.data))
+        self.assertEqual(5, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(reverse('app-detail', (self.fixture.id,)))
