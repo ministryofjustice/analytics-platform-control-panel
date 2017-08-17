@@ -12,7 +12,7 @@ class App(models.Model):
     created = CreationDateTimeField()
     name = models.CharField(max_length=100, blank=False)
     slug = AutoSlugField(populate_from='name')
-    repo_url = models.CharField(max_length=255, blank=True, default='')
+    repo_url = models.URLField(max_length=512, blank=True, default='')
 
     class Meta:
         ordering = ('name',)

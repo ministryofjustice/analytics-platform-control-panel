@@ -83,7 +83,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
     def test_update(self):
-        data = {'name': 'foo'}
+        data = {'name': 'foo', 'repo_url': 'http://foo.com'}
         response = self.client.put(reverse('app-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['name'], response.data['name'])
