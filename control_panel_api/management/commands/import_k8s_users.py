@@ -15,9 +15,6 @@ class Command(BaseCommand):
 
     USER_SECRETS_NAME = 'user-secrets'
 
-    def add_arguments(self, parser):
-        pass
-
     def handle(self, *args, **options):
         config.load_kube_config()
         v1 = client.CoreV1Api()
@@ -25,18 +22,27 @@ class Command(BaseCommand):
 
         user_secrets = [item.data for item in results.items if item.metadata.name == Command.USER_SECRETS_NAME]
 
-        users = []
+        users_added = 0
         for item in user_secrets:
             username = base64.b64decode(item['username'])
             email = base64.b64decode(item['email'])
 
             try:
-                users.append(User.objects.create(
+                first_name, last_name = base64.b64decode(item['fullname']).split()
+            except ValueError:
+                first_name = ''
+                last_name = ''
+
+            try:
+                User.objects.create(
                     username=username,
-                    email=email
-                ))
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                )
+                users_added += 1
                 logger.debug("Imported {} {}".format(username, email))
             except IntegrityError:
                 pass
 
-        self.stdout.write("Imported {} users".format(len(users)))
+        self.stdout.write("Imported {} users".format(users_added))
