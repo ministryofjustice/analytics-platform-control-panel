@@ -12,9 +12,12 @@ RUN apk update && \
 
 WORKDIR /home/control-panel
 
-ADD ./ .
+ADD requirements.txt requirements.txt
 
 RUN pip3 install -r requirements.txt
+
+ADD manage.py manage.py
+ADD control_panel_api control_panel_api
 
 EXPOSE 8000
 
