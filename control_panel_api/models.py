@@ -4,8 +4,16 @@ from django_extensions.db.fields import AutoSlugField, CreationDateTimeField
 
 
 class User(AbstractUser):
+    name = models.CharField(max_length=256, blank=True)
+
     class Meta:
         ordering = ('username',)
+
+    def get_full_name(self):
+        return self.name
+
+    def get_short_name(self):
+        return self.name
 
 
 class App(models.Model):
