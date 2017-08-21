@@ -26,19 +26,13 @@ class Command(BaseCommand):
         for item in user_secrets:
             username = base64.b64decode(item['username'])
             email = base64.b64decode(item['email'])
-
-            try:
-                first_name, last_name = base64.b64decode(item['fullname']).split()
-            except ValueError:
-                first_name = ''
-                last_name = ''
+            name = base64.b64decode(item['fullname'])
 
             try:
                 User.objects.create(
                     username=username,
                     email=email,
-                    first_name=first_name,
-                    last_name=last_name,
+                    name=name,
                 )
                 users_added += 1
                 logger.debug("Imported {} {}".format(username, email))
