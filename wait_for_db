@@ -1,0 +1,59 @@
+#!python3
+
+from collections import namedtuple
+import os
+import sys
+from time import sleep
+
+from django.conf import settings
+import psycopg2
+
+
+Attempt = namedtuple('Attempt', ['succeeded', 'number'])
+
+
+def retry(fn, max_attempts=20, delay=5, *args, **kwargs):
+
+    for i in range(max_attempts):
+
+        attempt = Attempt(fn(*args, **kwargs), i + 1)
+
+        yield attempt
+
+        if not attempt.succeeded and attempt.number < max_attempts:
+            sleep(delay)
+
+
+def connect(timeout=5):
+
+    conf = settings.DATABASES['default']
+
+    print('Connecting to db at {HOST}:{PORT} ...'.format(**conf))
+
+    try:
+        psycopg2.connect(
+            host=conf['HOST'],
+            port=conf['PORT'],
+            user=conf['USER'],
+            password=conf['PASSWORD'],
+            dbname='postgres',
+            connect_timeout=timeout
+        )
+
+    except Exception as error:
+        print(error)
+        return False
+
+    return True
+
+
+if __name__ == '__main__':
+
+    for attempt in retry(connect):
+
+        if attempt.succeeded:
+            break
+
+    if not attempt.succeeded:
+        print('Giving up after {0.number} attempts'.format(attempt))
+        sys.exit(1)

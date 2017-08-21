@@ -7,17 +7,17 @@ jobs:
 
       - image: docker:17.06.0-ce-git
 
-      - image: circleci/postgres:9.6.2
-        environment:
-          POSTGRES_DB: controlpanel
-          POSTGRES_PASSWORD: ""
-          POSTGRES_USER: "circleci"
-
     steps:
 
       - checkout
 
       - setup_remote_docker
+
+      - run:
+          name: Install dependencies
+          command: |
+            apk update && apk add py2-pip
+            pip install docker-compose==1.15.0
 
       - restore_cache:
           keys:
@@ -48,23 +48,13 @@ jobs:
             - /caches/app.tar
 
       - run:
-          name: Start postgres
-          command: |
-            docker run -d -p 5432:5432 circleci/postgres:9.6.2
-
-      - run:
           name: Run tests
           command: |
-            docker run -it --net=host \
-              -e DB_NAME=controlpanel \
-              app python3 manage.py test
+            docker-compose -f docker-compose.test.yml up --abort-on-container-exit
 
-#      - deploy:
-#          name: Push application Docker image
-#          command: |
-#            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-#              login="$(aws ecr get-login)"
-#              ${login}
-#              docker tag app "${ECR_ENDPOINT}/app:${CIRCLE_SHA1}"
-#              docker push "${ECR_ENDPOINT}/app:${CIRCLE_SHA1}"
-#            fi
+      - deploy:
+          name: Push application Docker image
+          command: |
+            docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
+            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+            docker push "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"

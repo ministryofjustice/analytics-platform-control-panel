@@ -1,0 +1,19 @@
+version: '3'
+services:
+  app:
+    image: "app"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    links:
+      - db
+    environment:
+      DB_HOST: "db"
+      DB_NAME: "controlpanel"
+      DB_USER: "postgres"
+      DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: "control_panel_api.settings"
+    command: ["./run_tests"]
+  db:
+    image: "postgres:9.6.2"

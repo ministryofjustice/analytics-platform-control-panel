@@ -16,6 +16,8 @@ ADD requirements.txt requirements.txt
 
 RUN pip3 install -r requirements.txt
 
+ADD run_tests run_tests
+ADD wait_for_db wait_for_db
 ADD manage.py manage.py
 ADD control_panel_api control_panel_api
 

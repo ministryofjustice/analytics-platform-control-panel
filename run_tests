@@ -1,0 +1,5 @@
+#!/bin/sh
+
+set -e -o pipefail
+
+python3 wait_for_db && python3 manage.py test
