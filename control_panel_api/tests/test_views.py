@@ -26,9 +26,10 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('email', response.data)
         self.assertIn('url', response.data)
         self.assertIn('username', response.data)
+        self.assertIn('name', response.data)
         self.assertIn('groups', response.data)
         self.assertIn('id', response.data)
-        self.assertEqual(5, len(response.data))
+        self.assertEqual(6, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(reverse('user-detail', (self.fixture.id,)))
