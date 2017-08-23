@@ -23,4 +23,4 @@ ADD control_panel_api control_panel_api
 
 EXPOSE 8000
 
-CMD ["python3", "manage.py", "runserver"]
+CMD ["python3", "manage.py", "runserver", "--noreload"]
