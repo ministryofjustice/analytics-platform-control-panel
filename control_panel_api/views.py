@@ -1,7 +1,10 @@
 from django.contrib.auth.models import Group
 from rest_framework import viewsets
 
-from control_panel_api.filters import AppFilter, UserFilter
+from control_panel_api.filters import (
+    AppFilter,
+    UserFilter,
+)
 from control_panel_api.models import App, User
 from control_panel_api.permissions import (
     AppPermissions,

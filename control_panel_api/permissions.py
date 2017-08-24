@@ -11,20 +11,18 @@ def is_superuser(user):
     return user and user.is_superuser
 
 
-class AppPermissions(BasePermission):
-
+class IsSuperuser(BasePermission):
     """
-    Allows access only to super users.
-    """
-
-    def has_permission(self, request, view):
-        return is_superuser(request.user)
-
-
-class UserPermissions(BasePermission):
-    """
-    Allows access only to super users.
+    Only superusers are authorised
     """
 
     def has_permission(self, request, view):
         return is_superuser(request.user)
+
+
+class AppPermissions(IsSuperuser):
+    pass
+
+
+class UserPermissions(IsSuperuser):
+    pass

@@ -113,8 +113,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ('control_panel_api.filters.SuperusersOnlyFilter',),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAdminUser',
+        'control_panel_api.permissions.IsSuperuser',
     ],
     'PAGE_SIZE': 10
 }
