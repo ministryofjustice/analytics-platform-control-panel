@@ -12,8 +12,8 @@ RUN apk update && \
 
 WORKDIR /home/control-panel
 
+# install python dependencies
 ADD requirements.txt requirements.txt
-
 RUN pip3 install -r requirements.txt
 
 ADD manage.py manage.py
@@ -21,6 +21,9 @@ ADD run_api run_api
 ADD run_tests run_tests
 ADD wait_for_db wait_for_db
 ADD control_panel_api control_panel_api
+
+# collect static files for deployment
+RUN python3 manage.py collectstatic
 
 EXPOSE 8000
 
