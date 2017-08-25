@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django_extensions.db.fields import AutoSlugField, CreationDateTimeField, ModificationDateTimeField
+from django_extensions.db.fields import AutoSlugField
+from django_extensions.db.models import TimeStampedModel
 
 
 class User(AbstractUser):
@@ -23,8 +24,7 @@ class User(AbstractUser):
         return Team.objects.filter(teammembership__user=self)
 
 
-class App(models.Model):
-    created = CreationDateTimeField()
+class App(TimeStampedModel):
     name = models.CharField(max_length=100, blank=False)
     slug = AutoSlugField(populate_from='name')
     repo_url = models.URLField(max_length=512, blank=True, default='')
@@ -33,16 +33,14 @@ class App(models.Model):
         ordering = ('name',)
 
 
-class Role(models.Model):
-    created = CreationDateTimeField()
+class Role(TimeStampedModel):
     code = models.CharField(max_length=256, blank=False, unique=True)
 
     class Meta:
         ordering = ('code',)
 
 
-class Team(models.Model):
-    created = CreationDateTimeField()
+class Team(TimeStampedModel):
     name = models.CharField(max_length=256, blank=False)
     slug = AutoSlugField(populate_from='name')
 
@@ -64,14 +62,11 @@ class Team(models.Model):
         return self.users().filter(teammembership__role__code=role_code)
 
 
-class TeamMembership(models.Model):
+class TeamMembership(TimeStampedModel):
     """
     User's membership to a team. A user is member of a team with a
     given role, e.g. user_1 is maintainer (role) in team_1
     """
-
-    created = CreationDateTimeField()
-    modified = ModificationDateTimeField()
 
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
