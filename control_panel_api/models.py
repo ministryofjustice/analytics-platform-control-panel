@@ -76,6 +76,5 @@ class TeamMembership(TimeStampedModel):
     class Meta:
         unique_together = (
             # a user can be in a team only once and with exactly one role
-            ('user', 'team', 'role'),
             ('user', 'team'),
         )

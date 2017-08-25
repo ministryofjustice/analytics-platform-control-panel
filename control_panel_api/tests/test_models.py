@@ -1,4 +1,5 @@
-from django.test import TestCase
+from django.db.utils import IntegrityError
+from django.test import TestCase, TransactionTestCase
 
 from control_panel_api.models import (
     Role,
@@ -77,3 +78,21 @@ class TeamTest(FixtureTestCase):
         assert self.user_bob in justice_members
         assert self.user_other not in justice_maintainers
         assert self.user_other not in justice_members
+
+
+class Membership(FixtureTestCase):
+
+    def test_user_can_be_added_to_team_only_once(self):
+        raised_integrity_error = False
+
+        try:
+            # (trying to) Add Alice to team justice again
+            TeamMembership.objects.create(
+                team=self.team_justice,
+                user=self.user_alice,
+                role=self.role_member,
+            )
+        except IntegrityError:
+            raised_integrity_error = True
+
+        assert raised_integrity_error
