@@ -8,6 +8,7 @@ django-extensions==1.8.1
 django-rest-swagger==2.1.2
 djangorestframework==3.6.3
 google-auth==1.0.2
+gunicorn==19.7.1
 idna==2.6
 ipaddress==1.0.18
 itypes==1.1.0

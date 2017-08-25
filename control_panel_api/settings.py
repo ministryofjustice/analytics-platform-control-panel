@@ -12,7 +12,8 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
 # Whitelist values for the HTTP Host header, to prevent certain attacks
 # MUST be set if DEBUG is False
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = list(
+    filter(None, os.environ.get('ALLOWED_HOSTS', '').split(' ')))
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -106,6 +107,8 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 STATIC_URL = '/static/'
 

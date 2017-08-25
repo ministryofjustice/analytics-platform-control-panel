@@ -1,0 +1,21 @@
+version: '3'
+services:
+  app:
+    image: "app"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    links:
+      - db
+    environment:
+      DB_HOST: "db"
+      DB_NAME: "controlpanel"
+      DB_USER: "controlpanel"
+      DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: "control_panel_api.settings"
+  db:
+    image: "circleci/postgres:9.6.2"
+    environment:
+      POSTGRES_USER: "controlpanel"
+      POSTGRES_DB: "controlpanel"

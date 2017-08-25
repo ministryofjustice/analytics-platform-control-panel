@@ -1,32 +1,60 @@
 version: 2
 jobs:
+
   build:
+
     docker:
-      - image: circleci/python:3.6.1
-        environment:
-          DEBUG: True
-      - image: circleci/postgres:9.6.2
-        environment:
-          POSTGRES_DB: controlpanel
-          POSTGRES_PASSWORD: ""
-          POSTGRES_USER: "circleci"
+
+      - image: docker:17.06.0-ce-git
+
     steps:
+
       - checkout
+
+      - setup_remote_docker
+
+      - run:
+          name: Install dependencies
+          command: |
+            apk update && apk add py2-pip
+            pip install docker-compose==1.15.0
+
       - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
-      - run:
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-      - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          keys:
+            - v1-{{ .Branch }}
           paths:
-            - "venv"
+            - /caches/app.tar
+
       - run:
+          name: Load Docker image layer cache
           command: |
-            . venv/bin/activate
-            python manage.py test
-      - store_artifacts:
-          path: test-reports/
-          destination: tr1
+            set +o pipefail
+            docker load -i /caches/app.tar | true
+
+      - run:
+          name: Build application Docker image
+          command: |
+            docker build --cache-from=app -t app .
+
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p /caches
+            docker save -o /caches/app.tar app
+
+      - save_cache:
+          key: v1-{{ .Branch }}-{{ epoch }}
+          paths:
+            - /caches/app.tar
+
+      - run:
+          name: Run tests
+          command: |
+            docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+
+      - deploy:
+          name: Push application Docker image
+          command: |
+            docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
+            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+            docker push "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
