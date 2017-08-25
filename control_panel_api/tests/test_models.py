@@ -9,7 +9,7 @@ from control_panel_api.models import (
 )
 
 
-class FixtureTestCase(TestCase):
+class MembershipsTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -49,38 +49,29 @@ class FixtureTestCase(TestCase):
             role=cls.role_member,
         )
 
-
-class UserTest(FixtureTestCase):
-
-    def test_teams(self):
+    def test_get_user_teams(self):
         alices_teams = self.user_alice.teams()
 
-        assert self.team_justice in alices_teams
-        assert self.team_other not in alices_teams
+        self.assertIn(self.team_justice, alices_teams)
+        self.assertNotIn(self.team_other, alices_teams)
 
-
-class TeamTest(FixtureTestCase):
-
-    def test_users(self):
+    def test_get_users_in_a_team(self):
         justice_users = self.team_justice.users()
 
-        assert self.user_alice in justice_users
-        assert self.user_bob in justice_users
-        assert self.user_other not in justice_users
+        self.assertIn(self.user_alice, justice_users)
+        self.assertIn(self.user_bob, justice_users)
+        self.assertNotIn(self.user_other, justice_users)
 
-    def test_users_with_role(self):
+    def test_get_users_with_a_role_in_team(self):
         justice_maintainers = self.team_justice.users_with_role("maintainer")
         justice_members = self.team_justice.users_with_role("member")
 
-        assert self.user_alice in justice_maintainers
-        assert self.user_alice not in justice_members
-        assert self.user_bob not in justice_maintainers
-        assert self.user_bob in justice_members
-        assert self.user_other not in justice_maintainers
-        assert self.user_other not in justice_members
-
-
-class Membership(FixtureTestCase):
+        self.assertIn(self.user_alice, justice_maintainers)
+        self.assertNotIn(self.user_alice, justice_members)
+        self.assertNotIn(self.user_bob, justice_maintainers)
+        self.assertIn(self.user_bob, justice_members)
+        self.assertNotIn(self.user_other, justice_maintainers)
+        self.assertNotIn(self.user_other, justice_members)
 
     def test_user_can_be_added_to_team_only_once(self):
         raised_integrity_error = False
