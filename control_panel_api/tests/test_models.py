@@ -41,7 +41,7 @@ class FixtureTestCase(TestCase):
             user=cls.user_bob,
             role=cls.role_member,
         )
-        # Add other user to other team as member as maintainer
+        # Add other user to other team as member
         TeamMembership.objects.create(
             team=cls.team_other,
             user=cls.user_other,
