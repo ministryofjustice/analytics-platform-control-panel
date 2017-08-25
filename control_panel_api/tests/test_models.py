@@ -20,8 +20,14 @@ class FixtureTestCase(TestCase):
         cls.team_justice, _ = Team.objects.get_or_create(name="Justice Team")
         cls.team_other, _ = Team.objects.get_or_create(name="Other Team")
         # Roles
-        cls.role_maintainer, _ = Role.objects.get_or_create(code="maintainer")
-        cls.role_member, _ = Role.objects.get_or_create(code="member")
+        cls.role_maintainer, _ = Role.objects.get_or_create(
+            code="maintainer",
+            name="Maintainer",
+        )
+        cls.role_member, _ = Role.objects.get_or_create(
+            code="member",
+            name="Member",
+        )
 
         # Add Alice to Justice team as maintainer
         TeamMembership.objects.create(

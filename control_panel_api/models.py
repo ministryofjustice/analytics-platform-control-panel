@@ -34,10 +34,11 @@ class App(TimeStampedModel):
 
 
 class Role(TimeStampedModel):
+    name = models.CharField(max_length=256, blank=False, unique=True)
     code = models.CharField(max_length=256, blank=False, unique=True)
 
     class Meta:
-        ordering = ('code',)
+        ordering = ('name',)
 
 
 class Team(TimeStampedModel):
