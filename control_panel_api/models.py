@@ -15,6 +15,13 @@ class User(AbstractUser):
     def get_short_name(self):
         return self.name
 
+    def teams(self):
+        """
+        Returns the teams (queryset) the user belongs to
+        """
+
+        return Team.objects.filter(teammembership__user=self)
+
 
 class App(models.Model):
     created = CreationDateTimeField()
@@ -41,6 +48,20 @@ class Team(models.Model):
 
     class Meta:
         ordering = ('name',)
+
+    def users(self):
+        """
+        Returns the users (queryset) in the team
+        """
+
+        return User.objects.filter(teammembership__team=self)
+
+    def users_with_role(self, role_code):
+        """
+        Returns the users (queryset) with the given `role_code `in the team
+        """
+
+        return self.users().filter(teammembership__role__code=role_code)
 
 
 class TeamMembership(models.Model):
