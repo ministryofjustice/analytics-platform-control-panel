@@ -27,20 +27,20 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         super(UserViewTest, self).setUp()
         self.fixture = self.normal_user
 
-    def test_list_as_superuser(self):
+    def test_list_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.get(reverse('user-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(len(response.data['results']), 2)
 
-    def test_list_as_normal_user(self):
+    def test_list_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse('user-list'))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_detail_as_superuser(self):
+    def test_detail_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.get(reverse('user-detail', (self.fixture.id,)))
@@ -53,13 +53,13 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('id', response.data)
         self.assertEqual(6, len(response.data))
 
-    def test_detail_as_normal_user(self):
+    def test_detail_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_delete_as_superuser(self):
+    def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
@@ -69,28 +69,28 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_delete_as_normal_user(self):
+    def test_delete_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.delete(
             reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_create_as_superuser(self):
+    def test_create_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         data = {'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    def test_create_as_normal_user(self):
+    def test_create_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         data = {'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_update_as_superuser(self):
+    def test_update_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         data = {'username': 'foo'}
@@ -99,7 +99,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['username'], response.data['username'])
 
-    def test_update_as_normal_user(self):
+    def test_update_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         data = {'username': 'foo'}
@@ -115,20 +115,20 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         mommy.make('control_panel_api.App')
         self.fixture = mommy.make('control_panel_api.App')
 
-    def test_list_as_superuser(self):
+    def test_list_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.get(reverse('app-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(len(response.data['results']), 2)
 
-    def test_list_as_normal_user(self):
+    def test_list_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse('app-list'))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_detail_as_superuser(self):
+    def test_detail_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
@@ -140,13 +140,13 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('repo_url', response.data)
         self.assertEqual(5, len(response.data))
 
-    def test_detail_as_normal_user(self):
+    def test_detail_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_delete_as_superuser(self):
+    def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
@@ -156,28 +156,28 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_delete_as_normal_user(self):
+    def test_delete_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.delete(
             reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_create_as_superuser(self):
+    def test_create_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    def test_create_as_normal_user(self):
+    def test_create_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_update_as_superuser(self):
+    def test_update_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
@@ -186,7 +186,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['name'], response.data['name'])
 
-    def test_update_as_normal_user(self):
+    def test_update_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
