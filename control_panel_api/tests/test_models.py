@@ -86,4 +86,4 @@ class MembershipsTestCase(TestCase):
         except IntegrityError:
             raised_integrity_error = True
 
-        assert raised_integrity_error
+        self.assertTrue(raised_integrity_error)
