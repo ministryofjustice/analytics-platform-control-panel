@@ -62,6 +62,7 @@ jobs:
       - deploy:
           name: Deploy to Kubernetes
           command: |
-            curl ${JENKINS_URL}/job/control-panel/build \
-              --data token=${JENKINS_JOB_TRIGGER_TOKEN}
+            curl ${JENKINS_URL}/job/control-panel/buildWithParameters \
+              --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
+              --data BRANCH=${CIRCLE_BRANCH} \
               --user ${JENKINS_USER}:${JENKINS_TOKEN}
