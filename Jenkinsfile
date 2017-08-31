@@ -4,9 +4,9 @@ pipeline {
 
   parameters {
     string(
-      name: "VERSION",
-      description: "Version number of the control-panel to deploy",
-      defaultValue: "0.1.0"
+      name: "BRANCH",
+      description: "Git branch or commit to deploy",
+      defaultValue: env.BRANCH_NAME
     )
   }
 
@@ -22,10 +22,11 @@ pipeline {
       steps {
         helm.upgrade(
           release: "cpanel",
-          chart: "mojanalytics/cpanel-${params.VERSION}",
+          chart: "mojanalytics/cpanel-0.1.0",
           values: "config/chart-env-config/${env.ENV}/cpanel.yml",
           overrides: [
-            "API.Environment.DEBUG": "True"
+            "API.Environment.DEBUG": "True",
+            "API.Image.Tag": params.BRANCH
           ]
         )
       }
