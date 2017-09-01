@@ -6,7 +6,7 @@ from control_panel_api.models import (
     Team,
     TeamMembership,
     User,
-)
+    App)
 
 
 class MembershipsTestCase(TestCase):
@@ -87,3 +87,20 @@ class MembershipsTestCase(TestCase):
             raised_integrity_error = True
 
         self.assertTrue(raised_integrity_error)
+
+
+class AppTestCase(TestCase):
+    def test_slug_characters_replaced(self):
+        name = 'foo__bar-baz!bat 1337'
+
+        app = App.objects.create(name=name)
+        self.assertEqual('foo-bar-bazbat-1337', app.slug)
+
+    def test_slug_collisions_increments(self):
+        name = 'foo'
+
+        app = App.objects.create(name=name)
+        self.assertEqual('foo', app.slug)
+
+        app2 = App.objects.create(name=name)
+        self.assertEqual('foo-2', app2.slug)
