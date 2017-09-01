@@ -1,5 +1,8 @@
+import re
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.template.defaultfilters import slugify
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -25,8 +28,11 @@ class User(AbstractUser):
 
 
 class App(TimeStampedModel):
+    def _slugify(value):
+        return re.sub(r'_+', '-', slugify(value))
+
     name = models.CharField(max_length=100, blank=False)
-    slug = AutoSlugField(populate_from='name')
+    slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
     repo_url = models.URLField(max_length=512, blank=True, default='')
 
     class Meta:
