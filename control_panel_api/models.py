@@ -29,6 +29,7 @@ class User(AbstractUser):
 
 
 class App(TimeStampedModel):
+
     def _slugify(value):
         return re.sub(r'_+', '-', slugify(value))
 
@@ -114,3 +115,27 @@ class TeamMembership(TimeStampedModel):
             # a user can be in a team only once and with exactly one role
             ('user', 'team'),
         )
+
+
+class AppDAG(TimeStampedModel):
+    """
+    App Data Access Group (DAG). An app has potentially access to several
+    S3 buckets.
+    """
+
+    READONLY = 'readonly'
+    READWRITE = 'readwrite'
+
+    ACCESS_LEVELS = (
+        (READONLY, "Read-only"),
+        (READWRITE, "Read-write"),
+    )
+
+    app = models.ForeignKey(App, on_delete=models.CASCADE)
+    s3bucket = models.ForeignKey(S3Bucket, on_delete=models.CASCADE)
+    access_level = models.CharField(
+        max_length=9, choices=ACCESS_LEVELS, default=READONLY)
+
+    class Meta:
+        # one record per app/s3bucket
+        unique_together = ('app', 's3bucket')
