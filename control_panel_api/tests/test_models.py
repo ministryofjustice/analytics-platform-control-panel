@@ -53,13 +53,13 @@ class MembershipsTestCase(TestCase):
         )
 
     def test_get_user_teams(self):
-        alices_teams = self.user_alice.teams()
+        alices_teams = self.user_alice.teams.all()
 
         self.assertIn(self.team_justice, alices_teams)
         self.assertNotIn(self.team_other, alices_teams)
 
     def test_get_users_in_a_team(self):
-        justice_users = self.team_justice.users()
+        justice_users = self.team_justice.users.all()
 
         self.assertIn(self.user_alice, justice_users)
         self.assertIn(self.user_bob, justice_users)

@@ -11,6 +11,8 @@ from django_extensions.db.models import TimeStampedModel
 class User(AbstractUser):
     name = models.CharField(max_length=256, blank=True)
 
+    teams = models.ManyToManyField('Team', through='TeamMembership')
+
     class Meta:
         ordering = ('username',)
 
@@ -19,13 +21,6 @@ class User(AbstractUser):
 
     def get_short_name(self):
         return self.name
-
-    def teams(self):
-        """
-        Returns the teams (queryset) the user belongs to
-        """
-
-        return Team.objects.filter(teammembership__user=self)
 
 
 class App(TimeStampedModel):
@@ -82,22 +77,17 @@ class Team(TimeStampedModel):
     name = models.CharField(max_length=256, blank=False)
     slug = AutoSlugField(populate_from='name')
 
+    users = models.ManyToManyField('User', through='TeamMembership')
+
     class Meta:
         ordering = ('name',)
-
-    def users(self):
-        """
-        Returns the users (queryset) in the team
-        """
-
-        return User.objects.filter(teammembership__team=self)
 
     def users_with_role(self, role_code):
         """
         Returns the users (queryset) with the given `role_code `in the team
         """
 
-        return self.users().filter(teammembership__role__code=role_code)
+        return self.users.filter(teammembership__role__code=role_code)
 
 
 class TeamMembership(TimeStampedModel):
