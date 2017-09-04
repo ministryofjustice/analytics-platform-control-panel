@@ -30,6 +30,16 @@ class AppFilter(SuperusersOnlyFilter):
     pass
 
 
+class S3BucketFilter(SuperusersOnlyFilter):
+    """
+    Filter to get visible users.
+
+    Currently superusers see everything, others see nothing.
+    """
+
+    pass
+
+
 class UserFilter(SuperusersOnlyFilter):
     """
     Filter to get visible users.
