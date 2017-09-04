@@ -201,13 +201,15 @@ class S3BucketPermissionsTest(APITestCase):
     def test_detail_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
-        response = self.client.get(reverse('s3bucket-detail', (self.s3bucket_1.id,)))
+        response = self.client.get(
+            reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
     def test_detail_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
-        response = self.client.get(reverse('s3bucket-detail', (self.s3bucket_1.id,)))
+        response = self.client.get(
+            reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
     def test_delete_as_superuser_responds_OK(self):

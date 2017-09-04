@@ -52,7 +52,8 @@ class S3BucketFilterTest(APITestCase):
         self.client.force_login(self.superuser)
 
         response = self.client.get(reverse("s3bucket-list"))
-        s3_bucket_ids = [s3bucket["id"] for s3bucket in response.data["results"]]
+        s3_bucket_ids = [s3bucket["id"]
+                         for s3bucket in response.data["results"]]
         self.assertEqual(len(s3_bucket_ids), 2)
         self.assertIn(self.s3_bucket_1.id, s3_bucket_ids)
         self.assertIn(self.s3_bucket_2.id, s3_bucket_ids)
