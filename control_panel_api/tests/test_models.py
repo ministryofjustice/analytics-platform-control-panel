@@ -113,8 +113,7 @@ class S3BucketTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Create an S3 bucket
-        cls.s3_bucket_1, _ = S3Bucket.objects.get_or_create(
-            name="test-bucket-1")
+        cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
     def test_arn(self):
         expected_arn = "arn:aws:s3:::{}".format(self.s3_bucket_1.name)
