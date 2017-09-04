@@ -3,6 +3,7 @@ from django.test import TestCase, TransactionTestCase
 
 from control_panel_api.models import (
     Role,
+    S3Bucket,
     Team,
     TeamMembership,
     User,
@@ -90,6 +91,7 @@ class MembershipsTestCase(TestCase):
 
 
 class AppTestCase(TestCase):
+
     def test_slug_characters_replaced(self):
         name = 'foo__bar-baz!bat 1337'
 
@@ -104,3 +106,16 @@ class AppTestCase(TestCase):
 
         app2 = App.objects.create(name=name)
         self.assertEqual('foo-2', app2.slug)
+
+
+class S3BucketTestCase(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Create an S3 bucket
+        cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+
+    def test_arn(self):
+        expected_arn = "arn:aws:s3:::{}".format(self.s3_bucket_1.name)
+
+        self.assertEqual(self.s3_bucket_1.arn, expected_arn)

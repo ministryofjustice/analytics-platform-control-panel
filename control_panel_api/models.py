@@ -1,6 +1,7 @@
 import re
 
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 from django.db import models
 from django.template.defaultfilters import slugify
 from django_extensions.db.fields import AutoSlugField
@@ -37,6 +38,35 @@ class App(TimeStampedModel):
 
     class Meta:
         ordering = ('name',)
+
+
+class S3Bucket(TimeStampedModel):
+    # See: AWS' Bucket Restrictions and Limitations
+    # http://docs.aws.amazon.com/en_gb/AmazonS3/latest/dev/BucketRestrictions.html
+    #
+    # A label starts with a letter (preventing labels starting with digits to
+    # avoid IP-like names) and ends with a letter or a digit. It has 0+
+    # letters, digits or hyphens in the middle
+    #
+    # An S3 bucket name starts with a label, it can have more than one label
+    # separated by a dot.
+    LABELS_REGEX = '^([a-z][a-z0-9-]*[a-z0-9])(.[a-z][a-z0-9-]*[a-z0-9])*$'
+    # An S3 bucket name needs to be min 3 chars, max 63 chars long.
+    LENGTH_REGEX = '^.{3,63}$'
+
+    name = models.CharField(max_length=63, validators=[
+        RegexValidator(regex=LENGTH_REGEX,
+                       message="must be between 3 and 63 characters"),
+        RegexValidator(regex=LABELS_REGEX,
+                       message="is invalid, check AWS S3 bucket names restrictions (for example, can only contains letters, digits, dots and hyphens)"),
+    ])
+
+    class Meta:
+        ordering = ('name',)
+
+    @property
+    def arn(self):
+        return "arn:aws:s3:::{}".format(self.name)
 
 
 class Role(TimeStampedModel):
