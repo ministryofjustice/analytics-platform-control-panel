@@ -7,9 +7,10 @@ from control_panel_api import views
 
 
 router = routers.DefaultRouter()
-router.register(r'users', views.UserViewSet)
-router.register(r'groups', views.GroupViewSet)
 router.register(r'apps', views.AppViewSet)
+router.register(r'groups', views.GroupViewSet)
+router.register(r's3buckets', views.S3BucketViewSet)
+router.register(r'users', views.UserViewSet)
 
 schema_view = get_swagger_view(title='Control Panel API')
 

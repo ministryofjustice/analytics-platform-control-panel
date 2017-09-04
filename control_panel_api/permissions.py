@@ -24,5 +24,9 @@ class AppPermissions(IsSuperuser):
     pass
 
 
+class S3BucketPermissions(IsSuperuser):
+    pass
+
+
 class UserPermissions(IsSuperuser):
     pass

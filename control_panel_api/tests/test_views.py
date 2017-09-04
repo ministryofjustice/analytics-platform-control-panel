@@ -4,6 +4,7 @@ from rest_framework.status import (
     HTTP_200_OK,
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
+    HTTP_400_BAD_REQUEST,
     HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
@@ -21,7 +22,7 @@ class AuthenticatedClientMixin(object):
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
-        super(UserViewTest, self).setUp()
+        super().setUp()
         self.fixture = mommy.make('control_panel_api.User')
 
     def test_list(self):
@@ -64,7 +65,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
-        super(AppViewTest, self).setUp()
+        super().setUp()
         mommy.make('control_panel_api.App')
         self.fixture = mommy.make('control_panel_api.App')
 
@@ -102,3 +103,68 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('app-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['name'], response.data['name'])
+
+
+class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
+    def setUp(self):
+        super().setUp()
+        mommy.make('control_panel_api.S3Bucket')
+        self.fixture = mommy.make(
+            'control_panel_api.S3Bucket', name='test-bucket-1')
+
+    def test_list(self):
+        response = self.client.get(reverse('s3bucket-list'))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(len(response.data['results']), 2)
+
+    def test_detail(self):
+        response = self.client.get(
+            reverse('s3bucket-detail', (self.fixture.id,)))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertIn('id', response.data)
+        self.assertIn('url', response.data)
+        self.assertIn('name', response.data)
+        self.assertIn('arn', response.data)
+        self.assertEqual(4, len(response.data))
+
+    def test_delete(self):
+        response = self.client.delete(
+            reverse('s3bucket-detail', (self.fixture.id,)))
+        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        response = self.client.get(reverse('s3bucket-detail', (self.fixture.id,)))
+        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_create_when_valid_data(self):
+        data = {'name': 'test-bucket-123'}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    def test_create_when_name_taken(self):
+        data = {'name': self.fixture.name}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_create_when_name_short(self):
+        data = {'name': 'ab'}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_create_when_name_invalid(self):
+        data = {'name': '127.0.0.1'}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_update_when_valid_data(self):
+        data = {'name': 'test-bucket-updated'}
+        response = self.client.put(
+            reverse('s3bucket-detail', (self.fixture.id,)), data)
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(data['name'], response.data['name'])
+
+    def test_update_when_name_invalid(self):
+        data = {'name': '__test_bucket__'}
+        response = self.client.put(
+            reverse('s3bucket-detail', (self.fixture.id,)), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
