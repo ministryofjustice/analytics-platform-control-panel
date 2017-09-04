@@ -141,6 +141,11 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
+    def test_create_when_name_taken(self):
+        data = {'name': self.fixture.name}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
     def test_create_when_name_short(self):
         data = {'name': 'ab'}
         response = self.client.post(reverse('s3bucket-list'), data)

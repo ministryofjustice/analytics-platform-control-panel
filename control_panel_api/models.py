@@ -54,7 +54,7 @@ class S3Bucket(TimeStampedModel):
     # An S3 bucket name needs to be min 3 chars, max 63 chars long.
     LENGTH_REGEX = '^.{3,63}$'
 
-    name = models.CharField(max_length=63, validators=[
+    name = models.CharField(unique=True, max_length=63, validators=[
         RegexValidator(regex=LENGTH_REGEX,
                        message="must be between 3 and 63 characters"),
         RegexValidator(regex=LABELS_REGEX,
