@@ -107,10 +107,11 @@ class TeamMembership(TimeStampedModel):
         )
 
 
-class AppDAG(TimeStampedModel):
+class AppS3BucketAccess(TimeStampedModel):
     """
-    App Data Access Group (DAG). An app has potentially access to several
-    S3 buckets.
+    An app (potentially) has access to several S3 buckets.
+
+    We have two access levels, "readonly" (default) and "readwrite".
     """
 
     READONLY = 'readonly'

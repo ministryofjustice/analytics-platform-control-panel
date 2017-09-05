@@ -8,7 +8,7 @@ from control_panel_api.models import (
     TeamMembership,
     User,
     App,
-    AppDAG,
+    AppS3BucketAccess,
 )
 
 
@@ -117,7 +117,7 @@ class S3BucketTestCase(TestCase):
         self.assertEqual(self.s3_bucket_1.arn, expected_arn)
 
 
-class AppsDAGTestCase(TestCase):
+class AppS3BucketAccessTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -127,17 +127,17 @@ class AppsDAGTestCase(TestCase):
         # S3 buckets
         cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
-    def test_apps_cant_be_added_twice_to_dag(self):
-        # Add app_1 to bucket_1's DAG (read-only)
-        AppDAG.objects.create(
+    def test_one_record_per_app_per_s3bucket(self):
+        # Give app_1 access to bucket_1 (read-only)
+        AppS3BucketAccess.objects.create(
             app=self.app_1,
             s3bucket=self.s3_bucket_1,
-            access_level=AppDAG.READONLY,
+            access_level=AppS3BucketAccess.READONLY,
         )
 
         with self.assertRaises(IntegrityError):
-            AppDAG.objects.create(
+            AppS3BucketAccess.objects.create(
                 app=self.app_1,
                 s3bucket=self.s3_bucket_1,
-                access_level=AppDAG.READWRITE,
+                access_level=AppS3BucketAccess.READWRITE,
             )
