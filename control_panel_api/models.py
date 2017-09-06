@@ -11,6 +11,8 @@ from django_extensions.db.models import TimeStampedModel
 class User(AbstractUser):
     name = models.CharField(max_length=256, blank=True)
 
+    teams = models.ManyToManyField('Team', through='TeamMembership')
+
     class Meta:
         ordering = ('username',)
 
@@ -20,15 +22,9 @@ class User(AbstractUser):
     def get_short_name(self):
         return self.name
 
-    def teams(self):
-        """
-        Returns the teams (queryset) the user belongs to
-        """
-
-        return Team.objects.filter(teammembership__user=self)
-
 
 class App(TimeStampedModel):
+
     def _slugify(value):
         return re.sub(r'_+', '-', slugify(value))
 
@@ -81,22 +77,17 @@ class Team(TimeStampedModel):
     name = models.CharField(max_length=256, blank=False)
     slug = AutoSlugField(populate_from='name')
 
+    users = models.ManyToManyField('User', through='TeamMembership')
+
     class Meta:
         ordering = ('name',)
-
-    def users(self):
-        """
-        Returns the users (queryset) in the team
-        """
-
-        return User.objects.filter(teammembership__team=self)
 
     def users_with_role(self, role_code):
         """
         Returns the users (queryset) with the given `role_code `in the team
         """
 
-        return self.users().filter(teammembership__role__code=role_code)
+        return self.users.filter(teammembership__role__code=role_code)
 
 
 class TeamMembership(TimeStampedModel):
@@ -114,3 +105,28 @@ class TeamMembership(TimeStampedModel):
             # a user can be in a team only once and with exactly one role
             ('user', 'team'),
         )
+
+
+class AppS3Bucket(TimeStampedModel):
+    """
+    An app (potentially) has access to several S3 buckets.
+
+    We have two access levels, "readonly" (default) and "readwrite".
+    """
+
+    READONLY = 'readonly'
+    READWRITE = 'readwrite'
+
+    ACCESS_LEVELS = (
+        (READONLY, "Read-only"),
+        (READWRITE, "Read-write"),
+    )
+
+    app = models.ForeignKey(App, on_delete=models.CASCADE)
+    s3bucket = models.ForeignKey(S3Bucket, on_delete=models.CASCADE)
+    access_level = models.CharField(
+        max_length=9, choices=ACCESS_LEVELS, default=READONLY)
+
+    class Meta:
+        # one record per app/s3bucket
+        unique_together = ('app', 's3bucket')

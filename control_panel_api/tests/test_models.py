@@ -2,12 +2,14 @@ from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 
 from control_panel_api.models import (
+    App,
+    AppS3Bucket,
     Role,
     S3Bucket,
     Team,
     TeamMembership,
     User,
-    App)
+)
 
 
 class MembershipsTestCase(TestCase):
@@ -51,13 +53,13 @@ class MembershipsTestCase(TestCase):
         )
 
     def test_get_user_teams(self):
-        alices_teams = self.user_alice.teams()
+        alices_teams = self.user_alice.teams.all()
 
         self.assertIn(self.team_justice, alices_teams)
         self.assertNotIn(self.team_other, alices_teams)
 
     def test_get_users_in_a_team(self):
-        justice_users = self.team_justice.users()
+        justice_users = self.team_justice.users.all()
 
         self.assertIn(self.user_alice, justice_users)
         self.assertIn(self.user_bob, justice_users)
@@ -75,19 +77,13 @@ class MembershipsTestCase(TestCase):
         self.assertNotIn(self.user_other, justice_members)
 
     def test_user_can_be_added_to_team_only_once(self):
-        raised_integrity_error = False
-
-        try:
+        with self.assertRaises(IntegrityError):
             # (trying to) Add Alice to team justice again
             TeamMembership.objects.create(
                 team=self.team_justice,
                 user=self.user_alice,
                 role=self.role_member,
             )
-        except IntegrityError:
-            raised_integrity_error = True
-
-        self.assertTrue(raised_integrity_error)
 
 
 class AppTestCase(TestCase):
@@ -119,3 +115,27 @@ class S3BucketTestCase(TestCase):
         expected_arn = "arn:aws:s3:::{}".format(self.s3_bucket_1.name)
 
         self.assertEqual(self.s3_bucket_1.arn, expected_arn)
+
+
+class AppS3BucketTestCase(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Apps
+        cls.app_1 = App.objects.create(name="app_1")
+
+        # S3 buckets
+        cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+
+    def test_one_record_per_app_per_s3bucket(self):
+        # Give app_1 access to bucket_1 (read-only)
+        self.app_1.apps3bucket_set.create(
+            s3bucket=self.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
+        )
+
+        with self.assertRaises(IntegrityError):
+            self.app_1.apps3bucket_set.create(
+                s3bucket=self.s3_bucket_1,
+                access_level=AppS3Bucket.READWRITE,
+            )
