@@ -2,13 +2,13 @@ from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 
 from control_panel_api.models import (
+    App,
+    AppS3Bucket,
     Role,
     S3Bucket,
     Team,
     TeamMembership,
     User,
-    App,
-    AppS3BucketAccess,
 )
 
 
@@ -117,7 +117,7 @@ class S3BucketTestCase(TestCase):
         self.assertEqual(self.s3_bucket_1.arn, expected_arn)
 
 
-class AppS3BucketAccessTestCase(TestCase):
+class AppS3BucketTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -129,15 +129,13 @@ class AppS3BucketAccessTestCase(TestCase):
 
     def test_one_record_per_app_per_s3bucket(self):
         # Give app_1 access to bucket_1 (read-only)
-        AppS3BucketAccess.objects.create(
-            app=self.app_1,
+        self.app_1.apps3bucket_set.create(
             s3bucket=self.s3_bucket_1,
-            access_level=AppS3BucketAccess.READONLY,
+            access_level=AppS3Bucket.READONLY,
         )
 
         with self.assertRaises(IntegrityError):
-            AppS3BucketAccess.objects.create(
-                app=self.app_1,
+            self.app_1.apps3bucket_set.create(
                 s3bucket=self.s3_bucket_1,
-                access_level=AppS3BucketAccess.READWRITE,
+                access_level=AppS3Bucket.READWRITE,
             )

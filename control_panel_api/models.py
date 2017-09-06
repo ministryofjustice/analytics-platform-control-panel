@@ -107,7 +107,7 @@ class TeamMembership(TimeStampedModel):
         )
 
 
-class AppS3BucketAccess(TimeStampedModel):
+class AppS3Bucket(TimeStampedModel):
     """
     An app (potentially) has access to several S3 buckets.
 
