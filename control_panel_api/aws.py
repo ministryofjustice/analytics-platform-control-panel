@@ -3,10 +3,10 @@ import json
 import boto3
 
 
-def create_bucket(name, region, **kwargs):
+def create_bucket(name, region, acl='private'):
     boto3.client('s3').create_bucket(
         Bucket=name,
-        ACL=kwargs.get('acl', 'private'),
+        ACL=acl,
         CreateBucketConfiguration={'LocationConstraint': region},
     )
 
