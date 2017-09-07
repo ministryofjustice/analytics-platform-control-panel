@@ -8,6 +8,7 @@ from control_panel_api.filters import (
 )
 from control_panel_api.models import (
     App,
+    AppS3Bucket,
     S3Bucket,
     User,
 )
@@ -17,8 +18,9 @@ from control_panel_api.permissions import (
     UserPermissions,
 )
 from control_panel_api.serializers import (
-    GroupSerializer,
+    AppS3BucketSerializer,
     AppSerializer,
+    GroupSerializer,
     S3BucketSerializer,
     UserSerializer,
 )
@@ -41,6 +43,11 @@ class AppViewSet(viewsets.ModelViewSet):
     serializer_class = AppSerializer
     filter_backends = (AppFilter,)
     permission_classes = (AppPermissions, )
+
+
+class AppS3BucketViewSet(viewsets.ModelViewSet):
+    queryset = AppS3Bucket.objects.all()
+    serializer_class = AppS3BucketSerializer
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):
