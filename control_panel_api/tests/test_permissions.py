@@ -195,15 +195,11 @@ class AppS3BucketPermissionsTest(APITestCase):
         self.s3bucket_3 = mommy.make(
             "control_panel_api.S3Bucket", name="test-bucket-3")
         # Grant access to these S3 buckets
-        self.apps3bucket_1 = mommy.make(
-            "control_panel_api.AppS3Bucket",
-            app=self.app_1,
+        self.apps3bucket_1 = self.app_1.apps3buckets.create(
             s3bucket=self.s3bucket_1,
             access_level=AppS3Bucket.READONLY,
         )
-        self.apps3bucket_2 = mommy.make(
-            "control_panel_api.AppS3Bucket",
-            app=self.app_2,
+        self.apps3bucket_2 = self.app_2.apps3buckets.create(
             s3bucket=self.s3bucket_2,
             access_level=AppS3Bucket.READONLY,
         )
