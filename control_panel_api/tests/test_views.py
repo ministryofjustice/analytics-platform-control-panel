@@ -82,7 +82,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('name', response.data)
         self.assertIn('slug', response.data)
         self.assertIn('repo_url', response.data)
-        self.assertEqual(5, len(response.data))
+        self.assertIn('apps3buckets', response.data)
+        self.assertEqual(6, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(
@@ -126,7 +127,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('url', response.data)
         self.assertIn('name', response.data)
         self.assertIn('arn', response.data)
-        self.assertEqual(4, len(response.data))
+        self.assertIn('apps3buckets', response.data)
+        self.assertEqual(5, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(

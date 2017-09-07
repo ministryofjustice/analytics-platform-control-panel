@@ -122,8 +122,10 @@ class AppS3Bucket(TimeStampedModel):
         (READWRITE, "Read-write"),
     )
 
-    app = models.ForeignKey(App, on_delete=models.CASCADE)
-    s3bucket = models.ForeignKey(S3Bucket, on_delete=models.CASCADE)
+    app = models.ForeignKey(
+        App, related_name='apps3buckets', on_delete=models.CASCADE)
+    s3bucket = models.ForeignKey(
+        S3Bucket, related_name='apps3buckets', on_delete=models.CASCADE)
     access_level = models.CharField(
         max_length=9, choices=ACCESS_LEVELS, default=READONLY)
 

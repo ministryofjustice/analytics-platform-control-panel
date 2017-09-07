@@ -129,13 +129,13 @@ class AppS3BucketTestCase(TestCase):
 
     def test_one_record_per_app_per_s3bucket(self):
         # Give app_1 access to bucket_1 (read-only)
-        self.app_1.apps3bucket_set.create(
+        self.app_1.apps3buckets.create(
             s3bucket=self.s3_bucket_1,
             access_level=AppS3Bucket.READONLY,
         )
 
         with self.assertRaises(IntegrityError):
-            self.app_1.apps3bucket_set.create(
+            self.app_1.apps3buckets.create(
                 s3bucket=self.s3_bucket_1,
                 access_level=AppS3Bucket.READWRITE,
             )
