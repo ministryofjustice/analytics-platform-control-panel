@@ -1,8 +1,10 @@
 from django.test.testcases import SimpleTestCase, override_settings
+from unittest.mock import patch
 
 from control_panel_api import services
 
 
+@override_settings(ENV='test', BUCKET_REGION='eu-test-2', LOGS_BUCKET_NAME='moj-test-logs')
 class ServicesTestCase(SimpleTestCase):
     def test_policy_document_readwrite(self):
         document = services.get_policy_document('foo', readwrite=True)
@@ -14,6 +16,27 @@ class ServicesTestCase(SimpleTestCase):
 
         sids = [s['Sid'] for s in document['Statement']]
         self.assertNotIn('UpdateRenameAndDeleteObjects', sids)
+
+    @patch('boto3.client')
+    def test_create_bucket(self, mock_client):
+        services.create_bucket('bucketname')
+
+        mock_client.return_value.create_bucket.assert_called_with(
+            Bucket='test-bucketname',
+            ACL='private',
+            CreateBucketConfiguration={
+                'LocationConstraint': 'eu-test-2',
+            },
+        )
+        mock_client.return_value.put_bucket_logging.assert_called_with(
+            Bucket='test-bucketname',
+            BucketLoggingStatus={
+                'LoggingEnabled': {
+                    'TargetBucket': 'moj-test-logs',
+                    'TargetPrefix': 'test-bucketname/'
+                }
+            }
+        )
 
 
 @override_settings(ENV='test', IAM_ARN_BASE='arn:aws:iam::1337')
