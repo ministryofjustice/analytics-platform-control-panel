@@ -154,6 +154,14 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
+    @patch('boto3.client')
+    def test_create_calls_apis(self, mock_client):
+        data = {'name': 'test-bucket-123'}
+        self.client.post(reverse('s3bucket-list'), data)
+        mock_client.return_value.create_bucket.assert_called()
+        mock_client.return_value.put_bucket_logging.assert_called()
+        self.assertEqual(2, mock_client.return_value.create_policy.call_count)
+
     def test_update_when_valid_data(self):
         data = {'name': 'test-bucket-updated'}
         response = self.client.put(
