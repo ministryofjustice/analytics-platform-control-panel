@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -5,14 +7,12 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
 
 
 class AuthenticatedClientMixin(object):
-
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -20,7 +20,6 @@ class AuthenticatedClientMixin(object):
 
 
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         self.fixture = mommy.make('control_panel_api.User')
@@ -63,7 +62,6 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.App')
@@ -106,7 +104,6 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
@@ -136,7 +133,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_create_when_valid_data(self):
+    @patch('boto3.client')
+    def test_create_when_valid_data(self, mock_client):
         data = {'name': 'test-bucket-123'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
