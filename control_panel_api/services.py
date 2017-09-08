@@ -17,14 +17,17 @@ def _policy_name(bucket_name, readwrite=False):
 
 
 def _policy_arn(bucket_name, readwrite=False):
+    """Return full bucket policy arn e.g. arn:aws:iam::1337:policy/bucketname-readonly"""
     return "{}:policy/{}".format(settings.IAM_ARN_BASE, _policy_name(bucket_name, readwrite))
 
 
 def _bucket_arn(bucket_name):
+    """Return bucket arn e.g. arn:aws:s3:::bucketname"""
     return "arn:aws:s3:::{}".format(bucket_name)
 
 
 def get_policy_document(bucket_name, readwrite):
+    """Return a standard policy document for a bucket, use a boolean flag `readwrite` to add write access"""
     bucket_arn = _bucket_arn(bucket_name)
 
     statements = [
@@ -88,8 +91,8 @@ def create_bucket(name):
 
 
 def create_bucket_policies(name):
-    bucket_name = _bucket_name(name)
     """Creates readwrite and readonly policies for s3 bucket"""
+    bucket_name = _bucket_name(name)
     aws.create_policy(_policy_name(bucket_name, readwrite=True), get_policy_document(bucket_name, True))
     aws.create_policy(_policy_name(bucket_name, readwrite=False), get_policy_document(bucket_name, False))
 
