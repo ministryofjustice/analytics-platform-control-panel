@@ -210,7 +210,8 @@ class S3BucketPermissionsTest(APITestCase):
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_delete_as_superuser_responds_OK(self):
+    @patch('boto3.client')
+    def test_delete_as_superuser_responds_OK(self, mock_client):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(

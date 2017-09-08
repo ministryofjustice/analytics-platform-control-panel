@@ -125,13 +125,21 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('arn', response.data)
         self.assertEqual(4, len(response.data))
 
-    def test_delete(self):
+    @patch('boto3.client')
+    def test_delete(self, mock_client):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         response = self.client.get(reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+
+    @patch('control_panel_api.services.delete_bucket')
+    @patch('control_panel_api.services.delete_bucket_policies')
+    def test_delete_calls_apis(self, mock_delete_bucket_policies, mock_delete_bucket):
+        self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
+        mock_delete_bucket_policies.assert_called()
+        mock_delete_bucket.assert_called()
 
     @patch('boto3.client')
     def test_create_when_valid_data(self, mock_client):
@@ -154,13 +162,13 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
-    @patch('boto3.client')
-    def test_create_calls_apis(self, mock_client):
+    @patch('control_panel_api.services.create_bucket')
+    @patch('control_panel_api.services.create_bucket_policies')
+    def test_create_calls_apis(self, mock_create_bucket, mock_create_bucket_policies):
         data = {'name': 'test-bucket-123'}
         self.client.post(reverse('s3bucket-list'), data)
-        mock_client.return_value.create_bucket.assert_called()
-        mock_client.return_value.put_bucket_logging.assert_called()
-        self.assertEqual(2, mock_client.return_value.create_policy.call_count)
+        mock_create_bucket.assert_called()
+        mock_create_bucket_policies.assert_called()
 
     def test_update_when_valid_data(self):
         data = {'name': 'test-bucket-updated'}

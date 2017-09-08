@@ -83,15 +83,20 @@ def get_policy_document(bucket_name, readwrite):
 
 
 def create_bucket(name):
-    """Creates an s3 bucket and adds logging"""
+    """Create an s3 bucket and add logging"""
     bucket_name = _bucket_name(name)
     aws.create_bucket(bucket_name, region=settings.BUCKET_REGION, acl='private')
     aws.put_bucket_logging(bucket_name, target_bucket=settings.LOGS_BUCKET_NAME,
                            target_prefix="{}/".format(bucket_name))
 
 
+def delete_bucket(name):
+    """Delete s3 bucket"""
+    aws.delete_bucket(_bucket_name(name))
+
+
 def create_bucket_policies(name):
-    """Creates readwrite and readonly policies for s3 bucket"""
+    """Create readwrite and readonly policies for s3 bucket"""
     bucket_name = _bucket_name(name)
     aws.create_policy(_policy_name(bucket_name, readwrite=True), get_policy_document(bucket_name, True))
     aws.create_policy(_policy_name(bucket_name, readwrite=False), get_policy_document(bucket_name, False))

@@ -54,3 +54,9 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
         services.create_bucket(instance.name)
         services.create_bucket_policies(instance.name)
+
+    def perform_destroy(self, instance):
+        name = instance.name
+        instance.delete()
+        services.delete_bucket_policies(name)
+        services.delete_bucket(name)
