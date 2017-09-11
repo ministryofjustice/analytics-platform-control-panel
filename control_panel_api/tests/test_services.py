@@ -1,5 +1,6 @@
-from django.test.testcases import SimpleTestCase, override_settings
 from unittest.mock import patch
+
+from django.test.testcases import SimpleTestCase, override_settings
 
 from control_panel_api import services
 
@@ -36,6 +37,14 @@ class ServicesTestCase(SimpleTestCase):
                     'TargetPrefix': 'test-bucketname/'
                 }
             }
+        )
+
+    @patch('boto3.client')
+    def test_delete_bucket(self, mock_client):
+        services.delete_bucket('bucketname')
+
+        mock_client.return_value.delete_bucket.assert_called_with(
+            Bucket='test-bucketname',
         )
 
 
