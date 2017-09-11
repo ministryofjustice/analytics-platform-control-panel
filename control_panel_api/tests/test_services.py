@@ -1,4 +1,5 @@
-from unittest.mock import patch
+import json
+from unittest.mock import patch, call
 
 from django.test.testcases import SimpleTestCase, override_settings
 
@@ -46,6 +47,22 @@ class ServicesTestCase(SimpleTestCase):
         mock_client.return_value.delete_bucket.assert_called_with(
             Bucket='test-bucketname',
         )
+
+    @patch('boto3.client')
+    def test_create_bucket_policies(self, mock_client):
+        services.create_bucket_policies('bucketname')
+
+        expected_calls = [
+            call(
+                PolicyName='test-bucketname-readwrite',
+                PolicyDocument=json.dumps(services.get_policy_document('test-bucketname', True))
+            ),
+            call(
+                PolicyName='test-bucketname-readonly',
+                PolicyDocument=json.dumps(services.get_policy_document('test-bucketname', False))
+            )
+        ]
+        mock_client.return_value.create_policy.assert_has_calls(expected_calls)
 
 
 @override_settings(ENV='test', IAM_ARN_BASE='arn:aws:iam::1337')
