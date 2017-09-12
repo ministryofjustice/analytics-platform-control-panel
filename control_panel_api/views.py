@@ -29,7 +29,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     filter_backends = (UserFilter,)
-    permission_classes = (UserPermissions, )
+    permission_classes = (UserPermissions,)
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -41,14 +41,14 @@ class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
     serializer_class = AppSerializer
     filter_backends = (AppFilter,)
-    permission_classes = (AppPermissions, )
+    permission_classes = (AppPermissions,)
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):
     queryset = S3Bucket.objects.all()
     serializer_class = S3BucketSerializer
     filter_backends = (S3BucketFilter,)
-    permission_classes = (S3BucketPermissions, )
+    permission_classes = (S3BucketPermissions,)
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -59,4 +59,3 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         name = instance.name
         instance.delete()
         services.delete_bucket_policies(name)
-        services.delete_bucket(name)

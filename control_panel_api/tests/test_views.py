@@ -134,12 +134,10 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.services.delete_bucket')
     @patch('control_panel_api.services.delete_bucket_policies')
-    def test_delete_calls_apis(self, mock_delete_bucket_policies, mock_delete_bucket):
+    def test_delete_calls_apis(self, mock_delete_bucket_policies):
         self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
         mock_delete_bucket_policies.assert_called()
-        mock_delete_bucket.assert_called()
 
     @patch('boto3.client')
     def test_create_when_valid_data(self, mock_client):
