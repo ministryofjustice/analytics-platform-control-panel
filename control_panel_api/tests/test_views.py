@@ -10,6 +10,12 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
+from control_panel_api.models import (
+    App,
+    AppS3Bucket,
+    S3Bucket,
+)
+
 
 class AuthenticatedClientMixin(object):
 
@@ -82,7 +88,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('name', response.data)
         self.assertIn('slug', response.data)
         self.assertIn('repo_url', response.data)
-        self.assertEqual(5, len(response.data))
+        self.assertIn('apps3buckets', response.data)
+        self.assertEqual(6, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(
@@ -103,6 +110,76 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('app-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['name'], response.data['name'])
+
+
+class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        # Apps
+        self.app_1 = App.objects.create(name="app_1")
+        self.app_2 = App.objects.create(name="app_2")
+
+        # S3 buckets
+        self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+        self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
+        self.s3_bucket_3 = S3Bucket.objects.create(name="test-bucket-3")
+
+        # Grant access to buckets
+        self.apps3bucket_1 = self.app_1.apps3buckets.create(
+            s3bucket=self.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
+        )
+        self.apps3bucket_2 = self.app_2.apps3buckets.create(
+            s3bucket=self.s3_bucket_2,
+            access_level=AppS3Bucket.READONLY,
+        )
+
+    def test_list(self):
+        response = self.client.get(reverse('apps3bucket-list'))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(len(response.data['results']), 2)
+
+    def test_detail(self):
+        response = self.client.get(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertIn('id', response.data)
+        self.assertIn('url', response.data)
+        self.assertIn('app', response.data)
+        self.assertIn('s3bucket', response.data)
+        self.assertEqual('readonly', response.data['access_level'])
+        self.assertEqual(5, len(response.data))
+
+    def test_delete(self):
+        response = self.client.delete(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
+        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        response = self.client.get(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
+        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_create(self):
+        data = {
+            'app': self.app_1.id,
+            's3bucket': self.s3_bucket_3.id,
+            'access_level': AppS3Bucket.READWRITE,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    def test_update(self):
+        data = {
+            'app': self.app_1.id,
+            's3bucket': self.s3_bucket_1.id,
+            'access_level': AppS3Bucket.READWRITE,
+        }
+        response = self.client.put(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(data['access_level'], response.data['access_level'])
 
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
@@ -126,14 +203,16 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('url', response.data)
         self.assertIn('name', response.data)
         self.assertIn('arn', response.data)
-        self.assertEqual(4, len(response.data))
+        self.assertIn('apps3buckets', response.data)
+        self.assertEqual(5, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
-        response = self.client.get(reverse('s3bucket-detail', (self.fixture.id,)))
+        response = self.client.get(
+            reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
     def test_create_when_valid_data(self):
