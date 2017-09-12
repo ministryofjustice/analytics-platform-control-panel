@@ -1,11 +1,10 @@
-import re
-
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
-from django.template.defaultfilters import slugify
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
+
+from control_panel_api import services
 
 
 class User(AbstractUser):
@@ -29,11 +28,8 @@ class User(AbstractUser):
 
 
 class App(TimeStampedModel):
-    def _slugify(value):
-        return re.sub(r'_+', '-', slugify(value))
-
     name = models.CharField(max_length=100, blank=False)
-    slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
+    slug = AutoSlugField(populate_from='name', slugify_function=services.app_slug)
     repo_url = models.URLField(max_length=512, blank=True, default='')
 
     class Meta:
@@ -66,7 +62,7 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def arn(self):
-        return "arn:aws:s3:::{}".format(self.name)
+        return services.bucket_arn(self.name)
 
 
 class Role(TimeStampedModel):

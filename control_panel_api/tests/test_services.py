@@ -81,4 +81,4 @@ class NamingTestCase(SimpleTestCase):
                          services._policy_arn('bucketname', readwrite=True))
 
     def test_bucket_arn(self):
-        self.assertEqual('arn:aws:s3:::bucketname', services._bucket_arn('bucketname'))
+        self.assertEqual('arn:aws:s3:::bucketname', services.bucket_arn('bucketname'))

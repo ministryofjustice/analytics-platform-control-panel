@@ -1,4 +1,7 @@
+import re
+
 from django.conf import settings
+from django.template.defaultfilters import slugify
 
 from . import aws
 
@@ -21,14 +24,18 @@ def _policy_arn(bucket_name, readwrite=False):
     return "{}:policy/{}".format(settings.IAM_ARN_BASE, _policy_name(bucket_name, readwrite))
 
 
-def _bucket_arn(bucket_name):
+def bucket_arn(bucket_name):
     """Return bucket arn e.g. arn:aws:s3:::bucketname"""
     return "arn:aws:s3:::{}".format(bucket_name)
 
 
+def app_slug(name):
+    return re.sub(r'_+', '-', slugify(name))
+
+
 def get_policy_document(bucket_name, readwrite):
     """Return a standard policy document for a bucket, use a boolean flag `readwrite` to add write access"""
-    bucket_arn = _bucket_arn(bucket_name)
+    bucket_name_arn = bucket_arn(bucket_name)
 
     statements = [
         {
@@ -46,7 +53,7 @@ def get_policy_document(bucket_name, readwrite):
                 "s3:ListBucket"
             ],
             "Effect": "Allow",
-            "Resource": [bucket_arn],
+            "Resource": [bucket_name_arn],
         },
         {
             "Sid": "ReadObjects",
@@ -56,7 +63,7 @@ def get_policy_document(bucket_name, readwrite):
                 "s3:GetObjectVersion",
             ],
             "Effect": "Allow",
-            "Resource": "{}/*".format(bucket_arn)
+            "Resource": "{}/*".format(bucket_name_arn)
         },
     ]
 
@@ -72,7 +79,7 @@ def get_policy_document(bucket_name, readwrite):
                     "s3:RestoreObject",
                 ],
                 "Effect": "Allow",
-                "Resource": "{}/*".format(bucket_arn)
+                "Resource": "{}/*".format(bucket_name_arn)
             }
         )
 
