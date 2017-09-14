@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -5,7 +7,6 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_400_BAD_REQUEST,
-    HTTP_403_FORBIDDEN,
     HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
@@ -18,7 +19,6 @@ from control_panel_api.models import (
 
 
 class AuthenticatedClientMixin(object):
-
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -26,7 +26,6 @@ class AuthenticatedClientMixin(object):
 
 
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         self.fixture = mommy.make('control_panel_api.User')
@@ -69,7 +68,6 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.App')
@@ -183,7 +181,6 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
@@ -206,7 +203,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('apps3buckets', response.data)
         self.assertEqual(5, len(response.data))
 
-    def test_delete(self):
+    @patch('boto3.client')
+    def test_delete(self, mock_client):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
@@ -215,7 +213,13 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_create_when_valid_data(self):
+    @patch('control_panel_api.services.bucket_delete')
+    def test_delete_calls_apis(self, mock_bucket_delete):
+        self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
+        mock_bucket_delete.assert_called()
+
+    @patch('boto3.client')
+    def test_create_when_valid_data(self, mock_client):
         data = {'name': 'test-bucket-123'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
@@ -234,6 +238,12 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         data = {'name': '127.0.0.1'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    @patch('control_panel_api.services.bucket_create')
+    def test_create_calls_apis(self, mock_bucket_create):
+        data = {'name': 'test-bucket-123'}
+        self.client.post(reverse('s3bucket-list'), data)
+        mock_bucket_create.assert_called()
 
     def test_update_when_valid_data(self):
         data = {'name': 'test-bucket-updated'}

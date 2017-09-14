@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -5,7 +7,6 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
 
@@ -13,7 +14,6 @@ from control_panel_api.models import AppS3Bucket
 
 
 class UserPermissionsTest(APITestCase):
-
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -92,7 +92,6 @@ class UserPermissionsTest(APITestCase):
 
 
 class AppPermissionsTest(APITestCase):
-
     def setUp(self):
         # Create users
         self.superuser = mommy.make(
@@ -284,7 +283,6 @@ class AppS3BucketPermissionsTest(APITestCase):
 
 
 class S3BucketPermissionsTest(APITestCase):
-
     def setUp(self):
         # Create users
         self.superuser = mommy.make(
@@ -323,7 +321,8 @@ class S3BucketPermissionsTest(APITestCase):
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_delete_as_superuser_responds_OK(self):
+    @patch('boto3.client')
+    def test_delete_as_superuser_responds_OK(self, mock_client):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
@@ -337,7 +336,8 @@ class S3BucketPermissionsTest(APITestCase):
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_create_as_superuser_responds_OK(self):
+    @patch('boto3.client')
+    def test_create_as_superuser_responds_OK(self, mock_client):
         self.client.force_login(self.superuser)
 
         data = {'name': 'test-bucket'}
