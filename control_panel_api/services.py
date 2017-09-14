@@ -98,11 +98,6 @@ def create_bucket(name):
                            target_prefix="{}/".format(bucket_name))
 
 
-def delete_bucket(name):
-    """Delete s3 bucket"""
-    aws.delete_bucket(_bucket_name(name))
-
-
 def create_bucket_policies(name):
     """Create readwrite and readonly policies for s3 bucket"""
     bucket_name = _bucket_name(name)

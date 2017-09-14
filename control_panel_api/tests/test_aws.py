@@ -10,10 +10,6 @@ class AwsTestCase(TestCase):
         aws.create_bucket('bucketname', 'eu-west-1')
         mock_client.return_value.create_bucket.assert_called()
 
-    def test_delete_bucket(self, mock_client):
-        aws.delete_bucket('bucketname')
-        mock_client.return_value.delete_bucket.assert_called()
-
     def test_put_bucket_logging(self, mock_client):
         aws.put_bucket_logging('bucketname', 'target_bucket', 'target_prefix')
         mock_client.return_value.put_bucket_logging.assert_called()

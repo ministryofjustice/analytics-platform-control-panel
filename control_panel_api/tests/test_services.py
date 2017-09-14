@@ -29,12 +29,6 @@ class ServicesTestCase(SimpleTestCase):
         mock_put_bucket_logging.assert_called_with('test-bucketname', target_bucket='moj-test-logs',
                                                    target_prefix='test-bucketname/')
 
-    @patch('control_panel_api.aws.delete_bucket')
-    def test_delete_bucket(self, mock_delete_bucket):
-        services.delete_bucket('bucketname')
-
-        mock_delete_bucket.assert_called_with('test-bucketname')
-
     @patch('control_panel_api.aws.create_policy')
     def test_create_bucket_policies(self, mock_create_policy):
         services.create_bucket_policies('bucketname')

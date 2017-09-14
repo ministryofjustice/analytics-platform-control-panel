@@ -11,10 +11,6 @@ def create_bucket(name, region, acl='private'):
     )
 
 
-def delete_bucket(name):
-    boto3.client('s3').delete_bucket(Bucket=name)
-
-
 def put_bucket_logging(name, target_bucket, target_prefix):
     boto3.client('s3').put_bucket_logging(
         Bucket=name,
