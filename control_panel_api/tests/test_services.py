@@ -65,7 +65,7 @@ class ServicesTestCase(SimpleTestCase):
         mock_create_bucket.assert_called()
 
     @patch('control_panel_api.services.delete_bucket_policies')
-    def test_bucket_create(self, mock_delete_bucket_policies):
+    def test_bucket_delete(self, mock_delete_bucket_policies):
         services.bucket_delete('bucketname')
 
         mock_delete_bucket_policies.assert_called()
