@@ -1,24 +1,20 @@
-import json
 from unittest.mock import patch, call
 
 from django.test.testcases import SimpleTestCase, override_settings
 
 from control_panel_api import services
+from control_panel_api.tests import POLICY_DOCUMENT_READWRITE, POLICY_DOCUMENT_READONLY
 
 
 @override_settings(ENV='test', BUCKET_REGION='eu-test-2', LOGS_BUCKET_NAME='moj-test-logs',
                    IAM_ARN_BASE='arn:aws:iam::1337')
 class ServicesTestCase(SimpleTestCase):
     def test_policy_document_readwrite(self):
-        document = services.get_policy_document('foo', readwrite=True)
+        document = services.get_policy_document('test-bucketname', readwrite=True)
+        self.assertEqual(POLICY_DOCUMENT_READWRITE, document)
 
-        sids = [s['Sid'] for s in document['Statement']]
-        self.assertIn('UpdateRenameAndDeleteObjects', sids)
-
-        document = services.get_policy_document('foo', readwrite=False)
-
-        sids = [s['Sid'] for s in document['Statement']]
-        self.assertNotIn('UpdateRenameAndDeleteObjects', sids)
+        document = services.get_policy_document('test-bucketname', readwrite=False)
+        self.assertEqual(POLICY_DOCUMENT_READONLY, document)
 
     @patch('control_panel_api.aws.put_bucket_logging')
     @patch('control_panel_api.aws.create_bucket')
@@ -34,8 +30,8 @@ class ServicesTestCase(SimpleTestCase):
         services.create_bucket_policies('bucketname')
 
         expected_calls = [
-            call('test-bucketname-readwrite', services.get_policy_document('test-bucketname', True)),
-            call('test-bucketname-readonly', services.get_policy_document('test-bucketname', False)),
+            call('test-bucketname-readwrite', POLICY_DOCUMENT_READWRITE),
+            call('test-bucketname-readonly', POLICY_DOCUMENT_READONLY),
         ]
         mock_create_policy.assert_has_calls(expected_calls)
 
