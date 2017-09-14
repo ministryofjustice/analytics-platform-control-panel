@@ -52,10 +52,9 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         instance = serializer.save()
-        services.create_bucket(instance.name)
-        services.create_bucket_policies(instance.name)
+        services.bucket_create(instance.name)
 
     def perform_destroy(self, instance):
         name = instance.name
         instance.delete()
-        services.delete_bucket_policies(name)
+        services.bucket_delete(name)

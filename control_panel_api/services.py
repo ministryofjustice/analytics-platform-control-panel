@@ -121,3 +121,15 @@ def delete_bucket_policies(name):
     policy_arn_readonly = _policy_arn(bucket_name, readwrite=False)
     aws.detach_policy_from_entities(policy_arn_readonly)
     aws.delete_policy(policy_arn_readonly)
+
+
+def bucket_create(name):
+    """Simple facade function for view to call on s3bucket create"""
+    create_bucket(name)
+    create_bucket_policies(name)
+
+
+def bucket_delete(name):
+    """Simple facade function for view to call on s3bucket delete
+    Note we do not destroy the actual data, just the policies"""
+    delete_bucket_policies(name)

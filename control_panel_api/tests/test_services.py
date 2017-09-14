@@ -62,6 +62,20 @@ class ServicesTestCase(SimpleTestCase):
         ]
         mock_delete_policy.assert_has_calls(expected_calls)
 
+    @patch('control_panel_api.services.create_bucket')
+    @patch('control_panel_api.services.create_bucket_policies')
+    def test_bucket_create(self, mock_create_bucket_policies, mock_create_bucket):
+        services.bucket_create('bucketname')
+
+        mock_create_bucket_policies.assert_called()
+        mock_create_bucket.assert_called()
+
+    @patch('control_panel_api.services.delete_bucket_policies')
+    def test_bucket_create(self, mock_delete_bucket_policies):
+        services.bucket_delete('bucketname')
+
+        mock_delete_bucket_policies.assert_called()
+
 
 @override_settings(ENV='test', IAM_ARN_BASE='arn:aws:iam::1337')
 class NamingTestCase(SimpleTestCase):
