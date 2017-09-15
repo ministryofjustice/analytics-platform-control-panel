@@ -1,4 +1,5 @@
-K8S_WORKER_ROLE_ARN = "arn:aws:iam::123:role/k8s_worker_role"
+IAM_ARN_BASE = "arn:aws:iam::123"
+K8S_WORKER_ROLE_NAME = "k8s_worker_role"
 
 POLICY_DOCUMENT_READWRITE = {
     'Version': '2012-10-17',
@@ -40,7 +41,7 @@ APP_IAM_ROLE_ASSUME_POLICY = {
         {
             "Effect": "Allow",
             "Principal": {
-                "AWS": K8S_WORKER_ROLE_ARN,
+                "AWS": f"{IAM_ARN_BASE}:role/{K8S_WORKER_ROLE_NAME}",
             },
             "Action": "sts:AssumeRole",
         }
