@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.test.utils import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -180,6 +181,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['access_level'], response.data['access_level'])
 
 
+@override_settings(ENV='test')
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
@@ -239,11 +241,27 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
+    @patch('boto3.client')
+    def test_create_name_valid_env_prefix(self, mock_client):
+        data = {'name': 'test-bucketname-foo-bar'}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    def test_create_name_invalid_env_prefix_400(self):
+        data = {'name': 'badenv-bucketname'}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_create_name_no_env_prefix_400(self):
+        data = {'name': 'bucketname'}
+        response = self.client.post(reverse('s3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
     @patch('control_panel_api.services.bucket_create')
     def test_create_calls_apis(self, mock_bucket_create):
         data = {'name': 'test-bucket-123'}
         self.client.post(reverse('s3bucket-list'), data)
-        mock_bucket_create.assert_called()
+        mock_bucket_create.assert_called_with('test-bucket-123')
 
     def test_update_when_valid_data(self):
         data = {'name': 'test-bucket-updated'}

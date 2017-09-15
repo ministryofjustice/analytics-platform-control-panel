@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.test.utils import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -282,6 +283,7 @@ class AppS3BucketPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
+@override_settings(ENV='test')
 class S3BucketPermissionsTest(APITestCase):
     def setUp(self):
         # Create users

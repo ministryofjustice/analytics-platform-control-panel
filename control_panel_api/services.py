@@ -9,11 +9,6 @@ READ_WRITE = 'readwrite'
 READ_ONLY = 'readonly'
 
 
-def _bucket_name(name):
-    """Prefix the bucket name with environment e.g. dev-james"""
-    return "{}-{}".format(settings.ENV, name)
-
-
 def _policy_name(bucket_name, readwrite=False):
     """Prefix the policy name with bucket name, postfix with access level e.g. dev-james-readwrite"""
     return "{}-{}".format(bucket_name, READ_WRITE if readwrite else READ_ONLY)
@@ -90,25 +85,21 @@ def get_policy_document(bucket_name, readwrite):
     }
 
 
-def create_bucket(name):
+def create_bucket(bucket_name):
     """Create an s3 bucket and add logging"""
-    bucket_name = _bucket_name(name)
     aws.create_bucket(bucket_name, region=settings.BUCKET_REGION, acl='private')
     aws.put_bucket_logging(bucket_name, target_bucket=settings.LOGS_BUCKET_NAME,
                            target_prefix="{}/".format(bucket_name))
 
 
-def create_bucket_policies(name):
+def create_bucket_policies(bucket_name):
     """Create readwrite and readonly policies for s3 bucket"""
-    bucket_name = _bucket_name(name)
     aws.create_policy(_policy_name(bucket_name, readwrite=True), get_policy_document(bucket_name, True))
     aws.create_policy(_policy_name(bucket_name, readwrite=False), get_policy_document(bucket_name, False))
 
 
-def delete_bucket_policies(name):
+def delete_bucket_policies(bucket_name):
     """Delete policy from attached entities first then delete policy, for both policy types"""
-    bucket_name = _bucket_name(name)
-
     policy_arn_readwrite = _policy_arn(bucket_name, readwrite=True)
     aws.detach_policy_from_entities(policy_arn_readwrite)
     aws.delete_policy(policy_arn_readwrite)
