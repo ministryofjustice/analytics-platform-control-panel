@@ -122,7 +122,7 @@ LOGOUT_URL = 'rest_framework:logout'
 BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 ENV = os.environ.get('ENV', 'dev')
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
-IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', 'arn:aws:iam::593291632749')
+IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', '')
 K8S_WORKER_ROLE_ARN = os.environ.get('K8S_WORKER_ROLE_ARN', '')
 
 AWS_API_CLIENT_HANDLER = boto3.client
