@@ -37,6 +37,35 @@ def delete_policy(policy_arn):
     aws_api_client("iam").delete_policy(PolicyArn=policy_arn)
 
 
+def create_role(role_name, assume_role_policy):
+    """Creates IAM role with the given name"""
+
+    boto3.client("iam").create_role(
+        RoleName=role_name,
+        AssumeRolePolicyDocument=json.dumps(assume_role_policy)
+    )
+
+
+def delete_role(role_name):
+    """Delete the given IAM role."""
+
+    _detach_role_policies(role_name)
+    boto3.client("iam").delete_role(RoleName=role_name)
+
+
+def _detach_role_policies(role_name):
+    """Detaches all the policies from the given role"""
+
+    client = boto3.client("iam")
+
+    policies = client.list_attached_role_policies(RoleName=role_name)
+    for policy in policies["AttachedPolicies"]:
+        detach_policy_from_role(
+            role_name=role_name,
+            policy_arn=policy["PolicyArn"],
+        )
+
+
 def detach_policy_from_entities(policy_arn):
     """Get all entities to which policy is attached first then call separate detach operations"""
     entities = aws_api_client("iam").list_entities_for_policy(PolicyArn=policy_arn)

@@ -19,6 +19,7 @@ from control_panel_api.models import (
 
 
 class AuthenticatedClientMixin(object):
+
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -26,6 +27,7 @@ class AuthenticatedClientMixin(object):
 
 
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         self.fixture = mommy.make('control_panel_api.User')
@@ -68,6 +70,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.App')
@@ -89,7 +92,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('apps3buckets', response.data)
         self.assertEqual(6, len(response.data))
 
-    def test_delete(self):
+    @patch('boto3.client')
+    def test_delete(self, mock_client):
         response = self.client.delete(
             reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
@@ -97,10 +101,25 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_create(self):
+    @patch('control_panel_api.services.app_delete')
+    def test_delete_deletes_app_iam_role(self, app_delete):
+        self.client.delete(reverse('app-detail', (self.fixture.id,)))
+
+        app_delete.assert_called_with(self.fixture.slug)
+
+    @patch('boto3.client')
+    def test_create(self, mock_client):
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    @patch('control_panel_api.services.app_create')
+    def test_create_creates_app_iam_role(self, app_create):
+        data = {'name': 'foo'}
+        response = self.client.post(reverse('app-list'), data)
+
+        app = App.objects.get(id=response.data["id"])
+        app_create.assert_called_with(app.slug)
 
     def test_update(self):
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
@@ -180,6 +199,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
