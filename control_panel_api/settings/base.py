@@ -2,8 +2,6 @@ import os
 
 import boto3
 
-# SECURITY WARNING: keep the secret key used in production secret!
-
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     '(2gbfi1uc1llww251t00s7$^luuzvivf7l+(snj=sbt#s8h!wu')

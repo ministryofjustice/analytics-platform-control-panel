@@ -2,6 +2,7 @@ import json
 
 from django.conf import settings
 
+
 aws_api_client = settings.AWS_API_CLIENT_HANDLER
 
 
@@ -37,8 +38,7 @@ def delete_policy(policy_arn):
 
 
 def detach_policy_from_entities(policy_arn):
-    """Get all entities to which policy is attached
-    See: http://boto3.readthedocs.io/en/latest/reference/services/iam.html#IAM.list_entities_for_policy"""
+    """Get all entities to which policy is attached first then call separate detach operations"""
     entities = aws_api_client("iam").list_entities_for_policy(PolicyArn=policy_arn)
 
     for role in entities["PolicyRoles"]:
