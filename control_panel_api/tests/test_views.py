@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.test.utils import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -112,7 +111,6 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
 
@@ -181,7 +179,6 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['access_level'], response.data['access_level'])
 
 
-@override_settings(ENV='test')
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
@@ -205,8 +202,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('apps3buckets', response.data)
         self.assertEqual(5, len(response.data))
 
-    @patch('boto3.client')
-    def test_delete(self, mock_client):
+    def test_delete(self):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
@@ -220,8 +216,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
         mock_bucket_delete.assert_called()
 
-    @patch('boto3.client')
-    def test_create_when_valid_data(self, mock_client):
+    def test_create_when_valid_data(self):
         data = {'name': 'test-bucket-123'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
@@ -241,8 +236,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
-    @patch('boto3.client')
-    def test_create_name_valid_env_prefix(self, mock_client):
+    def test_create_name_valid_env_prefix(self):
         data = {'name': 'test-bucketname-foo-bar'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)

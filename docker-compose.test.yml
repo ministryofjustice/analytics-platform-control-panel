@@ -13,7 +13,7 @@ services:
       DB_NAME: "controlpanel"
       DB_USER: "postgres"
       DEBUG: "True"
-      DJANGO_SETTINGS_MODULE: "control_panel_api.settings"
+      DJANGO_SETTINGS_MODULE: "control_panel_api.settings.test"
     command: ["./run_tests"]
   db:
     image: "postgres:9.6.2"
