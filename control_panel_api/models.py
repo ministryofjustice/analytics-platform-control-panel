@@ -34,7 +34,7 @@ class S3Bucket(TimeStampedModel):
     name = models.CharField(unique=True, max_length=63, validators=[
         validators.validate_env_prefix,
         validators.validate_s3_bucket_length,
-        validators.validate_s3_bucket_label,
+        validators.validate_s3_bucket_labels,
     ])
 
     class Meta:
