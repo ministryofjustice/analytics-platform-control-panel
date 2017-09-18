@@ -3,7 +3,10 @@ import os
 import sys
 
 if __name__ == "__main__":
-    settings = 'control_panel_api.settings.test' if 'test' in sys.argv else 'control_panel_api.settings'
+    if 'test' in sys.argv:
+        settings = 'control_panel_api.settings.test'
+    else:
+        settings = 'control_panel_api.settings'
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", settings)
     try:
