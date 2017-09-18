@@ -1,6 +1,12 @@
 # analytics-platform-control-panel
 Control panel contains admin functions like creating users and granting access to apps
 
+## How to run the tests
+
+```sh
+python manage.py test --settings=control_panel_api.settings.test
+```
+
 
 # Config
 
