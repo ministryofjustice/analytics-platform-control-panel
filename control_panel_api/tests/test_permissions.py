@@ -283,7 +283,6 @@ class AppS3BucketPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
-@override_settings(ENV='test')
 class S3BucketPermissionsTest(APITestCase):
     def setUp(self):
         # Create users
@@ -323,8 +322,7 @@ class S3BucketPermissionsTest(APITestCase):
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('boto3.client')
-    def test_delete_as_superuser_responds_OK(self, mock_client):
+    def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
@@ -338,8 +336,7 @@ class S3BucketPermissionsTest(APITestCase):
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('boto3.client')
-    def test_create_as_superuser_responds_OK(self, mock_client):
+    def test_create_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         data = {'name': 'test-bucket'}

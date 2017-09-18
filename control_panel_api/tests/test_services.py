@@ -1,13 +1,11 @@
 from unittest.mock import patch, call
 
-from django.test.testcases import SimpleTestCase, override_settings
+from django.test.testcases import SimpleTestCase
 
 from control_panel_api import services
 from control_panel_api.tests import POLICY_DOCUMENT_READWRITE, POLICY_DOCUMENT_READONLY
 
 
-@override_settings(ENV='test', BUCKET_REGION='eu-test-2', LOGS_BUCKET_NAME='moj-test-logs',
-                   IAM_ARN_BASE='arn:aws:iam::1337')
 class ServicesTestCase(SimpleTestCase):
     def test_policy_document_readwrite(self):
         document = services.get_policy_document('test-bucketname', readwrite=True)
@@ -67,11 +65,12 @@ class ServicesTestCase(SimpleTestCase):
         mock_delete_bucket_policies.assert_called()
 
 
-@override_settings(ENV='test', IAM_ARN_BASE='arn:aws:iam::1337')
 class NamingTestCase(SimpleTestCase):
     def test_policy_name_has_readwrite(self):
-        self.assertEqual('bucketname-readonly', services._policy_name('bucketname', readwrite=False))
-        self.assertEqual('bucketname-readwrite', services._policy_name('bucketname', readwrite=True))
+        self.assertEqual('bucketname-readonly',
+                         services._policy_name('bucketname', readwrite=False))
+        self.assertEqual('bucketname-readwrite',
+                         services._policy_name('bucketname', readwrite=True))
 
     def test_policy_arn(self):
         self.assertEqual('arn:aws:iam::1337:policy/bucketname-readonly',

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from control_panel_api import aws
 
 
-@patch('boto3.client')
+@patch('control_panel_api.aws.aws_api_client')
 class AwsTestCase(TestCase):
     def test_create_bucket(self, mock_client):
         aws.create_bucket('bucketname', 'eu-west-1')

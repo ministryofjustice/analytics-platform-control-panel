@@ -1,7 +1,9 @@
 import os
 
+import boto3
 
 # SECURITY WARNING: keep the secret key used in production secret!
+
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     '(2gbfi1uc1llww251t00s7$^luuzvivf7l+(snj=sbt#s8h!wu')
@@ -15,10 +17,8 @@ DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = list(
     filter(None, os.environ.get('ALLOWED_HOSTS', '').split(' ')))
 
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 # Application definition
 
@@ -68,7 +68,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'control_panel_api.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
@@ -82,7 +81,6 @@ DATABASES = {
         'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -103,7 +101,6 @@ USE_I18N = False
 USE_L10N = False
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
@@ -128,3 +125,5 @@ BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 ENV = os.environ.get('ENV', 'dev')
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', 'arn:aws:iam::593291632749')
+
+AWS_API_CLIENT_HANDLER = boto3.client
