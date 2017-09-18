@@ -130,7 +130,6 @@ def get_policy_document(bucket_name, readwrite):
 
 def create_bucket(bucket_name):
     """Create an s3 bucket and add logging"""
-    bucket_name = _bucket_name(name)
     aws.create_bucket(
         bucket_name, region=settings.BUCKET_REGION, acl='private')
     aws.put_bucket_logging(bucket_name, target_bucket=settings.LOGS_BUCKET_NAME,

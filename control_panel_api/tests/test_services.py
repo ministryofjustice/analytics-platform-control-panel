@@ -6,7 +6,6 @@ from control_panel_api import services
 from control_panel_api.tests import (
     APP_IAM_ROLE_ASSUME_POLICY,
     IAM_ARN_BASE,
-    K8S_WORKER_ROLE_NAME,
     POLICY_DOCUMENT_READONLY,
     POLICY_DOCUMENT_READWRITE,
 )

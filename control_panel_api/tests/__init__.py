@@ -1,5 +1,5 @@
 IAM_ARN_BASE = "arn:aws:iam::123"
-K8S_WORKER_ROLE_NAME = "k8s_worker_role"
+K8S_WORKER_ROLE_NAME = "test-k8s-worker-role"
 
 POLICY_DOCUMENT_READWRITE = {
     'Version': '2012-10-17',
