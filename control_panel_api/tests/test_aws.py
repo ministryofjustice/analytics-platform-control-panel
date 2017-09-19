@@ -8,6 +8,7 @@ from control_panel_api.aws import aws_api_client
 
 
 class AwsTestCase(TestCase):
+
     def test_create_bucket(self):
         aws.create_bucket('bucketname', 'eu-west-1')
         aws_api_client.return_value.create_bucket.assert_called()
@@ -47,6 +48,13 @@ class AwsTestCase(TestCase):
         )
         aws_api_client.return_value.detach_user_policy.assert_called_with(
             UserName='baz',
+            PolicyArn='policyarn',
+        )
+
+    def test_attach_policy_to_role(self):
+        aws.attach_policy_to_role('policyarn', 'rolename')
+        aws_api_client.return_value.attach_role_policy.assert_called_with(
+            RoleName='rolename',
             PolicyArn='policyarn',
         )
 

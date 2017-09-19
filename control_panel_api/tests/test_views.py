@@ -130,6 +130,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
 
@@ -185,6 +186,36 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         }
         response = self.client.post(reverse('apps3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    @patch('control_panel_api.services.app_granted_access_to_bucket')
+    def test_create_grant_access_readonly(self, mock_app_granted_access_to_bucket):
+        data = {
+            'app': self.app_1.id,
+            's3bucket': self.s3_bucket_3.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        self.client.post(reverse('apps3bucket-list'), data)
+
+        mock_app_granted_access_to_bucket.assert_called_with(
+            app_slug=self.app_1.slug,
+            bucket_name=self.s3_bucket_3.name,
+            readwrite=False,
+        )
+
+    @patch('control_panel_api.services.app_granted_access_to_bucket')
+    def test_create_grant_access_readwrite(self, mock_app_granted_access_to_bucket):
+        data = {
+            'app': self.app_1.id,
+            's3bucket': self.s3_bucket_3.id,
+            'access_level': AppS3Bucket.READWRITE,
+        }
+        self.client.post(reverse('apps3bucket-list'), data)
+
+        mock_app_granted_access_to_bucket.assert_called_with(
+            app_slug=self.app_1.slug,
+            bucket_name=self.s3_bucket_3.name,
+            readwrite=True,
+        )
 
     def test_update(self):
         data = {

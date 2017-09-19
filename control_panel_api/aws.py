@@ -78,6 +78,13 @@ def detach_policy_from_entities(policy_arn):
         detach_policy_from_user(policy_arn, user["UserName"])
 
 
+def attach_policy_to_role(policy_arn, role_name):
+    aws_api_client("iam").attach_role_policy(
+        RoleName=role_name,
+        PolicyArn=policy_arn,
+    )
+
+
 def detach_policy_from_role(policy_arn, role_name):
     aws_api_client("iam").detach_role_policy(
         RoleName=role_name,

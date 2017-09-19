@@ -92,6 +92,26 @@ class ServicesTestCase(SimpleTestCase):
 
         mock_delete_role.assert_called_with(expected_role_name)
 
+    @patch('control_panel_api.aws.attach_policy_to_role')
+    def test_app_granted_access_to_bucket(self, mock_attach_policy_to_role):
+        app_slug = 'appslug'
+        bucket_name = 'test-bucketname'
+
+        for readwrite in ['readonly', 'readwrite']:
+            services.app_granted_access_to_bucket(
+                app_slug=app_slug,
+                bucket_name=bucket_name,
+                readwrite=(readwrite == 'readwrite'),
+            )
+
+            expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{readwrite}'
+            expected_role_name = f'test_app_{app_slug}'
+
+            mock_attach_policy_to_role.assert_called_with(
+                policy_arn=expected_policy_arn,
+                role_name=expected_role_name,
+            )
+
 
 class NamingTestCase(SimpleTestCase):
 

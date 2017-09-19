@@ -153,6 +153,13 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
+def app_granted_access_to_bucket(app_slug, bucket_name, readwrite):
+    aws.attach_policy_to_role(
+        policy_arn=_policy_arn(bucket_name, readwrite),
+        role_name=_app_role_name(app_slug),
+    )
+
+
 def bucket_create(name):
     """Simple facade function for view to call on s3bucket create"""
     create_bucket(name)
