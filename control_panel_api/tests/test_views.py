@@ -234,7 +234,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     @patch('control_panel_api.services.bucket_delete')
     def test_delete_calls_apis(self, mock_bucket_delete):
         self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
-        mock_bucket_delete.assert_called()
+        mock_bucket_delete.assert_called_with('test-bucket-1')
 
     def test_create_when_valid_data(self):
         data = {'name': 'test-bucket-123'}
