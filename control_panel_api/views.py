@@ -62,6 +62,5 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         services.bucket_create(instance.name)
 
     def perform_destroy(self, instance):
-        name = instance.name
         instance.delete()
-        services.bucket_delete(name)
+        services.bucket_delete(instance.name)
