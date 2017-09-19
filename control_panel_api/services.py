@@ -14,6 +14,11 @@ def _policy_name(bucket_name, readwrite=False):
     return "{}-{}".format(bucket_name, READ_WRITE if readwrite else READ_ONLY)
 
 
+def _app_role_name(app_slug):
+    """Return the IAM role name for the given `app_slug`"""
+    return "{}_app_{}".format(settings.ENV, app_slug)
+
+
 def _policy_arn(bucket_name, readwrite=False):
     """Return full bucket policy arn e.g. arn:aws:iam::1337:policy/bucketname-readonly"""
     return "{}:policy/{}".format(settings.IAM_ARN_BASE, _policy_name(bucket_name, readwrite))
@@ -27,6 +32,44 @@ def bucket_arn(bucket_name):
 def app_slug(name):
     """Create a valid slug for s3 using standard django slugify but we add some custom"""
     return re.sub(r'_+', '-', slugify(name))
+
+
+def app_create(app_slug):
+    """Creates the IAM role for the given app"""
+    _create_app_role(_app_role_name(app_slug))
+
+
+def _create_app_role(role_name):
+    """Creates the IAM role for the given app"""
+
+    # See: `sts:AssumeRole` required by kube2iam
+    # https://github.com/jtblin/kube2iam#iam-roles
+    assume_role_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com",
+                },
+                "Action": "sts:AssumeRole",
+            },
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
+                },
+                "Action": "sts:AssumeRole",
+            }
+        ]
+    }
+
+    aws.create_role(role_name, assume_role_policy)
+
+
+def app_delete(app_slug):
+    """Deletes the IAM role for the given app"""
+    aws.delete_role(_app_role_name(app_slug))
 
 
 def get_policy_document(bucket_name, readwrite):
@@ -87,7 +130,8 @@ def get_policy_document(bucket_name, readwrite):
 
 def create_bucket(bucket_name):
     """Create an s3 bucket and add logging"""
-    aws.create_bucket(bucket_name, region=settings.BUCKET_REGION, acl='private')
+    aws.create_bucket(
+        bucket_name, region=settings.BUCKET_REGION, acl='private')
     aws.put_bucket_logging(bucket_name, target_bucket=settings.LOGS_BUCKET_NAME,
                            target_prefix="{}/".format(bucket_name))
 

@@ -15,6 +15,7 @@ from control_panel_api.models import AppS3Bucket
 
 
 class UserPermissionsTest(APITestCase):
+
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -93,6 +94,7 @@ class UserPermissionsTest(APITestCase):
 
 
 class AppPermissionsTest(APITestCase):
+
     def setUp(self):
         # Create users
         self.superuser = mommy.make(
@@ -129,7 +131,8 @@ class AppPermissionsTest(APITestCase):
         response = self.client.get(reverse('app-detail', (self.app_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_delete_as_superuser_responds_OK(self):
+    @patch('boto3.client')
+    def test_delete_as_superuser_responds_OK(self, mock_client):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
@@ -143,7 +146,8 @@ class AppPermissionsTest(APITestCase):
             reverse('app-detail', (self.app_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    def test_create_as_superuser_responds_OK(self):
+    @patch('boto3.client')
+    def test_create_as_superuser_responds_OK(self, mock_client):
         self.client.force_login(self.superuser)
 
         data = {'name': 'foo'}
@@ -284,6 +288,7 @@ class AppS3BucketPermissionsTest(APITestCase):
 
 
 class S3BucketPermissionsTest(APITestCase):
+
     def setUp(self):
         # Create users
         self.superuser = mommy.make(

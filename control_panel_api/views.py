@@ -45,6 +45,14 @@ class AppViewSet(viewsets.ModelViewSet):
     filter_backends = (AppFilter,)
     permission_classes = (AppPermissions,)
 
+    def perform_create(self, serializer):
+        app = serializer.save()
+        services.app_create(app.slug)
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        services.app_delete(instance.slug)
+
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
     queryset = AppS3Bucket.objects.all()
