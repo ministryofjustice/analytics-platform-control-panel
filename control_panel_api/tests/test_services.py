@@ -1,11 +1,11 @@
 from unittest.mock import patch, call
 
+from django.conf import settings
 from django.test.testcases import SimpleTestCase
 
 from control_panel_api import services
 from control_panel_api.tests import (
     APP_IAM_ROLE_ASSUME_POLICY,
-    IAM_ARN_BASE,
     POLICY_DOCUMENT_READONLY,
     POLICY_DOCUMENT_READWRITE,
 )
@@ -48,14 +48,14 @@ class ServicesTestCase(SimpleTestCase):
         services.delete_bucket_policies('test-bucketname')
 
         expected_calls = [
-            call(f'{IAM_ARN_BASE}:policy/test-bucketname-readwrite'),
-            call(f'{IAM_ARN_BASE}:policy/test-bucketname-readonly')
+            call(f'{settings.IAM_ARN_BASE}:policy/test-bucketname-readwrite'),
+            call(f'{settings.IAM_ARN_BASE}:policy/test-bucketname-readonly')
         ]
         mock_detach_policy_from_entities.assert_has_calls(expected_calls)
 
         expected_calls = [
-            call(f'{IAM_ARN_BASE}:policy/test-bucketname-readwrite'),
-            call(f'{IAM_ARN_BASE}:policy/test-bucketname-readonly')
+            call(f'{settings.IAM_ARN_BASE}:policy/test-bucketname-readwrite'),
+            call(f'{settings.IAM_ARN_BASE}:policy/test-bucketname-readonly')
         ]
         mock_delete_policy.assert_has_calls(expected_calls)
 
@@ -102,9 +102,9 @@ class NamingTestCase(SimpleTestCase):
                          services._policy_name('bucketname', readwrite=True))
 
     def test_policy_arn(self):
-        self.assertEqual(f'{IAM_ARN_BASE}:policy/bucketname-readonly',
+        self.assertEqual(f'{settings.IAM_ARN_BASE}:policy/bucketname-readonly',
                          services._policy_arn('bucketname', readwrite=False))
-        self.assertEqual(f'{IAM_ARN_BASE}:policy/bucketname-readwrite',
+        self.assertEqual(f'{settings.IAM_ARN_BASE}:policy/bucketname-readwrite',
                          services._policy_arn('bucketname', readwrite=True))
 
     def test_bucket_arn(self):

@@ -1,5 +1,5 @@
-IAM_ARN_BASE = "arn:aws:iam::123"
-K8S_WORKER_ROLE_NAME = "test-k8s-worker-role"
+from django.conf import settings
+
 
 POLICY_DOCUMENT_READWRITE = {
     'Version': '2012-10-17',
@@ -41,7 +41,7 @@ APP_IAM_ROLE_ASSUME_POLICY = {
         {
             "Effect": "Allow",
             "Principal": {
-                "AWS": f"{IAM_ARN_BASE}:role/{K8S_WORKER_ROLE_NAME}",
+                "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
             },
             "Action": "sts:AssumeRole",
         }
