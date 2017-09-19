@@ -56,9 +56,7 @@ def delete_role(role_name):
 def _detach_role_policies(role_name):
     """Detaches all the policies from the given role"""
 
-    client = aws_api_client("iam")
-
-    policies = client.list_attached_role_policies(RoleName=role_name)
+    policies = aws_api_client("iam").list_attached_role_policies(RoleName=role_name)
     for policy in policies["AttachedPolicies"]:
         detach_policy_from_role(
             role_name=role_name,
