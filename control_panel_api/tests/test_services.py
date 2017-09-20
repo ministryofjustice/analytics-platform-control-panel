@@ -123,7 +123,7 @@ class ServicesTestCase(TestCase):
             )
 
     @patch('control_panel_api.aws.detach_policy_from_role')
-    def test_bucket_delete(self, mock_detach_policy_from_role):
+    def test_bucket_delete_readwrite(self, mock_detach_policy_from_role):
         apps3bucket = mommy.make(
             'control_panel_api.AppS3Bucket',
             make_m2m=True,
@@ -135,6 +135,20 @@ class ServicesTestCase(TestCase):
 
         mock_detach_policy_from_role.assert_called_with(
             policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readwrite',
+            role_name='test_app_app-1')
+
+    @patch('control_panel_api.aws.detach_policy_from_role')
+    def test_bucket_delete_readonly(self, mock_detach_policy_from_role):
+        apps3bucket = mommy.make(
+            'control_panel_api.AppS3Bucket',
+            app=self.app_1,
+            s3bucket=self.s3_bucket_1,
+            access_level=services.READ_ONLY)
+
+        services.apps3bucket_delete(apps3bucket)
+
+        mock_detach_policy_from_role.assert_called_with(
+            policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readonly',
             role_name='test_app_app-1')
 
 
