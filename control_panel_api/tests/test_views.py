@@ -178,6 +178,15 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
+    @patch('control_panel_api.services.apps3bucket_delete')
+    def test_delete_calls_api(self, mock_apps3bucket_delete):
+        response = self.client.delete(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
+        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        called_args, _ = mock_apps3bucket_delete.call_args
+        self.assertIsInstance(called_args[0], AppS3Bucket)
+
     def test_create(self):
         data = {
             'app': self.app_1.id,

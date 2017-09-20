@@ -21,7 +21,8 @@ def _app_role_name(app_slug):
 
 def _policy_arn(bucket_name, readwrite=False):
     """Return full bucket policy arn e.g. arn:aws:iam::1337:policy/bucketname-readonly"""
-    return "{}:policy/{}".format(settings.IAM_ARN_BASE, _policy_name(bucket_name, readwrite))
+    return "{}:policy/{}".format(settings.IAM_ARN_BASE,
+                                 _policy_name(bucket_name, readwrite))
 
 
 def bucket_arn(bucket_name):
@@ -138,8 +139,10 @@ def create_bucket(bucket_name):
 
 def create_bucket_policies(bucket_name):
     """Create readwrite and readonly policies for s3 bucket"""
-    aws.create_policy(_policy_name(bucket_name, readwrite=True), get_policy_document(bucket_name, True))
-    aws.create_policy(_policy_name(bucket_name, readwrite=False), get_policy_document(bucket_name, False))
+    aws.create_policy(_policy_name(bucket_name, readwrite=True),
+                      get_policy_document(bucket_name, True))
+    aws.create_policy(_policy_name(bucket_name, readwrite=False),
+                      get_policy_document(bucket_name, False))
 
 
 def delete_bucket_policies(bucket_name):
@@ -175,3 +178,16 @@ def bucket_delete(name):
     """Simple facade function for view to call on s3bucket delete
     Note we do not destroy the actual data, just the policies"""
     delete_bucket_policies(name)
+
+
+def apps3bucket_delete(apps3bucket):
+    """On delete we detach the corresponding s3 read/write policy from app role
+    :type apps3bucket: control_panel_api.models.AppS3Bucket
+    """
+    aws.detach_policy_from_role(
+        policy_arn=_policy_arn(
+            bucket_name=apps3bucket.s3bucket.name,
+            readwrite=apps3bucket.access_level == READWRITE
+        ),
+        role_name=_app_role_name(apps3bucket.app.slug)
+    )
