@@ -5,13 +5,13 @@ from django.template.defaultfilters import slugify
 
 from . import aws
 
-READ_WRITE = 'readwrite'
-READ_ONLY = 'readonly'
+READWRITE = 'readwrite'
+READONLY = 'readonly'
 
 
 def _policy_name(bucket_name, readwrite=False):
     """Prefix the policy name with bucket name, postfix with access level e.g. dev-james-readwrite"""
-    return "{}-{}".format(bucket_name, READ_WRITE if readwrite else READ_ONLY)
+    return "{}-{}".format(bucket_name, READWRITE if readwrite else READONLY)
 
 
 def _app_role_name(app_slug):
