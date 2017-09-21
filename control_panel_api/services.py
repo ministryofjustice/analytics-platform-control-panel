@@ -156,15 +156,13 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
-def apps3bucket_create(apps3bucket):
-    policy_arn = _policy_arn(
-        apps3bucket.s3bucket.name,
-        apps3bucket.access_level == READWRITE,
-    )
-
-    aws.attach_policy_to_role(
-        policy_arn=policy_arn,
-        role_name=_app_role_name(apps3bucket.app.slug),
+def detach_bucket_access_from_app_role(app_slug, bucket_name, access_level):
+    aws.detach_policy_from_role(
+        policy_arn=_policy_arn(
+            bucket_name=bucket_name,
+            readwrite=access_level == READWRITE
+        ),
+        role_name=_app_role_name(app_slug)
     )
 
 
@@ -180,6 +178,18 @@ def bucket_delete(name):
     delete_bucket_policies(name)
 
 
+def apps3bucket_create(apps3bucket):
+    policy_arn = _policy_arn(
+        apps3bucket.s3bucket.name,
+        apps3bucket.access_level == READWRITE,
+    )
+
+    aws.attach_policy_to_role(
+        policy_arn=policy_arn,
+        role_name=_app_role_name(apps3bucket.app.slug),
+    )
+
+
 def apps3bucket_delete(apps3bucket):
     """On delete we detach the corresponding s3 read/write policy from app role
     :type apps3bucket: control_panel_api.models.AppS3Bucket
@@ -191,3 +201,7 @@ def apps3bucket_delete(apps3bucket):
         ),
         role_name=_app_role_name(apps3bucket.app.slug)
     )
+
+    detach_bucket_access_from_app_role(apps3bucket.app.slug,
+                                       apps3bucket.s3bucket.name,
+                                       apps3bucket.access_level)
