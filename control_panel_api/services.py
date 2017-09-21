@@ -15,7 +15,6 @@ def _policy_name(bucket_name, readwrite=False):
 
 
 def _app_role_name(app_slug):
-    """Return the IAM role name for the given `app_slug`"""
     return "{}_app_{}".format(settings.ENV, app_slug)
 
 
@@ -26,7 +25,6 @@ def _policy_arn(bucket_name, readwrite=False):
 
 
 def bucket_arn(bucket_name):
-    """Return bucket arn e.g. arn:aws:s3:::bucketname"""
     return "arn:aws:s3:::{}".format(bucket_name)
 
 
@@ -36,15 +34,10 @@ def app_slugify(name):
 
 
 def app_create(app_slug):
-    """Creates the IAM role for the given app"""
     _create_app_role(_app_role_name(app_slug))
 
 
 def _create_app_role(role_name):
-    """Creates the IAM role for the given app"""
-
-    # See: `sts:AssumeRole` required by kube2iam
-    # https://github.com/jtblin/kube2iam#iam-roles
     assume_role_policy = {
         "Version": "2012-10-17",
         "Statement": [
@@ -69,12 +62,10 @@ def _create_app_role(role_name):
 
 
 def app_delete(app_slug):
-    """Deletes the IAM role for the given app"""
     aws.delete_role(_app_role_name(app_slug))
 
 
 def get_policy_document(bucket_name, readwrite):
-    """Return a standard policy document for a bucket, use a boolean flag `readwrite` to add write access"""
     bucket_name_arn = bucket_arn(bucket_name)
 
     statements = [
@@ -130,7 +121,6 @@ def get_policy_document(bucket_name, readwrite):
 
 
 def create_bucket(bucket_name):
-    """Create an s3 bucket and add logging"""
     aws.create_bucket(
         bucket_name, region=settings.BUCKET_REGION, acl='private')
     aws.put_bucket_logging(bucket_name, target_bucket=settings.LOGS_BUCKET_NAME,
@@ -167,14 +157,12 @@ def detach_bucket_access_from_app_role(app_slug, bucket_name, access_level):
 
 
 def bucket_create(name):
-    """Simple facade function for view to call on s3bucket create"""
     create_bucket(name)
     create_bucket_policies(name)
 
 
 def bucket_delete(name):
-    """Simple facade function for view to call on s3bucket delete
-    Note we do not destroy the actual data, just the policies"""
+    """Note we do not destroy the actual data, just the policies"""
     delete_bucket_policies(name)
 
 
@@ -191,17 +179,7 @@ def apps3bucket_create(apps3bucket):
 
 
 def apps3bucket_delete(apps3bucket):
-    """On delete we detach the corresponding s3 read/write policy from app role
-    :type apps3bucket: control_panel_api.models.AppS3Bucket
-    """
-    aws.detach_policy_from_role(
-        policy_arn=_policy_arn(
-            bucket_name=apps3bucket.s3bucket.name,
-            readwrite=apps3bucket.access_level == READWRITE
-        ),
-        role_name=_app_role_name(apps3bucket.app.slug)
-    )
-
+    """:type apps3bucket: control_panel_api.models.AppS3Bucket"""
     detach_bucket_access_from_app_role(apps3bucket.app.slug,
                                        apps3bucket.s3bucket.name,
                                        apps3bucket.access_level)
