@@ -23,7 +23,7 @@ class User(AbstractUser):
 
 class App(TimeStampedModel):
     name = models.CharField(max_length=100, blank=False)
-    slug = AutoSlugField(populate_from='name', slugify_function=services.app_slug)
+    slug = AutoSlugField(populate_from='name', slugify_function=services.app_slugify)
     repo_url = models.URLField(max_length=512, blank=True, default='')
 
     class Meta:

@@ -30,7 +30,7 @@ def bucket_arn(bucket_name):
     return "arn:aws:s3:::{}".format(bucket_name)
 
 
-def app_slug(name):
+def app_slugify(name):
     """Create a valid slug for s3 using standard django slugify but we add some custom"""
     return re.sub(r'_+', '-', slugify(name))
 
