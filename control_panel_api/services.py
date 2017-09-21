@@ -154,13 +154,14 @@ def delete_bucket_policies(bucket_name):
 
 
 def apps3bucket_create(apps3bucket):
-    app_slug = apps3bucket.app.slug
-    bucket_name = apps3bucket.s3bucket.name
-    readwrite = (apps3bucket.access_level == READWRITE)
+    policy_arn = _policy_arn(
+        apps3bucket.s3bucket.name,
+        apps3bucket.access_level == READWRITE,
+    )
 
     aws.attach_policy_to_role(
-        policy_arn=_policy_arn(bucket_name, readwrite),
-        role_name=_app_role_name(app_slug),
+        policy_arn=policy_arn,
+        role_name=_app_role_name(apps3bucket.app.slug),
     )
 
 
