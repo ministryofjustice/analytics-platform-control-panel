@@ -59,13 +59,9 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = AppS3BucketSerializer
 
     def perform_create(self, serializer):
-        app_s3bucket = serializer.save()
+        apps3bucket = serializer.save()
 
-        services.app_granted_access_to_bucket(
-            app_slug=app_s3bucket.app.slug,
-            bucket_name=app_s3bucket.s3bucket.name,
-            readwrite=(app_s3bucket.access_level == AppS3Bucket.READWRITE),
-        )
+        services.apps3bucket_create(apps3bucket)
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):

@@ -1,9 +1,14 @@
 from unittest.mock import patch, call
 
 from django.conf import settings
-from django.test.testcases import SimpleTestCase
+from django.test.testcases import SimpleTestCase, TransactionTestCase
 
 from control_panel_api import services
+from control_panel_api.models import (
+    App,
+    AppS3Bucket,
+    S3Bucket,
+)
 from control_panel_api.tests import (
     APP_IAM_ROLE_ASSUME_POLICY,
     POLICY_DOCUMENT_READONLY,
@@ -11,7 +16,7 @@ from control_panel_api.tests import (
 )
 
 
-class ServicesTestCase(SimpleTestCase):
+class ServicesTestCase(TransactionTestCase):
 
     def test_policy_document_readwrite(self):
         document = services.get_policy_document(
@@ -93,19 +98,21 @@ class ServicesTestCase(SimpleTestCase):
         mock_delete_role.assert_called_with(expected_role_name)
 
     @patch('control_panel_api.aws.attach_policy_to_role')
-    def test_app_granted_access_to_bucket(self, mock_attach_policy_to_role):
-        app_slug = 'appslug'
-        bucket_name = 'test-bucketname'
+    def test_apps3bucket_create(self, mock_attach_policy_to_role):
+        app = App.objects.create(slug = 'appslug')
+        s3bucket = S3Bucket.objects.create(name='test-bucketname')
 
-        for readwrite in ['readonly', 'readwrite']:
-            services.app_granted_access_to_bucket(
-                app_slug=app_slug,
-                bucket_name=bucket_name,
-                readwrite=(readwrite == 'readwrite'),
+        for access_level in ['readonly', 'readwrite']:
+            apps3bucket, _ = AppS3Bucket.objects.update_or_create(
+                app=app,
+                s3bucket=s3bucket,
+                defaults={'access_level': access_level},
             )
 
-            expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{readwrite}'
-            expected_role_name = f'test_app_{app_slug}'
+            services.apps3bucket_create(apps3bucket)
+
+            expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
+            expected_role_name = f'test_app_{app.slug}'
 
             mock_attach_policy_to_role.assert_called_with(
                 policy_arn=expected_policy_arn,
