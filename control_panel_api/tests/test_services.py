@@ -99,7 +99,7 @@ class ServicesTestCase(TransactionTestCase):
 
     @patch('control_panel_api.aws.attach_policy_to_role')
     def test_apps3bucket_create(self, mock_attach_policy_to_role):
-        app = App.objects.create(slug = 'appslug')
+        app = App.objects.create(slug='appslug')
         s3bucket = S3Bucket.objects.create(name='test-bucketname')
 
         for access_level in ['readonly', 'readwrite']:
