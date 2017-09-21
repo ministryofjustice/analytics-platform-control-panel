@@ -186,6 +186,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
         called_args, _ = mock_apps3bucket_delete.call_args
         self.assertIsInstance(called_args[0], AppS3Bucket)
+        self.assertEqual(called_args[0].app.slug, self.apps3bucket_1.app.slug)
 
     def test_create(self):
         data = {
