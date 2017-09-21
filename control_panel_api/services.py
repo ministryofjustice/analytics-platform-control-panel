@@ -5,13 +5,13 @@ from django.template.defaultfilters import slugify
 
 from . import aws
 
-READ_WRITE = 'readwrite'
-READ_ONLY = 'readonly'
+READWRITE = 'readwrite'
+READONLY = 'readonly'
 
 
 def _policy_name(bucket_name, readwrite=False):
     """Prefix the policy name with bucket name, postfix with access level e.g. dev-james-readwrite"""
-    return "{}-{}".format(bucket_name, READ_WRITE if readwrite else READ_ONLY)
+    return "{}-{}".format(bucket_name, READWRITE if readwrite else READONLY)
 
 
 def _app_role_name(app_slug):
@@ -151,6 +151,18 @@ def delete_bucket_policies(bucket_name):
     policy_arn_readonly = _policy_arn(bucket_name, readwrite=False)
     aws.detach_policy_from_entities(policy_arn_readonly)
     aws.delete_policy(policy_arn_readonly)
+
+
+def apps3bucket_create(apps3bucket):
+    policy_arn = _policy_arn(
+        apps3bucket.s3bucket.name,
+        apps3bucket.access_level == READWRITE,
+    )
+
+    aws.attach_policy_to_role(
+        policy_arn=policy_arn,
+        role_name=_app_role_name(apps3bucket.app.slug),
+    )
 
 
 def bucket_create(name):

@@ -130,6 +130,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
 
@@ -185,6 +186,22 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         }
         response = self.client.post(reverse('apps3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    @patch('control_panel_api.services.apps3bucket_create')
+    def test_create_grants_access(self, mock_apps3bucket_create):
+        data = {
+            'app': self.app_1.id,
+            's3bucket': self.s3_bucket_3.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        self.client.post(reverse('apps3bucket-list'), data)
+
+        apps3bucket = AppS3Bucket.objects.get(
+            app=self.app_1,
+            s3bucket=self.s3_bucket_3,
+        )
+
+        mock_apps3bucket_create.assert_called_with(apps3bucket)
 
     def test_update(self):
         data = {
