@@ -38,6 +38,8 @@ def app_create(app_slug):
 
 
 def _create_app_role(role_name):
+    """See: `sts:AssumeRole` required by kube2iam
+    https://github.com/jtblin/kube2iam#iam-roles"""
     assume_role_policy = {
         "Version": "2012-10-17",
         "Statement": [
