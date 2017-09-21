@@ -147,11 +147,13 @@ def delete_bucket_policies(bucket_name):
 
 
 def detach_bucket_access_from_app_role(app_slug, bucket_name, access_level):
+    policy_arn = _policy_arn(
+        bucket_name=bucket_name,
+        readwrite=access_level == READWRITE
+    )
+
     aws.detach_policy_from_role(
-        policy_arn=_policy_arn(
-            bucket_name=bucket_name,
-            readwrite=access_level == READWRITE
-        ),
+        policy_arn=policy_arn,
         role_name=_app_role_name(app_slug)
     )
 
