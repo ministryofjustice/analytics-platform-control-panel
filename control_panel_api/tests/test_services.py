@@ -1,7 +1,8 @@
 from unittest.mock import patch, call
 
 from django.conf import settings
-from django.test.testcases import SimpleTestCase, TransactionTestCase
+from django.test.testcases import SimpleTestCase, TestCase
+from model_mommy import mommy
 
 from control_panel_api import services
 from control_panel_api.models import (
@@ -16,7 +17,11 @@ from control_panel_api.tests import (
 )
 
 
-class ServicesTestCase(TransactionTestCase):
+class ServicesTestCase(TestCase):
+    def setUp(self):
+        self.app_1 = mommy.make('control_panel_api.App', name='app-1')
+        self.s3_bucket_1 = mommy.make('control_panel_api.S3Bucket',
+                                      name='test-bucket-1')
 
     def test_policy_document_readwrite(self):
         document = services.get_policy_document(
@@ -34,7 +39,8 @@ class ServicesTestCase(TransactionTestCase):
 
         mock_create_bucket.assert_called_with(
             'test-bucketname', region='eu-test-2', acl='private')
-        mock_put_bucket_logging.assert_called_with('test-bucketname', target_bucket='moj-test-logs',
+        mock_put_bucket_logging.assert_called_with('test-bucketname',
+                                                   target_bucket='moj-test-logs',
                                                    target_prefix='test-bucketname/')
 
     @patch('control_panel_api.aws.create_policy')
@@ -49,7 +55,8 @@ class ServicesTestCase(TransactionTestCase):
 
     @patch('control_panel_api.aws.delete_policy')
     @patch('control_panel_api.aws.detach_policy_from_entities')
-    def test_delete_bucket_policies(self, mock_detach_policy_from_entities, mock_delete_policy):
+    def test_delete_bucket_policies(self, mock_detach_policy_from_entities,
+                                    mock_delete_policy):
         services.delete_bucket_policies('test-bucketname')
 
         expected_calls = [
@@ -66,7 +73,8 @@ class ServicesTestCase(TransactionTestCase):
 
     @patch('control_panel_api.services.create_bucket')
     @patch('control_panel_api.services.create_bucket_policies')
-    def test_bucket_create(self, mock_create_bucket_policies, mock_create_bucket):
+    def test_bucket_create(self, mock_create_bucket_policies,
+                           mock_create_bucket):
         services.bucket_create('test-bucketname')
 
         mock_create_bucket_policies.assert_called()
@@ -119,9 +127,51 @@ class ServicesTestCase(TransactionTestCase):
                 role_name=expected_role_name,
             )
 
+    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
+    def test_apps3bucket_delete(self, mock_detach_bucket_access_from_app_role):
+        app_name = 'app-2'
+        s3_bucket_name = 'test-bucket-2'
+
+        apps3bucket = mommy.make(
+            'control_panel_api.AppS3Bucket',
+            make_m2m=True,
+            app__name=app_name,
+            s3bucket__name=s3_bucket_name,
+            access_level=services.READWRITE)
+
+        services.apps3bucket_delete(apps3bucket)
+
+        mock_detach_bucket_access_from_app_role.assert_called_with(
+            app_name,
+            s3_bucket_name,
+            services.READWRITE)
+
+    @patch('control_panel_api.aws.detach_policy_from_role')
+    def test_detach_bucket_access_from_app_role_readwrite(
+            self,
+            mock_detach_policy_from_role):
+        services.detach_bucket_access_from_app_role(self.app_1.slug,
+                                                    self.s3_bucket_1.name,
+                                                    services.READWRITE)
+
+        mock_detach_policy_from_role.assert_called_with(
+            policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readwrite',
+            role_name='test_app_app-1')
+
+    @patch('control_panel_api.aws.detach_policy_from_role')
+    def test_detach_bucket_access_from_app_role_readonly(
+            self,
+            mock_detach_policy_from_role):
+        services.detach_bucket_access_from_app_role(self.app_1.slug,
+                                                    self.s3_bucket_1.name,
+                                                    services.READONLY)
+
+        mock_detach_policy_from_role.assert_called_with(
+            policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readonly',
+            role_name='test_app_app-1')
+
 
 class NamingTestCase(SimpleTestCase):
-
     def test_policy_name_has_readwrite(self):
         self.assertEqual('bucketname-readonly',
                          services._policy_name('bucketname', readwrite=False))
