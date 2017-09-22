@@ -48,11 +48,11 @@ class AppViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         app = serializer.save()
-        services.app_create(app.slug)
+        app.create_app_role()
 
     def perform_destroy(self, instance):
         instance.delete()
-        services.app_delete(instance.slug)
+        instance.delete_app_role()
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):

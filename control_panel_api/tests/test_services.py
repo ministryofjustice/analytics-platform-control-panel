@@ -86,25 +86,6 @@ class ServicesTestCase(TestCase):
 
         mock_delete_bucket_policies.assert_called()
 
-    @patch('control_panel_api.aws.create_role')
-    def test_app_create(self, mock_create_role):
-        app_slug = 'appname'
-        services.app_create(app_slug)
-
-        expected_role_name = "test_app_{}".format(app_slug)
-
-        mock_create_role.assert_called_with(
-            expected_role_name, APP_IAM_ROLE_ASSUME_POLICY)
-
-    @patch('control_panel_api.aws.delete_role')
-    def test_app_delete(self, mock_delete_role):
-        app_slug = 'appname'
-        services.app_delete(app_slug)
-
-        expected_role_name = "test_app_{}".format(app_slug)
-
-        mock_delete_role.assert_called_with(expected_role_name)
-
     @patch('control_panel_api.aws.attach_policy_to_role')
     def test_apps3bucket_create(self, mock_attach_policy_to_role):
         app = App.objects.create(slug='appslug')

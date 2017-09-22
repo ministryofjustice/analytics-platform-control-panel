@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.db.utils import IntegrityError
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 
 from control_panel_api.models import (
     App,
@@ -13,6 +13,7 @@ from control_panel_api.models import (
     User,
     UserS3Bucket,
 )
+from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
 
 
 class MembershipsTestCase(TestCase):
@@ -105,6 +106,29 @@ class AppTestCase(TestCase):
 
         app2 = App.objects.create(name=name)
         self.assertEqual('foo-2', app2.slug)
+
+    @patch('control_panel_api.aws.create_role')
+    def test_create_app_role_calls_service(self, mock_create_role):
+        app_name = 'appname'
+        app = App.objects.create(name=app_name)
+        app.create_app_role()
+
+        expected_role_name = f"test_app_{app_name}"
+
+        mock_create_role.assert_called_with(
+            expected_role_name,
+            APP_IAM_ROLE_ASSUME_POLICY
+        )
+
+    @patch('control_panel_api.aws.delete_role')
+    def test_delete_app_role_calls_service(self, mock_delete_role):
+        app_name = 'appname'
+        app = App.objects.create(name=app_name)
+        app.delete_app_role()
+
+        expected_role_name = f"test_app_{app_name}"
+
+        mock_delete_role.assert_called_with(expected_role_name)
 
 
 class S3BucketTestCase(TestCase):

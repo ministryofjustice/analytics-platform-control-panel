@@ -1,7 +1,4 @@
-import re
-
 from django.conf import settings
-from django.template.defaultfilters import slugify
 
 from . import aws
 
@@ -28,16 +25,7 @@ def bucket_arn(bucket_name):
     return "arn:aws:s3:::{}".format(bucket_name)
 
 
-def app_slugify(name):
-    """Create a valid slug for s3 using standard django slugify but we add some custom"""
-    return re.sub(r'_+', '-', slugify(name))
-
-
-def app_create(app_slug):
-    _create_app_role(_app_role_name(app_slug))
-
-
-def _create_app_role(role_name):
+def create_app_role(role_name):
     """See: `sts:AssumeRole` required by kube2iam
     https://github.com/jtblin/kube2iam#iam-roles"""
     assume_role_policy = {
@@ -63,8 +51,8 @@ def _create_app_role(role_name):
     aws.create_role(role_name, assume_role_policy)
 
 
-def app_delete(app_slug):
-    aws.delete_role(_app_role_name(app_slug))
+def delete_app_role(role_name):
+    aws.delete_role(role_name)
 
 
 def get_policy_document(bucket_name, readwrite):

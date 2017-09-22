@@ -101,11 +101,11 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.services.app_delete')
-    def test_delete_deletes_app_iam_role(self, app_delete):
+    @patch('control_panel_api.models.App.delete_app_role')
+    def test_delete_deletes_app_iam_role(self, delete_app_role):
         self.client.delete(reverse('app-detail', (self.fixture.id,)))
 
-        app_delete.assert_called_with(self.fixture.slug)
+        delete_app_role.assert_called()
 
     @patch('boto3.client')
     def test_create(self, mock_client):
@@ -113,13 +113,12 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.services.app_create')
-    def test_create_creates_app_iam_role(self, app_create):
+    @patch('control_panel_api.models.App.create_app_role')
+    def test_create_creates_app_iam_role(self, create_app_role):
         data = {'name': 'foo'}
-        response = self.client.post(reverse('app-list'), data)
+        self.client.post(reverse('app-list'), data)
 
-        app = App.objects.get(id=response.data["id"])
-        app_create.assert_called_with(app.slug)
+        create_app_role.assert_called()
 
     def test_update(self):
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
