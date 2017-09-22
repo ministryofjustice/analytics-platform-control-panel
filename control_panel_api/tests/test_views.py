@@ -101,6 +101,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
+
     @patch('control_panel_api.models.App.aws_delete_role')
     def test_delete_deletes_app_iam_role(self, mock_aws_delete_role):
         self.client.delete(reverse('app-detail', (self.fixture.id,)))
