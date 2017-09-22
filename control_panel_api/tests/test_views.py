@@ -224,6 +224,26 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['access_level'], response.data['access_level'])
 
+    def test_update_when_app_changed(self):
+        data = {
+            'app': self.app_2.id,
+            's3bucket': self.s3_bucket_1.id,
+            'access_level': AppS3Bucket.READWRITE,
+        }
+        response = self.client.put(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_update_when_s3bucket_changed(self):
+        data = {
+            'app': self.app_1.id,
+            's3bucket': self.s3_bucket_2.id,
+            'access_level': AppS3Bucket.READWRITE,
+        }
+        response = self.client.put(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 

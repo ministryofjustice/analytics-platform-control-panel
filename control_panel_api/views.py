@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group
 from rest_framework import viewsets
+from rest_framework.exceptions import ValidationError
 
 from control_panel_api import services
 from control_panel_api.filters import (
