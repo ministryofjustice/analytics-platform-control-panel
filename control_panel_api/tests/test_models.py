@@ -181,6 +181,7 @@ class AppS3BucketTestCase(TestCase):
                 access_level=AppS3Bucket.READWRITE,
             )
 
+
     @patch('control_panel_api.services.apps3bucket_update')
     def test_update_aws_permissions(self, mock_apps3bucket_update):
         apps3bucket = AppS3Bucket.objects.create(
@@ -189,8 +190,27 @@ class AppS3BucketTestCase(TestCase):
             access_level=AppS3Bucket.READONLY,
         )
         apps3bucket.update_aws_permissions()
-        mock_apps3bucket_update.assert_called_with(apps3bucket)
 
+        mock_apps3bucket_update.assert_called_with(
+            self.s3_bucket_1.name,
+            apps3bucket.has_readwrite_access(),
+            self.app_1.role_name
+        )
+
+    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
+    def test_aws_delete(self, mock_detach_bucket_access_from_app_role):
+        apps3bucket = self.app_1.apps3buckets.create(
+            s3bucket=self.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
+        )
+
+        apps3bucket.aws_delete()
+
+        mock_detach_bucket_access_from_app_role.assert_called_with(
+            self.s3_bucket_1.name,
+            apps3bucket.has_readwrite_access(),
+            self.app_1.role_name
+        )
 
 
 class UserS3BucketTestCase(TestCase):

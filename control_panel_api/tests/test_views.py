@@ -176,15 +176,13 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.services.apps3bucket_delete')
-    def test_delete_calls_service(self, mock_apps3bucket_delete):
+    @patch('control_panel_api.models.AppS3Bucket.aws_delete')
+    def test_delete_calls_aws_delete(self, mock_aws_delete):
         response = self.client.delete(
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
-        called_args, _ = mock_apps3bucket_delete.call_args
-        self.assertIsInstance(called_args[0], AppS3Bucket)
-        self.assertEqual(called_args[0].app.slug, self.apps3bucket_1.app.slug)
+        mock_aws_delete.assert_called()
 
     def test_create(self):
         data = {
@@ -195,8 +193,8 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('apps3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.services.apps3bucket_create')
-    def test_create_grants_access(self, mock_apps3bucket_create):
+    @patch('control_panel_api.models.AppS3Bucket.aws_create')
+    def test_create_calls_aws_create(self, mock_aws_create):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_3.id,
@@ -204,15 +202,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         }
         self.client.post(reverse('apps3bucket-list'), data)
 
-        apps3bucket = AppS3Bucket.objects.get(
-            app=self.app_1,
-            s3bucket=self.s3_bucket_3,
-        )
-
-        mock_apps3bucket_create.assert_called_with(
-            apps3bucket,
-            apps3bucket.app.role_name
-        )
+        mock_aws_create.assert_called()
 
     @patch('control_panel_api.models.AppS3Bucket.update_aws_permissions')
     def test_update(self, mock_update_aws_permissions):

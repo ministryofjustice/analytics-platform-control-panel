@@ -85,7 +85,11 @@ class ServicesTestCase(TestCase):
                 defaults={'access_level': access_level},
             )
 
-            services.apps3bucket_create(apps3bucket, apps3bucket.app.role_name)
+            services.attach_bucket_access_to_app_role(
+                apps3bucket.s3bucket.name,
+                apps3bucket.has_readwrite_access(),
+                apps3bucket.app.role_name
+            )
 
             expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
             expected_role_name = f'test_app_{app.slug}'
@@ -94,6 +98,7 @@ class ServicesTestCase(TestCase):
                 policy_arn=expected_policy_arn,
                 role_name=expected_role_name,
             )
+
 
     @patch('control_panel_api.aws.attach_policy_to_role')
     @patch('control_panel_api.aws.detach_policy_from_role')
@@ -111,9 +116,13 @@ class ServicesTestCase(TestCase):
                 s3bucket=s3bucket,
                 defaults={'access_level': access_level},
             )
-            services.apps3bucket_update(apps3bucket)
+            services.apps3bucket_update(
+                s3bucket.name,
+                apps3bucket.has_readwrite_access(),
+                app.role_name
+            )
 
-            old_access_level = 'readwrite' if access_level=='readonly' else 'readonly'
+            old_access_level = 'readwrite' if access_level == 'readonly' else 'readonly'
             new_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
             old_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{old_access_level}'
 
@@ -126,33 +135,12 @@ class ServicesTestCase(TestCase):
                 role_name=app_role_name,
             )
 
-    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
-    def test_apps3bucket_delete(self, mock_detach_bucket_access_from_app_role):
-        app_name = 'app-2'
-        s3_bucket_name = 'test-bucket-2'
-
-        apps3bucket = mommy.make(
-            'control_panel_api.AppS3Bucket',
-            make_m2m=True,
-            app__name=app_name,
-            s3bucket__name=s3_bucket_name,
-            access_level=services.READWRITE)
-
-        services.apps3bucket_delete(apps3bucket)
-
-        mock_detach_bucket_access_from_app_role.assert_called_with(
-            app_name,
-            s3_bucket_name,
-            services.READWRITE,
-            apps3bucket.app.role_name
-        )
 
     @patch('control_panel_api.aws.detach_policy_from_role')
     def test_detach_bucket_access_from_app_role_readwrite(
             self,
             mock_detach_policy_from_role):
         services.detach_bucket_access_from_app_role(
-            self.app_1.slug,
             self.s3_bucket_1.name,
             services.READWRITE,
             self.app_1.role_name
@@ -166,11 +154,12 @@ class ServicesTestCase(TestCase):
     def test_detach_bucket_access_from_app_role_readonly(
             self,
             mock_detach_policy_from_role):
+
+
         services.detach_bucket_access_from_app_role(
-            self.app_1.slug,
             self.s3_bucket_1.name,
-            services.READONLY,
-            self.app_1.role_name
+            False,
+            self.app_1.role_name,
         )
 
         mock_detach_policy_from_role.assert_called_with(

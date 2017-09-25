@@ -61,7 +61,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         apps3bucket = serializer.save()
-        services.apps3bucket_create(apps3bucket, apps3bucket.app.role_name)
+        apps3bucket.aws_create()
 
     def perform_update(self, serializer):
         apps3bucket = serializer.save()
@@ -69,7 +69,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         instance.delete()
-        services.apps3bucket_delete(instance)
+        instance.aws_delete()
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):

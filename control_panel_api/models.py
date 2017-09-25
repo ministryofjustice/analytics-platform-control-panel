@@ -159,8 +159,26 @@ class AppS3Bucket(AccessToS3Bucket):
         # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
 
+    def aws_create(self):
+        services.attach_bucket_access_to_app_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.app.role_name
+        )
+
+    def aws_delete(self):
+        services.detach_bucket_access_from_app_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.app.role_name
+        )
+
     def update_aws_permissions(self):
-        services.apps3bucket_update(self)
+        services.apps3bucket_update(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.app.role_name
+        )
 
 
 class UserS3Bucket(AccessToS3Bucket):
