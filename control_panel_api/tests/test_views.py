@@ -209,7 +209,10 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             s3bucket=self.s3_bucket_3,
         )
 
-        mock_apps3bucket_create.assert_called_with(apps3bucket)
+        mock_apps3bucket_create.assert_called_with(
+            apps3bucket,
+            apps3bucket.app.role_name
+        )
 
     @patch('control_panel_api.models.AppS3Bucket.update_aws_permissions')
     def test_update(self, mock_update_aws_permissions):

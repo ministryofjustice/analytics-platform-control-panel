@@ -61,7 +61,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         apps3bucket = serializer.save()
-        services.apps3bucket_create(apps3bucket)
+        services.apps3bucket_create(apps3bucket, apps3bucket.app.role_name)
 
     def perform_update(self, serializer):
         apps3bucket = serializer.save()

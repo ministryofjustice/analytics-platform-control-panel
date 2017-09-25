@@ -11,10 +11,6 @@ def _policy_name(bucket_name, readwrite=False):
     return "{}-{}".format(bucket_name, READWRITE if readwrite else READONLY)
 
 
-def _app_role_name(app_slug):
-    return "{}_app_{}".format(settings.ENV, app_slug)
-
-
 def _policy_arn(bucket_name, readwrite=False):
     """Return full bucket policy arn e.g. arn:aws:iam::1337:policy/bucketname-readonly"""
     return "{}:policy/{}".format(settings.IAM_ARN_BASE,
@@ -137,7 +133,8 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
-def detach_bucket_access_from_app_role(app_slug, bucket_name, access_level):
+def detach_bucket_access_from_app_role(
+        app_slug, bucket_name, access_level, app_role_name):
     policy_arn = _policy_arn(
         bucket_name=bucket_name,
         readwrite=access_level == READWRITE
@@ -145,11 +142,11 @@ def detach_bucket_access_from_app_role(app_slug, bucket_name, access_level):
 
     aws.detach_policy_from_role(
         policy_arn=policy_arn,
-        role_name=_app_role_name(app_slug)
+        role_name=app_role_name
     )
 
 
-def apps3bucket_create(apps3bucket):
+def apps3bucket_create(apps3bucket, app_role_name):
     policy_arn = _policy_arn(
         apps3bucket.s3bucket.name,
         apps3bucket.has_readwrite_access(),
@@ -157,7 +154,7 @@ def apps3bucket_create(apps3bucket):
 
     aws.attach_policy_to_role(
         policy_arn=policy_arn,
-        role_name=_app_role_name(apps3bucket.app.slug),
+        role_name=app_role_name,
     )
 
 
@@ -184,6 +181,9 @@ def apps3bucket_update(apps3bucket):
 
 def apps3bucket_delete(apps3bucket):
     """:type apps3bucket: control_panel_api.models.AppS3Bucket"""
-    detach_bucket_access_from_app_role(apps3bucket.app.slug,
-                                       apps3bucket.s3bucket.name,
-                                       apps3bucket.access_level)
+    detach_bucket_access_from_app_role(
+        apps3bucket.app.slug,
+        apps3bucket.s3bucket.name,
+        apps3bucket.access_level,
+        apps3bucket.app.role_name
+    )

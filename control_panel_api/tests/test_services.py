@@ -85,7 +85,7 @@ class ServicesTestCase(TestCase):
                 defaults={'access_level': access_level},
             )
 
-            services.apps3bucket_create(apps3bucket)
+            services.apps3bucket_create(apps3bucket, apps3bucket.app.role_name)
 
             expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
             expected_role_name = f'test_app_{app.slug}'
@@ -143,15 +143,20 @@ class ServicesTestCase(TestCase):
         mock_detach_bucket_access_from_app_role.assert_called_with(
             app_name,
             s3_bucket_name,
-            services.READWRITE)
+            services.READWRITE,
+            apps3bucket.app.role_name
+        )
 
     @patch('control_panel_api.aws.detach_policy_from_role')
     def test_detach_bucket_access_from_app_role_readwrite(
             self,
             mock_detach_policy_from_role):
-        services.detach_bucket_access_from_app_role(self.app_1.slug,
-                                                    self.s3_bucket_1.name,
-                                                    services.READWRITE)
+        services.detach_bucket_access_from_app_role(
+            self.app_1.slug,
+            self.s3_bucket_1.name,
+            services.READWRITE,
+            self.app_1.role_name
+        )
 
         mock_detach_policy_from_role.assert_called_with(
             policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readwrite',
@@ -161,9 +166,12 @@ class ServicesTestCase(TestCase):
     def test_detach_bucket_access_from_app_role_readonly(
             self,
             mock_detach_policy_from_role):
-        services.detach_bucket_access_from_app_role(self.app_1.slug,
-                                                    self.s3_bucket_1.name,
-                                                    services.READONLY)
+        services.detach_bucket_access_from_app_role(
+            self.app_1.slug,
+            self.s3_bucket_1.name,
+            services.READONLY,
+            self.app_1.role_name
+        )
 
         mock_detach_policy_from_role.assert_called_with(
             policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readonly',
