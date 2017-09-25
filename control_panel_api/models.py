@@ -50,6 +50,9 @@ class App(TimeStampedModel):
 
 
 class S3Bucket(TimeStampedModel):
+    READWRITE = 'readwrite'
+    READONLY = 'readonly'
+
     name = models.CharField(unique=True, max_length=63, validators=[
         validators.validate_env_prefix,
         validators.validate_s3_bucket_length,
@@ -61,7 +64,15 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def arn(self):
-        return services.bucket_arn(self.name)
+        return f"arn:aws:s3:::{self.name}"
+
+    def aws_create(self):
+        services.create_bucket(self.name)
+        services.create_bucket_policies(self.name, self.arn)
+
+    def aws_delete(self):
+        """Note we do not destroy the actual data, just the policies"""
+        services.delete_bucket_policies(self.name)
 
 
 class Role(TimeStampedModel):

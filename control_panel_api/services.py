@@ -21,10 +21,6 @@ def _policy_arn(bucket_name, readwrite=False):
                                  _policy_name(bucket_name, readwrite))
 
 
-def bucket_arn(bucket_name):
-    return "arn:aws:s3:::{}".format(bucket_name)
-
-
 def create_app_role(role_name):
     """See: `sts:AssumeRole` required by kube2iam
     https://github.com/jtblin/kube2iam#iam-roles"""
@@ -55,9 +51,7 @@ def delete_app_role(role_name):
     aws.delete_role(role_name)
 
 
-def get_policy_document(bucket_name, readwrite):
-    bucket_name_arn = bucket_arn(bucket_name)
-
+def get_policy_document(bucket_name_arn, readwrite):
     statements = [
         {
             "Sid": "ListBucketsInConsole",
@@ -117,12 +111,19 @@ def create_bucket(bucket_name):
                            target_prefix="{}/".format(bucket_name))
 
 
-def create_bucket_policies(bucket_name):
+def create_bucket_policies(bucket_name, bucket_arn):
     """Create readwrite and readonly policies for s3 bucket"""
-    aws.create_policy(_policy_name(bucket_name, readwrite=True),
-                      get_policy_document(bucket_name, True))
-    aws.create_policy(_policy_name(bucket_name, readwrite=False),
-                      get_policy_document(bucket_name, False))
+    readwrite = True
+    policy_name = _policy_name(bucket_name, readwrite)
+    policy_document = get_policy_document(bucket_arn, readwrite)
+
+    aws.create_policy(policy_name, policy_document)
+
+    readwrite = False
+    policy_name = _policy_name(bucket_name, readwrite)
+    policy_document = get_policy_document(bucket_arn, readwrite)
+
+    aws.create_policy(policy_name, policy_document)
 
 
 def delete_bucket_policies(bucket_name):
@@ -146,16 +147,6 @@ def detach_bucket_access_from_app_role(app_slug, bucket_name, access_level):
         policy_arn=policy_arn,
         role_name=_app_role_name(app_slug)
     )
-
-
-def bucket_create(name):
-    create_bucket(name)
-    create_bucket_policies(name)
-
-
-def bucket_delete(name):
-    """Note we do not destroy the actual data, just the policies"""
-    delete_bucket_policies(name)
 
 
 def apps3bucket_create(apps3bucket):

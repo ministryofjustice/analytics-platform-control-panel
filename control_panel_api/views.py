@@ -80,8 +80,8 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         instance = serializer.save()
-        services.bucket_create(instance.name)
+        instance.aws_create()
 
     def perform_destroy(self, instance):
         instance.delete()
-        services.bucket_delete(instance.name)
+        instance.aws_delete()

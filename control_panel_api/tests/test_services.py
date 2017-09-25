@@ -11,7 +11,6 @@ from control_panel_api.models import (
     S3Bucket,
 )
 from control_panel_api.tests import (
-    APP_IAM_ROLE_ASSUME_POLICY,
     POLICY_DOCUMENT_READONLY,
     POLICY_DOCUMENT_READWRITE,
 )
@@ -25,11 +24,11 @@ class ServicesTestCase(TestCase):
 
     def test_policy_document_readwrite(self):
         document = services.get_policy_document(
-            'test-bucketname', readwrite=True)
+            'arn:aws:s3:::test-bucketname', readwrite=True)
         self.assertEqual(POLICY_DOCUMENT_READWRITE, document)
 
         document = services.get_policy_document(
-            'test-bucketname', readwrite=False)
+            'arn:aws:s3:::test-bucketname', readwrite=False)
         self.assertEqual(POLICY_DOCUMENT_READONLY, document)
 
     @patch('control_panel_api.aws.put_bucket_logging')
@@ -45,7 +44,10 @@ class ServicesTestCase(TestCase):
 
     @patch('control_panel_api.aws.create_policy')
     def test_create_bucket_policies(self, mock_create_policy):
-        services.create_bucket_policies('test-bucketname')
+        services.create_bucket_policies(
+            'test-bucketname',
+            'arn:aws:s3:::test-bucketname'
+        )
 
         expected_calls = [
             call('test-bucketname-readwrite', POLICY_DOCUMENT_READWRITE),
@@ -70,21 +72,6 @@ class ServicesTestCase(TestCase):
             call(f'{settings.IAM_ARN_BASE}:policy/test-bucketname-readonly')
         ]
         mock_delete_policy.assert_has_calls(expected_calls)
-
-    @patch('control_panel_api.services.create_bucket')
-    @patch('control_panel_api.services.create_bucket_policies')
-    def test_bucket_create(self, mock_create_bucket_policies,
-                           mock_create_bucket):
-        services.bucket_create('test-bucketname')
-
-        mock_create_bucket_policies.assert_called()
-        mock_create_bucket.assert_called()
-
-    @patch('control_panel_api.services.delete_bucket_policies')
-    def test_bucket_delete(self, mock_delete_bucket_policies):
-        services.bucket_delete('test-bucketname')
-
-        mock_delete_bucket_policies.assert_called()
 
     @patch('control_panel_api.aws.attach_policy_to_role')
     def test_apps3bucket_create(self, mock_attach_policy_to_role):
@@ -195,7 +182,3 @@ class NamingTestCase(SimpleTestCase):
                          services._policy_arn('bucketname', readwrite=False))
         self.assertEqual(f'{settings.IAM_ARN_BASE}:policy/bucketname-readwrite',
                          services._policy_arn('bucketname', readwrite=True))
-
-    def test_bucket_arn(self):
-        self.assertEqual('arn:aws:s3:::bucketname',
-                         services.bucket_arn('bucketname'))

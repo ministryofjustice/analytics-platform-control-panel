@@ -132,20 +132,34 @@ class AppTestCase(TestCase):
 
 
 class S3BucketTestCase(TestCase):
-
     @classmethod
     def setUpTestData(cls):
         # Create an S3 bucket
         cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
     def test_arn(self):
-        expected_arn = "arn:aws:s3:::{}".format(self.s3_bucket_1.name)
+        self.assertEqual(
+            'arn:aws:s3:::test-bucket-1',
+            self.s3_bucket_1.arn
+        )
 
-        self.assertEqual(self.s3_bucket_1.arn, expected_arn)
+    @patch('control_panel_api.services.create_bucket')
+    @patch('control_panel_api.services.create_bucket_policies')
+    def test_bucket_create(self, mock_create_bucket_policies,
+                           mock_create_bucket):
+        self.s3_bucket_1.aws_create()
+
+        mock_create_bucket_policies.assert_called()
+        mock_create_bucket.assert_called()
+
+    @patch('control_panel_api.services.delete_bucket_policies')
+    def test_bucket_delete(self, mock_delete_bucket_policies):
+        self.s3_bucket_1.aws_delete()
+
+        mock_delete_bucket_policies.assert_called()
 
 
 class AppS3BucketTestCase(TestCase):
-
     @classmethod
     def setUpTestData(cls):
         # Apps
