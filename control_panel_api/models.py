@@ -112,3 +112,9 @@ class AppS3Bucket(TimeStampedModel):
     class Meta:
         # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
+
+    def has_readwrite_access(self):
+        return self.access_level == self.READWRITE
+
+    def update_aws_permissions(self):
+        services.apps3bucket_update(self)

@@ -63,6 +63,10 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
         apps3bucket = serializer.save()
         services.apps3bucket_create(apps3bucket)
 
+    def perform_update(self, serializer):
+        apps3bucket = serializer.save()
+        apps3bucket.update_aws_permissions()
+
     def perform_destroy(self, instance):
         instance.delete()
         services.apps3bucket_delete(instance)
