@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.db.utils import IntegrityError
 from django.test import TestCase, TransactionTestCase
 
@@ -139,3 +141,13 @@ class AppS3BucketTestCase(TestCase):
                 s3bucket=self.s3_bucket_1,
                 access_level=AppS3Bucket.READWRITE,
             )
+
+    @patch('control_panel_api.services.apps3bucket_update')
+    def test_update_aws_permissions(self, mock_apps3bucket_update):
+        apps3bucket = AppS3Bucket.objects.create(
+            app=self.app_1,
+            s3bucket=self.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
+        )
+        apps3bucket.update_aws_permissions()
+        mock_apps3bucket_update.assert_called_with(apps3bucket)
