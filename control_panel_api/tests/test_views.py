@@ -101,23 +101,23 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.models.App.delete_app_role')
-    def test_delete_deletes_app_iam_role(self, delete_app_role):
+    @patch('control_panel_api.models.App.aws_delete_role')
+    def test_delete_deletes_app_iam_role(self, mock_aws_delete_role):
         self.client.delete(reverse('app-detail', (self.fixture.id,)))
 
-        delete_app_role.assert_called()
+        mock_aws_delete_role.assert_called()
 
     def test_create(self):
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.models.App.create_app_role')
-    def test_create_creates_app_iam_role(self, create_app_role):
+    @patch('control_panel_api.models.App.aws_create_role')
+    def test_create_creates_app_iam_role(self, mock_aws_create_role):
         data = {'name': 'foo'}
         self.client.post(reverse('app-list'), data)
 
-        create_app_role.assert_called()
+        mock_aws_create_role.assert_called()
 
     def test_update(self):
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
@@ -204,8 +204,8 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
         mock_aws_create.assert_called()
 
-    @patch('control_panel_api.models.AppS3Bucket.update_aws_permissions')
-    def test_update(self, mock_update_aws_permissions):
+    @patch('control_panel_api.models.AppS3Bucket.aws_update')
+    def test_update(self, mock_aws_update):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_1.id,
@@ -216,8 +216,8 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['access_level'], response.data['access_level'])
 
-    @patch('control_panel_api.models.AppS3Bucket.update_aws_permissions')
-    def test_update_updates_aws(self, mock_update_aws_permissions):
+    @patch('control_panel_api.models.AppS3Bucket.aws_update')
+    def test_update_updates_aws(self, mock_aws_update):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_1.id,
@@ -225,7 +225,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         }
         self.client.put(
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
-        mock_update_aws_permissions.assert_called()
+        mock_aws_update.assert_called()
 
     def test_update_when_app_changed(self):
         data = {

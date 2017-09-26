@@ -39,14 +39,14 @@ class App(TimeStampedModel):
         ordering = ('name',)
 
     @property
-    def role_name(self):
+    def aws_role_name(self):
         return f"{settings.ENV}_app_{self.slug}"
 
-    def create_app_role(self):
-        services.create_app_role(self.role_name)
+    def aws_create_role(self):
+        services.create_app_role(self.aws_role_name)
 
-    def delete_app_role(self):
-        services.delete_app_role(self.role_name)
+    def aws_delete_role(self):
+        services.delete_app_role(self.aws_role_name)
 
 
 class S3Bucket(TimeStampedModel):
@@ -163,21 +163,21 @@ class AppS3Bucket(AccessToS3Bucket):
         services.attach_bucket_access_to_app_role(
             self.s3bucket.name,
             self.has_readwrite_access(),
-            self.app.role_name
+            self.app.aws_role_name,
         )
 
     def aws_delete(self):
         services.detach_bucket_access_from_app_role(
             self.s3bucket.name,
             self.has_readwrite_access(),
-            self.app.role_name
+            self.app.aws_role_name
         )
 
-    def update_aws_permissions(self):
+    def aws_update(self):
         services.apps3bucket_update(
             self.s3bucket.name,
             self.has_readwrite_access(),
-            self.app.role_name
+            self.app.aws_role_name
         )
 
 

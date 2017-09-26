@@ -48,11 +48,11 @@ class AppViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         app = serializer.save()
-        app.create_app_role()
+        app.aws_create_role()
 
     def perform_destroy(self, instance):
         instance.delete()
-        instance.delete_app_role()
+        instance.aws_delete_role()
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
@@ -65,7 +65,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         apps3bucket = serializer.save()
-        apps3bucket.update_aws_permissions()
+        apps3bucket.aws_update()
 
     def perform_destroy(self, instance):
         instance.delete()
