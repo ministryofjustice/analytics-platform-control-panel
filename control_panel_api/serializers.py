@@ -24,10 +24,12 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class AppSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = App
-        fields = ('id', 'url', 'name', 'slug', 'repo_url', 'apps3buckets')
+        fields = (
+            'id', 'url', 'name', 'slug', 'repo_url', 'apps3buckets',
+            'created_by'
+        )
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
@@ -53,4 +55,4 @@ class S3BucketSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = S3Bucket
-        fields = ('id', 'url', 'name', 'arn', 'apps3buckets')
+        fields = ('id', 'url', 'name', 'arn', 'apps3buckets', 'created_by')
