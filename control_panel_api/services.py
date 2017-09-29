@@ -206,7 +206,7 @@ def create_user_role(role_name):
             {
                 "Effect": "Allow",
                 "Principal": {
-                    "AWS": settings.K8S_WORKER_ROLE_ARN
+                    "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
                 },
                 "Action": "sts:AssumeRole"
             }

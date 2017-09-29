@@ -73,7 +73,7 @@ USER_IAM_ROLE_ASSUME_POLICY = {
         {
             'Effect': 'Allow',
             'Principal': {
-                'AWS': settings.K8S_WORKER_ROLE_ARN
+                "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
             },
             'Action': 'sts:AssumeRole'
         }
