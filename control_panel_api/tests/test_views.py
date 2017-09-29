@@ -56,10 +56,13 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_create(self):
+    @patch('control_panel_api.models.User.aws_create_role')
+    def test_create(self, mock_aws_create_role):
         data = {'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_aws_create_role.assert_called()
 
     def test_update(self):
         data = {'username': 'foo'}

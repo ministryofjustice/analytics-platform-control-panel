@@ -24,6 +24,13 @@ class User(AbstractUser):
     def get_short_name(self):
         return self.name
 
+    @property
+    def aws_role_name(self):
+        return f"{settings.ENV}_user_{self.username.lower()}"
+
+    def aws_create_role(self):
+        services.create_user_role(self.aws_role_name)
+
 
 class App(TimeStampedModel):
     def _slugify(name):

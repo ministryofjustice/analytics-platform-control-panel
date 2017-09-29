@@ -13,7 +13,7 @@ from control_panel_api.models import (
 from control_panel_api.tests import (
     POLICY_DOCUMENT_READONLY,
     POLICY_DOCUMENT_READWRITE,
-)
+    USER_IAM_ROLE_ASSUME_POLICY)
 
 
 class ServicesTestCase(TestCase):
@@ -165,6 +165,17 @@ class ServicesTestCase(TestCase):
         mock_detach_policy_from_role.assert_called_with(
             policy_arn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readonly',
             role_name='test_app_app-1')
+
+    @patch('control_panel_api.aws.create_role')
+    def test_create_user_role(self, mock_create_role):
+        role_name = f"test_user_user"
+
+        services.create_user_role(role_name)
+
+        mock_create_role.assert_called_with(
+            role_name,
+            USER_IAM_ROLE_ASSUME_POLICY
+        )
 
 
 class NamingTestCase(SimpleTestCase):

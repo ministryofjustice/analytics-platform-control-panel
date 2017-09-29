@@ -34,6 +34,10 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (UserFilter,)
     permission_classes = (UserPermissions,)
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.aws_create_role()
+
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
