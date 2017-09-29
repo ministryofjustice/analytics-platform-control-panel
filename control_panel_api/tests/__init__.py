@@ -54,18 +54,6 @@ USER_IAM_ROLE_ASSUME_POLICY = {
         {
             'Effect': 'Allow',
             'Principal': {
-                'Federated': settings.SAML_PROVIDER_ARN
-            },
-            'Action': 'sts:AssumeRoleWithSAML',
-            'Condition': {
-                'StringEquals': {
-                    'SAML:aud': 'https://signin.aws.amazon.com/saml'
-                }
-            }
-        },
-        {
-            'Effect': 'Allow',
-            'Principal': {
                 'Service': 'ec2.amazonaws.com'
             },
             'Action': 'sts:AssumeRole'
@@ -76,6 +64,18 @@ USER_IAM_ROLE_ASSUME_POLICY = {
                 "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
             },
             'Action': 'sts:AssumeRole'
+        },
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'Federated': settings.SAML_PROVIDER_ARN
+            },
+            'Action': 'sts:AssumeRoleWithSAML',
+            'Condition': {
+                'StringEquals': {
+                    'SAML:aud': 'https://signin.aws.amazon.com/saml'
+                }
+            }
         }
     ]
 }

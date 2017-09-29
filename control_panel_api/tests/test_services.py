@@ -170,7 +170,7 @@ class ServicesTestCase(TestCase):
     def test_create_user_role(self, mock_create_role):
         role_name = f"test_user_user"
 
-        services.create_user_role(role_name)
+        services.create_role(role_name, add_saml_statement=True)
 
         mock_create_role.assert_called_with(
             role_name,
