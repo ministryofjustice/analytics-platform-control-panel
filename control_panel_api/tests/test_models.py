@@ -25,9 +25,7 @@ class UserTestCase(TestCase):
 
         expected_role_name = f"test_user_{username}"
 
-        mock_create_user_role.assert_called_with(
-            expected_role_name,
-        )
+        mock_create_user_role.assert_called_with(expected_role_name)
 
     @patch('control_panel_api.services.delete_role')
     def test_aws_delete_role_calls_service(self, mock_delete_role):
@@ -37,9 +35,7 @@ class UserTestCase(TestCase):
 
         expected_role_name = f"test_user_{username}"
 
-        mock_delete_role.assert_called_with(
-            expected_role_name,
-        )
+        mock_delete_role.assert_called_with(expected_role_name)
 
 
 class MembershipsTestCase(TestCase):
