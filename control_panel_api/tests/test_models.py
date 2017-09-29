@@ -29,6 +29,18 @@ class UserTestCase(TestCase):
             expected_role_name,
         )
 
+    @patch('control_panel_api.services.delete_role')
+    def test_aws_delete_role_calls_service(self, mock_delete_role):
+        username = 'james'
+        user = User.objects.create(username=username)
+        user.aws_delete_role()
+
+        expected_role_name = f"test_user_{username}"
+
+        mock_delete_role.assert_called_with(
+            expected_role_name,
+        )
+
 
 class MembershipsTestCase(TestCase):
     @classmethod

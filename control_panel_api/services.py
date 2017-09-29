@@ -43,7 +43,7 @@ def create_app_role(role_name):
     aws.create_role(role_name, assume_role_policy)
 
 
-def delete_app_role(role_name):
+def delete_role(role_name):
     aws.delete_role(role_name)
 
 

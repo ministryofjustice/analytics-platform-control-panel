@@ -31,6 +31,9 @@ class User(AbstractUser):
     def aws_create_role(self):
         services.create_user_role(self.aws_role_name)
 
+    def aws_delete_role(self):
+        services.delete_role(self.aws_role_name)
+
 
 class App(TimeStampedModel):
     def _slugify(name):
@@ -54,7 +57,7 @@ class App(TimeStampedModel):
         services.create_app_role(self.aws_role_name)
 
     def aws_delete_role(self):
-        services.delete_app_role(self.aws_role_name)
+        services.delete_role(self.aws_role_name)
 
 
 class S3Bucket(TimeStampedModel):

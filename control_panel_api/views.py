@@ -38,6 +38,10 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
         instance.aws_create_role()
 
+    def perform_destroy(self, instance):
+        instance.delete()
+        instance.aws_delete_role()
+
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
