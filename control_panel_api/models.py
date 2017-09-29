@@ -86,12 +86,12 @@ class TeamMembership(TimeStampedModel):
             ('user', 'team'),
         )
 
-
-class AppS3Bucket(TimeStampedModel):
+class AccessToS3Bucket(TimeStampedModel):
     """
-    An app (potentially) has access to several S3 buckets.
+    Abstract model to model access to S3 buckets
 
-    We have two access levels, "readonly" (default) and "readwrite".
+    These models will be associated with an s3bucket and have
+    an access level (`readonly` or `readwrite`)
     """
 
     READONLY = 'readonly'
@@ -102,19 +102,50 @@ class AppS3Bucket(TimeStampedModel):
         (READWRITE, "Read-write"),
     )
 
-    app = models.ForeignKey(
-        App, related_name='apps3buckets', on_delete=models.CASCADE)
     s3bucket = models.ForeignKey(
-        S3Bucket, related_name='apps3buckets', on_delete=models.CASCADE)
+        S3Bucket, related_name='%(class)ss', on_delete=models.CASCADE)
     access_level = models.CharField(
         max_length=9, choices=ACCESS_LEVELS, default=READONLY)
+
+    class Meta:
+        abstract = True
+
+
+    def has_readwrite_access(self):
+        return self.access_level == self.READWRITE
+
+
+class AppS3Bucket(AccessToS3Bucket):
+    """
+    An app (potentially) has access to several S3 buckets.
+
+    We have two access levels, "readonly" (default) and "readwrite".
+    """
+
+    app = models.ForeignKey(
+        App, related_name='apps3buckets', on_delete=models.CASCADE)
 
     class Meta:
         # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
 
-    def has_readwrite_access(self):
-        return self.access_level == self.READWRITE
-
     def update_aws_permissions(self):
         services.apps3bucket_update(self)
+
+
+class UserS3Bucket(AccessToS3Bucket):
+    """
+    A user can have access to several S3 buckets.
+
+    We have two access levels, "readonly" (default) and "readwrite".
+    The `is_admin` field determine if the user has admin privileges on the
+    S3 bucket
+    """
+
+    user = models.ForeignKey(
+        User, related_name='users3buckets', on_delete=models.CASCADE)
+    is_admin = models.BooleanField(default=False)
+
+    class Meta:
+        # one record per user/s3bucket
+        unique_together = ('user', 's3bucket')

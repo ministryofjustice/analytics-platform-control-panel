@@ -11,6 +11,7 @@ from control_panel_api.models import (
     Team,
     TeamMembership,
     User,
+    UserS3Bucket,
 )
 
 
@@ -151,3 +152,28 @@ class AppS3BucketTestCase(TestCase):
         )
         apps3bucket.update_aws_permissions()
         mock_apps3bucket_update.assert_called_with(apps3bucket)
+
+
+
+class UserS3BucketTestCase(TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Users
+        cls.user_1 = User.objects.create(username="user_1")
+
+        # S3 buckets
+        cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+
+    def test_one_record_per_user_per_s3bucket(self):
+        # Give user_1 access to bucket_1 (read-only)
+        self.user_1.users3buckets.create(
+            s3bucket=self.s3_bucket_1,
+            access_level=UserS3Bucket.READONLY,
+        )
+
+        with self.assertRaises(IntegrityError):
+            self.user_1.users3buckets.create(
+                s3bucket=self.s3_bucket_1,
+                access_level=UserS3Bucket.READWRITE,
+            )
