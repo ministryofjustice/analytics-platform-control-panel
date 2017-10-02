@@ -176,3 +176,41 @@ def apps3bucket_update(bucket_name, readwrite, app_role_name):
         policy_arn=old_policy_arn,
         role_name=app_role_name,
     )
+
+
+def create_user_role(role_name):
+    """See: `sts:AssumeRole` required by kube2iam
+    https://github.com/jtblin/kube2iam#iam-roles"""
+    role_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Federated": settings.SAML_PROVIDER_ARN
+                },
+                "Action": "sts:AssumeRoleWithSAML",
+                "Condition": {
+                    "StringEquals": {
+                        "SAML:aud": "https://signin.aws.amazon.com/saml"
+                    }
+                }
+            },
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+            },
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": settings.K8S_WORKER_ROLE_ARN
+                },
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }
+
+    aws.create_role(role_name, role_policy)

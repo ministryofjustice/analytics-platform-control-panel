@@ -16,8 +16,21 @@ from control_panel_api.models import (
 from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
 
 
-class MembershipsTestCase(TestCase):
+class UserTestCase(TestCase):
+    @patch('control_panel_api.services.create_user_role')
+    def test_aws_create_role_calls_service(self, mock_create_user_role):
+        username = 'james'
+        user = User.objects.create(username=username)
+        user.aws_create_role()
 
+        expected_role_name = f"test_user_{username}"
+
+        mock_create_user_role.assert_called_with(
+            expected_role_name,
+        )
+
+
+class MembershipsTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Users
@@ -180,7 +193,6 @@ class AppS3BucketTestCase(TestCase):
                 s3bucket=self.s3_bucket_1,
                 access_level=AppS3Bucket.READWRITE,
             )
-
 
     @patch('control_panel_api.services.apps3bucket_update')
     def test_update_aws_permissions(self, mock_apps3bucket_update):

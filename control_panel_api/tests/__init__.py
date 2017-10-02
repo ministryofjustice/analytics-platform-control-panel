@@ -47,3 +47,35 @@ APP_IAM_ROLE_ASSUME_POLICY = {
         }
     ]
 }
+
+USER_IAM_ROLE_ASSUME_POLICY = {
+    'Version': '2012-10-17',
+    'Statement': [
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'Federated': settings.SAML_PROVIDER_ARN
+            },
+            'Action': 'sts:AssumeRoleWithSAML',
+            'Condition': {
+                'StringEquals': {
+                    'SAML:aud': 'https://signin.aws.amazon.com/saml'
+                }
+            }
+        },
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'Service': 'ec2.amazonaws.com'
+            },
+            'Action': 'sts:AssumeRole'
+        },
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'AWS': settings.K8S_WORKER_ROLE_ARN
+            },
+            'Action': 'sts:AssumeRole'
+        }
+    ]
+}

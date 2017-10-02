@@ -34,6 +34,10 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (UserFilter,)
     permission_classes = (UserPermissions,)
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.aws_create_role()
+
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
@@ -47,7 +51,7 @@ class AppViewSet(viewsets.ModelViewSet):
     permission_classes = (AppPermissions,)
 
     def perform_create(self, serializer):
-        app = serializer.save()
+        app = serializer.save(created_by=self.request.user)
         app.aws_create_role()
 
     def perform_destroy(self, instance):
@@ -79,7 +83,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     permission_classes = (S3BucketPermissions,)
 
     def perform_create(self, serializer):
-        instance = serializer.save()
+        instance = serializer.save(created_by=self.request.user)
         instance.aws_create()
 
     def perform_destroy(self, instance):

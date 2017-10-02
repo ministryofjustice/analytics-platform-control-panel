@@ -24,6 +24,13 @@ class User(AbstractUser):
     def get_short_name(self):
         return self.name
 
+    @property
+    def aws_role_name(self):
+        return f"{settings.ENV}_user_{self.username.lower()}"
+
+    def aws_create_role(self):
+        services.create_user_role(self.aws_role_name)
+
 
 class App(TimeStampedModel):
     def _slugify(name):
@@ -34,6 +41,7 @@ class App(TimeStampedModel):
     name = models.CharField(max_length=100, blank=False)
     slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
     repo_url = models.URLField(max_length=512, blank=True, default='')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         ordering = ('name',)
@@ -55,6 +63,7 @@ class S3Bucket(TimeStampedModel):
         validators.validate_s3_bucket_length,
         validators.validate_s3_bucket_labels,
     ])
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         ordering = ('name',)

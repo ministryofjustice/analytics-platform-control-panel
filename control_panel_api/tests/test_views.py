@@ -56,10 +56,13 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    def test_create(self):
+    @patch('control_panel_api.models.User.aws_create_role')
+    def test_create(self, mock_aws_create_role):
         data = {'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_aws_create_role.assert_called()
 
     def test_update(self):
         data = {'username': 'foo'}
@@ -90,7 +93,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('slug', response.data)
         self.assertIn('repo_url', response.data)
         self.assertIn('apps3buckets', response.data)
-        self.assertEqual(6, len(response.data))
+        self.assertIn('created_by', response.data)
+        self.assertEqual(7, len(response.data))
 
     @patch('boto3.client')
     def test_delete(self, mock_client):
@@ -111,6 +115,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        self.assertEqual(self.superuser.id, response.data['created_by'])
 
     @patch('control_panel_api.models.App.aws_create_role')
     def test_create_creates_app_iam_role(self, mock_aws_create_role):
@@ -270,7 +276,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('name', response.data)
         self.assertIn('arn', response.data)
         self.assertIn('apps3buckets', response.data)
-        self.assertEqual(5, len(response.data))
+        self.assertIn('created_by', response.data)
+        self.assertEqual(6, len(response.data))
 
     def test_delete(self):
         response = self.client.delete(
@@ -290,6 +297,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         data = {'name': 'test-bucket-123'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        self.assertEqual(self.superuser.id, response.data['created_by'])
 
     def test_create_when_name_taken(self):
         data = {'name': self.fixture.name}
