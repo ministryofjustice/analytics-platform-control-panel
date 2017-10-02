@@ -50,9 +50,6 @@ class App(TimeStampedModel):
 
 
 class S3Bucket(TimeStampedModel):
-    READWRITE = 'readwrite'
-    READONLY = 'readonly'
-
     name = models.CharField(unique=True, max_length=63, validators=[
         validators.validate_env_prefix,
         validators.validate_s3_bucket_length,
