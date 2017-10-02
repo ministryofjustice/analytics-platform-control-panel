@@ -1,5 +1,9 @@
+import re
+
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.template.defaultfilters import slugify
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -22,12 +26,27 @@ class User(AbstractUser):
 
 
 class App(TimeStampedModel):
+    def _slugify(name):
+        """Create a slug using standard django slugify but we override with
+        extra replacement so it's valid for s3"""
+        return re.sub(r'_+', '-', slugify(name))
+
     name = models.CharField(max_length=100, blank=False)
-    slug = AutoSlugField(populate_from='name', slugify_function=services.app_slugify)
+    slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
     repo_url = models.URLField(max_length=512, blank=True, default='')
 
     class Meta:
         ordering = ('name',)
+
+    @property
+    def aws_role_name(self):
+        return f"{settings.ENV}_app_{self.slug}"
+
+    def aws_create_role(self):
+        services.create_app_role(self.aws_role_name)
+
+    def aws_delete_role(self):
+        services.delete_app_role(self.aws_role_name)
 
 
 class S3Bucket(TimeStampedModel):
@@ -42,7 +61,15 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def arn(self):
-        return services.bucket_arn(self.name)
+        return f"arn:aws:s3:::{self.name}"
+
+    def aws_create(self):
+        services.create_bucket(self.name)
+        services.create_bucket_policies(self.name, self.arn)
+
+    def aws_delete(self):
+        """Note we do not destroy the actual data, just the policies"""
+        services.delete_bucket_policies(self.name)
 
 
 class Role(TimeStampedModel):
@@ -129,8 +156,26 @@ class AppS3Bucket(AccessToS3Bucket):
         # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
 
-    def update_aws_permissions(self):
-        services.apps3bucket_update(self)
+    def aws_create(self):
+        services.attach_bucket_access_to_app_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.app.aws_role_name,
+        )
+
+    def aws_delete(self):
+        services.detach_bucket_access_from_app_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.app.aws_role_name
+        )
+
+    def aws_update(self):
+        services.apps3bucket_update(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.app.aws_role_name
+        )
 
 
 class UserS3Bucket(AccessToS3Bucket):

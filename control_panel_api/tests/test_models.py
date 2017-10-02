@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.db.utils import IntegrityError
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase
 
 from control_panel_api.models import (
     App,
@@ -13,6 +13,7 @@ from control_panel_api.models import (
     User,
     UserS3Bucket,
 )
+from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
 
 
 class MembershipsTestCase(TestCase):
@@ -106,22 +107,59 @@ class AppTestCase(TestCase):
         app2 = App.objects.create(name=name)
         self.assertEqual('foo-2', app2.slug)
 
+    @patch('control_panel_api.aws.create_role')
+    def test_aws_create_role_calls_service(self, mock_create_role):
+        app_name = 'appname'
+        app = App.objects.create(name=app_name)
+        app.aws_create_role()
+
+        expected_role_name = f"test_app_{app_name}"
+
+        mock_create_role.assert_called_with(
+            expected_role_name,
+            APP_IAM_ROLE_ASSUME_POLICY
+        )
+
+    @patch('control_panel_api.aws.delete_role')
+    def test_aws_delete_role_calls_service(self, mock_delete_role):
+        app_name = 'appname'
+        app = App.objects.create(name=app_name)
+        app.aws_delete_role()
+
+        expected_role_name = f"test_app_{app_name}"
+
+        mock_delete_role.assert_called_with(expected_role_name)
+
 
 class S3BucketTestCase(TestCase):
-
     @classmethod
     def setUpTestData(cls):
         # Create an S3 bucket
         cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
     def test_arn(self):
-        expected_arn = "arn:aws:s3:::{}".format(self.s3_bucket_1.name)
+        self.assertEqual(
+            'arn:aws:s3:::test-bucket-1',
+            self.s3_bucket_1.arn
+        )
 
-        self.assertEqual(self.s3_bucket_1.arn, expected_arn)
+    @patch('control_panel_api.services.create_bucket')
+    @patch('control_panel_api.services.create_bucket_policies')
+    def test_bucket_create(self, mock_create_bucket_policies,
+                           mock_create_bucket):
+        self.s3_bucket_1.aws_create()
+
+        mock_create_bucket_policies.assert_called()
+        mock_create_bucket.assert_called()
+
+    @patch('control_panel_api.services.delete_bucket_policies')
+    def test_bucket_delete(self, mock_delete_bucket_policies):
+        self.s3_bucket_1.aws_delete()
+
+        mock_delete_bucket_policies.assert_called()
 
 
 class AppS3BucketTestCase(TestCase):
-
     @classmethod
     def setUpTestData(cls):
         # Apps
@@ -143,6 +181,7 @@ class AppS3BucketTestCase(TestCase):
                 access_level=AppS3Bucket.READWRITE,
             )
 
+
     @patch('control_panel_api.services.apps3bucket_update')
     def test_update_aws_permissions(self, mock_apps3bucket_update):
         apps3bucket = AppS3Bucket.objects.create(
@@ -150,9 +189,29 @@ class AppS3BucketTestCase(TestCase):
             s3bucket=self.s3_bucket_1,
             access_level=AppS3Bucket.READONLY,
         )
-        apps3bucket.update_aws_permissions()
-        mock_apps3bucket_update.assert_called_with(apps3bucket)
 
+        apps3bucket.aws_update()
+
+        mock_apps3bucket_update.assert_called_with(
+            self.s3_bucket_1.name,
+            apps3bucket.has_readwrite_access(),
+            self.app_1.aws_role_name
+        )
+
+    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
+    def test_aws_delete(self, mock_detach_bucket_access_from_app_role):
+        apps3bucket = self.app_1.apps3buckets.create(
+            s3bucket=self.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
+        )
+
+        apps3bucket.aws_delete()
+
+        mock_detach_bucket_access_from_app_role.assert_called_with(
+            self.s3_bucket_1.name,
+            apps3bucket.has_readwrite_access(),
+            self.app_1.aws_role_name
+        )
 
 
 class UserS3BucketTestCase(TestCase):

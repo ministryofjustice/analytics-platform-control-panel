@@ -101,25 +101,23 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.services.app_delete')
-    def test_delete_deletes_app_iam_role(self, app_delete):
+    @patch('control_panel_api.models.App.aws_delete_role')
+    def test_delete_deletes_app_iam_role(self, mock_aws_delete_role):
         self.client.delete(reverse('app-detail', (self.fixture.id,)))
 
-        app_delete.assert_called_with(self.fixture.slug)
+        mock_aws_delete_role.assert_called()
 
-    @patch('boto3.client')
-    def test_create(self, mock_client):
+    def test_create(self):
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.services.app_create')
-    def test_create_creates_app_iam_role(self, app_create):
+    @patch('control_panel_api.models.App.aws_create_role')
+    def test_create_creates_app_iam_role(self, mock_aws_create_role):
         data = {'name': 'foo'}
-        response = self.client.post(reverse('app-list'), data)
+        self.client.post(reverse('app-list'), data)
 
-        app = App.objects.get(id=response.data["id"])
-        app_create.assert_called_with(app.slug)
+        mock_aws_create_role.assert_called()
 
     def test_update(self):
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
@@ -178,15 +176,13 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.services.apps3bucket_delete')
-    def test_delete_calls_service(self, mock_apps3bucket_delete):
+    @patch('control_panel_api.models.AppS3Bucket.aws_delete')
+    def test_delete_calls_aws_delete(self, mock_aws_delete):
         response = self.client.delete(
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
-        called_args, _ = mock_apps3bucket_delete.call_args
-        self.assertIsInstance(called_args[0], AppS3Bucket)
-        self.assertEqual(called_args[0].app.slug, self.apps3bucket_1.app.slug)
+        mock_aws_delete.assert_called()
 
     def test_create(self):
         data = {
@@ -197,8 +193,8 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('apps3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.services.apps3bucket_create')
-    def test_create_grants_access(self, mock_apps3bucket_create):
+    @patch('control_panel_api.models.AppS3Bucket.aws_create')
+    def test_create_calls_aws_create(self, mock_aws_create):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_3.id,
@@ -206,15 +202,10 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         }
         self.client.post(reverse('apps3bucket-list'), data)
 
-        apps3bucket = AppS3Bucket.objects.get(
-            app=self.app_1,
-            s3bucket=self.s3_bucket_3,
-        )
+        mock_aws_create.assert_called()
 
-        mock_apps3bucket_create.assert_called_with(apps3bucket)
-
-    @patch('control_panel_api.models.AppS3Bucket.update_aws_permissions')
-    def test_update(self, mock_update_aws_permissions):
+    @patch('control_panel_api.models.AppS3Bucket.aws_update')
+    def test_update(self, mock_aws_update):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_1.id,
@@ -225,8 +216,8 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['access_level'], response.data['access_level'])
 
-    @patch('control_panel_api.models.AppS3Bucket.update_aws_permissions')
-    def test_update_updates_aws(self, mock_update_aws_permissions):
+    @patch('control_panel_api.models.AppS3Bucket.aws_update')
+    def test_update_updates_aws(self, mock_aws_update):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_1.id,
@@ -234,7 +225,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         }
         self.client.put(
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
-        mock_update_aws_permissions.assert_called()
+        mock_aws_update.assert_called()
 
     def test_update_when_app_changed(self):
         data = {
@@ -290,10 +281,10 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.services.bucket_delete')
-    def test_delete_calls_apis(self, mock_bucket_delete):
+    @patch('control_panel_api.models.S3Bucket.aws_delete')
+    def test_delete_calls_aws_delete(self, mock_aws_delete):
         self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
-        mock_bucket_delete.assert_called_with('test-bucket-1')
+        mock_aws_delete.assert_called()
 
     def test_create_when_valid_data(self):
         data = {'name': 'test-bucket-123'}
@@ -330,11 +321,11 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
-    @patch('control_panel_api.services.bucket_create')
-    def test_create_calls_apis(self, mock_bucket_create):
+    @patch('control_panel_api.models.S3Bucket.aws_create')
+    def test_create_calls_aws_create(self, mock_aws_create):
         data = {'name': 'test-bucket-123'}
         self.client.post(reverse('s3bucket-list'), data)
-        mock_bucket_create.assert_called_with('test-bucket-123')
+        mock_aws_create.assert_called()
 
     def test_update_when_valid_data(self):
         data = {'name': 'test-bucket-updated'}
