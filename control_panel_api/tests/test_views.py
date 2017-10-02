@@ -48,10 +48,13 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('id', response.data)
         self.assertEqual(6, len(response.data))
 
-    def test_delete(self):
+    @patch('control_panel_api.models.User.aws_delete_role')
+    def test_delete(self, mock_aws_delete_role):
         response = self.client.delete(
             reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        mock_aws_delete_role.assert_called()
 
         response = self.client.get(reverse('user-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)

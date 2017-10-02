@@ -17,33 +17,50 @@ def _policy_arn(bucket_name, readwrite=False):
                                  _policy_name(bucket_name, readwrite))
 
 
-def create_app_role(role_name):
+def create_role(role_name, add_saml_statement=False):
     """See: `sts:AssumeRole` required by kube2iam
     https://github.com/jtblin/kube2iam#iam-roles"""
-    assume_role_policy = {
+
+    role_policy = {
         "Version": "2012-10-17",
         "Statement": [
             {
                 "Effect": "Allow",
                 "Principal": {
-                    "Service": "ec2.amazonaws.com",
+                    "Service": "ec2.amazonaws.com"
                 },
-                "Action": "sts:AssumeRole",
+                "Action": "sts:AssumeRole"
             },
             {
                 "Effect": "Allow",
                 "Principal": {
                     "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
                 },
-                "Action": "sts:AssumeRole",
+                "Action": "sts:AssumeRole"
             }
         ]
     }
 
-    aws.create_role(role_name, assume_role_policy)
+    saml_statement = {
+        "Effect": "Allow",
+        "Principal": {
+            "Federated": settings.SAML_PROVIDER_ARN
+        },
+        "Action": "sts:AssumeRoleWithSAML",
+        "Condition": {
+            "StringEquals": {
+                "SAML:aud": "https://signin.aws.amazon.com/saml"
+            }
+        }
+    }
+
+    if add_saml_statement:
+        role_policy['Statement'].append(saml_statement)
+
+    aws.create_role(role_name, role_policy)
 
 
-def delete_app_role(role_name):
+def delete_role(role_name):
     aws.delete_role(role_name)
 
 
@@ -176,41 +193,3 @@ def apps3bucket_update(bucket_name, readwrite, app_role_name):
         policy_arn=old_policy_arn,
         role_name=app_role_name,
     )
-
-
-def create_user_role(role_name):
-    """See: `sts:AssumeRole` required by kube2iam
-    https://github.com/jtblin/kube2iam#iam-roles"""
-    role_policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "Federated": settings.SAML_PROVIDER_ARN
-                },
-                "Action": "sts:AssumeRoleWithSAML",
-                "Condition": {
-                    "StringEquals": {
-                        "SAML:aud": "https://signin.aws.amazon.com/saml"
-                    }
-                }
-            },
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "Service": "ec2.amazonaws.com"
-                },
-                "Action": "sts:AssumeRole"
-            },
-            {
-                "Effect": "Allow",
-                "Principal": {
-                    "AWS": settings.K8S_WORKER_ROLE_ARN
-                },
-                "Action": "sts:AssumeRole"
-            }
-        ]
-    }
-
-    aws.create_role(role_name, role_policy)

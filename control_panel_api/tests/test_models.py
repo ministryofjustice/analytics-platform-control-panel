@@ -17,17 +17,28 @@ from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
 
 
 class UserTestCase(TestCase):
-    @patch('control_panel_api.services.create_user_role')
-    def test_aws_create_role_calls_service(self, mock_create_user_role):
+    @patch('control_panel_api.services.create_role')
+    def test_aws_create_role_calls_service(self, mock_create_role):
         username = 'james'
         user = User.objects.create(username=username)
         user.aws_create_role()
 
         expected_role_name = f"test_user_{username}"
 
-        mock_create_user_role.assert_called_with(
+        mock_create_role.assert_called_with(
             expected_role_name,
+            add_saml_statement=True
         )
+
+    @patch('control_panel_api.services.delete_role')
+    def test_aws_delete_role_calls_service(self, mock_delete_role):
+        username = 'james'
+        user = User.objects.create(username=username)
+        user.aws_delete_role()
+
+        expected_role_name = f"test_user_{username}"
+
+        mock_delete_role.assert_called_with(expected_role_name)
 
 
 class MembershipsTestCase(TestCase):
