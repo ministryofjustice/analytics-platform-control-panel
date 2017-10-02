@@ -27,8 +27,13 @@ class AppSerializer(serializers.ModelSerializer):
     class Meta:
         model = App
         fields = (
-            'id', 'url', 'name', 'slug', 'repo_url', 'apps3buckets',
-            'created_by'
+            'id',
+            'url',
+            'name',
+            'slug',
+            'repo_url',
+            'apps3buckets',
+            'created_by',
         )
 
 
