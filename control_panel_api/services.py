@@ -175,7 +175,7 @@ def attach_bucket_access_to_app_role(bucket_name, readwrite, app_role_name):
     )
 
 
-def apps3bucket_update(bucket_name, readwrite, app_role_name):
+def update_bucket_access(bucket_name, readwrite, app_role_name):
     new_policy_arn = _policy_arn(
         bucket_name,
         readwrite,

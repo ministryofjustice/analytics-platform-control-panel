@@ -205,7 +205,7 @@ class AppS3BucketTestCase(TestCase):
                 access_level=AppS3Bucket.READWRITE,
             )
 
-    @patch('control_panel_api.services.apps3bucket_update')
+    @patch('control_panel_api.services.update_bucket_access')
     def test_update_aws_permissions(self, mock_apps3bucket_update):
         apps3bucket = AppS3Bucket.objects.create(
             app=self.app_1,

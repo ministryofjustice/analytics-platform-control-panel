@@ -183,7 +183,7 @@ class AppS3Bucket(AccessToS3Bucket):
         )
 
     def aws_update(self):
-        services.apps3bucket_update(
+        services.update_bucket_access(
             self.s3bucket.name,
             self.has_readwrite_access(),
             self.app.aws_role_name

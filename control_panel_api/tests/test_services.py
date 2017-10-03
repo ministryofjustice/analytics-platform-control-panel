@@ -116,7 +116,7 @@ class ServicesTestCase(TestCase):
                 s3bucket=s3bucket,
                 defaults={'access_level': access_level},
             )
-            services.apps3bucket_update(
+            services.update_bucket_access(
                 s3bucket.name,
                 apps3bucket.has_readwrite_access(),
                 app.aws_role_name
