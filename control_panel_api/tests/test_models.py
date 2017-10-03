@@ -221,7 +221,7 @@ class AppS3BucketTestCase(TestCase):
             self.app_1.aws_role_name
         )
 
-    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
+    @patch('control_panel_api.services.detach_bucket_access_from_role')
     def test_aws_delete(self, mock_detach_bucket_access_from_app_role):
         apps3bucket = self.app_1.apps3buckets.create(
             s3bucket=self.s3_bucket_1,
@@ -258,7 +258,7 @@ class UserS3BucketTestCase(TestCase):
                 access_level=UserS3Bucket.READWRITE,
             )
 
-    @patch('control_panel_api.services.attach_bucket_access_to_app_role')
+    @patch('control_panel_api.services.attach_bucket_access_to_role')
     def test_aws_create(self, mock_attach_bucket_access_to_app_role):
         self.users3bucket_1.aws_create()
 
@@ -268,7 +268,7 @@ class UserS3BucketTestCase(TestCase):
             self.user_1.aws_role_name,
         )
 
-    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
+    @patch('control_panel_api.services.detach_bucket_access_from_role')
     def test_aws_delete(self, mock_detach_bucket_access_from_app_role):
         self.users3bucket_1.aws_delete()
 

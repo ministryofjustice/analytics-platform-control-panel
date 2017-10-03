@@ -168,14 +168,14 @@ class AppS3Bucket(AccessToS3Bucket):
         unique_together = ('app', 's3bucket')
 
     def aws_create(self):
-        services.attach_bucket_access_to_app_role(
+        services.attach_bucket_access_to_role(
             self.s3bucket.name,
             self.has_readwrite_access(),
             self.app.aws_role_name,
         )
 
     def aws_delete(self):
-        services.detach_bucket_access_from_app_role(
+        services.detach_bucket_access_from_role(
             self.s3bucket.name,
             self.has_readwrite_access(),
             self.app.aws_role_name
@@ -207,14 +207,14 @@ class UserS3Bucket(AccessToS3Bucket):
         unique_together = ('user', 's3bucket')
 
     def aws_create(self):
-        services.attach_bucket_access_to_app_role(
+        services.attach_bucket_access_to_role(
             self.s3bucket.name,
             self.has_readwrite_access(),
             self.user.aws_role_name,
         )
 
     def aws_delete(self):
-        services.detach_bucket_access_from_app_role(
+        services.detach_bucket_access_from_role(
             self.s3bucket.name,
             self.has_readwrite_access(),
             self.user.aws_role_name,
