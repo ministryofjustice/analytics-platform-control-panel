@@ -15,7 +15,7 @@ from control_panel_api.models import (
     App,
     AppS3Bucket,
     S3Bucket,
-)
+    User)
 
 
 class AuthenticatedClientMixin(object):
@@ -351,3 +351,39 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.put(
             reverse('s3bucket-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+
+class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.user_1 = User.objects.create(username="user-1")
+        self.user_2 = User.objects.create(username="user-2")
+        self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+        self.users3bucket_1 = self.user_1.users3buckets.create(
+            s3bucket=self.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
+        )
+
+    @patch('control_panel_api.models.UserS3Bucket.aws_create')
+    def test_create(self, mock_aws_create):
+        data = {
+            'user': self.user_2.id,
+            's3bucket': self.s3_bucket_1.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('users3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_aws_create.assert_called()
+
+    @patch('control_panel_api.models.UserS3Bucket.aws_delete')
+    def test_delete(self, mock_aws_delete):
+        response = self.client.delete(
+            reverse('users3bucket-detail', (self.users3bucket_1.id,)))
+        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        mock_aws_delete.assert_called()
+
+        response = self.client.get(
+            reverse('users3bucket-detail', (self.users3bucket_1.id,)))
+        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)

@@ -84,6 +84,14 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
     queryset = UserS3Bucket.objects.all()
     serializer_class = UserS3BucketSerializer
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.aws_create()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        instance.aws_delete()
+
 
 class S3BucketViewSet(viewsets.ModelViewSet):
     queryset = S3Bucket.objects.all()

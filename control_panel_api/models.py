@@ -205,3 +205,17 @@ class UserS3Bucket(AccessToS3Bucket):
     class Meta:
         # one record per user/s3bucket
         unique_together = ('user', 's3bucket')
+
+    def aws_create(self):
+        services.attach_bucket_access_to_app_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.user.aws_role_name,
+        )
+
+    def aws_delete(self):
+        services.detach_bucket_access_from_app_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.user.aws_role_name,
+        )

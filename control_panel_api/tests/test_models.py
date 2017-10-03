@@ -241,21 +241,39 @@ class UserS3BucketTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # Users
         cls.user_1 = User.objects.create(username="user_1")
+        cls.user_2 = User.objects.create(username="user_2")
 
-        # S3 buckets
         cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
-    def test_one_record_per_user_per_s3bucket(self):
-        # Give user_1 access to bucket_1 (read-only)
-        self.user_1.users3buckets.create(
-            s3bucket=self.s3_bucket_1,
-            access_level=UserS3Bucket.READONLY,
+        cls.users3bucket_1 = cls.user_1.users3buckets.create(
+            s3bucket=cls.s3_bucket_1,
+            access_level=AppS3Bucket.READONLY,
         )
 
+    def test_one_record_per_user_per_s3bucket(self):
         with self.assertRaises(IntegrityError):
             self.user_1.users3buckets.create(
                 s3bucket=self.s3_bucket_1,
                 access_level=UserS3Bucket.READWRITE,
             )
+
+    @patch('control_panel_api.services.attach_bucket_access_to_app_role')
+    def test_aws_create(self, mock_attach_bucket_access_to_app_role):
+        self.users3bucket_1.aws_create()
+
+        mock_attach_bucket_access_to_app_role.assert_called_with(
+            self.s3_bucket_1.name,
+            self.users3bucket_1.has_readwrite_access(),
+            self.user_1.aws_role_name,
+        )
+
+    @patch('control_panel_api.services.detach_bucket_access_from_app_role')
+    def test_aws_delete(self, mock_detach_bucket_access_from_app_role):
+        self.users3bucket_1.aws_delete()
+
+        mock_detach_bucket_access_from_app_role.assert_called_with(
+            self.s3_bucket_1.name,
+            self.users3bucket_1.has_readwrite_access(),
+            self.user_1.aws_role_name
+        )
