@@ -149,7 +149,6 @@ class AccessToS3Bucket(TimeStampedModel):
     class Meta:
         abstract = True
 
-
     def has_readwrite_access(self):
         return self.access_level == self.READWRITE
 

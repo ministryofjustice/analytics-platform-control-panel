@@ -5,8 +5,8 @@ from control_panel_api.models import (
     App,
     AppS3Bucket,
     S3Bucket,
-    User
-)
+    User,
+    UserS3Bucket)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -54,6 +54,13 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
             )
 
         return super().update(instance, validated_data)
+
+
+class UserS3BucketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserS3Bucket
+        fields = ('id', 'url', 'user', 's3bucket', 'access_level')
 
 
 class S3BucketSerializer(serializers.ModelSerializer):
