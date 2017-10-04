@@ -15,7 +15,7 @@ from control_panel_api.models import (
     App,
     AppS3Bucket,
     S3Bucket,
-    User)
+    User, UserS3Bucket)
 
 
 class AuthenticatedClientMixin(object):
@@ -333,6 +333,7 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.user_1 = User.objects.create(username="user-1")
         self.user_2 = User.objects.create(username="user-2")
         self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+        self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
         self.users3bucket_1 = self.user_1.users3buckets.create(
             s3bucket=self.s3_bucket_1,
             access_level=AppS3Bucket.READONLY,
@@ -361,3 +362,22 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(
             reverse('users3bucket-detail', (self.users3bucket_1.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_update_bad_requests(self):
+        fixtures = (
+            {
+                'user': self.user_2.id,  # when app changed
+                's3bucket': self.s3_bucket_1.id,
+                'access_level': UserS3Bucket.READWRITE,
+            },
+            {
+                'user': self.user_1.id,  # when s3bucket changed
+                's3bucket': self.s3_bucket_2.id,
+                'access_level': UserS3Bucket.READWRITE,
+            },
+        )
+
+        for data in fixtures:
+            response = self.client.put(
+                reverse('users3bucket-detail', (self.users3bucket_1.id,)), data)
+            self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)

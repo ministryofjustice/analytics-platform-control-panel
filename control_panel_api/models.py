@@ -125,6 +125,7 @@ class TeamMembership(TimeStampedModel):
             ('user', 'team'),
         )
 
+
 class AccessToS3Bucket(TimeStampedModel):
     """
     Abstract model to model access to S3 buckets
