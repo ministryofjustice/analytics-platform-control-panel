@@ -167,6 +167,7 @@ class AppS3Bucket(AccessToS3Bucket):
     class Meta:
         # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
+        ordering = ('id',)
 
     def aws_create(self):
         services.attach_bucket_access_to_role(
@@ -206,6 +207,7 @@ class UserS3Bucket(AccessToS3Bucket):
     class Meta:
         # one record per user/s3bucket
         unique_together = ('user', 's3bucket')
+        ordering = ('id',)
 
     def aws_create(self):
         services.attach_bucket_access_to_role(
