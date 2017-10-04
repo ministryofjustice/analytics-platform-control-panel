@@ -220,3 +220,10 @@ class UserS3Bucket(AccessToS3Bucket):
             self.has_readwrite_access(),
             self.user.aws_role_name,
         )
+
+    def aws_update(self):
+        services.update_bucket_access(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.user.aws_role_name,
+        )

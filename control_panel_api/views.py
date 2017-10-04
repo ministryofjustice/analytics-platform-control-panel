@@ -88,6 +88,10 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
         instance.aws_create()
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        instance.aws_update()
+
     def perform_destroy(self, instance):
         instance.delete()
         instance.aws_delete()

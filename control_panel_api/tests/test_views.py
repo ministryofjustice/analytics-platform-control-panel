@@ -379,6 +379,20 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('users3bucket-detail', (self.users3bucket_1.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
+    @patch('control_panel_api.models.UserS3Bucket.aws_update')
+    def test_update(self, mock_aws_update):
+        data = {
+            'user': self.user_1.id,
+            's3bucket': self.s3_bucket_1.id,
+            'access_level': UserS3Bucket.READWRITE,
+        }
+        response = self.client.put(
+            reverse('users3bucket-detail', (self.users3bucket_1.id,)), data)
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(data['access_level'], response.data['access_level'])
+
+        mock_aws_update.assert_called()
+
     def test_update_bad_requests(self):
         fixtures = (
             {
