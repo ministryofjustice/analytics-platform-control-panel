@@ -339,6 +339,22 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             access_level=AppS3Bucket.READONLY,
         )
 
+    def test_list(self):
+        response = self.client.get(reverse('users3bucket-list'))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(len(response.data['results']), 1)
+
+    def test_detail(self):
+        response = self.client.get(
+            reverse('users3bucket-detail', (self.users3bucket_1.id,)))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertIn('id', response.data)
+        self.assertIn('url', response.data)
+        self.assertIn('user', response.data)
+        self.assertIn('s3bucket', response.data)
+        self.assertEqual('readonly', response.data['access_level'])
+        self.assertEqual(5, len(response.data))
+
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
     def test_create(self, mock_aws_create):
         data = {
