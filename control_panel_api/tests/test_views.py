@@ -141,16 +141,13 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
 
-        # Apps
         self.app_1 = App.objects.create(name="app_1")
         self.app_2 = App.objects.create(name="app_2")
 
-        # S3 buckets
         self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
         self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
         self.s3_bucket_3 = S3Bucket.objects.create(name="test-bucket-3")
 
-        # Grant access to buckets
         self.apps3bucket_1 = self.app_1.apps3buckets.create(
             s3bucket=self.s3_bucket_1,
             access_level=AppS3Bucket.READONLY,
@@ -176,40 +173,27 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual('readonly', response.data['access_level'])
         self.assertEqual(5, len(response.data))
 
-    def test_delete(self):
-        response = self.client.delete(
-            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
-        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
-
-        response = self.client.get(
-            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
-        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
-
     @patch('control_panel_api.models.AppS3Bucket.aws_delete')
-    def test_delete_calls_aws_delete(self, mock_aws_delete):
+    def test_delete(self, mock_aws_delete):
         response = self.client.delete(
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_aws_delete.assert_called()
 
-    def test_create(self):
-        data = {
-            'app': self.app_1.id,
-            's3bucket': self.s3_bucket_3.id,
-            'access_level': AppS3Bucket.READWRITE,
-        }
-        response = self.client.post(reverse('apps3bucket-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
+        response = self.client.get(
+            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
+        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
     @patch('control_panel_api.models.AppS3Bucket.aws_create')
-    def test_create_calls_aws_create(self, mock_aws_create):
+    def test_create(self, mock_aws_create):
         data = {
             'app': self.app_1.id,
             's3bucket': self.s3_bucket_3.id,
             'access_level': AppS3Bucket.READONLY,
         }
-        self.client.post(reverse('apps3bucket-list'), data)
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         mock_aws_create.assert_called()
 
@@ -225,36 +209,26 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['access_level'], response.data['access_level'])
 
-    @patch('control_panel_api.models.AppS3Bucket.aws_update')
-    def test_update_updates_aws(self, mock_aws_update):
-        data = {
-            'app': self.app_1.id,
-            's3bucket': self.s3_bucket_1.id,
-            'access_level': AppS3Bucket.READWRITE,
-        }
-        self.client.put(
-            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
         mock_aws_update.assert_called()
 
-    def test_update_when_app_changed(self):
-        data = {
-            'app': self.app_2.id,
-            's3bucket': self.s3_bucket_1.id,
-            'access_level': AppS3Bucket.READWRITE,
-        }
-        response = self.client.put(
-            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+    def test_update_bad_requests(self):
+        fixtures = (
+            {
+                'app': self.app_2.id,  # when app changed
+                's3bucket': self.s3_bucket_1.id,
+                'access_level': AppS3Bucket.READWRITE,
+            },
+            {
+                'app': self.app_1.id,  # when s3bucket changed
+                's3bucket': self.s3_bucket_2.id,
+                'access_level': AppS3Bucket.READWRITE,
+            },
+        )
 
-    def test_update_when_s3bucket_changed(self):
-        data = {
-            'app': self.app_1.id,
-            's3bucket': self.s3_bucket_2.id,
-            'access_level': AppS3Bucket.READWRITE,
-        }
-        response = self.client.put(
-            reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+        for data in fixtures:
+            response = self.client.put(
+                reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
+            self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
