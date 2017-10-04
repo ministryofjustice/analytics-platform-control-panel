@@ -99,34 +99,26 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('created_by', response.data)
         self.assertEqual(7, len(response.data))
 
-    @patch('boto3.client')
-    def test_delete(self, mock_client):
+    @patch('control_panel_api.models.App.aws_delete_role')
+    def test_delete(self, mock_aws_delete_role):
         response = self.client.delete(
             reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
+        mock_aws_delete_role.assert_called()
+
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.models.App.aws_delete_role')
-    def test_delete_deletes_app_iam_role(self, mock_aws_delete_role):
-        self.client.delete(reverse('app-detail', (self.fixture.id,)))
-
-        mock_aws_delete_role.assert_called()
-
-    def test_create(self):
+    @patch('control_panel_api.models.App.aws_create_role')
+    def test_create(self, mock_aws_create_role):
         data = {'name': 'foo'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        self.assertEqual(self.superuser.id, response.data['created_by'])
-
-    @patch('control_panel_api.models.App.aws_create_role')
-    def test_create_creates_app_iam_role(self, mock_aws_create_role):
-        data = {'name': 'foo'}
-        self.client.post(reverse('app-list'), data)
-
         mock_aws_create_role.assert_called()
+
+        self.assertEqual(self.superuser.id, response.data['created_by'])
 
     def test_update(self):
         data = {'name': 'foo', 'repo_url': 'http://foo.com'}
