@@ -256,75 +256,48 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('created_by', response.data)
         self.assertEqual(6, len(response.data))
 
-    def test_delete(self):
+    @patch('control_panel_api.models.S3Bucket.aws_delete')
+    def test_delete(self, mock_aws_delete):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        mock_aws_delete.assert_called()
 
         response = self.client.get(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
-    @patch('control_panel_api.models.S3Bucket.aws_delete')
-    def test_delete_calls_aws_delete(self, mock_aws_delete):
-        self.client.delete(reverse('s3bucket-detail', (self.fixture.id,)))
-        mock_aws_delete.assert_called()
-
-    def test_create_when_valid_data(self):
+    @patch('control_panel_api.models.S3Bucket.aws_create')
+    def test_create(self, mock_aws_create):
         data = {'name': 'test-bucket-123'}
         response = self.client.post(reverse('s3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(self.superuser.id, response.data['created_by'])
 
-    def test_create_when_name_taken(self):
-        data = {'name': self.fixture.name}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
-
-    def test_create_when_name_short(self):
-        data = {'name': 'ab'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
-
-    def test_create_when_name_invalid(self):
-        data = {'name': '127.0.0.1'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
-
-    def test_create_name_valid_env_prefix(self):
-        data = {'name': 'test-bucketname-foo-bar'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
-
-    def test_create_name_invalid_env_prefix_400(self):
-        data = {'name': 'badenv-bucketname'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
-
-    def test_create_name_no_env_prefix_400(self):
-        data = {'name': 'bucketname'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
-
-    @patch('control_panel_api.models.S3Bucket.aws_create')
-    def test_create_calls_aws_create(self, mock_aws_create):
-        data = {'name': 'test-bucket-123'}
-        self.client.post(reverse('s3bucket-list'), data)
         mock_aws_create.assert_called()
 
-    def test_update_when_valid_data(self):
+    def test_create_bad_requests(self):
+        fixtures = (
+            {'name': self.fixture.name},  # name exists
+            {'name': 'ab'},  # name short
+            {'name': '127.0.0.1'},  # name invalid
+            {'name': '__test_bucket__'},  # name invalid
+            {'name': 'badenv-bucketname'},  # name invalid env prefix
+            {'name': 'bucketname'},  # name no env prefix
+        )
+
+        for data in fixtures:
+            response = self.client.post(reverse('s3bucket-list'), data)
+            self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_update(self):
         data = {'name': 'test-bucket-updated'}
         response = self.client.put(
             reverse('s3bucket-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['name'], response.data['name'])
-
-    def test_update_when_name_invalid(self):
-        data = {'name': '__test_bucket__'}
-        response = self.client.put(
-            reverse('s3bucket-detail', (self.fixture.id,)), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
 
 class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
