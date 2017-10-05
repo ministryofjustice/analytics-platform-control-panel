@@ -5,8 +5,8 @@ from control_panel_api.models import (
     App,
     AppS3Bucket,
     S3Bucket,
-    User
-)
+    User,
+    UserS3Bucket)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -46,11 +46,30 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         if instance.app != validated_data['app']:
             raise serializers.ValidationError(
-                "app can't change, create a new record"
+                "App is not editable. Create a new record."
             )
         if instance.s3bucket != validated_data['s3bucket']:
             raise serializers.ValidationError(
-                "s3bucket can't change, create a new record"
+                "S3Bucket is not editable. Create a new record."
+            )
+
+        return super().update(instance, validated_data)
+
+
+class UserS3BucketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = UserS3Bucket
+        fields = ('id', 'url', 'user', 's3bucket', 'access_level')
+
+    def update(self, instance, validated_data):
+        if instance.user != validated_data['user']:
+            raise serializers.ValidationError(
+                "User is not editable. Create a new record."
+            )
+        if instance.s3bucket != validated_data['s3bucket']:
+            raise serializers.ValidationError(
+                "S3Bucket is not editable. Create a new record."
             )
 
         return super().update(instance, validated_data)

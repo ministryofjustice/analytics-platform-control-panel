@@ -150,8 +150,8 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
-def detach_bucket_access_from_app_role(
-        bucket_name, readwrite, app_role_name):
+def detach_bucket_access_from_role(
+        bucket_name, readwrite, role_name):
     policy_arn = _policy_arn(
         bucket_name=bucket_name,
         readwrite=readwrite
@@ -159,11 +159,11 @@ def detach_bucket_access_from_app_role(
 
     aws.detach_policy_from_role(
         policy_arn=policy_arn,
-        role_name=app_role_name
+        role_name=role_name
     )
 
 
-def attach_bucket_access_to_app_role(bucket_name, readwrite, app_role_name):
+def attach_bucket_access_to_role(bucket_name, readwrite, role_name):
     policy_arn = _policy_arn(
         bucket_name,
         readwrite,
@@ -171,11 +171,11 @@ def attach_bucket_access_to_app_role(bucket_name, readwrite, app_role_name):
 
     aws.attach_policy_to_role(
         policy_arn=policy_arn,
-        role_name=app_role_name,
+        role_name=role_name,
     )
 
 
-def apps3bucket_update(bucket_name, readwrite, app_role_name):
+def update_bucket_access(bucket_name, readwrite, role_name):
     new_policy_arn = _policy_arn(
         bucket_name,
         readwrite,
@@ -187,9 +187,9 @@ def apps3bucket_update(bucket_name, readwrite, app_role_name):
 
     aws.attach_policy_to_role(
         policy_arn=new_policy_arn,
-        role_name=app_role_name,
+        role_name=role_name,
     )
     aws.detach_policy_from_role(
         policy_arn=old_policy_arn,
-        role_name=app_role_name,
+        role_name=role_name,
     )

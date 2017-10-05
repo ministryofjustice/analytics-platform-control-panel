@@ -13,7 +13,7 @@ from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
     User,
-)
+    UserS3Bucket)
 from control_panel_api.permissions import (
     AppPermissions,
     S3BucketPermissions,
@@ -25,7 +25,7 @@ from control_panel_api.serializers import (
     GroupSerializer,
     S3BucketSerializer,
     UserSerializer,
-)
+    UserS3BucketSerializer)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -74,6 +74,23 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         apps3bucket = serializer.save()
         apps3bucket.aws_update()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        instance.aws_delete()
+
+
+class UserS3BucketViewSet(viewsets.ModelViewSet):
+    queryset = UserS3Bucket.objects.all()
+    serializer_class = UserS3BucketSerializer
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        instance.aws_create()
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        instance.aws_update()
 
     def perform_destroy(self, instance):
         instance.delete()

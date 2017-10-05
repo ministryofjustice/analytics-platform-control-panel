@@ -85,7 +85,7 @@ class ServicesTestCase(TestCase):
                 defaults={'access_level': access_level},
             )
 
-            services.attach_bucket_access_to_app_role(
+            services.attach_bucket_access_to_role(
                 apps3bucket.s3bucket.name,
                 apps3bucket.has_readwrite_access(),
                 apps3bucket.app.aws_role_name
@@ -116,7 +116,7 @@ class ServicesTestCase(TestCase):
                 s3bucket=s3bucket,
                 defaults={'access_level': access_level},
             )
-            services.apps3bucket_update(
+            services.update_bucket_access(
                 s3bucket.name,
                 apps3bucket.has_readwrite_access(),
                 app.aws_role_name
@@ -140,7 +140,7 @@ class ServicesTestCase(TestCase):
     def test_detach_bucket_access_from_app_role_readwrite(
             self,
             mock_detach_policy_from_role):
-        services.detach_bucket_access_from_app_role(
+        services.detach_bucket_access_from_role(
             self.s3_bucket_1.name,
             services.READWRITE,
             self.app_1.aws_role_name,
@@ -156,7 +156,7 @@ class ServicesTestCase(TestCase):
             mock_detach_policy_from_role):
 
 
-        services.detach_bucket_access_from_app_role(
+        services.detach_bucket_access_from_role(
             self.s3_bucket_1.name,
             False,
             self.app_1.aws_role_name,

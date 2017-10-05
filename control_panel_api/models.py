@@ -125,6 +125,7 @@ class TeamMembership(TimeStampedModel):
             ('user', 'team'),
         )
 
+
 class AccessToS3Bucket(TimeStampedModel):
     """
     Abstract model to model access to S3 buckets
@@ -149,9 +150,32 @@ class AccessToS3Bucket(TimeStampedModel):
     class Meta:
         abstract = True
 
-
     def has_readwrite_access(self):
         return self.access_level == self.READWRITE
+
+    def aws_role_name(self):
+        raise NotImplementedError
+
+    def aws_create(self):
+        services.attach_bucket_access_to_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.aws_role_name(),
+        )
+
+    def aws_delete(self):
+        services.detach_bucket_access_from_role(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.aws_role_name(),
+        )
+
+    def aws_update(self):
+        services.update_bucket_access(
+            self.s3bucket.name,
+            self.has_readwrite_access(),
+            self.aws_role_name(),
+        )
 
 
 class AppS3Bucket(AccessToS3Bucket):
@@ -167,27 +191,10 @@ class AppS3Bucket(AccessToS3Bucket):
     class Meta:
         # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
+        ordering = ('id',)
 
-    def aws_create(self):
-        services.attach_bucket_access_to_app_role(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
-            self.app.aws_role_name,
-        )
-
-    def aws_delete(self):
-        services.detach_bucket_access_from_app_role(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
-            self.app.aws_role_name
-        )
-
-    def aws_update(self):
-        services.apps3bucket_update(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
-            self.app.aws_role_name
-        )
+    def aws_role_name(self):
+        return self.app.aws_role_name
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -206,3 +213,7 @@ class UserS3Bucket(AccessToS3Bucket):
     class Meta:
         # one record per user/s3bucket
         unique_together = ('user', 's3bucket')
+        ordering = ('id',)
+
+    def aws_role_name(self):
+        return self.user.aws_role_name
