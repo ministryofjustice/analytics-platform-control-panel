@@ -162,6 +162,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('url', response.data)
         self.assertIn('app', response.data)
         self.assertIn('s3bucket', response.data)
+        self.assertIn('access_level', response.data)
         self.assertEqual('readonly', response.data['access_level'])
         self.assertEqual(5, len(response.data))
 
@@ -317,8 +318,10 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('url', response.data)
         self.assertIn('user', response.data)
         self.assertIn('s3bucket', response.data)
+        self.assertIn('access_level', response.data)
+        self.assertIn('is_admin', response.data)
         self.assertEqual('readonly', response.data['access_level'])
-        self.assertEqual(5, len(response.data))
+        self.assertEqual(6, len(response.data))
 
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
     def test_create(self, mock_aws_create):
