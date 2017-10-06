@@ -56,7 +56,9 @@ jobs:
           name: Push application Docker image
           command: |
             docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
+            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
             docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+            docker push "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
             docker push "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
 
       - deploy:
@@ -64,5 +66,6 @@ jobs:
           command: |
             curl ${JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
               --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
+              --data COMMIT_HASH=${CIRCLE_SHA1} \
               --data BRANCH_NAME=${CIRCLE_BRANCH} \
               --user ${JENKINS_USER}:${JENKINS_TOKEN}
