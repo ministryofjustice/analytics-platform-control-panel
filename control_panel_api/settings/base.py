@@ -2,6 +2,7 @@ import os
 
 import boto3
 
+
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     '(2gbfi1uc1llww251t00s7$^luuzvivf7l+(snj=sbt#s8h!wu')
@@ -30,6 +31,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'rest_framework',
     'rest_framework_swagger',
+    'raven.contrib.django.raven_compat',
     'control_panel_api',
 ]
 
@@ -126,3 +128,8 @@ IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', '')
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME', '')
 SAML_PROVIDER_ARN = os.environ.get('SAML_PROVIDER_ARN', '')
 AWS_API_CLIENT_HANDLER = boto3.client
+
+RAVEN_CONFIG = {
+    'dsn': os.environ.get('SENTRY_DSN', ''),
+    'environment': ENV,
+}
