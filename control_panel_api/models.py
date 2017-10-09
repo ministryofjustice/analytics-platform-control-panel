@@ -45,6 +45,8 @@ class App(TimeStampedModel):
     slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
     repo_url = models.URLField(max_length=512, blank=True, default='')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    users = models.ManyToManyField(
+        'User', through='AppUser', related_name='apps')
 
     class Meta:
         ordering = ('name',)
@@ -58,6 +60,18 @@ class App(TimeStampedModel):
 
     def aws_delete_role(self):
         services.delete_role(self.aws_role_name)
+
+
+class AppUser(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    app = models.ForeignKey(App, on_delete=models.CASCADE)
+    is_admin = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = (
+            ('app', 'user'),
+        )
+        ordering = ('id',)
 
 
 class S3Bucket(TimeStampedModel):

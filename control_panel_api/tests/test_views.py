@@ -15,7 +15,10 @@ from control_panel_api.models import (
     App,
     AppS3Bucket,
     S3Bucket,
-    User, UserS3Bucket)
+    User,
+    UserS3Bucket,
+    AppUser
+)
 
 
 class AuthenticatedClientMixin(object):
@@ -221,6 +224,92 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         for data in fixtures:
             response = self.client.put(
                 reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
+            self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+
+class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
+
+    def setUp(self):
+        super().setUp()
+
+        self.app_1 = App.objects.create(name="app_1")
+        self.app_2 = App.objects.create(name="app_2")
+        self.user_2 = mommy.make('control_panel_api.User')
+
+        self.appuser_1 = AppUser.objects.create(
+            user=self.superuser,
+            app=self.app_1,
+            is_admin=True,
+        )
+        self.appuser_2 = AppUser.objects.create(
+            user=self.user_2,
+            app=self.app_1,
+            is_admin=True,
+        )
+
+    def test_list(self):
+        response = self.client.get(reverse('appuser-list'))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(len(response.data['results']), 2)
+
+    def test_detail(self):
+        response = self.client.get(
+            reverse('appuser-detail', (self.appuser_1.id,)))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertIn('id', response.data)
+        self.assertIn('url', response.data)
+        self.assertIn('app', response.data)
+        self.assertIn('user', response.data)
+        self.assertIn('is_admin', response.data)
+        self.assertEqual(True, response.data['is_admin'])
+        self.assertEqual(5, len(response.data))
+
+    def test_create(self):
+        data = {
+            'app': self.app_2.id,
+            'user': self.user_2.id,
+            'is_admin': False,
+        }
+        response = self.client.post(reverse('appuser-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+    def test_update(self):
+        data = {
+            'app': self.app_1.id,
+            'user': self.user_2.id,
+            'is_admin': False,
+        }
+        response = self.client.put(
+            reverse('appuser-detail', (self.appuser_2.id,)), data)
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(data['is_admin'], response.data['is_admin'])
+
+    def test_delete(self):
+        response = self.client.delete(
+            reverse('appuser-detail', (self.appuser_2.id,)))
+        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        response = self.client.get(
+            reverse('appuser-detail', (self.appuser_2.id,)))
+        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+
+    def test_update_bad_requests(self):
+        fixtures = (
+            {
+                'app': self.app_2.id,  # when app changed
+                'user': self.user_2.id,
+                'is_admin': True,
+            },
+            {
+                'app': self.app_1.id,  # when user changed
+                'user': self.superuser.id,
+                'is_admin': True,
+            },
+        )
+
+        for data in fixtures:
+            response = self.client.put(
+                reverse('appuser-detail', (self.appuser_2.id,)), data)
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
 
