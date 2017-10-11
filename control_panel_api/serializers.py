@@ -33,6 +33,9 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class AppSerializer(serializers.ModelSerializer):
+
+    iam_role_name = serializers.ReadOnlyField(source='aws_role_name')
+
     class Meta:
         model = App
         fields = (
@@ -41,9 +44,10 @@ class AppSerializer(serializers.ModelSerializer):
             'name',
             'slug',
             'repo_url',
+            'iam_role_name',
+            'created_by',
             'apps3buckets',
             'userapps',
-            'created_by',
         )
 
 
