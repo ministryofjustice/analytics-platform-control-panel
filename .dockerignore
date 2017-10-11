@@ -1,0 +1,9 @@
+Jenkinsfile
+venv
+.cache
+.circleci
+.env
+.github
+.gitignore
+.python-version
+__pycache__

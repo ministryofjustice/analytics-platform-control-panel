@@ -2,11 +2,15 @@ FROM alpine:3.6
 
 MAINTAINER Andy Driver <andy.driver@digital.justice.gov.uk>
 
-RUN apk update && \
-    apk add \
+# install build dependencies (they'll be uninstalled after pip install)
+RUN apk add --no-cache \
         --virtual build-deps \
         gcc \
-        musl-dev \
+        musl-dev
+
+# install python3 and 'ca-certificates' so that HTTPS works consistently
+RUN apk add --no-cache \
+        ca-certificates \
         postgresql-dev \
         python3-dev
 
@@ -15,6 +19,9 @@ WORKDIR /home/control-panel
 # install python dependencies
 ADD requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
+
+# uninstall build dependencies
+RUN apk del build-deps
 
 ADD manage.py manage.py
 ADD run_api run_api
