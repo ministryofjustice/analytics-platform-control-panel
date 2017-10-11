@@ -150,7 +150,7 @@ class AppPermissionsTest(APITestCase):
     def test_create_as_superuser_responds_OK(self, mock_client):
         self.client.force_login(self.superuser)
 
-        data = {'name': 'foo'}
+        data = {'name': 'foo', 'repo_url': 'https://example.com'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 

@@ -122,7 +122,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('control_panel_api.models.App.aws_create_role')
     def test_create(self, mock_aws_create_role):
-        data = {'name': 'foo'}
+        data = {'name': 'foo', 'repo_url': 'https://example.com'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
