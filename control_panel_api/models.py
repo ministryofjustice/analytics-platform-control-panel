@@ -42,7 +42,7 @@ class App(TimeStampedModel):
         return re.sub(r'_+', '-', slugify(name))
 
     name = models.CharField(max_length=100, blank=False)
-    slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
+    slug = AutoSlugField(populate_from='_repo_name', slugify_function=_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
@@ -58,6 +58,23 @@ class App(TimeStampedModel):
 
     def aws_delete_role(self):
         services.delete_role(self.aws_role_name)
+
+    @property
+    def _repo_name(self):
+        '''
+        Returns the repo name
+
+        The name is the part after the last slash in the URL, without
+        the '.git' (if present).
+
+        Examples:
+
+        "https://github.com/org/a_repo_name" => "a_repo_name"
+        "git@github.com:org/repo_2.git" => "repo_2"
+        '''
+
+        last_after_slash = self.repo_url.split('/')[-1]
+        return last_after_slash.replace('.git', '')
 
 
 class UserApp(TimeStampedModel):

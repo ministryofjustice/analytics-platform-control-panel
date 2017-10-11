@@ -117,27 +117,26 @@ class MembershipsTestCase(TestCase):
 class AppTestCase(TestCase):
 
     def test_slug_characters_replaced(self):
-        name = 'foo__bar-baz!bat 1337'
+        repo_url = 'https://example.com/foo__bar-baz!bat-1337'
 
-        app = App.objects.create(name=name)
+        app = App.objects.create(repo_url=repo_url)
         self.assertEqual('foo-bar-bazbat-1337', app.slug)
 
     def test_slug_collisions_increments(self):
-        name = 'foo'
+        repo_url = 'git@github.com:org/foo.git'
 
-        app = App.objects.create(name=name)
+        app = App.objects.create(repo_url=repo_url)
         self.assertEqual('foo', app.slug)
 
-        app2 = App.objects.create(name=name)
+        app2 = App.objects.create(repo_url=repo_url)
         self.assertEqual('foo-2', app2.slug)
 
     @patch('control_panel_api.aws.create_role')
     def test_aws_create_role_calls_service(self, mock_create_role):
-        app_name = 'appname'
-        app = App.objects.create(name=app_name)
+        app = App.objects.create(repo_url='https://example.com/repo_name')
         app.aws_create_role()
 
-        expected_role_name = f"test_app_{app_name}"
+        expected_role_name = f"test_app_{app.slug}"
 
         mock_create_role.assert_called_with(
             expected_role_name,
@@ -146,11 +145,10 @@ class AppTestCase(TestCase):
 
     @patch('control_panel_api.aws.delete_role')
     def test_aws_delete_role_calls_service(self, mock_delete_role):
-        app_name = 'appname'
-        app = App.objects.create(name=app_name)
+        app = App.objects.create(repo_url='https://example.com/repo_name')
         app.aws_delete_role()
 
-        expected_role_name = f"test_app_{app_name}"
+        expected_role_name = f"test_app_{app.slug}"
 
         mock_delete_role.assert_called_with(expected_role_name)
 

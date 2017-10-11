@@ -18,7 +18,10 @@ from control_panel_api.tests import (
 
 class ServicesTestCase(TestCase):
     def setUp(self):
-        self.app_1 = mommy.make('control_panel_api.App', name='app-1')
+        self.app_1 = mommy.make(
+            'control_panel_api.App',
+            repo_url='https://example.com/app-1'
+        )
         self.s3_bucket_1 = mommy.make('control_panel_api.S3Bucket',
                                       name='test-bucket-1')
 
