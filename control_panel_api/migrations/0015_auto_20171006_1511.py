@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AppUser',
+            name='UserApp',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('created', django_extensions.db.fields.CreationDateTimeField(auto_now_add=True, verbose_name='created')),
@@ -34,6 +34,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='app',
             name='users',
-            field=models.ManyToManyField(related_name='apps', through='control_panel_api.AppUser', to=settings.AUTH_USER_MODEL),
+            field=models.ManyToManyField(related_name='userapps', through='control_panel_api.UserApp', to=settings.AUTH_USER_MODEL),
         ),
     ]

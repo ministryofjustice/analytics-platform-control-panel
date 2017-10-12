@@ -16,8 +16,8 @@ from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
     User,
+    UserApp,
     UserS3Bucket,
-    AppUser
 )
 
 
@@ -49,7 +49,9 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('name', response.data)
         self.assertIn('groups', response.data)
         self.assertIn('id', response.data)
-        self.assertEqual(6, len(response.data))
+        self.assertIn('userapps', response.data)
+        self.assertIn('users3buckets', response.data)
+        self.assertEqual(8, len(response.data))
 
     @patch('control_panel_api.models.User.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
@@ -236,25 +238,25 @@ class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
         self.app_2 = App.objects.create(name="app_2")
         self.user_2 = mommy.make('control_panel_api.User')
 
-        self.appuser_1 = AppUser.objects.create(
+        self.appuser_1 = UserApp.objects.create(
             user=self.superuser,
             app=self.app_1,
             is_admin=True,
         )
-        self.appuser_2 = AppUser.objects.create(
+        self.appuser_2 = UserApp.objects.create(
             user=self.user_2,
             app=self.app_1,
             is_admin=True,
         )
 
     def test_list(self):
-        response = self.client.get(reverse('appuser-list'))
+        response = self.client.get(reverse('userapp-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(len(response.data['results']), 2)
 
     def test_detail(self):
         response = self.client.get(
-            reverse('appuser-detail', (self.appuser_1.id,)))
+            reverse('userapp-detail', (self.appuser_1.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertIn('id', response.data)
         self.assertIn('url', response.data)
@@ -270,7 +272,7 @@ class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
             'user': self.user_2.id,
             'is_admin': False,
         }
-        response = self.client.post(reverse('appuser-list'), data)
+        response = self.client.post(reverse('userapp-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
     def test_update(self):
@@ -280,17 +282,17 @@ class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
             'is_admin': False,
         }
         response = self.client.put(
-            reverse('appuser-detail', (self.appuser_2.id,)), data)
+            reverse('userapp-detail', (self.appuser_2.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['is_admin'], response.data['is_admin'])
 
     def test_delete(self):
         response = self.client.delete(
-            reverse('appuser-detail', (self.appuser_2.id,)))
+            reverse('userapp-detail', (self.appuser_2.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         response = self.client.get(
-            reverse('appuser-detail', (self.appuser_2.id,)))
+            reverse('userapp-detail', (self.appuser_2.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
     def test_update_bad_requests(self):
@@ -309,7 +311,7 @@ class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
 
         for data in fixtures:
             response = self.client.put(
-                reverse('appuser-detail', (self.appuser_2.id,)), data)
+                reverse('userapp-detail', (self.appuser_2.id,)), data)
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
 

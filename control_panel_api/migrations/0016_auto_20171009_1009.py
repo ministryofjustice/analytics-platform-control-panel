@@ -13,11 +13,11 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name='appuser',
+            name='userapp',
             options={},
         ),
         migrations.AlterUniqueTogether(
-            name='appuser',
+            name='userapp',
             unique_together=set([('app', 'user')]),
         ),
     ]

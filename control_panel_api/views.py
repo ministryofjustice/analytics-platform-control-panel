@@ -11,8 +11,8 @@ from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
     User,
+    UserApp,
     UserS3Bucket,
-    AppUser
 )
 from control_panel_api.permissions import (
     AppPermissions,
@@ -22,11 +22,11 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
+    AppUserSerializer,
     GroupSerializer,
     S3BucketSerializer,
-    UserSerializer,
     UserS3BucketSerializer,
-    AppUserSerializer
+    UserSerializer,
 )
 
 
@@ -114,6 +114,6 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         instance.aws_delete()
 
 
-class AppUserViewSet(viewsets.ModelViewSet):
-    queryset = AppUser.objects.all()
+class UserAppViewSet(viewsets.ModelViewSet):
+    queryset = UserApp.objects.all()
     serializer_class = AppUserSerializer

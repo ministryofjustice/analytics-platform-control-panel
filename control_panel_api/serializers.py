@@ -6,19 +6,27 @@ from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
     User,
+    UserApp,
     UserS3Bucket,
-    AppUser)
+)
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
-        fields = ('id', 'url', 'username', 'name', 'email', 'groups')
+        fields = (
+            'id',
+            'url',
+            'username',
+            'name',
+            'email',
+            'groups',
+            'userapps',
+            'users3buckets'
+        )
 
 
 class GroupSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Group
         fields = ('id', 'url', 'name')
@@ -77,16 +85,14 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
 
 
 class S3BucketSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = S3Bucket
         fields = ('id', 'url', 'name', 'arn', 'apps3buckets', 'created_by')
 
 
 class AppUserSerializer(serializers.ModelSerializer):
-
     class Meta:
-        model = AppUser
+        model = UserApp
         fields = ('id', 'url', 'app', 'user', 'is_admin')
 
     def update(self, instance, validated_data):

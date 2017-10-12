@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AlterModelOptions(
-            name='appuser',
+            name='userapp',
             options={'ordering': ('id',)},
         ),
     ]
