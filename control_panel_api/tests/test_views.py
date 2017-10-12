@@ -137,8 +137,6 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['name'], response.data['name'])
 
 
-from django.test import tag
-@tag('fluffy')
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
