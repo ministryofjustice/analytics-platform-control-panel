@@ -123,13 +123,15 @@ class AppTestCase(TestCase):
         self.assertEqual('foo-bar-bazbat-1337', app.slug)
 
     def test_slug_collisions_increments(self):
-        repo_url = 'git@github.com:org/foo.git'
+        app = App.objects.create(
+            repo_url='git@github.com:org/foo-bar.git',
+        )
+        self.assertEqual('foo-bar', app.slug)
 
-        app = App.objects.create(repo_url=repo_url)
-        self.assertEqual('foo', app.slug)
-
-        app2 = App.objects.create(repo_url=repo_url)
-        self.assertEqual('foo-2', app2.slug)
+        app2 = App.objects.create(
+            repo_url='https://www.example.com/org/foo-bar',
+        )
+        self.assertEqual('foo-bar-2', app2.slug)
 
     @patch('control_panel_api.aws.create_role')
     def test_aws_create_role_calls_service(self, mock_create_role):

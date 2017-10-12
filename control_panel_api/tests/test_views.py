@@ -12,7 +12,6 @@ from rest_framework.status import (
 from rest_framework.test import APITestCase
 
 from control_panel_api.models import (
-    App,
     AppS3Bucket,
     S3Bucket,
     User,
@@ -138,13 +137,15 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['name'], response.data['name'])
 
 
+from django.test import tag
+@tag('fluffy')
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
         super().setUp()
 
-        self.app_1 = App.objects.create(name="app_1")
-        self.app_2 = App.objects.create(name="app_2")
+        self.app_1 = mommy.make('control_panel_api.App', name='app_1')
+        self.app_2 = mommy.make('control_panel_api.App', name='app_2')
 
         self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
         self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
@@ -239,8 +240,8 @@ class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
 
-        self.app_1 = App.objects.create(name="app_1")
-        self.app_2 = App.objects.create(name="app_2")
+        self.app_1 = mommy.make('control_panel_api.App', name='app_1')
+        self.app_2 = mommy.make('control_panel_api.App', name='app_2')
         self.user_2 = mommy.make('control_panel_api.User')
 
         self.appuser_1 = UserApp.objects.create(
