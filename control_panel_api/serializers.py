@@ -42,6 +42,7 @@ class AppSerializer(serializers.ModelSerializer):
             'slug',
             'repo_url',
             'apps3buckets',
+            'userapps',
             'created_by',
         )
 

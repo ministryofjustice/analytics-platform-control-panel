@@ -101,8 +101,9 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('slug', response.data)
         self.assertIn('repo_url', response.data)
         self.assertIn('apps3buckets', response.data)
+        self.assertIn('userapps', response.data)
         self.assertIn('created_by', response.data)
-        self.assertEqual(7, len(response.data))
+        self.assertEqual(8, len(response.data))
 
     @patch('control_panel_api.models.App.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
