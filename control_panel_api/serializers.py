@@ -34,8 +34,6 @@ class GroupSerializer(serializers.ModelSerializer):
 
 class AppSerializer(serializers.ModelSerializer):
 
-    iam_role_name = serializers.ReadOnlyField(source='aws_role_name')
-
     class Meta:
         model = App
         fields = (

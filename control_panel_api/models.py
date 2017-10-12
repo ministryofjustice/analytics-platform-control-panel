@@ -25,14 +25,14 @@ class User(AbstractUser):
         return self.name
 
     @property
-    def aws_role_name(self):
+    def iam_role_name(self):
         return f"{settings.ENV}_user_{self.username.lower()}"
 
     def aws_create_role(self):
-        services.create_role(self.aws_role_name, add_saml_statement=True)
+        services.create_role(self.iam_role_name, add_saml_statement=True)
 
     def aws_delete_role(self):
-        services.delete_role(self.aws_role_name)
+        services.delete_role(self.iam_role_name)
 
 
 class App(TimeStampedModel):
@@ -50,14 +50,14 @@ class App(TimeStampedModel):
         ordering = ('name',)
 
     @property
-    def aws_role_name(self):
+    def iam_role_name(self):
         return f"{settings.ENV}_app_{self.slug}"
 
     def aws_create_role(self):
-        services.create_role(self.aws_role_name)
+        services.create_role(self.iam_role_name)
 
     def aws_delete_role(self):
-        services.delete_role(self.aws_role_name)
+        services.delete_role(self.iam_role_name)
 
     @property
     def _repo_name(self):
@@ -225,7 +225,7 @@ class AppS3Bucket(AccessToS3Bucket):
         ordering = ('id',)
 
     def aws_role_name(self):
-        return self.app.aws_role_name
+        return self.app.iam_role_name
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -247,4 +247,4 @@ class UserS3Bucket(AccessToS3Bucket):
         ordering = ('id',)
 
     def aws_role_name(self):
-        return self.user.aws_role_name
+        return self.user.iam_role_name

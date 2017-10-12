@@ -105,7 +105,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('created_by', response.data)
         self.assertEqual(
             response.data['iam_role_name'],
-            self.fixture.aws_role_name,
+            self.fixture.iam_role_name,
         )
         self.assertEqual(9, len(response.data))
 
