@@ -117,27 +117,28 @@ class MembershipsTestCase(TestCase):
 class AppTestCase(TestCase):
 
     def test_slug_characters_replaced(self):
-        name = 'foo__bar-baz!bat 1337'
+        repo_url = 'https://example.com/foo__bar-baz!bat-1337'
 
-        app = App.objects.create(name=name)
+        app = App.objects.create(repo_url=repo_url)
         self.assertEqual('foo-bar-bazbat-1337', app.slug)
 
     def test_slug_collisions_increments(self):
-        name = 'foo'
+        app = App.objects.create(
+            repo_url='git@github.com:org/foo-bar.git',
+        )
+        self.assertEqual('foo-bar', app.slug)
 
-        app = App.objects.create(name=name)
-        self.assertEqual('foo', app.slug)
-
-        app2 = App.objects.create(name=name)
-        self.assertEqual('foo-2', app2.slug)
+        app2 = App.objects.create(
+            repo_url='https://www.example.com/org/foo-bar',
+        )
+        self.assertEqual('foo-bar-2', app2.slug)
 
     @patch('control_panel_api.aws.create_role')
     def test_aws_create_role_calls_service(self, mock_create_role):
-        app_name = 'appname'
-        app = App.objects.create(name=app_name)
+        app = App.objects.create(repo_url='https://example.com/repo_name')
         app.aws_create_role()
 
-        expected_role_name = f"test_app_{app_name}"
+        expected_role_name = f"test_app_{app.slug}"
 
         mock_create_role.assert_called_with(
             expected_role_name,
@@ -146,11 +147,10 @@ class AppTestCase(TestCase):
 
     @patch('control_panel_api.aws.delete_role')
     def test_aws_delete_role_calls_service(self, mock_delete_role):
-        app_name = 'appname'
-        app = App.objects.create(name=app_name)
+        app = App.objects.create(repo_url='https://example.com/repo_name')
         app.aws_delete_role()
 
-        expected_role_name = f"test_app_{app_name}"
+        expected_role_name = f"test_app_{app.slug}"
 
         mock_delete_role.assert_called_with(expected_role_name)
 
@@ -218,7 +218,7 @@ class AppS3BucketTestCase(TestCase):
         mock_apps3bucket_update.assert_called_with(
             self.s3_bucket_1.name,
             apps3bucket.has_readwrite_access(),
-            self.app_1.aws_role_name
+            self.app_1.iam_role_name
         )
 
     @patch('control_panel_api.services.attach_bucket_access_to_role')
@@ -233,7 +233,7 @@ class AppS3BucketTestCase(TestCase):
         mock_attach_bucket_access_to_role.assert_called_with(
             self.s3_bucket_1.name,
             apps3bucket.has_readwrite_access(),
-            self.app_1.aws_role_name
+            self.app_1.iam_role_name
         )
 
     @patch('control_panel_api.services.detach_bucket_access_from_role')
@@ -248,7 +248,7 @@ class AppS3BucketTestCase(TestCase):
         mock_detach_bucket_access_from_app_role.assert_called_with(
             self.s3_bucket_1.name,
             apps3bucket.has_readwrite_access(),
-            self.app_1.aws_role_name
+            self.app_1.iam_role_name
         )
 
 
@@ -280,7 +280,7 @@ class UserS3BucketTestCase(TestCase):
         mock_attach_bucket_access_to_app_role.assert_called_with(
             self.s3_bucket_1.name,
             self.users3bucket_1.has_readwrite_access(),
-            self.user_1.aws_role_name,
+            self.user_1.iam_role_name,
         )
 
     @patch('control_panel_api.services.detach_bucket_access_from_role')
@@ -290,5 +290,5 @@ class UserS3BucketTestCase(TestCase):
         mock_detach_bucket_access_from_app_role.assert_called_with(
             self.s3_bucket_1.name,
             self.users3bucket_1.has_readwrite_access(),
-            self.user_1.aws_role_name
+            self.user_1.iam_role_name
         )

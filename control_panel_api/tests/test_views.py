@@ -12,7 +12,6 @@ from rest_framework.status import (
 from rest_framework.test import APITestCase
 
 from control_panel_api.models import (
-    App,
     AppS3Bucket,
     S3Bucket,
     User,
@@ -103,7 +102,11 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('apps3buckets', response.data)
         self.assertIn('userapps', response.data)
         self.assertIn('created_by', response.data)
-        self.assertEqual(8, len(response.data))
+        self.assertEqual(
+            response.data['iam_role_name'],
+            self.fixture.iam_role_name,
+        )
+        self.assertEqual(9, len(response.data))
 
     @patch('control_panel_api.models.App.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
@@ -118,7 +121,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('control_panel_api.models.App.aws_create_role')
     def test_create(self, mock_aws_create_role):
-        data = {'name': 'foo'}
+        data = {'name': 'foo', 'repo_url': 'https://example.com'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
@@ -139,8 +142,8 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
 
-        self.app_1 = App.objects.create(name="app_1")
-        self.app_2 = App.objects.create(name="app_2")
+        self.app_1 = mommy.make('control_panel_api.App', name='app_1')
+        self.app_2 = mommy.make('control_panel_api.App', name='app_2')
 
         self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
         self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
@@ -235,8 +238,8 @@ class AppUserViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
 
-        self.app_1 = App.objects.create(name="app_1")
-        self.app_2 = App.objects.create(name="app_2")
+        self.app_1 = mommy.make('control_panel_api.App', name='app_1')
+        self.app_2 = mommy.make('control_panel_api.App', name='app_2')
         self.user_2 = mommy.make('control_panel_api.User')
 
         self.appuser_1 = UserApp.objects.create(

@@ -25,14 +25,14 @@ class User(AbstractUser):
         return self.name
 
     @property
-    def aws_role_name(self):
+    def iam_role_name(self):
         return f"{settings.ENV}_user_{self.username.lower()}"
 
     def aws_create_role(self):
-        services.create_role(self.aws_role_name, add_saml_statement=True)
+        services.create_role(self.iam_role_name, add_saml_statement=True)
 
     def aws_delete_role(self):
-        services.delete_role(self.aws_role_name)
+        services.delete_role(self.iam_role_name)
 
 
 class App(TimeStampedModel):
@@ -42,22 +42,39 @@ class App(TimeStampedModel):
         return re.sub(r'_+', '-', slugify(name))
 
     name = models.CharField(max_length=100, blank=False)
-    slug = AutoSlugField(populate_from='name', slugify_function=_slugify)
-    repo_url = models.URLField(max_length=512, blank=True, default='')
+    slug = AutoSlugField(populate_from='_repo_name', slugify_function=_slugify)
+    repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
     class Meta:
         ordering = ('name',)
 
     @property
-    def aws_role_name(self):
+    def iam_role_name(self):
         return f"{settings.ENV}_app_{self.slug}"
 
     def aws_create_role(self):
-        services.create_role(self.aws_role_name)
+        services.create_role(self.iam_role_name)
 
     def aws_delete_role(self):
-        services.delete_role(self.aws_role_name)
+        services.delete_role(self.iam_role_name)
+
+    @property
+    def _repo_name(self):
+        '''
+        Returns the repo name
+
+        The name is the part after the last slash in the URL, without
+        the '.git' (if present).
+
+        Examples:
+
+        "https://github.com/org/a_repo_name" => "a_repo_name"
+        "git@github.com:org/repo_2.git" => "repo_2"
+        '''
+
+        last_after_slash = self.repo_url.split('/')[-1]
+        return last_after_slash.replace('.git', '')
 
 
 class UserApp(TimeStampedModel):
@@ -208,7 +225,7 @@ class AppS3Bucket(AccessToS3Bucket):
         ordering = ('id',)
 
     def aws_role_name(self):
-        return self.app.aws_role_name
+        return self.app.iam_role_name
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -230,4 +247,4 @@ class UserS3Bucket(AccessToS3Bucket):
         ordering = ('id',)
 
     def aws_role_name(self):
-        return self.user.aws_role_name
+        return self.user.iam_role_name

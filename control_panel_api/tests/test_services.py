@@ -18,7 +18,10 @@ from control_panel_api.tests import (
 
 class ServicesTestCase(TestCase):
     def setUp(self):
-        self.app_1 = mommy.make('control_panel_api.App', name='app-1')
+        self.app_1 = mommy.make(
+            'control_panel_api.App',
+            repo_url='https://example.com/app-1'
+        )
         self.s3_bucket_1 = mommy.make('control_panel_api.S3Bucket',
                                       name='test-bucket-1')
 
@@ -88,7 +91,7 @@ class ServicesTestCase(TestCase):
             services.attach_bucket_access_to_role(
                 apps3bucket.s3bucket.name,
                 apps3bucket.has_readwrite_access(),
-                apps3bucket.app.aws_role_name
+                apps3bucket.app.iam_role_name
             )
 
             expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
@@ -119,7 +122,7 @@ class ServicesTestCase(TestCase):
             services.update_bucket_access(
                 s3bucket.name,
                 apps3bucket.has_readwrite_access(),
-                app.aws_role_name
+                app.iam_role_name
             )
 
             old_access_level = 'readwrite' if access_level == 'readonly' else 'readonly'
@@ -143,7 +146,7 @@ class ServicesTestCase(TestCase):
         services.detach_bucket_access_from_role(
             self.s3_bucket_1.name,
             services.READWRITE,
-            self.app_1.aws_role_name,
+            self.app_1.iam_role_name,
         )
 
         mock_detach_policy_from_role.assert_called_with(
@@ -159,7 +162,7 @@ class ServicesTestCase(TestCase):
         services.detach_bucket_access_from_role(
             self.s3_bucket_1.name,
             False,
-            self.app_1.aws_role_name,
+            self.app_1.iam_role_name,
         )
 
         mock_detach_policy_from_role.assert_called_with(
