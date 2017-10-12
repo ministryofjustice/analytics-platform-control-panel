@@ -60,6 +60,20 @@ class App(TimeStampedModel):
         services.delete_role(self.aws_role_name)
 
 
+class UserApp(TimeStampedModel):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='userapps')
+    app = models.ForeignKey(
+        App, on_delete=models.CASCADE, related_name='userapps')
+    is_admin = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = (
+            ('app', 'user'),
+        )
+        ordering = ('id',)
+
+
 class S3Bucket(TimeStampedModel):
     name = models.CharField(unique=True, max_length=63, validators=[
         validators.validate_env_prefix,

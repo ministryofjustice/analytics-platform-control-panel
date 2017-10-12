@@ -1,8 +1,6 @@
 from django.contrib.auth.models import Group
 from rest_framework import viewsets
-from rest_framework.exceptions import ValidationError
 
-from control_panel_api import services
 from control_panel_api.filters import (
     AppFilter,
     S3BucketFilter,
@@ -13,7 +11,9 @@ from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
     User,
-    UserS3Bucket)
+    UserApp,
+    UserS3Bucket,
+)
 from control_panel_api.permissions import (
     AppPermissions,
     S3BucketPermissions,
@@ -22,10 +22,12 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
+    AppUserSerializer,
     GroupSerializer,
     S3BucketSerializer,
+    UserS3BucketSerializer,
     UserSerializer,
-    UserS3BucketSerializer)
+)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -110,3 +112,8 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.delete()
         instance.aws_delete()
+
+
+class UserAppViewSet(viewsets.ModelViewSet):
+    queryset = UserApp.objects.all()
+    serializer_class = AppUserSerializer
