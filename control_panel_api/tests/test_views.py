@@ -91,6 +91,18 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(len(response.data['results']), 2)
 
+    def test_list_filter_by_repo_url(self):
+        self.fixture.repo_url = 'https://example.com'
+        self.fixture.save()
+
+        params = {'repo_url': 'https%3A%2F%2Fexample.com'}
+        response = self.client.get(reverse('app-list'), params)
+
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(len(response.data['results']), 1)
+        app = response.data['results'][0]
+        self.assertEqual(app['id'], self.fixture.id)
+
     def test_detail(self):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
