@@ -54,6 +54,8 @@ class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
     serializer_class = AppSerializer
     filter_backends = (AppFilter,)
+
+    filter_fields = ('name', 'repo_url', 'slug')
     permission_classes = (AppPermissions,)
 
     def perform_create(self, serializer):
