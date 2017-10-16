@@ -2,13 +2,12 @@ from unittest.mock import patch
 
 from django.db.utils import IntegrityError
 from django.test import TestCase
+from model_mommy import mommy
 
 from control_panel_api.models import (
     App,
     AppS3Bucket,
-    Role,
     S3Bucket,
-    Team,
     TeamMembership,
     User,
     UserS3Bucket,
@@ -44,22 +43,17 @@ class UserTestCase(TestCase):
 class MembershipsTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # Users
-        cls.user_alice, _ = User.objects.get_or_create(username="Alice")
-        cls.user_bob, _ = User.objects.get_or_create(username="Bob")
-        cls.user_other, _ = User.objects.get_or_create(username="Other")
-        # Teams
-        cls.team_justice, _ = Team.objects.get_or_create(name="Justice Team")
-        cls.team_other, _ = Team.objects.get_or_create(name="Other Team")
-        # Roles
-        cls.role_maintainer, _ = Role.objects.get_or_create(
-            code="maintainer",
-            name="Maintainer",
-        )
-        cls.role_member, _ = Role.objects.get_or_create(
-            code="member",
-            name="Member",
-        )
+        cls.user_alice, cls.user_bob, cls.user_other = mommy.make(
+            'control_panel_api.User', _quantity=3)
+
+        cls.team_justice, cls.team_other = mommy.make(
+            'control_panel_api.Team', _quantity=2)
+
+        cls.role_maintainer = mommy.make(
+            'control_panel_api.Role', code="maintainer", name="Maintainer")
+
+        cls.role_member = mommy.make(
+            'control_panel_api.Role', code="member", name="Member")
 
         # Add Alice to Justice team as maintainer
         TeamMembership.objects.create(
@@ -256,8 +250,10 @@ class UserS3BucketTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.user_1 = User.objects.create(username="user_1")
-        cls.user_2 = User.objects.create(username="user_2")
+        cls.user_1 = User.objects.create(auth0_id='github|user_1',
+                                         username="user_1")
+        cls.user_2 = User.objects.create(auth0_id='github|user_2',
+                                         username="user_2")
 
         cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
