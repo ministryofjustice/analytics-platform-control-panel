@@ -9,12 +9,11 @@ from control_panel_api.models import AppS3Bucket
 class AppFilterTest(APITestCase):
 
     def setUp(self):
-        # Create users
         self.superuser = mommy.make(
             "control_panel_api.User", is_superuser=True)
         self.normal_user = mommy.make(
             "control_panel_api.User", is_superuser=False)
-        # Create some apps
+
         self.app_1 = mommy.make(
             "control_panel_api.App", name="App 1")
         self.app_2 = mommy.make(
@@ -124,10 +123,10 @@ class UserFilterTest(APITestCase):
         self.client.force_login(self.superuser)
 
         response = self.client.get(reverse("user-list"))
-        user_ids = [user["id"] for user in response.data["results"]]
+        user_ids = [user["auth0_id"] for user in response.data["results"]]
         self.assertEqual(len(user_ids), 2)
-        self.assertIn(self.superuser.id, user_ids)
-        self.assertIn(self.normal_user.id, user_ids)
+        self.assertIn(self.superuser.auth0_id, user_ids)
+        self.assertIn(self.normal_user.auth0_id, user_ids)
 
     def test_normal_user_sees_nothing(self):
         self.client.force_login(self.normal_user)

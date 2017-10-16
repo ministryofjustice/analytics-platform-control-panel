@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.test.utils import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -18,9 +17,15 @@ class UserPermissionsTest(APITestCase):
 
     def setUp(self):
         self.superuser = mommy.make(
-            'control_panel_api.User', is_superuser=True)
+            'control_panel_api.User',
+            auth0_id='github|user_1',
+            is_superuser=True,
+        )
         self.normal_user = mommy.make(
-            'control_panel_api.User', is_superuser=False)
+            'control_panel_api.User',
+            auth0_id='github|user_2',
+            is_superuser=False,
+        )
 
     def test_list_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
@@ -38,28 +43,28 @@ class UserPermissionsTest(APITestCase):
         self.client.force_login(self.superuser)
 
         response = self.client.get(
-            reverse('user-detail', (self.normal_user.id,)))
+            reverse('user-detail', (self.normal_user.auth0_id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
     def test_detail_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(
-            reverse('user-detail', (self.normal_user.id,)))
+            reverse('user-detail', (self.normal_user.auth0_id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
     def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
-            reverse('user-detail', (self.normal_user.id,)))
+            reverse('user-detail', (self.normal_user.auth0_id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
     def test_delete_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.delete(
-            reverse('user-detail', (self.normal_user.id,)))
+            reverse('user-detail', (self.normal_user.auth0_id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
     def test_create_as_superuser_responds_OK(self):
@@ -81,7 +86,7 @@ class UserPermissionsTest(APITestCase):
 
         data = {'username': 'foo'}
         response = self.client.put(
-            reverse('user-detail', (self.normal_user.id,)), data)
+            reverse('user-detail', (self.normal_user.auth0_id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
 
     def test_update_as_normal_user_responds_403(self):
@@ -89,7 +94,7 @@ class UserPermissionsTest(APITestCase):
 
         data = {'username': 'foo'}
         response = self.client.put(
-            reverse('user-detail', (self.normal_user.id,)), data)
+            reverse('user-detail', (self.normal_user.auth0_id,)), data)
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 

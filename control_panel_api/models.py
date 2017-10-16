@@ -11,9 +11,12 @@ from control_panel_api import services, validators
 
 
 class User(AbstractUser):
+    auth0_id = models.CharField(max_length=128, primary_key=True)
     name = models.CharField(max_length=256, blank=True)
 
     teams = models.ManyToManyField('Team', through='TeamMembership')
+
+    REQUIRED_FIELDS = ['email', 'auth0_id']
 
     class Meta:
         ordering = ('username',)
