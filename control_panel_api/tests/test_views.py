@@ -95,7 +95,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.fixture.repo_url = 'https://example.com'
         self.fixture.save()
 
-        params = {'repo_url': 'https%3A%2F%2Fexample.com'}
+        params = {'repo_url': self.fixture.repo_url}
         response = self.client.get(reverse('app-list'), params)
 
         self.assertEqual(HTTP_200_OK, response.status_code)

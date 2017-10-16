@@ -1,5 +1,3 @@
-from urllib.parse import unquote
-
 from django.contrib.auth.models import Group
 from rest_framework import viewsets
 
@@ -56,16 +54,9 @@ class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
     serializer_class = AppSerializer
     filter_backends = (AppFilter,)
+
+    filter_fields = ('name', 'repo_url', 'slug')
     permission_classes = (AppPermissions,)
-
-    def get_queryset(self):
-        queryset = self.queryset
-
-        repo_url = self.request.query_params.get('repo_url')
-        if repo_url:
-            queryset = queryset.filter(repo_url=unquote(repo_url))
-
-        return queryset
 
     def perform_create(self, serializer):
         app = serializer.save(created_by=self.request.user)
