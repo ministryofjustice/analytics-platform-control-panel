@@ -33,10 +33,10 @@ def deploy_rstudio(username, env='dev', tag='latest'):
         '{username}-rstudio'.format(username=username),
         'mojanalytics/rstudio',
         '-f', 'config/chart-env-config/{env}/rstudio.yml'.format(env=env),
-        '--set', 'Username={}'.format(username),
-        '--set', 'AWS.IAMRole={env}_user_{username}'.format(
+        '--set', 'username={}'.format(username),
+        '--set', 'aws.iamRole={env}_user_{username}'.format(
             env=env, username=username),
-        '--set', 'RStudio.Image.Tag={}'.format(tag),
+        '--set', 'rstudio.image.tag={}'.format(tag),
         '--namespace', 'user-{username}'.format(username=username)
     )
 
