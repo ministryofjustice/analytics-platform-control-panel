@@ -29,7 +29,7 @@ class User(AbstractUser):
 
     @property
     def aws_role_name(self):
-        return f"{settings.ENV}_user_{self.auth0_id}"
+        return f"{settings.ENV}_user_{self.username.lower()}"
 
     def aws_create_role(self):
         services.create_role(self.aws_role_name, add_saml_statement=True)
