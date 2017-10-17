@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     # 'django.contrib.messages',
     'django.contrib.staticfiles',  # TODO - remove this?
     'django_extensions',
+    'django_filters',
     'rest_framework',
     'rest_framework_swagger',
     'raven.contrib.django.raven_compat',
