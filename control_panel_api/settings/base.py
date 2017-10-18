@@ -111,6 +111,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'control_panel_api.authentication.Auth0JWTAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication'
+    ],
     'DEFAULT_FILTER_BACKENDS': ('control_panel_api.filters.SuperusersOnlyFilter',),
     'DEFAULT_PERMISSION_CLASSES': [
         'control_panel_api.permissions.IsSuperuser',
