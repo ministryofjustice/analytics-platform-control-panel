@@ -140,5 +140,5 @@ RAVEN_CONFIG = {
     'environment': ENV,
 }
 
-OIDC_CLIENT_ID = os.environ.get('OIDC_CLIENT_ID')
-OIDC_CLIENT_SECRET = os.environ.get('OIDC_CLIENT_SECRET')
+AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID')
+AUTH0_CLIENT_SECRET = os.environ.get('AUTH0_CLIENT_SECRET')
