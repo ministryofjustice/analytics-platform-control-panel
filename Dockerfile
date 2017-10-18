@@ -11,6 +11,8 @@ RUN apk add --no-cache \
 # install python3 and 'ca-certificates' so that HTTPS works consistently
 RUN apk add --no-cache \
         ca-certificates \
+        libffi-dev \
+        libressl-dev \
         postgresql-dev \
         python3-dev
 
