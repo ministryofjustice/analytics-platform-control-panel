@@ -15,7 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id',
+            'auth0_id',
             'url',
             'username',
             'name',
@@ -24,6 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
             'userapps',
             'users3buckets'
         )
+        read_only_fields = ('auth0_id',)
 
 
 class GroupSerializer(serializers.ModelSerializer):
