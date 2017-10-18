@@ -134,3 +134,6 @@ RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN', ''),
     'environment': ENV,
 }
+
+AUTH0_CLIENT_ID = os.environ.get('AUTH0_CLIENT_ID')
+AUTH0_CLIENT_SECRET = os.environ.get('AUTH0_CLIENT_SECRET')
