@@ -183,9 +183,8 @@ if __name__ == '__main__':
     except InvalidEmails as emails_error:
         invalid_emails = ', '.join(emails_error.args[0])
         print(
-            f'Some email addresses were not valid: {invalid_emails}',
-            file=sys.stderr
-        )
+            'Some email addresses were not valid: {}'.format(invalid_emails),
+            file=sys.stderr)
         sys.exit(1)
 
     except NoUsers:
