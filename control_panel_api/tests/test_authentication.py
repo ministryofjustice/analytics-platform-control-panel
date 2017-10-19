@@ -5,11 +5,18 @@ from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK
 from rest_framework.test import APITestCase
 
-from control_panel_api.authentication import Auth0JWTAuthentication
 
-
-# Decode token at https://jwt.io/
-GOOD_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImphbWVzQGptb3ouY28udWsiLCJuYW1lIjoiSmFtZXMgTW9ycmlzIiwiYXVkIjoiYXVkaWVuY2UiLCJzdWIiOiJnaXRodWJ8MTIzNDUifQ.Vfvhtm_TXbtOBKcIWed0YzVH7gIKlSdzg36bbIK6UZ4'  # noqa
+def build_jwt(user, audience, secret):
+    return jwt.encode(
+        {
+            'email': user.email,
+            'name': user.name,
+            'aud': audience,
+            'sub': user.auth0_id
+        },
+        secret,
+        algorithm='HS256'
+    ).decode('utf8')
 
 
 class Auth0JWTAuthenticationTestCase(APITestCase):
@@ -17,7 +24,9 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
     def setUp(self):
         self.user = mommy.make(
             'control_panel_api.User',
-            username='james',
+            email='test@example.com',
+            name='Test User',
+            username='test',
             auth0_id='github|12345',
             is_superuser=True
         )
@@ -26,11 +35,15 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         return self.client.get(
             reverse('user-detail', args=[self.user.auth0_id]))
 
+    def assert_status_code(self, code):
+        r = self.get_user()
+        self.assertEqual(code, r.status_code, r.content.decode('utf8'))
+
     def assert_access_denied(self):
-        self.assertEqual(HTTP_403_FORBIDDEN, self.get_user().status_code)
+        self.assert_status_code(HTTP_403_FORBIDDEN)
 
     def assert_authenticated(self):
-        self.assertEqual(HTTP_200_OK, self.get_user().status_code)
+        self.assert_status_code(HTTP_200_OK)
 
     def test_user_can_not_view(self):
         self.assert_access_denied()
@@ -45,8 +58,8 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
 
     @override_settings(AUTH0_CLIENT_SECRET='secret', AUTH0_CLIENT_ID='audience')
     def test_good_token(self):
-        # assert the token is good
-        decoded = jwt.decode(GOOD_TOKEN, key='secret', audience='audience')
-        self.assertEqual(decoded['sub'], 'github|12345')
-        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {GOOD_TOKEN}')
+
+        token = build_jwt(self.user, 'audience', 'secret')
+
+        self.client.credentials(HTTP_AUTHORIZATION='JWT {}'.format(token))
         self.assert_authenticated()

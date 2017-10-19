@@ -30,8 +30,8 @@ class Auth0JWTAuthentication(BaseAuthentication):
                 audience=settings.AUTH0_CLIENT_ID
             )
 
-        except InvalidTokenError:
-            raise AuthenticationFailed('JWT decode error')
+        except InvalidTokenError as error:
+            raise AuthenticationFailed(error)
 
         sub = decoded.get('sub')
 
