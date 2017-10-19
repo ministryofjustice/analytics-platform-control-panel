@@ -25,6 +25,8 @@ RUN pip3 install -r requirements.txt
 # uninstall build dependencies
 RUN apk del build-deps
 
+ENV DJANGO_SETTINGS_MODULE "control_panel_api.settings"
+
 ADD manage.py manage.py
 ADD run_api run_api
 ADD run_tests run_tests
