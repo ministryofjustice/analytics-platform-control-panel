@@ -56,7 +56,7 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='JWT bar')
         self.assert_access_denied()
 
-    @override_settings(AUTH0_CLIENT_SECRET='secret', AUTH0_CLIENT_ID='audience')
+    @override_settings(OIDC_CLIENT_SECRET='secret', OIDC_CLIENT_ID='audience')
     def test_good_token(self):
 
         token = build_jwt(self.user, 'audience', 'secret')
