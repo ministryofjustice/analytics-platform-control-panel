@@ -26,8 +26,8 @@ class Auth0JWTAuthentication(BaseAuthentication):
         try:
             decoded = jwt.decode(
                 token,
-                key=settings.AUTH0_CLIENT_SECRET,
-                audience=settings.AUTH0_CLIENT_ID
+                key=settings.OIDC_CLIENT_SECRET,
+                audience=settings.OIDC_CLIENT_ID
             )
 
         except InvalidTokenError as error:
