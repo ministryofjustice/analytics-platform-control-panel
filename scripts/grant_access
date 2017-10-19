@@ -50,6 +50,8 @@ class AccessGranter(object):
         emails = self.parse_emails(emails)
         users = self.get_users(emails)
 
+        app_name = sanitize(app_name)
+
         self.add_users_to_group(users, app_name)
 
         if list(filter(None, self.invalid_emails)):
@@ -160,15 +162,30 @@ def valid_email(s):
     return EMAIL_USER.match(user) and EMAIL_DOMAIN.match(domain)
 
 
+def sanitize(label):
+    label = label.lower()
+    # labels can contain alphanumerics and hyphens
+    # replace runs of hyphens with a single hyphen
+    label = re.sub(r'[^a-z0-9]+', '-', label)
+    # label must start with a letter
+    label = re.sub(r'^[^a-z]*', '')
+    # label must be 63 chars or less
+    label = label[:63]
+    # make sure we end with an alphanumeric
+    label = re.sub(r'[^a-z0-9]+$', '')
+    return label
+
+
 if __name__ == '__main__':
     try:
         main()
 
     except InvalidEmails as emails_error:
+        invalid_emails = ', '.join(emails_error.args[0])
         print(
-            'Some of the email addresses entered were not valid: {}'.format(
-                ', '.join(emails_error.args[0])),
-            file=sys.stderr)
+            f'Some email addresses were not valid: {invalid_emails}',
+            file=sys.stderr
+        )
         sys.exit(1)
 
     except NoUsers:
