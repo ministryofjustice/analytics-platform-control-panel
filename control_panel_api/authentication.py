@@ -21,7 +21,7 @@ class Auth0JWTAuthentication(BaseAuthentication):
             return None
 
         if prefix != 'JWT'.encode():
-            raise AuthenticationFailed('JWT prefix missing')
+            return None
 
         try:
             decoded = jwt.decode(
