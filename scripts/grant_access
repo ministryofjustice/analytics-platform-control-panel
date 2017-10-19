@@ -168,11 +168,11 @@ def sanitize(label):
     # replace runs of hyphens with a single hyphen
     label = re.sub(r'[^a-z0-9]+', '-', label)
     # label must start with a letter
-    label = re.sub(r'^[^a-z]*', '')
+    label = re.sub(r'^[^a-z]*', '', label)
     # label must be 63 chars or less
     label = label[:63]
     # make sure we end with an alphanumeric
-    label = re.sub(r'[^a-z0-9]+$', '')
+    label = re.sub(r'[^a-z0-9]+$', '', label)
     return label
 
 
