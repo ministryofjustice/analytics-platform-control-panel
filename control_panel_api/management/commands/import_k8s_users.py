@@ -12,6 +12,23 @@ from moj_analytics.auth0_client import Auth0, ManagementAPI, User as Auth0User
 logger = logging.getLogger(__name__)
 
 
+def get_user_secrets():
+    config.load_kube_config()
+    kubernetes_api = client.CoreV1Api()
+
+    secrets = kubernetes_api.list_secret_for_all_namespaces()
+
+    user_secrets = [
+        item.data for item in secrets.items
+        if item.metadata.name == 'user-secrets']
+
+    decoded_user_secrets = [
+        {k: base64.b64decode(v).decode() for k, v in item.items()}
+        for item in user_secrets]
+
+    return decoded_user_secrets
+
+
 def get_auth0_users():
     api = Auth0(
         settings.OIDC_CLIENT_ID,
@@ -20,42 +37,34 @@ def get_auth0_users():
     )
     api.access(ManagementAPI(settings.OIDC_DOMAIN))
 
-    results = api.management.get_all(Auth0User, 'connection=github')
+    return api.management.get_all(Auth0User, 'connection=github')
 
-    return results
+
+def get_auth0_ids():
+    auth0_id_by_nickname = {
+        item['nickname'].lower(): item['user_id']
+        for item in get_auth0_users()}
+
+    return auth0_id_by_nickname
 
 
 class Command(BaseCommand):
     help = "Import Kubernetes user-secrets data into the User.  " \
            "Uses KUBECONFIG envvar or defaults to ~/.kube/config"
 
-    USER_SECRETS_NAME = 'user-secrets'
-
     def handle(self, *args, **options):
-        config.load_kube_config()
-        v1 = client.CoreV1Api()
+        user_secrets = get_user_secrets()
 
-        results = v1.list_secret_for_all_namespaces()
-
-        user_secrets = [
-            item.data for item in results.items
-            if item.metadata.name == Command.USER_SECRETS_NAME]
-
-        decoded_user_secrets = [
-            {k: base64.b64decode(v).decode() for k, v in item.items()}
-            for item in user_secrets]
-
-        auth0_users_by_nickname = {
-            item['nickname'].lower(): item for item in get_auth0_users()}
+        auth0_id_by_nickname = get_auth0_ids()
 
         users_added = 0
-        for item in decoded_user_secrets:
+        for item in user_secrets:
             username = item['username']
             email = item['email']
             name = item['fullname']
 
             try:
-                auth0_id = auth0_users_by_nickname[username.lower()]['user_id']
+                auth0_id = auth0_id_by_nickname[username.lower()]
             except KeyError:
                 logger.warning(f"User {username} not found in auth0")
                 continue
