@@ -10,11 +10,30 @@ RUN apk add --no-cache \
 
 # install python3 and 'ca-certificates' so that HTTPS works consistently
 RUN apk add --no-cache \
+        openssl \
         ca-certificates \
         libffi-dev \
         libressl-dev \
         postgresql-dev \
         python3-dev
+
+# Install kubernetes
+ENV K8S_VERSION 1.7.7
+RUN wget https://storage.googleapis.com/kubernetes-release/release/v$K8S_VERSION/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl \
+    && chmod +x /usr/local/bin/kubectl
+
+# Install helm
+ENV HELM_VERSION 2.6.1
+RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz \
+    && tar xzf helm-v$HELM_VERSION-linux-amd64.tar.gz \
+    && mv linux-amd64/helm /usr/local/bin \
+    && rm -rf helm-v$HELM_VERSION-linux-amd64.tar.gz linux-amd64
+
+# Configure helm
+ENV HELM_HOME /tmp/helm
+RUN helm init --client-only
+COPY helm-repositories.yaml /tmp/helm/repository/repositories.yaml
+RUN helm repo update
 
 WORKDIR /home/control-panel
 
