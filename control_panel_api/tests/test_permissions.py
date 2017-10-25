@@ -70,7 +70,7 @@ class UserPermissionsTest(APITestCase):
     def test_create_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
-        data = {'username': 'foo'}
+        data = {'username': 'foo', 'auth0_id': 'github|888'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
@@ -84,7 +84,7 @@ class UserPermissionsTest(APITestCase):
     def test_update_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
-        data = {'username': 'foo'}
+        data = {'username': 'foo', 'auth0_id': 'github|888'}
         response = self.client.put(
             reverse('user-detail', (self.normal_user.auth0_id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
@@ -92,7 +92,7 @@ class UserPermissionsTest(APITestCase):
     def test_update_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
-        data = {'username': 'foo'}
+        data = {'username': 'foo', 'auth0_id': 'github|888'}
         response = self.client.put(
             reverse('user-detail', (self.normal_user.auth0_id,)), data)
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
