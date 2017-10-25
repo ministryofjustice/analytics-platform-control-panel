@@ -55,7 +55,7 @@ def create_role(role_name, add_saml_statement=False):
             "Effect": "Allow",
             "Principal": {
                 "Federated":
-                    f"{settings.IAM_ARN_BASE}:saml_provider/"
+                    f"{settings.IAM_ARN_BASE}:saml-provider/"
                     f"{settings.SAML_PROVIDER}"
             },
             "Action": "sts:AssumeRoleWithSAML",
