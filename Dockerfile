@@ -17,11 +17,6 @@ RUN apk add --no-cache \
         postgresql-dev \
         python3-dev
 
-# Install kubernetes
-ENV K8S_VERSION 1.7.7
-RUN wget https://storage.googleapis.com/kubernetes-release/release/v$K8S_VERSION/bin/linux/amd64/kubectl -O /usr/local/bin/kubectl \
-    && chmod +x /usr/local/bin/kubectl
-
 # Install helm
 ENV HELM_VERSION 2.7.0
 RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz \
