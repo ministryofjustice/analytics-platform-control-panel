@@ -25,7 +25,6 @@ class UserSerializer(serializers.ModelSerializer):
             'userapps',
             'users3buckets'
         )
-        read_only_fields = ('auth0_id',)
 
 
 class GroupSerializer(serializers.ModelSerializer):

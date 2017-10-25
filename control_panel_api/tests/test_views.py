@@ -71,14 +71,17 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
+        self.assertEqual(data['auth0_id'], response.data['auth0_id'])
+
         mock_aws_create_role.assert_called()
 
     def test_update(self):
-        data = {'username': 'foo'}
+        data = {'username': 'foo', 'auth0_id': 'github|888'}
         response = self.client.put(
             reverse('user-detail', (self.fixture.auth0_id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['username'], response.data['username'])
+        self.assertEqual(data['auth0_id'], response.data['auth0_id'])
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
