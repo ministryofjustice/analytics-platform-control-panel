@@ -7,14 +7,21 @@ READONLY = 'readonly'
 
 
 def _policy_name(bucket_name, readwrite=False):
-    """Prefix the policy name with bucket name, postfix with access level e.g. dev-james-readwrite"""
+    """
+    Prefix the policy name with bucket name, postfix with access level
+    eg: dev-james-readwrite
+    """
     return "{}-{}".format(bucket_name, READWRITE if readwrite else READONLY)
 
 
 def _policy_arn(bucket_name, readwrite=False):
-    """Return full bucket policy arn e.g. arn:aws:iam::1337:policy/bucketname-readonly"""
-    return "{}:policy/{}".format(settings.IAM_ARN_BASE,
-                                 _policy_name(bucket_name, readwrite))
+    """
+    Return full bucket policy arn
+    eg: arn:aws:iam::1337:policy/bucketname-readonly
+    """
+    return "{}:policy/{}".format(
+        settings.IAM_ARN_BASE,
+        _policy_name(bucket_name, readwrite))
 
 
 def create_role(role_name, add_saml_statement=False):
@@ -34,27 +41,30 @@ def create_role(role_name, add_saml_statement=False):
             {
                 "Effect": "Allow",
                 "Principal": {
-                    "AWS": f"{settings.IAM_ARN_BASE}:role/{settings.K8S_WORKER_ROLE_NAME}",
+                    "AWS":
+                        f"{settings.IAM_ARN_BASE}:role/"
+                        f"{settings.K8S_WORKER_ROLE_NAME}",
                 },
                 "Action": "sts:AssumeRole"
             }
         ]
     }
 
-    saml_statement = {
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": settings.SAML_PROVIDER_ARN
-        },
-        "Action": "sts:AssumeRoleWithSAML",
-        "Condition": {
-            "StringEquals": {
-                "SAML:aud": "https://signin.aws.amazon.com/saml"
+    if add_saml_statement:
+        saml_statement = {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated":
+                    f"{settings.IAM_ARN_BASE}:saml-provider/"
+                    f"{settings.SAML_PROVIDER}"
+            },
+            "Action": "sts:AssumeRoleWithSAML",
+            "Condition": {
+                "StringEquals": {
+                    "SAML:aud": "https://signin.aws.amazon.com/saml"
+                }
             }
         }
-    }
-
-    if add_saml_statement:
         role_policy['Statement'].append(saml_statement)
 
     aws.create_role(role_name, role_policy)
@@ -119,9 +129,13 @@ def get_policy_document(bucket_name_arn, readwrite):
 
 def create_bucket(bucket_name):
     aws.create_bucket(
-        bucket_name, region=settings.BUCKET_REGION, acl='private')
-    aws.put_bucket_logging(bucket_name, target_bucket=settings.LOGS_BUCKET_NAME,
-                           target_prefix="{}/".format(bucket_name))
+        bucket_name,
+        region=settings.BUCKET_REGION,
+        acl='private')
+    aws.put_bucket_logging(
+        bucket_name,
+        target_bucket=settings.LOGS_BUCKET_NAME,
+        target_prefix=f"{bucket_name}/")
 
 
 def create_bucket_policies(bucket_name, bucket_arn):
@@ -140,7 +154,10 @@ def create_bucket_policies(bucket_name, bucket_arn):
 
 
 def delete_bucket_policies(bucket_name):
-    """Delete policy from attached entities first then delete policy, for both policy types"""
+    """
+    Delete policy from attached entities first then delete policy, for both
+    policy types
+    """
     policy_arn_readwrite = _policy_arn(bucket_name, readwrite=True)
     aws.detach_policy_from_entities(policy_arn_readwrite)
     aws.delete_policy(policy_arn_readwrite)
@@ -150,8 +167,7 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
-def detach_bucket_access_from_role(
-        bucket_name, readwrite, role_name):
+def detach_bucket_access_from_role(bucket_name, readwrite, role_name):
     policy_arn = _policy_arn(
         bucket_name=bucket_name,
         readwrite=readwrite

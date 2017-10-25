@@ -68,7 +68,7 @@ USER_IAM_ROLE_ASSUME_POLICY = {
         {
             'Effect': 'Allow',
             'Principal': {
-                'Federated': settings.SAML_PROVIDER_ARN
+                'Federated': f"{settings.IAM_ARN_BASE}:saml-provider/{settings.SAML_PROVIDER}"
             },
             'Action': 'sts:AssumeRoleWithSAML',
             'Condition': {
