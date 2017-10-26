@@ -62,10 +62,21 @@ jobs:
             docker push "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
 
       - deploy:
-          name: Deploy to Kubernetes
+          name: Deploy to dev
           command: |
             curl ${JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
               --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
               --data COMMIT_HASH=${CIRCLE_SHA1} \
               --data BRANCH_NAME=${CIRCLE_BRANCH} \
               --user ${JENKINS_USER}:${JENKINS_TOKEN}
+
+      - deploy:
+          name: Deploy to alpha
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "api" ]; then
+              curl ${ALPHA_JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
+                --data token=${ALPHA_JENKINS_TOKEN} \
+                --data COMMIT_HASH=${CIRCLE_SHA1} \
+                --data BRANCH_NAME=${CIRCLE_BRANCH} \
+                --user ${ALPHA_JENKINS_USER}:${ALPHA_JENKINS_TOKEN}
+            fi
