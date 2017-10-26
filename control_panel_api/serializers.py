@@ -34,27 +34,6 @@ class GroupSerializer(serializers.ModelSerializer):
         fields = ('id', 'url', 'name')
 
 
-class AppSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = App
-        fields = (
-            'id',
-            'url',
-            'name',
-            'slug',
-            'repo_url',
-            'iam_role_name',
-            'created_by',
-            'apps3buckets',
-            'userapps',
-        )
-
-    def validate_repo_url(self, value):
-        """Normalise repo URLs by removing trailing .git"""
-        return value.rsplit(".git", 1)[0]
-
-
 class AppS3BucketSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -93,11 +72,76 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class SimpleAppSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = App
+        fields = (
+            'id',
+            'url',
+            'name',
+            'slug',
+            'repo_url',
+            'iam_role_name',
+            'created_by',
+        )
+
+
+class SimpleS3BucketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = S3Bucket
+        fields = ('id', 'url', 'name', 'arn', 'created_by')
+
+
+class AppAppS3BucketSerializer(serializers.ModelSerializer):
+    """Used from within with AppSerializer to not expose app"""
+    s3bucket = SimpleS3BucketSerializer()
+
+    class Meta:
+        model = AppS3Bucket
+        fields = ('id', 'url', 's3bucket', 'access_level')
+
+
+class S3BucketAppS3BucketSerializer(serializers.ModelSerializer):
+    """Used from within with S3BucketSerializer to not expose s3bucket"""
+    app = SimpleAppSerializer()
+
+    class Meta:
+        model = AppS3Bucket
+        fields = ('id', 'url', 'app', 'access_level')
+
+
+class AppSerializer(serializers.ModelSerializer):
+
+    apps3buckets = AppAppS3BucketSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = App
+        fields = (
+            'id',
+            'url',
+            'name',
+            'slug',
+            'repo_url',
+            'iam_role_name',
+            'created_by',
+            'apps3buckets',
+            'userapps',
+        )
+
+    def validate_repo_url(self, value):
+        """Normalise repo URLs by removing trailing .git"""
+        return value.rsplit(".git", 1)[0]
+
+
 class S3BucketSerializer(serializers.ModelSerializer):
+    apps3buckets = S3BucketAppS3BucketSerializer(many=True, read_only=True)
 
     class Meta:
         model = S3Bucket
         fields = ('id', 'url', 'name', 'arn', 'apps3buckets', 'created_by')
+        read_only_fields = ('apps3buckets', 'created_by')
 
 
 class AppUserSerializer(serializers.ModelSerializer):
