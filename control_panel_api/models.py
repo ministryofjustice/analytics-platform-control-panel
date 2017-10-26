@@ -7,7 +7,7 @@ from django.template.defaultfilters import slugify
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
-from control_panel_api import services, validators
+from control_panel_api import helm, services, validators
 
 
 class User(AbstractUser):
@@ -36,6 +36,10 @@ class User(AbstractUser):
 
     def aws_delete_role(self):
         services.delete_role(self.iam_role_name)
+
+    def helm_create_user(self):
+        helm.init_user(self.username, self.email, self.get_full_name())
+        helm.config_user(self.username)
 
 
 class App(TimeStampedModel):

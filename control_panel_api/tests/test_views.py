@@ -65,8 +65,9 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('user-detail', (self.fixture.auth0_id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
+    @patch('control_panel_api.models.User.helm_create_user')
     @patch('control_panel_api.models.User.aws_create_role')
-    def test_create(self, mock_aws_create_role):
+    def test_create(self, mock_aws_create_role, mock_helm_create_user):
         data = {'auth0_id': 'github|2', 'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
@@ -74,6 +75,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['auth0_id'], response.data['auth0_id'])
 
         mock_aws_create_role.assert_called()
+        mock_helm_create_user.assert_called()
 
     def test_update(self):
         data = {'username': 'foo', 'auth0_id': 'github|888'}

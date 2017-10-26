@@ -16,6 +16,22 @@ from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
 
 
 class UserTestCase(TestCase):
+    @patch('control_panel_api.helm.init_user')
+    @patch('control_panel_api.helm.config_user')
+    def test_helm_create_user(self, mock_config_user, mock_init_user):
+        username = 'foo'
+        email = 'bar@baz.com'
+        name = 'bat'
+        user = User.objects.create(
+            username=username,
+            email=email,
+            name=name,
+        )
+        user.helm_create_user()
+
+        mock_config_user.assert_called_with(username)
+        mock_init_user.assert_called_with(username, email, name)
+
     @patch('control_panel_api.services.create_role')
     def test_aws_create_role_calls_service(self, mock_create_role):
         username = 'james'

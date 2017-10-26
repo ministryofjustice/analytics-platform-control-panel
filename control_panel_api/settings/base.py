@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import boto3
 
@@ -143,3 +144,7 @@ RAVEN_CONFIG = {
 OIDC_CLIENT_ID = os.environ.get('OIDC_CLIENT_ID')
 OIDC_CLIENT_SECRET = os.environ.get('OIDC_CLIENT_SECRET')
 OIDC_DOMAIN = os.environ.get('OIDC_DOMAIN')
+
+# Helm variables
+NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
+SUBPROCESS_MODULE = subprocess

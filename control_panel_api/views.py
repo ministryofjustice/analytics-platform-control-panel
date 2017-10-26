@@ -39,6 +39,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         instance = serializer.save()
         instance.aws_create_role()
+        instance.helm_create_user()
 
     def perform_destroy(self, instance):
         instance.delete()
