@@ -1,8 +1,6 @@
 import os
-import subprocess
 
 import boto3
-
 
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
@@ -147,4 +145,3 @@ OIDC_DOMAIN = os.environ.get('OIDC_DOMAIN')
 
 # Helm variables
 NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
-SUBPROCESS_MODULE = subprocess

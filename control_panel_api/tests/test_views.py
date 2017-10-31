@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from model_mommy import mommy
 from rest_framework.reverse import reverse
@@ -28,6 +28,7 @@ class AuthenticatedClientMixin(object):
         self.client.force_login(self.superuser)
 
 
+@patch('control_panel_api.helm.subprocess.run', MagicMock())
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
@@ -183,6 +184,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('app-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual('http://foo.com', response.data['repo_url'])
+
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 

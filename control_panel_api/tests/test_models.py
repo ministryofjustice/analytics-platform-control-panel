@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.db.utils import IntegrityError
 from django.test import TestCase
@@ -15,6 +15,7 @@ from control_panel_api.models import (
 from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
 
 
+@patch('control_panel_api.helm.subprocess.run', MagicMock())
 class UserTestCase(TestCase):
     @patch('control_panel_api.helm.init_user')
     @patch('control_panel_api.helm.config_user')
