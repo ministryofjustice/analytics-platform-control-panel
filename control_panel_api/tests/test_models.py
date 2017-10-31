@@ -28,7 +28,7 @@ class UserTestCase(TestCase):
             email=email,
             name=name,
         )
-        user.helm_create_user()
+        user.helm_create()
 
         mock_config_user.assert_called_with(username)
         mock_init_user.assert_called_with(username, email, name)

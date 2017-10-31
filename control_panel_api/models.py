@@ -37,7 +37,7 @@ class User(AbstractUser):
     def aws_delete_role(self):
         services.delete_role(self.iam_role_name)
 
-    def helm_create_user(self):
+    def helm_create(self):
         helm.init_user(self.username, self.email, self.get_full_name())
         helm.config_user(self.username)
 
