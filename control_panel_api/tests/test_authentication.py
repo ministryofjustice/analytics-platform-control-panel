@@ -1,9 +1,11 @@
-from django.test import override_settings
 import jwt
+from django.test import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_403_FORBIDDEN, HTTP_200_OK
+from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 from rest_framework.test import APITestCase
+
+from control_panel_api.models import User
 
 
 def build_jwt(user, audience, secret):
@@ -12,13 +14,15 @@ def build_jwt(user, audience, secret):
             'email': user.email,
             'name': user.name,
             'aud': audience,
-            'sub': user.auth0_id
+            'sub': user.auth0_id,
+            'nickname': user.username,
         },
         secret,
         algorithm='HS256'
     ).decode('utf8')
 
 
+@override_settings(OIDC_CLIENT_SECRET='secret', OIDC_CLIENT_ID='audience')
 class Auth0JWTAuthenticationTestCase(APITestCase):
 
     def setUp(self):
@@ -56,10 +60,30 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='JWT bar')
         self.assert_access_denied()
 
-    @override_settings(OIDC_CLIENT_SECRET='secret', OIDC_CLIENT_ID='audience')
     def test_good_token(self):
-
         token = build_jwt(self.user, 'audience', 'secret')
 
-        self.client.credentials(HTTP_AUTHORIZATION='JWT {}'.format(token))
+        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         self.assert_authenticated()
+
+    def test_unknown_valid_user_is_created(self):
+        new_user = mommy.prepare(
+            'control_panel_api.User',
+            email='new@example.com',
+            name='new User',
+            username='new',
+            auth0_id='github|12346',
+            is_superuser=False,
+        )
+
+        token = build_jwt(new_user, 'audience', 'secret')
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
+        self.assert_access_denied()
+
+        created_user = User.objects.get(pk=new_user.auth0_id)
+        self.assertIsNotNone(created_user)
+        self.assertEqual(new_user.auth0_id, created_user.auth0_id)
+        self.assertEqual(new_user.username, created_user.username)
+        self.assertEqual(new_user.name, created_user.name)
+        self.assertEqual(new_user.email, created_user.email)
