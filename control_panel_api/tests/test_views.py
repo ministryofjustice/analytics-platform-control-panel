@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from model_mommy import mommy
 from rest_framework.reverse import reverse
@@ -28,6 +28,7 @@ class AuthenticatedClientMixin(object):
         self.client.force_login(self.superuser)
 
 
+@patch('control_panel_api.helm.subprocess.run', MagicMock())
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
@@ -65,8 +66,9 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('user-detail', (self.fixture.auth0_id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
+    @patch('control_panel_api.models.User.helm_create')
     @patch('control_panel_api.models.User.aws_create_role')
-    def test_create(self, mock_aws_create_role):
+    def test_create(self, mock_aws_create_role, mock_helm_create_user):
         data = {'auth0_id': 'github|2', 'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
@@ -74,6 +76,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['auth0_id'], response.data['auth0_id'])
 
         mock_aws_create_role.assert_called()
+        mock_helm_create_user.assert_called()
 
     def test_update(self):
         data = {'username': 'foo', 'auth0_id': 'github|888'}
@@ -181,6 +184,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('app-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual('http://foo.com', response.data['repo_url'])
+
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
