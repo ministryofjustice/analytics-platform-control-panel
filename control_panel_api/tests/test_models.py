@@ -276,14 +276,14 @@ class UserS3BucketTestCase(TestCase):
 
         cls.users3bucket_1 = cls.user_1.users3buckets.create(
             s3bucket=cls.s3_bucket_1,
-            access_level=AppS3Bucket.READONLY,
+            is_admin=False,
         )
 
     def test_one_record_per_user_per_s3bucket(self):
         with self.assertRaises(IntegrityError):
             self.user_1.users3buckets.create(
                 s3bucket=self.s3_bucket_1,
-                access_level=UserS3Bucket.READWRITE,
+                is_admin=False,
             )
 
     @patch('control_panel_api.services.attach_bucket_access_to_role')
@@ -304,4 +304,14 @@ class UserS3BucketTestCase(TestCase):
             self.s3_bucket_1.name,
             self.users3bucket_1.has_readwrite_access(),
             self.user_1.iam_role_name
+        )
+
+    @patch('control_panel_api.services.update_bucket_access')
+    def test_update(self, mock_update_bucket_access):
+        self.users3bucket_1.aws_update()
+
+        mock_update_bucket_access.assert_called_with(
+            self.s3_bucket_1.name,
+            self.users3bucket_1.has_readwrite_access(),
+            self.user_1.iam_role_name,
         )

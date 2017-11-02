@@ -188,10 +188,10 @@ class AccessToS3Bucket(TimeStampedModel):
     class Meta:
         abstract = True
 
-    def has_readwrite_access(self):
-        return self.access_level == self.READWRITE
-
     def aws_role_name(self):
+        raise NotImplementedError
+
+    def has_readwrite_access(self):
         raise NotImplementedError
 
     def aws_create(self):
@@ -234,24 +234,37 @@ class AppS3Bucket(AccessToS3Bucket):
     def aws_role_name(self):
         return self.app.iam_role_name
 
+    def has_readwrite_access(self):
+        return self.access_level == self.READWRITE
+
 
 class UserS3Bucket(AccessToS3Bucket):
     """
     A user can have access to several S3 buckets.
 
     We have two access levels, "readonly" (default) and "readwrite".
-    The `is_admin` field determine if the user has admin privileges on the
-    S3 bucket
-    """
 
+    The `is_admin` field determines the `access_level` to the S3Bucket. The
+    `access_level` can not be changed directly.
+    """
     user = models.ForeignKey(
         User, related_name='users3buckets', on_delete=models.CASCADE)
     is_admin = models.BooleanField(default=False)
 
     class Meta:
-        # one record per user/s3bucket
         unique_together = ('user', 's3bucket')
         ordering = ('id',)
 
     def aws_role_name(self):
         return self.user.iam_role_name
+
+    def has_readwrite_access(self):
+        return self.is_admin
+
+    def save(self, **kwargs):
+        if self.has_readwrite_access():
+            self.access_level = self.READWRITE
+        else:
+            self.access_level = self.READONLY
+
+        super().save(**kwargs)
