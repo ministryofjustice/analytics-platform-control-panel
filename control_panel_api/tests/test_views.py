@@ -465,7 +465,7 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
         self.users3bucket_1 = self.user_1.users3buckets.create(
             s3bucket=self.s3_bucket_1,
-            access_level=AppS3Bucket.READONLY,
+            is_admin=True,
         )
 
     def test_list(self):
@@ -483,7 +483,7 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('s3bucket', response.data)
         self.assertIn('access_level', response.data)
         self.assertIn('is_admin', response.data)
-        self.assertEqual('readonly', response.data['access_level'])
+        self.assertEqual(UserS3Bucket.READWRITE, response.data['access_level'])
         self.assertEqual(6, len(response.data))
 
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
@@ -491,10 +491,11 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         data = {
             'user': self.user_2.auth0_id,
             's3bucket': self.s3_bucket_1.id,
-            'access_level': AppS3Bucket.READONLY,
+            'is_admin': True,
         }
         response = self.client.post(reverse('users3bucket-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
+        self.assertEqual(UserS3Bucket.READWRITE, response.data['access_level'])
 
         mock_aws_create.assert_called()
 
@@ -515,12 +516,12 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         data = {
             'user': self.user_1.auth0_id,
             's3bucket': self.s3_bucket_1.id,
-            'access_level': UserS3Bucket.READWRITE,
+            'is_admin': False,
         }
         response = self.client.put(
             reverse('users3bucket-detail', (self.users3bucket_1.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(data['access_level'], response.data['access_level'])
+        self.assertEqual(UserS3Bucket.READONLY, response.data['access_level'])
 
         mock_aws_update.assert_called()
 

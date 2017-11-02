@@ -58,6 +58,7 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserS3Bucket
         fields = ('id', 'url', 'user', 's3bucket', 'access_level', 'is_admin')
+        read_only_fields = ('access_level',)
 
     def update(self, instance, validated_data):
         if instance.user != validated_data['user']:
