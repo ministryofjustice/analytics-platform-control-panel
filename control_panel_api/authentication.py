@@ -39,9 +39,14 @@ class Auth0JWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed('JWT missing "sub" field')
 
         try:
-            user = User.objects.get(auth0_id=sub)
+            user = User.objects.get(pk=sub)
 
         except User.DoesNotExist:
-            raise AuthenticationFailed(f'No such user: {sub}')
+            user = User.objects.create(
+                pk=sub,
+                username=decoded.get(settings.OIDC_FIELD_USERNAME),
+                email=decoded.get(settings.OIDC_FIELD_EMAIL),
+                name=decoded.get(settings.OIDC_FIELD_NAME),
+            )
 
         return user, None

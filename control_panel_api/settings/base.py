@@ -142,6 +142,9 @@ RAVEN_CONFIG = {
 OIDC_CLIENT_ID = os.environ.get('OIDC_CLIENT_ID')
 OIDC_CLIENT_SECRET = os.environ.get('OIDC_CLIENT_SECRET')
 OIDC_DOMAIN = os.environ.get('OIDC_DOMAIN')
+OIDC_FIELD_USERNAME = 'nickname'
+OIDC_FIELD_EMAIL = 'email'
+OIDC_FIELD_NAME = 'name'
 
 # Helm variables
 NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
