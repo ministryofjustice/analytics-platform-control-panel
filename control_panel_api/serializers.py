@@ -144,7 +144,7 @@ class S3BucketSerializer(serializers.ModelSerializer):
         read_only_fields = ('apps3buckets', 'created_by')
 
 
-class AppUserSerializer(serializers.ModelSerializer):
+class UserAppSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserApp
