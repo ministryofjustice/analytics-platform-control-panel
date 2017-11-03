@@ -11,22 +11,6 @@ from control_panel_api.models import (
 )
 
 
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = (
-            'auth0_id',
-            'url',
-            'username',
-            'name',
-            'email',
-            'groups',
-            'userapps',
-            'users3buckets'
-        )
-
-
 class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -161,3 +145,43 @@ class UserAppSerializer(serializers.ModelSerializer):
             )
 
         return super().update(instance, validated_data)
+
+
+class UserUserAppSerializer(serializers.ModelSerializer):
+    """Used from within with UserSerializer to explicitly expose the app
+    but hide the User
+    """
+    app = SimpleAppSerializer()
+
+    class Meta:
+        model = UserApp
+        fields = ('id', 'app', 'is_admin')
+
+
+class UserUserS3BucketSerializer(serializers.ModelSerializer):
+    """Used from within with UserSerializer to explicitly expose the s3bucket
+    but hide the User
+    """
+    s3bucket = SimpleS3BucketSerializer()
+
+    class Meta:
+        model = UserS3Bucket
+        fields = ('id', 's3bucket', 'access_level', 'is_admin')
+
+
+class UserSerializer(serializers.ModelSerializer):
+    userapps = UserUserAppSerializer(many=True, read_only=True)
+    users3buckets = UserUserS3BucketSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+            'groups',
+            'userapps',
+            'users3buckets',
+        )

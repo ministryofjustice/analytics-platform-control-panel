@@ -20,6 +20,26 @@ from control_panel_api.models import (
 )
 
 
+class AssertionsMixin(object):
+    def assert_s3bucket(self, s3bucket):
+        self.assertIn('id', s3bucket)
+        self.assertIn('url', s3bucket)
+        self.assertIn('name', s3bucket)
+        self.assertIn('arn', s3bucket)
+        self.assertIn('created_by', s3bucket)
+        self.assertEqual(5, len(s3bucket))
+
+    def assert_app(self, app):
+        self.assertIn('id', app)
+        self.assertIn('url', app)
+        self.assertIn('name', app)
+        self.assertIn('slug', app)
+        self.assertIn('repo_url', app)
+        self.assertIn('iam_role_name', app)
+        self.assertIn('created_by', app)
+        self.assertEqual(7, len(app))
+
+
 class AuthenticatedClientMixin(object):
 
     def setUp(self):
@@ -29,11 +49,13 @@ class AuthenticatedClientMixin(object):
 
 
 @patch('control_panel_api.helm.subprocess.run', MagicMock())
-class UserViewTest(AuthenticatedClientMixin, APITestCase):
+class UserViewTest(AssertionsMixin, AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
         super().setUp()
         self.fixture = mommy.make('control_panel_api.User', auth0_id='github|1')
+        mommy.make('control_panel_api.UserS3Bucket', user=self.fixture)
+        mommy.make('control_panel_api.UserApp', user=self.fixture)
 
     def test_list(self):
         response = self.client.get(reverse('user-list'))
@@ -53,6 +75,22 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('userapps', response.data)
         self.assertIn('users3buckets', response.data)
         self.assertEqual(8, len(response.data))
+
+        userapp = response.data['userapps'][0]
+        self.assertIn('id', userapp)
+        self.assertIn('app', userapp)
+        self.assertIn('is_admin', userapp)
+        self.assertEqual(3, len(userapp))
+
+        self.assert_app(userapp['app'])
+
+        users3bucket = response.data['users3buckets'][0]
+        self.assertIn('id', users3bucket)
+        self.assertIn('s3bucket', users3bucket)
+        self.assertIn('access_level', users3bucket)
+        self.assertEqual(4, len(users3bucket))
+
+        self.assert_s3bucket(users3bucket['s3bucket'])
 
     @patch('control_panel_api.models.User.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
@@ -87,7 +125,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['auth0_id'], response.data['auth0_id'])
 
 
-class AppViewTest(AuthenticatedClientMixin, APITestCase):
+class AppViewTest(AssertionsMixin, AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
         super().setUp()
@@ -136,13 +174,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('access_level', apps3bucket)
         self.assertEqual(4, len(apps3bucket))
 
-        s3bucket = apps3bucket['s3bucket']
-        self.assertIn('id', s3bucket)
-        self.assertIn('url', s3bucket)
-        self.assertIn('name', s3bucket)
-        self.assertIn('arn', s3bucket)
-        self.assertIn('created_by', s3bucket)
-        self.assertEqual(5, len(s3bucket))
+        self.assert_s3bucket(apps3bucket['s3bucket'])
 
     @patch('control_panel_api.models.App.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
@@ -367,7 +399,7 @@ class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
 
-class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+class S3BucketViewTest(AssertionsMixin, AuthenticatedClientMixin, APITestCase):
 
     def setUp(self):
         super().setUp()
@@ -400,15 +432,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertIn('access_level', apps3bucket)
         self.assertEqual(4, len(apps3bucket))
 
-        app = apps3bucket['app']
-        self.assertIn('id', app)
-        self.assertIn('url', app)
-        self.assertIn('name', app)
-        self.assertIn('slug', app)
-        self.assertIn('repo_url', app)
-        self.assertIn('iam_role_name', app)
-        self.assertIn('created_by', app)
-        self.assertEqual(7, len(app))
+        self.assert_app(apps3bucket['app'])
 
     @patch('control_panel_api.models.S3Bucket.aws_delete')
     def test_delete(self, mock_aws_delete):
