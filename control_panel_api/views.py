@@ -111,6 +111,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)
         instance.aws_create()
+        instance.create_users3bucket(user=self.request.user)
 
     def perform_destroy(self, instance):
         instance.delete()
