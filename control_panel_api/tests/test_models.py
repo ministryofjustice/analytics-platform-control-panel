@@ -197,11 +197,9 @@ class S3BucketTestCase(TestCase):
 class AppS3BucketTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # Apps
-        cls.app_1 = App.objects.create(name="app_1")
-
-        # S3 buckets
-        cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
+        cls.app_1 = mommy.make('control_panel_api.App', name="app_1")
+        cls.s3_bucket_1 = mommy.make(
+            'control_panel_api.S3Bucket', name="test-bucket-1")
 
     def test_one_record_per_app_per_s3bucket(self):
         # Give app_1 access to bucket_1 (read-only)
@@ -261,6 +259,25 @@ class AppS3BucketTestCase(TestCase):
             apps3bucket.has_readwrite_access(),
             self.app_1.iam_role_name
         )
+
+    def test_repo_name(self):
+        app = mommy.prepare(
+            'control_panel_api.App',
+            repo_url='https://github.com/org/a_repo_name'
+        )
+        self.assertEqual('a_repo_name', app._repo_name)
+
+        app.repo_url = 'git@github.com:org/repo_2.git'
+        self.assertEqual('repo_2', app._repo_name)
+
+        app.repo_url = 'https://github.com/org/a_repo_name/'
+        self.assertEqual('a_repo_name', app._repo_name)
+
+        app.repo_url = 'http://foo.com'
+        self.assertEqual('foo.com', app._repo_name)
+
+        app.repo_url = 'http://foo.com/'
+        self.assertEqual('foo.com', app._repo_name)
 
 
 class UserS3BucketTestCase(TestCase):
