@@ -261,23 +261,19 @@ class AppS3BucketTestCase(TestCase):
         )
 
     def test_repo_name(self):
-        app = mommy.prepare(
-            'control_panel_api.App',
-            repo_url='https://github.com/org/a_repo_name'
+        app = mommy.prepare('control_panel_api.App')
+
+        url_test_cases = (
+            ('https://github.com/org/a_repo_name', 'a_repo_name'),
+            ('git@github.com:org/repo_2.git', 'repo_2'),
+            ('https://github.com/org/a_repo_name/', 'a_repo_name'),
+            ('http://foo.com', 'foo.com'),
+            ('http://foo.com/', 'foo.com'),
         )
-        self.assertEqual('a_repo_name', app._repo_name)
 
-        app.repo_url = 'git@github.com:org/repo_2.git'
-        self.assertEqual('repo_2', app._repo_name)
-
-        app.repo_url = 'https://github.com/org/a_repo_name/'
-        self.assertEqual('a_repo_name', app._repo_name)
-
-        app.repo_url = 'http://foo.com'
-        self.assertEqual('foo.com', app._repo_name)
-
-        app.repo_url = 'http://foo.com/'
-        self.assertEqual('foo.com', app._repo_name)
+        for url, expected in url_test_cases:
+            app.repo_url = url
+            self.assertEqual(expected, app._repo_name)
 
 
 class UserS3BucketTestCase(TestCase):
