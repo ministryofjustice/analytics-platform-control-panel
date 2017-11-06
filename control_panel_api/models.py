@@ -121,6 +121,14 @@ class S3Bucket(TimeStampedModel):
         """Note we do not destroy the actual data, just the policies"""
         services.delete_bucket_policies(self.name)
 
+    def create_users3bucket(self, user):
+        UserS3Bucket.objects.create(
+            user=user,
+            s3bucket=self,
+            is_admin=True,
+            access_level=UserS3Bucket.READWRITE,
+        )
+
 
 class Role(TimeStampedModel):
     name = models.CharField(max_length=256, blank=False, unique=True)

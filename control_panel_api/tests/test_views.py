@@ -432,6 +432,19 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
         mock_aws_create.assert_called()
 
+        users3bucket = UserS3Bucket.objects.get(
+            user_id=self.superuser.auth0_id,
+            s3bucket_id=response.data['id'],
+        )
+
+        self.assertEqual(
+            self.superuser.auth0_id, users3bucket.user.auth0_id)
+        self.assertEqual(
+            response.data['id'], users3bucket.s3bucket.id)
+        self.assertEqual(
+            UserS3Bucket.READWRITE, users3bucket.access_level)
+        self.assertTrue(users3bucket.is_admin)
+
     def test_create_bad_requests(self):
         fixtures = (
             {'name': self.fixture.name},  # name exists
