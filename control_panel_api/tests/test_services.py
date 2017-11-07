@@ -78,8 +78,9 @@ class ServicesTestCase(TestCase):
 
     @patch('control_panel_api.aws.attach_policy_to_role')
     def test_apps3bucket_create(self, mock_attach_policy_to_role):
-        app = App.objects.create(slug='appslug')
-        s3bucket = S3Bucket.objects.create(name='test-bucketname')
+        app = mommy.make('control_panel_api.App', slug='appslug')
+        s3bucket = mommy.make(
+            'control_panel_api.S3Bucket', name='test-bucketname')
 
         for access_level in ['readonly', 'readwrite']:
             apps3bucket, _ = AppS3Bucket.objects.update_or_create(
@@ -108,8 +109,9 @@ class ServicesTestCase(TestCase):
     def test_apps3bucket_update(self,
             mock_detach_policy_from_role,
             mock_attach_policy_to_role):
-        app = App.objects.create(slug='appslug')
-        s3bucket = S3Bucket.objects.create(name='test-bucketname')
+        app = mommy.make('control_panel_api.App', slug='appslug')
+        s3bucket = mommy.make(
+            'control_panel_api.S3Bucket', name='test-bucketname')
 
         app_role_name = f'test_app_{app.slug}'
 

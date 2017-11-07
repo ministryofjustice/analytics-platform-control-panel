@@ -68,8 +68,7 @@ class App(TimeStampedModel):
 
     @property
     def _repo_name(self):
-        '''
-        Returns the repo name
+        """Returns the repo name
 
         The name is the part after the last slash in the URL, without
         the '.git' (if present).
@@ -78,10 +77,16 @@ class App(TimeStampedModel):
 
         "https://github.com/org/a_repo_name" => "a_repo_name"
         "git@github.com:org/repo_2.git" => "repo_2"
-        '''
+        """
+        repo_name = self.repo_url
 
-        last_after_slash = self.repo_url.split('/')[-1]
-        return last_after_slash.replace('.git', '')
+        if repo_name.endswith('/'):
+            repo_name = repo_name[:-1]
+
+        if repo_name.endswith('.git'):
+            repo_name = repo_name[:-4]
+
+        return repo_name.rsplit('/', 1)[1]
 
 
 class UserApp(TimeStampedModel):
