@@ -78,11 +78,15 @@ class App(TimeStampedModel):
         "https://github.com/org/a_repo_name" => "a_repo_name"
         "git@github.com:org/repo_2.git" => "repo_2"
         """
-        last_after_slash = self.repo_url \
-            .rstrip('/') \
-            .replace('.git', '') \
-            .rsplit('/', 1)[1]
-        return last_after_slash
+        repo_name = self.repo_url
+
+        if repo_name.endswith('/'):
+            repo_name = repo_name[:-1]
+
+        if repo_name.endswith('.git'):
+            repo_name = repo_name[:-4]
+
+        return repo_name.rsplit('/', 1)[1]
 
 
 class UserApp(TimeStampedModel):
