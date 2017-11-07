@@ -266,6 +266,7 @@ class AppS3BucketTestCase(TestCase):
         url_test_cases = (
             ('https://github.com/org/a_repo_name', 'a_repo_name'),
             ('git@github.com:org/repo_2.git', 'repo_2'),
+            ('https://github.com/org/a_repo_name.git/', 'a_repo_name'),
             ('https://github.com/org/a_repo_name/', 'a_repo_name'),
             ('http://foo.com', 'foo.com'),
             ('http://foo.com/', 'foo.com'),
