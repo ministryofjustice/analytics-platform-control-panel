@@ -127,12 +127,13 @@ class S3Bucket(TimeStampedModel):
         services.delete_bucket_policies(self.name)
 
     def create_users3bucket(self, user):
-        UserS3Bucket.objects.create(
+        users3bucket = UserS3Bucket.objects.create(
             user=user,
             s3bucket=self,
             is_admin=True,
             access_level=UserS3Bucket.READWRITE,
         )
+        users3bucket.aws_create()
 
 
 class Role(TimeStampedModel):

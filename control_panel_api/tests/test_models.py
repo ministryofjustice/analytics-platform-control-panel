@@ -193,6 +193,12 @@ class S3BucketTestCase(TestCase):
 
         mock_delete_bucket_policies.assert_called()
 
+    @patch('control_panel_api.models.UserS3Bucket.aws_create')
+    def test_create_users3bucket(self, mock_aws_create):
+        self.s3_bucket_1.create_users3bucket(
+            mommy.make('control_panel_api.User'))
+        mock_aws_create.assert_called()
+
 
 class AppS3BucketTestCase(TestCase):
     @classmethod
