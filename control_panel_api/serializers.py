@@ -133,8 +133,8 @@ class UserSimpleSerializer(serializers.ModelSerializer):
 
 class UserS3BucketNestedInS3BucketSerializer(serializers.ModelSerializer):
     """
-    Used from within with S3BucketSerializer to explicitly expose the
-    user but not the s3bucket
+    Serializer for `UserS3Bucket`s used within S3Bucket serializer.
+    It exposes the `user` but not the `s3bucket` (which is the parent)
     """
     user = UserSimpleSerializer()
 
