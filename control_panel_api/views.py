@@ -22,7 +22,7 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
-    AppUserSerializer,
+    UserAppSerializer,
     GroupSerializer,
     S3BucketSerializer,
     UserS3BucketSerializer,
@@ -120,4 +120,4 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 
 class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()
-    serializer_class = AppUserSerializer
+    serializer_class = UserAppSerializer

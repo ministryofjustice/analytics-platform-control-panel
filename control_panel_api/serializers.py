@@ -11,22 +11,6 @@ from control_panel_api.models import (
 )
 
 
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = (
-            'auth0_id',
-            'url',
-            'username',
-            'name',
-            'email',
-            'groups',
-            'userapps',
-            'users3buckets'
-        )
-
-
 class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -72,8 +56,7 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class SimpleAppSerializer(serializers.ModelSerializer):
-
+class AppSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = App
         fields = (
@@ -87,25 +70,24 @@ class SimpleAppSerializer(serializers.ModelSerializer):
         )
 
 
-class SimpleS3BucketSerializer(serializers.ModelSerializer):
-
+class S3BucketSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = S3Bucket
         fields = ('id', 'url', 'name', 'arn', 'created_by')
 
 
-class AppAppS3BucketSerializer(serializers.ModelSerializer):
+class AppS3BucketNestedInAppSerializer(serializers.ModelSerializer):
     """Used from within with AppSerializer to not expose app"""
-    s3bucket = SimpleS3BucketSerializer()
+    s3bucket = S3BucketSimpleSerializer()
 
     class Meta:
         model = AppS3Bucket
         fields = ('id', 'url', 's3bucket', 'access_level')
 
 
-class S3BucketAppS3BucketSerializer(serializers.ModelSerializer):
+class AppS3BucketNestedInS3BucketSerializer(serializers.ModelSerializer):
     """Used from within with S3BucketSerializer to not expose s3bucket"""
-    app = SimpleAppSerializer()
+    app = AppSimpleSerializer()
 
     class Meta:
         model = AppS3Bucket
@@ -113,8 +95,7 @@ class S3BucketAppS3BucketSerializer(serializers.ModelSerializer):
 
 
 class AppSerializer(serializers.ModelSerializer):
-
-    apps3buckets = AppAppS3BucketSerializer(many=True, read_only=True)
+    apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
 
     class Meta:
         model = App
@@ -136,7 +117,8 @@ class AppSerializer(serializers.ModelSerializer):
 
 
 class S3BucketSerializer(serializers.ModelSerializer):
-    apps3buckets = S3BucketAppS3BucketSerializer(many=True, read_only=True)
+    apps3buckets = AppS3BucketNestedInS3BucketSerializer(
+        many=True, read_only=True)
 
     class Meta:
         model = S3Bucket
@@ -144,7 +126,7 @@ class S3BucketSerializer(serializers.ModelSerializer):
         read_only_fields = ('apps3buckets', 'created_by')
 
 
-class AppUserSerializer(serializers.ModelSerializer):
+class UserAppSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserApp
@@ -161,3 +143,44 @@ class AppUserSerializer(serializers.ModelSerializer):
             )
 
         return super().update(instance, validated_data)
+
+
+class UserAppNestedInUserSerializer(serializers.ModelSerializer):
+    """Used from within with UserSerializer to explicitly expose the app
+    but hide the User
+    """
+    app = AppSimpleSerializer()
+
+    class Meta:
+        model = UserApp
+        fields = ('id', 'app', 'is_admin')
+
+
+class UserS3BucketNestedInUserSerializer(serializers.ModelSerializer):
+    """Used from within with UserSerializer to explicitly expose the s3bucket
+    but hide the User
+    """
+    s3bucket = S3BucketSimpleSerializer()
+
+    class Meta:
+        model = UserS3Bucket
+        fields = ('id', 's3bucket', 'access_level', 'is_admin')
+
+
+class UserSerializer(serializers.ModelSerializer):
+    userapps = UserAppNestedInUserSerializer(many=True, read_only=True)
+    users3buckets = UserS3BucketNestedInUserSerializer(
+        many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+            'groups',
+            'userapps',
+            'users3buckets',
+        )

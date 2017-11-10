@@ -21,7 +21,6 @@ from control_panel_api.models import (
 
 
 class AuthenticatedClientMixin(object):
-
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -30,10 +29,11 @@ class AuthenticatedClientMixin(object):
 
 @patch('control_panel_api.helm.subprocess.run', MagicMock())
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         self.fixture = mommy.make('control_panel_api.User', auth0_id='github|1')
+        mommy.make('control_panel_api.UserS3Bucket', user=self.fixture)
+        mommy.make('control_panel_api.UserApp', user=self.fixture)
 
     def test_list(self):
         response = self.client.get(reverse('user-list'))
@@ -44,15 +44,52 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(
             reverse('user-detail', (self.fixture.auth0_id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertIn('email', response.data)
-        self.assertIn('url', response.data)
-        self.assertIn('username', response.data)
-        self.assertIn('name', response.data)
-        self.assertIn('groups', response.data)
-        self.assertIn('auth0_id', response.data)
-        self.assertIn('userapps', response.data)
-        self.assertIn('users3buckets', response.data)
-        self.assertEqual(8, len(response.data))
+
+        expected_fields = {
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+            'groups',
+            'userapps',
+            'users3buckets',
+        }
+        self.assertEqual(expected_fields, set(response.data))
+
+        userapp = response.data['userapps'][0]
+        expected_fields = {'id', 'app', 'is_admin'}
+        self.assertEqual(
+            expected_fields,
+            set(userapp)
+        )
+
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'slug',
+            'repo_url',
+            'iam_role_name',
+            'created_by',
+        }
+        self.assertEqual(
+            expected_fields,
+            set(userapp['app'])
+        )
+
+        users3bucket = response.data['users3buckets'][0]
+        expected_fields = {'id', 's3bucket', 'access_level', 'is_admin'}
+        self.assertEqual(
+            expected_fields,
+            set(users3bucket)
+        )
+
+        expected_fields = {'id', 'url', 'name', 'arn', 'created_by'}
+        self.assertEqual(
+            expected_fields,
+            set(users3bucket['s3bucket'])
+        )
 
     @patch('control_panel_api.models.User.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
@@ -88,11 +125,13 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.App')
-        self.fixture = mommy.make('control_panel_api.App')
+        self.fixture = mommy.make(
+            'control_panel_api.App',
+            repo_url='https://foo.com'
+        )
         mommy.make('control_panel_api.AppS3Bucket', app=self.fixture)
 
     def test_list(self):
@@ -101,9 +140,6 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(len(response.data['results']), 2)
 
     def test_list_filter_by_repo_url(self):
-        self.fixture.repo_url = 'https://example.com'
-        self.fixture.save()
-
         params = {'repo_url': self.fixture.repo_url}
         response = self.client.get(reverse('app-list'), params)
 
@@ -115,34 +151,37 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
     def test_detail(self):
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertIn('id', response.data)
-        self.assertIn('url', response.data)
-        self.assertIn('name', response.data)
-        self.assertIn('slug', response.data)
-        self.assertIn('repo_url', response.data)
-        self.assertIn('apps3buckets', response.data)
-        self.assertIn('userapps', response.data)
-        self.assertIn('created_by', response.data)
+
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'slug',
+            'repo_url',
+            'iam_role_name',
+            'created_by',
+            'apps3buckets',
+            'userapps',
+        }
+        self.assertEqual(expected_fields, set(response.data))
+
         self.assertEqual(
             response.data['iam_role_name'],
             self.fixture.iam_role_name,
         )
-        self.assertEqual(9, len(response.data))
 
         apps3bucket = response.data['apps3buckets'][0]
-        self.assertIn('id', apps3bucket)
-        self.assertIn('url', apps3bucket)
-        self.assertIn('s3bucket', apps3bucket)
-        self.assertIn('access_level', apps3bucket)
-        self.assertEqual(4, len(apps3bucket))
+        expected_fields = {'id', 'url', 's3bucket', 'access_level'}
+        self.assertEqual(
+            expected_fields,
+            set(apps3bucket)
+        )
 
-        s3bucket = apps3bucket['s3bucket']
-        self.assertIn('id', s3bucket)
-        self.assertIn('url', s3bucket)
-        self.assertIn('name', s3bucket)
-        self.assertIn('arn', s3bucket)
-        self.assertIn('created_by', s3bucket)
-        self.assertEqual(5, len(s3bucket))
+        expected_fields = {'id', 'url', 'name', 'arn', 'created_by'}
+        self.assertEqual(
+            expected_fields,
+            set(apps3bucket['s3bucket'])
+        )
 
     @patch('control_panel_api.models.App.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
@@ -157,7 +196,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('control_panel_api.models.App.aws_create_role')
     def test_create(self, mock_aws_create_role):
-        data = {'name': 'foo', 'repo_url': 'https://example.com'}
+        data = {'name': 'foo', 'repo_url': 'https://example.com.git'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
@@ -165,29 +204,18 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
         self.assertEqual(self.superuser.auth0_id, response.data['created_by'])
 
-    def test_create_normalises_repo_url(self):
-        data = {'name': 'foo', 'repo_url': 'https://example.com.git'}
-        response = self.client.post(reverse('app-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
         self.assertEqual('https://example.com', response.data['repo_url'])
 
     def test_update(self):
-        data = {'name': 'foo', 'repo_url': 'http://foo.com'}
-        response = self.client.put(
-            reverse('app-detail', (self.fixture.id,)), data)
-        self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(data['name'], response.data['name'])
-
-    def test_update_normalises_repo_url(self):
         data = {'name': 'foo', 'repo_url': 'http://foo.com.git'}
         response = self.client.put(
             reverse('app-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(data['name'], response.data['name'])
         self.assertEqual('http://foo.com', response.data['repo_url'])
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
 
@@ -216,13 +244,18 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(
             reverse('apps3bucket-detail', (self.apps3bucket_1.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertIn('id', response.data)
-        self.assertIn('url', response.data)
-        self.assertIn('app', response.data)
-        self.assertIn('s3bucket', response.data)
-        self.assertIn('access_level', response.data)
-        self.assertEqual('readonly', response.data['access_level'])
-        self.assertEqual(5, len(response.data))
+
+        expected_fields = {
+            'id',
+            'url',
+            'app',
+            's3bucket',
+            'access_level'
+        }
+        self.assertEqual(
+            expected_fields,
+            set(response.data),
+        )
 
     @patch('control_panel_api.models.AppS3Bucket.aws_delete')
     def test_delete(self, mock_aws_delete):
@@ -310,13 +343,11 @@ class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(
             reverse('userapp-detail', (self.userapp_1.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertIn('id', response.data)
-        self.assertIn('url', response.data)
-        self.assertIn('app', response.data)
-        self.assertIn('user', response.data)
-        self.assertIn('is_admin', response.data)
+
+        expected_fields = {'id', 'url', 'app', 'user', 'is_admin'}
+        self.assertEqual(expected_fields, set(response.data))
+
         self.assertEqual(True, response.data['is_admin'])
-        self.assertEqual(5, len(response.data))
 
     def test_create(self):
         data = {
@@ -368,7 +399,6 @@ class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
@@ -385,30 +415,37 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertIn('id', response.data)
-        self.assertIn('url', response.data)
-        self.assertIn('name', response.data)
-        self.assertIn('arn', response.data)
-        self.assertIn('apps3buckets', response.data)
-        self.assertIn('created_by', response.data)
-        self.assertEqual(6, len(response.data))
+
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'arn',
+            'apps3buckets',
+            'created_by'
+        }
+        self.assertEqual(expected_fields, set(response.data))
 
         apps3bucket = response.data['apps3buckets'][0]
-        self.assertIn('id', apps3bucket)
-        self.assertIn('url', apps3bucket)
-        self.assertIn('app', apps3bucket)
-        self.assertIn('access_level', apps3bucket)
-        self.assertEqual(4, len(apps3bucket))
+        expected_fields = {'id', 'url', 'app', 'access_level'}
+        self.assertEqual(
+            expected_fields,
+            set(apps3bucket)
+        )
 
-        app = apps3bucket['app']
-        self.assertIn('id', app)
-        self.assertIn('url', app)
-        self.assertIn('name', app)
-        self.assertIn('slug', app)
-        self.assertIn('repo_url', app)
-        self.assertIn('iam_role_name', app)
-        self.assertIn('created_by', app)
-        self.assertEqual(7, len(app))
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'slug',
+            'repo_url',
+            'iam_role_name',
+            'created_by',
+        }
+        self.assertEqual(
+            expected_fields,
+            set(apps3bucket['app'])
+        )
 
     @patch('control_panel_api.models.S3Bucket.aws_delete')
     def test_delete(self, mock_aws_delete):
@@ -470,10 +507,10 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
-        self.user_1 = User.objects.create(auth0_id='github|1',
-                                          username="user-1")
-        self.user_2 = User.objects.create(auth0_id='github|2',
-                                          username="user-2")
+        self.user_1 = User.objects.create(
+            auth0_id='github|1', username="user-1")
+        self.user_2 = User.objects.create(
+            auth0_id='github|2', username="user-2")
         self.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
         self.s3_bucket_2 = S3Bucket.objects.create(name="test-bucket-2")
         self.users3bucket_1 = self.user_1.users3buckets.create(
@@ -490,14 +527,20 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         response = self.client.get(
             reverse('users3bucket-detail', (self.users3bucket_1.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertIn('id', response.data)
-        self.assertIn('url', response.data)
-        self.assertIn('user', response.data)
-        self.assertIn('s3bucket', response.data)
-        self.assertIn('access_level', response.data)
-        self.assertIn('is_admin', response.data)
+
+        expected_fields = {
+            'id',
+            'url',
+            'user',
+            's3bucket',
+            'access_level',
+            'is_admin'
+        }
+        self.assertEqual(
+            expected_fields,
+            set(response.data)
+        )
         self.assertEqual('readonly', response.data['access_level'])
-        self.assertEqual(6, len(response.data))
 
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
     def test_create(self, mock_aws_create):
