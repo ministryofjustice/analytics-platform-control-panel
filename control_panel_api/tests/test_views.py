@@ -405,6 +405,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.fixture = mommy.make(
             'control_panel_api.S3Bucket', name='test-bucket-1')
         mommy.make('control_panel_api.AppS3Bucket', s3bucket=self.fixture)
+        mommy.make('control_panel_api.UserS3Bucket', s3bucket=self.fixture)
 
     def test_list(self):
         response = self.client.get(reverse('s3bucket-list'))
@@ -416,24 +417,25 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-        expected_fields = {
+        expected_s3bucket_fields = {
             'id',
             'url',
             'name',
             'arn',
             'apps3buckets',
+            'users3buckets',
             'created_by'
         }
-        self.assertEqual(expected_fields, set(response.data))
+        self.assertEqual(expected_s3bucket_fields, set(response.data))
 
         apps3bucket = response.data['apps3buckets'][0]
-        expected_fields = {'id', 'url', 'app', 'access_level'}
+        expected_apps3bucket_fields = {'id', 'url', 'app', 'access_level'}
         self.assertEqual(
-            expected_fields,
+            expected_apps3bucket_fields,
             set(apps3bucket)
         )
 
-        expected_fields = {
+        expected_app_fields = {
             'id',
             'url',
             'name',
@@ -443,8 +445,27 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             'created_by',
         }
         self.assertEqual(
-            expected_fields,
+            expected_app_fields,
             set(apps3bucket['app'])
+        )
+
+        users3bucket = response.data['users3buckets'][0]
+        expected_users3bucket_fields = {'id', 'user', 'access_level', 'is_admin'}
+        self.assertEqual(
+            expected_users3bucket_fields,
+            set(users3bucket)
+        )
+
+        expected_user_fields = {
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+        }
+        self.assertEqual(
+            expected_user_fields,
+            set(users3bucket['user'])
         )
 
     @patch('control_panel_api.models.S3Bucket.aws_delete')
