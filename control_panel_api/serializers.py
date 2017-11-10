@@ -57,6 +57,7 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
 
 
 class AppSimpleSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = App
         fields = (
@@ -71,6 +72,7 @@ class AppSimpleSerializer(serializers.ModelSerializer):
 
 
 class S3BucketSimpleSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = S3Bucket
         fields = ('id', 'url', 'name', 'arn', 'created_by')
@@ -116,14 +118,42 @@ class AppSerializer(serializers.ModelSerializer):
         return value.rsplit(".git", 1)[0]
 
 
+class UserSimpleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+        )
+
+
+class UserS3BucketNestedInS3BucketSerializer(serializers.ModelSerializer):
+    """
+    Serializer for `UserS3Bucket`s used within S3Bucket serializer.
+    It exposes the `user` but not the `s3bucket` (which is the parent)
+    """
+    user = UserSimpleSerializer()
+
+    class Meta:
+        model = UserS3Bucket
+        fields = ('id', 'user', 'access_level', 'is_admin')
+
+
 class S3BucketSerializer(serializers.ModelSerializer):
     apps3buckets = AppS3BucketNestedInS3BucketSerializer(
+        many=True, read_only=True)
+    users3buckets = UserS3BucketNestedInS3BucketSerializer(
         many=True, read_only=True)
 
     class Meta:
         model = S3Bucket
-        fields = ('id', 'url', 'name', 'arn', 'apps3buckets', 'created_by')
-        read_only_fields = ('apps3buckets', 'created_by')
+        fields = ('id', 'url', 'name', 'arn', 'apps3buckets',
+                  'users3buckets', 'created_by')
+        read_only_fields = ('apps3buckets', 'users3buckets', 'created_by')
 
 
 class UserAppSerializer(serializers.ModelSerializer):
