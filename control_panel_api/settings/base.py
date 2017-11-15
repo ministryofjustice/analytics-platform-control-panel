@@ -119,8 +119,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'control_panel_api.permissions.IsSuperuser',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'DEFAULT_PAGINATION_CLASS': 'control_panel_api.pagination.CustomPageNumberPagination',
+    'PAGE_SIZE': 50
 }
 
 LOGIN_URL = 'rest_framework:login'
