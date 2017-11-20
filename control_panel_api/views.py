@@ -1,6 +1,12 @@
+import logging
+from subprocess import CalledProcessError
+
+from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
+from django.db import transaction
 from rest_framework import viewsets
 
+from control_panel_api.exceptions import AWSException, HelmException
 from control_panel_api.filters import (
     AppFilter,
     S3BucketFilter,
@@ -22,12 +28,14 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
-    UserAppSerializer,
     GroupSerializer,
     S3BucketSerializer,
+    UserAppSerializer,
     UserS3BucketSerializer,
     UserSerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -36,14 +44,30 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (UserFilter,)
     permission_classes = (UserPermissions,)
 
+    @transaction.atomic
     def perform_create(self, serializer):
         instance = serializer.save()
-        instance.aws_create_role()
-        instance.helm_create()
 
+        try:
+            instance.aws_create_role()
+            instance.helm_create()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
+        except CalledProcessError as e:
+            logger.error(e)
+            instance.aws_delete_role()
+            raise HelmException
+
+    @transaction.atomic
     def perform_destroy(self, instance):
         instance.delete()
-        instance.aws_delete_role()
+
+        try:
+            instance.aws_delete_role()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -59,13 +83,25 @@ class AppViewSet(viewsets.ModelViewSet):
     filter_fields = ('name', 'repo_url', 'slug')
     permission_classes = (AppPermissions,)
 
+    @transaction.atomic
     def perform_create(self, serializer):
         app = serializer.save(created_by=self.request.user)
-        app.aws_create_role()
 
+        try:
+            app.aws_create_role()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
+
+    @transaction.atomic
     def perform_destroy(self, instance):
         instance.delete()
-        instance.aws_delete_role()
+
+        try:
+            instance.aws_delete_role()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
@@ -74,32 +110,65 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         apps3bucket = serializer.save()
-        apps3bucket.aws_create()
+
+        try:
+            apps3bucket.aws_create()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
     def perform_update(self, serializer):
         apps3bucket = serializer.save()
-        apps3bucket.aws_update()
+
+        try:
+            apps3bucket.aws_update()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
     def perform_destroy(self, instance):
         instance.delete()
-        instance.aws_delete()
+
+        try:
+            instance.aws_delete()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
     queryset = UserS3Bucket.objects.all()
     serializer_class = UserS3BucketSerializer
 
+    @transaction.atomic
     def perform_create(self, serializer):
         instance = serializer.save()
-        instance.aws_create()
 
+        try:
+            instance.aws_create()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
+
+    @transaction.atomic
     def perform_update(self, serializer):
         instance = serializer.save()
-        instance.aws_update()
 
+        try:
+            instance.aws_update()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
+
+    @transaction.atomic
     def perform_destroy(self, instance):
         instance.delete()
-        instance.aws_delete()
+
+        try:
+            instance.aws_delete()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):
@@ -108,14 +177,27 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     filter_backends = (S3BucketFilter,)
     permission_classes = (S3BucketPermissions,)
 
+    @transaction.atomic
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)
-        instance.aws_create()
+
+        try:
+            instance.aws_create()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
+
         instance.create_users3bucket(user=self.request.user)
 
+    @transaction.atomic
     def perform_destroy(self, instance):
         instance.delete()
-        instance.aws_delete()
+
+        try:
+            instance.aws_delete()
+        except ClientError as e:
+            logger.error(e)
+            raise AWSException
 
 
 class UserAppViewSet(viewsets.ModelViewSet):
