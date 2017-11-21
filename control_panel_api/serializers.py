@@ -96,7 +96,32 @@ class AppS3BucketNestedInS3BucketSerializer(serializers.ModelSerializer):
         fields = ('id', 'url', 'app', 'access_level')
 
 
+class UserSimpleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+        )
+
+
+class UserAppNestedInAppSerializer(serializers.ModelSerializer):
+    """Used from within with AppSerializer to explicitly expose the user
+    but hide the app
+    """
+    user = UserSimpleSerializer()
+
+    class Meta:
+        model = UserApp
+        fields = ('id', 'user', 'is_admin')
+
+
 class AppSerializer(serializers.ModelSerializer):
+    userapps = UserAppNestedInAppSerializer(many=True, read_only=True)
     apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
 
     class Meta:
@@ -116,19 +141,6 @@ class AppSerializer(serializers.ModelSerializer):
     def validate_repo_url(self, value):
         """Normalise repo URLs by removing trailing .git"""
         return value.rsplit(".git", 1)[0]
-
-
-class UserSimpleSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = (
-            'auth0_id',
-            'url',
-            'username',
-            'name',
-            'email',
-        )
 
 
 class UserS3BucketNestedInS3BucketSerializer(serializers.ModelSerializer):
