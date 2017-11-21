@@ -10,13 +10,17 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
+from control_panel_api.aws import aws
+from control_panel_api.helm import helm
 from control_panel_api.models import AppS3Bucket
 
 
-@patch('control_panel_api.helm.subprocess.run', MagicMock())
+@patch.object(aws, 'client', MagicMock())
+@patch.object(helm, '_helm_command', MagicMock())
 class UserPermissionsTest(APITestCase):
 
     def setUp(self):
+        super().setUp()
         self.superuser = mommy.make(
             'control_panel_api.User',
             auth0_id='github|user_1',
@@ -99,9 +103,11 @@ class UserPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
+@patch.object(aws, 'client', MagicMock())
 class AppPermissionsTest(APITestCase):
 
     def setUp(self):
+        super().setUp()
         # Create users
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
@@ -184,9 +190,11 @@ class AppPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
+@patch.object(aws, 'client', MagicMock())
 class AppS3BucketPermissionsTest(APITestCase):
 
     def setUp(self):
+        super().setUp()
         # Create users
         self.superuser = mommy.make(
             "control_panel_api.User", is_superuser=True)
@@ -293,9 +301,11 @@ class AppS3BucketPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
+@patch.object(aws, 'client', MagicMock())
 class S3BucketPermissionsTest(APITestCase):
 
     def setUp(self):
+        super().setUp()
         # Create users
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)

@@ -11,6 +11,7 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
+from control_panel_api.aws import aws
 from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
@@ -21,14 +22,16 @@ from control_panel_api.models import (
 
 
 class AuthenticatedClientMixin(object):
+
     def setUp(self):
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
         self.client.force_login(self.superuser)
+        super().setUp()
 
 
-@patch('control_panel_api.helm.subprocess.run', MagicMock())
 class UserViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         self.fixture = mommy.make('control_panel_api.User', auth0_id='github|1')
@@ -106,7 +109,8 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
     @patch('control_panel_api.models.User.helm_create')
     @patch('control_panel_api.models.User.aws_create_role')
     def test_create(self, mock_aws_create_role, mock_helm_create_user):
-        data = {'auth0_id': 'github|2', 'username': 'foo'}
+        username = 'foo'
+        data = {'auth0_id': 'github|2', 'username': username}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
@@ -125,6 +129,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.App')
@@ -216,6 +221,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
 
@@ -316,6 +322,7 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
 
@@ -398,7 +405,9 @@ class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
 
+@patch.object(aws, 'client', MagicMock())
 class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
@@ -450,7 +459,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         )
 
         users3bucket = response.data['users3buckets'][0]
-        expected_users3bucket_fields = {'id', 'user', 'access_level', 'is_admin'}
+        expected_users3bucket_fields = {
+            'id', 'user', 'access_level', 'is_admin'}
         self.assertEqual(
             expected_users3bucket_fields,
             set(users3bucket)
@@ -526,6 +536,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
 
 class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
+
     def setUp(self):
         super().setUp()
         self.user_1 = User.objects.create(

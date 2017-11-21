@@ -1,6 +1,6 @@
 from django.conf import settings
 
-from . import aws
+from .aws import aws
 
 READWRITE = 'readwrite'
 READONLY = 'readonly'
