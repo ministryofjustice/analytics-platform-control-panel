@@ -1,9 +1,12 @@
+import json
 from unittest.mock import MagicMock, patch
 
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from model_mommy import mommy
 
+from control_panel_api.aws import aws
+from control_panel_api.helm import helm
 from control_panel_api.models import (
     App,
     AppS3Bucket,
@@ -12,14 +15,18 @@ from control_panel_api.models import (
     User,
     UserS3Bucket,
 )
-from control_panel_api.tests import APP_IAM_ROLE_ASSUME_POLICY
+from control_panel_api.tests import (
+    APP_IAM_ROLE_ASSUME_POLICY,
+    USER_IAM_ROLE_ASSUME_POLICY
+)
 
 
-@patch('control_panel_api.helm.subprocess.run', MagicMock())
+@patch.object(aws, 'client', MagicMock())
+@patch.object(helm, 'config_user', MagicMock())
+@patch.object(helm, 'init_user', MagicMock())
 class UserTestCase(TestCase):
-    @patch('control_panel_api.helm.init_user')
-    @patch('control_panel_api.helm.config_user')
-    def test_helm_create_user(self, mock_config_user, mock_init_user):
+
+    def test_helm_create_user(self):
         username = 'foo'
         email = 'bar@baz.com'
         name = 'bat'
@@ -30,31 +37,28 @@ class UserTestCase(TestCase):
         )
         user.helm_create()
 
-        mock_config_user.assert_called_with(username)
-        mock_init_user.assert_called_with(username, email, name)
+        helm.config_user.assert_called_with(username)
+        helm.init_user.assert_called_with(username, email, name)
 
-    @patch('control_panel_api.services.create_role')
-    def test_aws_create_role_calls_service(self, mock_create_role):
+    def test_aws_create_role_calls_service(self):
         username = 'james'
         user = User.objects.create(username=username)
         user.aws_create_role()
+        expected_role_name = f'test_user_{username}'
 
-        expected_role_name = f"test_user_{username}"
+        aws.client.return_value.create_role.assert_called_with(
+            RoleName=expected_role_name,
+            AssumeRolePolicyDocument=json.dumps(USER_IAM_ROLE_ASSUME_POLICY))
 
-        mock_create_role.assert_called_with(
-            expected_role_name,
-            add_saml_statement=True
-        )
-
-    @patch('control_panel_api.services.delete_role')
-    def test_aws_delete_role_calls_service(self, mock_delete_role):
+    def test_aws_delete_role_calls_service(self):
         username = 'james'
         user = User.objects.create(username=username)
         user.aws_delete_role()
 
         expected_role_name = f"test_user_{username}"
 
-        mock_delete_role.assert_called_with(expected_role_name)
+        aws.client.return_value.delete_role.assert_called_with(
+            RoleName=expected_role_name)
 
 
 class MembershipsTestCase(TestCase):
@@ -125,6 +129,7 @@ class MembershipsTestCase(TestCase):
             )
 
 
+@patch.object(aws, 'client', MagicMock())
 class AppTestCase(TestCase):
 
     def test_slug_characters_replaced(self):
@@ -144,26 +149,24 @@ class AppTestCase(TestCase):
         )
         self.assertEqual('foo-bar-2', app2.slug)
 
-    @patch('control_panel_api.aws.create_role')
-    def test_aws_create_role_calls_service(self, mock_create_role):
+    def test_aws_create_role_calls_service(self):
         app = App.objects.create(repo_url='https://example.com/repo_name')
         app.aws_create_role()
 
         expected_role_name = f"test_app_{app.slug}"
 
-        mock_create_role.assert_called_with(
-            expected_role_name,
-            APP_IAM_ROLE_ASSUME_POLICY
-        )
+        aws.client.return_value.create_role.assert_called_with(
+            RoleName=expected_role_name,
+            AssumeRolePolicyDocument=json.dumps(APP_IAM_ROLE_ASSUME_POLICY))
 
-    @patch('control_panel_api.aws.delete_role')
-    def test_aws_delete_role_calls_service(self, mock_delete_role):
+    def test_aws_delete_role_calls_service(self):
         app = App.objects.create(repo_url='https://example.com/repo_name')
         app.aws_delete_role()
 
         expected_role_name = f"test_app_{app.slug}"
 
-        mock_delete_role.assert_called_with(expected_role_name)
+        aws.client.return_value.delete_role.assert_called_with(
+            RoleName=expected_role_name)
 
 
 class S3BucketTestCase(TestCase):

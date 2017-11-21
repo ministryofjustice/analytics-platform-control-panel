@@ -1,6 +1,15 @@
 import os
 
-import boto3
+
+def is_enabled(value):
+    return str(value).lower() not in ('n', 'no', 'off', 'false', '0')
+
+
+# These are boolean flags to enable/disable features in the API
+ENABLED = {
+    'write_to_cluster':
+        is_enabled(os.environ.get('ENABLE_WRITE_TO_CLUSTER', True)),
+}
 
 SECRET_KEY = os.environ.get(
     'SECRET_KEY',
@@ -132,7 +141,6 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', '')
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME', '')
 SAML_PROVIDER = os.environ.get('SAML_PROVIDER', '')
-AWS_API_CLIENT_HANDLER = boto3.client
 
 RAVEN_CONFIG = {
     'dsn': os.environ.get('SENTRY_DSN', ''),
