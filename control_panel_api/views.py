@@ -108,6 +108,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
     queryset = AppS3Bucket.objects.all()
     serializer_class = AppS3BucketSerializer
 
+    @transaction.atomic
     def perform_create(self, serializer):
         apps3bucket = serializer.save()
 
@@ -117,6 +118,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
             logger.error(e)
             raise AWSException
 
+    @transaction.atomic
     def perform_update(self, serializer):
         apps3bucket = serializer.save()
 
@@ -126,6 +128,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
             logger.error(e)
             raise AWSException
 
+    @transaction.atomic
     def perform_destroy(self, instance):
         instance.delete()
 
