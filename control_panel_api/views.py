@@ -56,7 +56,6 @@ class UserViewSet(viewsets.ModelViewSet):
             raise AWSException
         except CalledProcessError as e:
             logger.error(e)
-            instance.aws_delete_role()
             raise HelmException
 
     @transaction.atomic

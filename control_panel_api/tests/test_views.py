@@ -134,11 +134,10 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(data['username'], response.data['username'])
         self.assertEqual(data['auth0_id'], response.data['auth0_id'])
 
-    @patch('control_panel_api.models.User.aws_delete_role')
     @patch('control_panel_api.models.User.helm_create')
     @patch('control_panel_api.models.User.aws_create_role')
     def test_aws_error_and_transaction(self, mock_aws_create_role,
-                                       mock_helm_create, mock_aws_delete_role):
+                                       mock_helm_create):
         mock_helm_create.side_effect = CalledProcessError(1, 'foo error')
 
         data = {'auth0_id': 'github|3', 'username': 'foo'}
@@ -146,7 +145,6 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_500_INTERNAL_SERVER_ERROR, response.status_code)
 
         mock_aws_create_role.assert_called()
-        mock_aws_delete_role.assert_called()
 
         with self.assertRaises(User.DoesNotExist):
             User.objects.get(name=data['auth0_id'])
