@@ -50,6 +50,7 @@ class App(TimeStampedModel):
         return re.sub(r'_+', '-', slugify(name))
 
     name = models.CharField(max_length=100, blank=False)
+    description = models.TextField(blank=True)
     slug = AutoSlugField(populate_from='_repo_name', slugify_function=_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
