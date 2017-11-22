@@ -138,6 +138,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             repo_url='https://foo.com'
         )
         mommy.make('control_panel_api.AppS3Bucket', app=self.fixture)
+        mommy.make('control_panel_api.UserApp', app=self.fixture)
 
     def test_list(self):
         response = self.client.get(reverse('app-list'))
@@ -187,6 +188,22 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             expected_fields,
             set(apps3bucket['s3bucket'])
         )
+
+        userapp = response.data['userapps'][0]
+        expected_fields = {'id', 'user', 'is_admin'}
+        self.assertEqual(
+            expected_fields,
+            set(userapp)
+        )
+
+        expected_fields = {
+            'auth0_id',
+            'url',
+            'username',
+            'name',
+            'email',
+        }
+        self.assertEqual(expected_fields, set(userapp['user']))
 
     @patch('control_panel_api.models.App.aws_delete_role')
     def test_delete(self, mock_aws_delete_role):
