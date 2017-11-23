@@ -46,6 +46,7 @@ ADD run_api run_api
 ADD run_tests run_tests
 ADD wait_for_db wait_for_db
 ADD control_panel_api control_panel_api
+ADD moj_analytics moj_analytics
 
 # collect static files for deployment
 RUN python3 manage.py collectstatic
