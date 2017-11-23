@@ -48,5 +48,8 @@ class Auth0JWTAuthentication(BaseAuthentication):
                 email=decoded.get(settings.OIDC_FIELD_EMAIL),
                 name=decoded.get(settings.OIDC_FIELD_NAME),
             )
+            user.save()
+            user.aws_create_role()
+            user.helm_create()
 
         return user, None

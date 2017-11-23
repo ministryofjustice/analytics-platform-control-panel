@@ -1,3 +1,5 @@
+from unittest.mock import MagicMock, patch
+
 import jwt
 from django.test import override_settings
 from model_mommy import mommy
@@ -5,6 +7,8 @@ from rest_framework.reverse import reverse
 from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
 from rest_framework.test import APITestCase
 
+from control_panel_api.aws import aws
+from control_panel_api.helm import helm
 from control_panel_api.models import User
 
 
@@ -23,6 +27,9 @@ def build_jwt(user, audience, secret):
 
 
 @override_settings(OIDC_CLIENT_SECRET='secret', OIDC_CLIENT_ID='audience')
+@patch.object(aws, 'client', MagicMock())
+@patch.object(helm, 'config_user', MagicMock())
+@patch.object(helm, 'init_user', MagicMock())
 class Auth0JWTAuthenticationTestCase(APITestCase):
 
     def setUp(self):
