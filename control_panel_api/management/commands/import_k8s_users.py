@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_secrets():
-    config.load_kube_config()
+    config.load_incluster_config()
     kubernetes_api = client.CoreV1Api()
 
     secrets = kubernetes_api.list_secret_for_all_namespaces()
