@@ -19,6 +19,7 @@ schema_view = get_swagger_view(title='Control Panel API')
 urlpatterns = [
     url(r'^$', schema_view),
     url(r'^', include(router.urls)),
+    url(r'^k8s/(?P<k8s_endpoint>.+)', views.k8s_api_handler),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
 

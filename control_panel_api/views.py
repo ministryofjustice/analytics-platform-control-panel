@@ -4,6 +4,7 @@ from subprocess import CalledProcessError
 from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
 
 from control_panel_api.exceptions import (
@@ -37,6 +38,7 @@ from control_panel_api.serializers import (
     UserS3BucketSerializer,
     UserSerializer,
 )
+from k8s import handler as k8s_handler
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +59,11 @@ def handle_external_exceptions(func):
             raise HelmException(e) from e
 
     return inner
+
+
+@csrf_exempt
+def k8s_api_handler(request, k8s_endpoint):
+    return k8s_handler(request, k8s_endpoint)
 
 
 class UserViewSet(viewsets.ModelViewSet):
