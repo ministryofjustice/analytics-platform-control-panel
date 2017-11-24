@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db.utils import IntegrityError
 from kubernetes import client, config
+from kubernetes.config.config_exception import ConfigException
 
 from control_panel_api.models import User
 from moj_analytics.auth0_client import Auth0, ManagementAPI, User as Auth0User
@@ -13,7 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_secrets():
-    config.load_kube_config()
+    try:
+        config.load_incluster_config()
+    except ConfigException as e:
+        logger.error(e)
+        config.load_kube_config()
+
     kubernetes_api = client.CoreV1Api()
 
     secrets = kubernetes_api.list_secret_for_all_namespaces()
