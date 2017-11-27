@@ -97,15 +97,29 @@ class API(object):
 
         return resource.__class__(self, response)
 
-    def get_all(self, resource_class, search=None):
+    def get_all(self, resource_class, **kwargs):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
-        resources = self.request('GET', endpoint, params=search)
+        resources = self.request('GET', endpoint, params=kwargs)
 
         if endpoint in resources:
             resources = resources[endpoint]
 
         return [resource_class(self, r) for r in resources]
+
+    def get_all_pages(self, resource_class, per_page=100, **kwargs):
+        page = 0
+        while True:
+            items = self.get_all(
+                resource_class, per_page=per_page, page=page, **kwargs)
+
+            for item in items:
+                yield item
+
+            if not items or len(items) < per_page:
+                break
+
+            page += 1
 
     def get(self, resource):
         resources = self.get_all(resource.__class__)
