@@ -7,18 +7,17 @@ import requests
 
 class K8sProxy():
 
-    def __init__(self, request, k8s_endpoint):
+    def __init__(self, request):
         self.request = request
-        self.k8s_endpoint = k8s_endpoint
         self._load_config()
 
     def handle(self):
         k8s_response = self._make_k8s_request()
 
         return HttpResponse(
-          k8s_response.text,
-          status=k8s_response.status_code,
-          content_type='application/json'
+            k8s_response.text,
+            status=k8s_response.status_code,
+            content_type='application/json'
         )
 
     def _make_k8s_request(self):
@@ -30,7 +29,7 @@ class K8sProxy():
             self._request_url,
             headers={'accept': 'application/json'},
             verify=False,
-            auth=(self.config['k8s_username'], self.config['k8s_password']),
+            auth=(self.cluster_username, self.cluster_password),
         )
 
     @property
@@ -39,19 +38,21 @@ class K8sProxy():
 
     @property
     def _request_url(self):
-        return f"{self.config['k8s_cluster_url']}/{self.k8s_endpoint}?{self._request_querystring}"
+        return f"{self.cluster_url}{self._request_path}?{self._request_querystring}"
+
+    @property
+    def _request_path(self):
+        return self.request.path[4:]  # path without '/k8s' prefix
 
     @property
     def _request_querystring(self):
         return self.request.GET.urlencode()
 
     def _load_config(self):
-        self.config = {
-            'k8s_cluster_url': os.environ['K8S_CLUSTER_URL'],
-            'k8s_username': os.environ['K8S_USERNAME'],
-            'k8s_password': os.environ['K8S_PASSWORD'],
-        }
+        self.cluster_url = os.environ['K8S_CLUSTER_URL']
+        self.cluster_username = os.environ['K8S_USERNAME']
+        self.cluster_password = os.environ['K8S_PASSWORD']
 
 
-def handler(request, k8s_endpoint):
-    return K8sProxy(request, k8s_endpoint).handle()
+def handler(request):
+    return K8sProxy(request).handle()

@@ -66,8 +66,8 @@ def handle_external_exceptions(func):
 @api_view()
 @permission_classes((K8sPermissions,))
 @csrf_exempt
-def k8s_api_handler(request, k8s_endpoint):
-    return k8s_handler(request, k8s_endpoint)
+def k8s_api_handler(request):
+    return k8s_handler(request)
 
 
 class UserViewSet(viewsets.ModelViewSet):
