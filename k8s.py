@@ -2,6 +2,8 @@ import json
 import os
 
 from django.http import HttpResponse
+from kubernetes import client, config
+from kubernetes.config.config_exception import ConfigException
 import requests
 
 
@@ -21,15 +23,15 @@ class K8sProxy():
         )
 
     def _make_k8s_request(self):
-        import pdb
-        pdb.set_trace()
-
+        headers = {
+            'accept': 'application/json',
+            'authorization': self.cluster_authorization,
+        }
         requests_func = getattr(requests, self._request_method)
         return requests_func(
             self._request_url,
-            headers={'accept': 'application/json'},
+            headers=headers,
             verify=False,
-            auth=(self.cluster_username, self.cluster_password),
         )
 
     @property
@@ -49,9 +51,14 @@ class K8sProxy():
         return self.request.GET.urlencode()
 
     def _load_config(self):
-        self.cluster_url = os.environ['K8S_CLUSTER_URL']
-        self.cluster_username = os.environ['K8S_USERNAME']
-        self.cluster_password = os.environ['K8S_PASSWORD']
+        try:
+            config.load_incluster_config()
+        except ConfigException as e:
+            config.load_kube_config()
+
+        self.cluster_url = client.configuration.host
+        self.cluster_authorization = client.configuration.api_key[
+            'authorization']
 
 
 def handler(request):
