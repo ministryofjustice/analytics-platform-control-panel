@@ -31,7 +31,7 @@ class K8sProxy():
         return requests_func(
             self._request_url,
             headers=headers,
-            verify=False,
+            verify=self.ssl_ca_cert,
         )
 
     @property
@@ -59,6 +59,7 @@ class K8sProxy():
         self.cluster_url = client.configuration.host
         self.cluster_authorization = client.configuration.api_key[
             'authorization']
+        self.ssl_ca_cert = client.configuration.ssl_ca_cert
 
 
 def handler(request):
