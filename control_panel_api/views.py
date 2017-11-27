@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
+from rest_framework.decorators import api_view, permission_classes
 
 from control_panel_api.exceptions import (
     AWSException,
@@ -28,6 +29,7 @@ from control_panel_api.permissions import (
     AppPermissions,
     S3BucketPermissions,
     UserPermissions,
+    K8sPermissions,
 )
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
@@ -61,6 +63,8 @@ def handle_external_exceptions(func):
     return inner
 
 
+@api_view()
+@permission_classes((K8sPermissions,))
 @csrf_exempt
 def k8s_api_handler(request, k8s_endpoint):
     return k8s_handler(request, k8s_endpoint)
