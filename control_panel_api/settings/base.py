@@ -129,7 +129,7 @@ REST_FRAMEWORK = {
         'control_panel_api.permissions.IsSuperuser',
     ],
     'DEFAULT_PAGINATION_CLASS': 'control_panel_api.pagination.CustomPageNumberPagination',
-    'PAGE_SIZE': 50
+    'PAGE_SIZE': 100
 }
 
 LOGIN_URL = 'rest_framework:login'
