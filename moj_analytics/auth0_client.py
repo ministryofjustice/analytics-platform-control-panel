@@ -116,7 +116,7 @@ class API(object):
             for item in items:
                 yield item
 
-            if not items or len(items) < per_page:
+            if len(items) < per_page:
                 break
 
             page += 1
