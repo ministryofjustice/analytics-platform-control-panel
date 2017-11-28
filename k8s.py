@@ -24,12 +24,12 @@ class K8sProxy():
 
     def _make_k8s_request(self):
         headers = {
-            'accept': 'application/json',
             'authorization': self.cluster_authorization,
         }
         requests_func = getattr(requests, self._request_method)
         return requests_func(
             self._request_url,
+            data=self.request.body,
             headers=headers,
             verify=self.ssl_ca_cert,
         )
