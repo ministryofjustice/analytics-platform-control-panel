@@ -57,6 +57,8 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
             'groups',
             'userapps',
             'users3buckets',
+            'is_superuser',
+            'verified_email',
         }
         self.assertEqual(expected_fields, set(response.data))
 
