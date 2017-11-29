@@ -7,7 +7,7 @@ from kubernetes.config.config_exception import ConfigException
 import requests
 
 
-class K8sProxy():
+class K8sProxy(object):
 
     def __init__(self, request):
         self.request = request
