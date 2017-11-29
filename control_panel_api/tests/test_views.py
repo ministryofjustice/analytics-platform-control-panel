@@ -746,3 +746,40 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             response = self.client.put(
                 reverse('users3bucket-detail', (self.users3bucket_1.id,)), data)
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+
+class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
+
+    @patch('kubernetes.client.configuration')
+    @patch('kubernetes.config.load_incluster_config')
+    @patch('requests.post')
+    def test_proxy(self, mock_request, mock_load_config, mock_k8s_config):
+        # Mock k8s config
+        K8S_HOST = 'https://k8s.local'
+        K8S_AUTH_TOKEN = 'Basic test_token'
+        K8S_SSL_CERT_PATH = '/path/to/ssl_ca_cert'
+        mock_k8s_config.host = K8S_HOST
+        mock_k8s_config.api_key = {'authorization': K8S_AUTH_TOKEN}
+        mock_k8s_config.ssl_ca_cert = K8S_SSL_CERT_PATH
+
+        # Mock k8s response
+        TEST_DATA = b'{"test_pod": true}'
+        mock_request.return_value.status_code = HTTP_201_CREATED
+        mock_request.return_value.text = TEST_DATA
+
+        # Make request to CP API
+        K8S_PATH = '/api/v1/namespaces/user-alice/pods?foo=bar'
+        response = self.client.post(
+            f'/k8s{K8S_PATH}',
+            TEST_DATA,
+            content_type='application/json'
+        )
+
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+        self.assertEqual(TEST_DATA, response.content)
+        mock_request.assert_called_with(
+            f'{K8S_HOST}{K8S_PATH}',
+            data=TEST_DATA,
+            headers={'authorization': K8S_AUTH_TOKEN},
+            verify=K8S_SSL_CERT_PATH,
+        )

@@ -63,7 +63,7 @@ def handle_external_exceptions(func):
     return inner
 
 
-@api_view()
+@api_view(['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'])
 @permission_classes((K8sPermissions,))
 @csrf_exempt
 def k8s_api_handler(request):
