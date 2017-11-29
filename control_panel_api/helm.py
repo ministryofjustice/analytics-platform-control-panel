@@ -2,6 +2,8 @@ import subprocess
 
 from django.conf import settings
 
+from control_panel_api.utils import sanitize_dns_label
+
 
 class Helm(object):
 
@@ -18,8 +20,9 @@ class Helm(object):
         self._helm_command('upgrade', release, chart, *flags)
 
     def init_user(self, username, email, fullname):
+        username_slug = sanitize_dns_label(username)
         self.upgrade_release(
-            f'init-user-{username}',
+            f'init-user-{username_slug}',
             'mojanalytics/init-user',
             '--set', f'NFSHostname={settings.NFS_HOSTNAME}',
             '--set', f'Username={username}',
@@ -28,10 +31,11 @@ class Helm(object):
         )
 
     def config_user(self, username):
+        username_slug = sanitize_dns_label(username)
         self.upgrade_release(
-            f'config-user-{username}',
+            f'config-user-{username_slug}',
             'mojanalytics/config-user',
-            '--namespace', f'user-{username}',
+            '--namespace', f'user-{username_slug}',
             '--set', f'Username={username}',
         )
 
