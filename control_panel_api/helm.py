@@ -25,7 +25,7 @@ class Helm(object):
             f'init-user-{username_slug}',
             'mojanalytics/init-user',
             '--set', f'NFSHostname={settings.NFS_HOSTNAME}',
-            '--set', f'Username={username}',
+            '--set', f'Username={username_slug}',
             '--set', f'Email={email}',
             '--set', f'Fullname={fullname}',
         )
@@ -36,7 +36,7 @@ class Helm(object):
             f'config-user-{username_slug}',
             'mojanalytics/config-user',
             '--namespace', f'user-{username_slug}',
-            '--set', f'Username={username}',
+            '--set', f'Username={username_slug}',
         )
 
 
