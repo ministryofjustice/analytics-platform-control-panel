@@ -1,5 +1,4 @@
 from django.contrib.auth.models import Group
-from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 
 from control_panel_api.filters import (
@@ -36,11 +35,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     filter_backends = (UserFilter,)
     permission_classes = (UserPermissions,)
-
-    def get_object(self):
-        obj = get_object_or_404(self.get_queryset(), pk=self.kwargs["pk"])
-        self.check_object_permissions(self.request, obj)
-        return obj
 
     def perform_create(self, serializer):
         instance = serializer.save()

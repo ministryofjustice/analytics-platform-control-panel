@@ -4,7 +4,11 @@ import jwt
 from django.test import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK, HTTP_403_FORBIDDEN
+from rest_framework.status import (
+    HTTP_200_OK,
+    HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
+)
 from rest_framework.test import APITestCase
 
 from control_panel_api.aws import aws
@@ -56,6 +60,9 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
     def assert_authenticated(self):
         self.assert_status_code(HTTP_200_OK)
 
+    def assert_not_found(self):
+        self.assert_status_code(HTTP_404_NOT_FOUND)
+
     def test_user_can_not_view(self):
         self.assert_access_denied()
 
@@ -86,7 +93,8 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         token = build_jwt(new_user, 'audience', 'secret')
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
-        self.assert_access_denied()
+        # 404 is raised before object permissions are checked
+        self.assert_not_found()
 
         created_user = User.objects.get(pk=new_user.auth0_id)
         self.assertIsNotNone(created_user)

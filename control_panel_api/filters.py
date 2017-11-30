@@ -19,8 +19,8 @@ class SuperusersOnlyFilter(DjangoFilterBackend):
 
         if is_superuser(request.user):
             return queryset
-        else:
-            return queryset.none()
+
+        return queryset.none()
 
 
 class AppFilter(SuperusersOnlyFilter):
@@ -43,11 +43,18 @@ class S3BucketFilter(SuperusersOnlyFilter):
     pass
 
 
-class UserFilter(SuperusersOnlyFilter):
+class UserFilter(DjangoFilterBackend):
     """
     Filter to get visible users.
 
-    Currently superusers see everything, others see nothing.
+    Currently superusers see everything, normal users see only themselves,
+    unauthenticated users see nothing.
     """
 
-    pass
+    def filter_queryset(self, request, queryset, view):
+        queryset = super().filter_queryset(request, queryset, view)
+
+        if is_superuser(request.user):
+            return queryset
+
+        return queryset.filter(pk=request.user.pk)

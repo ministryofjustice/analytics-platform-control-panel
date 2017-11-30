@@ -19,9 +19,6 @@ class IsSuperuser(BasePermission):
     def has_permission(self, request, view):
         return is_superuser(request.user)
 
-    def has_object_permission(self, request, view, obj):
-        return is_superuser(request.user)
-
 
 class AppPermissions(IsSuperuser):
     pass
@@ -31,23 +28,23 @@ class S3BucketPermissions(IsSuperuser):
     pass
 
 
-class IsSelf(BasePermission):
+class UserPermissions(BasePermission):
+    """
+    Superusers can do anything, normal users can only access themselves,
+    unauthenticated users cannot do anything
+    """
 
     def has_permission(self, request, view):
-        if super().has_permission(request, view):
+        if is_superuser(request.user):
             return True
 
-        if hasattr(request.user, 'auth0_id'):
-            return view.kwargs.get('pk') == request.user.auth0_id
+        if request.user.is_anonymous():
+            return False
 
-        return False
+        return view.action not in ('create', 'destroy', 'list')
 
     def has_object_permission(self, request, view, obj):
-        if super().has_object_permission(request, view, obj):
+        if is_superuser(request.user):
             return True
 
-        return obj == request.user
-
-
-class UserPermissions(IsSelf, IsSuperuser):
-    pass
+        return request.user == obj
