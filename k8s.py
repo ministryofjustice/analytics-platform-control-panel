@@ -7,11 +7,26 @@ from kubernetes.config.config_exception import ConfigException
 import requests
 
 
-class K8sProxy(object):
+
+class Config(object):
+
+    def __init__(self):
+        try:
+            config.load_incluster_config()
+        except ConfigException as e:
+            config.load_kube_config()
+
+        self.host = client.configuration.host
+        self.authorization = client.configuration.api_key[
+            'authorization']
+        self.ssl_ca_cert = client.configuration.ssl_ca_cert
+
+
+class Proxy(object):
 
     def __init__(self, request):
         self.request = request
-        self._load_config()
+        self._config = Config()
 
     def handle(self):
         k8s_response = self._make_k8s_request()
@@ -24,14 +39,14 @@ class K8sProxy(object):
 
     def _make_k8s_request(self):
         headers = {
-            'authorization': self.cluster_authorization,
+            'authorization': self._config.authorization,
         }
         requests_func = getattr(requests, self._request_method)
         return requests_func(
             self._request_url,
             data=self.request.body,
             headers=headers,
-            verify=self.ssl_ca_cert,
+            verify=self._config.ssl_ca_cert,
         )
 
     @property
@@ -40,7 +55,7 @@ class K8sProxy(object):
 
     @property
     def _request_url(self):
-        return f"{self.cluster_url}{self._request_path}?{self._request_querystring}"
+        return f"{self._config.host}{self._request_path}?{self._request_querystring}"
 
     @property
     def _request_path(self):
@@ -51,16 +66,9 @@ class K8sProxy(object):
         return self.request.GET.urlencode()
 
     def _load_config(self):
-        try:
-            config.load_incluster_config()
-        except ConfigException as e:
-            config.load_kube_config()
+        pass
 
-        self.cluster_url = client.configuration.host
-        self.cluster_authorization = client.configuration.api_key[
-            'authorization']
-        self.ssl_ca_cert = client.configuration.ssl_ca_cert
 
 
 def handler(request):
-    return K8sProxy(request).handle()
+    return Proxy(request).handle()
