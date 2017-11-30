@@ -425,7 +425,7 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/something')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('requests.get')
+    @patch('requests.request')
     def test_superuser_can_do_anything(self, mock_request):
         self.client.force_login(self.superuser)
 
@@ -434,14 +434,14 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/something')
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    @patch('requests.get')
+    @patch('requests.request')
     def test_user_cant_operate_outside_their_namespace(self, mock_request):
         self.client.force_login(self.normal_user)
 
         response = self.client.get('/k8s/api/v1/namespaces/user-other')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('requests.get')
+    @patch('requests.request')
     def test_user_can_operate_in_their_namespace(self, mock_request):
         self.client.force_login(self.normal_user)
 

@@ -40,7 +40,7 @@ from control_panel_api.serializers import (
     UserS3BucketSerializer,
     UserSerializer,
 )
-from k8s import handler as k8s_handler
+import k8s
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def handle_external_exceptions(func):
 @permission_classes((K8sPermissions,))
 @csrf_exempt
 def k8s_api_handler(request):
-    return k8s_handler(request)
+    return k8s.proxy(request)
 
 
 class UserViewSet(viewsets.ModelViewSet):

@@ -752,7 +752,7 @@ class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('kubernetes.client.configuration')
     @patch('kubernetes.config.load_incluster_config')
-    @patch('requests.post')
+    @patch('requests.request')
     def test_proxy(self, mock_request, mock_load_config, mock_k8s_config):
         # Mock k8s config
         K8S_HOST = 'https://k8s.local'
@@ -778,6 +778,7 @@ class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
         self.assertEqual(TEST_DATA, response.content)
         mock_request.assert_called_with(
+            'post',
             f'{K8S_HOST}{K8S_PATH}',
             data=TEST_DATA,
             headers={'authorization': K8S_AUTH_TOKEN},
