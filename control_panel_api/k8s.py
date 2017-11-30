@@ -15,9 +15,14 @@ class Request(object):
         self._config = Config()
 
     def dispatch(self):
+        method = self.request.method.lower()
+        host = self._config.host
+        path = self.request.path[4:]  # path without '/k8s' prefix
+        querystring = self.request.GET.urlencode()
+
         k8s_response = requests.request(
-            self.request.method.lower(),
-            f"{self._config.host}{self.path}?{self.querystring}",
+            method,
+            f"{host}{path}?{querystring}",
             data=self.request.body,
             headers={'authorization': self._config.authorization},
             verify=self._config.ssl_ca_cert,
@@ -28,14 +33,6 @@ class Request(object):
             status=k8s_response.status_code,
             content_type='application/json'
         )
-
-    @property
-    def path(self):
-        return self.request.path[4:]  # path without '/k8s' prefix
-
-    @property
-    def querystring(self):
-        return self.request.GET.urlencode()
 
 
 class Config(object):
