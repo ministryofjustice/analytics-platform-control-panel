@@ -425,8 +425,10 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/something')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
+    @patch('kubernetes.client.configuration')
+    @patch('kubernetes.config.load_incluster_config')
     @patch('requests.request')
-    def test_superuser_can_do_anything(self, mock_request):
+    def test_superuser_can_do_anything(self, mock_request, mock_load_config, mock_config):
         self.client.force_login(self.superuser)
 
         mock_request.return_value.status_code = 200
@@ -441,8 +443,10 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/api/v1/namespaces/user-other')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
+    @patch('kubernetes.client.configuration')
+    @patch('kubernetes.config.load_incluster_config')
     @patch('requests.request')
-    def test_user_can_operate_in_their_namespace(self, mock_request):
+    def test_user_can_operate_in_their_namespace(self, mock_request, mock_load_config, mock_config):
         self.client.force_login(self.normal_user)
 
         mock_request.return_value.status_code = 200
