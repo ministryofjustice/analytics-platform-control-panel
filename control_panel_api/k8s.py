@@ -4,18 +4,8 @@ from kubernetes.config.config_exception import ConfigException
 import requests
 
 
-class Config(object):
-
-    def __init__(self):
-        try:
-            config.load_incluster_config()
-        except ConfigException as e:
-            config.load_kube_config()
-
-        self.host = client.configuration.host
-        self.authorization = client.configuration.api_key[
-            'authorization']
-        self.ssl_ca_cert = client.configuration.ssl_ca_cert
+def proxy(request):
+    return Request(request).make()
 
 
 class Request(object):
@@ -56,5 +46,15 @@ class Request(object):
         return self.request.GET.urlencode()
 
 
-def proxy(request):
-    return Request(request).make()
+class Config(object):
+
+    def __init__(self):
+        try:
+            config.load_incluster_config()
+        except ConfigException as e:
+            config.load_kube_config()
+
+        self.host = client.configuration.host
+        self.authorization = client.configuration.api_key[
+            'authorization']
+        self.ssl_ca_cert = client.configuration.ssl_ca_cert
