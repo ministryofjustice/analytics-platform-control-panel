@@ -16,8 +16,8 @@ class Request(object):
 
     def make(self):
         k8s_response = requests.request(
-            self.method,
-            self.url,
+            self.request.method.lower(),
+            f"{self._config.host}{self.path}?{self.querystring}",
             data=self.request.body,
             headers={'authorization': self._config.authorization},
             verify=self._config.ssl_ca_cert,
@@ -28,14 +28,6 @@ class Request(object):
             status=k8s_response.status_code,
             content_type='application/json'
         )
-
-    @property
-    def method(self):
-        return self.request.method.lower()
-
-    @property
-    def url(self):
-        return f"{self._config.host}{self.path}?{self.querystring}"
 
     @property
     def path(self):
@@ -55,6 +47,5 @@ class Config(object):
             config.load_kube_config()
 
         self.host = client.configuration.host
-        self.authorization = client.configuration.api_key[
-            'authorization']
+        self.authorization = client.configuration.api_key['authorization']
         self.ssl_ca_cert = client.configuration.ssl_ca_cert
