@@ -5,7 +5,7 @@ import requests
 
 
 def proxy(request):
-    return Request(request).make()
+    return Request(request).dispatch()
 
 
 class Request(object):
@@ -14,7 +14,7 @@ class Request(object):
         self.request = request
         self._config = Config()
 
-    def make(self):
+    def dispatch(self):
         k8s_response = requests.request(
             self.request.method.lower(),
             f"{self._config.host}{self.path}?{self.querystring}",
