@@ -750,16 +750,15 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
 class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
 
-    @patch('kubernetes.client.configuration')
-    @patch('kubernetes.config.load_incluster_config')
+    @patch('control_panel_api.k8s.config')
     @patch('requests.request')
-    def test_proxy(self, mock_request, mock_load_config, mock_k8s_config):
+    def test_proxy(self, mock_request, mock_k8s_config):
         # Mock k8s config
         K8S_HOST = 'https://k8s.local'
         K8S_AUTH_TOKEN = 'Basic test_token'
         K8S_SSL_CERT_PATH = '/path/to/ssl_ca_cert'
         mock_k8s_config.host = K8S_HOST
-        mock_k8s_config.api_key = {'authorization': K8S_AUTH_TOKEN}
+        mock_k8s_config.authorization = K8S_AUTH_TOKEN
         mock_k8s_config.ssl_ca_cert = K8S_SSL_CERT_PATH
 
         # Mock k8s response
