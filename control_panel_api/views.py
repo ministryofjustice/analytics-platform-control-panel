@@ -6,7 +6,10 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from rest_framework import viewsets
 
-from control_panel_api.exceptions import AWSException, HelmException
+from control_panel_api.exceptions import (
+    AWSException,
+    HelmException,
+)
 from control_panel_api.filters import (
     AppFilter,
     S3BucketFilter,
@@ -53,10 +56,10 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.helm_create()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
         except CalledProcessError as e:
             logger.error(e)
-            raise HelmException from e
+            raise HelmException(e) from e
 
     @transaction.atomic
     def perform_destroy(self, instance):
@@ -66,7 +69,7 @@ class UserViewSet(viewsets.ModelViewSet):
             instance.aws_delete_role()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -90,7 +93,6 @@ class AppViewSet(viewsets.ModelViewSet):
             app.aws_create_role()
         except ClientError as e:
             logger.error(e)
-
             raise AWSException(e) from e
 
     @transaction.atomic
@@ -101,7 +103,7 @@ class AppViewSet(viewsets.ModelViewSet):
             instance.aws_delete_role()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
@@ -116,7 +118,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
             apps3bucket.aws_create()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
     @transaction.atomic
     def perform_update(self, serializer):
@@ -126,7 +128,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
             apps3bucket.aws_update()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
     @transaction.atomic
     def perform_destroy(self, instance):
@@ -136,7 +138,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
             instance.aws_delete()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
@@ -161,7 +163,7 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
             instance.aws_update()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
     @transaction.atomic
     def perform_destroy(self, instance):
@@ -171,7 +173,7 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
             instance.aws_delete()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):
@@ -188,7 +190,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
             instance.aws_create()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
         instance.create_users3bucket(user=self.request.user)
 
@@ -200,7 +202,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
             instance.aws_delete()
         except ClientError as e:
             logger.error(e)
-            raise AWSException from e
+            raise AWSException(e) from e
 
 
 class UserAppViewSet(viewsets.ModelViewSet):

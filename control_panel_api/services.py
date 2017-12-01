@@ -1,9 +1,32 @@
+import logging
+
+from botocore.exceptions import ClientError
 from django.conf import settings
 
 from .aws import aws
 
 READWRITE = 'readwrite'
 READONLY = 'readonly'
+
+logger = logging.getLogger(__name__)
+
+
+def ignore_existing(func):
+    """Decorates a function to catch and allow exceptions that are thrown for
+    existing entities or already created buckets etc, and reraise all others
+    """
+    e_names = 'BucketAlreadyOwnedByYou', 'EntityAlreadyExistsException'
+
+    def inner(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except ClientError as e:
+            if e.__class__.__name__ not in e_names:
+                raise e
+
+            logger.error(f"Caught aws exception and ignored: {e}")
+
+    return inner
 
 
 def _policy_name(bucket_name, readwrite=False):
@@ -24,6 +47,7 @@ def _policy_arn(bucket_name, readwrite=False):
         _policy_name(bucket_name, readwrite))
 
 
+@ignore_existing
 def create_role(role_name, add_saml_statement=False):
     """See: `sts:AssumeRole` required by kube2iam
     https://github.com/jtblin/kube2iam#iam-roles"""
@@ -127,6 +151,7 @@ def get_policy_document(bucket_name_arn, readwrite):
     }
 
 
+@ignore_existing
 def create_bucket(bucket_name):
     aws.create_bucket(
         bucket_name,
@@ -138,6 +163,7 @@ def create_bucket(bucket_name):
         target_prefix=f"{bucket_name}/")
 
 
+@ignore_existing
 def create_bucket_policies(bucket_name, bucket_arn):
     """Create readwrite and readonly policies for s3 bucket"""
     readwrite = True

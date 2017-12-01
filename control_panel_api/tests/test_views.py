@@ -147,7 +147,18 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         mock_aws_create_role.assert_called()
 
         with self.assertRaises(User.DoesNotExist):
-            User.objects.get(name=data['auth0_id'])
+            User.objects.get(pk=data['auth0_id'])
+
+    @patch('control_panel_api.aws.create_role')
+    def test_aws_error_existing_ignored(self, mock_create_role):
+        e = type('EntityAlreadyExistsException', (ClientError,), {})
+        mock_create_role.side_effect = e({}, 'CreateRole')
+
+        data = {'auth0_id': 'github|3', 'username': 'foo'}
+        response = self.client.post(reverse('user-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_create_role.assert_called()
 
 
 class AppViewTest(AuthenticatedClientMixin, APITestCase):
@@ -269,6 +280,17 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
         with self.assertRaises(App.DoesNotExist):
             App.objects.get(name=data['name'])
+
+    @patch('control_panel_api.aws.create_role')
+    def test_aws_error_existing_ignored(self, mock_create_role):
+        e = type('EntityAlreadyExistsException', (ClientError,), {})
+        mock_create_role.side_effect = e({}, 'CreateRole')
+
+        data = {'name': 'foo', 'repo_url': 'https://example.com.git'}
+        response = self.client.post(reverse('app-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_create_role.assert_called()
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
@@ -589,6 +611,23 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             reverse('s3bucket-detail', (self.fixture.id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(data['name'], response.data['name'])
+
+    def test_aws_error_existing_ignored(self):
+        fixtures = (
+            ('control_panel_api.aws.create_bucket', 'BucketAlreadyOwnedByYou'),
+            ('control_panel_api.aws.create_policy', 'EntityAlreadyExistsException'),
+        )
+
+        for patch_func, aws_exception in fixtures:
+            with patch(patch_func) as mock_call:
+                e = type(aws_exception, (ClientError,), {})
+                mock_call.side_effect = e({}, 'Foo')
+
+                data = {'name': f'test-bucket-123-{aws_exception.lower()}'}
+                response = self.client.post(reverse('s3bucket-list'), data)
+                self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+                mock_call.assert_called()
 
 
 class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
