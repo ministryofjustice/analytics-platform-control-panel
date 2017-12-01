@@ -227,4 +227,6 @@ class UserSerializer(serializers.ModelSerializer):
             'groups',
             'userapps',
             'users3buckets',
+            'is_superuser',
+            'email_verified',
         )

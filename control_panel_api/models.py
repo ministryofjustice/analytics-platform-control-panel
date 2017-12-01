@@ -14,6 +14,7 @@ from control_panel_api.helm import helm
 class User(AbstractUser):
     auth0_id = models.CharField(max_length=128, primary_key=True)
     name = models.CharField(max_length=256, blank=True)
+    email_verified = models.BooleanField(default=False)
 
     teams = models.ManyToManyField('Team', through='TeamMembership')
 
