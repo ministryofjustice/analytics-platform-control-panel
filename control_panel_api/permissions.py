@@ -20,6 +20,26 @@ class IsSuperuser(BasePermission):
         return is_superuser(request.user)
 
 
+class K8sPermissions(BasePermission):
+    """
+    User can operate only in his namespace (unless superuser)
+    """
+
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+
+        if is_superuser(request.user):
+            return True
+
+        username = request.user.username.lower()
+        if not username:
+            return False
+
+        path = request.path.lower()
+        return path.startswith(f'/k8s/api/v1/namespaces/user-{username}')
+
+
 class AppPermissions(IsSuperuser):
     pass
 

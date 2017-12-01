@@ -4,7 +4,9 @@ from subprocess import CalledProcessError
 from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets
+from rest_framework.decorators import api_view, permission_classes
 
 from control_panel_api.exceptions import (
     AWSException,
@@ -25,6 +27,7 @@ from control_panel_api.models import (
 )
 from control_panel_api.permissions import (
     AppPermissions,
+    K8sPermissions,
     S3BucketPermissions,
     UserPermissions,
 )
@@ -37,6 +40,8 @@ from control_panel_api.serializers import (
     UserS3BucketSerializer,
     UserSerializer,
 )
+from control_panel_api.k8s import proxy as k8s_proxy
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +62,13 @@ def handle_external_exceptions(func):
             raise HelmException(e) from e
 
     return inner
+
+
+@api_view(['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'])
+@permission_classes((K8sPermissions,))
+@csrf_exempt
+def k8s_api_handler(request):
+    return k8s_proxy(request)
 
 
 class UserViewSet(viewsets.ModelViewSet):
