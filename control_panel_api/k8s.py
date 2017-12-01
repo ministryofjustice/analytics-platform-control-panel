@@ -15,11 +15,10 @@ class Request(object):
 
     def __init__(self, request):
         self.request = request
-        self._load_config()
 
     def dispatch(self):
         method = self.request.method.lower()
-        host = self._config.host
+        host = self.config.host
         path = self.request.path[4:]  # path without '/k8s' prefix
         querystring = self.request.GET.urlencode()
 
@@ -27,8 +26,8 @@ class Request(object):
             method,
             f"{host}{path}?{querystring}",
             data=self.request.body,
-            headers={'authorization': self._config.authorization},
-            verify=self._config.ssl_ca_cert,
+            headers={'authorization': self.config.authorization},
+            verify=self.config.ssl_ca_cert,
         )
 
         return HttpResponse(
@@ -37,9 +36,13 @@ class Request(object):
             content_type='application/json'
         )
 
-    def _load_config(self):
-        config.load()
-        self._config = config
+    @property
+    def config(self):
+        if not hasattr(self, '_config'):
+            config.load()
+            self._config = config
+
+        return self._config
 
 
 class Config(object):
