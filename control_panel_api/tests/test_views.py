@@ -750,23 +750,23 @@ class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
 class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.K8S_HOST = 'https://k8s.local'
+        self.K8S_AUTH_TOKEN = 'Basic test_token'
+        self.K8S_SSL_CERT_PATH = '/path/to/ssl_ca_cert'
+
     @patch('control_panel_api.k8s.config')
     @patch('requests.request')
     def test_proxy(self, mock_request, mock_k8s_config):
-        # Mock k8s config
-        K8S_HOST = 'https://k8s.local'
-        K8S_AUTH_TOKEN = 'Basic test_token'
-        K8S_SSL_CERT_PATH = '/path/to/ssl_ca_cert'
-        mock_k8s_config.host = K8S_HOST
-        mock_k8s_config.authorization = K8S_AUTH_TOKEN
-        mock_k8s_config.ssl_ca_cert = K8S_SSL_CERT_PATH
+        mock_k8s_config.host = self.K8S_HOST
+        mock_k8s_config.authorization = self.K8S_AUTH_TOKEN
+        mock_k8s_config.ssl_ca_cert = self.K8S_SSL_CERT_PATH
 
-        # Mock k8s response
         TEST_DATA = b'{"test_pod": true}'
         mock_request.return_value.status_code = HTTP_201_CREATED
         mock_request.return_value.text = TEST_DATA
 
-        # Make request to CP API
         K8S_PATH = '/api/v1/namespaces/user-alice/pods?foo=bar'
         response = self.client.post(
             f'/k8s{K8S_PATH}',
@@ -778,8 +778,8 @@ class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(TEST_DATA, response.content)
         mock_request.assert_called_with(
             'post',
-            f'{K8S_HOST}{K8S_PATH}',
+            f'{self.K8S_HOST}{K8S_PATH}',
             data=TEST_DATA,
-            headers={'authorization': K8S_AUTH_TOKEN},
-            verify=K8S_SSL_CERT_PATH,
+            headers={'authorization': self.K8S_AUTH_TOKEN},
+            verify=self.K8S_SSL_CERT_PATH,
         )

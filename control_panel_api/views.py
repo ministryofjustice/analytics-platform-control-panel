@@ -27,9 +27,9 @@ from control_panel_api.models import (
 )
 from control_panel_api.permissions import (
     AppPermissions,
+    K8sPermissions,
     S3BucketPermissions,
     UserPermissions,
-    K8sPermissions,
 )
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
