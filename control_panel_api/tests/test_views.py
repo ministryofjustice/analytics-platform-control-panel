@@ -153,7 +153,7 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
     @patch('control_panel_api.models.User.helm_create')
     @patch('control_panel_api.models.User.aws_create_role')
     def test_helm_error_and_transaction(self, mock_aws_create_role,
-                                       mock_helm_create):
+                                        mock_helm_create):
         mock_helm_create.side_effect = CalledProcessError(1, 'Helm error')
 
         data = {'auth0_id': 'github|3', 'username': 'foo'}
@@ -166,8 +166,10 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         with self.assertRaises(User.DoesNotExist):
             User.objects.get(pk=data['auth0_id'])
 
-    @patch('control_panel_api.aws.create_role')
-    def test_aws_error_existing_ignored(self, mock_create_role):
+    @patch('control_panel_api.models.User.helm_create')
+    @patch('control_panel_api.aws.AWSClient.create_role')
+    def test_aws_error_existing_ignored(self, mock_create_role,
+                                        mock_helm_create):
         e = type('EntityAlreadyExistsException', (ClientError,), {})
         mock_create_role.side_effect = e({}, 'CreateRole')
 
@@ -298,7 +300,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         with self.assertRaises(App.DoesNotExist):
             App.objects.get(name=data['name'])
 
-    @patch('control_panel_api.aws.create_role')
+    @patch('control_panel_api.aws.AWSClient.create_role')
     def test_aws_error_existing_ignored(self, mock_create_role):
         e = type('EntityAlreadyExistsException', (ClientError,), {})
         mock_create_role.side_effect = e({}, 'CreateRole')
@@ -631,8 +633,10 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
 
     def test_aws_error_existing_ignored(self):
         fixtures = (
-            ('control_panel_api.aws.create_bucket', 'BucketAlreadyOwnedByYou'),
-            ('control_panel_api.aws.create_policy', 'EntityAlreadyExistsException'),
+            ('control_panel_api.aws.AWSClient.create_bucket',
+             'BucketAlreadyOwnedByYou'),
+            ('control_panel_api.aws.AWSClient.create_policy',
+             'EntityAlreadyExistsException'),
         )
 
         for patch_func, aws_exception in fixtures:
