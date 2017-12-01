@@ -138,13 +138,30 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
     @patch('control_panel_api.models.User.aws_create_role')
     def test_aws_error_and_transaction(self, mock_aws_create_role,
                                        mock_helm_create):
-        mock_helm_create.side_effect = CalledProcessError(1, 'foo error')
+        mock_aws_create_role.side_effect = ClientError({"foo": "bar"}, "bar")
 
         data = {'auth0_id': 'github|3', 'username': 'foo'}
         response = self.client.post(reverse('user-list'), data)
         self.assertEqual(HTTP_500_INTERNAL_SERVER_ERROR, response.status_code)
 
         mock_aws_create_role.assert_called()
+        mock_helm_create.assert_not_called()
+
+        with self.assertRaises(User.DoesNotExist):
+            User.objects.get(pk=data['auth0_id'])
+
+    @patch('control_panel_api.models.User.helm_create')
+    @patch('control_panel_api.models.User.aws_create_role')
+    def test_helm_error_and_transaction(self, mock_aws_create_role,
+                                       mock_helm_create):
+        mock_helm_create.side_effect = CalledProcessError(1, 'Helm error')
+
+        data = {'auth0_id': 'github|3', 'username': 'foo'}
+        response = self.client.post(reverse('user-list'), data)
+        self.assertEqual(HTTP_500_INTERNAL_SERVER_ERROR, response.status_code)
+
+        mock_aws_create_role.assert_called()
+        mock_helm_create.assert_called()
 
         with self.assertRaises(User.DoesNotExist):
             User.objects.get(pk=data['auth0_id'])
