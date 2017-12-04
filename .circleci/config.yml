@@ -1,29 +1,84 @@
 version: 2
 jobs:
+
   build:
+
     docker:
-      - image: circleci/python:3.6.1
-      - image: circleci/postgres:9.6.2
-        environment:
-          DEBUG: True
-          DB_NAME: controlpanel
+
+      - image: docker:17.06.0-ce-git
+
     steps:
+
       - checkout
+
+      - setup_remote_docker
+
+      - run:
+          name: Install dependencies
+          command: |
+            apk update && apk add --no-progress curl curl-dev py2-pip
+            pip install docker-compose==1.15.0 | cat
+
       - restore_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
-      - run:
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-      - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          keys:
+            - v1-{{ .Branch }}
           paths:
-            - "venv"
+            - /caches/app.tar
+
       - run:
+          name: Load Docker image layer cache
           command: |
-            . venv/bin/activate
-            pytest moj_analytics
-      - store_artifacts:
-          path: test-reports/
-          destination: tr1
+            set +o pipefail
+            docker load -i /caches/app.tar | true
+
+      - run:
+          name: Build application Docker image
+          command: |
+            docker build --cache-from=app -t app .
+
+      - run:
+          name: Save Docker image layer cache
+          command: |
+            mkdir -p /caches
+            docker save -o /caches/app.tar app
+
+      - save_cache:
+          key: v1-{{ .Branch }}-{{ epoch }}
+          paths:
+            - /caches/app.tar
+
+      - run:
+          name: Run tests
+          command: |
+            docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+
+      - deploy:
+          name: Push application Docker image
+          command: |
+            docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
+            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
+            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+            docker push "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
+            docker push "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+
+      - deploy:
+          name: Deploy to dev
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              curl ${JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
+                --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
+                --data COMMIT_HASH=${CIRCLE_SHA1} \
+                --data BRANCH_NAME=${CIRCLE_BRANCH} \
+                --user ${JENKINS_USER}:${JENKINS_TOKEN}
+            fi
+
+      - deploy:
+          name: Deploy to alpha
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              curl ${ALPHA_JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
+                --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
+                --data COMMIT_HASH=${CIRCLE_SHA1} \
+                --data BRANCH_NAME=${CIRCLE_BRANCH} \
+                --user ${ALPHA_JENKINS_USER}:${ALPHA_JENKINS_TOKEN}
+            fi
