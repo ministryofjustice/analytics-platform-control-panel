@@ -13,7 +13,8 @@ class CustomPageNumberPagination(PageNumberPagination):
         execute original parent functionality
         """
         page_size = self.get_page_size(request)
-        if page_size != 0:
+
+        if not self._page_size_is_all(page_size):
             return super().paginate_queryset(queryset, request, view)
 
         paginator = self.django_paginator_class(queryset, queryset.count())
@@ -35,3 +36,8 @@ class CustomPageNumberPagination(PageNumberPagination):
                 pass
 
         return self.page_size
+
+    def _page_size_is_all(self, page_size):
+        """If page_size is specified as 0 we use that to mean return all
+        """
+        return page_size == 0
