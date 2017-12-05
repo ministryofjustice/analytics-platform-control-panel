@@ -25,6 +25,11 @@ class K8sPermissions(BasePermission):
     User can operate only in his namespace (unless superuser)
     """
 
+    ALLOWED_APIS = [
+        'api/v1',
+        'apis/apps/v1beta2',
+    ]
+
     def has_permission(self, request, view):
         if not request.user:
             return False
@@ -37,7 +42,12 @@ class K8sPermissions(BasePermission):
             return False
 
         path = request.path.lower()
-        return path.startswith(f'/k8s/api/v1/namespaces/user-{username}')
+
+        for api in self.ALLOWED_APIS:
+            if path.startswith(f'/k8s/{api}/namespaces/user-{username}'):
+                return True
+
+        return False
 
 
 class AppPermissions(IsSuperuser):
