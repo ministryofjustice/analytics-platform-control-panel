@@ -451,5 +451,12 @@ class K8sPermissionsTest(APITestCase):
         mock_request.return_value.status_code = 200
 
         username = self.normal_user.username.lower()
-        response = self.client.get(f'/k8s/api/v1/namespaces/user-{username}')
-        self.assertEqual(HTTP_200_OK, response.status_code)
+
+        api_groups = [
+            'api/v1',
+            'apis/apps/v1beta2',
+        ]
+
+        for api in api_groups:
+            response = self.client.get(f'/k8s/{api}/namespaces/user-{username}')
+            self.assertEqual(HTTP_200_OK, response.status_code)
