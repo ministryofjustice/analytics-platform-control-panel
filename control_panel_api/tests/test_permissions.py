@@ -436,7 +436,7 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/something')
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    def test_user_cant_operate_outside_their_namespace(self):
+    def test_normal_user_cant_operate_outside_their_namespace(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get('/k8s/api/v1/namespaces/user-other')
@@ -445,11 +445,27 @@ class K8sPermissionsTest(APITestCase):
     @patch('kubernetes.client.configuration')
     @patch('kubernetes.config.load_incluster_config')
     @patch('requests.request')
-    def test_user_can_operate_in_their_namespace(self, mock_request, mock_load_config, mock_config):
+    def test_normal_user_can_operate_in_their_namespace(self, mock_request, mock_load_config, mock_config):
         self.client.force_login(self.normal_user)
 
         mock_request.return_value.status_code = 200
 
         username = self.normal_user.username.lower()
-        response = self.client.get(f'/k8s/api/v1/namespaces/user-{username}')
-        self.assertEqual(HTTP_200_OK, response.status_code)
+
+        api_groups = [
+            'api/v1',
+            'apis/apps/v1beta2',
+        ]
+
+        for api in api_groups:
+            response = self.client.get(f'/k8s/{api}/namespaces/user-{username}')
+            self.assertEqual(HTTP_200_OK, response.status_code)
+
+    def test_normal_user_cant_make_requests_to_disallowed_apis(self):
+        self.client.force_login(self.normal_user)
+
+        username = self.normal_user.username.lower()
+
+        disallowed_api = 'apis/disallowed/v1alpha0'
+        response = self.client.get(f'/k8s/{disallowed_api}/namespaces/user-{username}')
+        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
