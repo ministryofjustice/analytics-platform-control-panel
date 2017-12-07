@@ -160,10 +160,16 @@ NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
 
 LOGGING = {
     'version': 1,
+    'formatters': {
+        'default': {
+            'format': '%(asctime)s %(name)s %(levelname)s %(message)s',
+        },
+    },
     'handlers': {
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
+            'formatter': 'default',
         },
     },
     'loggers': {
