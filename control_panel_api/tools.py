@@ -3,7 +3,6 @@ import os
 from django.conf import settings
 
 from control_panel_api.helm import Helm
-from control_panel_api.utils import sanitize_dns_label
 
 
 class Tool():
@@ -13,26 +12,22 @@ class Tool():
         self.helm = Helm()
         self.load_auth_client_config()
 
-    def deploy_for(self, username):
+    def deploy_for(self, user):
         """
         Deploy the given tool in the user namespace.
 
         >>> rstudio = Tool('rstudio')
-        >>> rstudio.deploy_for('alice')
+        >>> rstudio.deploy_for(alice)
         """
-        env = settings.ENV
-        username_slug = sanitize_dns_label(username)
-
         self.helm.upgrade_release(
             f'{username}-{self.name}',
             f'mojanalytics/{self.name}',
-            '--namespace', f'user-{username_slug}',
-            '--set', f'Username={username_slug}',
-            '--set', f'aws.iamRole={env}_user_{username_slug}',
+            '--namespace', user.k8s_namespace,
+            '--set', f'Username={user.username.lower()}',
+            '--set', f'aws.iamRole={user.iam_role_name}',
             '--set', 'authProxy.auth.domain=' + self.auth_client["domain"],
             '--set', 'authProxy.auth.clientId=' + self.auth_client["id"],
-            '--set', 'authProxy.auth.clientSecret=' +
-            self.auth_client["secret"],
+            '--set', 'authProxy.auth.clientSecret=' + self.auth_client["secret"],
         )
 
     def load_auth_client_config(self):
