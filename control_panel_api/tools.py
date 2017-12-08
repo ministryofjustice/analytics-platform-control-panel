@@ -25,9 +25,9 @@ class Tool():
             '--namespace', user.k8s_namespace,
             '--set', f'Username={user.username.lower()}',
             '--set', f'aws.iamRole={user.iam_role_name}',
-            '--set', 'authProxy.auth.domain=' + self.auth_client["domain"],
-            '--set', 'authProxy.auth.clientId=' + self.auth_client["id"],
-            '--set', 'authProxy.auth.clientSecret=' + self.auth_client["secret"],
+            '--set', 'authProxy.auth.domain=' + self.auth_client['domain'],
+            '--set', 'authProxy.auth.clientId=' + self.auth_client['id'],
+            '--set', 'authProxy.auth.clientSecret=' + self.auth_client['secret'],
         )
 
     def load_auth_client_config(self):
