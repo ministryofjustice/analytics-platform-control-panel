@@ -44,7 +44,7 @@ class K8sPermissions(BasePermission):
         path = request.path.lower()
 
         for api in self.ALLOWED_APIS:
-            if path.startswith(f'/k8s/{api}/namespaces/user-{username}'):
+            if path.startswith(f'/k8s/{api}/namespaces/user-{username}/'):
                 return True
 
         return False
