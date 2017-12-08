@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from django.conf import settings
 
@@ -10,7 +11,10 @@ class Tool():
     def __init__(self, name):
         self.name = name
         self.helm = Helm()
-        self.load_auth_client_config()
+
+        self.auth_client_domain = _get_auth_client_config('domain')
+        self.auth_client_id = _get_auth_client_config('id')
+        self.auth_client_secret = _get_auth_client_config('secret')
 
     def deploy_for(self, user):
         """
@@ -19,35 +23,25 @@ class Tool():
         >>> rstudio = Tool('rstudio')
         >>> rstudio.deploy_for(alice)
         """
+
+        username = user.username.lower()
+        auth_proxy_cookie_secret = secrets.token_hex(32)
+        tool_cookie_secret = secrets.token_hex(32)
+
         self.helm.upgrade_release(
-            f'{username}-{self.name}',
-            f'mojanalytics/{self.name}',
+            chart=f'mojanalytics/{self.name}',
+            release=f'{username}-{self.name}',
             '--namespace', user.k8s_namespace,
-            '--set', f'Username={user.username.lower()}',
+            '--set', f'Username={username}',
             '--set', f'aws.iamRole={user.iam_role_name}',
-            '--set', 'authProxy.auth.domain=' + self.auth_client['domain'],
-            '--set', 'authProxy.auth.clientId=' + self.auth_client['id'],
-            '--set', 'authProxy.auth.clientSecret=' + self.auth_client['secret'],
+            '--set', f'toolsDomain={settings.TOOLS_DOMAIN}',
+            '--set', f'authProxy.cookieSecret={auth_proxy_cookie_secret}',
+            '--set', f'{self.name}.secureCookieKey={tool_cookie_secret}',
+            '--set', f'authProxy.auth0.domain={self.auth_client_domain}',
+            '--set', f'authProxy.auth0.clientId={self.auth_client_id}',
+            '--set', f'authProxy.auth0.clientSecret={self.auth_client_secret}',
         )
 
-    def load_auth_client_config(self):
-        """
-        Read Auth client config into `self.auth_client`
-
-        This dictionary has 3 keys:
-          - `domain` with value `settings.OIDC_DOMAIN`
-          - `id` with value from `${TOOL}_AUTH_CLIENT_ID`
-          - `secret` with value from `${TOOL}_AUTH_CLIENT_SECRET`
-
-        e.g. if the tool name is `rstudio`:
-          - `domain` will be read from `settings.OIDC_DOMAIN`
-          - `id` will be read from `RSTUDIO_AUTH_CLIENT_ID`
-          - `secret` will be read from `RSTUDIO_AUTH_CLIENT_SECRET`
-        """
-        tool_auth_prefix = f'{self.name.upper()}_AUTH_CLIENT'
-
-        self.auth_client = {
-            'domain': settings.OIDC_DOMAIN,
-            'id': os.environ[f'{tool_auth_prefix}_ID'],
-            'secret': os.environ[f'{tool_auth_prefix}_SECRET'],
-        }
+    def _get_auth_client_config(self, key):
+        setting_key = f'{self.name}_AUTH_CLIENT_{key}'
+        return getattr(settings, setting_key.upper())

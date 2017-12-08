@@ -157,6 +157,11 @@ OIDC_FIELD_NAME = 'name'
 
 # Helm variables
 NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
+TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
+# RStudio tool - Auth client config
+RSTUDIO_AUTH_CLIENT_DOMAIN = os.environ.get('RSTUDIO_AUTH_CLIENT_DOMAIN', OIDC_DOMAIN)
+RSTUDIO_AUTH_CLIENT_ID = os.environ.get('RSTUDIO_AUTH_CLIENT_ID')
+RSTUDIO_AUTH_CLIENT_SECRET = os.environ.get('RSTUDIO_AUTH_CLIENT_SECRET')
 
 LOGGING = {
     'version': 1,
