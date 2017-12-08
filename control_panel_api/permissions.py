@@ -6,6 +6,8 @@ See: http://www.django-rest-framework.org/api-guide/permissions/#custom-permissi
 
 from rest_framework.permissions import BasePermission
 
+from control_panel_api.utils import sanitize_dns_label
+
 
 def is_superuser(user):
     return user and user.is_superuser
@@ -42,9 +44,10 @@ class K8sPermissions(BasePermission):
             return False
 
         path = request.path.lower()
+        namespace = sanitize_dns_label(f'user-{username}')
 
         for api in self.ALLOWED_APIS:
-            if path.startswith(f'/k8s/{api}/namespaces/user-{username}/'):
+            if path.startswith(f'/k8s/{api}/namespaces/{namespace}/'):
                 return True
 
         return False

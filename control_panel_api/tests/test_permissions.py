@@ -417,6 +417,7 @@ class K8sPermissionsTest(APITestCase):
         )
         self.normal_user = mommy.make(
             'control_panel_api.User',
+            username='alice',
             auth0_id='github|user_2',
             is_superuser=False,
         )
