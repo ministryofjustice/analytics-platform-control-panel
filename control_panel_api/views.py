@@ -4,9 +4,11 @@ from subprocess import CalledProcessError
 from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 
 from control_panel_api.exceptions import (
     AWSException,
@@ -29,6 +31,7 @@ from control_panel_api.permissions import (
     AppPermissions,
     K8sPermissions,
     S3BucketPermissions,
+    ToolDeploymentPermissions,
     UserPermissions,
 )
 from control_panel_api.serializers import (
@@ -41,6 +44,7 @@ from control_panel_api.serializers import (
     UserSerializer,
 )
 from control_panel_api.k8s import proxy as k8s_proxy
+from control_panel_api.tools import Tool
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +57,7 @@ def handle_external_exceptions(func):
 
     def inner(*args, **kwargs):
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except ClientError as e:
             logger.error(e)
             raise AWSException(e) from e
@@ -199,3 +203,13 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()
     serializer_class = UserAppSerializer
+
+
+@api_view(['POST'])
+@permission_classes((ToolDeploymentPermissions,))
+@handle_external_exceptions
+def tool_deployments_list(request, tool_name):
+    tool = Tool(tool_name)
+    tool.deploy_for(request.user)
+
+    return JsonResponse({}, status=status.HTTP_201_CREATED)
