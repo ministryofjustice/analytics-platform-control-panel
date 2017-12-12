@@ -46,7 +46,7 @@ class Tool():
             f'{username}-{self.name}',
             f'mojanalytics/{self.name}',
             '--namespace', user.k8s_namespace,
-            '--set', f'Username={username}',
+            '--set', f'username={username}',
             '--set', f'aws.iamRole={user.iam_role_name}',
             '--set', f'toolsDomain={settings.TOOLS_DOMAIN}',
             '--set', f'authProxy.cookieSecret={auth_proxy_cookie_secret}',

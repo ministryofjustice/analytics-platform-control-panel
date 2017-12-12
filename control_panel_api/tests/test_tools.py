@@ -45,7 +45,7 @@ class ToolsTestCase(TestCase):
             f'{username}-{tool_name}',
             f'mojanalytics/{tool_name}',
             '--namespace', user.k8s_namespace,
-            '--set', f'Username={username}',
+            '--set', f'username={username}',
             '--set', f'aws.iamRole={user.iam_role_name}',
             '--set', f'toolsDomain={self.TOOLS_DOMAIN}',
             '--set', f'authProxy.cookieSecret={cookie_secret_proxy}',
