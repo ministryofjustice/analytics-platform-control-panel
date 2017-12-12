@@ -19,7 +19,7 @@ class UnsupportedToolException(APIException):
     default_code = 'unsupported_tool'
 
 
-class Tool():
+class Tool(object):
 
     def __init__(self, name):
         if not name in SUPPORTED_TOOL_NAMES:
