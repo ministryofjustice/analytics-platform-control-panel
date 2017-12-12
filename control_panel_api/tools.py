@@ -22,7 +22,10 @@ class UnsupportedToolException(APIException):
 class Tool():
 
     def __init__(self, name):
-        self.name = self._validate_name(name)
+        if not name in SUPPORTED_TOOL_NAMES:
+            raise UnsupportedToolException
+
+        self.name = name
         self.helm = Helm()
 
         self.auth_client_domain = self._get_auth_client_config('domain')
@@ -58,9 +61,3 @@ class Tool():
     def _get_auth_client_config(self, key):
         setting_key = f'{self.name}_AUTH_CLIENT_{key}'
         return getattr(settings, setting_key.upper())
-
-    def _validate_name(self, name):
-        if not name in SUPPORTED_TOOL_NAMES:
-            raise UnsupportedToolException
-
-        return name
