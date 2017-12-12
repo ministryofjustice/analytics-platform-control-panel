@@ -1,7 +1,7 @@
 from unittest.case import TestCase
+from unittest.mock import patch
 
 from django.test import override_settings
-from unittest.mock import patch
 
 from control_panel_api.models import User
 from control_panel_api.tools import Tool, UnsupportedToolException

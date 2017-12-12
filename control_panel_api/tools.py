@@ -1,4 +1,3 @@
-import os
 import secrets
 
 from django.conf import settings

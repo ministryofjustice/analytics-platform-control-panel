@@ -481,8 +481,6 @@ class K8sPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
-
-
 class ToolDeploymentPermissionsTest(APITestCase):
 
     def setUp(self):
