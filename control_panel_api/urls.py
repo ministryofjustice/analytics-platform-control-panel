@@ -20,7 +20,7 @@ urlpatterns = [
     url(r'^$', schema_view),
     url(r'^', include(router.urls)),
     url(r'^k8s/.+', views.k8s_api_handler),
-    url(r'^tools/(?P<tool_name>[-a-zA-Z]+)/deployments/$', views.tool_deployments_list, name='tool-deployments-list'),
+    url(r'^tools/(?P<tool_name>[-a-z]+)/deployments/$', views.tool_deployments_list, name='tool-deployments-list'),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
 
