@@ -165,6 +165,7 @@ RSTUDIO_AUTH_CLIENT_SECRET = os.environ.get('RSTUDIO_AUTH_CLIENT_SECRET')
 
 LOGGING = {
     'version': 1,
+    'disable_existing_loggers': False,
     'formatters': {
         'default': {
             'format': '%(asctime)s %(name)s %(levelname)s %(message)s',
@@ -179,6 +180,10 @@ LOGGING = {
     },
     'loggers': {
         '': {
+            'handlers': ['console'],
+            'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
+        },
+        'django': {
             'handlers': ['console'],
             'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
         },
