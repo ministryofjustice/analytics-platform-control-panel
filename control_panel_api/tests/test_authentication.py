@@ -1,8 +1,10 @@
 from unittest.mock import MagicMock, patch
 
-import jwt
 from django.test import override_settings
+from jose import jwk, jwt
+from jose.exceptions import JWTError
 from model_mommy import mommy
+from requests.exceptions import Timeout
 from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
@@ -14,28 +16,60 @@ from rest_framework.test import APITestCase
 from control_panel_api.aws import aws
 from control_panel_api.helm import helm
 from control_panel_api.models import User
+from control_panel_api.tests import PRIVATE_KEY, PUBLIC_KEY
+
+KID = 'mykid'
 
 
-def build_jwt(user, audience, secret):
-    return jwt.encode(
-        {
-            'email': user.email,
-            'name': user.name,
-            'aud': audience,
-            'sub': user.auth0_id,
-            'nickname': user.username,
-        },
-        secret,
-        algorithm='HS256'
-    ).decode('utf8')
+def build_jwt(claim=None):
+    default_claim = {
+        'email': 'test@example.com',
+        'name': 'Test User',
+        'aud': 'audience',
+        'sub': 'github|12345',
+        'nickname': 'test',
+    }
+
+    headers = {
+        'kid': KID
+    }
+
+    if claim:
+        default_claim.update(claim)
+
+    return jwt.encode(default_claim, PRIVATE_KEY, 'RS256', headers)
 
 
-@override_settings(OIDC_CLIENT_SECRET='secret', OIDC_CLIENT_ID='audience')
+def build_jwt_from_user(user):
+    return build_jwt({
+        'sub': user.auth0_id,
+        'nickname': user.username,
+        'name': user.name,
+        'email': user.email
+    })
+
+
+def get_jwk():
+    jwk_key = jwk.construct(PUBLIC_KEY, 'RS256')
+
+    jwk_dict = jwk_key.to_dict()
+    jwk_dict['kid'] = KID
+
+    return jwk_dict
+
+
+mock_get_key = MagicMock()
+mock_get_key.return_value = get_jwk()
+
+
+@override_settings(OIDC_DOMAIN='dev-analytics-moj.eu.auth0.com',
+                   OIDC_CLIENT_SECRET='secret',
+                   OIDC_CLIENT_ID='audience')
 @patch.object(aws, 'client', MagicMock())
 @patch.object(helm, 'config_user', MagicMock())
 @patch.object(helm, 'init_user', MagicMock())
+@patch('control_panel_api.authentication.get_key', mock_get_key)
 class Auth0JWTAuthenticationTestCase(APITestCase):
-
     def setUp(self):
         self.user = mommy.make(
             'control_panel_api.User',
@@ -74,8 +108,26 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='JWT bar')
         self.assert_access_denied()
 
+    @patch('requests.get')
+    def test_bad_request_for_jwks(self, mock_request_get):
+        mock_request_get.side_effect = Timeout
+
+        token = build_jwt()
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
+        self.assert_access_denied()
+
+    @patch('jose.jwt.decode')
+    def test_decode_jwt_error(self, mock_decode):
+        mock_decode.side_effect = JWTError
+
+        token = build_jwt()
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
+        self.assert_access_denied()
+
     def test_good_token(self):
-        token = build_jwt(self.user, 'audience', 'secret')
+        token = build_jwt()
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         self.assert_authenticated()
@@ -90,7 +142,7 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
             is_superuser=False,
         )
 
-        token = build_jwt(new_user, 'audience', 'secret')
+        token = build_jwt_from_user(new_user)
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         # 404 is raised before object permissions are checked
