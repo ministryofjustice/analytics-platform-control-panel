@@ -33,21 +33,15 @@ class K8sPermissions(BasePermission):
     ]
 
     def has_permission(self, request, view):
-        if not request.user:
+        if not request.user or request.user.is_anonymous():
             return False
 
         if is_superuser(request.user):
             return True
 
-        username = request.user.username.lower()
-        if not username:
-            return False
-
         path = request.path.lower()
-        namespace = sanitize_dns_label(f'user-{username}')
-
         for api in self.ALLOWED_APIS:
-            if path.startswith(f'/k8s/{api}/namespaces/{namespace}/'):
+            if path.startswith(f'/k8s/{api}/namespaces/{request.user.k8s_namespace}/'):
                 return True
 
         return False
@@ -81,3 +75,9 @@ class UserPermissions(BasePermission):
             return True
 
         return request.user == obj
+
+
+class ToolDeploymentPermissions(BasePermission):
+
+    def has_permission(self, request, view):
+        return not request.user.is_anonymous()

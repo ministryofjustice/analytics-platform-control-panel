@@ -60,6 +60,12 @@ class UserTestCase(TestCase):
         aws.client.return_value.delete_role.assert_called_with(
             RoleName=expected_role_name)
 
+    def test_k8s_namespace(self):
+        user = User(username='AlicE')
+        expected_ns = f'user-alice'
+
+        self.assertEqual(user.k8s_namespace, expected_ns)
+
 
 class MembershipsTestCase(TestCase):
     @classmethod

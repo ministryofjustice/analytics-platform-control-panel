@@ -783,3 +783,34 @@ class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
             headers={'authorization': self.K8S_AUTH_TOKEN},
             verify=self.K8S_SSL_CERT_PATH,
         )
+
+
+class ToolDeploymentViewTest(AuthenticatedClientMixin, APITestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.normal_user = mommy.make('control_panel_api.User', is_superuser=False)
+        self.client.force_login(self.normal_user)
+
+    def test_create_when_invalid_tool_name(self):
+        response = self.client.post(
+            reverse('tool-deployments-list', ('unsupported-tool',)),
+            None,
+            content_type='application/json',
+        )
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
+    @patch('control_panel_api.views.Tool', autospec=True)
+    def test_create_when_valid_tool_name(self, mock_tool):
+        mock_tool_instance = mock_tool.return_value
+
+        tool_name = 'rstudio'
+        response = self.client.post(
+            reverse('tool-deployments-list', (tool_name,)),
+            None,
+            content_type='application/json',
+        )
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_tool.assert_called_with(tool_name)
+        mock_tool_instance.deploy_for.assert_called_with(self.normal_user)
