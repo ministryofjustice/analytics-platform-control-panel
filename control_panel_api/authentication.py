@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_jwks():
-    response = requests.get(
-        f'https://{settings.OIDC_DOMAIN}/.well-known/jwks.json')
+    response = requests.get(settings.OIDC_WELL_KNOWN_URL)
     return response.json()
 
 
