@@ -21,12 +21,18 @@ def get_jwks():
     return response.json()
 
 
-def get_key(jwks, unverified_header):
+def get_key(jwks, kid):
     for jwk in jwks.get('keys'):
-        if jwk['kid'] == unverified_header['kid']:
+        if jwk['kid'] == kid:
             return jwk
 
     return None
+
+
+def get_jwk(kid):
+    jwks = get_jwks()
+
+    return get_key(jwks, kid)
 
 
 class Auth0JWTAuthentication(BaseAuthentication):
@@ -45,12 +51,11 @@ class Auth0JWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed('Error decoding JWT header') from e
 
         try:
-            jwks = get_jwks()
+            key = get_jwk(unverified_header['kid'])
         except RequestException as e:
             logger.error(e)
             raise AuthenticationFailed(e) from e
 
-        key = get_key(jwks, unverified_header)
         if key is None:
             raise AuthenticationFailed('kid matching failure')
 
