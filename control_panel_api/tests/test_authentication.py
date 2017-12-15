@@ -13,8 +13,6 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
-from control_panel_api.aws import aws
-from control_panel_api.helm import helm
 from control_panel_api.models import User
 from control_panel_api.tests import PRIVATE_KEY, PUBLIC_KEY
 
@@ -65,10 +63,11 @@ mock_get_key.return_value = get_jwk()
 @override_settings(OIDC_DOMAIN='dev-analytics-moj.eu.auth0.com',
                    OIDC_CLIENT_SECRET='secret',
                    OIDC_CLIENT_ID='audience')
-@patch.object(aws, 'client', MagicMock())
-@patch.object(helm, 'config_user', MagicMock())
-@patch.object(helm, 'init_user', MagicMock())
 @patch('control_panel_api.authentication.get_key', mock_get_key)
+@patch('control_panel_api.aws.aws.client', MagicMock())
+@patch('control_panel_api.helm.helm.config_user', MagicMock())
+@patch('control_panel_api.helm.helm.init_user', MagicMock())
+@patch('requests.get', MagicMock())
 class Auth0JWTAuthenticationTestCase(APITestCase):
     def setUp(self):
         self.user = mommy.make(
@@ -108,7 +107,7 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION='JWT bar')
         self.assert_access_denied()
 
-    @patch('requests.get')
+    @patch('control_panel_api.authentication.get_jwks')
     def test_bad_request_for_jwks(self, mock_request_get):
         mock_request_get.side_effect = Timeout
 
