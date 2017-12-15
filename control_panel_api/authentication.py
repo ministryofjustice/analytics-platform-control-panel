@@ -1,9 +1,9 @@
 import logging
 
-import requests
 from django.conf import settings
 from jose import jwt
 from jose.exceptions import JWTError
+import requests
 from requests.exceptions import RequestException
 from rest_framework.authentication import (
     BaseAuthentication,
