@@ -35,6 +35,22 @@ def get_jwk(kid):
     return get_key(jwks, kid)
 
 
+def get_or_create_user(payload):
+    try:
+        user = User.objects.get(pk=payload.get('sub'))
+    except User.DoesNotExist:
+        user = User.objects.create(
+            pk=payload.get('sub'),
+            username=payload.get(settings.OIDC_FIELD_USERNAME),
+            email=payload.get(settings.OIDC_FIELD_EMAIL),
+            name=payload.get(settings.OIDC_FIELD_NAME),
+        )
+        user.save()
+        user.helm_create()
+
+    return user
+
+
 class Auth0JWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
         try:
@@ -70,21 +86,9 @@ class Auth0JWTAuthentication(BaseAuthentication):
             logger.error(e)
             raise AuthenticationFailed(e) from e
 
-        sub = decoded.get('sub')
-
-        if sub is None:
+        if decoded.get('sub') is None:
             raise AuthenticationFailed('JWT missing "sub" field')
 
-        try:
-            user = User.objects.get(pk=sub)
-        except User.DoesNotExist:
-            user = User.objects.create(
-                pk=sub,
-                username=decoded.get(settings.OIDC_FIELD_USERNAME),
-                email=decoded.get(settings.OIDC_FIELD_EMAIL),
-                name=decoded.get(settings.OIDC_FIELD_NAME),
-            )
-            user.save()
-            user.helm_create()
+        user = get_or_create_user(decoded)
 
         return user, None
