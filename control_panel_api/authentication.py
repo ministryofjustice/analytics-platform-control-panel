@@ -35,15 +35,15 @@ def get_jwk(kid):
     return get_key(jwks, kid)
 
 
-def get_or_create_user(payload):
+def get_or_create_user(decoded_payload):
     try:
-        user = User.objects.get(pk=payload.get('sub'))
+        user = User.objects.get(pk=decoded_payload.get('sub'))
     except User.DoesNotExist:
         user = User.objects.create(
-            pk=payload.get('sub'),
-            username=payload.get(settings.OIDC_FIELD_USERNAME),
-            email=payload.get(settings.OIDC_FIELD_EMAIL),
-            name=payload.get(settings.OIDC_FIELD_NAME),
+            pk=decoded_payload.get('sub'),
+            username=decoded_payload.get(settings.OIDC_FIELD_USERNAME),
+            email=decoded_payload.get(settings.OIDC_FIELD_EMAIL),
+            name=decoded_payload.get(settings.OIDC_FIELD_NAME),
         )
         user.save()
         user.helm_create()
