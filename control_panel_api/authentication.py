@@ -41,10 +41,12 @@ def get_matching_key(kid, jwks):
     raise KeyError('kid matching failure')
 
 
-def get_jwk(kid):
+def get_key(token):
+    unverified_header = jwt.get_unverified_header(token)
+
     jwks = get_jwks()
 
-    return get_matching_key(kid, jwks)
+    return get_matching_key(unverified_header['kid'], jwks)
 
 
 def get_or_create_user(decoded_payload):
@@ -71,17 +73,13 @@ class Auth0JWTAuthentication(BaseAuthentication):
             return None
 
         try:
-            unverified_header = jwt.get_unverified_header(token)
+            key = get_key(token)
         except JWTError as e:
             raise AuthenticationFailed('Error decoding JWT header') from e
-
-        try:
-            key = get_jwk(unverified_header['kid'])
         except RequestException as e:
             logger.error(e)
             raise AuthenticationFailed(e) from e
         except KeyError as e:
-            logger.error(e)
             raise AuthenticationFailed(e) from e
 
         try:
