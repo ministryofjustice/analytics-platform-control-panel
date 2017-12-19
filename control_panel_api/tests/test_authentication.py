@@ -19,7 +19,7 @@ from control_panel_api.tests import PRIVATE_KEY, PUBLIC_KEY
 KID = 'mykid'
 
 
-def build_jwt(claim=None):
+def build_jwt(claim=None, headers=None):
     default_claim = {
         'email': 'test@example.com',
         'name': 'Test User',
@@ -28,14 +28,17 @@ def build_jwt(claim=None):
         'nickname': 'test',
     }
 
-    headers = {
+    default_headers = {
         'kid': KID
     }
 
     if claim:
         default_claim.update(claim)
 
-    return jwt.encode(default_claim, PRIVATE_KEY, 'RS256', headers)
+    if headers:
+        default_headers.update(headers)
+
+    return jwt.encode(default_claim, PRIVATE_KEY, 'RS256', default_headers)
 
 
 def build_jwt_from_user(user):
@@ -47,27 +50,25 @@ def build_jwt_from_user(user):
     })
 
 
-def get_jwk():
+def get_jwks():
     jwk_key = jwk.construct(PUBLIC_KEY, 'RS256')
 
     jwk_dict = jwk_key.to_dict()
     jwk_dict['kid'] = KID
 
-    return jwk_dict
+    return {'keys': [jwk_dict]}
 
 
-mock_get_key = MagicMock()
-mock_get_key.return_value = get_jwk()
+mock_get_keys = MagicMock()
+mock_get_keys.return_value = get_jwks()
 
 
 @override_settings(OIDC_DOMAIN='dev-analytics-moj.eu.auth0.com',
                    OIDC_CLIENT_SECRET='secret',
                    OIDC_CLIENT_ID='audience')
-@patch('control_panel_api.authentication.get_key', mock_get_key)
 @patch('control_panel_api.aws.aws.client', MagicMock())
 @patch('control_panel_api.helm.helm.config_user', MagicMock())
 @patch('control_panel_api.helm.helm.init_user', MagicMock())
-@patch('requests.get', MagicMock())
 class Auth0JWTAuthenticationTestCase(APITestCase):
     def setUp(self):
         self.user = mommy.make(
@@ -109,28 +110,38 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
 
     @patch('control_panel_api.authentication.get_jwks')
     def test_bad_request_for_jwks(self, mock_request_get):
-        mock_request_get.side_effect = Timeout
+        mock_request_get.side_effect = Timeout("test_bad_request_for_jwks")
 
         token = build_jwt()
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         self.assert_access_denied()
 
+    @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
+    def test_jwk_kid_keyerror(self):
+        token = build_jwt(headers={'kid': 'notmatching'})
+
+        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
+        self.assert_access_denied()
+
+    @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
     @patch('jose.jwt.decode')
     def test_decode_jwt_error(self, mock_decode):
-        mock_decode.side_effect = JWTError
+        mock_decode.side_effect = JWTError("test_decode_jwt_error")
 
         token = build_jwt()
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         self.assert_access_denied()
 
+    @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
     def test_good_token(self):
         token = build_jwt()
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         self.assert_authenticated()
 
+    @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
     def test_unknown_valid_user_is_created(self):
         new_user = mommy.prepare(
             'control_panel_api.User',

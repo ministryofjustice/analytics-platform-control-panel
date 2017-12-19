@@ -33,18 +33,18 @@ def get_jwks():
     return response.json()
 
 
-def get_key(jwks, kid):
+def get_matching_key(kid, jwks):
     for jwk in jwks.get('keys'):
         if jwk['kid'] == kid:
             return jwk
 
-    return None
+    raise KeyError('kid matching failure')
 
 
 def get_jwk(kid):
     jwks = get_jwks()
 
-    return get_key(jwks, kid)
+    return get_matching_key(kid, jwks)
 
 
 def get_or_create_user(decoded_payload):
@@ -80,9 +80,9 @@ class Auth0JWTAuthentication(BaseAuthentication):
         except RequestException as e:
             logger.error(e)
             raise AuthenticationFailed(e) from e
-
-        if key is None:
-            raise AuthenticationFailed('kid matching failure')
+        except KeyError as e:
+            logger.error(e)
+            raise AuthenticationFailed(e) from e
 
         try:
             decoded = jwt.decode(
