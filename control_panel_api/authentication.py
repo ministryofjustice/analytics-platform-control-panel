@@ -16,6 +16,18 @@ from control_panel_api.models import User
 logger = logging.getLogger(__name__)
 
 
+def get_jwt(request):
+    try:
+        prefix, token = get_authorization_header(request).split()
+    except (ValueError, TypeError):
+        return None
+
+    if prefix != 'JWT'.encode():
+        return None
+
+    return token
+
+
 def get_jwks():
     response = requests.get(settings.OIDC_WELL_KNOWN_URL)
     return response.json()
@@ -53,12 +65,9 @@ def get_or_create_user(decoded_payload):
 
 class Auth0JWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
-        try:
-            prefix, token = get_authorization_header(request).split()
-        except (ValueError, TypeError):
-            return None
+        token = get_jwt(request)
 
-        if prefix != 'JWT'.encode():
+        if token is None:
             return None
 
         try:
