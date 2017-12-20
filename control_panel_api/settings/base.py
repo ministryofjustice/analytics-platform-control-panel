@@ -154,6 +154,7 @@ OIDC_DOMAIN = os.environ.get('OIDC_DOMAIN')
 OIDC_FIELD_USERNAME = 'nickname'
 OIDC_FIELD_EMAIL = 'email'
 OIDC_FIELD_NAME = 'name'
+OIDC_WELL_KNOWN_URL = f'https://{OIDC_DOMAIN}/.well-known/jwks.json'
 
 # Helm variables
 NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
@@ -165,6 +166,7 @@ RSTUDIO_AUTH_CLIENT_SECRET = os.environ.get('RSTUDIO_AUTH_CLIENT_SECRET')
 
 LOGGING = {
     'version': 1,
+    'disable_existing_loggers': False,
     'formatters': {
         'default': {
             'format': '%(asctime)s %(name)s %(levelname)s %(message)s',
@@ -179,6 +181,10 @@ LOGGING = {
     },
     'loggers': {
         '': {
+            'handlers': ['console'],
+            'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
+        },
+        'django': {
             'handlers': ['console'],
             'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
         },

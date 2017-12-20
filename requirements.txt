@@ -15,6 +15,8 @@ django-filter==1.0.4
 django-rest-swagger==2.1.2
 djangorestframework==3.7.3
 docutils==0.14
+ecdsa==0.13
+future==0.16.0
 google-auth==1.0.2
 gunicorn==19.7.1
 idna==2.6
@@ -31,9 +33,10 @@ py==1.5.1
 pyasn1==0.3.2
 pyasn1-modules==0.0.11
 pycparser==2.18
-PyJWT==1.5.3
+pycrypto==2.6.1
 pytest==3.2.5
 python-dateutil==2.6.1
+python-jose==1.4.0
 pytz==2017.3
 PyYAML==3.12
 raven==6.2.1
