@@ -39,7 +39,9 @@ class User(AbstractUser):
         return sanitize_dns_label(f'user-{self.username}')
 
     def aws_create_role(self):
-        services.create_role(self.iam_role_name, add_saml_statement=True)
+        services.create_role(
+            self.iam_role_name, add_saml_statement=True,
+            add_oidc_statement=True, oidc_sub=self.auth0_id)
 
     def aws_delete_role(self):
         services.delete_role(self.iam_role_name)

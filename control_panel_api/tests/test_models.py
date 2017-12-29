@@ -42,7 +42,8 @@ class UserTestCase(TestCase):
 
     def test_aws_create_role_calls_service(self):
         username = 'james'
-        user = User.objects.create(username=username)
+        auth0_id = 'github|user_1'
+        user = User.objects.create(auth0_id=auth0_id, username=username)
         user.aws_create_role()
         expected_role_name = f'test_user_{username}'
 

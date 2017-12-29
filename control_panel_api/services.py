@@ -51,7 +51,9 @@ def _policy_arn(bucket_name, readwrite=False):
 
 
 @ignore_existing
-def create_role(role_name, add_saml_statement=False):
+def create_role(
+        role_name, add_saml_statement=False, add_oidc_statement=False,
+        oidc_sub=None):
     """See: `sts:AssumeRole` required by kube2iam
     https://github.com/jtblin/kube2iam#iam-roles"""
 
@@ -93,6 +95,25 @@ def create_role(role_name, add_saml_statement=False):
             }
         }
         role_policy['Statement'].append(saml_statement)
+
+    if add_oidc_statement:
+        oidc_statement = {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated":
+                    f"{settings.IAM_ARN_BASE}:oidc-provider/"
+                    f"{settings.OIDC_DOMAIN}/"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity"
+        }
+
+        if oidc_sub:
+            oidc_statement['Condition'] = {
+                "StringEquals": {
+                    f"{settings.OIDC_DOMAIN}/:sub": oidc_sub
+                }
+            }
+        role_policy['Statement'].append(oidc_statement)
 
     aws.create_role(role_name, role_policy)
 
