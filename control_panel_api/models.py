@@ -9,6 +9,7 @@ from django_extensions.db.models import TimeStampedModel
 
 from control_panel_api import services, validators
 from control_panel_api.helm import helm
+from control_panel_api.utils import sanitize_dns_label
 
 
 class User(AbstractUser):
@@ -32,6 +33,10 @@ class User(AbstractUser):
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_user_{self.username.lower()}"
+
+    @property
+    def k8s_namespace(self):
+        return sanitize_dns_label(f'user-{self.username}')
 
     def aws_create_role(self):
         services.create_role(self.iam_role_name, add_saml_statement=True)
