@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.http import HttpResponse
 from kubernetes import (
     client as k8s_client,
@@ -26,7 +27,7 @@ class Request(object):
             method,
             f"{host}{path}?{querystring}",
             data=self.request.body,
-            headers={'authorization': self.config.authorization},
+            headers={'authorization': self.authorization},
             verify=self.config.ssl_ca_cert,
         )
 
@@ -35,6 +36,13 @@ class Request(object):
             status=k8s_response.status_code,
             content_type='application/json'
         )
+
+    @property
+    def authorization(self):
+        if settings.ENABLED['k8s_rbac']:
+            return self.request.META['HTTP_AUTHORIZATION'].replace('JWT', 'Bearer')
+
+        return self.config.authorization
 
     @property
     def config(self):
@@ -63,8 +71,8 @@ class Config(object):
                 k8s_config.load_kube_config()
 
             self.host = k8s_client.configuration.host
-            self.authorization = k8s_client.configuration.api_key[
-                'authorization']
+            if not settings.ENABLED['k8s_rbac']:
+                self.authorization = k8s_client.configuration.api_key['authorization']
             self.ssl_ca_cert = k8s_client.configuration.ssl_ca_cert
 
             self._loaded = True

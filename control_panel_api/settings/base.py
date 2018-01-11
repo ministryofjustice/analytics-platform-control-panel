@@ -7,6 +7,7 @@ def is_enabled(value):
 
 # These are boolean flags to enable/disable features in the API
 ENABLED = {
+    'k8s_rbac': is_enabled(os.environ.get('ENABLE_K8S_RBAC', False)),
     'write_to_cluster':
         is_enabled(os.environ.get('ENABLE_WRITE_TO_CLUSTER', True)),
 }
