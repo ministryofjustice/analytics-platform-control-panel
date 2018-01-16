@@ -22,6 +22,19 @@ class AWSClient(object):
             ACL=acl,
             CreateBucketConfiguration={'LocationConstraint': region})
 
+    def put_bucket_encryption(self, name):
+        self._do('s3', 'put_bucket_encryption',
+            Bucket=name,
+            ServerSideEncryptionConfiguration={
+                 'Rules': [
+                     {
+                         'ApplyServerSideEncryptionByDefault': {
+                             'SSEAlgorithm': 'AES256'
+                         }
+                     }
+                 ]
+            })
+
     def put_bucket_logging(self, name, target_bucket, target_prefix):
         self._do('s3', 'put_bucket_logging',
             Bucket=name,

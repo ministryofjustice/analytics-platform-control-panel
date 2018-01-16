@@ -164,6 +164,7 @@ def create_bucket(bucket_name):
         bucket_name,
         target_bucket=settings.LOGS_BUCKET_NAME,
         target_prefix=f"{bucket_name}/")
+    aws.put_bucket_encryption(bucket_name)
 
 
 @ignore_existing
