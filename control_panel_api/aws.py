@@ -1,6 +1,7 @@
 import json
 
 import boto3
+from botocore.exceptions import ClientError
 
 from django.conf import settings
 
@@ -57,8 +58,11 @@ class AWSClient(object):
                 PolicyName=policy_name,
             )
             return result['PolicyDocument']
-        except Exception as e: # TODO: Be specific
-            pass
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchEntity':
+                pass
+            else:
+                raise e
 
     def put_role_policy(self, role_name, policy_name,  policy_document):
         self._do('iam', 'put_role_policy',
