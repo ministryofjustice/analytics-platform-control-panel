@@ -222,22 +222,17 @@ class AccessToS3Bucket(TimeStampedModel):
         raise NotImplementedError
 
     def aws_create(self):
-        services.attach_bucket_access_to_role(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
-            self.aws_role_name(),
-        )
+        self.aws_update()
 
     def aws_delete(self):
-        services.detach_bucket_access_from_role(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
+        services.revoke_bucket_access(
+            self.s3bucket.arn,
             self.aws_role_name(),
         )
 
     def aws_update(self):
-        services.update_bucket_access(
-            self.s3bucket.name,
+        services.grant_bucket_access(
+            self.s3bucket.arn,
             self.has_readwrite_access(),
             self.aws_role_name(),
         )

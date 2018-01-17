@@ -3,7 +3,13 @@ import logging
 from botocore.exceptions import ClientError
 from django.conf import settings
 
-from .aws import aws
+from control_panel_api.aws import (
+    aws,
+    S3AccessPolicy,
+)
+
+
+S3_POLICY_NAME = 's3-access'
 
 READWRITE = 'readwrite'
 READONLY = 'readonly'
@@ -199,45 +205,33 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
-def detach_bucket_access_from_role(bucket_name, readwrite, role_name):
-    policy_arn = _policy_arn(
-        bucket_name=bucket_name,
-        readwrite=readwrite
-    )
-
-    aws.detach_policy_from_role(
-        policy_arn=policy_arn,
-        role_name=role_name
-    )
-
-
-def attach_bucket_access_to_role(bucket_name, readwrite, role_name):
-    policy_arn = _policy_arn(
-        bucket_name,
-        readwrite,
-    )
-
-    aws.attach_policy_to_role(
-        policy_arn=policy_arn,
+def revoke_bucket_access(bucket_arn, role_name):
+    policy_document = aws.get_inline_policy_document(
         role_name=role_name,
+        policy_name=S3_POLICY_NAME,
     )
 
+    policy = aws.S3AccessPolicy(document=policy_document)
+    policy.revoke_access(bucket_arn)
 
-def update_bucket_access(bucket_name, readwrite, role_name):
-    new_policy_arn = _policy_arn(
-        bucket_name,
-        readwrite,
-    )
-    old_policy_arn = _policy_arn(
-        bucket_name,
-        not readwrite,
-    )
-
-    aws.attach_policy_to_role(
-        policy_arn=new_policy_arn,
+    aws.put_role_policy(
         role_name=role_name,
+        policy_name=S3_POLICY_NAME,
+        policy_document=policy.document,
     )
-    aws.detach_policy_from_role(
-        policy_arn=old_policy_arn,
+
+
+def grant_bucket_access(bucket_arn, readwrite, role_name):
+    policy_document = aws.get_inline_policy_document(
         role_name=role_name,
+        policy_name=S3_POLICY_NAME,
+    )
+
+    policy = S3AccessPolicy(document=policy_document)
+    policy.grant_access(bucket_arn, readwrite=readwrite)
+
+    aws.put_role_policy(
+        role_name=role_name,
+        policy_name=S3_POLICY_NAME,
+        policy_document=policy.document,
     )
