@@ -172,10 +172,10 @@ class S3AccessPolicy(object):
                 "Effect": "Allow",
                 "Action": [
                     "s3:GetBucketLocation",
-                    "s3:ListAllMyBuckets"
+                    "s3:ListAllMyBuckets",
                 ],
-                "Resource": "arn:aws:s3:::*"
-            }
+                "Resource": "arn:aws:s3:::*",
+            },
         ]
 
         all_buckets = self._readonly | self._readwrite
