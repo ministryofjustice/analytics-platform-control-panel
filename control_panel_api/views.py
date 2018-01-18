@@ -95,6 +95,7 @@ class UserViewSet(viewsets.ModelViewSet):
         instance.delete()
 
         instance.aws_delete_role()
+        instance.helm_delete()
 
 
 class GroupViewSet(viewsets.ModelViewSet):

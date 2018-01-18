@@ -12,12 +12,12 @@ from rest_framework.status import (
 from rest_framework.test import APITestCase
 
 from control_panel_api.aws import aws
-from control_panel_api.helm import helm
 from control_panel_api.models import AppS3Bucket
 
 
-@patch.object(aws, 'client', MagicMock())
-@patch.object(helm, '_helm_command', MagicMock())
+@patch('control_panel_api.aws.aws.client', MagicMock())
+@patch('control_panel_api.helm.helm._helm_command', MagicMock())
+@patch('control_panel_api.helm.helm._helm_shell_command', MagicMock())
 class UserPermissionsTest(APITestCase):
 
     def setUp(self):
@@ -426,10 +426,10 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/something')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('kubernetes.client.configuration')
-    @patch('kubernetes.config.load_incluster_config')
+    @patch('kubernetes.client.configuration', MagicMock())
+    @patch('kubernetes.config.load_incluster_config', MagicMock())
     @patch('requests.request')
-    def test_superuser_can_do_anything(self, mock_request, mock_load_config, mock_config):
+    def test_superuser_can_do_anything(self, mock_request):
         self.client.force_login(self.superuser)
 
         mock_request.return_value.status_code = 200
@@ -443,10 +443,10 @@ class K8sPermissionsTest(APITestCase):
         response = self.client.get('/k8s/api/v1/namespaces/user-other/')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('kubernetes.client.configuration')
-    @patch('kubernetes.config.load_incluster_config')
+    @patch('kubernetes.client.configuration', MagicMock())
+    @patch('kubernetes.config.load_incluster_config', MagicMock())
     @patch('requests.request')
-    def test_normal_user_can_operate_in_their_namespace(self, mock_request, mock_load_config, mock_config):
+    def test_normal_user_can_operate_in_their_namespace(self, mock_request):
         self.client.force_login(self.normal_user)
 
         mock_request.return_value.status_code = 200
@@ -459,7 +459,8 @@ class K8sPermissionsTest(APITestCase):
         ]
 
         for api in api_groups:
-            response = self.client.get(f'/k8s/{api}/namespaces/user-{username}/')
+            response = self.client.get(
+                f'/k8s/{api}/namespaces/user-{username}/')
             self.assertEqual(HTTP_200_OK, response.status_code)
 
     def test_normal_user_cant_make_requests_to_disallowed_apis(self):
@@ -468,7 +469,8 @@ class K8sPermissionsTest(APITestCase):
         username = self.normal_user.username.lower()
 
         disallowed_api = 'apis/disallowed/v1alpha0'
-        response = self.client.get(f'/k8s/{disallowed_api}/namespaces/user-{username}/')
+        response = self.client.get(
+            f'/k8s/{disallowed_api}/namespaces/user-{username}/')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
     def test_normal_user_cant_operate_on_namespaces_with_same_prefix(self):
@@ -477,7 +479,8 @@ class K8sPermissionsTest(APITestCase):
         username = self.normal_user.username.lower()
         other_username = f'{username}other'
 
-        response = self.client.get(f'/k8s/api/v1/namespaces/user-{other_username}/do/something')
+        response = self.client.get(
+            f'/k8s/api/v1/namespaces/user-{other_username}/do/something')
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 

@@ -11,13 +11,14 @@ READONLY = 'readonly'
 logger = logging.getLogger(__name__)
 
 
-def ignore_existing(func):
+def ignore_aws_exceptions(func):
     """Decorates a function to catch and allow exceptions that are thrown for
     existing entities or already created buckets etc, and reraise all others
     """
     exception_names = (
         'BucketAlreadyOwnedByYou',
-        'EntityAlreadyExistsException'
+        'EntityAlreadyExistsException',
+        'NoSuchEntityException',
     )
 
     def inner(*args, **kwargs):
@@ -50,7 +51,7 @@ def _policy_arn(bucket_name, readwrite=False):
         _policy_name(bucket_name, readwrite))
 
 
-@ignore_existing
+@ignore_aws_exceptions
 def create_role(role_name, add_saml_statement=False):
     """See: `sts:AssumeRole` required by kube2iam
     https://github.com/jtblin/kube2iam#iam-roles"""
@@ -97,6 +98,7 @@ def create_role(role_name, add_saml_statement=False):
     aws.create_role(role_name, role_policy)
 
 
+@ignore_aws_exceptions
 def delete_role(role_name):
     aws.delete_role(role_name)
 
@@ -154,7 +156,7 @@ def get_policy_document(bucket_name_arn, readwrite):
     }
 
 
-@ignore_existing
+@ignore_aws_exceptions
 def create_bucket(bucket_name):
     aws.create_bucket(
         bucket_name,
@@ -166,7 +168,7 @@ def create_bucket(bucket_name):
         target_prefix=f"{bucket_name}/")
 
 
-@ignore_existing
+@ignore_aws_exceptions
 def create_bucket_policies(bucket_name, bucket_arn):
     """Create readwrite and readonly policies for s3 bucket"""
     readwrite = True

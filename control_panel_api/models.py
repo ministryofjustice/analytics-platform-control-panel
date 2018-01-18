@@ -48,6 +48,10 @@ class User(AbstractUser):
         helm.init_user(self.username, self.email, self.get_full_name())
         helm.config_user(self.username)
 
+    def helm_delete(self):
+        helm.delete_namespace(self.username)
+        helm.delete_user(self.username)
+
 
 class App(TimeStampedModel):
     def _slugify(name):
