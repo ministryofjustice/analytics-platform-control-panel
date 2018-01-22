@@ -107,13 +107,15 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
             set(users3bucket['s3bucket'])
         )
 
+    @patch('control_panel_api.models.User.helm_delete')
     @patch('control_panel_api.models.User.aws_delete_role')
-    def test_delete(self, mock_aws_delete_role):
+    def test_delete(self, mock_aws_delete_role, mock_helm_delete):
         response = self.client.delete(
             reverse('user-detail', (self.fixture.auth0_id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_aws_delete_role.assert_called()
+        mock_helm_delete.assert_called()
 
         response = self.client.get(
             reverse('user-detail', (self.fixture.auth0_id,)))
