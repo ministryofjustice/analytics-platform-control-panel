@@ -211,7 +211,7 @@ def revoke_bucket_access(bucket_arn, role_name):
         policy_name=S3_POLICY_NAME,
     )
 
-    policy = aws.S3AccessPolicy(document=policy_document)
+    policy = S3AccessPolicy(document=policy_document)
     policy.revoke_access(bucket_arn)
 
     aws.put_role_policy(
