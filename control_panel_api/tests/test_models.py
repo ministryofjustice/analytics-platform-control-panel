@@ -29,32 +29,20 @@ from control_panel_api.tests import (
 class UserTestCase(TestCase):
 
     def test_helm_create_user(self):
-        username = 'foo'
-        email = 'bar@baz.com'
-        name = 'bat'
-        user = User.objects.create(
-            username=username,
-            email=email,
-            name=name,
-        )
+        user = mommy.prepare('control_panel_api.User')
+
         user.helm_create()
 
-        helm.config_user.assert_called_with(username)
-        helm.init_user.assert_called_with(username, email, name)
+        helm.config_user.assert_called_with(user.username)
+        helm.init_user.assert_called_with(user.username, user.email, user.name)
 
     def test_helm_delete_user(self):
-        username = 'foo'
-        email = 'bar@baz.com'
-        name = 'bat'
-        user = User.objects.create(
-            username=username,
-            email=email,
-            name=name,
-        )
+        user = mommy.prepare('control_panel_api.User')
+
         user.helm_delete()
 
-        helm.uninstall_user_charts.assert_called_with(username)
-        helm.uninstall_init_user_chart.assert_called_with(username)
+        helm.uninstall_user_charts.assert_called_with(user.username)
+        helm.uninstall_init_user_chart.assert_called_with(user.username)
 
     def test_aws_create_role_calls_service(self):
         username = 'james'
