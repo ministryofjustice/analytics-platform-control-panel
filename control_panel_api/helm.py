@@ -38,11 +38,11 @@ class Helm(object):
             '--set', f'Fullname={fullname}',
         )
 
-    def delete_user(self, username):
+    def uninstall_init_user_chart(self, username):
         username_slug = sanitize_dns_label(username)
         self._helm_command('delete', f'init-user-{username_slug}', '--purge')
 
-    def delete_namespace(self, username):
+    def uninstall_user_charts(self, username):
         username_slug = sanitize_dns_label(username)
         self._helm_shell_command(
             f'delete --purge $(helm list -q --namespace user-{username_slug})'

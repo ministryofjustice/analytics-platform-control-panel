@@ -49,8 +49,8 @@ class User(AbstractUser):
         helm.config_user(self.username)
 
     def helm_delete(self):
-        helm.delete_namespace(self.username)
-        helm.delete_user(self.username)
+        helm.uninstall_user_charts(self.username)
+        helm.uninstall_init_user_chart(self.username)
 
 
 class App(TimeStampedModel):

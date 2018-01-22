@@ -24,8 +24,8 @@ from control_panel_api.tests import (
 @patch.object(aws, 'client', MagicMock())
 @patch.object(helm, 'config_user', MagicMock())
 @patch.object(helm, 'init_user', MagicMock())
-@patch.object(helm, 'delete_namespace', MagicMock())
-@patch.object(helm, 'delete_user', MagicMock())
+@patch.object(helm, 'uninstall_user_charts', MagicMock())
+@patch.object(helm, 'uninstall_init_user_chart', MagicMock())
 class UserTestCase(TestCase):
 
     def test_helm_create_user(self):
@@ -53,8 +53,8 @@ class UserTestCase(TestCase):
         )
         user.helm_delete()
 
-        helm.delete_namespace.assert_called_with(username)
-        helm.delete_user.assert_called_with(username)
+        helm.uninstall_user_charts.assert_called_with(username)
+        helm.uninstall_init_user_chart.assert_called_with(username)
 
     def test_aws_create_role_calls_service(self):
         username = 'james'
