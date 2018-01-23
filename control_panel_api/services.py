@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import logging
 
 from botocore.exceptions import ClientError
@@ -205,33 +206,29 @@ def delete_bucket_policies(bucket_name):
     aws.delete_policy(policy_arn_readonly)
 
 
-def revoke_bucket_access(bucket_arn, role_name):
+@contextmanager
+def s3_access_policy(role_name):
     policy_document = aws.get_inline_policy_document(
         role_name=role_name,
         policy_name=S3_POLICY_NAME,
     )
-
     policy = S3AccessPolicy(document=policy_document)
-    policy.revoke_access(bucket_arn)
+
+    yield policy
 
     aws.put_role_policy(
         role_name=role_name,
         policy_name=S3_POLICY_NAME,
         policy_document=policy.document,
     )
+
+
+def revoke_bucket_access(bucket_arn, role_name):
+    with s3_access_policy(role_name) as policy:
+        policy.revoke_access(bucket_arn)
+
 
 
 def grant_bucket_access(bucket_arn, readwrite, role_name):
-    policy_document = aws.get_inline_policy_document(
-        role_name=role_name,
-        policy_name=S3_POLICY_NAME,
-    )
-
-    policy = S3AccessPolicy(document=policy_document)
-    policy.grant_access(bucket_arn, readwrite=readwrite)
-
-    aws.put_role_policy(
-        role_name=role_name,
-        policy_name=S3_POLICY_NAME,
-        policy_document=policy.document,
-    )
+    with s3_access_policy(role_name) as policy:
+        policy.grant_access(bucket_arn, readwrite=readwrite)
