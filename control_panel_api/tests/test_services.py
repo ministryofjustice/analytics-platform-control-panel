@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 from django.conf import settings
 from django.test.testcases import SimpleTestCase, TestCase
@@ -8,14 +8,13 @@ from model_mommy import mommy
 from control_panel_api import services
 from control_panel_api.aws import aws
 from control_panel_api.models import (
-    App,
     AppS3Bucket,
-    S3Bucket,
 )
 from control_panel_api.tests import (
     POLICY_DOCUMENT_READONLY,
     POLICY_DOCUMENT_READWRITE,
-    USER_IAM_ROLE_ASSUME_POLICY)
+    USER_IAM_ROLE_ASSUME_POLICY,
+)
 
 
 @patch.object(aws, 'client', MagicMock())
@@ -57,6 +56,16 @@ class ServicesTestCase(TestCase):
                     'TargetBucket': 'moj-test-logs',
                     'TargetPrefix': 'test-bucketname/'
                 }
+            })
+
+        aws.client.return_value.put_bucket_encryption.assert_called_with(
+            Bucket='test-bucketname',
+            ServerSideEncryptionConfiguration={
+                'Rules': [{
+                    'ApplyServerSideEncryptionByDefault': {
+                        'SSEAlgorithm': 'AES256'
+                    }
+                }]
             })
 
     def test_create_bucket_policies(self):
