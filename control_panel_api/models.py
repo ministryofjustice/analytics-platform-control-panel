@@ -122,6 +122,7 @@ class S3Bucket(TimeStampedModel):
         validators.validate_s3_bucket_labels,
     ])
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    is_data_warehouse = models.BooleanField(default=False)
 
     class Meta:
         ordering = ('name',)

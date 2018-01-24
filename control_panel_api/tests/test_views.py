@@ -420,6 +420,30 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
                 reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
+    @patch('control_panel_api.models.AppS3Bucket.aws_create', MagicMock())
+    def test_create_with_s3_data_warehouse_not_allowed(self):
+        s3_bucket_app = mommy.make(
+            'control_panel_api.S3Bucket', is_data_warehouse=False)
+
+        data = {
+            'app': self.app_1.id,
+            's3bucket': s3_bucket_app.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        s3_bucket = mommy.make(
+            'control_panel_api.S3Bucket', is_data_warehouse=True)
+
+        data = {
+            'app': self.app_1.id,
+            's3bucket': s3_bucket.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
 
 class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
 
