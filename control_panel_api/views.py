@@ -183,6 +183,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = S3BucketSerializer
     filter_backends = (S3BucketFilter,)
     permission_classes = (S3BucketPermissions,)
+    filter_fields = ('is_data_warehouse',)
 
     @handle_external_exceptions
     @transaction.atomic

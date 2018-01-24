@@ -535,6 +535,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
+        mommy.make('control_panel_api.S3Bucket', is_data_warehouse=True)
         self.fixture = mommy.make(
             'control_panel_api.S3Bucket', name='test-bucket-1')
         mommy.make('control_panel_api.AppS3Bucket', s3bucket=self.fixture)
@@ -543,7 +544,11 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def test_list(self):
         response = self.client.get(reverse('s3bucket-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(len(response.data['results']), 2)
+        self.assertEqual(len(response.data['results']), 3)
+
+        response = self.client.get(
+            reverse('s3bucket-list') + '?is_data_warehouse=true')
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_detail(self):
         response = self.client.get(
