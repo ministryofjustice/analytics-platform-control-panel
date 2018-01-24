@@ -3,7 +3,7 @@ import logging
 from botocore.exceptions import ClientError
 from django.core.management.base import BaseCommand, CommandError
 
-from control_panel_api.aws import detach_policy_from_role, S3AccessPolicy
+from control_panel_api.aws import aws, S3AccessPolicy
 from control_panel_api.models import (
     AppS3Bucket,
     UserS3Bucket,
@@ -38,7 +38,7 @@ class Command(BaseCommand):
         success_message += f'Granted access to "{bucket_name}" (readwrite={readwrite})'
         logger.info(success_message)
 
-    def _detach_managed_policy(self, access)
+    def _detach_managed_policy(self, access):
         role_name = access.aws_role_name()
         bucket_name = access.s3bucket.name
         readwrite = access.has_readwrite_access()
@@ -48,7 +48,7 @@ class Command(BaseCommand):
                 bucket_name=bucket_name,
                 readwrite=readwrite,
             )
-            detach_policy_from_role(
+            aws.detach_policy_from_role(
                 policy_arn=policy_arn,
                 role_name=role_name,
             )
@@ -56,6 +56,6 @@ class Command(BaseCommand):
             logger.info(f'Detached managed policy "{policy_arn}" from "{role_name}"')
         except ClientError as e:
             if e.response['Error']['Code'] == 'NoSuchEntity':
-                logger.warning(f'WARNING: Managed policy "{policy_arn}" not attached to role "{role_name}".')
+                logger.warning(f'Managed policy "{policy_arn}" not attached to role "{role_name}".')
             else:
                 raise e
