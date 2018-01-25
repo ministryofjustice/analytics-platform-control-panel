@@ -8,7 +8,9 @@ from model_mommy import mommy
 from control_panel_api import services
 from control_panel_api.aws import aws, S3AccessPolicy
 from control_panel_api.models import (
+    App,
     AppS3Bucket,
+    S3Bucket,
 )
 from control_panel_api.tests import (
     POLICY_DOCUMENT_READONLY,
