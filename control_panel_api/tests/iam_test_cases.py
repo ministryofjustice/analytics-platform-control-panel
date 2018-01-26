@@ -32,6 +32,7 @@ class IAMPolicyTestCase(TestCase):
     def assert_has_not_sid(self, document, sid):
         try:
             self.assert_has_sid(document, sid)
-            raise AssertionError(f'Sid "{sid}" found in {statements}')
         except AssertionError:
             pass
+        else:
+            raise AssertionError(f'Expected policy to not have statement with sid "{sid}"')

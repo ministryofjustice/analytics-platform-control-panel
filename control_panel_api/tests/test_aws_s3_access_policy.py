@@ -6,50 +6,60 @@ from control_panel_api.tests.iam_test_cases import IAMPolicyTestCase
 
 class S3AccessTestCase(IAMPolicyTestCase):
 
-    CONSOLE_ACTIONS = [
+    CONSOLE_ACTIONS = (
         's3:GetBucketLocation',
         's3:ListAllMyBuckets',
-    ]
+    )
 
-    READ_ACTIONS = [
+    READ_ACTIONS = (
         's3:GetObject',
         's3:GetObjectAcl',
         's3:GetObjectVersion',
-    ]
+    )
 
-    WRITE_ACTIONS = [
+    WRITE_ACTIONS = (
         's3:DeleteObject',
         's3:DeleteObjectVersion',
         's3:PutObject',
         's3:PutObjectAcl',
         's3:RestoreObject',
-    ]
+    )
+
+    def assert_has_readwrite_access(self, document, arn):
+        self._assert_can_list(document, arn)
+        self._assert_can_read(document, arn)
+        self._assert_can_write(document, arn)
+
+    def assert_has_readonly_access(self, document, arn):
+        self._assert_can_list(document, arn)
+        self._assert_can_read(document, arn)
+        self.assert_cannot_write(document, arn)
 
     def assert_can_access_console(self, document):
         for action in self.CONSOLE_ACTIONS:
             self.assert_allowed(document, action, 'arn:aws:s3:::*')
 
-    def assert_can_list(self, document, resource):
-        self.assert_allowed(document, 's3:ListBucket', resource)
-
     def assert_cannot_list(self, document, resource):
         self.assert_not_allowed(document, 's3:ListBucket', resource)
-
-    def assert_can_read(self, document, resource):
-        for action in self.READ_ACTIONS:
-            self.assert_allowed(document, action, f'{resource}/*')
 
     def assert_cannot_read(self, document, resource):
         for action in self.READ_ACTIONS:
             self.assert_not_allowed(document, action, f'{resource}/*')
 
-    def assert_can_write(self, document, resource):
-        for action in self.WRITE_ACTIONS:
-            self.assert_allowed(document, action, f'{resource}/*')
-
     def assert_cannot_write(self, document, resource):
         for action in self.WRITE_ACTIONS:
             self.assert_not_allowed(document, action, f'{resource}/*')
+
+    def _assert_can_list(self, document, resource):
+        self.assert_allowed(document, 's3:ListBucket', resource)
+
+    def _assert_can_read(self, document, resource):
+        for action in self.READ_ACTIONS:
+            self.assert_allowed(document, action, f'{resource}/*')
+
+    def _assert_can_write(self, document, resource):
+        for action in self.WRITE_ACTIONS:
+            self.assert_allowed(document, action, f'{resource}/*')
 
 
 class S3AccessPolicyTestCase(S3AccessTestCase):
@@ -64,12 +74,12 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
         self.assert_has_not_sid(document, 'readwrite')
 
     def test_granting_access(self):
-        arns = [
+        arns = (
             ('arn:aws:s3:::readonly-1', False),
             ('arn:aws:s3:::readonly-2', False),
             ('arn:aws:s3:::readwrite-1', True),
             ('arn:aws:s3:::readwrite-2', True),
-        ]
+        )
 
         policy = S3AccessPolicy()
         for (arn, readwrite) in arns:
@@ -79,12 +89,10 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
         self.assert_can_access_console(document)
 
         for (arn, readwrite) in arns:
-            self.assert_can_list(document, arn)
-            self.assert_can_read(document, arn)
             if readwrite:
-                self.assert_can_write(document, arn)
+                self.assert_has_readwrite_access(document, arn)
             else:
-                self.assert_cannot_write(document, arn)
+                self.assert_has_readonly_access(document, arn)
 
     def test_granting_access_again_with_different_level(self):
         ARN = 'arn:aws:s3:::test-bucket-1'
@@ -94,17 +102,13 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
 
         document = policy.document
         self.assert_can_access_console(document)
-        self.assert_can_list(document, ARN)
-        self.assert_can_read(document, ARN)
-        self.assert_can_write(document, ARN)
+        self.assert_has_readwrite_access(document, ARN)
 
         policy.grant_access(ARN, readwrite=False)
 
         document = policy.document
         self.assert_can_access_console(document)
-        self.assert_can_list(document, ARN)
-        self.assert_can_read(document, ARN)
-        self.assert_cannot_write(document, ARN)
+        self.assert_has_readonly_access(document, ARN)
 
     def test_revoking_access(self):
         readonly_arn = 'arn:aws:s3:::readonly-1'
@@ -116,10 +120,8 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
 
         document = policy.document
         self.assert_can_access_console(document)
-        for arn in [readwrite_arn, readwrite_arn]:
-            self.assert_can_list(document, arn)
-            self.assert_can_read(document, arn)
-        self.assert_can_write(document, readwrite_arn)
+        self.assert_has_readonly_access(document, readonly_arn)
+        self.assert_has_readwrite_access(document, readwrite_arn)
 
         policy.revoke_access(readwrite_arn)
 
@@ -130,9 +132,7 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
         self.assert_cannot_write(document, readwrite_arn)
         # existing permissions didn't change
         self.assert_can_access_console(document)
-        self.assert_can_list(document, readonly_arn)
-        self.assert_can_read(document, readonly_arn)
-        self.assert_cannot_write(document, readonly_arn)
+        self.assert_has_readonly_access(document, readonly_arn)
 
     def test_import_document(self):
         DOCUMENT = {
@@ -196,14 +196,12 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
         document = policy.document
 
         readonly_arn = 'arn:aws:s3:::readonly-1'
-        readwrite_arns = [
+        readwrite_arns = (
             'arn:aws:s3:::readwrite-1',
             'arn:aws:s3:::readwrite-2',
-        ]
+        )
 
         self.assert_can_access_console(document)
-        for arn in (readwrite_arns + [readonly_arn]):
-            self.assert_can_list(document, arn)
-            self.assert_can_read(document, arn)
+        self.assert_has_readonly_access(document, readonly_arn)
         for arn in readwrite_arns:
-            self.assert_can_write(document, arn)
+            self.assert_has_readwrite_access(document, arn)
