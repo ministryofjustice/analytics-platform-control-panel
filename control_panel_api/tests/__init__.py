@@ -1,5 +1,3 @@
-from unittest.case import TestCase
-
 from django.conf import settings
 
 POLICY_DOCUMENT_READWRITE = {

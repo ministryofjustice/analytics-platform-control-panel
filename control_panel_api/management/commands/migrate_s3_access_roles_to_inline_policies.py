@@ -21,10 +21,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         for klass in [UserS3Bucket, AppS3Bucket]:
             for access in klass.objects.all():
-                # Update inline policy
                 self._update_inline_policy(access)
-
-                # Detach old IAM managed policy from role
                 self._detach_managed_policy(access)
 
     def _update_inline_policy(self, access):
@@ -34,9 +31,10 @@ class Command(BaseCommand):
 
         access.aws_update()
 
-        success_message = f'Updated "{role_name}"\'s inline policy: '
-        success_message += f'Granted access to "{bucket_name}" (readwrite={readwrite})'
-        logger.info(success_message)
+        logger.info(
+            f'Updated "{role_name}"\'s inline policy: '
+            f'Granted access to "{bucket_name}" (readwrite={readwrite})'
+        )
 
     def _detach_managed_policy(self, access):
         role_name = access.aws_role_name()

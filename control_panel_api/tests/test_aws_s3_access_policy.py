@@ -98,7 +98,6 @@ class S3AccessPolicyTestCase(S3AccessTestCase):
         self.assert_can_read(document, ARN)
         self.assert_can_write(document, ARN)
 
-        # Granting readonly access
         policy.grant_access(ARN, readwrite=False)
 
         document = policy.document

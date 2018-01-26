@@ -146,23 +146,23 @@ aws = AWSClient()
 class S3AccessPolicy(object):
 
     def __init__(self, document=None):
-        self._readonly = set()
-        self._readwrite = set()
+        self._readonly_arns = set()
+        self._readwrite_arns = set()
 
         if document:
             self._load(document)
 
     def revoke_access(self, bucket_arn):
-        self._readonly.discard(bucket_arn)
-        self._readwrite.discard(bucket_arn)
+        self._readonly_arns.discard(bucket_arn)
+        self._readwrite_arns.discard(bucket_arn)
 
     def grant_access(self, bucket_arn, readwrite=False):
         self.revoke_access(bucket_arn)
 
         if readwrite:
-            self._readwrite.add(bucket_arn)
+            self._readwrite_arns.add(bucket_arn)
         else:
-            self._readonly.add(bucket_arn)
+            self._readonly_arns.add(bucket_arn)
 
     @property
     def document(self):
@@ -178,14 +178,14 @@ class S3AccessPolicy(object):
             },
         ]
 
-        all_buckets = self._readonly | self._readwrite
-        if all_buckets:
-            statements.append(self._list_statement)
+        all_buckets_arns = self._readonly_arns | self._readwrite_arns
+        if all_buckets_arns:
+            statements.append(self._list_statement(all_buckets_arns))
 
-        if self._readonly:
+        if self._readonly_arns:
             statements.append(self._readonly_statement)
 
-        if self._readwrite:
+        if self._readwrite_arns:
             statements.append(self._readwrite_statement)
 
         return {
@@ -193,9 +193,7 @@ class S3AccessPolicy(object):
             "Statement": statements,
         }
 
-    @property
-    def _list_statement(self):
-        all_buckets_arns = self._readonly | self._readwrite
+    def _list_statement(self, all_buckets_arns):
         return {
             "Sid": "list",
             "Action": [
@@ -215,7 +213,7 @@ class S3AccessPolicy(object):
                 "s3:GetObjectVersion",
             ],
             "Effect": "Allow",
-            "Resource": self._with_star(self._readonly),
+            "Resource": self._s3_objects_arns(self._readonly_arns),
         }
 
     @property
@@ -233,31 +231,21 @@ class S3AccessPolicy(object):
                 "s3:RestoreObject",
             ],
             "Effect": "Allow",
-            "Resource": self._with_star(self._readwrite),
+            "Resource": self._s3_objects_arns(self._readwrite_arns),
         }
 
-    def _with_star(self, arns):
+    def _s3_objects_arns(self, arns):
         return [f'{arn}/*' for arn in arns]
 
-    def _without_star(self, resources):
-        result = []
-        for resource in resources:
-            without = resource
-            if resource.endswith('/*'):
-                without = resource[:-2]
-
-            result.append(without)
-
-        return result
+    def _s3_buckets_arns(self, arns):
+        return [arn.rsplit('/*', 1)[0] for arn in arns]
 
     def _load(self, document):
         for statement in document['Statement']:
             sid = statement['Sid']
-            if sid not in ['readonly', 'readwrite']:
-                continue
-
-            arns = set(self._without_star(statement['Resource']))
-            if sid == 'readwrite':
-                self._readwrite = arns
-            else:
-                self._readonly = arns
+            if sid in ('readonly', 'readwrite'):
+                arns = set(self._s3_buckets_arns(statement['Resource']))
+                if sid == 'readwrite':
+                    self._readwrite_arns = arns
+                else:
+                    self._readonly_arns = arns
