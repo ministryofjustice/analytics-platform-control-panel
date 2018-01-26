@@ -174,7 +174,7 @@ class S3BucketSerializer(serializers.ModelSerializer):
     class Meta:
         model = S3Bucket
         fields = ('id', 'url', 'name', 'arn', 'apps3buckets',
-                  'users3buckets', 'created_by')
+                  'users3buckets', 'created_by', 'is_data_warehouse')
         read_only_fields = ('apps3buckets', 'users3buckets', 'created_by')
 
 

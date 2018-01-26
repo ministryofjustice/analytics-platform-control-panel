@@ -562,7 +562,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             'arn',
             'apps3buckets',
             'users3buckets',
-            'created_by'
+            'created_by',
+            'is_data_warehouse',
         }
         self.assertEqual(expected_s3bucket_fields, set(response.data))
 
@@ -631,6 +632,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(self.superuser.auth0_id, response.data['created_by'])
+        self.assertFalse(response.data['is_data_warehouse'])
 
         mock_aws_create.assert_called()
 
