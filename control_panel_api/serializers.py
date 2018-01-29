@@ -36,6 +36,14 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
 
+    def create(self, validated_data):
+        if validated_data['s3bucket'].is_data_warehouse:
+            raise serializers.ValidationError(
+                'Apps cannot access data warehouse S3 Buckets.'
+            )
+
+        return super().create(validated_data)
+
 
 class UserS3BucketSerializer(serializers.ModelSerializer):
 
@@ -166,7 +174,7 @@ class S3BucketSerializer(serializers.ModelSerializer):
     class Meta:
         model = S3Bucket
         fields = ('id', 'url', 'name', 'arn', 'apps3buckets',
-                  'users3buckets', 'created_by')
+                  'users3buckets', 'created_by', 'is_data_warehouse')
         read_only_fields = ('apps3buckets', 'users3buckets', 'created_by')
 
 

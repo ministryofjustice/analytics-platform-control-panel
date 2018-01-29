@@ -420,6 +420,30 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
                 reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
+    @patch('control_panel_api.models.AppS3Bucket.aws_create', MagicMock())
+    def test_create_with_s3_data_warehouse_not_allowed(self):
+        s3_bucket_app = mommy.make(
+            'control_panel_api.S3Bucket', is_data_warehouse=False)
+
+        data = {
+            'app': self.app_1.id,
+            's3bucket': s3_bucket_app.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        s3_bucket = mommy.make(
+            'control_panel_api.S3Bucket', is_data_warehouse=True)
+
+        data = {
+            'app': self.app_1.id,
+            's3bucket': s3_bucket.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
 
 class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
 
@@ -511,6 +535,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
+        mommy.make('control_panel_api.S3Bucket', is_data_warehouse=True)
         self.fixture = mommy.make(
             'control_panel_api.S3Bucket', name='test-bucket-1')
         mommy.make('control_panel_api.AppS3Bucket', s3bucket=self.fixture)
@@ -519,7 +544,11 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def test_list(self):
         response = self.client.get(reverse('s3bucket-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(len(response.data['results']), 2)
+        self.assertEqual(len(response.data['results']), 3)
+
+        response = self.client.get(
+            reverse('s3bucket-list') + '?is_data_warehouse=true')
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_detail(self):
         response = self.client.get(
@@ -533,7 +562,8 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             'arn',
             'apps3buckets',
             'users3buckets',
-            'created_by'
+            'created_by',
+            'is_data_warehouse',
         }
         self.assertEqual(expected_s3bucket_fields, set(response.data))
 
@@ -602,6 +632,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(self.superuser.auth0_id, response.data['created_by'])
+        self.assertFalse(response.data['is_data_warehouse'])
 
         mock_aws_create.assert_called()
 
