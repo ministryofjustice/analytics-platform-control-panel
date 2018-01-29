@@ -39,7 +39,7 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         if validated_data['s3bucket'].is_data_warehouse:
             raise serializers.ValidationError(
-                'Only app s3bucket can be related.'
+                'Apps cannot access data warehouse S3 Buckets.'
             )
 
         return super().create(validated_data)
