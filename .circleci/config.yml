@@ -72,13 +72,17 @@ jobs:
                 --user ${JENKINS_USER}:${JENKINS_TOKEN}
             fi
 
-      - deploy:
-          name: Deploy to alpha
-          command: |
-            if [ "${CIRCLE_BRANCH}" == "master" ]; then
-              curl ${ALPHA_JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
-                --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
-                --data COMMIT_HASH=${CIRCLE_SHA1} \
-                --data BRANCH_NAME=${CIRCLE_BRANCH} \
-                --user ${ALPHA_JENKINS_USER}:${ALPHA_JENKINS_TOKEN}
-            fi
+      #################################################
+      ##  TEMPORARILY DISABLING DEPLOY TO ALPHA      ##
+      ##  REASON: MORE TESTING OF IAM POLICY REVAMP  ##
+      #################################################
+      # - deploy:
+      #     name: Deploy to alpha
+      #     command: |
+      #       if [ "${CIRCLE_BRANCH}" == "master" ]; then
+      #         curl ${ALPHA_JENKINS_URL}/job/control-panel/job/api/buildWithParameters \
+      #           --data token=${JENKINS_JOB_TRIGGER_TOKEN} \
+      #           --data COMMIT_HASH=${CIRCLE_SHA1} \
+      #           --data BRANCH_NAME=${CIRCLE_BRANCH} \
+      #           --user ${ALPHA_JENKINS_USER}:${ALPHA_JENKINS_TOKEN}
+      #       fi

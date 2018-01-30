@@ -6,9 +6,11 @@ from django.test.testcases import SimpleTestCase, TestCase
 from model_mommy import mommy
 
 from control_panel_api import services
-from control_panel_api.aws import aws
+from control_panel_api.aws import aws, S3AccessPolicy
 from control_panel_api.models import (
+    App,
     AppS3Bucket,
+    S3Bucket,
 )
 from control_panel_api.tests import (
     POLICY_DOCUMENT_READONLY,
@@ -106,86 +108,54 @@ class ServicesTestCase(TestCase):
             call(PolicyArn=f'{base}:policy/test-bucketname-readonly')
         ])
 
-    def test_apps3bucket_create(self):
-        app = mommy.make('control_panel_api.App', slug='appslug')
-        s3bucket = mommy.make(
-            'control_panel_api.S3Bucket', name='test-bucketname')
+    def test_grant_bucket_access(self):
+        app = App(slug='appslug')
+        s3bucket = S3Bucket(name='test-bucketname')
 
-        for access_level in ['readonly', 'readwrite']:
-            apps3bucket, _ = AppS3Bucket.objects.update_or_create(
-                app=app,
-                s3bucket=s3bucket,
-                defaults={'access_level': access_level},
-            )
+        policy_orig = S3AccessPolicy()
+        policy_orig.grant_access('test-bucket-other')
+        aws.client.return_value.get_role_policy.return_value = {
+            'PolicyDocument': policy_orig.document,
+        }
 
-            services.attach_bucket_access_to_role(
-                apps3bucket.s3bucket.name,
-                apps3bucket.has_readwrite_access(),
-                apps3bucket.app.iam_role_name
-            )
-
-            expected_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
-            expected_role_name = f'test_app_{app.slug}'
-
-            aws.client.return_value.attach_role_policy.assert_called_with(
-                PolicyArn=expected_policy_arn,
-                RoleName=expected_role_name,
-            )
-
-
-    def test_apps3bucket_update(self):
-        app = mommy.make('control_panel_api.App', slug='appslug')
-        s3bucket = mommy.make(
-            'control_panel_api.S3Bucket', name='test-bucketname')
-
-        app_role_name = f'test_app_{app.slug}'
-
-        for access_level in ['readonly', 'readwrite']:
-            apps3bucket, _ = AppS3Bucket.objects.update_or_create(
-                app=app,
-                s3bucket=s3bucket,
-                defaults={'access_level': access_level},
-            )
-            services.update_bucket_access(
-                s3bucket.name,
-                apps3bucket.has_readwrite_access(),
+        for readwrite in [False, True]:
+            services.grant_bucket_access(
+                s3bucket.arn,
+                readwrite,
                 app.iam_role_name
             )
 
-            old_access_level = 'readwrite' if access_level == 'readonly' else 'readonly'
-            new_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{access_level}'
-            old_policy_arn = f'{settings.IAM_ARN_BASE}:policy/test-bucketname-{old_access_level}'
+            policy_expected = S3AccessPolicy(document=policy_orig.document)
+            policy_expected.grant_access(s3bucket.arn, readwrite=readwrite)
 
-            aws.client.return_value.attach_role_policy.assert_called_with(
-                PolicyArn=new_policy_arn,
-                RoleName=app_role_name)
+            aws.client.return_value.put_role_policy.assert_called_with(
+                RoleName=app.iam_role_name,
+                PolicyName='s3-access',
+                PolicyDocument=json.dumps(policy_expected.document),
+            )
 
-            aws.client.return_value.detach_role_policy.assert_called_with(
-                PolicyArn=old_policy_arn,
-                RoleName=app_role_name)
+    def test_revoke_bucket_access(self):
+        app = App(slug='appslug')
+        s3bucket = S3Bucket(name='test-bucketname')
 
-    def test_detach_bucket_access_from_app_role_readwrite(self):
-        services.detach_bucket_access_from_role(
-            self.s3_bucket_1.name,
-            services.READWRITE,
-            self.app_1.iam_role_name,
-        )
+        for readwrite in [False, True]:
+            policy_orig = S3AccessPolicy()
+            policy_orig.grant_access('test-bucket-other')
+            policy_orig.grant_access(s3bucket.arn, readwrite=readwrite)
+            aws.client.return_value.get_role_policy.return_value = {
+                'PolicyDocument': policy_orig.document,
+            }
 
-        aws.client.return_value.detach_role_policy(
-            PolicyArn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readwrite',
-            RoleName='test_app_app-1')
+            services.revoke_bucket_access(s3bucket.arn, app.iam_role_name)
 
-    def test_detach_bucket_access_from_app_role_readonly(self):
+            policy_expected = S3AccessPolicy(document=policy_orig.document)
+            policy_expected.revoke_access(s3bucket.arn)
 
-        services.detach_bucket_access_from_role(
-            self.s3_bucket_1.name,
-            False,
-            self.app_1.iam_role_name,
-        )
-
-        aws.client.return_value.detach_role_policy.assert_called_with(
-            PolicyArn=f'{settings.IAM_ARN_BASE}:policy/test-bucket-1-readonly',
-            RoleName='test_app_app-1')
+            aws.client.return_value.put_role_policy.assert_called_with(
+                RoleName=app.iam_role_name,
+                PolicyName='s3-access',
+                PolicyDocument=json.dumps(policy_expected.document),
+            )
 
     def test_create_user_role(self):
         role_name = "test_user_user"
@@ -198,6 +168,7 @@ class ServicesTestCase(TestCase):
 
 
 class NamingTestCase(SimpleTestCase):
+
     def test_policy_name_has_readwrite(self):
         self.assertEqual('bucketname-readonly',
                          services._policy_name('bucketname', readwrite=False))
