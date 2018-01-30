@@ -613,13 +613,10 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             set(users3bucket['user'])
         )
 
-    @patch('control_panel_api.models.S3Bucket.aws_delete')
-    def test_delete(self, mock_aws_delete):
+    def test_delete(self):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
-
-        mock_aws_delete.assert_called()
 
         response = self.client.get(
             reverse('s3bucket-detail', (self.fixture.id,)))
@@ -674,8 +671,6 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         fixtures = (
             ('control_panel_api.aws.AWSClient.create_bucket',
              'BucketAlreadyOwnedByYou'),
-            ('control_panel_api.aws.AWSClient.create_policy',
-             'EntityAlreadyExistsException'),
         )
 
         for patch_func, aws_exception in fixtures:

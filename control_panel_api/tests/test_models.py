@@ -192,19 +192,10 @@ class S3BucketTestCase(TestCase):
         )
 
     @patch('control_panel_api.services.create_bucket')
-    @patch('control_panel_api.services.create_bucket_policies')
-    def test_bucket_create(self, mock_create_bucket_policies,
-                           mock_create_bucket):
+    def test_bucket_create(self, mock_create_bucket):
         self.s3_bucket_1.aws_create()
 
-        mock_create_bucket_policies.assert_called()
         mock_create_bucket.assert_called()
-
-    @patch('control_panel_api.services.delete_bucket_policies')
-    def test_bucket_delete(self, mock_delete_bucket_policies):
-        self.s3_bucket_1.aws_delete()
-
-        mock_delete_bucket_policies.assert_called()
 
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
     def test_create_users3bucket(self, mock_aws_create):
