@@ -46,11 +46,6 @@ class AWSClient(object):
                 }
             })
 
-    def create_policy(self, name, policy_document):
-        self._do('iam', 'create_policy',
-            PolicyName=name,
-            PolicyDocument=json.dumps(policy_document))
-
     def get_inline_policy_document(self, role_name, policy_name):
         if not self.enabled:
             return None
@@ -73,9 +68,6 @@ class AWSClient(object):
             PolicyName=policy_name,
             PolicyDocument=json.dumps(policy_document)
         )
-
-    def delete_policy(self, policy_arn):
-        self._do('iam', 'delete_policy', PolicyArn=policy_arn)
 
     def create_role(self, role_name, assume_role_policy):
         """Creates IAM role with the given name"""
@@ -103,43 +95,9 @@ class AWSClient(object):
                     policy_arn=policy["PolicyArn"]
                 )
 
-    def detach_policy_from_entities(self, policy_arn):
-        """
-        Get all entities to which policy is attached first then call separate
-        detach operations
-        """
-        entities = self._do(
-            'iam', 'list_entities_for_policy', PolicyArn=policy_arn)
-
-        if entities:
-
-            for role in entities["PolicyRoles"]:
-                self.detach_policy_from_role(policy_arn, role["RoleName"])
-
-            for group in entities["PolicyGroups"]:
-                self.detach_policy_from_group(policy_arn, group["GroupName"])
-
-            for user in entities["PolicyUsers"]:
-                self.detach_policy_from_user(policy_arn, user["UserName"])
-
-    def attach_policy_to_role(self, policy_arn, role_name):
-        self._do('iam', 'attach_role_policy',
-            RoleName=role_name,
-            PolicyArn=policy_arn)
-
     def detach_policy_from_role(self, policy_arn, role_name):
         self._do('iam', 'detach_role_policy',
             RoleName=role_name,
-            PolicyArn=policy_arn)
-
-    def detach_policy_from_group(self, policy_arn, group_name):
-        self._do('iam', 'detach_group_policy',
-            GroupName=group_name,
-            PolicyArn=policy_arn)
-
-    def detach_policy_from_user(self, policy_arn, user_name):
-        self._do('iam', 'detach_user_policy',
-            UserName=user_name,
             PolicyArn=policy_arn)
 
 

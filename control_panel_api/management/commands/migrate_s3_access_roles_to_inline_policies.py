@@ -8,11 +8,31 @@ from control_panel_api.models import (
     AppS3Bucket,
     UserS3Bucket,
 )
-# Using "private" method to get the policy ARN - no point in duplicating it
-from control_panel_api.services import _policy_arn
+
+
+READWRITE = 'readwrite'
+READONLY = 'readonly'
 
 
 logger = logging.getLogger(__name__)
+
+
+def _policy_name(bucket_name, readwrite=False):
+    """
+    Prefix the policy name with bucket name, postfix with access level
+    eg: dev-james-readwrite
+    """
+    return "{}-{}".format(bucket_name, READWRITE if readwrite else READONLY)
+
+
+def _policy_arn(bucket_name, readwrite=False):
+    """
+    Return full bucket policy arn
+    eg: arn:aws:iam::1337:policy/bucketname-readonly
+    """
+    return "{}:policy/{}".format(
+        settings.IAM_ARN_BASE,
+        _policy_name(bucket_name, readwrite))
 
 
 class Command(BaseCommand):

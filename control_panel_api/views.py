@@ -194,13 +194,6 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 
         instance.create_users3bucket(user=self.request.user)
 
-    @handle_external_exceptions
-    @transaction.atomic
-    def perform_destroy(self, instance):
-        instance.delete()
-
-        instance.aws_delete()
-
 
 class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()

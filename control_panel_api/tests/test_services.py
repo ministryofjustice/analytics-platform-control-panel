@@ -12,11 +12,7 @@ from control_panel_api.models import (
     AppS3Bucket,
     S3Bucket,
 )
-from control_panel_api.tests import (
-    POLICY_DOCUMENT_READONLY,
-    POLICY_DOCUMENT_READWRITE,
-    USER_IAM_ROLE_ASSUME_POLICY,
-)
+from control_panel_api.tests import USER_IAM_ROLE_ASSUME_POLICY
 
 
 @patch.object(aws, 'client', MagicMock())
@@ -31,15 +27,6 @@ class ServicesTestCase(TestCase):
         self.s3_bucket_1 = mommy.make(
             'control_panel_api.S3Bucket',
             name='test-bucket-1')
-
-    def test_policy_document_readwrite(self):
-        document = services.get_policy_document(
-            'arn:aws:s3:::test-bucketname', readwrite=True)
-        self.assertEqual(POLICY_DOCUMENT_READWRITE, document)
-
-        document = services.get_policy_document(
-            'arn:aws:s3:::test-bucketname', readwrite=False)
-        self.assertEqual(POLICY_DOCUMENT_READONLY, document)
 
     def test_create_bucket(self):
         services.create_bucket('test-bucketname')
@@ -69,44 +56,6 @@ class ServicesTestCase(TestCase):
                     }
                 }]
             })
-
-    def test_create_bucket_policies(self):
-        services.create_bucket_policies(
-            'test-bucketname',
-            'arn:aws:s3:::test-bucketname')
-
-        aws.client.return_value.create_policy.assert_has_calls([
-            call(
-                PolicyName='test-bucketname-readwrite',
-                PolicyDocument=json.dumps(POLICY_DOCUMENT_READWRITE)),
-            call(
-                PolicyName='test-bucketname-readonly',
-                PolicyDocument=json.dumps(POLICY_DOCUMENT_READONLY))
-        ])
-
-    def test_delete_bucket_policies(self):
-        aws.client.return_value.list_entities_for_policy.return_value = {
-            'PolicyRoles': [{'RoleName': 'test-role'}],
-            'PolicyGroups': [{'GroupName': 'test-group'}],
-            'PolicyUsers': [{'UserName': 'test-user'}]
-        }
-
-        services.delete_bucket_policies('test-bucketname')
-        base = settings.IAM_ARN_BASE
-
-        aws.client.return_value.detach_role_policy.assert_has_calls([
-            call(
-                PolicyArn=f'{base}:policy/test-bucketname-readwrite',
-                RoleName='test-role'),
-            call(
-                PolicyArn=f'{base}:policy/test-bucketname-readonly',
-                RoleName='test-role')
-        ])
-
-        aws.client.return_value.delete_policy.assert_has_calls([
-            call(PolicyArn=f'{base}:policy/test-bucketname-readwrite'),
-            call(PolicyArn=f'{base}:policy/test-bucketname-readonly')
-        ])
 
     def test_grant_bucket_access(self):
         app = App(slug='appslug')
@@ -165,18 +114,3 @@ class ServicesTestCase(TestCase):
         aws.client.return_value.create_role.assert_called_with(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(USER_IAM_ROLE_ASSUME_POLICY))
-
-
-class NamingTestCase(SimpleTestCase):
-
-    def test_policy_name_has_readwrite(self):
-        self.assertEqual('bucketname-readonly',
-                         services._policy_name('bucketname', readwrite=False))
-        self.assertEqual('bucketname-readwrite',
-                         services._policy_name('bucketname', readwrite=True))
-
-    def test_policy_arn(self):
-        self.assertEqual(f'{settings.IAM_ARN_BASE}:policy/bucketname-readonly',
-                         services._policy_arn('bucketname', readwrite=False))
-        self.assertEqual(f'{settings.IAM_ARN_BASE}:policy/bucketname-readwrite',
-                         services._policy_arn('bucketname', readwrite=True))

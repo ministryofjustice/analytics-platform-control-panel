@@ -133,11 +133,6 @@ class S3Bucket(TimeStampedModel):
 
     def aws_create(self):
         services.create_bucket(self.name)
-        services.create_bucket_policies(self.name, self.arn)
-
-    def aws_delete(self):
-        """Note we do not destroy the actual data, just the policies"""
-        services.delete_bucket_policies(self.name)
 
     def create_users3bucket(self, user):
         users3bucket = UserS3Bucket.objects.create(
