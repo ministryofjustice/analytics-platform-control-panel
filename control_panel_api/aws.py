@@ -52,6 +52,9 @@ class AWSClient(object):
             PolicyDocument=json.dumps(policy_document))
 
     def get_inline_policy_document(self, role_name, policy_name):
+        if not self.enabled:
+            return None
+
         try:
             result = self._do('iam', 'get_role_policy',
                 RoleName=role_name,
