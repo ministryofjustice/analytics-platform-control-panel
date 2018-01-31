@@ -1,5 +1,4 @@
 import json
-
 from unittest.case import TestCase
 from unittest.mock import MagicMock, call, patch
 
@@ -50,6 +49,11 @@ class AwsTestCase(TestCase):
         aws.client.return_value.get_role_policy.side_effect = not_found_error
 
         document = aws.get_inline_policy_document(role_name, policy_name)
+        self.assertEqual(document, None)
+
+    @patch.object(aws, 'enabled', False)
+    def test_get_inline_policy_document_when_not_writing_to_cluster(self):
+        document = aws.get_inline_policy_document('test-user-role', 's3-access')
         self.assertEqual(document, None)
 
     def test_put_role_policy(self):
