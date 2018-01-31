@@ -105,7 +105,7 @@ def create_bucket(bucket_name, is_data_warehouse):
     if is_data_warehouse:
         aws.put_bucket_tagging(
             bucket_name,
-            tags=[('buckettype', 'datawarehouse')]
+            tags={'buckettype': 'datawarehouse'}
         )
 
 

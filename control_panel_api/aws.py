@@ -50,14 +50,14 @@ class AWSClient(object):
         """Put bucket tagging
 
         :param name: Bucket name
-        :param tags: List of tags (key, value) e.g. [('buckettype', 'datawarehouse')]
+        :param tags: Tags {key: value} e.g. {'buckettype': 'datawarehouse'}
         :type name: str
-        :type tags: list(tuple)
+        :type tags: dict
         """
         self._do('s3', 'put_bucket_tagging',
             Bucket=name,
             Tagging={
-                'TagSet': [{'Key': k, 'Value': v} for k, v in tags]
+                'TagSet': [{'Key': k, 'Value': v} for k, v in tags.items()]
             })
 
     def get_inline_policy_document(self, role_name, policy_name):
