@@ -17,7 +17,6 @@ READONLY = 'readonly'
 logger = logging.getLogger(__name__)
 
 
-# Copied from `services`
 def _policy_name(bucket_name, readwrite=False):
     """
     Prefix the policy name with bucket name, postfix with access level
@@ -26,7 +25,6 @@ def _policy_name(bucket_name, readwrite=False):
     return "{}-{}".format(bucket_name, READWRITE if readwrite else READONLY)
 
 
-# Copied from `services`
 def _policy_arn(bucket_name, readwrite=False):
     """
     Return full bucket policy arn
