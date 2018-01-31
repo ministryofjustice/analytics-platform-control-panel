@@ -182,7 +182,6 @@ class AppTestCase(TestCase):
 class S3BucketTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # Create an S3 bucket
         cls.s3_bucket_1 = S3Bucket.objects.create(name="test-bucket-1")
 
     def test_arn(self):
@@ -195,7 +194,10 @@ class S3BucketTestCase(TestCase):
     def test_bucket_create(self, mock_create_bucket):
         self.s3_bucket_1.aws_create()
 
-        mock_create_bucket.assert_called()
+        mock_create_bucket.assert_called_with(
+            self.s3_bucket_1.name,
+            self.s3_bucket_1.is_data_warehouse,
+        )
 
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
     def test_create_users3bucket(self, mock_aws_create):
