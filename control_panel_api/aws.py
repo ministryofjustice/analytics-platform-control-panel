@@ -57,7 +57,7 @@ class AWSClient(object):
         self._do('s3', 'put_bucket_tagging',
             Bucket=name,
             Tagging={
-                'TagSet': [{'Key': k, 'Value': v} for k, v in tags.items()]
+                'TagSet': [{'Key': str(k), 'Value': str(v)} for k, v in tags.items()]
             })
 
     def get_inline_policy_document(self, role_name, policy_name):
