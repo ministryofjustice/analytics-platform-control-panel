@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 from django.conf import settings
 from django.test.testcases import SimpleTestCase, TestCase
@@ -15,7 +15,7 @@ from control_panel_api.models import (
 from control_panel_api.tests import USER_IAM_ROLE_ASSUME_POLICY
 
 
-@patch.object(aws, 'client', MagicMock())
+@patch('control_panel_api.aws.aws.client')
 class ServicesTestCase(TestCase):
 
     def setUp(self):
@@ -28,17 +28,17 @@ class ServicesTestCase(TestCase):
             'control_panel_api.S3Bucket',
             name='test-bucket-1')
 
-    def test_create_bucket(self):
-        services.create_bucket('test-bucketname')
+    def test_create_bucket(self, mock_client):
+        services.create_bucket('test-bucketname', is_data_warehouse=True)
 
-        aws.client.return_value.create_bucket.assert_called_with(
+        mock_client.return_value.create_bucket.assert_called_with(
             Bucket='test-bucketname',
             CreateBucketConfiguration={
                 'LocationConstraint': 'eu-test-2'
             },
             ACL='private')
 
-        aws.client.return_value.put_bucket_logging.assert_called_with(
+        mock_client.return_value.put_bucket_logging.assert_called_with(
             Bucket='test-bucketname',
             BucketLoggingStatus={
                 'LoggingEnabled': {
@@ -47,7 +47,7 @@ class ServicesTestCase(TestCase):
                 }
             })
 
-        aws.client.return_value.put_bucket_encryption.assert_called_with(
+        mock_client.return_value.put_bucket_encryption.assert_called_with(
             Bucket='test-bucketname',
             ServerSideEncryptionConfiguration={
                 'Rules': [{
@@ -57,13 +57,13 @@ class ServicesTestCase(TestCase):
                 }]
             })
 
-    def test_grant_bucket_access(self):
+    def test_grant_bucket_access(self, mock_client):
         app = App(slug='appslug')
         s3bucket = S3Bucket(name='test-bucketname')
 
         policy_orig = S3AccessPolicy()
         policy_orig.grant_access('test-bucket-other')
-        aws.client.return_value.get_role_policy.return_value = {
+        mock_client.return_value.get_role_policy.return_value = {
             'PolicyDocument': policy_orig.document,
         }
 
@@ -77,13 +77,13 @@ class ServicesTestCase(TestCase):
             policy_expected = S3AccessPolicy(document=policy_orig.document)
             policy_expected.grant_access(s3bucket.arn, readwrite=readwrite)
 
-            aws.client.return_value.put_role_policy.assert_called_with(
+            mock_client.return_value.put_role_policy.assert_called_with(
                 RoleName=app.iam_role_name,
                 PolicyName='s3-access',
                 PolicyDocument=json.dumps(policy_expected.document),
             )
 
-    def test_revoke_bucket_access(self):
+    def test_revoke_bucket_access(self, mock_client):
         app = App(slug='appslug')
         s3bucket = S3Bucket(name='test-bucketname')
 
@@ -91,7 +91,7 @@ class ServicesTestCase(TestCase):
             policy_orig = S3AccessPolicy()
             policy_orig.grant_access('test-bucket-other')
             policy_orig.grant_access(s3bucket.arn, readwrite=readwrite)
-            aws.client.return_value.get_role_policy.return_value = {
+            mock_client.return_value.get_role_policy.return_value = {
                 'PolicyDocument': policy_orig.document,
             }
 
@@ -100,17 +100,17 @@ class ServicesTestCase(TestCase):
             policy_expected = S3AccessPolicy(document=policy_orig.document)
             policy_expected.revoke_access(s3bucket.arn)
 
-            aws.client.return_value.put_role_policy.assert_called_with(
+            mock_client.return_value.put_role_policy.assert_called_with(
                 RoleName=app.iam_role_name,
                 PolicyName='s3-access',
                 PolicyDocument=json.dumps(policy_expected.document),
             )
 
-    def test_create_user_role(self):
+    def test_create_user_role(self, mock_client):
         role_name = "test_user_user"
 
         services.create_role(role_name, add_saml_statement=True)
 
-        aws.client.return_value.create_role.assert_called_with(
+        mock_client.return_value.create_role.assert_called_with(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(USER_IAM_ROLE_ASSUME_POLICY))

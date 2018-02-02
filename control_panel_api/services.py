@@ -91,7 +91,7 @@ def delete_role(role_name):
 
 
 @ignore_aws_exceptions
-def create_bucket(bucket_name):
+def create_bucket(bucket_name, is_data_warehouse):
     aws.create_bucket(
         bucket_name,
         region=settings.BUCKET_REGION,
@@ -101,6 +101,12 @@ def create_bucket(bucket_name):
         target_bucket=settings.LOGS_BUCKET_NAME,
         target_prefix=f"{bucket_name}/")
     aws.put_bucket_encryption(bucket_name)
+
+    if is_data_warehouse:
+        aws.put_bucket_tagging(
+            bucket_name,
+            tags={'buckettype': 'datawarehouse'}
+        )
 
 
 @contextmanager

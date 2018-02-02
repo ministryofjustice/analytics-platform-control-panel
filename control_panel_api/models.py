@@ -132,7 +132,7 @@ class S3Bucket(TimeStampedModel):
         return f"arn:aws:s3:::{self.name}"
 
     def aws_create(self):
-        services.create_bucket(self.name)
+        services.create_bucket(self.name, self.is_data_warehouse)
 
     def create_users3bucket(self, user):
         users3bucket = UserS3Bucket.objects.create(
