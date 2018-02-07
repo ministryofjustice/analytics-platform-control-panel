@@ -1,5 +1,7 @@
 from django.conf import settings
 
+from control_panel_api.tests.permissions import *
+
 
 APP_IAM_ROLE_ASSUME_POLICY = {
     "Version": "2012-10-17",
