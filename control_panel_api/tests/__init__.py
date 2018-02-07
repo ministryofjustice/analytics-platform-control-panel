@@ -1,5 +1,6 @@
 from django.conf import settings
 
+from control_panel_api.tests.filters import *
 from control_panel_api.tests.permissions import *
 
 
