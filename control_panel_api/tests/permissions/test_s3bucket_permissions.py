@@ -7,6 +7,7 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
+    HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
 
@@ -28,6 +29,8 @@ class S3BucketPermissionsTest(APITestCase):
             "control_panel_api.S3Bucket", name="test-bucket-1")
         self.s3bucket_2 = mommy.make(
             "control_panel_api.S3Bucket", name="test-bucket-2")
+        # Normal user has access to s3bucket_1
+        self.normal_user.users3buckets.create(s3bucket=self.s3bucket_1)
 
     def test_list_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
@@ -48,12 +51,19 @@ class S3BucketPermissionsTest(APITestCase):
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    def test_detail_as_normal_user_responds_403(self):
+    def test_detail_as_normal_user_responds_200_if_has_access(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(
             reverse('s3bucket-detail', (self.s3bucket_1.id,)))
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(HTTP_200_OK, response.status_code)
+
+    def test_detail_as_normal_user_responds_404_if_has_not_access(self):
+        self.client.force_login(self.normal_user)
+
+        response = self.client.get(
+            reverse('s3bucket-detail', (self.s3bucket_2.id,)))
+        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
     def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
