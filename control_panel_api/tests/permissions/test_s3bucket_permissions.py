@@ -35,11 +35,11 @@ class S3BucketPermissionsTest(APITestCase):
         response = self.client.get(reverse('s3bucket-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    def test_list_as_normal_user_responds_403(self):
+    def test_list_as_normal_user_responds_OK(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse('s3bucket-list'))
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(HTTP_200_OK, response.status_code)
 
     def test_detail_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
