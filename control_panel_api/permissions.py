@@ -91,6 +91,26 @@ class UserPermissions(BasePermission):
 
         return request.user == obj
 
+# NOTE: James is doing some work related to this class as well,
+#       that's why I'm not testing it - he'll add tests.
+#       Only thing relevant for filtering work is `list`/`retrive` actions
+class UserS3BucketPermissions(BasePermission):
+    """
+    - Superusers can do anything
+    - Normal users can list/retrieve UserS3Buckets
+
+    NOTE: Filters are applied before permissions
+    """
+
+    def has_permission(self, request, view):
+        if is_superuser(request.user):
+            return True
+
+        if request.user.is_anonymous():
+            return False
+
+        return view.action in ('list', 'retrieve')
+
 
 class ToolDeploymentPermissions(BasePermission):
 
