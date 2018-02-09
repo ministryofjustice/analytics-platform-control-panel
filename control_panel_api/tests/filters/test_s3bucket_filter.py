@@ -7,21 +7,26 @@ from rest_framework.test import APITestCase
 class S3BucketFilterTest(APITestCase):
 
     def setUp(self):
-        self.superuser = mommy.make("control_panel_api.User",
-                                    is_superuser=True)
-        self.normal_user = mommy.make("control_panel_api.User",
-                                      is_superuser=False)
+        self.superuser = mommy.make(
+            "control_panel_api.User",
+            is_superuser=True)
+        self.normal_user = mommy.make(
+            "control_panel_api.User",
+            is_superuser=False)
 
-        self.s3_bucket_1 = mommy.make("control_panel_api.S3Bucket",
-                                      name="test-bucket-1")
-        self.s3_bucket_2 = mommy.make("control_panel_api.S3Bucket",
-                                      name="test-bucket-2")
+        self.s3_bucket_1 = mommy.make(
+            "control_panel_api.S3Bucket",
+            name="test-bucket-1")
+        self.s3_bucket_2 = mommy.make(
+            "control_panel_api.S3Bucket",
+            name="test-bucket-2")
 
-        mommy.make("control_panel_api.UserS3Bucket",
-                   user=self.normal_user,
-                   s3bucket=self.s3_bucket_1,
-                   access_level='readonly',
-                   is_admin=False)
+        mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.normal_user,
+            s3bucket=self.s3_bucket_1,
+            access_level='readonly',
+            is_admin=False)
 
     def test_superuser_sees_everything(self):
         self.client.force_login(self.superuser)

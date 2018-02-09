@@ -92,6 +92,24 @@ class UserPermissions(BasePermission):
         return request.user == obj
 
 
+class UserS3BucketPermissions(BasePermission):
+    """
+    - Superusers can do anything
+    - Normal users can list/retrieve UserS3Buckets
+
+    NOTE: Filters are applied before permissions
+    """
+
+    def has_permission(self, request, view):
+        if is_superuser(request.user):
+            return True
+
+        if request.user.is_anonymous():
+            return False
+
+        return view.action in ('list', 'retrieve')
+
+
 class ToolDeploymentPermissions(BasePermission):
 
     def has_permission(self, request, view):

@@ -20,19 +20,24 @@ class S3BucketPermissionsTest(APITestCase):
     def setUp(self):
         super().setUp()
 
-        self.superuser = mommy.make('control_panel_api.User',
-                                    is_superuser=True)
-        self.normal_user = mommy.make('control_panel_api.User',
-                                      is_superuser=False)
+        self.superuser = mommy.make(
+            'control_panel_api.User',
+            is_superuser=True)
+        self.normal_user = mommy.make(
+            'control_panel_api.User',
+            is_superuser=False)
 
-        self.s3bucket_1 = mommy.make("control_panel_api.S3Bucket",
-                                     name="test-bucket-1")
-        self.s3bucket_2 = mommy.make("control_panel_api.S3Bucket",
-                                     name="test-bucket-2")
+        self.s3bucket_1 = mommy.make(
+            "control_panel_api.S3Bucket",
+            name="test-bucket-1")
+        self.s3bucket_2 = mommy.make(
+            "control_panel_api.S3Bucket",
+            name="test-bucket-2")
 
-        mommy.make("control_panel_api.UserS3Bucket",
-                   user=self.normal_user,
-                   s3bucket=self.s3bucket_1)
+        mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.normal_user,
+            s3bucket=self.s3bucket_1)
 
     def test_list_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)

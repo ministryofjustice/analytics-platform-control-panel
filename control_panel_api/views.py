@@ -18,6 +18,7 @@ from control_panel_api.filters import (
     AppFilter,
     S3BucketFilter,
     UserFilter,
+    UserS3BucketFilter,
 )
 from control_panel_api.models import (
     App,
@@ -33,6 +34,7 @@ from control_panel_api.permissions import (
     S3BucketPermissions,
     ToolDeploymentPermissions,
     UserPermissions,
+    UserS3BucketPermissions,
 )
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
@@ -155,6 +157,8 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 class UserS3BucketViewSet(viewsets.ModelViewSet):
     queryset = UserS3Bucket.objects.all()
     serializer_class = UserS3BucketSerializer
+    filter_backends = (UserS3BucketFilter,)
+    permission_classes = (UserS3BucketPermissions,)
 
     @handle_external_exceptions
     @transaction.atomic
