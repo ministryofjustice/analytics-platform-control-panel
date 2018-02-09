@@ -15,7 +15,7 @@ class UserS3BucketFilterTest(APITestCase):
         self.normal_user = mommy.make(
             "control_panel_api.User",
             is_superuser=False)
-        self.normal_user_2 = mommy.make(
+        self.other_user = mommy.make(
             "control_panel_api.User",
             is_superuser=False)
 
@@ -29,7 +29,7 @@ class UserS3BucketFilterTest(APITestCase):
         self.s3bucket_1_normal_user_access = self.normal_user.users3buckets.create(
             s3bucket=self.s3bucket_1,
             access_level=UserS3Bucket.READONLY)
-        self.s3bucket_1_normal_user_2_access = self.normal_user_2.users3buckets.create(
+        self.s3bucket_1_other_user_access = self.other_user.users3buckets.create(
             s3bucket=self.s3bucket_1,
             access_level=UserS3Bucket.READONLY)
         self.s3bucket_2_superuser_access = self.superuser.users3buckets.create(
@@ -45,7 +45,7 @@ class UserS3BucketFilterTest(APITestCase):
         self.assertEqual(HTTP_200_OK, response.status_code)
         self.assertEqual(len(ids), 3)
         self.assertIn(self.s3bucket_1_normal_user_access.id, ids)
-        self.assertIn(self.s3bucket_1_normal_user_2_access.id, ids)
+        self.assertIn(self.s3bucket_1_other_user_access.id, ids)
         self.assertIn(self.s3bucket_2_superuser_access.id, ids)
 
     def test_normal_user_only_sees_records_for_buckets_has_access_to(self):
@@ -62,5 +62,5 @@ class UserS3BucketFilterTest(APITestCase):
 
         ids = [us["id"] for us in response.data["results"]]
         self.assertIn(self.s3bucket_1_normal_user_access.id, ids)
-        self.assertIn(self.s3bucket_1_normal_user_2_access.id, ids)
+        self.assertIn(self.s3bucket_1_other_user_access.id, ids)
         self.assertNotIn(self.s3bucket_2_superuser_access.id, ids)
