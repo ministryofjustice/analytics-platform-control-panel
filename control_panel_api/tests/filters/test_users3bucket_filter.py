@@ -9,31 +9,32 @@ from control_panel_api.models import UserS3Bucket
 class UserS3BucketFilterTest(APITestCase):
 
     def setUp(self):
-        # Create users
         self.superuser = mommy.make(
-            "control_panel_api.User", is_superuser=True)
+            "control_panel_api.User",
+            is_superuser=True)
         self.normal_user = mommy.make(
-            "control_panel_api.User", is_superuser=False)
+            "control_panel_api.User",
+            is_superuser=False)
         self.normal_user_2 = mommy.make(
-            "control_panel_api.User", is_superuser=False)
-        # Create some S3 buckets
+            "control_panel_api.User",
+            is_superuser=False)
+
         self.s3bucket_1 = mommy.make(
-            "control_panel_api.S3Bucket", name="test-bucket-1")
+            "control_panel_api.S3Bucket",
+            name="test-bucket-1")
         self.s3bucket_2 = mommy.make(
-            "control_panel_api.S3Bucket", name="test-bucket-2")
-        # Grant access to these S3 buckets
+            "control_panel_api.S3Bucket",
+            name="test-bucket-2")
+
         self.s3bucket_1_normal_user_access = self.normal_user.users3buckets.create(
             s3bucket=self.s3bucket_1,
-            access_level=UserS3Bucket.READONLY,
-        )
+            access_level=UserS3Bucket.READONLY)
         self.s3bucket_1_normal_user_2_access = self.normal_user_2.users3buckets.create(
             s3bucket=self.s3bucket_1,
-            access_level=UserS3Bucket.READONLY,
-        )
+            access_level=UserS3Bucket.READONLY)
         self.s3bucket_2_superuser_access = self.superuser.users3buckets.create(
             s3bucket=self.s3bucket_2,
-            access_level=UserS3Bucket.READWRITE,
-        )
+            access_level=UserS3Bucket.READWRITE)
 
     def test_superuser_sees_everything(self):
         self.client.force_login(self.superuser)

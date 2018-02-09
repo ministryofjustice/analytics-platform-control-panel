@@ -91,9 +91,7 @@ class UserPermissions(BasePermission):
 
         return request.user == obj
 
-# NOTE: James is doing some work related to this class as well,
-#       that's why I'm not testing it - he'll add tests.
-#       Only thing relevant for filtering work is `list`/`retrive` actions
+
 class UserS3BucketPermissions(BasePermission):
     """
     - Superusers can do anything
