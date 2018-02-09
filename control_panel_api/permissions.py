@@ -51,8 +51,23 @@ class AppPermissions(IsSuperuser):
     pass
 
 
-class S3BucketPermissions(IsSuperuser):
-    pass
+class S3BucketPermissions(BasePermission):
+    """
+    - Superusers can do anything
+    - Normal users can create S3 buckets and list/retrieve buckets they have
+      access to
+
+    NOTE: Filters are applied before permissions
+    """
+
+    def has_permission(self, request, view):
+        if is_superuser(request.user):
+            return True
+
+        if request.user.is_anonymous():
+            return False
+
+        return view.action in ('create', 'list', 'retrieve')
 
 
 class UserPermissions(BasePermission):
