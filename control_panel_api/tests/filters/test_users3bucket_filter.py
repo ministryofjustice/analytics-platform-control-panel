@@ -26,13 +26,19 @@ class UserS3BucketFilterTest(APITestCase):
             "control_panel_api.S3Bucket",
             name="test-bucket-2")
 
-        self.s3bucket_1_normal_user_access = self.normal_user.users3buckets.create(
+        self.s3bucket_1_normal_user_access = mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.normal_user,
             s3bucket=self.s3bucket_1,
             access_level=UserS3Bucket.READONLY)
-        self.s3bucket_1_other_user_access = self.other_user.users3buckets.create(
+        self.s3bucket_1_other_user_access = mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.other_user,
             s3bucket=self.s3bucket_1,
             access_level=UserS3Bucket.READONLY)
-        self.s3bucket_2_superuser_access = self.superuser.users3buckets.create(
+        self.s3bucket_2_superuser_access = mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.superuser,
             s3bucket=self.s3bucket_2,
             access_level=UserS3Bucket.READWRITE)
 
