@@ -463,8 +463,8 @@ class ToolDeploymentPermissionsTest(APITestCase):
         )
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('control_panel_api.views.Tool')
-    def test_normal_user_can_deploy_tool(self, mock_tool):
+    @patch('control_panel_api.views.Tool', MagicMock())
+    def test_normal_user_can_deploy_tool(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.post(
@@ -474,8 +474,8 @@ class ToolDeploymentPermissionsTest(APITestCase):
         )
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.views.Tool')
-    def test_superuser_can_deploy_tool(self, mock_tool):
+    @patch('control_panel_api.views.Tool', MagicMock())
+    def test_superuser_can_deploy_tool(self):
         self.client.force_login(self.superuser)
 
         response = self.client.post(
