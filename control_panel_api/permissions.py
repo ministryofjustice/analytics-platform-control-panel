@@ -99,7 +99,10 @@ class UserS3BucketPermissions(BasePermission):
         if is_superuser(request.user):
             return True
 
-        if view.action not in ('create',):
+        if request.user.is_anonymous():
+            return False
+
+        if view.action != 'create':
             return True
 
         serializer = UserS3BucketSerializer(data=request.data)
