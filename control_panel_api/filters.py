@@ -86,8 +86,6 @@ class UserS3BucketFilter(DjangoFilterBackend):
         if is_superuser(request.user):
             return queryset
 
-        accessible_buckets = S3Bucket.objects.filter(
-            users3buckets__user=request.user,
-        )
+        accessible_buckets = S3Bucket.objects.accessible_by(request.user)
 
-        return queryset.filter(s3bucket=accessible_buckets)
+        return queryset.filter(s3bucket__in=accessible_buckets)

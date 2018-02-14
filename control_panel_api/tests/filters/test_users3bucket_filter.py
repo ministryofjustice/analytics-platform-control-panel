@@ -7,7 +7,6 @@ from control_panel_api.models import UserS3Bucket
 
 
 class UserS3BucketFilterTest(APITestCase):
-
     def setUp(self):
         self.superuser = mommy.make(
             "control_panel_api.User",
@@ -25,6 +24,9 @@ class UserS3BucketFilterTest(APITestCase):
         self.s3bucket_2 = mommy.make(
             "control_panel_api.S3Bucket",
             name="test-bucket-2")
+        self.s3bucket_3 = mommy.make(
+            "control_panel_api.S3Bucket",
+            name="test-bucket-3")
 
         self.s3bucket_1_normal_user_access = mommy.make(
             "control_panel_api.UserS3Bucket",
@@ -36,10 +38,20 @@ class UserS3BucketFilterTest(APITestCase):
             user=self.other_user,
             s3bucket=self.s3bucket_1,
             access_level=UserS3Bucket.READONLY)
+        self.s3bucket_2_normal_user_access = mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.normal_user,
+            s3bucket=self.s3bucket_2,
+            access_level=UserS3Bucket.READONLY)
         self.s3bucket_2_superuser_access = mommy.make(
             "control_panel_api.UserS3Bucket",
             user=self.superuser,
             s3bucket=self.s3bucket_2,
+            access_level=UserS3Bucket.READWRITE)
+        self.s3bucket_3_superuser_access = mommy.make(
+            "control_panel_api.UserS3Bucket",
+            user=self.superuser,
+            s3bucket=self.s3bucket_3,
             access_level=UserS3Bucket.READWRITE)
 
     def test_superuser_sees_everything(self):
@@ -49,7 +61,7 @@ class UserS3BucketFilterTest(APITestCase):
         ids = [us["id"] for us in response.data["results"]]
 
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(len(ids), 3)
+        self.assertEqual(len(ids), 5)
         self.assertIn(self.s3bucket_1_normal_user_access.id, ids)
         self.assertIn(self.s3bucket_1_other_user_access.id, ids)
         self.assertIn(self.s3bucket_2_superuser_access.id, ids)
@@ -66,7 +78,9 @@ class UserS3BucketFilterTest(APITestCase):
         response = self.client.get(reverse("users3bucket-list"))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-        ids = [us["id"] for us in response.data["results"]]
+        ids = [result["id"] for result in response.data["results"]]
         self.assertIn(self.s3bucket_1_normal_user_access.id, ids)
         self.assertIn(self.s3bucket_1_other_user_access.id, ids)
-        self.assertNotIn(self.s3bucket_2_superuser_access.id, ids)
+        self.assertIn(self.s3bucket_2_normal_user_access.id, ids)
+        self.assertIn(self.s3bucket_2_superuser_access.id, ids)
+        self.assertNotIn(self.s3bucket_3_superuser_access.id, ids)

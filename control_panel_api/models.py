@@ -116,9 +116,13 @@ class UserApp(TimeStampedModel):
 
 
 class S3BucketManager(models.Manager):
-    def accessible_by_admin(self, user):
+    def accessible_by(self, user):
         return self.get_queryset().filter(
             users3buckets__user=user,
+        )
+
+    def accessible_by_admin(self, user):
+        return self.accessible_by(user).filter(
             users3buckets__is_admin=True,
         )
 
