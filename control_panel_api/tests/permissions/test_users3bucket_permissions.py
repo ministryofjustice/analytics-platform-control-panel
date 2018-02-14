@@ -56,47 +56,50 @@ class UserS3Buckets(APITestCase):
             is_admin=True,
         )
 
-    def test_create_superuser_ok(self):
-        self.client.force_login(self.superuser)
+    def test_create(self):
+        fixtures = [
+            {
+                'user': self.superuser,
+                'data': {
+                    'user': self.user_1.auth0_id,
+                    's3bucket': self.s3bucket_2.id,
+                    'access_level': AccessToS3Bucket.READWRITE,
+                },
+                'expected_code': HTTP_201_CREATED,
+            },
+            {
+                'user': self.normal_user,
+                'data': {'doesnt': 'matter'},
+                'expected_code': HTTP_400_BAD_REQUEST,
+            },
+            {
+                'user': self.normal_user,
+                'data': {
+                    'user': mommy.make('control_panel_api.User').auth0_id,
+                    's3bucket': self.s3bucket_1.id,
+                    'access_level': AccessToS3Bucket.READWRITE,
+                    'is_admin': True,
+                },
+                'expected_code': HTTP_201_CREATED,
+            },
+            {
+                'user': self.normal_user,
+                'data': {
+                    'user': mommy.make('control_panel_api.User').auth0_id,
+                    's3bucket': self.s3bucket_2.id,
+                    'access_level': AccessToS3Bucket.READWRITE,
+                    'is_admin': True,
+                },
+                'expected_code': HTTP_403_FORBIDDEN,
+            },
+        ]
 
-        data = {
-            'user': self.user_1.auth0_id,
-            's3bucket': self.s3bucket_2.id,
-            'access_level': AccessToS3Bucket.READWRITE,
-        }
-        response = self.client.post(reverse('users3bucket-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
+        for fixture in fixtures:
+            self.client.force_login(fixture['user'])
 
-    def test_create_normal_user_bad_data_400(self):
-        self.client.force_login(self.normal_user)
-
-        data = {'doesnt': 'matter'}
-        response = self.client.post(reverse('users3bucket-list'), data)
-        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
-
-    def test_create_normal_user_other_admin_ok(self):
-        self.client.force_login(self.normal_user)
-
-        data = {
-            'user': mommy.make('control_panel_api.User').auth0_id,
-            's3bucket': self.s3bucket_1.id,
-            'access_level': AccessToS3Bucket.READWRITE,
-            'is_admin': True,
-        }
-        response = self.client.post(reverse('users3bucket-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
-
-    def test_create_normal_user_non_admin_403(self):
-        self.client.force_login(self.normal_user)
-
-        data = {
-            'user': mommy.make('control_panel_api.User').auth0_id,
-            's3bucket': self.s3bucket_2.id,
-            'access_level': AccessToS3Bucket.READWRITE,
-            'is_admin': True,
-        }
-        response = self.client.post(reverse('users3bucket-list'), data)
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+            response = self.client.post(
+                reverse('users3bucket-list'), fixture['data'])
+            self.assertEqual(fixture['expected_code'], response.status_code)
 
     def test_delete_super_user_owner_admin_ok(self):
         self.client.force_login(self.superuser)
