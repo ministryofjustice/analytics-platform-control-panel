@@ -49,7 +49,7 @@ class S3BucketFilter(DjangoFilterBackend):
         if is_superuser(request.user):
             return queryset
 
-        return queryset.filter(users3buckets__user=request.user)
+        return queryset.accessible_by(request.user)
 
 
 class UserFilter(DjangoFilterBackend):

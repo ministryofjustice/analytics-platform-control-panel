@@ -115,9 +115,9 @@ class UserApp(TimeStampedModel):
         ordering = ('id',)
 
 
-class S3BucketManager(models.Manager):
+class S3BucketQuerySet(models.QuerySet):
     def accessible_by(self, user):
-        return self.get_queryset().filter(
+        return self.filter(
             users3buckets__user=user,
         )
 
@@ -136,7 +136,7 @@ class S3Bucket(TimeStampedModel):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     is_data_warehouse = models.BooleanField(default=False)
 
-    objects = S3BucketManager()
+    objects = S3BucketQuerySet.as_manager()
 
     class Meta:
         ordering = ('name',)
