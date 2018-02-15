@@ -121,7 +121,7 @@ class S3BucketQuerySet(models.QuerySet):
             users3buckets__user=user,
         )
 
-    def accessible_by_admin(self, user):
+    def administered_by(self, user):
         return self.accessible_by(user).filter(
             users3buckets__is_admin=True,
         )

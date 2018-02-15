@@ -108,7 +108,7 @@ class UserS3BucketPermissions(BasePermission):
         serializer = UserS3BucketSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        accessible_buckets = S3Bucket.objects.accessible_by_admin(request.user)
+        accessible_buckets = S3Bucket.objects.administered_by(request.user)
 
         if serializer.validated_data['s3bucket'] in accessible_buckets:
             return True
@@ -120,7 +120,7 @@ class UserS3BucketPermissions(BasePermission):
         if obj.user_is_admin(request.user):
             return True
 
-        if obj.s3bucket in S3Bucket.objects.accessible_by_admin(request.user):
+        if obj.s3bucket in S3Bucket.objects.administered_by(request.user):
             return True
 
 
