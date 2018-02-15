@@ -115,6 +115,19 @@ class UserApp(TimeStampedModel):
         ordering = ('id',)
 
 
+class S3BucketQuerySet(models.QuerySet):
+    def accessible_by(self, user):
+        return self.filter(
+            users3buckets__user=user,
+        )
+
+    def administered_by(self, user):
+        return self.filter(
+            users3buckets__user=user,
+            users3buckets__is_admin=True,
+        )
+
+
 class S3Bucket(TimeStampedModel):
     name = models.CharField(unique=True, max_length=63, validators=[
         validators.validate_env_prefix,
@@ -123,6 +136,8 @@ class S3Bucket(TimeStampedModel):
     ])
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     is_data_warehouse = models.BooleanField(default=False)
+
+    objects = S3BucketQuerySet.as_manager()
 
     class Meta:
         ordering = ('name',)
@@ -272,3 +287,6 @@ class UserS3Bucket(AccessToS3Bucket):
 
     def aws_role_name(self):
         return self.user.iam_role_name
+
+    def user_is_admin(self, user):
+        return self.user == user and self.is_admin

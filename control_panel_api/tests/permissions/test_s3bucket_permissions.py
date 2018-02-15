@@ -11,12 +11,9 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
-from control_panel_api.aws import aws
 
-
-@patch.object(aws, 'client', MagicMock())
+@patch('control_panel_api.aws.aws.client', MagicMock())
 class S3BucketPermissionsTest(APITestCase):
-
     def setUp(self):
         super().setUp()
 

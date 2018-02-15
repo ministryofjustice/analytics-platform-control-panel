@@ -7,25 +7,21 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
 
-from control_panel_api.aws import aws
 from control_panel_api.models import AppS3Bucket
 
 
-@patch.object(aws, 'client', MagicMock())
+@patch('control_panel_api.aws.aws.client', MagicMock())
 class AppPermissionsTest(APITestCase):
-
     def setUp(self):
         super().setUp()
-        # Create users
         self.superuser = mommy.make(
             'control_panel_api.User', is_superuser=True)
         self.normal_user = mommy.make(
             'control_panel_api.User', is_superuser=False)
-        # Create some apps
+
         self.app_1 = mommy.make(
             "control_panel_api.App", name="App 1")
         self.app_2 = mommy.make(
@@ -55,8 +51,7 @@ class AppPermissionsTest(APITestCase):
         response = self.client.get(reverse('app-detail', (self.app_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('boto3.client')
-    def test_delete_as_superuser_responds_OK(self, mock_client):
+    def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         response = self.client.delete(
@@ -70,8 +65,7 @@ class AppPermissionsTest(APITestCase):
             reverse('app-detail', (self.app_1.id,)))
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('boto3.client')
-    def test_create_as_superuser_responds_OK(self, mock_client):
+    def test_create_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
 
         data = {'name': 'foo', 'repo_url': 'https://example.com'}
@@ -102,29 +96,27 @@ class AppPermissionsTest(APITestCase):
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
 
-@patch.object(aws, 'client', MagicMock())
+@patch('control_panel_api.aws.aws.client', MagicMock())
 class AppS3BucketPermissionsTest(APITestCase):
-
     def setUp(self):
         super().setUp()
-        # Create users
         self.superuser = mommy.make(
             "control_panel_api.User", is_superuser=True)
         self.normal_user = mommy.make(
             "control_panel_api.User", is_superuser=False)
-        # Create some apps
+
         self.app_1 = mommy.make(
             "control_panel_api.App", name="App 1")
         self.app_2 = mommy.make(
             "control_panel_api.App", name="App 2")
-        # Create some S3 buckets
+
         self.s3bucket_1 = mommy.make(
             "control_panel_api.S3Bucket", name="test-bucket-1")
         self.s3bucket_2 = mommy.make(
             "control_panel_api.S3Bucket", name="test-bucket-2")
         self.s3bucket_3 = mommy.make(
             "control_panel_api.S3Bucket", name="test-bucket-3")
-        # Grant access to these S3 buckets
+
         self.apps3bucket_1 = self.app_1.apps3buckets.create(
             s3bucket=self.s3bucket_1,
             access_level=AppS3Bucket.READONLY,
@@ -214,7 +206,6 @@ class AppS3BucketPermissionsTest(APITestCase):
 
 
 class K8sPermissionsTest(APITestCase):
-
     def setUp(self):
         super().setUp()
         self.superuser = mommy.make(
@@ -292,7 +283,6 @@ class K8sPermissionsTest(APITestCase):
 
 
 class ToolDeploymentPermissionsTest(APITestCase):
-
     def setUp(self):
         super().setUp()
         self.superuser = mommy.make(
@@ -315,8 +305,8 @@ class ToolDeploymentPermissionsTest(APITestCase):
         )
         self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
-    @patch('control_panel_api.views.Tool')
-    def test_normal_user_can_deploy_tool(self, mock_tool):
+    @patch('control_panel_api.views.Tool', MagicMock())
+    def test_normal_user_can_deploy_tool(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.post(
@@ -326,8 +316,8 @@ class ToolDeploymentPermissionsTest(APITestCase):
         )
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-    @patch('control_panel_api.views.Tool')
-    def test_superuser_can_deploy_tool(self, mock_tool):
+    @patch('control_panel_api.views.Tool', MagicMock())
+    def test_superuser_can_deploy_tool(self):
         self.client.force_login(self.superuser)
 
         response = self.client.post(
