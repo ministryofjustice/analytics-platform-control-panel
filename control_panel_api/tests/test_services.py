@@ -57,6 +57,15 @@ class ServicesTestCase(TestCase):
                 }]
             })
 
+        mock_client.return_value.put_bucket_tagging.assert_called_with(
+            Bucket='test-bucketname',
+            Tagging={
+                'TagSet': [{
+                    'Key': 'buckettype',
+                    'Value': 'datawarehouse'
+                }]
+            })
+
     def test_grant_bucket_access(self, mock_client):
         app = App(slug='appslug')
         s3bucket = S3Bucket(name='test-bucketname')
