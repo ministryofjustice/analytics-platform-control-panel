@@ -564,6 +564,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             'users3buckets',
             'created_by',
             'is_data_warehouse',
+            'location_url',
         }
         self.assertEqual(expected_s3bucket_fields, set(response.data))
 

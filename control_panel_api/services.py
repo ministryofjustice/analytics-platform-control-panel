@@ -28,7 +28,7 @@ def ignore_aws_exceptions(func):
 
     def inner(*args, **kwargs):
         try:
-            func(*args, **kwargs)
+            return func(*args, **kwargs)
         except ClientError as e:
             if e.__class__.__name__ not in exception_names:
                 raise e
@@ -92,7 +92,7 @@ def delete_role(role_name):
 
 @ignore_aws_exceptions
 def create_bucket(bucket_name, is_data_warehouse):
-    aws.create_bucket(
+    result = aws.create_bucket(
         bucket_name,
         region=settings.BUCKET_REGION,
         acl='private')
@@ -107,6 +107,8 @@ def create_bucket(bucket_name, is_data_warehouse):
             bucket_name,
             tags={'buckettype': 'datawarehouse'}
         )
+
+    return result
 
 
 @contextmanager
