@@ -136,6 +136,7 @@ class S3Bucket(TimeStampedModel):
     ])
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     is_data_warehouse = models.BooleanField(default=False)
+    location_url = models.CharField(max_length=128, null=True)
 
     objects = S3BucketQuerySet.as_manager()
 
@@ -147,7 +148,10 @@ class S3Bucket(TimeStampedModel):
         return f"arn:aws:s3:::{self.name}"
 
     def aws_create(self):
-        services.create_bucket(self.name, self.is_data_warehouse)
+        result = services.create_bucket(self.name, self.is_data_warehouse)
+
+        if result:
+            self.location_url = result['Location']
 
     def create_users3bucket(self, user):
         users3bucket = UserS3Bucket.objects.create(

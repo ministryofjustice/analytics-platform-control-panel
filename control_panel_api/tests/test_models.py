@@ -17,7 +17,7 @@ from control_panel_api.models import (
 )
 from control_panel_api.tests import (
     APP_IAM_ROLE_ASSUME_POLICY,
-    USER_IAM_ROLE_ASSUME_POLICY
+    USER_IAM_ROLE_ASSUME_POLICY,
 )
 
 
@@ -192,12 +192,17 @@ class S3BucketTestCase(TestCase):
 
     @patch('control_panel_api.services.create_bucket')
     def test_bucket_create(self, mock_create_bucket):
+        url = 'http://foo.com/'
+        mock_create_bucket.return_value = {'Location': url}
+
         self.s3_bucket_1.aws_create()
 
         mock_create_bucket.assert_called_with(
             self.s3_bucket_1.name,
             self.s3_bucket_1.is_data_warehouse,
         )
+
+        self.assertEqual(url, self.s3_bucket_1.location_url)
 
     @patch('control_panel_api.models.UserS3Bucket.aws_create')
     def test_create_users3bucket(self, mock_aws_create):

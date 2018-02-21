@@ -18,7 +18,7 @@ class AWSClient(object):
             return getattr(client, method)(**kwargs)
 
     def create_bucket(self, name, region, acl='private'):
-        self._do('s3', 'create_bucket',
+        return self._do('s3', 'create_bucket',
             Bucket=name,
             ACL=acl,
             CreateBucketConfiguration={'LocationConstraint': region})
