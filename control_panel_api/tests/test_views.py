@@ -24,7 +24,6 @@ from control_panel_api.models import (
     UserApp,
     UserS3Bucket,
 )
-
 from control_panel_api.tests.test_authentication import (
     build_jwt_from_user,
     mock_get_keys,
@@ -319,9 +318,17 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
         mock_create_role.assert_called()
 
+    @patch('control_panel_api.auth0.Auth0.get_group_members')
+    def test_customers(self, mock_get_group_members):
+        mock_get_group_members.return_value = [{'email': 'foo@example.com'}]
+
+        response = self.client.get(reverse('app-customers', (self.fixture.id,)))
+
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        mock_get_group_members.assert_called()
+
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
 

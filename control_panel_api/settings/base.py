@@ -156,6 +156,8 @@ OIDC_FIELD_USERNAME = 'nickname'
 OIDC_FIELD_EMAIL = 'email'
 OIDC_FIELD_NAME = 'name'
 OIDC_WELL_KNOWN_URL = f'https://{OIDC_DOMAIN}/.well-known/jwks.json'
+OIDC_AUTH_EXTENSION_URL = os.environ.get('OIDC_AUTH_EXTENSION_URL')
+OIDC_AUTH_EXTENSION_AUDIENCE = os.environ.get('OIDC_AUTH_EXTENSION_AUDIENCE', 'urn:auth0-authz-api')
 
 # Helm variables
 NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
