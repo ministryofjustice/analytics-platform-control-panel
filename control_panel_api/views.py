@@ -43,6 +43,7 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
+    GroupMemberSerializer,
     GroupSerializer,
     S3BucketSerializer,
     UserAppSerializer,
@@ -138,7 +139,10 @@ class AppViewSet(viewsets.ModelViewSet):
         if members is None:
             raise Http404
 
-        return Response(members)
+        serializer = GroupMemberSerializer(data=members, many=True)
+        serializer.is_valid()
+
+        return Response(serializer.data)
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):

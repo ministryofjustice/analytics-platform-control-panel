@@ -320,12 +320,32 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('control_panel_api.auth0.Auth0.get_group_members')
     def test_customers(self, mock_get_group_members):
-        mock_get_group_members.return_value = [{'email': 'foo@example.com'}]
+        mock_get_group_members.return_value = [{
+            "email": "a.user@digital.justice.gov.uk",
+            "user_id": "email|5955f7ee86da0c1d55foobar",
+            "nickname": "a.user",
+            "name": "a.user@digital.justice.gov.uk",
+            "foo": "bar",
+            "baz": "bat",
+        }]
 
         response = self.client.get(reverse('app-customers', (self.fixture.id,)))
 
         self.assertEqual(HTTP_200_OK, response.status_code)
         mock_get_group_members.assert_called()
+
+        self.assertEqual(1, len(response.data))
+
+        expected_fields = {
+            'email',
+            'user_id',
+            'nickname',
+            'name',
+        }
+        self.assertEqual(
+            expected_fields,
+            set(response.data[0]),
+        )
 
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
