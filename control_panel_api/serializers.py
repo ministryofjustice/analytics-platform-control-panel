@@ -252,3 +252,10 @@ class UserSerializer(serializers.ModelSerializer):
             'is_superuser',
             'email_verified',
         )
+
+
+class GroupMemberSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    user_id = serializers.CharField(max_length=64)
+    nickname = serializers.CharField(max_length=64)
+    name = serializers.CharField(max_length=64)

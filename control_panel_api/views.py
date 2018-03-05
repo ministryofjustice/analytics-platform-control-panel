@@ -5,11 +5,13 @@ from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.http import JsonResponse
+from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, detail_route, permission_classes
+from rest_framework.response import Response
 
+from control_panel_api.auth0 import auth0
 from control_panel_api.exceptions import (
     AWSException,
     HelmException,
@@ -20,6 +22,7 @@ from control_panel_api.filters import (
     UserFilter,
     UserS3BucketFilter,
 )
+from control_panel_api.k8s import proxy as k8s_proxy
 from control_panel_api.models import (
     App,
     AppS3Bucket,
@@ -30,6 +33,7 @@ from control_panel_api.models import (
 )
 from control_panel_api.permissions import (
     AppPermissions,
+    IsSuperuser,
     K8sPermissions,
     S3BucketPermissions,
     ToolDeploymentPermissions,
@@ -39,15 +43,14 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
+    GroupMemberSerializer,
     GroupSerializer,
     S3BucketSerializer,
     UserAppSerializer,
     UserS3BucketSerializer,
     UserSerializer,
 )
-from control_panel_api.k8s import proxy as k8s_proxy
 from control_panel_api.tools import Tool
-
 
 logger = logging.getLogger(__name__)
 
@@ -126,6 +129,20 @@ class AppViewSet(viewsets.ModelViewSet):
         instance.delete()
 
         instance.aws_delete_role()
+
+    @detail_route(permission_classes=[IsSuperuser])
+    def customers(self, request, pk=None):
+        instance = self.get_object()
+
+        members = auth0.get_group_members(instance.name)
+
+        if members is None:
+            raise Http404
+
+        serializer = GroupMemberSerializer(data=members, many=True)
+        serializer.is_valid()
+
+        return Response(serializer.data)
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
