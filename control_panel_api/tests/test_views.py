@@ -100,7 +100,14 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
             set(users3bucket)
         )
 
-        expected_fields = {'id', 'url', 'name', 'arn', 'created_by'}
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'arn',
+            'created_by',
+            'is_data_warehouse',
+        }
         self.assertEqual(
             expected_fields,
             set(users3bucket['s3bucket'])
@@ -243,7 +250,14 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             set(apps3bucket)
         )
 
-        expected_fields = {'id', 'url', 'name', 'arn', 'created_by'}
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'arn',
+            'created_by',
+            'is_data_warehouse',
+        }
         self.assertEqual(
             expected_fields,
             set(apps3bucket['s3bucket'])
