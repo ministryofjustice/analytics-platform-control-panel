@@ -84,7 +84,7 @@ class S3BucketSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = S3Bucket
-        fields = ('id', 'url', 'name', 'arn', 'created_by')
+        fields = ('id', 'url', 'name', 'arn', 'created_by', 'is_data_warehouse')
 
 
 class AppS3BucketNestedInAppSerializer(serializers.ModelSerializer):
