@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from django.core.cache import cache
 from jose import jwt
 from jose.exceptions import JWTError
 import requests
@@ -29,8 +30,14 @@ def get_jwt(request):
 
 
 def get_jwks():
-    response = requests.get(settings.OIDC_WELL_KNOWN_URL)
-    return response.json()
+    jwks = cache.get(settings.OIDC_WELL_KNOWN_URL)
+
+    if not jwks:
+        response = requests.get(settings.OIDC_WELL_KNOWN_URL)
+        jwks = response.json()
+        cache.set(settings.OIDC_WELL_KNOWN_URL, jwks)
+
+    return jwks
 
 
 def get_matching_key(kid, jwks):

@@ -5,11 +5,13 @@ from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
 from django.db import transaction
 from django.http import JsonResponse
+from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, detail_route, permission_classes
+from rest_framework.response import Response
 
+from control_panel_api.auth0 import auth0
 from control_panel_api.exceptions import (
     AWSException,
     HelmException,
@@ -18,7 +20,9 @@ from control_panel_api.filters import (
     AppFilter,
     S3BucketFilter,
     UserFilter,
+    UserS3BucketFilter,
 )
+from control_panel_api.k8s import proxy as k8s_proxy
 from control_panel_api.models import (
     App,
     AppS3Bucket,
@@ -29,23 +33,24 @@ from control_panel_api.models import (
 )
 from control_panel_api.permissions import (
     AppPermissions,
+    IsSuperuser,
     K8sPermissions,
     S3BucketPermissions,
     ToolDeploymentPermissions,
     UserPermissions,
+    UserS3BucketPermissions,
 )
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
+    GroupMemberSerializer,
     GroupSerializer,
     S3BucketSerializer,
     UserAppSerializer,
     UserS3BucketSerializer,
     UserSerializer,
 )
-from control_panel_api.k8s import proxy as k8s_proxy
 from control_panel_api.tools import Tool
-
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +100,7 @@ class UserViewSet(viewsets.ModelViewSet):
         instance.delete()
 
         instance.aws_delete_role()
+        instance.helm_delete()
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -123,6 +129,20 @@ class AppViewSet(viewsets.ModelViewSet):
         instance.delete()
 
         instance.aws_delete_role()
+
+    @detail_route(permission_classes=[IsSuperuser])
+    def customers(self, request, pk=None):
+        instance = self.get_object()
+
+        members = auth0.get_group_members(instance.name)
+
+        if members is None:
+            raise Http404
+
+        serializer = GroupMemberSerializer(data=members, many=True)
+        serializer.is_valid()
+
+        return Response(serializer.data)
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
@@ -154,6 +174,8 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 class UserS3BucketViewSet(viewsets.ModelViewSet):
     queryset = UserS3Bucket.objects.all()
     serializer_class = UserS3BucketSerializer
+    filter_backends = (UserS3BucketFilter,)
+    permission_classes = (UserS3BucketPermissions,)
 
     @handle_external_exceptions
     @transaction.atomic
@@ -182,6 +204,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = S3BucketSerializer
     filter_backends = (S3BucketFilter,)
     permission_classes = (S3BucketPermissions,)
+    filter_fields = ('is_data_warehouse',)
 
     @handle_external_exceptions
     @transaction.atomic
@@ -191,13 +214,6 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         instance.aws_create()
 
         instance.create_users3bucket(user=self.request.user)
-
-    @handle_external_exceptions
-    @transaction.atomic
-    def perform_destroy(self, instance):
-        instance.delete()
-
-        instance.aws_delete()
 
 
 class UserAppViewSet(viewsets.ModelViewSet):

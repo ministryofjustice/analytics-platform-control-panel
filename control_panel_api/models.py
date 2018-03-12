@@ -48,6 +48,10 @@ class User(AbstractUser):
         helm.init_user(self.username, self.email, self.get_full_name())
         helm.config_user(self.username)
 
+    def helm_delete(self):
+        helm.uninstall_user_charts(self.username)
+        helm.uninstall_init_user_chart(self.username)
+
 
 class App(TimeStampedModel):
     def _slugify(name):
@@ -111,6 +115,19 @@ class UserApp(TimeStampedModel):
         ordering = ('id',)
 
 
+class S3BucketQuerySet(models.QuerySet):
+    def accessible_by(self, user):
+        return self.filter(
+            users3buckets__user=user,
+        )
+
+    def administered_by(self, user):
+        return self.filter(
+            users3buckets__user=user,
+            users3buckets__is_admin=True,
+        )
+
+
 class S3Bucket(TimeStampedModel):
     name = models.CharField(unique=True, max_length=63, validators=[
         validators.validate_env_prefix,
@@ -118,6 +135,10 @@ class S3Bucket(TimeStampedModel):
         validators.validate_s3_bucket_labels,
     ])
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    is_data_warehouse = models.BooleanField(default=False)
+    location_url = models.CharField(max_length=128, null=True)
+
+    objects = S3BucketQuerySet.as_manager()
 
     class Meta:
         ordering = ('name',)
@@ -127,12 +148,10 @@ class S3Bucket(TimeStampedModel):
         return f"arn:aws:s3:::{self.name}"
 
     def aws_create(self):
-        services.create_bucket(self.name)
-        services.create_bucket_policies(self.name, self.arn)
+        result = services.create_bucket(self.name, self.is_data_warehouse)
 
-    def aws_delete(self):
-        """Note we do not destroy the actual data, just the policies"""
-        services.delete_bucket_policies(self.name)
+        if result:
+            self.location_url = result['Location']
 
     def create_users3bucket(self, user):
         users3bucket = UserS3Bucket.objects.create(
@@ -217,22 +236,17 @@ class AccessToS3Bucket(TimeStampedModel):
         raise NotImplementedError
 
     def aws_create(self):
-        services.attach_bucket_access_to_role(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
-            self.aws_role_name(),
-        )
+        self.aws_update()
 
     def aws_delete(self):
-        services.detach_bucket_access_from_role(
-            self.s3bucket.name,
-            self.has_readwrite_access(),
+        services.revoke_bucket_access(
+            self.s3bucket.arn,
             self.aws_role_name(),
         )
 
     def aws_update(self):
-        services.update_bucket_access(
-            self.s3bucket.name,
+        services.grant_bucket_access(
+            self.s3bucket.arn,
             self.has_readwrite_access(),
             self.aws_role_name(),
         )
@@ -277,3 +291,6 @@ class UserS3Bucket(AccessToS3Bucket):
 
     def aws_role_name(self):
         return self.user.iam_role_name
+
+    def user_is_admin(self, user):
+        return self.user == user and self.is_admin

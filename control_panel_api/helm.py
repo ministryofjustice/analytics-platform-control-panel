@@ -14,6 +14,14 @@ class Helm(object):
         if self.enabled:
             subprocess.run(['helm', command] + list(args), check=True)
 
+    def _helm_shell_command(self, command_string):
+        if self.enabled:
+            subprocess.run(
+                f'helm {command_string}',
+                shell=True,
+                check=True
+            )
+
     def upgrade_release(self, release, chart, *args):
         default_flags = ['--install', '--wait']
         flags = list(args) + default_flags
@@ -28,6 +36,16 @@ class Helm(object):
             '--set', f'Username={username_slug}',
             '--set', f'Email={email}',
             '--set', f'Fullname={fullname}',
+        )
+
+    def uninstall_init_user_chart(self, username):
+        username_slug = sanitize_dns_label(username)
+        self._helm_command('delete', f'init-user-{username_slug}', '--purge')
+
+    def uninstall_user_charts(self, username):
+        username_slug = sanitize_dns_label(username)
+        self._helm_shell_command(
+            f'delete --purge $(helm list -q --namespace user-{username_slug})'
         )
 
     def config_user(self, username):

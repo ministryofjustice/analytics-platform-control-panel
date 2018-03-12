@@ -7,6 +7,7 @@ def is_enabled(value):
 
 # These are boolean flags to enable/disable features in the API
 ENABLED = {
+    'k8s_rbac': is_enabled(os.environ.get('ENABLE_K8S_RBAC', False)),
     'write_to_cluster':
         is_enabled(os.environ.get('ENABLE_WRITE_TO_CLUSTER', True)),
 }
@@ -155,6 +156,8 @@ OIDC_FIELD_USERNAME = 'nickname'
 OIDC_FIELD_EMAIL = 'email'
 OIDC_FIELD_NAME = 'name'
 OIDC_WELL_KNOWN_URL = f'https://{OIDC_DOMAIN}/.well-known/jwks.json'
+OIDC_AUTH_EXTENSION_URL = os.environ.get('OIDC_AUTH_EXTENSION_URL')
+OIDC_AUTH_EXTENSION_AUDIENCE = os.environ.get('OIDC_AUTH_EXTENSION_AUDIENCE', 'urn:auth0-authz-api')
 
 # Helm variables
 NFS_HOSTNAME = os.environ.get('NFS_HOSTNAME')
