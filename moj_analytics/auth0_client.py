@@ -248,6 +248,10 @@ class Role(AuthzResource):
             role=self['name']))
 
 
+class Member(AuthzResource):
+    pass
+
+
 class Group(AuthzResource):
 
     def add_role(self, role):
@@ -277,3 +281,9 @@ class Group(AuthzResource):
         print('Added users({users}) to group({group})'.format(
             users=', '.join(user['email'] for user in users),
             group=self['name']))
+
+    def get_members(self):
+        results = self.api.request(
+            'GET', f"groups/{self['_id']}/members")
+
+        return [Member(self, r) for r in results['users']]

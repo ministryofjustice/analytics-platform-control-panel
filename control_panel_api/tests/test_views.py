@@ -2,6 +2,7 @@ from subprocess import CalledProcessError
 from unittest.mock import MagicMock, patch
 
 from botocore.exceptions import ClientError
+from django.test import override_settings
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.status import (
@@ -22,6 +23,10 @@ from control_panel_api.models import (
     User,
     UserApp,
     UserS3Bucket,
+)
+from control_panel_api.tests.test_authentication import (
+    build_jwt_from_user,
+    mock_get_keys,
 )
 
 
@@ -95,19 +100,28 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
             set(users3bucket)
         )
 
-        expected_fields = {'id', 'url', 'name', 'arn', 'created_by'}
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'arn',
+            'created_by',
+            'is_data_warehouse',
+        }
         self.assertEqual(
             expected_fields,
             set(users3bucket['s3bucket'])
         )
 
+    @patch('control_panel_api.models.User.helm_delete')
     @patch('control_panel_api.models.User.aws_delete_role')
-    def test_delete(self, mock_aws_delete_role):
+    def test_delete(self, mock_aws_delete_role, mock_helm_delete):
         response = self.client.delete(
             reverse('user-detail', (self.fixture.auth0_id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_aws_delete_role.assert_called()
+        mock_helm_delete.assert_called()
 
         response = self.client.get(
             reverse('user-detail', (self.fixture.auth0_id,)))
@@ -236,7 +250,14 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             set(apps3bucket)
         )
 
-        expected_fields = {'id', 'url', 'name', 'arn', 'created_by'}
+        expected_fields = {
+            'id',
+            'url',
+            'name',
+            'arn',
+            'created_by',
+            'is_data_warehouse',
+        }
         self.assertEqual(
             expected_fields,
             set(apps3bucket['s3bucket'])
@@ -311,9 +332,37 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
         mock_create_role.assert_called()
 
+    @patch('control_panel_api.auth0.Auth0.get_group_members')
+    def test_customers(self, mock_get_group_members):
+        mock_get_group_members.return_value = [{
+            "email": "a.user@digital.justice.gov.uk",
+            "user_id": "email|5955f7ee86da0c1d55foobar",
+            "nickname": "a.user",
+            "name": "a.user@digital.justice.gov.uk",
+            "foo": "bar",
+            "baz": "bat",
+        }]
+
+        response = self.client.get(reverse('app-customers', (self.fixture.id,)))
+
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        mock_get_group_members.assert_called()
+
+        self.assertEqual(1, len(response.data))
+
+        expected_fields = {
+            'email',
+            'user_id',
+            'nickname',
+            'name',
+        }
+        self.assertEqual(
+            expected_fields,
+            set(response.data[0]),
+        )
+
 
 class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
-
     def setUp(self):
         super().setUp()
 
@@ -412,6 +461,30 @@ class AppS3BucketViewTest(AuthenticatedClientMixin, APITestCase):
                 reverse('apps3bucket-detail', (self.apps3bucket_1.id,)), data)
             self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
+    @patch('control_panel_api.models.AppS3Bucket.aws_create', MagicMock())
+    def test_create_with_s3_data_warehouse_not_allowed(self):
+        s3_bucket_app = mommy.make(
+            'control_panel_api.S3Bucket', is_data_warehouse=False)
+
+        data = {
+            'app': self.app_1.id,
+            's3bucket': s3_bucket_app.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        s3_bucket = mommy.make(
+            'control_panel_api.S3Bucket', is_data_warehouse=True)
+
+        data = {
+            'app': self.app_1.id,
+            's3bucket': s3_bucket.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = self.client.post(reverse('apps3bucket-list'), data)
+        self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
+
 
 class UserAppViewTest(AuthenticatedClientMixin, APITestCase):
 
@@ -503,6 +576,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
         mommy.make('control_panel_api.S3Bucket')
+        mommy.make('control_panel_api.S3Bucket', is_data_warehouse=True)
         self.fixture = mommy.make(
             'control_panel_api.S3Bucket', name='test-bucket-1')
         mommy.make('control_panel_api.AppS3Bucket', s3bucket=self.fixture)
@@ -511,7 +585,11 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
     def test_list(self):
         response = self.client.get(reverse('s3bucket-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(len(response.data['results']), 2)
+        self.assertEqual(len(response.data['results']), 3)
+
+        response = self.client.get(
+            reverse('s3bucket-list') + '?is_data_warehouse=true')
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_detail(self):
         response = self.client.get(
@@ -525,7 +603,9 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             'arn',
             'apps3buckets',
             'users3buckets',
-            'created_by'
+            'created_by',
+            'is_data_warehouse',
+            'location_url',
         }
         self.assertEqual(expected_s3bucket_fields, set(response.data))
 
@@ -575,13 +655,10 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
             set(users3bucket['user'])
         )
 
-    @patch('control_panel_api.models.S3Bucket.aws_delete')
-    def test_delete(self, mock_aws_delete):
+    def test_delete(self):
         response = self.client.delete(
             reverse('s3bucket-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
-
-        mock_aws_delete.assert_called()
 
         response = self.client.get(
             reverse('s3bucket-detail', (self.fixture.id,)))
@@ -594,6 +671,7 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         self.assertEqual(self.superuser.auth0_id, response.data['created_by'])
+        self.assertFalse(response.data['is_data_warehouse'])
 
         mock_aws_create.assert_called()
 
@@ -635,8 +713,6 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
         fixtures = (
             ('control_panel_api.aws.AWSClient.create_bucket',
              'BucketAlreadyOwnedByYou'),
-            ('control_panel_api.aws.AWSClient.create_policy',
-             'EntityAlreadyExistsException'),
         )
 
         for patch_func, aws_exception in fixtures:
@@ -755,34 +831,45 @@ class K8sAPIHandlerTest(AuthenticatedClientMixin, APITestCase):
         self.K8S_HOST = 'https://k8s.local'
         self.K8S_AUTH_TOKEN = 'Basic test_token'
         self.K8S_SSL_CERT_PATH = '/path/to/ssl_ca_cert'
+        self.USER_TOKEN = build_jwt_from_user(self.superuser)
 
+    @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
     @patch('control_panel_api.k8s.config')
     @patch('requests.request')
     def test_proxy(self, mock_request, mock_k8s_config):
-        mock_k8s_config.host = self.K8S_HOST
-        mock_k8s_config.authorization = self.K8S_AUTH_TOKEN
-        mock_k8s_config.ssl_ca_cert = self.K8S_SSL_CERT_PATH
+        for (k8s_rbac_enabled, expected_auth) in [
+            (False, self.K8S_AUTH_TOKEN),
+            (True, f'Bearer {self.USER_TOKEN}'),
+        ]:
+            with override_settings(
+                ENABLED={'k8s_rbac': k8s_rbac_enabled},
+                OIDC_CLIENT_ID='audience',
+            ):
+                mock_k8s_config.host = self.K8S_HOST
+                mock_k8s_config.ssl_ca_cert = self.K8S_SSL_CERT_PATH
+                mock_k8s_config.authorization = self.K8S_AUTH_TOKEN
 
-        TEST_DATA = b'{"test_pod": true}'
-        mock_request.return_value.status_code = HTTP_201_CREATED
-        mock_request.return_value.text = TEST_DATA
+                TEST_DATA = b'{"test_pod": true}'
+                mock_request.return_value.status_code = HTTP_201_CREATED
+                mock_request.return_value.text = TEST_DATA
 
-        K8S_PATH = '/api/v1/namespaces/user-alice/pods?foo=bar'
-        response = self.client.post(
-            f'/k8s{K8S_PATH}',
-            TEST_DATA,
-            content_type='application/json'
-        )
+                K8S_PATH = '/api/v1/namespaces/user-alice/pods?foo=bar'
+                response = self.client.post(
+                    f'/k8s{K8S_PATH}',
+                    TEST_DATA,
+                    content_type='application/json',
+                    HTTP_AUTHORIZATION=f'JWT {self.USER_TOKEN}',
+                )
 
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
-        self.assertEqual(TEST_DATA, response.content)
-        mock_request.assert_called_with(
-            'post',
-            f'{self.K8S_HOST}{K8S_PATH}',
-            data=TEST_DATA,
-            headers={'authorization': self.K8S_AUTH_TOKEN},
-            verify=self.K8S_SSL_CERT_PATH,
-        )
+                self.assertEqual(HTTP_201_CREATED, response.status_code)
+                self.assertEqual(TEST_DATA, response.content)
+                mock_request.assert_called_with(
+                    'post',
+                    f'{self.K8S_HOST}{K8S_PATH}',
+                    data=TEST_DATA,
+                    headers={'authorization': expected_auth},
+                    verify=self.K8S_SSL_CERT_PATH,
+                )
 
 
 class ToolDeploymentViewTest(AuthenticatedClientMixin, APITestCase):

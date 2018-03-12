@@ -36,6 +36,14 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
 
         return super().update(instance, validated_data)
 
+    def create(self, validated_data):
+        if validated_data['s3bucket'].is_data_warehouse:
+            raise serializers.ValidationError(
+                'Apps cannot access data warehouse S3 Buckets.'
+            )
+
+        return super().create(validated_data)
+
 
 class UserS3BucketSerializer(serializers.ModelSerializer):
 
@@ -76,7 +84,7 @@ class S3BucketSimpleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = S3Bucket
-        fields = ('id', 'url', 'name', 'arn', 'created_by')
+        fields = ('id', 'url', 'name', 'arn', 'created_by', 'is_data_warehouse')
 
 
 class AppS3BucketNestedInAppSerializer(serializers.ModelSerializer):
@@ -165,9 +173,23 @@ class S3BucketSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = S3Bucket
-        fields = ('id', 'url', 'name', 'arn', 'apps3buckets',
-                  'users3buckets', 'created_by')
-        read_only_fields = ('apps3buckets', 'users3buckets', 'created_by')
+        fields = (
+            'id',
+            'url',
+            'name',
+            'arn',
+            'apps3buckets',
+            'users3buckets',
+            'created_by',
+            'is_data_warehouse',
+            'location_url',
+        )
+        read_only_fields = (
+            'apps3buckets',
+            'users3buckets',
+            'created_by',
+            'url',
+        )
 
 
 class UserAppSerializer(serializers.ModelSerializer):
@@ -230,3 +252,10 @@ class UserSerializer(serializers.ModelSerializer):
             'is_superuser',
             'email_verified',
         )
+
+
+class GroupMemberSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    user_id = serializers.CharField(max_length=64)
+    nickname = serializers.CharField(max_length=64)
+    name = serializers.CharField(max_length=64)
