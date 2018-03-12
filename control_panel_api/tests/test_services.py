@@ -118,7 +118,9 @@ class ServicesTestCase(TestCase):
     def test_create_user_role(self, mock_client):
         role_name = "test_user_user"
 
-        services.create_role(role_name, add_saml_statement=True)
+        services.create_role(
+            role_name, add_saml_statement=True, add_oidc_statement=True,
+            oidc_sub="github|user_1")
 
         mock_client.return_value.create_role.assert_called_with(
             RoleName=role_name,

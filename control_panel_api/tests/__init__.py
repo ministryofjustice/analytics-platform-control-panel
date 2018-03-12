@@ -49,6 +49,18 @@ USER_IAM_ROLE_ASSUME_POLICY = {
                     'SAML:aud': 'https://signin.aws.amazon.com/saml'
                 }
             }
+        },
+        {
+            'Effect': 'Allow',
+            'Principal': {
+                'Federated': f"{settings.IAM_ARN_BASE}:oidc-provider/{settings.OIDC_DOMAIN}/"
+            },
+            'Action': 'sts:AssumeRoleWithWebIdentity',
+            'Condition': {
+                'StringEquals': {
+                    f"{settings.OIDC_DOMAIN}/:sub": "github|user_1"
+                }
+            }
         }
     ]
 }
