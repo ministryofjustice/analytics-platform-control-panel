@@ -8,7 +8,8 @@ from django.http import JsonResponse
 from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, detail_route, permission_classes
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from control_panel_api.auth0 import auth0
@@ -130,8 +131,13 @@ class AppViewSet(viewsets.ModelViewSet):
 
         instance.aws_delete_role()
 
-    @detail_route(permission_classes=[IsSuperuser])
-    def customers(self, request, pk=None):
+
+class AppCustomersAPIView(GenericAPIView):
+    queryset = App.objects.all()
+    serializer_class = GroupMemberSerializer
+    permission_classes = (IsSuperuser,)
+
+    def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
         members = auth0.get_group_members(instance.name)
@@ -139,10 +145,31 @@ class AppViewSet(viewsets.ModelViewSet):
         if members is None:
             raise Http404
 
-        serializer = GroupMemberSerializer(data=members, many=True)
+        serializer = self.get_serializer(data=members, many=True)
         serializer.is_valid()
 
         return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        auth0.add_group_member(
+            self.get_object().name,
+            serializer.validated_data['email']
+        )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class AppCustomersDetailAPIView(GenericAPIView):
+    queryset = App.objects.all()
+    permission_classes = (IsSuperuser,)
+
+    def delete(self, request, *args, **kwargs):
+        auth0.delete_group_member(self.get_object().name, kwargs['user_id'])
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):

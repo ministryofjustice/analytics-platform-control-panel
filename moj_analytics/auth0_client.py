@@ -14,6 +14,10 @@ class AddGroupMemberError(Exception):
     pass
 
 
+class DeleteGroupMemberError(Exception):
+    pass
+
+
 class AddGroupRoleError(Exception):
     pass
 
@@ -278,9 +282,15 @@ class Group(AuthzResource):
         if 'error' in response:
             raise AddGroupMemberError(response['message'])
 
-        print('Added users({users}) to group({group})'.format(
-            users=', '.join(user['email'] for user in users),
-            group=self['name']))
+    def delete_users(self, users):
+        response = self.api.request(
+            'DELETE',
+            'groups/{_id}/members'.format(**self),
+            json=[user['user_id'] for user in users]
+        )
+
+        if 'error' in response:
+            raise DeleteGroupMemberError(response['message'])
 
     def get_members(self):
         results = self.api.request(

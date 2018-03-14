@@ -256,6 +256,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 class GroupMemberSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    user_id = serializers.CharField(max_length=64)
-    nickname = serializers.CharField(max_length=64)
-    name = serializers.CharField(max_length=64)
+    user_id = serializers.CharField(max_length=64, required=False)
+    nickname = serializers.CharField(max_length=64, required=False)
+    name = serializers.CharField(max_length=64, required=False)
+
+    class Meta:
+        read_only_fields = (
+            'user_id',
+            'nickname',
+            'name',
+        )

@@ -343,7 +343,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             "baz": "bat",
         }]
 
-        response = self.client.get(reverse('app-customers', (self.fixture.id,)))
+        response = self.client.get(reverse('appcustomers-list', (self.fixture.id,)))
 
         self.assertEqual(HTTP_200_OK, response.status_code)
         mock_get_group_members.assert_called()
