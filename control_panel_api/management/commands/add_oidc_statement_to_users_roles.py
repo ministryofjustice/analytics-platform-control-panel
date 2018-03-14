@@ -2,6 +2,7 @@ import json
 import logging
 
 import boto3
+from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -22,7 +23,13 @@ class Command(BaseCommand):
         for user in User.objects.all():
             # Read role trust policy
             iam_role = iam.Role(user.iam_role_name)
-            assume_role_policy_document = iam_role.assume_role_policy_document
+            try:
+                assume_role_policy_document = iam_role.assume_role_policy_document
+            except ClientError as e:
+                if e.response['Error']['Code'] == 'NoSuchEntity':
+                    continue
+                else:
+                    raise e
 
             if _has_oidc_statement(assume_role_policy_document):
                 logger.info(f'OIDC statement already found in "{user.iam_role_name}" trust policy. Skipping.')
