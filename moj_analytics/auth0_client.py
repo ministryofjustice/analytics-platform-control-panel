@@ -261,7 +261,7 @@ class Group(AuthzResource):
     def add_role(self, role):
         response = self.api.request(
             'PATCH',
-            'groups/{_id}/roles'.format(**self),
+            f"groups/{self['_id']}/roles",
             json=[role['_id']]
         )
 
@@ -275,7 +275,7 @@ class Group(AuthzResource):
     def add_users(self, users):
         response = self.api.request(
             'PATCH',
-            'groups/{_id}/members'.format(**self),
+            f"groups/{self['_id']}/members",
             json=[user['user_id'] for user in users]
         )
 
@@ -285,7 +285,7 @@ class Group(AuthzResource):
     def delete_users(self, users):
         response = self.api.request(
             'DELETE',
-            'groups/{_id}/members'.format(**self),
+            f"groups/{self['_id']}/members",
             json=[user['user_id'] for user in users]
         )
 
