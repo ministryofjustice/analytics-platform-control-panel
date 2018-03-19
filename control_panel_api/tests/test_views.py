@@ -28,6 +28,7 @@ from control_panel_api.tests.test_authentication import (
     build_jwt_from_user,
     mock_get_keys,
 )
+from moj_analytics.auth0_client import Group, User as Auth0User
 
 
 class AuthenticatedClientMixin(object):
@@ -332,8 +333,14 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
         mock_create_role.assert_called()
 
+
+class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.fixture = mommy.make('control_panel_api.App')
+
     @patch('control_panel_api.auth0.Auth0.get_group_members')
-    def test_customers(self, mock_get_group_members):
+    def test_get(self, mock_get_group_members):
         mock_get_group_members.return_value = [{
             "email": "a.user@digital.justice.gov.uk",
             "user_id": "email|5955f7ee86da0c1d55foobar",
@@ -343,7 +350,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             "baz": "bat",
         }]
 
-        response = self.client.get(reverse('app-customers', (self.fixture.id,)))
+        response = self.client.get(
+            reverse('appcustomers-list', (self.fixture.id,)))
 
         self.assertEqual(HTTP_200_OK, response.status_code)
         mock_get_group_members.assert_called()
@@ -359,6 +367,87 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(
             expected_fields,
             set(response.data[0]),
+        )
+
+    @patch('control_panel_api.auth0.auth0.api')
+    def test_post(self, mock_api):
+        api_get_user_response = {'user_id': 123}
+        mock_api.authorization.get.return_value = api_get_user_response
+
+        data = {'email': 'foo@example.com'}
+
+        response = self.client.post(
+            reverse('appcustomers-list', (self.fixture.id,)), data)
+
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_api.authorization.get_or_create.assert_called_with(
+            Group(name=self.fixture.name)
+        )
+
+        mock_api.authorization.get.assert_called_with(
+            Auth0User(email=data['email'])
+        )
+
+        mock_api.authorization.get_or_create.return_value.add_users.assert_called_with(
+            [{'user_id': api_get_user_response['user_id']}]
+        )
+
+    @patch('control_panel_api.auth0.auth0.api')
+    def test_post_create_user(self, mock_api):
+        api_create_user_response = {'user_id': 123}
+
+        mock_api.authorization.get.return_value = None
+        mock_api.management.create.return_value = api_create_user_response
+
+        data = {'email': 'foo@example.com'}
+
+        response = self.client.post(
+            reverse('appcustomers-list', (self.fixture.id,)), data)
+
+        self.assertEqual(HTTP_201_CREATED, response.status_code)
+
+        mock_api.authorization.get_or_create.assert_called_with(
+            Group(name=self.fixture.name)
+        )
+
+        mock_api.authorization.get.assert_called_with(
+            Auth0User(email=data['email'])
+        )
+
+        mock_api.management.create.assert_called_with(
+            Auth0User(
+                connection='email',
+                email=data['email'],
+                email_verified=True,
+            )
+        )
+
+        mock_api.authorization.get_or_create.return_value.add_users.assert_called_with(
+            [{'user_id': api_create_user_response['user_id']}]
+        )
+
+
+class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
+    def setUp(self):
+        super().setUp()
+        self.fixture = mommy.make('control_panel_api.App')
+
+    @patch('control_panel_api.auth0.auth0.api')
+    def test_delete(self, mock_api):
+        user_id = 'email|12345'
+
+        response = self.client.delete(
+            reverse('appcustomers-detail', (self.fixture.id, user_id)))
+
+        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+
+        mock_api.authorization.get.assert_called_with(
+            Group(name=self.fixture.name)
+        )
+
+        mock_api.authorization.get.return_value.delete_users.assert_called_with(
+            [{'user_id': user_id}]
         )
 
 
