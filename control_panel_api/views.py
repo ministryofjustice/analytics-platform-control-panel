@@ -44,7 +44,7 @@ from control_panel_api.permissions import (
 from control_panel_api.serializers import (
     AppS3BucketSerializer,
     AppSerializer,
-    GroupMemberSerializer,
+    AppCustomerSerializer,
     GroupSerializer,
     S3BucketSerializer,
     UserAppSerializer,
@@ -134,7 +134,7 @@ class AppViewSet(viewsets.ModelViewSet):
 
 class AppCustomersAPIView(GenericAPIView):
     queryset = App.objects.all()
-    serializer_class = GroupMemberSerializer
+    serializer_class = AppCustomerSerializer
     permission_classes = (IsSuperuser,)
 
     def get(self, request, *args, **kwargs):
