@@ -28,7 +28,7 @@ from control_panel_api.tests.test_authentication import (
     build_jwt_from_user,
     mock_get_keys,
 )
-from moj_analytics.auth0_client import Group, User as Auth0User
+from moj_analytics.auth0_client import Group as Auth0Group, User as Auth0User
 
 
 class AuthenticatedClientMixin(object):
@@ -382,7 +382,7 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         mock_api.authorization.get_or_create.assert_called_with(
-            Group(name=self.fixture.name)
+            Auth0Group(name=self.fixture.name)
         )
 
         mock_api.authorization.get.assert_called_with(
@@ -408,7 +408,7 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         mock_api.authorization.get_or_create.assert_called_with(
-            Group(name=self.fixture.name)
+            Auth0Group(name=self.fixture.name)
         )
 
         mock_api.authorization.get.assert_called_with(
@@ -443,7 +443,7 @@ class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_api.authorization.get.assert_called_with(
-            Group(name=self.fixture.name)
+            Auth0Group(name=self.fixture.name)
         )
 
         mock_api.authorization.get.return_value.delete_users.assert_called_with(
