@@ -28,7 +28,7 @@ from control_panel_api.tests.test_authentication import (
     build_jwt_from_user,
     mock_get_keys,
 )
-from moj_analytics.auth0_client import Group, User as Auth0User
+from moj_analytics.auth0_client import Group as Auth0Group, User as Auth0User
 
 
 class AuthenticatedClientMixin(object):
@@ -337,7 +337,7 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
     def setUp(self):
         super().setUp()
-        self.fixture = mommy.make('control_panel_api.App')
+        self.app = mommy.make('control_panel_api.App')
 
     @patch('control_panel_api.auth0.Auth0.get_group_members')
     def test_get(self, mock_get_group_members):
@@ -351,7 +351,7 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         }]
 
         response = self.client.get(
-            reverse('appcustomers-list', (self.fixture.id,)))
+            reverse('appcustomers-list', (self.app.id,)))
 
         self.assertEqual(HTTP_200_OK, response.status_code)
         mock_get_group_members.assert_called()
@@ -377,12 +377,12 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         data = {'email': 'foo@example.com'}
 
         response = self.client.post(
-            reverse('appcustomers-list', (self.fixture.id,)), data)
+            reverse('appcustomers-list', (self.app.id,)), data)
 
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         mock_api.authorization.get_or_create.assert_called_with(
-            Group(name=self.fixture.name)
+            Auth0Group(name=self.app.name)
         )
 
         mock_api.authorization.get.assert_called_with(
@@ -403,12 +403,12 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         data = {'email': 'foo@example.com'}
 
         response = self.client.post(
-            reverse('appcustomers-list', (self.fixture.id,)), data)
+            reverse('appcustomers-list', (self.app.id,)), data)
 
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         mock_api.authorization.get_or_create.assert_called_with(
-            Group(name=self.fixture.name)
+            Auth0Group(name=self.app.name)
         )
 
         mock_api.authorization.get.assert_called_with(
@@ -443,7 +443,7 @@ class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_api.authorization.get.assert_called_with(
-            Group(name=self.fixture.name)
+            Auth0Group(name=self.fixture.name)
         )
 
         mock_api.authorization.get.return_value.delete_users.assert_called_with(
