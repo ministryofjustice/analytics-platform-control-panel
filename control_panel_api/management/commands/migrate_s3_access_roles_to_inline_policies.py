@@ -1,7 +1,8 @@
 import logging
 
 from botocore.exceptions import ClientError
-from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 from control_panel_api.aws import aws, S3AccessPolicy
 from control_panel_api.models import (
