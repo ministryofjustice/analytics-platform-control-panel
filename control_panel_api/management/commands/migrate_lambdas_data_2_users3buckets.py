@@ -31,6 +31,11 @@ def _bucket_name(policy_name):
 
 
 class Command(BaseCommand):
+    """
+    NOTE: Needs permission to perform `iam:ListAttachedRolePolicies` action
+    """
+
+
     help = ("Add UserS3Bucket records to reflect access to team S3 buckets "
             "granted by AWS Lambda functions.")
 

@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 
 import boto3
 from django.conf import settings
@@ -7,7 +8,7 @@ from django.core.management.base import BaseCommand
 
 from control_panel_api.models import S3Bucket
 
-
+DRYRUN = os.environ.get('DRYRUN', 'false').lower() == 'true'
 READWRITE = 'readwrite'
 
 
@@ -25,12 +26,16 @@ def _bucket_name(policy_name):
 
 
 class Command(BaseCommand):
+    """
+    NOTE: Needs permission to perform `iam:ListPolicies` action
+    """
+
+
     help = "Add records for S3 buckets created by AWS Lambda functions."
 
     def handle(self, *args, **options):
-        iam_client = boto3.client('iam')
-
-        results = iam_client.list_policies(
+        iam = boto3.client('iam')
+        results = iam.list_policies(
             Scope='Local',  # Customer managed policies only
             OnlyAttached=True,  # Ignore non-attached policies
             MaxItems=1000,
@@ -43,10 +48,11 @@ class Command(BaseCommand):
                 bucket_name = _bucket_name(policy_name)
 
                 if not S3Bucket.objects.filter(name=bucket_name).exists():
-                    S3Bucket.objects.create(
-                        name=bucket_name,
-                        is_data_warehouse=True,
-                    )
+                    if not DRYRUN:
+                        S3Bucket.objects.create(
+                            name=bucket_name,
+                            is_data_warehouse=True,
+                        )
                     logger.info(f'Created S3 bucket "{bucket_name}" record for IAM policy "{policy_name}"')
                 else:
                     logger.debug(f'S3 bucket "{bucket_name}" record for IAM policy "{policy_name}" already exists')
