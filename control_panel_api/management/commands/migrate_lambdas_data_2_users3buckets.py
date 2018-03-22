@@ -3,6 +3,7 @@ import re
 import os
 
 import boto3
+from botocore.exceptions import ClientError
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -46,10 +47,18 @@ class Command(BaseCommand):
         for user in users:
             role_name = user.iam_role_name
 
-            policies = iam.list_attached_role_policies(
-                RoleName=role_name,
-                MaxItems=1000,
-            )
+            logger.info(f'Migrating user "{user.username}" ("{user.auth0_id}"): Reading policies from role "{role_name}"...')
+            try:
+                policies = iam.list_attached_role_policies(
+                    RoleName=role_name,
+                    MaxItems=1000,
+                )
+            except ClientError as e:
+                if e.response['Error']['Code'] in ('NoSuchEntity', 'ValidationError'):
+                    logger.warning(f'Error while reading policies from IAM role "{role_name}" - user "{user.username}" ("{user.pk}"): - {e}')
+                    continue
+                else:
+                    raise e
 
             if policies:
                 for policy in policies["AttachedPolicies"]:
