@@ -21,7 +21,7 @@ READWRITE = 'readwrite'
 logger = logging.getLogger(__name__)
 
 
-def _eligible(policy_name):
+def _is_eligible(policy_name):
     return (policy_name.startswith(f'{settings.ENV}-') and
             not policy_name.startswith(f'{settings.ENV}-app-') and
             policy_name.endswith(READWRITE))
@@ -63,7 +63,7 @@ class Command(BaseCommand):
             if policies:
                 for policy in policies["AttachedPolicies"]:
                     policy_name = policy["PolicyName"]
-                    if _eligible(policy_name):
+                    if _is_eligible(policy_name):
                         bucket_name = _bucket_name(policy_name)
                         s3bucket = S3Bucket.objects.filter(name=bucket_name)
                         if not s3bucket.exists():
