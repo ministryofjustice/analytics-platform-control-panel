@@ -47,7 +47,10 @@ class Command(BaseCommand):
         for user in users:
             role_name = user.iam_role_name
 
-            logger.info(f'Migrating user "{user.username}" ("{user.auth0_id}"): Reading policies from role "{role_name}"...')
+            logger.info(
+                f'Migrating user "{user.username}" ("{user.auth0_id}"): '
+                f'Reading policies from role "{role_name}"...'
+            )
             try:
                 policies = iam.list_attached_role_policies(
                     RoleName=role_name,
@@ -55,7 +58,10 @@ class Command(BaseCommand):
                 )
             except ClientError as e:
                 if e.response['Error']['Code'] in ('NoSuchEntity', 'ValidationError'):
-                    logger.warning(f'Error while reading policies from IAM role "{role_name}" - user "{user.username}" ("{user.pk}"): - {e}')
+                    logger.warning(
+                        f'Error reading policies from IAM role "{role_name}": '
+                        f'user "{user.username}" ("{user.pk}"): {e}'
+                    )
                     continue
                 else:
                     raise e
@@ -67,7 +73,10 @@ class Command(BaseCommand):
                         bucket_name = _bucket_name(policy_name)
                         s3bucket = S3Bucket.objects.filter(name=bucket_name)
                         if not s3bucket.exists():
-                            logger.warning(f'S3 bucket "{bucket_name}" corresponding to IAM policy "{policy_name}" not found')
+                            logger.warning(
+                                f'S3 bucket "{bucket_name}" not found: '
+                                f'corresponding to IAM policy "{policy_name}"'
+                            )
                             continue
 
                         s3bucket = s3bucket.first()
@@ -84,8 +93,16 @@ class Command(BaseCommand):
                                         s3bucket=s3bucket,
                                         access_level=READWRITE,
                                     )
-                                logger.info(f'UserS3Bucket created for ({user.username}, {bucket_name})')
+                                logger.info(
+                                    f'UserS3Bucket created: '
+                                    f'({user.username}, {bucket_name})'
+                                )
                             except Exception as e:
-                                logger.error(f'Failed to create UserS3Bucket for ({user.username}, {bucket_name}): {e}')
+                                logger.critical(
+                                    f'Failed to create UserS3Bucket: '
+                                    f'for ({user.username}, {bucket_name}): {e}'
+                                )
                         else:
-                            logger.warning(f'Already found UserS3Bucket for ({user.username}, {bucket_name})')
+                            logger.warning(
+                                f'Existing UserS3Bucket ({user.username}, {bucket_name}) found'
+                            )

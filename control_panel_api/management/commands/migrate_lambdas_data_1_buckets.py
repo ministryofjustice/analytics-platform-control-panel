@@ -53,6 +53,12 @@ class Command(BaseCommand):
                             name=bucket_name,
                             is_data_warehouse=True,
                         )
-                    logger.info(f'Created S3 bucket "{bucket_name}" record for IAM policy "{policy_name}"')
+                    logger.info(
+                        f'Created S3 bucket "{bucket_name}" record '
+                        f'for IAM policy "{policy_name}"'
+                    )
                 else:
-                    logger.debug(f'S3 bucket "{bucket_name}" record for IAM policy "{policy_name}" already exists')
+                    logger.warning(
+                        f'S3 bucket "{bucket_name}" record '
+                        f'for IAM policy "{policy_name}" already exists'
+                    )
