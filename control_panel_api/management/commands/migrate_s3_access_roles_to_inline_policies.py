@@ -1,4 +1,5 @@
 import logging
+import os
 
 from botocore.exceptions import ClientError
 from django.conf import settings
@@ -11,6 +12,7 @@ from control_panel_api.models import (
 )
 
 
+DRYRUN = os.environ.get('DRYRUN', 'false').lower() == 'true'
 READWRITE = 'readwrite'
 READONLY = 'readonly'
 
@@ -50,7 +52,8 @@ class Command(BaseCommand):
         bucket_name = access.s3bucket.name
         readwrite = access.has_readwrite_access()
 
-        access.aws_update()
+        if not DRYRUN:
+            access.aws_update()
 
         logger.info(
             f'Updated "{role_name}"\'s inline policy: '
@@ -67,10 +70,11 @@ class Command(BaseCommand):
                 bucket_name=bucket_name,
                 readwrite=readwrite,
             )
-            aws.detach_policy_from_role(
-                policy_arn=policy_arn,
-                role_name=role_name,
-            )
+            if not DRYRUN:
+                aws.detach_policy_from_role(
+                    policy_arn=policy_arn,
+                    role_name=role_name,
+                )
 
             logger.info(f'Detached managed policy "{policy_arn}" from "{role_name}"')
         except ClientError as e:
