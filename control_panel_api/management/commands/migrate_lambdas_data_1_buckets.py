@@ -47,7 +47,8 @@ class Command(BaseCommand):
             if _is_eligible(policy_name):
                 bucket_name = _bucket_name(policy_name)
 
-                if not S3Bucket.objects.filter(name=bucket_name).exists():
+                s3bucket = S3Bucket.objects.filter(name=bucket_name).first()
+                if not s3bucket:
                     if not DRYRUN:
                         S3Bucket.objects.create(
                             name=bucket_name,
@@ -57,8 +58,9 @@ class Command(BaseCommand):
                         f'Created S3 bucket "{bucket_name}" record '
                         f'for IAM policy "{policy_name}"'
                     )
-                else:
+                elif not s3bucket.is_data_warehouse:
                     logger.warning(
                         f'S3 bucket "{bucket_name}" record '
-                        f'for IAM policy "{policy_name}" already exists'
+                        f'for IAM policy "{policy_name}" already exists and '
+                        f'it is not a data warehouse bucket'
                     )
