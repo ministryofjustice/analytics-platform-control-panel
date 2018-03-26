@@ -18,7 +18,6 @@ from control_panel_api.models import (
 )
 
 
-DRYRUN = os.environ.get('DRYRUN', 'false').lower() == 'true'
 READWRITE = 'readwrite'
 
 
@@ -33,6 +32,15 @@ class Command(BaseCommand):
 
     help = ("Add UserS3Bucket records to reflect access to team S3 buckets "
             "granted by AWS Lambda functions.")
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dry-run',
+            dest='dry_run',
+            help="Run command without side effects",
+            default=False,
+            action='store_true',
+        )
 
     def handle(self, *args, **options):
         iam = boto3.client('iam')
@@ -83,7 +91,7 @@ class Command(BaseCommand):
                 )
                 if not users3bucket.exists():
                     try:
-                        if not DRYRUN:
+                        if not options["dry_run"]:
                             UserS3Bucket.objects.create(
                                 user=user,
                                 s3bucket=s3bucket,

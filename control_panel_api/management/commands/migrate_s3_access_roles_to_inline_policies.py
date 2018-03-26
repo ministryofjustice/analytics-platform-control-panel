@@ -12,7 +12,6 @@ from control_panel_api.models import (
 )
 
 
-DRYRUN = os.environ.get('DRYRUN', 'false').lower() == 'true'
 READWRITE = 'readwrite'
 READONLY = 'readonly'
 
@@ -41,6 +40,15 @@ def _policy_arn(bucket_name, readwrite=False):
 class Command(BaseCommand):
     help = "Convert data access policies from managed to inline."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dry-run',
+            dest='dry_run',
+            help="Run command without side effects",
+            default=False,
+            action='store_true',
+        )
+
     def handle(self, *args, **options):
         for klass in [UserS3Bucket, AppS3Bucket]:
             for access in klass.objects.all():
@@ -52,7 +60,7 @@ class Command(BaseCommand):
         bucket_name = access.s3bucket.name
         readwrite = access.has_readwrite_access()
 
-        if not DRYRUN:
+        if not options["dry_run"]:
             access.aws_update()
 
         logger.info(
@@ -70,7 +78,7 @@ class Command(BaseCommand):
                 bucket_name=bucket_name,
                 readwrite=readwrite,
             )
-            if not DRYRUN:
+            if not options["dry_run"]:
                 aws.detach_policy_from_role(
                     policy_arn=policy_arn,
                     role_name=role_name,

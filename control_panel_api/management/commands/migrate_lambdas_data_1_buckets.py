@@ -11,9 +11,6 @@ from control_panel_api.management.commands.migrate_lambdas_data_utils import (
 from control_panel_api.models import S3Bucket
 
 
-DRYRUN = os.environ.get('DRYRUN', 'false').lower() == 'true'
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -24,6 +21,15 @@ class Command(BaseCommand):
 
 
     help = "Add records for S3 buckets created by AWS Lambda functions."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--dry-run',
+            dest='dry_run',
+            help="Run command without side effects",
+            default=False,
+            action='store_true',
+        )
 
     def handle(self, *args, **options):
         iam = boto3.client('iam')
@@ -43,7 +49,7 @@ class Command(BaseCommand):
 
             s3bucket = S3Bucket.objects.filter(name=s3bucket_name).first()
             if not s3bucket:
-                if not DRYRUN:
+                if not options["dry_run"]:
                     S3Bucket.objects.create(
                         name=s3bucket_name,
                         is_data_warehouse=True,
