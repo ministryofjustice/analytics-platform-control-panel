@@ -1,9 +1,10 @@
 import logging
 
 from botocore.exceptions import ClientError
-from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 
 from control_panel_api.aws import aws, S3AccessPolicy
+from control_panel_api.management.commands.dry_runnable import DryRunnable
 from control_panel_api.models import (
     AppS3Bucket,
     UserS3Bucket,
@@ -35,7 +36,7 @@ def _policy_arn(bucket_name, readwrite=False):
         _policy_name(bucket_name, readwrite))
 
 
-class Command(BaseCommand):
+class Command(DryRunnable):
     help = "Convert data access policies from managed to inline."
 
     def handle(self, *args, **options):
@@ -49,7 +50,8 @@ class Command(BaseCommand):
         bucket_name = access.s3bucket.name
         readwrite = access.has_readwrite_access()
 
-        access.aws_update()
+        if not options["dry_run"]:
+            access.aws_update()
 
         logger.info(
             f'Updated "{role_name}"\'s inline policy: '
@@ -66,10 +68,11 @@ class Command(BaseCommand):
                 bucket_name=bucket_name,
                 readwrite=readwrite,
             )
-            aws.detach_policy_from_role(
-                policy_arn=policy_arn,
-                role_name=role_name,
-            )
+            if not options["dry_run"]:
+                aws.detach_policy_from_role(
+                    policy_arn=policy_arn,
+                    role_name=role_name,
+                )
 
             logger.info(f'Detached managed policy "{policy_arn}" from "{role_name}"')
         except ClientError as e:
