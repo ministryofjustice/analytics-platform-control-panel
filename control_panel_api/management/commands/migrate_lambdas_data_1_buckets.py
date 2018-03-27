@@ -1,41 +1,32 @@
 import logging
-import os
 
 import boto3
-from django.core.management.base import BaseCommand
 
 from control_panel_api.management.commands.migrate_lambdas_data_utils import (
     bucket_name,
     is_eligible,
 )
+from control_panel_api.management.commands.dry_runnable import DryRunnable
 from control_panel_api.models import S3Bucket
 
 
 logger = logging.getLogger(__name__)
 
 
-class Command(BaseCommand):
+class Command(DryRunnable):
     """
-    NOTE: Needs permission to perform `iam:ListPolicies` action
+    Add records for S3 buckets created by AWS Lambda functions.
+
+    NOTE: Needs permission to perform `iam:ListPolicies` action.
     """
 
-
-    help = "Add records for S3 buckets created by AWS Lambda functions."
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--dry-run',
-            dest='dry_run',
-            help="Run command without side effects",
-            default=False,
-            action='store_true',
-        )
+    help = __doc__
 
     def handle(self, *args, **options):
         iam = boto3.client('iam')
         results = iam.list_policies(
             Scope='Local',  # Customer managed policies only
-            OnlyAttached=True,  # Ignore non-attached policies
+            OnlyAttached=True,  # Ignore IAM policies not used
             MaxItems=1000,
         )
 

@@ -1,11 +1,10 @@
 import logging
-import os
 
 from botocore.exceptions import ClientError
 from django.conf import settings
-from django.core.management.base import BaseCommand
 
 from control_panel_api.aws import aws, S3AccessPolicy
+from control_panel_api.management.commands.dry_runnable import DryRunnable
 from control_panel_api.models import (
     AppS3Bucket,
     UserS3Bucket,
@@ -37,17 +36,8 @@ def _policy_arn(bucket_name, readwrite=False):
         _policy_name(bucket_name, readwrite))
 
 
-class Command(BaseCommand):
+class Command(DryRunnable):
     help = "Convert data access policies from managed to inline."
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--dry-run',
-            dest='dry_run',
-            help="Run command without side effects",
-            default=False,
-            action='store_true',
-        )
 
     def handle(self, *args, **options):
         for klass in [UserS3Bucket, AppS3Bucket]:

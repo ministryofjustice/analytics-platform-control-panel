@@ -1,12 +1,10 @@
 import logging
-import re
-import os
 
 import boto3
 from botocore.exceptions import ClientError
 from django.conf import settings
-from django.core.management.base import BaseCommand
 
+from control_panel_api.management.commands.dry_runnable import DryRunnable
 from control_panel_api.management.commands.migrate_lambdas_data_utils import (
     bucket_name,
     is_eligible,
@@ -24,23 +22,15 @@ READWRITE = 'readwrite'
 logger = logging.getLogger(__name__)
 
 
-class Command(BaseCommand):
+class Command(DryRunnable):
     """
-    NOTE: Needs permission to perform `iam:ListAttachedRolePolicies` action
+    Add UserS3Bucket records to reflect access to team S3 buckets granted by
+    AWS Lambda functions.
+
+    NOTE: Needs permission to perform `iam:ListAttachedRolePolicies` action.
     """
 
-
-    help = ("Add UserS3Bucket records to reflect access to team S3 buckets "
-            "granted by AWS Lambda functions.")
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--dry-run',
-            dest='dry_run',
-            help="Run command without side effects",
-            default=False,
-            action='store_true',
-        )
+    help = __doc__
 
     def handle(self, *args, **options):
         iam = boto3.client('iam')
