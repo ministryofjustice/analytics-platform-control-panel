@@ -40,6 +40,8 @@ class Command(DryRunnable):
     help = "Convert data access policies from managed to inline."
 
     def handle(self, *args, **options):
+        self.dry_run = options["dry_run"]
+
         for klass in [UserS3Bucket, AppS3Bucket]:
             for access in klass.objects.all():
                 self._update_inline_policy(access)
@@ -50,7 +52,7 @@ class Command(DryRunnable):
         bucket_name = access.s3bucket.name
         readwrite = access.has_readwrite_access()
 
-        if not options["dry_run"]:
+        if not self.dry_run:
             access.aws_update()
 
         logger.info(
@@ -68,7 +70,7 @@ class Command(DryRunnable):
                 bucket_name=bucket_name,
                 readwrite=readwrite,
             )
-            if not options["dry_run"]:
+            if not self.dry_run:
                 aws.detach_policy_from_role(
                     policy_arn=policy_arn,
                     role_name=role_name,
