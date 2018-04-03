@@ -52,17 +52,6 @@ class S3BucketFilter(DjangoFilterBackend):
         return queryset.accessible_by(request.user)
 
 
-class UserFilter(DjangoFilterBackend):
-    """
-    Filter to get visible users.
-
-    Everyone can see all users.
-    """
-
-    def filter_queryset(self, request, queryset, view):
-        return super().filter_queryset(request, queryset, view)
-
-
 class UserS3BucketFilter(DjangoFilterBackend):
     """
     Filter to get visible UserS3Bucket records.

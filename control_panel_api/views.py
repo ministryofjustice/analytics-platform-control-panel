@@ -7,6 +7,7 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import GenericAPIView
@@ -20,7 +21,6 @@ from control_panel_api.exceptions import (
 from control_panel_api.filters import (
     AppFilter,
     S3BucketFilter,
-    UserFilter,
     UserS3BucketFilter,
 )
 from control_panel_api.k8s import proxy as k8s_proxy
@@ -84,7 +84,7 @@ def k8s_api_handler(request):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    filter_backends = (UserFilter,)
+    filter_backends = (DjangoFilterBackend,)
     permission_classes = (UserPermissions,)
 
     @handle_external_exceptions
