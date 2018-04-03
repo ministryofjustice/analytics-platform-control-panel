@@ -12,7 +12,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
-from control_panel_api.auth0 import auth0
+from control_panel_api.auth0 import Auth0
 from control_panel_api.exceptions import (
     AWSException,
     HelmException,
@@ -42,9 +42,9 @@ from control_panel_api.permissions import (
     UserS3BucketPermissions,
 )
 from control_panel_api.serializers import (
+    AppCustomerSerializer,
     AppS3BucketSerializer,
     AppSerializer,
-    AppCustomerSerializer,
     GroupSerializer,
     S3BucketSerializer,
     UserAppSerializer,
@@ -140,7 +140,7 @@ class AppCustomersAPIView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        members = auth0.get_group_members(instance.name)
+        members = Auth0().get_group_members(instance.name)
 
         if members is None:
             raise Http404
@@ -154,7 +154,7 @@ class AppCustomersAPIView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        auth0.add_group_member(
+        Auth0().add_group_member(
             self.get_object().name,
             serializer.validated_data['email']
         )
@@ -167,7 +167,7 @@ class AppCustomersDetailAPIView(GenericAPIView):
     permission_classes = (IsSuperuser,)
 
     def delete(self, request, *args, **kwargs):
-        auth0.delete_group_member(self.get_object().name, kwargs['user_id'])
+        Auth0().delete_group_member(self.get_object().name, kwargs['user_id'])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

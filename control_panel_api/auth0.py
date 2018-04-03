@@ -67,6 +67,3 @@ class Auth0(object):
             return None
 
         group.delete_users([{'user_id': user_id}])
-
-
-auth0 = Auth0()
