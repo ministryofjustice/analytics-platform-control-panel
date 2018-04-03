@@ -74,8 +74,9 @@ class S3BucketPermissions(BasePermission):
 
 class UserPermissions(BasePermission):
     """
-    Superusers can do anything, normal users can only access themselves,
-    unauthenticated users cannot do anything
+    Superusers can do anything.
+    Normal users can list all, retrieve/update only themselves.
+    Unauthenticated users cannot do anything.
     """
 
     def has_permission(self, request, view):
@@ -85,7 +86,7 @@ class UserPermissions(BasePermission):
         if request.user.is_anonymous():
             return False
 
-        return view.action not in ('create', 'destroy', 'list')
+        return view.action in ('list', 'retrieve', 'update', 'partial_update')
 
     def has_object_permission(self, request, view, obj):
         if is_superuser(request.user):

@@ -56,17 +56,11 @@ class UserFilter(DjangoFilterBackend):
     """
     Filter to get visible users.
 
-    Currently superusers see everything, normal users see only themselves,
-    unauthenticated users see nothing.
+    Everyone can see all users.
     """
 
     def filter_queryset(self, request, queryset, view):
-        queryset = super().filter_queryset(request, queryset, view)
-
-        if is_superuser(request.user):
-            return queryset
-
-        return queryset.filter(pk=request.user.pk)
+        return super().filter_queryset(request, queryset, view)
 
 
 class UserS3BucketFilter(DjangoFilterBackend):
