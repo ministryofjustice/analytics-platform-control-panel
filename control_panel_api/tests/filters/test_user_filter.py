@@ -1,6 +1,6 @@
 from model_mommy import mommy
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_403_FORBIDDEN
+from rest_framework.status import HTTP_200_OK
 from rest_framework.test import APITestCase
 
 
@@ -21,8 +21,9 @@ class UserFilterTest(APITestCase):
         self.assertIn(self.superuser.auth0_id, user_ids)
         self.assertIn(self.normal_user.auth0_id, user_ids)
 
-    def test_normal_user_sees_nothing(self):
+    def test_normal_user_sees_everything(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse("user-list"))
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(len(response.data["results"]), 2)

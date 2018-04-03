@@ -9,7 +9,6 @@ from rest_framework.reverse import reverse
 from rest_framework.status import (
     HTTP_200_OK,
     HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
 
@@ -80,12 +79,12 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
             is_superuser=True
         )
 
-    def get_user(self):
+    def get_user(self, user):
         return self.client.get(
-            reverse('user-detail', args=[self.user.auth0_id]))
+            reverse('user-detail', args=[user.auth0_id]))
 
     def assert_status_code(self, code):
-        r = self.get_user()
+        r = self.get_user(self.user)
         self.assertEqual(code, r.status_code, r.content.decode('utf8'))
 
     def assert_access_denied(self):
@@ -93,9 +92,6 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
 
     def assert_authenticated(self):
         self.assert_status_code(HTTP_200_OK)
-
-    def assert_not_found(self):
-        self.assert_status_code(HTTP_404_NOT_FOUND)
 
     def test_user_can_not_view(self):
         self.assert_access_denied()
@@ -155,8 +151,7 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         token = build_jwt_from_user(new_user)
 
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
-        # 404 is raised before object permissions are checked
-        self.assert_not_found()
+        self.get_user(new_user)
 
         created_user = User.objects.get(pk=new_user.auth0_id)
         self.assertIsNotNone(created_user)

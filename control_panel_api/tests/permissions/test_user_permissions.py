@@ -7,7 +7,6 @@ from rest_framework.status import (
     HTTP_201_CREATED,
     HTTP_204_NO_CONTENT,
     HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
 )
 from rest_framework.test import APITestCase
 
@@ -36,11 +35,11 @@ class UserPermissionsTest(APITestCase):
         response = self.client.get(reverse('user-list'))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    def test_list_as_normal_user_responds_403(self):
+    def test_list_as_normal_user_responds_OK(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(reverse('user-list'))
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+        self.assertEqual(HTTP_200_OK, response.status_code)
 
     def test_detail_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
@@ -56,13 +55,12 @@ class UserPermissionsTest(APITestCase):
             reverse('user-detail', (self.normal_user.auth0_id,)))
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    def test_detail_as_normal_user_responds_404(self):
+    def test_detail_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         response = self.client.get(
             reverse('user-detail', (self.superuser.auth0_id,)))
-        # 404 raised before object permissions checked
-        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
     def test_delete_as_superuser_responds_OK(self):
         self.client.force_login(self.superuser)
@@ -108,12 +106,11 @@ class UserPermissionsTest(APITestCase):
             reverse('user-detail', (self.normal_user.auth0_id,)), data)
         self.assertEqual(HTTP_200_OK, response.status_code)
 
-    def test_update_as_normal_user_responds_404(self):
+    def test_update_as_normal_user_responds_403(self):
         self.client.force_login(self.normal_user)
 
         data = {'username': 'foo', 'auth0_id': 'github|888'}
         response = self.client.put(
             reverse('user-detail', (self.superuser.auth0_id,)), data)
-        # 404 raised before object permissions checked
-        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
+        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
 
