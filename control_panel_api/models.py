@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.signals import post_delete
 from django.template.defaultfilters import slugify
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
@@ -240,12 +241,6 @@ class AccessToS3Bucket(TimeStampedModel):
     def aws_create(self):
         self.aws_update()
 
-    def aws_delete(self):
-        services.revoke_bucket_access(
-            self.s3bucket.arn,
-            self.aws_role_name(),
-        )
-
     def aws_update(self):
         services.grant_bucket_access(
             self.s3bucket.arn,
@@ -296,3 +291,24 @@ class UserS3Bucket(AccessToS3Bucket):
 
     def user_is_admin(self, user):
         return self.user == user and self.is_admin
+
+
+def _access_to_bucket_deleted(sender, **kwargs):
+    access_to_bucket = kwargs['instance']
+
+    services.revoke_bucket_access(
+        access_to_bucket.s3bucket.arn,
+        access_to_bucket.aws_role_name(),
+    )
+
+
+post_delete.connect(
+    _access_to_bucket_deleted,
+    sender=AppS3Bucket,
+    dispatch_uid='control_panel_api.models._access_to_bucket_deleted',
+)
+post_delete.connect(
+    _access_to_bucket_deleted,
+    sender=UserS3Bucket,
+    dispatch_uid='control_panel_api.models._access_to_bucket_deleted',
+)

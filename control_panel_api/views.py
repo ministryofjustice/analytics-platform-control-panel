@@ -190,13 +190,6 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
 
         apps3bucket.aws_update()
 
-    @handle_external_exceptions
-    @transaction.atomic
-    def perform_destroy(self, instance):
-        instance.delete()
-
-        instance.aws_delete()
-
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
     queryset = UserS3Bucket.objects.all()
@@ -217,13 +210,6 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
         instance = serializer.save()
 
         instance.aws_update()
-
-    @handle_external_exceptions
-    @transaction.atomic
-    def perform_destroy(self, instance):
-        instance.delete()
-
-        instance.aws_delete()
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):
