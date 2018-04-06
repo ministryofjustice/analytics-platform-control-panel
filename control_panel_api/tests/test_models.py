@@ -1,5 +1,5 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from django.db.utils import IntegrityError
 from django.test import TestCase
@@ -191,6 +191,29 @@ class S3BucketTestCase(TestCase):
             self.s3_bucket_1.arn
         )
 
+    @patch('control_panel_api.models.services.revoke_bucket_access')
+    def test_delete_revokes_permissions(self, mock_revoke_bucket_access):
+        users3bucket = mommy.make(
+            'control_panel_api.UserS3Bucket',
+            s3bucket=self.s3_bucket_1,
+        )
+
+        apps3bucket = mommy.make(
+            'control_panel_api.AppS3Bucket',
+            s3bucket=self.s3_bucket_1,
+        )
+
+        self.s3_bucket_1.delete()
+
+        expected_revoke_calls = (
+            call(self.s3_bucket_1.arn, users3bucket.aws_role_name()),
+            call(self.s3_bucket_1.arn, apps3bucket.aws_role_name()),
+        )
+        mock_revoke_bucket_access.assert_has_calls(
+            expected_revoke_calls,
+            any_order=True,
+        )
+
     @patch('control_panel_api.services.create_bucket')
     def test_bucket_create(self, mock_create_bucket):
         url = 'http://foo.com/'
@@ -265,14 +288,15 @@ class AppS3BucketTestCase(TestCase):
         )
 
     @patch('control_panel_api.services.revoke_bucket_access')
-    def test_aws_delete(self, mock_revoke_bucket_access):
-        apps3bucket = AppS3Bucket(
+    def test_delete_revoke_permissions(self, mock_revoke_bucket_access):
+        apps3bucket = mommy.make(
+            'control_panel_api.AppS3Bucket',
             app=self.app_1,
             s3bucket=self.s3_bucket_1,
             access_level=AppS3Bucket.READONLY,
         )
 
-        apps3bucket.aws_delete()
+        apps3bucket.delete()
 
         mock_revoke_bucket_access.assert_called_with(
             self.s3_bucket_1.arn,
@@ -330,8 +354,8 @@ class UserS3BucketTestCase(TestCase):
         )
 
     @patch('control_panel_api.services.revoke_bucket_access')
-    def test_aws_delete(self, mock_revoke_bucket_access):
-        self.users3bucket_1.aws_delete()
+    def test_delete_revoke_permissions(self, mock_revoke_bucket_access):
+        self.users3bucket_1.delete()
 
         mock_revoke_bucket_access.assert_called_with(
             self.s3_bucket_1.arn,
