@@ -19,7 +19,6 @@ from control_panel_api.exceptions import (
     HelmException,
 )
 from control_panel_api.filters import (
-    AppFilter,
     S3BucketFilter,
     UserS3BucketFilter,
 )
@@ -112,10 +111,10 @@ class GroupViewSet(viewsets.ModelViewSet):
 class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
     serializer_class = AppSerializer
-    filter_backends = (AppFilter,)
+    filter_backends = (DjangoFilterBackend,)
+    permission_classes = (AppPermissions,)
 
     filter_fields = ('name', 'repo_url', 'slug')
-    permission_classes = (AppPermissions,)
 
     @handle_external_exceptions
     @transaction.atomic
