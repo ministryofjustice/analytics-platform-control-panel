@@ -23,6 +23,8 @@ class Helm(object):
             )
 
     def upgrade_release(self, release, chart, *args):
+        self._helm_shell_command('repo update')
+
         default_flags = ['--install', '--wait']
         flags = list(args) + default_flags
         self._helm_command('upgrade', release, chart, *flags)
