@@ -24,16 +24,6 @@ class SuperusersOnlyFilter(DjangoFilterBackend):
         return queryset.none()
 
 
-class AppFilter(SuperusersOnlyFilter):
-    """
-    Filter to get visible apps.
-
-    Currently superusers see everything, others see nothing.
-    """
-
-    pass
-
-
 class S3BucketFilter(DjangoFilterBackend):
     """
     Filter to get visible S3 buckets.

@@ -17,17 +17,12 @@ class AppFilterTest(APITestCase):
         self.app_2 = mommy.make(
             "control_panel_api.App", name="App 2")
 
-    def test_superuser_sees_everything(self):
-        self.client.force_login(self.superuser)
+    def test_everyone_see_everything(self):
+        for user in [self.superuser, self.normal_user]:
+            self.client.force_login(user)
 
-        response = self.client.get(reverse("app-list"))
-        app_ids = [app["id"] for app in response.data["results"]]
-        self.assertEqual(len(app_ids), 2)
-        self.assertIn(self.app_1.id, app_ids)
-        self.assertIn(self.app_2.id, app_ids)
-
-    def test_normal_user_sees_nothing(self):
-        self.client.force_login(self.normal_user)
-
-        response = self.client.get(reverse("app-list"))
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+            response = self.client.get(reverse("app-list"))
+            app_ids = [app["id"] for app in response.data["results"]]
+            self.assertEqual(len(app_ids), 2)
+            self.assertIn(self.app_1.id, app_ids)
+            self.assertIn(self.app_2.id, app_ids)

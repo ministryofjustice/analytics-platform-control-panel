@@ -50,7 +50,19 @@ class K8sPermissions(BasePermission):
 
 
 class AppPermissions(IsSuperuser):
-    pass
+    """
+    - Superusers can do anything
+    - Normal users can only list apps
+    """
+
+    def has_permission(self, request, view):
+        if is_superuser(request.user):
+            return True
+
+        if request.user.is_anonymous():
+            return False
+
+        return view.action == 'list'
 
 
 class S3BucketPermissions(BasePermission):
