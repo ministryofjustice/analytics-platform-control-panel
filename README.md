@@ -1,6 +1,10 @@
 # analytics-platform-control-panel
-Control panel contains admin functions like creating users and granting access to apps
+The logic/backend of the Control Panel app. Serves an API for creating users,
+apps, tools & managing permissions, which are achieved by calling through to
+Kubernetes API (via Helm) and AWS IAM API.
 
+The frontend is:
+https://github.com/ministryofjustice/analytics-platform-control-panel-frontend
 
 ## Running with Docker
 
@@ -26,15 +30,35 @@ docker-compose -f docker-compose.test.yml up --abort-on-container-exit
 
 The Control Panel app requires Python 3.6+
 
-It is best to use a virtual environment to install dependencies, eg:
+It is best to use a virtual environment to install python dependencies, eg:
 ```sh
 python -m venv venv
 . venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### Kubernetes setup
+
+You need a kubeconfig (~/.kube/config) with the credentials for your k8s cluster. Once you've got that, this should work:
+```sh
+kubectl cluster-info
+```
+
+You need to tell Helm to use the AP charts:
+```sh
+helm repo add mojanalytics https://ministryofjustice.github.io/analytics-platform-helm-charts/charts/
+helm repo update
+```
+
 ### <a name="env"></a>Environment variables
 
+#### Bare minimum (for local testing)
+```sh
+export DEBUG=True
+export DJANGO_SETTINGS_MODULE=control_panel_api.settings
+```
+
+#### Reference
 | name | description | default |
 | ---- | ----------- | ------- |
 | `SECRET_KEY` | Secret key used to encrypt cookies, etc | |
@@ -55,6 +79,7 @@ pip install -r requirements.txt
 | `DB_PASSWORD` | Postgres password | |
 | `DB_HOST` | Hostname of postgres server | `127.0.0.1` |
 | `DB_PORT` | Postgres port | `5432` |
+| `ENABLE_*` | Feature flags - various (see base.py) | |
 
 ### Database
 
@@ -73,6 +98,7 @@ python manage.py migrate
 ```sh
 python manage.py createsuperuser
 ```
+NB `Username` needs to be your GitHub username
 
 ### Compile Sass and Javascript
 
@@ -99,3 +125,14 @@ Go to http://localhost:8000/
 # Documentation
 
 You can see the documentation and interact with the API by visiting [http://localhost:8000/](http://localhost:8000/).
+
+# Error explanations
+
+#### `Error: file "mojanalytics/rstudio" not found`
+It ran a Helm command but it can't find the chart. See the Helm set-up, above.
+
+#### `django.core.exceptions.ImproperlyConfigured: Requested setting DATABASES, but settings are not configured. You must either define the environment variable DJANGO_SETTINGS_MODULE or call settings.configure() before accessing settings.`
+You need to set environment variable DJANGO_SETTINGS_MODULE.
+
+#### `400 : ["The schema generator did not return a schema Document"]`
+You need to log in.
