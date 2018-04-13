@@ -57,6 +57,13 @@ class AwsTestCase(TestCase):
             PolicyDocument=json.dumps(policy_document),
         )
 
+    def test_attach_policy_to_role(self):
+        aws.attach_policy_to_role('policyarn', 'rolename')
+        aws.client.return_value.attach_role_policy.assert_called_with(
+            RoleName='rolename',
+            PolicyArn='policyarn',
+        )
+
     def test_detach_policy_from_role(self):
         aws.detach_policy_from_role('policyarn', 'foo')
         aws.client.return_value.detach_role_policy.assert_called()

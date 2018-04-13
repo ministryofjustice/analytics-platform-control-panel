@@ -1,6 +1,7 @@
 import json
 from unittest.mock import MagicMock, call, patch
 
+from django.conf import settings
 from django.db.utils import IntegrityError
 from django.test import TestCase
 from model_mommy import mommy
@@ -51,9 +52,17 @@ class UserTestCase(TestCase):
         user.aws_create_role()
         expected_role_name = f'test_user_{username}'
 
-        aws.client.return_value.create_role.assert_called_with(
+        aws_client = aws.client.return_value
+        aws_client.create_role.assert_called_with(
             RoleName=expected_role_name,
             AssumeRolePolicyDocument=json.dumps(USER_IAM_ROLE_ASSUME_POLICY))
+        aws_client.attach_role_policy.assert_called_with(
+            RoleName=expected_role_name,
+            PolicyArn=(
+                f'{settings.IAM_ARN_BASE}:policy/'
+                f'{settings.ENV}-read-user-roles-inline-policies'
+            ),
+        )
 
     def test_aws_delete_role_calls_service(self):
         username = 'james'

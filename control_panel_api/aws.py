@@ -109,6 +109,11 @@ class AWSClient(object):
                     policy_arn=policy["PolicyArn"]
                 )
 
+    def attach_policy_to_role(self, policy_arn, role_name):
+        self._do('iam', 'attach_role_policy',
+            RoleName=role_name,
+            PolicyArn=policy_arn)
+
     def detach_policy_from_role(self, policy_arn, role_name):
         self._do('iam', 'detach_role_policy',
             RoleName=role_name,

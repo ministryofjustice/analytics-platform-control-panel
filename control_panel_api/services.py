@@ -11,6 +11,7 @@ from control_panel_api.aws import (
 
 
 S3_POLICY_NAME = 's3-access'
+READ_INLINE_POLICIES_POLICY_NAME = f'{settings.ENV}-read-user-roles-inline-policies'
 
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,16 @@ def create_role(
         role_policy['Statement'].append(oidc_statement)
 
     aws.create_role(role_name, role_policy)
+
+
+def grant_read_inline_policies(role_name):
+    policy_arn = (
+        f'{settings.IAM_ARN_BASE}:policy/{READ_INLINE_POLICIES_POLICY_NAME}'
+    )
+    aws.attach_policy_to_role(
+        role_name=role_name,
+        policy_arn=policy_arn,
+    )
 
 
 @ignore_aws_exceptions

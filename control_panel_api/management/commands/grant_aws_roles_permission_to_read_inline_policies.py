@@ -7,10 +7,10 @@ from django.conf import settings
 
 from control_panel_api.management.commands.dry_runnable import DryRunnable
 from control_panel_api.models import User
+from control_panel_api.services import READ_INLINE_POLICIES_POLICY_NAME as POLICY_NAME
 
 
 IAM = boto3.client('iam')
-POLICY_NAME = f'{settings.ENV}-read-user-roles-inline-policies'
 POLICY_ARN = f"{settings.IAM_ARN_BASE}:policy/{POLICY_NAME}"
 POLICY_DOCUMENT = {
     "Version": "2012-10-17",

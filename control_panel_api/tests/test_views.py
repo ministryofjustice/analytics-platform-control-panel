@@ -182,10 +182,11 @@ class UserViewTest(AuthenticatedClientMixin, APITestCase):
         with self.assertRaises(User.DoesNotExist):
             User.objects.get(pk=data['auth0_id'])
 
+    @patch('control_panel_api.models.services.grant_read_inline_policies')
     @patch('control_panel_api.models.User.helm_create')
     @patch('control_panel_api.aws.AWSClient.create_role')
     def test_aws_error_existing_ignored(self, mock_create_role,
-                                        mock_helm_create):
+                                        mock_helm_create, mock_grant_read_inline_policies):
         e = type('EntityAlreadyExistsException', (ClientError,), {})
         mock_create_role.side_effect = e({}, 'CreateRole')
 
