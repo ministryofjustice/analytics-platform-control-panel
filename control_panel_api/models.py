@@ -43,6 +43,7 @@ class User(AbstractUser):
         services.create_role(
             self.iam_role_name, add_saml_statement=True,
             add_oidc_statement=True, oidc_sub=self.auth0_id)
+        services.grant_read_inline_policies(self.iam_role_name)
 
     def aws_delete_role(self):
         services.delete_role(self.iam_role_name)

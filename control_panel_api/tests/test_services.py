@@ -125,3 +125,15 @@ class ServicesTestCase(TestCase):
         mock_client.return_value.create_role.assert_called_with(
             RoleName=role_name,
             AssumeRolePolicyDocument=json.dumps(USER_IAM_ROLE_ASSUME_POLICY))
+
+    def test_grant_read_inline_policies(self, mock_client):
+        role_name = "test_user_user"
+        services.grant_read_inline_policies(role_name)
+
+        mock_client.return_value.attach_role_policy.assert_called_with(
+            RoleName=role_name,
+            PolicyArn=(
+                f'{settings.IAM_ARN_BASE}:policy/'
+                f'{settings.ENV}-read-user-roles-inline-policies'
+            ),
+        )
