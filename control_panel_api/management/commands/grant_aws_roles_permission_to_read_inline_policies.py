@@ -38,7 +38,6 @@ def create_policy():
             PolicyName=POLICY_NAME,
             PolicyDocument=json.dumps(POLICY_DOCUMENT),
         )
-        logger.info(f'IAM policy "{POLICY_NAME}" created')
     except ClientError as e:
         if e.response['Error']['Code'] == 'EntityAlreadyExists':
             logger.warning(f'IAM policy "{POLICY_NAME}" already exists')
