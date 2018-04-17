@@ -137,8 +137,10 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
         self.assert_authenticated()
 
+    @patch('control_panel_api.authentication.User.helm_create')
+    @patch('control_panel_api.authentication.User.aws_create_role')
     @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
-    def test_unknown_valid_user_is_created(self):
+    def test_unknown_valid_user_is_created(self, mock_aws_create_role, mock_helm_create):
         new_user = mommy.prepare(
             'control_panel_api.User',
             email='new@example.com',
@@ -159,3 +161,6 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
         self.assertEqual(new_user.username, created_user.username)
         self.assertEqual(new_user.name, created_user.name)
         self.assertEqual(new_user.email, created_user.email)
+
+        mock_helm_create.assert_called()
+        mock_aws_create_role.assert_called()
