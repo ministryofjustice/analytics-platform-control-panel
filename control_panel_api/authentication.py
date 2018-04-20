@@ -67,6 +67,7 @@ def get_or_create_user(decoded_payload):
             name=decoded_payload.get(settings.OIDC_FIELD_NAME),
         )
         user.save()
+        user.aws_create_role()
         user.helm_create()
 
     return user
