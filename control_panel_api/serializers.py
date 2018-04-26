@@ -1,3 +1,6 @@
+from operator import itemgetter
+import re
+
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
@@ -266,3 +269,41 @@ class AppCustomerSerializer(serializers.Serializer):
             'nickname',
             'name',
         )
+
+
+class ESBucketHitsSerializer(serializers.BaseSerializer):
+
+    def to_representation(self, aggregations):
+        accessed_by_sum_map = {}
+        accessed_by_type_map = {}
+
+        for result in aggregations.bucket_hits:
+            role_type, accessed_by = self._extract_fields(result.key)
+
+            accessed_by_type_map[accessed_by] = role_type
+
+            if accessed_by not in accessed_by_sum_map:
+                accessed_by_sum_map[accessed_by] = result.doc_count
+            else:
+                accessed_by_sum_map[accessed_by] += result.doc_count
+
+        results = [
+            {'accessed_by': k, 'count': v, 'type': accessed_by_type_map[k]}
+            for k, v in accessed_by_sum_map.items()
+        ]
+
+        sorted_by_sum = sorted(results, key=itemgetter('count'), reverse=True)
+
+        return sorted_by_sum
+
+    def _extract_fields(self, key):
+        match = re.search('alpha_(app|user)_([\w-]+)/', key)
+
+        if match:
+            return match.group(1), match.group(2)
+
+        return 'unknown', key
+
+
+class S3BucketAccessLogsQueryParamsSerializer(serializers.Serializer):
+    day_range = serializers.IntegerField(required=False)
