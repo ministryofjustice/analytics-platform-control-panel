@@ -9,6 +9,7 @@ from django.http import JsonResponse
 from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
+from elasticsearch import TransportError
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, detail_route, permission_classes
 from rest_framework.generics import GenericAPIView
@@ -18,6 +19,7 @@ from control_panel_api.auth0 import Auth0
 from control_panel_api.elasticsearch import ElasticSearch
 from control_panel_api.exceptions import (
     AWSException,
+    ESException,
     HelmException,
 )
 from control_panel_api.filters import (
@@ -239,11 +241,14 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 
         es = ElasticSearch(settings.ELASTICSEARCH_CONN)
 
-        result = es.bucket_hits_aggregation(
-            settings.ELASTICSEARCH_INDEX_S3LOGS,
-            self.get_object().name,
-            query_params_serializer.validated_data.get('day_range'),
-        )
+        try:
+            result = es.bucket_hits_aggregation(
+                settings.ELASTICSEARCH_INDEX_S3LOGS,
+                self.get_object().name,
+                query_params_serializer.validated_data.get('day_range'),
+            )
+        except TransportError as e:
+            raise ESException(e) from e
 
         return Response(ESBucketHitsSerializer(result.aggs).data)
 
