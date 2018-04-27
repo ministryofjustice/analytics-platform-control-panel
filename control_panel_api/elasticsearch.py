@@ -13,8 +13,9 @@ class ElasticSearch(object):
         q1 = Q('term', **{'bucket.keyword': bucket_name})
         q2 = Q('terms',
                **{'operation.keyword': ["REST.GET.BUCKET", "REST.GET.OBJECT"]})
+        q3 = Q('match', request_header_user_agent='AWS-Support-TrustedAdvisor')
 
-        s = s.query(q1 & q2)
+        s = s.query(q1 & q2 & ~q3)
 
         if day_range:
             s = s.filter(Range(time_received={"gte": f"now-{day_range}d/d"}))
