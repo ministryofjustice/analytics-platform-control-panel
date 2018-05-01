@@ -250,7 +250,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         except TransportError as e:
             raise ESException(e) from e
 
-        return Response(ESBucketHitsSerializer(result.aggs).data)
+        return Response(ESBucketHitsSerializer(result.aggregations).data)
 
 
 class UserAppViewSet(viewsets.ModelViewSet):
