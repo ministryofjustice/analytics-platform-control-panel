@@ -274,22 +274,22 @@ class AppCustomerSerializer(serializers.Serializer):
 class ESBucketHitsSerializer(serializers.BaseSerializer):
 
     def to_representation(self, aggregations):
-        accessed_by_sum_map = {}
-        accessed_by_type_map = {}
+        access_count = {}
+        accessor_role = {}
 
         for result in aggregations.bucket_hits:
             role_type, accessed_by = self._get_accessed_by(result.key)
 
-            accessed_by_type_map[accessed_by] = role_type
+            accessor_role[accessed_by] = role_type
 
-            if accessed_by not in accessed_by_sum_map:
-                accessed_by_sum_map[accessed_by] = result.doc_count
+            if accessed_by not in access_count:
+                access_count[accessed_by] = result.doc_count
             else:
-                accessed_by_sum_map[accessed_by] += result.doc_count
+                access_count[accessed_by] += result.doc_count
 
         results = [
-            {'accessed_by': k, 'count': v, 'type': accessed_by_type_map[k]}
-            for k, v in accessed_by_sum_map.items()
+            {'accessed_by': k, 'count': v, 'type': accessor_role[k]}
+            for k, v in access_count.items()
         ]
 
         return sorted(results, key=itemgetter('count'), reverse=True)
