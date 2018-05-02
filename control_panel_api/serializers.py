@@ -1,7 +1,7 @@
+from django.conf import settings
+from django.contrib.auth.models import Group
 from operator import itemgetter
 import re
-
-from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from control_panel_api.models import (
@@ -295,7 +295,7 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
         return sorted(results, key=itemgetter('count'), reverse=True)
 
     def _get_accessed_by(self, key):
-        match = re.search('alpha_(app|user)_([\w-]+)/', key)
+        match = re.search(f"{settings.ENV}_(app|user)_([\w-]+)/", key)
 
         if match:
             return match.group(1), match.group(2)

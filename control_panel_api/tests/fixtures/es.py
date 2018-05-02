@@ -45,7 +45,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "20065578",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/5487346a-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/5487346a-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -85,7 +85,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "20065578",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/5487346a-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/5487346a-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -125,7 +125,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "718",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -165,7 +165,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "1411",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -205,7 +205,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "20065578",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/1d233a54-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/1d233a54-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -245,7 +245,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "20065578",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -285,7 +285,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "20065578",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -325,7 +325,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "1411",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/1d233a54-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/1d233a54-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -365,7 +365,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "718",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/1d233a54-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/1d233a54-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -405,7 +405,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "1411",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -445,7 +445,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "718",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.OBJECT",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -485,7 +485,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "3393",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.BUCKET",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_user_foobar/5acc32a6-alpha_user_foobar",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_user_foobar/5acc32a6-test_user_foobar",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -525,7 +525,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "3393",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.BUCKET",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_user_foobar/5acc32a6-alpha_user_foobar",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_user_foobar/5acc32a6-test_user_foobar",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -565,7 +565,7 @@ BUCKET_HITS_AGGREGATION = {
                     "bytes": "3393",
                     "bucket_owner": "7040326b5ad7aa545c783bfa4b4b015c3588d829d66caea8df056f6175115082",
                     "operation": "REST.GET.BUCKET",
-                    "requester_id": "arn:aws:sts::593291632749:assumed-role/alpha_user_foobar/5acc32a6-alpha_user_foobar",
+                    "requester_id": "arn:aws:sts::593291632749:assumed-role/test_user_foobar/5acc32a6-test_user_foobar",
                     "request_http_ver": "1.1",
                     "status": "200"
                 }
@@ -578,22 +578,22 @@ BUCKET_HITS_AGGREGATION = {
             "sum_other_doc_count": 0,
             "buckets": [
                 {
-                    "key": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/e33d655d-alpha_app_sentencing-policy-model",
+                    "key": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/e33d655d-test_app_sentencing-policy-model",
                     "doc_count": 6
                 }
                 ,
                 {
-                    "key": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/1d233a54-alpha_app_sentencing-policy-model",
+                    "key": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/1d233a54-test_app_sentencing-policy-model",
                     "doc_count": 3
                 }
                 ,
                 {
-                    "key": "arn:aws:sts::593291632749:assumed-role/alpha_user_foobar/5acc32a6-alpha_user_foobar",
+                    "key": "arn:aws:sts::593291632749:assumed-role/test_user_foobar/5acc32a6-test_user_foobar",
                     "doc_count": 3
                 }
                 ,
                 {
-                    "key": "arn:aws:sts::593291632749:assumed-role/alpha_app_sentencing-policy-model/5487346a-alpha_app_sentencing-policy-model",
+                    "key": "arn:aws:sts::593291632749:assumed-role/test_app_sentencing-policy-model/5487346a-test_app_sentencing-policy-model",
                     "doc_count": 2
                 }
             ]
