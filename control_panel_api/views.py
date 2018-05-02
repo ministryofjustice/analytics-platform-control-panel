@@ -16,7 +16,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
 from control_panel_api.auth0 import Auth0
-from control_panel_api.elasticsearch import ElasticSearch
+from control_panel_api.elasticsearch import bucket_hits_aggregation
 from control_panel_api.exceptions import (
     AWSException,
     ESException,
@@ -239,10 +239,8 @@ class S3BucketViewSet(viewsets.ModelViewSet):
             data=request.query_params)
         query_params_serializer.is_valid(raise_exception=True)
 
-        es = ElasticSearch(settings.ELASTICSEARCH_CONN)
-
         try:
-            result = es.bucket_hits_aggregation(
+            result = bucket_hits_aggregation(
                 settings.ELASTICSEARCH_INDEX_S3LOGS,
                 self.get_object().name,
                 query_params_serializer.validated_data.get('num_days'),
