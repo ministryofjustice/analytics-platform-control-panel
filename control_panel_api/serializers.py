@@ -292,9 +292,7 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
             for k, v in accessed_by_sum_map.items()
         ]
 
-        sorted_by_sum = sorted(results, key=itemgetter('count'), reverse=True)
-
-        return sorted_by_sum
+        return sorted(results, key=itemgetter('count'), reverse=True)
 
     def _extract_fields(self, key):
         match = re.search('alpha_(app|user)_([\w-]+)/', key)
