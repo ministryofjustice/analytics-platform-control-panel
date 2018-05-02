@@ -245,7 +245,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
             result = es.bucket_hits_aggregation(
                 settings.ELASTICSEARCH_INDEX_S3LOGS,
                 self.get_object().name,
-                query_params_serializer.validated_data.get('day_range'),
+                query_params_serializer.validated_data.get('num_days'),
             )
         except TransportError as e:
             raise ESException(e) from e

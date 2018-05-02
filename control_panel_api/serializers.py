@@ -304,4 +304,4 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
 
 
 class S3BucketAccessLogsQueryParamsSerializer(serializers.Serializer):
-    day_range = serializers.IntegerField(required=False)
+    num_days = serializers.IntegerField(required=False)
