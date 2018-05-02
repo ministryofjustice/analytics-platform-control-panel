@@ -4,9 +4,10 @@ from elasticsearch_dsl import Q, Search
 from elasticsearch_dsl.query import Range
 
 
-def bucket_hits_aggregation(index, bucket_name, num_days=None):
+def bucket_hits_aggregation(bucket_name, num_days=None):
     client = _Elasticsearch(settings.ELASTICSEARCH_CONN)
-    s = Search(using=client, index=index)
+
+    s = Search(using=client, index=settings.ELASTICSEARCH_INDEX_S3LOGS)
 
     q1 = Q('term', **{'bucket.keyword': bucket_name})
     q2 = Q('terms',
