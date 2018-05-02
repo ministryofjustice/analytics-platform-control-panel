@@ -278,7 +278,7 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
         accessed_by_type_map = {}
 
         for result in aggregations.bucket_hits:
-            role_type, accessed_by = self._extract_fields(result.key)
+            role_type, accessed_by = self._get_accessed_by(result.key)
 
             accessed_by_type_map[accessed_by] = role_type
 
@@ -294,7 +294,7 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
 
         return sorted(results, key=itemgetter('count'), reverse=True)
 
-    def _extract_fields(self, key):
+    def _get_accessed_by(self, key):
         match = re.search('alpha_(app|user)_([\w-]+)/', key)
 
         if match:
