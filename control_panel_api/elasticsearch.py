@@ -22,4 +22,4 @@ def bucket_hits_aggregation(bucket_name, num_days=None):
     s.aggs.bucket('bucket_hits', 'terms', field='requester_id.keyword',
                   size=100)
 
-    return s.execute()
+    return s.execute().aggregations.bucket_hits

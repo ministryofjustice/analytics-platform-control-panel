@@ -275,11 +275,11 @@ class AppCustomerSerializer(serializers.Serializer):
 
 class ESBucketHitsSerializer(serializers.BaseSerializer):
 
-    def to_representation(self, aggregations):
+    def to_representation(self, bucket_hits):
         access_count = defaultdict(int)
         accessor_role = {}
 
-        for result in aggregations.bucket_hits:
+        for result in bucket_hits:
             role_type, accessed_by = self._get_accessed_by(result.key)
 
             accessor_role[accessed_by] = role_type
