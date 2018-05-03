@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.conf import settings
 from django.contrib.auth.models import Group
 from operator import itemgetter
@@ -274,18 +276,14 @@ class AppCustomerSerializer(serializers.Serializer):
 class ESBucketHitsSerializer(serializers.BaseSerializer):
 
     def to_representation(self, aggregations):
-        access_count = {}
+        access_count = defaultdict(int)
         accessor_role = {}
 
         for result in aggregations.bucket_hits:
             role_type, accessed_by = self._get_accessed_by(result.key)
 
             accessor_role[accessed_by] = role_type
-
-            if accessed_by not in access_count:
-                access_count[accessed_by] = result.doc_count
-            else:
-                access_count[accessed_by] += result.doc_count
+            access_count[accessed_by] += result.doc_count
 
         results = [
             {'accessed_by': k, 'count': v, 'type': accessor_role[k]}
