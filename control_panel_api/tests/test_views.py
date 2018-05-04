@@ -24,6 +24,7 @@ from control_panel_api.models import (
     UserApp,
     UserS3Bucket,
 )
+from control_panel_api.tests.fixtures.es import BUCKET_HITS_AGGREGATION
 from control_panel_api.tests.test_authentication import (
     build_jwt_from_user,
     mock_get_keys,
@@ -818,6 +819,25 @@ class S3BucketViewTest(AuthenticatedClientMixin, APITestCase):
                 self.assertEqual(HTTP_201_CREATED, response.status_code)
 
                 mock_call.assert_called()
+
+    @patch('elasticsearch.Elasticsearch.search')
+    def test_access_logs(self, mock_bucket_hits_aggregation):
+        mock_bucket_hits_aggregation.return_value = BUCKET_HITS_AGGREGATION
+
+        response = self.client.get(
+            reverse('s3bucket-access-logs', (self.fixture.id,)))
+        self.assertEqual(HTTP_200_OK, response.status_code)
+
+        self.assertEqual(2, len(response.data))
+
+        self.assertEqual('sentencing-policy-model',
+                         response.data[0]['accessed_by'])
+        self.assertEqual(11, response.data[0]['count'])
+        self.assertEqual('app', response.data[0]['type'])
+
+        self.assertEqual('foobar', response.data[1]['accessed_by'])
+        self.assertEqual(3, response.data[1]['count'])
+        self.assertEqual('user', response.data[1]['type'])
 
 
 class UserS3BucketViewTest(AuthenticatedClientMixin, APITestCase):

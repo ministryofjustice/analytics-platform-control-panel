@@ -1,4 +1,9 @@
+from collections import defaultdict
+
+from django.conf import settings
 from django.contrib.auth.models import Group
+from operator import itemgetter
+import re
 from rest_framework import serializers
 
 from control_panel_api.models import (
@@ -266,3 +271,35 @@ class AppCustomerSerializer(serializers.Serializer):
             'nickname',
             'name',
         )
+
+
+class ESBucketHitsSerializer(serializers.BaseSerializer):
+
+    def to_representation(self, bucket_hits):
+        access_count = defaultdict(int)
+        accessor_role = {}
+
+        for result in bucket_hits:
+            role_type, accessed_by = self._get_accessed_by(result.key)
+
+            accessor_role[accessed_by] = role_type
+            access_count[accessed_by] += result.doc_count
+
+        results = [
+            {'accessed_by': k, 'count': v, 'type': accessor_role[k]}
+            for k, v in access_count.items()
+        ]
+
+        return sorted(results, key=itemgetter('count'), reverse=True)
+
+    def _get_accessed_by(self, key):
+        match = re.search(f"{settings.ENV}_(app|user)_([\w-]+)/", key)
+
+        if match:
+            return match.group(1), match.group(2)
+
+        return 'unknown', key
+
+
+class S3BucketAccessLogsQueryParamsSerializer(serializers.Serializer):
+    num_days = serializers.IntegerField(required=False)

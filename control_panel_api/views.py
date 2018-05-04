@@ -1,6 +1,3 @@
-import logging
-from subprocess import CalledProcessError
-
 from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
 from django.db import transaction
@@ -8,14 +5,19 @@ from django.http import JsonResponse
 from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
+from elasticsearch import TransportError
+import logging
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, detail_route, permission_classes
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
+from subprocess import CalledProcessError
 
 from control_panel_api.auth0 import Auth0
+from control_panel_api.elasticsearch import bucket_hits_aggregation
 from control_panel_api.exceptions import (
     AWSException,
+    ESException,
     HelmException,
 )
 from control_panel_api.filters import (
@@ -44,7 +46,9 @@ from control_panel_api.serializers import (
     AppCustomerSerializer,
     AppS3BucketSerializer,
     AppSerializer,
+    ESBucketHitsSerializer,
     GroupSerializer,
+    S3BucketAccessLogsQueryParamsSerializer,
     S3BucketSerializer,
     UserAppSerializer,
     UserS3BucketSerializer,
@@ -226,6 +230,22 @@ class S3BucketViewSet(viewsets.ModelViewSet):
         instance.aws_create()
 
         instance.create_users3bucket(user=self.request.user)
+
+    @detail_route()
+    def access_logs(self, request, pk=None):
+        query_params_serializer = S3BucketAccessLogsQueryParamsSerializer(
+            data=request.query_params)
+        query_params_serializer.is_valid(raise_exception=True)
+
+        try:
+            result = bucket_hits_aggregation(
+                self.get_object().name,
+                query_params_serializer.validated_data.get('num_days'),
+            )
+        except TransportError as e:
+            raise ESException(e) from e
+
+        return Response(ESBucketHitsSerializer(result).data)
 
 
 class UserAppViewSet(viewsets.ModelViewSet):

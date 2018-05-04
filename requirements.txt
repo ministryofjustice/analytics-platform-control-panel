@@ -16,6 +16,8 @@ django-rest-swagger==2.1.2
 djangorestframework==3.7.3
 docutils==0.14
 ecdsa==0.13
+elasticsearch==6.2.0
+elasticsearch-dsl==6.1.0
 future==0.16.0
 google-auth==1.0.2
 gunicorn==19.7.1
