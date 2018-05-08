@@ -37,7 +37,7 @@ pyasn1-modules==0.0.11
 pycparser==2.18
 pycrypto==2.6.1
 pytest==3.2.5
-python-dateutil==2.6.1
+python-dateutil==2.7.2
 python-jose==1.4.0
 pytz==2017.3
 PyYAML==3.12
