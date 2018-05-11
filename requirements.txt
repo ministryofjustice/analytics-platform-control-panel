@@ -22,7 +22,7 @@ future==0.16.0
 google-auth==1.4.1
 gunicorn==19.7.1
 idna==2.6
-ipaddress==1.0.18
+ipaddress==1.0.22
 itypes==1.1.0
 Jinja2==2.9.6
 jmespath==0.9.3
