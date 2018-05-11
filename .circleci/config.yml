@@ -55,8 +55,9 @@ jobs:
       - deploy:
           name: Push application Docker image
           command: |
+            BRANCH=$(echo -n $CIRCLE_BRANCH | tr '/' '-')
             docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
             docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
-            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+            docker tag app "quay.io/mojanalytics/control-panel:${BRANCH}"
             docker push "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
-            docker push "quay.io/mojanalytics/control-panel:${CIRCLE_BRANCH}"
+            docker push "quay.io/mojanalytics/control-panel:${BRANCH}"
