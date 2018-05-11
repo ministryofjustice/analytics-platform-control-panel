@@ -44,7 +44,7 @@ PyYAML==3.12
 raven==6.2.1
 requests==2.18.4
 rsa==3.4.2
-s3transfer==0.1.12
+s3transfer==0.1.13
 simplejson==3.11.1
 six==1.10.0
 uritemplate==3.0.0
