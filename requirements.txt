@@ -24,7 +24,7 @@ gunicorn==19.7.1
 idna==2.6
 ipaddress==1.0.18
 itypes==1.1.0
-Jinja2==2.9.6
+Jinja2==2.10
 jmespath==0.9.3
 kubernetes==3.0.0
 MarkupSafe==1.0
