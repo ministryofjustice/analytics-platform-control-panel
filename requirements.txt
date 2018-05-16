@@ -39,7 +39,7 @@ pycrypto==2.6.1
 pytest==3.2.5
 python-dateutil==2.7.3
 python-jose==3.0.0
-pytz==2017.3
+pytz==2018.4
 PyYAML==3.12
 raven==6.2.1
 requests==2.18.4
