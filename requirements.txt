@@ -11,7 +11,7 @@ coreschema==0.0.4
 cryptography==2.2.2
 Django==1.11.7
 django-extensions==1.8.1
-django-filter==1.0.4
+django-filter==1.1.0
 django-rest-swagger==2.1.2
 djangorestframework==3.7.3
 docutils==0.14
