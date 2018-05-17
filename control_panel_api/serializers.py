@@ -57,11 +57,13 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
         fields = ('id', 'url', 'user', 's3bucket', 'access_level', 'is_admin')
 
     def update(self, instance, validated_data):
-        if instance.user != validated_data['user']:
+        user = instance.user
+        s3bucket = instance.s3bucket
+        if user != validated_data.get('user', user):
             raise serializers.ValidationError(
                 "User is not editable. Create a new record."
             )
-        if instance.s3bucket != validated_data['s3bucket']:
+        if s3bucket != validated_data.get('s3bucket', s3bucket):
             raise serializers.ValidationError(
                 "S3Bucket is not editable. Create a new record."
             )

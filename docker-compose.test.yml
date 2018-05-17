@@ -15,11 +15,6 @@ services:
       DB_USER: "postgres"
       DEBUG: "True"
       DJANGO_SETTINGS_MODULE: "control_panel_api.settings.test"
-    volumes:
-      - ./control_panel_api:/home/control-panel/control_panel_api
-      - ./moj_analytics:/home/control-panel/mojanalytics
-      - ./requirements.txt:/home/control-panel/requirements.txt
-      - ./manage.py:/home/control-panel/manage.py
     command: ["./run_tests"]
   db:
     image: "postgres:9.6.2"
