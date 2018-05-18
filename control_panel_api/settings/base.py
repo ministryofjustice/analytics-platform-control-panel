@@ -208,3 +208,10 @@ LOGGING = {
         },
     },
 }
+
+CONCOURSE = {
+    'url': os.environ.get('CONCOURSE_URL', 'https://example.com'),
+    'team': 'main',
+    'username': os.environ.get('CONCOURSE_USERNAME', ''),
+    'password': os.environ.get('CONCOURSE_PASSWORD', '')
+}
