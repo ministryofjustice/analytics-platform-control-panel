@@ -18,3 +18,5 @@ services:
     command: ["./run_tests"]
   db:
     image: "postgres:9.6.2"
+    logging:
+      driver: none

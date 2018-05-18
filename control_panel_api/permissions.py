@@ -34,7 +34,7 @@ class K8sPermissions(BasePermission):
     ]
 
     def has_permission(self, request, view):
-        if not request.user or request.user.is_anonymous():
+        if not request.user or request.user.is_anonymous:
             return False
 
         if is_superuser(request.user):
@@ -59,7 +59,7 @@ class AppPermissions(IsSuperuser):
         if is_superuser(request.user):
             return True
 
-        if request.user.is_anonymous():
+        if request.user.is_anonymous:
             return False
 
         return view.action == 'list'
@@ -78,7 +78,7 @@ class S3BucketPermissions(BasePermission):
         if is_superuser(request.user):
             return True
 
-        if request.user.is_anonymous():
+        if request.user.is_anonymous:
             return False
 
         return view.action in ('create', 'list', 'retrieve')
@@ -95,7 +95,7 @@ class UserPermissions(BasePermission):
         if is_superuser(request.user):
             return True
 
-        if request.user.is_anonymous():
+        if request.user.is_anonymous:
             return False
 
         return view.action in ('list', 'retrieve', 'update', 'partial_update')
@@ -112,7 +112,7 @@ class UserS3BucketPermissions(BasePermission):
         if is_superuser(request.user):
             return True
 
-        if request.user.is_anonymous():
+        if request.user.is_anonymous:
             return False
 
         if view.action != 'create':
@@ -139,4 +139,4 @@ class UserS3BucketPermissions(BasePermission):
 
 class ToolDeploymentPermissions(BasePermission):
     def has_permission(self, request, view):
-        return not request.user.is_anonymous()
+        return not request.user.is_anonymous

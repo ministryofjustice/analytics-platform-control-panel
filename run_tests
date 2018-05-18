@@ -2,4 +2,6 @@
 
 set -e -o pipefail
 
-python3 wait_for_db && python3 manage.py test
+export DJANGO_SETTINGS_MODULE="control_panel_api.settings.test"
+
+python3 wait_for_db && pytest --color=yes --spec --testmon control_panel_api
