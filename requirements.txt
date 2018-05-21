@@ -40,7 +40,7 @@ pytest==3.5.1
 pytest-django==3.2.1
 pytest-spec==1.1.0
 pytest-testmon==0.9.11
-pytest-watch==4.1.0
+pytest-watch==4.2.0
 python-dateutil==2.7.3
 python-jose==3.0.0
 pytz==2018.4
