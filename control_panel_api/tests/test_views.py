@@ -285,23 +285,27 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('control_panel_api.models.services.revoke_bucket_access')
     @patch('control_panel_api.models.App.aws_delete_role')
-    def test_delete(self, mock_aws_delete_role, _):
+    @patch('control_panel_api.models.App.concourse_delete_pipeline')
+    def test_delete(self, mock_aws_delete_role, _, delete_pipeline):
         response = self.client.delete(
             reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_aws_delete_role.assert_called()
+        delete_pipeline.assert_called()
 
         response = self.client.get(reverse('app-detail', (self.fixture.id,)))
         self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
 
     @patch('control_panel_api.models.App.aws_create_role')
-    def test_create(self, mock_aws_create_role):
+    @patch('control_panel_api.models.App.concourse_create_pipeline')
+    def test_create(self, mock_aws_create_role, create_pipeline):
         data = {'name': 'foo', 'repo_url': 'https://example.com.git'}
         response = self.client.post(reverse('app-list'), data)
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
         mock_aws_create_role.assert_called()
+        create_pipeline.assert_called()
 
         self.assertEqual(self.superuser.auth0_id, response.data['created_by'])
 
@@ -316,7 +320,11 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
         self.assertEqual('http://foo.com', response.data['repo_url'])
 
     @patch('control_panel_api.models.App.aws_create_role')
-    def test_aws_error_and_transaction(self, mock_aws_create_role):
+    @patch('control_panel_api.models.App.concourse_create_pipeline')
+    def test_aws_error_and_transaction(
+            self,
+            mock_aws_create_role,
+            create_pipeline):
         mock_aws_create_role.side_effect = ClientError({"foo": "bar"}, "bar")
 
         data = {'name': 'not-created', 'repo_url': 'https://example.com.git'}
@@ -327,6 +335,8 @@ class AppViewTest(AuthenticatedClientMixin, APITestCase):
             App.objects.get(name=data['name'])
 
     @patch('control_panel_api.aws.AWSClient.create_role')
+    @patch('control_panel_api.models.Concourse', MagicMock())
+    @patch('control_panel_api.models.WebappPipeline', MagicMock())
     def test_aws_error_existing_ignored(self, mock_create_role):
         e = type('EntityAlreadyExistsException', (ClientError,), {})
         mock_create_role.side_effect = e({}, 'CreateRole')

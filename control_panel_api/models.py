@@ -10,6 +10,7 @@ from django_extensions.db.models import TimeStampedModel
 
 from control_panel_api import services, validators
 from control_panel_api.auth0 import Auth0
+from control_panel_api.concourse import Concourse, WebappPipeline
 from control_panel_api.helm import helm
 from control_panel_api.utils import sanitize_dns_label
 
@@ -82,6 +83,17 @@ class App(TimeStampedModel):
 
     def aws_delete_role(self):
         services.delete_role(self.iam_role_name)
+
+    def concourse_create_pipeline(self):
+        concourse = Concourse(**settings.CONCOURSE)
+        concourse.pipelines[self.slug] = WebappPipeline(
+            concourse,
+            name=self.slug,
+            team_name=concourse.team)
+
+    def concourse_delete_pipeline(self):
+        concourse = Concourse(**settings.CONCOURSE)
+        del concourse.pipelines[self.slug]
 
     @property
     def _repo_name(self):

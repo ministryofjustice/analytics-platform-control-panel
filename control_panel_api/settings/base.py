@@ -84,6 +84,9 @@ WSGI_APPLICATION = 'control_panel_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
+        'OPTIONS': {
+            'connect_timeout': 5,
+        },
         'NAME': os.environ.get('DB_NAME', 'controlpanel'),
         'USER': os.environ.get('DB_USER', ''),
         'PASSWORD': os.environ.get('DB_PASSWORD', ''),

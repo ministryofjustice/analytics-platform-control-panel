@@ -125,6 +125,7 @@ class AppViewSet(viewsets.ModelViewSet):
         app = serializer.save(created_by=self.request.user)
 
         app.aws_create_role()
+        app.concourse_create_pipeline()
 
     @handle_external_exceptions
     @transaction.atomic
@@ -132,6 +133,7 @@ class AppViewSet(viewsets.ModelViewSet):
         instance.delete()
 
         instance.aws_delete_role()
+        instance.concourse_delete_pipeline()
 
 
 class AppCustomersAPIView(GenericAPIView):

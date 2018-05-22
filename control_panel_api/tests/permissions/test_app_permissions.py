@@ -12,6 +12,8 @@ from rest_framework.test import APITestCase
 
 
 @patch('control_panel_api.aws.aws.client', MagicMock())
+@patch('control_panel_api.models.App.concourse_delete_pipeline', MagicMock())
+@patch('control_panel_api.models.App.concourse_create_pipeline', MagicMock())
 class AppPermissionsTest(APITestCase):
     def setUp(self):
         super().setUp()
