@@ -1,8 +1,12 @@
+import logging
 import subprocess
 
 from django.conf import settings
 
 from control_panel_api.utils import sanitize_dns_label
+
+
+log = logging.getLogger(__name__)
 
 
 class Helm(object):
@@ -12,15 +16,28 @@ class Helm(object):
 
     def _helm_command(self, command, *args):
         if self.enabled:
-            subprocess.run(['helm', command] + list(args), check=True)
+            try:
+                subprocess.run(
+                    ['helm', command] + list(args),
+                    stderr=subprocess.PIPE,
+                    check=True)
+            except subprocess.CalledProcessError as error:
+                log.error(error.stdout)
+                raise error
+
 
     def _helm_shell_command(self, command_string):
         if self.enabled:
-            subprocess.run(
-                f'helm {command_string}',
-                shell=True,
-                check=True
-            )
+            try:
+                subprocess.run(
+                    f'helm {command_string}',
+                    stderr=subprocess.PIPE,
+                    shell=True,
+                    check=True
+                )
+            except subprocess.CalledProcessError as error:
+                log.error(error.stdout)
+                raise error
 
     def upgrade_release(self, release, chart, *args):
         self._helm_shell_command('repo update')
