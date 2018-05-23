@@ -65,8 +65,11 @@ class AwsTestCase(TestCase):
         )
 
     def test_detach_policy_from_role(self):
-        aws.detach_policy_from_role('policyarn', 'foo')
-        aws.client.return_value.detach_role_policy.assert_called()
+        aws.detach_policy_from_role('policy_arn', 'role_name')
+        aws.client.return_value.detach_role_policy.assert_called_with(
+            RoleName='role_name',
+            PolicyArn='policy_arn',
+        )
 
     def test_create_role(self):
         role_name = "a_role"
