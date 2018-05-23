@@ -94,6 +94,7 @@ class AWSClient(object):
         """Delete the given IAM role."""
 
         self._detach_role_policies(role_name)
+        self._delete_role_inline_policies(role_name)
         self._do('iam', 'delete_role', RoleName=role_name)
 
     def _detach_role_policies(self, role_name):
@@ -106,8 +107,26 @@ class AWSClient(object):
             for policy in policies["AttachedPolicies"]:
                 self.detach_policy_from_role(
                     role_name=role_name,
-                    policy_arn=policy["PolicyArn"]
+                    policy_arn=policy["PolicyArn"],
                 )
+
+    def _delete_role_inline_policies(self, role_name):
+        """Deletes all inline policies in the given role"""
+
+        policies = self._do(
+            'iam', 'list_role_policies', RoleName=role_name)
+
+        if policies:
+            for policy_name in policies["PolicyNames"]:
+                self.delete_role_inline_policy(
+                    role_name=role_name,
+                    policy_name=policy_name,
+                )
+
+    def delete_role_inline_policy(self, policy_name, role_name):
+        self._do('iam', 'delete_role_policy',
+            RoleName=role_name,
+            PolicyName=policy_name)
 
     def attach_policy_to_role(self, policy_arn, role_name):
         self._do('iam', 'attach_role_policy',

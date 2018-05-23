@@ -71,6 +71,13 @@ class AwsTestCase(TestCase):
             PolicyArn='policy_arn',
         )
 
+    def test_delete_role_inline_policy(self):
+        aws.delete_role_inline_policy('policy_name', 'role_name')
+        aws.client.return_value.delete_role_policy.assert_called_with(
+            RoleName='role_name',
+            PolicyName='policy_name',
+        )
+
     def test_create_role(self):
         role_name = "a_role"
         assume_role_policy = {"test policy": True}
@@ -83,24 +90,38 @@ class AwsTestCase(TestCase):
         )
 
     def test_delete_role(self):
-        aws.client.return_value.list_attached_role_policies.return_value = {
+        aws_client = aws.client.return_value
+        aws_client.list_attached_role_policies.return_value = {
             "AttachedPolicies": [
                 {"PolicyArn": "arn_1"},
                 {"PolicyArn": "arn_2"},
+            ],
+        }
+        aws_client.list_role_policies.return_value = {
+            "PolicyNames": [
+                's3-access',
+                'other-inline-policy',
             ],
         }
 
         role_name = "a_role"
         aws.delete_role(role_name)
 
+        # Check managed policies are detached from role
         expected_detach_calls = [
             call(RoleName=role_name, PolicyArn='arn_1'),
             call(RoleName=role_name, PolicyArn='arn_2'),
         ]
-
-        # Check policies are detached from role
-        aws.client.return_value.detach_role_policy.assert_has_calls(
+        aws_client.detach_role_policy.assert_has_calls(
             expected_detach_calls)
+
+        # Check inline policies are deleted
+        expected_delete_policy_calls = [
+            call(RoleName=role_name, PolicyName='s3-access'),
+            call(RoleName=role_name, PolicyName='other-inline-policy'),
+        ]
+        aws_client.delete_role_policy.assert_has_calls(
+            expected_delete_policy_calls)
 
         # Check role is deleted
         aws.client.return_value.delete_role.assert_called_with(
