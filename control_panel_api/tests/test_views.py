@@ -378,10 +378,8 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         group = MagicMock()
         user = MagicMock()
         authz = api.authorization
-        authz.get.side_effect = [
-            group,
-            user
-        ]
+        authz.get_or_create.return_value = group
+        authz.get.return_value = user
 
         response = self.client.post(
             reverse('appcustomers-list', (self.app.id,)),
@@ -389,7 +387,7 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
 
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        authz.get.assert_any_call(Auth0Group(name=self.app.slug))
+        authz.get_or_create.assert_called_with(Auth0Group(name=self.app.slug))
 
         group.add_users.assert_called_with([
             {'user_id': user['user_id']}])
@@ -400,10 +398,8 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         api = mock_auth0_client.return_value
         group = MagicMock()
         authz = api.authorization
-        authz.get.side_effect = [
-            group,
-            None
-        ]
+        authz.get_or_create.return_value = group
+        authz.get.return_value = None
         mgmt = api.management
         mgmt.create.return_value = Auth0User(user_id=123)
 
