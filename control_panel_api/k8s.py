@@ -68,12 +68,14 @@ class Config(object):
             try:
                 k8s_config.load_incluster_config()
             except ConfigException as e:
+                from control_panel_api import k8s_patch
                 k8s_config.load_kube_config()
 
-            self.host = k8s_client.configuration.host
+            conf = k8s_client.configuration.Configuration()
+            self.host = conf.host
             if not settings.ENABLED['k8s_rbac']:
-                self.authorization = k8s_client.configuration.api_key['authorization']
-            self.ssl_ca_cert = k8s_client.configuration.ssl_ca_cert
+                self.authorization = conf.api_key['authorization']
+            self.ssl_ca_cert = conf.ssl_ca_cert
 
             self._loaded = True
 
