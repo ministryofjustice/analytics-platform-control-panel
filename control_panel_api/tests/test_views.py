@@ -372,62 +372,55 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         )
 
     @patch('control_panel_api.auth0.Auth0Client')
-    def test_post(self, mock_auth0client):
-        api_get_user_response = {'user_id': 123}
-        mock_auth0client.return_value.authorization.get.return_value = api_get_user_response
-
+    def test_post(self, mock_auth0_client):
         data = {'email': 'foo@example.com'}
+        api = mock_auth0_client.return_value
+        group = MagicMock()
+        user = MagicMock()
+        authz = api.authorization
+        authz.get.side_effect = [
+            group,
+            user
+        ]
 
         response = self.client.post(
-            reverse('appcustomers-list', (self.app.id,)), data)
+            reverse('appcustomers-list', (self.app.id,)),
+            data)
 
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        mock_auth0client.return_value.authorization.get_or_create.assert_called_with(
-            Auth0Group(name=self.app.name)
-        )
+        authz.get.assert_any_call(Auth0Group(name=self.app.slug))
 
-        mock_auth0client.return_value.authorization.get.assert_called_with(
-            Auth0User(email=data['email'])
-        )
-
-        mock_auth0client.return_value.authorization.get_or_create.return_value.add_users.assert_called_with(
-            [{'user_id': api_get_user_response['user_id']}]
-        )
+        group.add_users.assert_called_with([
+            {'user_id': user['user_id']}])
 
     @patch('control_panel_api.auth0.Auth0Client')
-    def test_post_create_user(self, mock_auth0client):
-        api_create_user_response = {'user_id': 123}
-
-        mock_auth0client.return_value.authorization.get.return_value = None
-        mock_auth0client.return_value.management.create.return_value = api_create_user_response
-
+    def test_post_create_user(self, mock_auth0_client):
         data = {'email': 'foo@example.com'}
+        api = mock_auth0_client.return_value
+        group = MagicMock()
+        authz = api.authorization
+        authz.get.side_effect = [
+            group,
+            None
+        ]
+        mgmt = api.management
+        mgmt.create.return_value = Auth0User(user_id=123)
 
         response = self.client.post(
-            reverse('appcustomers-list', (self.app.id,)), data)
+            reverse('appcustomers-list', (self.app.id,)),
+            data)
 
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        mock_auth0client.return_value.authorization.get_or_create.assert_called_with(
-            Auth0Group(name=self.app.name)
-        )
-
-        mock_auth0client.return_value.authorization.get.assert_called_with(
-            Auth0User(email=data['email'])
-        )
-
-        mock_auth0client.return_value.management.create.assert_called_with(
+        mgmt.create.assert_called_with(
             Auth0User(
                 connection='email',
                 email=data['email'],
-                email_verified=True,
-            )
-        )
+                email_verified=True))
 
-        mock_auth0client.return_value.authorization.get_or_create.return_value.add_users.assert_called_with(
-            [{'user_id': api_create_user_response['user_id']}]
-        )
+        group.add_users.assert_called_with([
+            {'user_id': 123}])
 
 
 class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
@@ -445,7 +438,7 @@ class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         mock_auth0client.return_value.authorization.get.assert_called_with(
-            Auth0Group(name=self.fixture.name)
+            Auth0Group(name=self.fixture.slug)
         )
 
         mock_auth0client.return_value.authorization.get.return_value.delete_users.assert_called_with(

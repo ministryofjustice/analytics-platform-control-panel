@@ -45,7 +45,7 @@ class Auth0(object):
         return group.get_members()
 
     def add_group_member(self, group_name, email):
-        group = self.authorization_api.get_or_create(Group(name=group_name))
+        group = self.authorization_api.get(Group(name=group_name))
 
         user = self.authorization_api.get(User(
             email=email,
