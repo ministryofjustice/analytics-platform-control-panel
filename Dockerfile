@@ -1,4 +1,4 @@
-FROM alpine:3.6
+FROM alpine:3.7
 
 MAINTAINER Andy Driver <andy.driver@digital.justice.gov.uk>
 
@@ -13,9 +13,17 @@ RUN apk add --no-cache \
         openssl \
         ca-certificates \
         libffi-dev \
-        libressl-dev \
-        postgresql-dev \
         python3-dev
+
+# Temporary bugfix for libressl
+# Postgres needs libressl-dev, but cryptography only works with openssl-dev
+RUN apk add --no-cache --virtual temp-ssl-fix \
+        openssl-dev \
+    && pip3 install cryptography==2.2.2 \
+    && apk del temp-ssl-fix \
+    && apk add --no-cache \
+        libressl-dev \
+        postgresql-dev
 
 # Install helm
 ENV HELM_VERSION 2.8.2
