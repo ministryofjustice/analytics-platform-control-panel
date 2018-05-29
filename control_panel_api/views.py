@@ -143,7 +143,7 @@ class AppCustomersAPIView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        members = Auth0().get_group_members(instance.name)
+        members = Auth0().get_group_members(instance.slug)
 
         if members is None:
             raise Http404
@@ -158,7 +158,7 @@ class AppCustomersAPIView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         Auth0().add_group_member(
-            self.get_object().name,
+            self.get_object().slug,
             serializer.validated_data['email']
         )
 
@@ -170,7 +170,7 @@ class AppCustomersDetailAPIView(GenericAPIView):
     permission_classes = (IsSuperuser,)
 
     def delete(self, request, *args, **kwargs):
-        Auth0().delete_group_member(self.get_object().name, kwargs['user_id'])
+        Auth0().delete_group_member(self.get_object().slug, kwargs['user_id'])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
