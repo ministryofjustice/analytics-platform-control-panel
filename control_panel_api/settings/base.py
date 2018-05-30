@@ -167,8 +167,17 @@ RSTUDIO_AUTH_CLIENT_DOMAIN = os.environ.get('RSTUDIO_AUTH_CLIENT_DOMAIN', OIDC_D
 RSTUDIO_AUTH_CLIENT_ID = os.environ.get('RSTUDIO_AUTH_CLIENT_ID')
 RSTUDIO_AUTH_CLIENT_SECRET = os.environ.get('RSTUDIO_AUTH_CLIENT_SECRET')
 
-ELASTICSEARCH_CONN = os.environ.get('ELASTICSEARCH_CONN')
-ELASTICSEARCH_INDEX_S3LOGS = os.environ.get('ELASTICSEARCH_INDEX_S3LOGS', 's3logs-*')
+ELASTICSEARCH = {
+    'connection': {
+        'host': os.environ.get('ELASTICSEARCH_HOST'),
+        'port': os.environ.get('ELASTICSEARCH_PORT', 9243),
+        'http_auth': (
+            os.environ.get('ELASTICSEARCH_USERNAME'),
+            os.environ.get('ELASTICSEARCH_PASSWORD')
+        ),
+    },
+    'index': os.environ.get('ELASTICSEARCH_INDEX_S3LOGS', 's3logs-*'),
+}
 
 LOGGING = {
     'version': 1,
