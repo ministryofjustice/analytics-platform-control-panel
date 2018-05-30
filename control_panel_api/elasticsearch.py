@@ -1,12 +1,13 @@
 from django.conf import settings
-from elasticsearch_dsl import Q, Search, connections
+from elasticsearch import Elasticsearch
+from elasticsearch_dsl import Q, Search
 from elasticsearch_dsl.query import Range
 
 
 def bucket_hits_aggregation(bucket_name, num_days=None):
-    connections.create_connection(hosts=settings.ELASTICSEARCH['connection'])
+    conn = Elasticsearch(hosts=settings.ELASTICSEARCH['hosts'])
 
-    s = Search(index=settings.ELASTICSEARCH['index'])
+    s = Search(using=conn, index=settings.ELASTICSEARCH['index'])
 
     q1 = Q('term', **{'bucket.keyword': bucket_name})
     q2 = Q('terms',
