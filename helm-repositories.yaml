@@ -18,4 +18,4 @@ repositories:
   certFile: ""
   keyFile: ""
   name: mojanalytics
-  url: https://ministryofjustice.github.io/analytics-platform-helm-charts/charts/
+  url: http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
