@@ -46,7 +46,7 @@ kubectl cluster-info
 
 You need to tell Helm to use the AP charts:
 ```sh
-helm repo add mojanalytics https://ministryofjustice.github.io/analytics-platform-helm-charts/charts/
+helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 helm repo update
 ```
 
