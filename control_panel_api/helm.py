@@ -22,7 +22,7 @@ class Helm(object):
                     stderr=subprocess.PIPE,
                     check=True)
             except subprocess.CalledProcessError as error:
-                log.error(error.stdout)
+                log.error(error.stderr)
                 raise error
 
 
@@ -36,7 +36,7 @@ class Helm(object):
                     check=True
                 )
             except subprocess.CalledProcessError as error:
-                log.error(error.stdout)
+                log.error(error.stderr)
                 raise error
 
     def upgrade_release(self, release, chart, *args):
