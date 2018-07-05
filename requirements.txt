@@ -44,7 +44,7 @@ pytest-watch==4.2.0
 python-dateutil==2.7.3
 python-jose==3.0.0
 pytz==2018.4
-PyYAML==4.1
+PyYAML==3.12
 raven==6.9.0
 requests==2.19.1
 rsa==3.4.2
