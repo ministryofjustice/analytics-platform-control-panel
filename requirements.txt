@@ -17,7 +17,7 @@ djangorestframework==3.8.2
 docutils==0.14
 ecdsa==0.13
 elasticsearch==6.2.0
-elasticsearch-dsl==6.1.0
+elasticsearch-dsl==6.2.1
 future==0.16.0
 google-auth==1.5.0
 gunicorn==19.8.1
