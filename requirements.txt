@@ -20,7 +20,7 @@ elasticsearch==6.2.0
 elasticsearch-dsl==6.1.0
 future==0.16.0
 google-auth==1.5.0
-gunicorn==19.8.1
+gunicorn==19.9.0
 idna==2.6
 ipaddress==1.0.22
 itypes==1.1.0
