@@ -30,11 +30,11 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
         fields = ('id', 'url', 'app', 's3bucket', 'access_level')
 
     def update(self, instance, validated_data):
-        if instance.app != validated_data['app']:
+        if 'app' in validated_data and instance.app != validated_data['app']:
             raise serializers.ValidationError(
                 "App is not editable. Create a new record."
             )
-        if instance.s3bucket != validated_data['s3bucket']:
+        if 's3bucket' in validated_data and instance.s3bucket != validated_data['s3bucket']:
             raise serializers.ValidationError(
                 "S3Bucket is not editable. Create a new record."
             )
