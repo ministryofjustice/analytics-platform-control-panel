@@ -26,7 +26,7 @@ RUN apk add --no-cache --virtual temp-ssl-fix \
         postgresql-dev
 
 # Install helm
-ENV HELM_VERSION 2.8.2
+ENV HELM_VERSION 2.9.1
 RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz \
     && tar xzf helm-v$HELM_VERSION-linux-amd64.tar.gz \
     && mv linux-amd64/helm /usr/local/bin \
