@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from django.conf import settings
 
 from moj_analytics.auth0_client import (
@@ -36,34 +38,50 @@ class Auth0(object):
 
         return self.api.management
 
-    def get_group_members(self, app_name):
-        group = self.authorization_api.get(Group(name=app_name))
+    def get_group_members(self, group_name):
+        group = self.authorization_api.get(Group(name=group_name))
 
         if group is None:
             return None
 
         return group.get_members()
 
-    def add_group_member(self, group_name, email):
-        group = self.authorization_api.get_or_create(Group(name=group_name))
+    def add_group_members(self, group_name, emails, user_options={}):
+        group = self.authorization_api.get(Group(name=group_name))
 
-        user = self.authorization_api.get(User(
-            email=email,
-        ))
+        all_users = self.authorization_api.get_all(User)
+        user_lookup = {
+            user['email']: user
+            for user in all_users if 'email' in user}
 
-        if user is None:
-            user = self.management_api.create(User(
-                connection='email',
-                email=email,
-                email_verified=True,
-            ))
+        def has_options(user):
+            return all(
+                item in user.items()
+                for item in user_options.items())
 
-        group.add_users([{'user_id': user['user_id']}])
+        # sorted users for easier testing
+        users_to_add = OrderedDict()
 
-    def delete_group_member(self, group_name, user_id):
+        for email in emails:
+            user = user_lookup.get(email)
+
+            if user and has_options(user):
+                users_to_add[email] = user
+
+            else:
+                users_to_add[email] = self.management_api.create(User(
+                    email=email,
+                    email_verified=True,
+                    **user_options))
+
+        group.add_users(list(users_to_add.values()))
+
+    def delete_group_members(self, group_name, user_ids):
         group = self.authorization_api.get(Group(name=group_name))
 
         if group is None:
             return None
 
-        group.delete_users([{'user_id': user_id}])
+        group.delete_users([
+            {'user_id': user_id}
+            for user_id in user_ids])

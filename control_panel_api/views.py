@@ -13,7 +13,6 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 from subprocess import CalledProcessError
 
-from control_panel_api.auth0 import Auth0
 from control_panel_api.elasticsearch import bucket_hits_aggregation
 from control_panel_api.exceptions import (
     AWSException,
@@ -141,14 +140,13 @@ class AppCustomersAPIView(GenericAPIView):
     permission_classes = (IsSuperuser,)
 
     def get(self, request, *args, **kwargs):
-        instance = self.get_object()
+        app = self.get_object()
+        customers = app.get_customers()
 
-        members = Auth0().get_group_members(instance.slug)
-
-        if members is None:
+        if not customers:
             raise Http404
 
-        serializer = self.get_serializer(data=members, many=True)
+        serializer = self.get_serializer(data=customers, many=True)
         serializer.is_valid()
 
         return Response(serializer.data)
@@ -157,10 +155,8 @@ class AppCustomersAPIView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        Auth0().add_group_member(
-            self.get_object().slug,
-            serializer.validated_data['email']
-        )
+        app = self.get_object()
+        app.add_customers([serializer.validated_data['email']])
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -170,7 +166,8 @@ class AppCustomersDetailAPIView(GenericAPIView):
     permission_classes = (IsSuperuser,)
 
     def delete(self, request, *args, **kwargs):
-        Auth0().delete_group_member(self.get_object().slug, kwargs['user_id'])
+        app = self.get_object()
+        app.delete_customers([kwargs['user_id']])
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 

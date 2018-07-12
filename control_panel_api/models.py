@@ -9,6 +9,7 @@ from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
 from control_panel_api import services, validators
+from control_panel_api.auth0 import Auth0
 from control_panel_api.helm import helm
 from control_panel_api.utils import sanitize_dns_label
 
@@ -103,6 +104,20 @@ class App(TimeStampedModel):
             repo_name = repo_name[:-4]
 
         return repo_name.rsplit('/', 1)[1]
+
+    def get_customers(self):
+        return Auth0().get_group_members(group_name=self.slug)
+
+    def add_customers(self, emails):
+        Auth0().add_group_members(
+            group_name=self.slug,
+            emails=emails,
+            user_options={'connection': 'email'})
+
+    def delete_customers(self, user_ids):
+        Auth0().delete_group_members(
+            group_name=self.slug,
+            user_ids=user_ids)
 
 
 class UserApp(TimeStampedModel):
