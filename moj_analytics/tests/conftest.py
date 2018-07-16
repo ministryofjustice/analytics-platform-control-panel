@@ -226,3 +226,27 @@ def given_a_role_exists(request, config, mock_resources, state):
     data = [Role(name='role1', applicationId='app1')]
     mock_resources(config['authz_url'], 'roles', data, authz_format)
     state['roles'] = data
+
+
+@pytest.fixture
+def given_more_than_100_users_exist(request, config, responses):
+    total = 150
+    per_page = 100
+
+    data = [
+        User(email=f'test{i}@example.com', connection='email')
+        for i in range(total)
+    ]
+
+    for i in range(0, total, per_page):
+        responses.add_callback(
+            'GET',
+            f'https://{config["domain"]}/api/v2/users',
+            json_response({
+                'start': 0,
+                'limit': per_page,
+                'length': (total - i),
+                'total': total,
+                'users': data[i:i+100]
+            })
+        )

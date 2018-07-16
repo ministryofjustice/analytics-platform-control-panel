@@ -104,26 +104,29 @@ class API(object):
     def get_all(self, resource_class, **kwargs):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
-        resources = self.request('GET', endpoint, params=kwargs)
+        defaults = {
+            'page': 0,
+            'per_page': 100,
+            'include_totals': True
+        }
 
-        if endpoint in resources:
-            resources = resources[endpoint]
+        params = defaults.copy()
+        params.update(kwargs)
 
-        return [resource_class(self, r) for r in resources]
+        resources = []
 
-    def get_all_pages(self, resource_class, per_page=100, **kwargs):
-        page = 0
         while True:
-            items = self.get_all(
-                resource_class, per_page=per_page, page=page, **kwargs)
+            response = self.request('GET', endpoint, params=params)
 
-            for item in items:
-                yield item
+            if endpoint in response:
+                resources.extend(response[endpoint])
 
-            if len(items) < per_page:
+            if len(resources) == response['total']:
                 break
 
-            page += 1
+            params['page'] += 1
+
+        return [resource_class(self, r) for r in resources]
 
     def get(self, resource):
         resources = self.get_all(resource.__class__)
