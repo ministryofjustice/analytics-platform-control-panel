@@ -93,7 +93,7 @@ class API(object):
         response = self.request('POST', endpoint, json=resource)
 
         if 'error' in response:
-            raise CreateResourceError(response['message'])
+            raise CreateResourceError(response)
 
         print('Created {resource}({attrs})'.format(
             resource=resource.__class__.__name__.lower(),
@@ -269,7 +269,7 @@ class Group(AuthzResource):
         )
 
         if 'error' in response:
-            raise AddGroupRoleError(response['message'])
+            raise AddGroupRoleError(response)
 
         print('Added role({role}) to group({group})'.format(
             role=role['name'],
@@ -283,7 +283,7 @@ class Group(AuthzResource):
         )
 
         if 'error' in response:
-            raise AddGroupMemberError(response['message'])
+            raise AddGroupMemberError(response)
 
     def delete_users(self, users):
         response = self.api.request(
@@ -293,7 +293,7 @@ class Group(AuthzResource):
         )
 
         if 'error' in response:
-            raise DeleteGroupMemberError(response['message'])
+            raise DeleteGroupMemberError(response)
 
     def get_members(self):
         results = self.api.request(
