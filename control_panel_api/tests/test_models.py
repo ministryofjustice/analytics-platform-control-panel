@@ -1,4 +1,5 @@
 import json
+from operator import itemgetter
 from unittest.mock import MagicMock, call, patch
 
 from django.conf import settings
@@ -6,6 +7,7 @@ from django.db.utils import IntegrityError
 from django.test import TestCase
 from model_mommy import mommy
 
+from control_panel_api.auth0 import User as Auth0User
 from control_panel_api.aws import aws
 from control_panel_api.helm import helm
 from control_panel_api.models import (
@@ -187,6 +189,84 @@ class AppTestCase(TestCase):
 
         aws.client.return_value.delete_role.assert_called_with(
             RoleName=expected_role_name)
+
+    @patch('control_panel_api.auth0.Auth0Client')
+    def test_get_customers(self, auth0):
+        auth0.return_value.authorization.get.return_value.get_members.return_value = [
+            {'email': 'test@example.com'}
+        ]
+
+        app = App.objects.create(repo_url='https://example.com/repo_name')
+        customers = app.get_customers()
+
+        expected_customer_emails = ['test@example.com']
+
+        self.assertEqual(
+            expected_customer_emails,
+            list(map(itemgetter('email'), customers)))
+
+    @patch('control_panel_api.auth0.Auth0Client')
+    def test_add_customers(self, mock_auth0_client):
+        app = App.objects.create(repo_url='https://example.com/repo_name')
+        auth0 = mock_auth0_client.return_value
+        authz = auth0.authorization
+        mgmt = auth0.management
+        group = authz.get.return_value
+        emails = [
+            'test1@example.com',
+            'test2@example.com'
+        ]
+
+        def mock_create_user(user):
+            return Auth0User(user, user_id=emails.index(user['email']))
+
+        mgmt.create.side_effect = mock_create_user
+
+        def new_user(email):
+            return Auth0User(
+                email=email,
+                email_verified=True,
+                connection='email')
+
+        def existing_user(email):
+            return Auth0User(new_user(email), user_id=emails.index(email))
+
+        def assert_case(all_users, expected_created, expected_added):
+            authz.get_all.return_value = all_users
+
+            app.add_customers(emails)
+
+            mgmt.create.assert_has_calls(
+                [call(user) for user in expected_created],
+                any_order=True)
+
+            args, kwargs = group.add_users.call_args
+            assert list(args[0]) == expected_added
+
+        assert_case(
+            all_users=[],
+            expected_created=map(new_user, emails),
+            expected_added=list(map(existing_user, emails)))
+
+        assert_case(
+            all_users=[existing_user('test1@example.com')],
+            expected_created=[new_user('test2@example.com')],
+            expected_added=list(map(existing_user, emails)))
+
+        assert_case(
+            all_users=list(map(existing_user, emails)),
+            expected_created=[],
+            expected_added=list(map(existing_user, emails)))
+
+    @patch('control_panel_api.auth0.Auth0Client')
+    def test_delete_customers(self, mock_auth0_client):
+        app = App.objects.create(repo_url='https://example.com/repo_name')
+        auth0 = mock_auth0_client.return_value
+        authz = auth0.authorization
+        group = authz.get.return_value
+        app.delete_customers(['email|123'])
+        group.delete_users.assert_called_with([
+            {'user_id': 'email|123'}])
 
 
 class S3BucketTestCase(TestCase):

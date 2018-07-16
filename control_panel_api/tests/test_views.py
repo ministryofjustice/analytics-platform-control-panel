@@ -376,10 +376,14 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         data = {'email': 'foo@example.com'}
         api = mock_auth0_client.return_value
         group = MagicMock()
-        user = MagicMock()
+        user = {
+            'user_id': 'email|123',
+            'email': 'foo@example.com',
+            'email_verified': True,
+            'connection': 'email'}
         authz = api.authorization
-        authz.get_or_create.return_value = group
-        authz.get.return_value = user
+        authz.get.return_value = group
+        authz.get_all.return_value = [user]
 
         response = self.client.post(
             reverse('appcustomers-list', (self.app.id,)),
@@ -387,10 +391,10 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
 
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        authz.get_or_create.assert_called_with(Auth0Group(name=self.app.slug))
+        authz.get.assert_called_with(Auth0Group(name=self.app.slug))
 
-        group.add_users.assert_called_with([
-            {'user_id': user['user_id']}])
+        args, kwargs = group.add_users.call_args
+        assert list(args[0]) == [user]
 
     @patch('control_panel_api.auth0.Auth0Client')
     def test_post_create_user(self, mock_auth0_client):
@@ -398,8 +402,8 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
         api = mock_auth0_client.return_value
         group = MagicMock()
         authz = api.authorization
-        authz.get_or_create.return_value = group
-        authz.get.return_value = None
+        authz.get.return_value = group
+        authz.get_all.return_value = []
         mgmt = api.management
         mgmt.create.return_value = Auth0User(user_id=123)
 
@@ -415,8 +419,8 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
                 email=data['email'],
                 email_verified=True))
 
-        group.add_users.assert_called_with([
-            {'user_id': 123}])
+        args, kwargs = group.add_users.call_args
+        assert list(args[0]) == [{'user_id': 123}]
 
 
 class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
