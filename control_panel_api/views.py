@@ -143,7 +143,7 @@ class AppCustomersAPIView(GenericAPIView):
         app = self.get_object()
         customers = app.get_customers()
 
-        if not customers:
+        if customers is None:
             raise Http404
 
         serializer = self.get_serializer(data=customers, many=True)

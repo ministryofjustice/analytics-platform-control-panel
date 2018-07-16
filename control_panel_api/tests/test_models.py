@@ -203,7 +203,7 @@ class AppTestCase(TestCase):
 
         self.assertEqual(
             expected_customer_emails,
-            sorted(map(itemgetter('email'), customers)))
+            list(map(itemgetter('email'), customers)))
 
     @patch('control_panel_api.auth0.Auth0Client')
     def test_add_customers(self, mock_auth0_client):
