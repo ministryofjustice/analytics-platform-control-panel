@@ -74,7 +74,7 @@ class Auth0(object):
                     email_verified=True,
                     **user_options))
 
-        group.add_users(list(users_to_add.values()))
+        group.add_users(users_to_add.values())
 
     def delete_group_members(self, group_name, user_ids):
         group = self.authorization_api.get(Group(name=group_name))

@@ -240,7 +240,8 @@ class AppTestCase(TestCase):
                 [call(user) for user in expected_created],
                 any_order=True)
 
-            group.add_users.assert_called_with(expected_added)
+            args, kwargs = group.add_users.call_args
+            assert list(args[0]) == expected_added
 
         assert_case(
             all_users=[],
