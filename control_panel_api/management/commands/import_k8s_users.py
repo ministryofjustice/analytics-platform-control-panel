@@ -43,7 +43,7 @@ def get_auth0_users():
     )
     api.access(ManagementAPI(settings.OIDC_DOMAIN))
 
-    return list(api.management.get_all_pages(Auth0User, connection='github'))
+    return list(api.management.get_all(Auth0User, connection='github'))
 
 
 def get_auth0_ids():

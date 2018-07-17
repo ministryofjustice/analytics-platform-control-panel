@@ -6,6 +6,10 @@ class AccessTokenError(Exception):
     pass
 
 
+class APIError(Exception):
+    pass
+
+
 class CreateResourceError(Exception):
     pass
 
@@ -93,7 +97,7 @@ class API(object):
         response = self.request('POST', endpoint, json=resource)
 
         if 'error' in response:
-            raise CreateResourceError(response['message'])
+            raise CreateResourceError(response)
 
         print('Created {resource}({attrs})'.format(
             resource=resource.__class__.__name__.lower(),
@@ -104,26 +108,35 @@ class API(object):
     def get_all(self, resource_class, **kwargs):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
-        resources = self.request('GET', endpoint, params=kwargs)
+        params = dict(
+            page=0,
+            per_page=100,
+            include_totals=True,
+            **kwargs
+        )
 
-        if endpoint in resources:
-            resources = resources[endpoint]
+        resources = []
+        total = None
 
-        return [resource_class(self, r) for r in resources]
-
-    def get_all_pages(self, resource_class, per_page=100, **kwargs):
-        page = 0
         while True:
-            items = self.get_all(
-                resource_class, per_page=per_page, page=page, **kwargs)
+            response = self.request('GET', endpoint, params=params)
+            response.raise_for_status()
 
-            for item in items:
-                yield item
+            if total is None:
+                total = response['total']
 
-            if len(items) < per_page:
+            if total != response['total']:
+                raise APIError(f'{endpoint} total changed')
+
+            if endpoint in results:
+                resources.extend(results[endpoint])
+
+            if len(resources) >= total:
                 break
 
-            page += 1
+            params['page'] += 1
+
+        return [resource_class(self, r) for r in resources]
 
     def get(self, resource):
         resources = self.get_all(resource.__class__)
@@ -266,7 +279,7 @@ class Group(AuthzResource):
         )
 
         if 'error' in response:
-            raise AddGroupRoleError(response['message'])
+            raise AddGroupRoleError(response)
 
         print('Added role({role}) to group({group})'.format(
             role=role['name'],
@@ -280,7 +293,7 @@ class Group(AuthzResource):
         )
 
         if 'error' in response:
-            raise AddGroupMemberError(response['message'])
+            raise AddGroupMemberError(response)
 
     def delete_users(self, users):
         response = self.api.request(
@@ -290,7 +303,7 @@ class Group(AuthzResource):
         )
 
         if 'error' in response:
-            raise DeleteGroupMemberError(response['message'])
+            raise DeleteGroupMemberError(response)
 
     def get_members(self):
         results = self.api.request(
