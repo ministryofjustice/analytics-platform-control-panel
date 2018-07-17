@@ -13,6 +13,15 @@ class TestAuth0Client(object):
     @pytest.mark.usefixtures(
         'given_valid_api_client_credentials',
         'given_access_to_the_management_api',
+        'given_more_than_100_users_exist',
+    )
+    def test_it_can_list_more_than_100_users(self, auth0):
+        users = auth0.management.get_all(User)
+        assert len(users) == 150
+
+    @pytest.mark.usefixtures(
+        'given_valid_api_client_credentials',
+        'given_access_to_the_management_api',
     )
     def test_it_can_create_a_client(self, auth0):
 
