@@ -238,15 +238,15 @@ def given_more_than_100_users_exist(request, config, responses):
         for i in range(total)
     ]
 
-    for i in range(0, total, per_page):
+    for start in range(0, total, per_page):
         responses.add_callback(
             'GET',
             f'https://{config["domain"]}/api/v2/users',
             json_response({
                 'start': 0,
                 'limit': per_page,
-                'length': (total - i),
+                'length': (total - start),
                 'total': total,
-                'users': data[i:i+100]
+                'users': data[start:start+per_page]
             })
         )

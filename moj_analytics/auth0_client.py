@@ -6,6 +6,10 @@ class AccessTokenError(Exception):
     pass
 
 
+class APIError(Exception):
+    pass
+
+
 class CreateResourceError(Exception):
     pass
 
@@ -104,24 +108,30 @@ class API(object):
     def get_all(self, resource_class, **kwargs):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
-        defaults = {
-            'page': 0,
-            'per_page': 100,
-            'include_totals': True
-        }
-
-        params = defaults.copy()
-        params.update(kwargs)
+        params = dict(
+            page=0,
+            per_page=100,
+            include_totals=True,
+            **kwargs
+        )
 
         resources = []
+        total = None
 
         while True:
             response = self.request('GET', endpoint, params=params)
+            response.raise_for_status()
 
-            if endpoint in response:
-                resources.extend(response[endpoint])
+            if total is None:
+                total = response['total']
 
-            if len(resources) == response['total']:
+            if total != response['total']:
+                raise APIError(f'{endpoint} total changed')
+
+            if endpoint in results:
+                resources.extend(results[endpoint])
+
+            if len(resources) >= total:
                 break
 
             params['page'] += 1

@@ -19,7 +19,6 @@ class TestAuth0Client(object):
         users = auth0.management.get_all(User)
         assert len(users) == 150
 
-
     @pytest.mark.usefixtures(
         'given_valid_api_client_credentials',
         'given_access_to_the_management_api',
