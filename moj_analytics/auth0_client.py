@@ -128,8 +128,8 @@ class API(object):
             if total != response['total']:
                 raise APIError(f'{endpoint} total changed')
 
-            if endpoint in results:
-                resources.extend(results[endpoint])
+            if endpoint in response:
+                resources.extend(response[endpoint])
 
             if len(resources) >= total:
                 break
