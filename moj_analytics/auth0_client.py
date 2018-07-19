@@ -68,6 +68,7 @@ class API(object):
         self.audience = audience or base_url
         self.access_token = None
         self._token = None
+        self.get_all_params = {}
 
     def request(self, method, endpoint, **kwargs):
         url = '{base_url}/{endpoint}'.format(
@@ -109,12 +110,7 @@ class API(object):
     def get_all(self, resource_class, **kwargs):
         endpoint = '{}s'.format(resource_class.__name__.lower())
 
-        params = dict(
-            page=0,
-            per_page=100,
-            include_totals=True,
-            **kwargs
-        )
+        params = self.get_all_params
 
         resources = []
         total = None
@@ -160,10 +156,21 @@ class ManagementAPI(API):
     def __init__(self, domain):
         super(ManagementAPI, self).__init__(
             'https://{domain}/api/v2/'.format(domain=domain))
+        self.get_all_params = {
+            'page': 0,  # first page is 0
+            'per_page': 100,
+            'include_totals': True,
+        }
 
 
 class AuthorizationAPI(API):
-    pass
+
+    def __init__(self, domain):
+        super(AuthorizationAPI, self).__init__(domain)
+        self.get_all_params = {
+            'page': 1,
+            'per_page': 25,  # max allowed
+        }
 
 
 class Resource(dict):
