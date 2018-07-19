@@ -165,8 +165,8 @@ class ManagementAPI(API):
 
 class AuthorizationAPI(API):
 
-    def __init__(self, domain):
-        super(AuthorizationAPI, self).__init__(domain)
+    def __init__(self, *args, **kwargs):
+        super(AuthorizationAPI, self).__init__(*args, **kwargs)
         self.get_all_params = {
             'page': 1,
             'per_page': 25,  # max allowed
