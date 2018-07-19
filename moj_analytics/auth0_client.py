@@ -85,6 +85,7 @@ class API(object):
             json=kwargs.pop('json', {}),
             **kwargs
         )
+        response.raise_for_status()
 
         if response.text:
             return response.json()
@@ -120,7 +121,6 @@ class API(object):
 
         while True:
             response = self.request('GET', endpoint, params=params)
-            response.raise_for_status()
 
             if total is None:
                 total = response['total']
