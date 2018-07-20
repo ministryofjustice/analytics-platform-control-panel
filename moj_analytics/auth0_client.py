@@ -106,9 +106,12 @@ class API(object):
 
         return resource.__class__(self, response)
 
-    def get_all(self, resource_class, endpoint=None, **kwargs):
+    def get_all(self, resource_class, endpoint=None, key=None, **kwargs):
         if endpoint is None:
-            endpoint = '{}s'.format(resource_class.__name__.lower())
+            endpoint = f'{resource_class.__name__.lower()}s'
+
+        if key is None:
+            key = f'{resource_class.__name__.lower()}s'
 
         params = resource_class.get_all_params
 
@@ -124,13 +127,12 @@ class API(object):
             if total != response['total']:
                 raise APIError(f'{endpoint} total changed')
 
-            if endpoint in response:
-                resources.extend(response[endpoint])
+            resources.extend(response.get(key, []))
 
             if len(resources) >= total:
                 break
 
-            params['page'] += 1
+            params['page'] = params.get('page', 1) + 1
 
         return [resource_class(self, r) for r in resources]
 
@@ -208,7 +210,6 @@ class User(Resource):
     get_all_params = {
         'page': 0,  # first page is zero
         'per_page': 100,  # max allowed is 100
-        'include_totals': True,  # include 'total' field in results
     }
 
 
@@ -312,4 +313,5 @@ class Group(AuthzResource):
     def get_members(self):
         return self.api.get_all(
             Member,
-            endpoint=f'groups/{self["_id"]}/members')
+            endpoint=f'groups/{self["_id"]}/members',
+            key='users')
