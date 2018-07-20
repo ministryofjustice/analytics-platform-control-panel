@@ -68,7 +68,6 @@ class API(object):
         self.audience = audience or base_url
         self.access_token = None
         self._token = None
-        self.get_all_params = {}
 
     def request(self, method, endpoint, **kwargs):
         url = '{base_url}/{endpoint}'.format(
@@ -107,10 +106,11 @@ class API(object):
 
         return resource.__class__(self, response)
 
-    def get_all(self, resource_class, **kwargs):
-        endpoint = '{}s'.format(resource_class.__name__.lower())
+    def get_all(self, resource_class, endpoint=None, **kwargs):
+        if endpoint is None:
+            endpoint = '{}s'.format(resource_class.__name__.lower())
 
-        params = self.get_all_params
+        params = resource_class.get_all_params
 
         resources = []
         total = None
@@ -156,24 +156,14 @@ class ManagementAPI(API):
     def __init__(self, domain):
         super(ManagementAPI, self).__init__(
             'https://{domain}/api/v2/'.format(domain=domain))
-        self.get_all_params = {
-            'page': 0,  # first page is 0
-            'per_page': 100,
-            'include_totals': True,
-        }
 
 
 class AuthorizationAPI(API):
-
-    def __init__(self, *args, **kwargs):
-        super(AuthorizationAPI, self).__init__(*args, **kwargs)
-        self.get_all_params = {
-            'page': 1,
-            'per_page': 25,  # max allowed
-        }
+    pass
 
 
 class Resource(dict):
+    get_all_params = {}
 
     def __init__(self, api=None, *args, **kwargs):
         super(Resource, self).__init__(*args, **kwargs)
@@ -215,7 +205,11 @@ class Connection(Resource):
 
 
 class User(Resource):
-    pass
+    get_all_params = {
+        'page': 0,  # first page is zero
+        'per_page': 100,  # max allowed is 100
+        'include_totals': True,  # include 'total' field in results
+    }
 
 
 class AuthzResource(Resource):
@@ -273,7 +267,10 @@ class Role(AuthzResource):
 
 
 class Member(AuthzResource):
-    pass
+    get_all_params = {
+        'page': 1,  # first page is 1
+        'per_page': 25,  # max allowed is 25
+    }
 
 
 class Group(AuthzResource):
@@ -313,7 +310,6 @@ class Group(AuthzResource):
             raise DeleteGroupMemberError(response)
 
     def get_members(self):
-        results = self.api.request(
-            'GET', f"groups/{self['_id']}/members")
-
-        return [Member(self, r) for r in results['users']]
+        return self.api.get_all(
+            Member,
+            endpoint=f'groups/{self["_id"]}/members')
