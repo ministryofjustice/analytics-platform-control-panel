@@ -106,6 +106,9 @@ class API(object):
 
         return resource.__class__(self, response)
 
+    def error(self, message):
+        raise APIError(f'{self.__class__.__name__} error: {message}')
+
     def get_all(self, resource_class, endpoint=None, key=None, **kwargs):
         if endpoint is None:
             endpoint = f'{resource_class.__name__.lower()}s'
@@ -121,13 +124,19 @@ class API(object):
         while True:
             response = self.request('GET', endpoint, params=params)
 
+            if 'total' not in response:
+                self.error('Expected "total"')
+
+            if key not in response:
+                self.error(f'Expected "{key}"')
+
             if total is None:
                 total = response['total']
 
             if total != response['total']:
-                raise APIError(f'{endpoint} total changed')
+                self.error(f'{endpoint} total changed during iteration')
 
-            resources.extend(response.get(key, []))
+            resources.extend(response[key])
 
             if len(resources) >= total:
                 break
