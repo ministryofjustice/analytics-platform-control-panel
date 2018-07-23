@@ -83,6 +83,7 @@ class API(object):
                 'Authorization': 'Bearer {}'.format(self.access_token),
             },
             json=kwargs.pop('json', {}),
+            timeout=30,
             **kwargs
         )
         response.raise_for_status()
