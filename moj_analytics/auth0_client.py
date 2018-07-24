@@ -117,7 +117,7 @@ class API(object):
         if key is None:
             key = f'{resource_class.__name__.lower()}s'
 
-        params = resource_class.get_all_params
+        params = resource_class.get_all_params.copy()
 
         resources = []
         total = None
