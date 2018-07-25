@@ -1,5 +1,5 @@
 from subprocess import CalledProcessError
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 from botocore.exceptions import ClientError
 from django.test import override_settings
@@ -373,54 +373,62 @@ class AppCustomersAPIViewTest(AuthenticatedClientMixin, APITestCase):
 
     @patch('control_panel_api.auth0.Auth0Client')
     def test_post(self, mock_auth0_client):
-        data = {'email': 'foo@example.com'}
-        api = mock_auth0_client.return_value
-        group = MagicMock()
-        user = {
-            'user_id': 'email|123',
-            'email': 'foo@example.com',
-            'email_verified': True,
-            'connection': 'email'}
-        authz = api.authorization
-        authz.get.return_value = group
-        authz.get_all.return_value = [user]
+        auth0 = mock_auth0_client.return_value
+        authz = auth0.authorization
+        mgmt = auth0.management
+        group = authz.get.return_value
+        emails = [
+            'test1@example.com',
+            'test2@example.com',
+        ]
 
-        response = self.client.post(
-            reverse('appcustomers-list', (self.app.id,)),
-            data)
+        def mock_create_user(user):
+            return Auth0User(user, user_id=emails.index(user['email']))
 
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
+        mgmt.create.side_effect = mock_create_user
 
-        authz.get.assert_called_with(Auth0Group(name=self.app.slug))
+        def new_user(email):
+            return Auth0User(
+                email=email,
+                email_verified=True,
+                connection='email')
 
-        args, kwargs = group.add_users.call_args
-        assert list(args[0]) == [user]
+        def existing_user(email):
+            return Auth0User(new_user(email), user_id=emails.index(email))
 
-    @patch('control_panel_api.auth0.Auth0Client')
-    def test_post_create_user(self, mock_auth0_client):
-        data = {'email': 'foo@example.com'}
-        api = mock_auth0_client.return_value
-        group = MagicMock()
-        authz = api.authorization
-        authz.get.return_value = group
-        authz.get_all.return_value = []
-        mgmt = api.management
-        mgmt.create.return_value = Auth0User(user_id=123)
+        def assert_case(data, all_users, expected_created, expected_added):
+            authz.get_all.return_value = all_users
 
-        response = self.client.post(
-            reverse('appcustomers-list', (self.app.id,)),
-            data)
+            response = self.client.post(
+                reverse('appcustomers-list', (self.app.id,)),
+                data)
 
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
+            self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        mgmt.create.assert_called_with(
-            Auth0User(
-                connection='email',
-                email=data['email'],
-                email_verified=True))
+            mgmt.create.assert_has_calls(
+                [call(user) for user in expected_created],
+                any_order=True)
 
-        args, kwargs = group.add_users.call_args
-        assert list(args[0]) == [{'user_id': 123}]
+            args, kwargs = group.add_users.call_args
+            assert list(args[0]) == expected_added
+
+        assert_case(
+            data={'email': 'test1@example.com'},
+            all_users=[existing_user('test1@example.com')],
+            expected_created=[],
+            expected_added=list(map(existing_user, ['test1@example.com'])))
+
+        assert_case(
+            data={'email': 'test1@example.com'},
+            all_users=[],
+            expected_created=map(new_user, ['test1@example.com']),
+            expected_added=list(map(existing_user, ['test1@example.com'])))
+
+        assert_case(
+            data={'email': 'test1@example.com, test2@example.com'},
+            all_users=[],
+            expected_created=map(new_user, emails),
+            expected_added=list(map(existing_user, emails)))
 
 
 class AppCustomersDetailAPIView(AuthenticatedClientMixin, APITestCase):
