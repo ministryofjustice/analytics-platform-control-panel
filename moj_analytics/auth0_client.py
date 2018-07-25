@@ -142,6 +142,9 @@ class API(object):
             if len(resources) >= total:
                 break
 
+            if len(response[key]) < 1:
+                break
+
             params['page'] = params.get('page', 1) + 1
 
         return [resource_class(self, r) for r in resources]

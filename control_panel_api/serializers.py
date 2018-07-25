@@ -262,7 +262,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class AppCustomerSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.CharField()
     user_id = serializers.CharField(max_length=64, required=False)
     nickname = serializers.CharField(max_length=64, required=False)
     name = serializers.CharField(max_length=64, required=False)
