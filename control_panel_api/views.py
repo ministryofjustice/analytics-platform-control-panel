@@ -158,14 +158,14 @@ class AppCustomersAPIView(GenericAPIView):
         return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
-        data = request.data
-        delimiters = re.compile(r'[,; ]+')
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         app = self.get_object()
+
+        delimiters = re.compile(r'[,; ]+')
         emails = delimiters.split(serializer.validated_data['email'])
+
         errors = []
         for email in emails:
             validator = EmailValidator(
