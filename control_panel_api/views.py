@@ -1,17 +1,23 @@
+import logging
+import re
+from subprocess import CalledProcessError
+
 from botocore.exceptions import ClientError
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import EmailValidator
 from django.db import transaction
 from django.http import JsonResponse
 from django.http.response import Http404
 from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from elasticsearch import TransportError
-import logging
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, detail_route, permission_classes
+from rest_framework.exceptions import ValidationError
+from rest_framework.fields import get_error_detail
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from subprocess import CalledProcessError
 
 from control_panel_api.elasticsearch import bucket_hits_aggregation
 from control_panel_api.exceptions import (
@@ -156,7 +162,22 @@ class AppCustomersAPIView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         app = self.get_object()
-        app.add_customers([serializer.validated_data['email']])
+
+        delimiters = re.compile(r'[,; ]+')
+        emails = delimiters.split(serializer.validated_data['email'])
+
+        errors = []
+        for email in emails:
+            validator = EmailValidator(
+                message=f'{email} is not a valid email address')
+            try:
+                validator(email)
+            except DjangoValidationError as error:
+                errors.extend(get_error_detail(error))
+        if errors:
+            raise ValidationError(errors)
+
+        app.add_customers(emails)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

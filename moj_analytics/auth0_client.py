@@ -117,7 +117,7 @@ class API(object):
         if key is None:
             key = f'{resource_class.__name__.lower()}s'
 
-        params = resource_class.get_all_params
+        params = resource_class.get_all_params.copy()
 
         resources = []
         total = None
@@ -140,6 +140,9 @@ class API(object):
             resources.extend(response[key])
 
             if len(resources) >= total:
+                break
+
+            if len(response[key]) < 1:
                 break
 
             params['page'] = params.get('page', 1) + 1
