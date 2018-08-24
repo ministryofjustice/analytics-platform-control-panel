@@ -121,6 +121,10 @@ Go to http://localhost:8000/
 ./run_tests
 ```
 
+# Deployment
+
+Commits to the protected `master` branch will trigger a Concourse CI pipeline which will deploy the changes to our `dev` environment.
+Versioned Github releases will trigger another pipeline and deploy to our `alpha` environment.
 
 # Documentation
 
