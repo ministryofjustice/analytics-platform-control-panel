@@ -2,6 +2,4 @@
 
 set -e -o pipefail
 
-python3 wait_for_db && \
-    python3 manage.py migrate && \
-    gunicorn -b 0.0.0.0:8000 control_panel_api.wsgi:application
+gunicorn -b 0.0.0.0:8000 control_panel_api.wsgi:application
