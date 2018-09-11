@@ -21,3 +21,14 @@ services:
     environment:
       POSTGRES_USER: "controlpanel"
       POSTGRES_DB: "controlpanel"
+  migration:
+    image: app:latest
+    command: ["sh", "-c", "python3 wait_for_db && python3 manage.py migrate"]
+    environment:
+      DB_HOST: "db"
+      DB_NAME: "controlpanel"
+      DB_USER: "controlpanel"
+    links:
+      - db
+    depends_on:
+      - db
