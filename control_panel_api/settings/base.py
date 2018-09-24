@@ -202,6 +202,12 @@ LOGGING = {
             'handlers': ['console'],
             'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
         },
+        'django.template': {
+            # Get rid of noisy debug messages
+            'handlers': ['console'],
+            'level': os.environ.get('LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
         'django': {
             'handlers': ['console'],
             'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
