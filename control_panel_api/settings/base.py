@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 def is_enabled(value):
@@ -144,10 +145,15 @@ IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', '')
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME', '')
 SAML_PROVIDER = os.environ.get('SAML_PROVIDER', '')
 
-RAVEN_CONFIG = {
-    'dsn': os.environ.get('SENTRY_DSN', ''),
-    'environment': ENV,
-}
+if os.environ.get('SENTRY_DSN'):
+    this_is_running_in_the_django_shell = "shell" in sys.argv
+    RAVEN_CONFIG = {
+        'dsn': os.environ.get('SENTRY_DSN', ''),
+        'environment': ENV,
+        'ignore_exceptions': ('*') if this_is_running_in_the_django_shell else (),
+    }
+else:
+    INSTALLED_APPS.remove('raven.contrib.django.raven_compat')
 
 OIDC_CLIENT_ID = os.environ.get('OIDC_CLIENT_ID')
 OIDC_CLIENT_SECRET = os.environ.get('OIDC_CLIENT_SECRET')
