@@ -60,7 +60,7 @@ def get_or_create_user(decoded_payload):
     try:
         user = User.objects.get(pk=decoded_payload.get('sub'))
     except User.DoesNotExist:
-        logger.info('User "{}" is new. Will add it to db and k8s.'
+        logger.info('User "{}" is new. Will add it to k8s, create aws role and add to db.'
                     .format(decoded_payload.get('sub')))
         user = User.objects.create(
             pk=decoded_payload.get('sub'),
@@ -71,8 +71,15 @@ def get_or_create_user(decoded_payload):
         user.save()
         logger.info('User {} saved to db as: "{}"'
                     .format(decoded_payload.get('sub'), user))
-        user.aws_create_role()
-        user.helm_create()
+        try:
+            user.aws_create_role()
+            user.helm_create()
+        except:
+            # these steps are essential, so if they don't complete, delete the user so that
+            # they run again on the next later request. They are idempotent anyway.
+            # e.g. "Max number of attempts exceeded (1) when attempting to retrieve data from metadata service."
+            # or if apiserver is momentarily down
+            user.delete()
 
     return user
 
