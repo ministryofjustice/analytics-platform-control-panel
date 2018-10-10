@@ -8,6 +8,9 @@ from kubernetes.config.config_exception import ConfigException
 import requests
 
 
+log = __import__('logging').getLogger(__name__)
+
+
 def proxy(request):
     return Request(request).dispatch()
 
@@ -23,6 +26,9 @@ class Request(object):
         path = self.request.path[4:]  # path without '/k8s' prefix
         querystring = self.request.GET.urlencode()
 
+        log.info(
+            'Making request: "{}" authorization: "{}" data: "{}"'
+            .format(f"{host}{path}?{querystring}", self.authorization, self.request.body))
         k8s_response = requests.request(
             method,
             f"{host}{path}?{querystring}",
@@ -30,6 +36,8 @@ class Request(object):
             headers={'authorization': self.authorization},
             verify=self.config.ssl_ca_cert,
         )
+        log.info(f'Response: {k8s_response}')
+
 
         return HttpResponse(
             k8s_response.text,
@@ -66,9 +74,12 @@ class Config(object):
         """
         if not self._loaded:
             try:
+                log.info('Getting incluster config')
                 k8s_config.load_incluster_config()
             except ConfigException as e:
-                from control_panel_api import k8s_patch
+                log.info('Didn\'t get incluster config. Error:')
+                log.exception(e)
+                log.info('Getting kube_config instead')
                 k8s_config.load_kube_config()
 
             conf = k8s_client.configuration.Configuration()

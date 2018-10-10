@@ -60,6 +60,8 @@ def get_or_create_user(decoded_payload):
     try:
         user = User.objects.get(pk=decoded_payload.get('sub'))
     except User.DoesNotExist:
+        logger.info('User "{}" is new. Will add it to db and k8s.'
+                    .format(decoded_payload.get('sub')))
         user = User.objects.create(
             pk=decoded_payload.get('sub'),
             username=decoded_payload.get(settings.OIDC_FIELD_USERNAME),
@@ -67,6 +69,8 @@ def get_or_create_user(decoded_payload):
             name=decoded_payload.get(settings.OIDC_FIELD_NAME),
         )
         user.save()
+        logger.info('User {} saved to db as: "{}"'
+                    .format(decoded_payload.get('sub'), user))
         user.aws_create_role()
         user.helm_create()
 
@@ -75,19 +79,24 @@ def get_or_create_user(decoded_payload):
 
 class Auth0JWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
+        logger.info(f'request arrived {request}')
         token = get_jwt(request)
+        logger.info(f'token "{token}"')
 
         if token is None:
             return None
 
         try:
             key = get_key(token)
+            logger.info(f'key "{key}"')
         except JWTError as e:
+            logger.error(e)
             raise AuthenticationFailed('Error decoding JWT header') from e
         except RequestException as e:
             logger.error(e)
             raise AuthenticationFailed(e) from e
         except KeyError as e:
+            logger.exception(e)
             raise AuthenticationFailed(e) from e
 
         try:
@@ -102,8 +111,12 @@ class Auth0JWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed(e) from e
 
         if decoded.get('sub') is None:
+            logger.error(f'no "sub" field in jwt token')
             raise AuthenticationFailed('JWT missing "sub" field')
 
+        logger.info('Received request with jwt token for subject {}'
+                    .format(decoded['sub']))
         user = get_or_create_user(decoded)
+        logger.info(f'user "{user}"')
 
         return user, None

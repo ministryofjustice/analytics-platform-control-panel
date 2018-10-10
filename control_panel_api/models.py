@@ -14,6 +14,9 @@ from control_panel_api.helm import helm
 from control_panel_api.utils import sanitize_dns_label
 
 
+logger = __import__('logging').getLogger(__name__)
+
+
 class User(AbstractUser):
     auth0_id = models.CharField(max_length=128, primary_key=True)
     name = models.CharField(max_length=256, blank=True)
@@ -41,6 +44,7 @@ class User(AbstractUser):
         return sanitize_dns_label(f'user-{self.username}')
 
     def aws_create_role(self):
+        logger.info(f'aws_create_role "{self.iam_role_name}"')
         services.create_role(
             self.iam_role_name, add_saml_statement=True,
             add_oidc_statement=True, oidc_sub=self.auth0_id)
@@ -50,10 +54,12 @@ class User(AbstractUser):
         services.delete_role(self.iam_role_name)
 
     def helm_create(self):
+        logger.info(f'helm_create "{self.username}"')
         helm.init_user(self.username, self.email, self.get_full_name())
         helm.config_user(self.username)
 
     def helm_delete(self):
+        logger.info(f'helm_delete "{self.username}""')
         helm.uninstall_user_charts(self.username)
         helm.uninstall_init_user_chart(self.username)
 
