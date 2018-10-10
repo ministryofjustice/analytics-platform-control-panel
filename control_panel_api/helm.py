@@ -55,6 +55,8 @@ class Helm(object):
             '--set', f'Username={username_slug}',
             '--set', f'Email={email}',
             '--set', f'Fullname={fullname}',
+            '--set', f'Env={settings.ENV}',
+            '--set', f'OidcDomain={settings.OIDC_DOMAIN}',
         )
 
     def uninstall_init_user_chart(self, username):
