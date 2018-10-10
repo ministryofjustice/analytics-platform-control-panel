@@ -15,29 +15,41 @@ class Helm(object):
         self.enabled = settings.ENABLED['write_to_cluster']
 
     def _helm_command(self, command, *args):
-        if self.enabled:
-            try:
-                subprocess.run(
-                    ['helm', command] + list(args),
-                    stderr=subprocess.PIPE,
-                    check=True)
-            except subprocess.CalledProcessError as error:
-                log.error(error.stderr)
-                raise error
+        helm_command = ['helm', command] + list(args)
+
+        if not self.enabled:
+            log.warning(f'helm commands disabled: {helm_command}')
+            return
+
+        try:
+            log.warning(f'Running: {helm_command}')
+            subprocess.run(
+                helm_command,
+                stderr=subprocess.PIPE,
+                check=True)
+        except subprocess.CalledProcessError as error:
+            log.error(error.stderr)
+            raise error
 
 
     def _helm_shell_command(self, command_string):
-        if self.enabled:
-            try:
-                subprocess.run(
-                    f'helm {command_string}',
-                    stderr=subprocess.PIPE,
-                    shell=True,
-                    check=True
-                )
-            except subprocess.CalledProcessError as error:
-                log.error(error.stderr)
-                raise error
+        helm_command = f'helm {command_string}'
+
+        if not self.enabled:
+            log.warning(f'helm shell commands disabled: {helm_command}')
+            return
+
+        try:
+            log.warning(f'Running (with shell): {helm_command}')
+            subprocess.run(
+                helm_command,
+                stderr=subprocess.PIPE,
+                shell=True,
+                check=True
+            )
+        except subprocess.CalledProcessError as error:
+            log.error(error.stderr)
+            raise error
 
     def upgrade_release(self, release, chart, *args):
         self._helm_shell_command('repo update')
