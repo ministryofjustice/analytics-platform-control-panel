@@ -74,12 +74,13 @@ def get_or_create_user(decoded_payload):
         try:
             user.aws_create_role()
             user.helm_create()
-        except:
+        except Exception:
             # these steps are essential, so if they don't complete, delete the user so that
             # they run again on the next later request. They are idempotent anyway.
             # e.g. "Max number of attempts exceeded (1) when attempting to retrieve data from metadata service."
             # or if apiserver is momentarily down
             user.delete()
+            raise
 
     return user
 
