@@ -59,28 +59,30 @@ def get_key(token):
 def get_or_create_user(decoded_payload):
     try:
         user = User.objects.get(pk=decoded_payload.get('sub'))
+        return user
     except User.DoesNotExist:
-        logger.info('User "{}" is new. Will add it to k8s, create aws role and add to db.'
-                    .format(decoded_payload.get('sub')))
-        user = User.objects.create(
-            pk=decoded_payload.get('sub'),
-            username=decoded_payload.get(settings.OIDC_FIELD_USERNAME),
-            email=decoded_payload.get(settings.OIDC_FIELD_EMAIL),
-            name=decoded_payload.get(settings.OIDC_FIELD_NAME),
-        )
-        user.save()
-        logger.info('User {} saved to db as: "{}"'
-                    .format(decoded_payload.get('sub'), user))
-        try:
-            user.aws_create_role()
-            user.helm_create()
-        except Exception:
-            # these steps are essential, so if they don't complete, delete the user so that
-            # they run again on the next later request. They are idempotent anyway.
-            # e.g. "Max number of attempts exceeded (1) when attempting to retrieve data from metadata service."
-            # or if apiserver is momentarily down
-            user.delete()
-            raise
+        pass
+    logger.info('User "{}" is new. Will add it to the db, create aws role and create its charts on k8s.'
+                .format(decoded_payload.get('sub')))
+    user = User.objects.create(
+        pk=decoded_payload.get('sub'),
+        username=decoded_payload.get(settings.OIDC_FIELD_USERNAME),
+        email=decoded_payload.get(settings.OIDC_FIELD_EMAIL),
+        name=decoded_payload.get(settings.OIDC_FIELD_NAME),
+    )
+    user.save()
+    logger.info('User {} saved to db as: "{}"'
+                .format(decoded_payload.get('sub'), user))
+    try:
+        user.aws_create_role()
+        user.helm_create()
+    except Exception:
+        # these steps are essential, so if they don't complete, delete the user so that
+        # they run again on the next later request. They are idempotent anyway.
+        # e.g. "Max number of attempts exceeded (1) when attempting to retrieve data from metadata service."
+        # or if apiserver is momentarily down
+        user.delete()
+        raise
 
     return user
 
