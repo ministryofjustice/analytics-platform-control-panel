@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 from elasticsearch import TransportError
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, detail_route, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import get_error_detail
 from rest_framework.generics import GenericAPIView
@@ -59,7 +59,7 @@ from control_panel_api.serializers import (
     UserS3BucketSerializer,
     UserSerializer,
 )
-from control_panel_api.tools import Tool
+from control_panel_api.tools import SUPPORTED_TOOL_NAMES, Tools
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +249,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 
         instance.create_users3bucket(user=self.request.user)
 
-    @detail_route()
+    @action(detail=True)
     def access_logs(self, request, pk=None):
         query_params_serializer = S3BucketAccessLogsQueryParamsSerializer(
             data=request.query_params)
@@ -270,12 +270,19 @@ class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()
     serializer_class = UserAppSerializer
 
+@api_view(['GET'])
+@permission_classes((ToolDeploymentPermissions,))
+@handle_external_exceptions
+def supported_tool_list(request):
+    tools = [{"name": n} for n in SUPPORTED_TOOL_NAMES]
+    return JsonResponse({"results": tools})
+
 
 @api_view(['POST'])
 @permission_classes((ToolDeploymentPermissions,))
 @handle_external_exceptions
 def tool_deployments_list(request, tool_name):
-    tool = Tool(tool_name)
+    tool = Tools[tool_name]()
     tool.deploy_for(request.user)
 
     return JsonResponse({}, status=status.HTTP_201_CREATED)

@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^apps/(?P<pk>[0-9]+)/customers/(?P<user_id>[\w\d\|]+)/$', views.AppCustomersDetailAPIView.as_view(), name='appcustomers-detail'),
     url(r'^k8s/.+', views.k8s_api_handler),
     url(r'^tools/(?P<tool_name>[-a-z]+)/deployments/$', views.tool_deployments_list, name='tool-deployments-list'),
+    url(r'^tools/$', views.supported_tool_list, name='tool-list'),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework'))
 ]
 

@@ -30,3 +30,17 @@ def sanitize_dns_label(label):
     label = re.sub(r'[^a-z0-9]*$', '', label)
 
     return label
+
+def sanitize_environment_variable(name):
+    """
+    make a string with hyphens into a string where those hyphens have been replaced with _
+    :param name: name of variable to sanitize
+    :type str
+    :return: sanitized name
+    :rtype str
+    """
+    # uppercase
+    name = name.upper()
+    # replace - with _
+    name = name.replace('-', '_', )
+    return name
