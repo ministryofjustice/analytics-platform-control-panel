@@ -62,8 +62,8 @@ def get_or_create_user(decoded_payload):
         return user
     except User.DoesNotExist:
         pass
-    logger.info('User "{}" is new. Will add it to the db, create aws role and create its charts on k8s.'
-                .format(decoded_payload.get('sub')))
+    logger.info('User "{}" is new. Will add it to the db, create aws role and '
+                'create its charts on k8s.'.format(decoded_payload.get('sub')))
     user = User.objects.create(
         pk=decoded_payload.get('sub'),
         username=decoded_payload.get(settings.OIDC_FIELD_USERNAME),
@@ -77,11 +77,21 @@ def get_or_create_user(decoded_payload):
         user.aws_create_role()
         user.helm_create()
     except Exception:
-        # these steps are essential, so if they don't complete, delete the user so that
-        # they run again on the next later request. They are idempotent anyway.
-        # e.g. "Max number of attempts exceeded (1) when attempting to retrieve data from metadata service."
-        # or if apiserver is momentarily down
+        # the steps above are essential to the user, so if they don't
+        # complete, we want to runthem again on the user's next attempt
+        # request, because there's a good chance the problem was temporary.
+        # Examples of errors:
+        # * "Max number of attempts exceeded (1) when attempting to retrieve
+        #   data from metadata service."
+        # * k8s apiserver is momentarily down
+        # delete the user so that this method runs again on the next request
         user.delete()
+
+        # TODO deal with the problem of a failed helm install causing:
+        # "Error: a release named init-user-joebloggs already exists."
+        #  Consider doing:
+        # https://github.com/helm/helm/issues/3353#issuecomment-385222233
+
         raise
 
     return user

@@ -28,7 +28,8 @@ class Request(object):
 
         log.info(
             'Making request: "{}" authorization: "{}" data: "{}"'
-            .format(f"{host}{path}?{querystring}", self.authorization, self.request.body))
+            .format(f"{host}{path}?{querystring}", self.authorization,
+                    self.request.body))
         k8s_response = requests.request(
             method,
             f"{host}{path}?{querystring}",

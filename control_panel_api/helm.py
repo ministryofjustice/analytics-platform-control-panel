@@ -22,7 +22,7 @@ class Helm(object):
             return
 
         try:
-            log.warning('Running: {}'.format(' '.join(helm_command)))
+            log.info('Running: {}'.format(' '.join(helm_command)))
             subprocess.run(
                 helm_command,
                 stderr=subprocess.PIPE,
