@@ -59,6 +59,7 @@ def get_key(token):
 def get_or_create_user(decoded_payload):
     try:
         user = User.objects.get(pk=decoded_payload.get('sub'))
+        return user
     except User.DoesNotExist:
         pass
     logger.info('User "{}" is new. Will add it to the db, create aws role and '
