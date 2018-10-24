@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 def is_enabled(value):
@@ -144,10 +145,15 @@ IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE', '')
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME', '')
 SAML_PROVIDER = os.environ.get('SAML_PROVIDER', '')
 
-RAVEN_CONFIG = {
-    'dsn': os.environ.get('SENTRY_DSN', ''),
-    'environment': ENV,
-}
+if os.environ.get('SENTRY_DSN'):
+    this_is_running_in_the_django_shell = "shell" in sys.argv
+    RAVEN_CONFIG = {
+        'dsn': os.environ.get('SENTRY_DSN', ''),
+        'environment': ENV,
+        'ignore_exceptions': ('*') if this_is_running_in_the_django_shell else (),
+    }
+else:
+    INSTALLED_APPS.remove('raven.contrib.django.raven_compat')
 
 OIDC_CLIENT_ID = os.environ.get('OIDC_CLIENT_ID')
 OIDC_CLIENT_SECRET = os.environ.get('OIDC_CLIENT_SECRET')
@@ -166,6 +172,10 @@ TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 RSTUDIO_AUTH_CLIENT_DOMAIN = os.environ.get('RSTUDIO_AUTH_CLIENT_DOMAIN', OIDC_DOMAIN)
 RSTUDIO_AUTH_CLIENT_ID = os.environ.get('RSTUDIO_AUTH_CLIENT_ID')
 RSTUDIO_AUTH_CLIENT_SECRET = os.environ.get('RSTUDIO_AUTH_CLIENT_SECRET')
+
+JUPYTER_LAB_AUTH_CLIENT_DOMAIN = os.environ.get('JUPYTER_LAB_AUTH_CLIENT_DOMAIN', OIDC_DOMAIN)
+JUPYTER_LAB_AUTH_CLIENT_ID = os.environ.get('JUPYTER_LAB_AUTH_CLIENT_ID')
+JUPYTER_LAB_AUTH_CLIENT_SECRET = os.environ.get('JUPYTER_LAB_AUTH_CLIENT_SECRET')
 
 ELASTICSEARCH = {
     'hosts': [
@@ -201,6 +211,12 @@ LOGGING = {
         '': {
             'handlers': ['console'],
             'level': os.environ.get('LOG_LEVEL', 'DEBUG'),
+        },
+        'django.template': {
+            # Get rid of noisy debug messages
+            'handlers': ['console'],
+            'level': os.environ.get('LOG_LEVEL', 'INFO'),
+            'propagate': False,
         },
         'django': {
             'handlers': ['console'],

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import override_settings
 
 from control_panel_api.models import User
-from control_panel_api.tools import Tool, UnsupportedToolException
+from control_panel_api.tools import RStudio, UnsupportedToolException, Tools, BaseTool, ToolsRepository, JupyterLab
 
 
 class ToolsTestCase(TestCase):
@@ -16,18 +16,18 @@ class ToolsTestCase(TestCase):
 
     def test_when_unsupported_tool_raises_error(self):
         with self.assertRaises(UnsupportedToolException):
-            Tool('unsupported_tool')
+            Tools['unsupported_tool']()
 
     @override_settings(
         TOOLS_DOMAIN=TOOLS_DOMAIN,
-        RSTUDIO_AUTH_CLIENT_DOMAIN=TOOL_AUTH_CLIENT_DOMAIN,
-        RSTUDIO_AUTH_CLIENT_ID=TOOL_AUTH_CLIENT_ID,
-        RSTUDIO_AUTH_CLIENT_SECRET=TOOL_AUTH_CLIENT_SECRET,
+        RANDOTOOL_AUTH_CLIENT_DOMAIN=TOOL_AUTH_CLIENT_DOMAIN,
+        RANDOTOOL_AUTH_CLIENT_ID=TOOL_AUTH_CLIENT_ID,
+        RANDOTOOL_AUTH_CLIENT_SECRET=TOOL_AUTH_CLIENT_SECRET,
     )
     @patch('secrets.token_hex')
     @patch('control_panel_api.tools.Helm.upgrade_release')
-    def test_deploy_for(self, mock_helm_upgrade_release, mock_token_hex):
-        tool_name = 'rstudio'
+    def test_deploy_for_generic(self, mock_helm_upgrade_release, mock_token_hex):
+        tool_name = 'randotool'
         user = User(username='AlIcE')
         username = user.username.lower()
 
@@ -38,7 +38,10 @@ class ToolsTestCase(TestCase):
             cookie_secret_tool
         ]
 
-        tool = Tool(tool_name)
+        class RandoTool(BaseTool):
+            name = 'randotool'
+
+        tool = RandoTool()
         tool.deploy_for(user)
 
         mock_helm_upgrade_release.assert_called_with(
@@ -54,3 +57,18 @@ class ToolsTestCase(TestCase):
             '--set', f'authProxy.auth0.clientId={self.TOOL_AUTH_CLIENT_ID}',
             '--set', f'authProxy.auth0.clientSecret={self.TOOL_AUTH_CLIENT_SECRET}',
         )
+
+
+class TestToolsRepository(TestCase):
+
+    def test_repository_init(self):
+        tr = ToolsRepository(RStudio, JupyterLab)
+        self.assertDictEqual(tr.data, {
+            'rstudio': RStudio,
+            'jupyter-lab': JupyterLab
+        })
+
+    def test_getattr_exception(self):
+        tr = ToolsRepository()
+        with self.assertRaises(UnsupportedToolException):
+            tr['foo']()

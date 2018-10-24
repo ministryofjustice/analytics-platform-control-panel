@@ -1004,9 +1004,10 @@ class ToolDeploymentViewTest(AuthenticatedClientMixin, APITestCase):
         )
         self.assertEqual(HTTP_400_BAD_REQUEST, response.status_code)
 
-    @patch('control_panel_api.views.Tool', autospec=True)
-    def test_create_when_valid_tool_name(self, mock_tool):
-        mock_tool_instance = mock_tool.return_value
+    @patch('control_panel_api.views.Tools', autospec=True)
+    def test_create_when_valid_tool_name(self, mock_toolrepo):
+        mock_tool_cls = mock_toolrepo.__getitem__.return_value
+        mock_tool_instance = mock_tool_cls.return_value
 
         tool_name = 'rstudio'
         response = self.client.post(
@@ -1016,5 +1017,5 @@ class ToolDeploymentViewTest(AuthenticatedClientMixin, APITestCase):
         )
         self.assertEqual(HTTP_201_CREATED, response.status_code)
 
-        mock_tool.assert_called_with(tool_name)
+        mock_toolrepo.__getitem__.assert_called_with(tool_name)
         mock_tool_instance.deploy_for.assert_called_with(self.normal_user)
