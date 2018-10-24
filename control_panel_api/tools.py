@@ -1,13 +1,44 @@
 import secrets
+from collections import UserDict
 
 from django.conf import settings
+from django.utils.functional import cached_property
 from rest_framework.exceptions import APIException
 
 from control_panel_api.helm import Helm
+from control_panel_api.utils import sanitize_environment_variable
+
+
+class HelmToolDeployMixin:
+
+    @cached_property
+    def helm(self):
+        return Helm()
+
+
+class Auth0ClientConfigMixin:
+
+    def _get_auth_client_config(self, key):
+        setting_key = sanitize_environment_variable(
+            f'{self.name}_AUTH_CLIENT_{key}')
+        return getattr(settings, setting_key.upper())
+
+    @cached_property
+    def auth_client_domain(self):
+        return self._get_auth_client_config('domain')
+
+    @cached_property
+    def auth_client_id(self):
+        return self._get_auth_client_config('id')
+
+    @cached_property
+    def auth_client_secret(self):
+        return self._get_auth_client_config('secret')
 
 
 SUPPORTED_TOOL_NAMES = [
     'rstudio',
+    'jupyter-lab'
 ]
 
 
@@ -19,35 +50,22 @@ class UnsupportedToolException(APIException):
     default_code = 'unsupported_tool'
 
 
-class Tool(object):
+class BaseTool(HelmToolDeployMixin, Auth0ClientConfigMixin):
+    name = None
 
-    def __init__(self, name):
-        if not name in SUPPORTED_TOOL_NAMES:
-            raise UnsupportedToolException
+    @property
+    def chart_name(self):
+        return f'mojanalytics/{self.name}'
 
-        self.name = name
-        self.helm = Helm()
+    def release_name(self, username):
+        return f'{username}-{self.name}'
 
-        self.auth_client_domain = self._get_auth_client_config('domain')
-        self.auth_client_id = self._get_auth_client_config('id')
-        self.auth_client_secret = self._get_auth_client_config('secret')
-
-    def deploy_for(self, user):
-        """
-        Deploy the given tool in the user namespace.
-
-        >>> rstudio = Tool('rstudio')
-        >>> rstudio.deploy_for(alice)
-        """
-
-        username = user.username.lower()
+    def deploy_params(self, user):
         auth_proxy_cookie_secret = secrets.token_hex(32)
         tool_cookie_secret = secrets.token_hex(32)
+        username = user.username.lower()
 
-        self.helm.upgrade_release(
-            f'{username}-{self.name}',
-            f'mojanalytics/{self.name}',
-            '--namespace', user.k8s_namespace,
+        return [
             '--set', f'username={username}',
             '--set', f'aws.iamRole={user.iam_role_name}',
             '--set', f'toolsDomain={settings.TOOLS_DOMAIN}',
@@ -56,8 +74,61 @@ class Tool(object):
             '--set', f'authProxy.auth0.domain={self.auth_client_domain}',
             '--set', f'authProxy.auth0.clientId={self.auth_client_id}',
             '--set', f'authProxy.auth0.clientSecret={self.auth_client_secret}',
+        ]
+
+    def deploy_for(self, user):
+        """
+        Deploy the given tool in the user namespace.
+        >>> class RStudio(BaseTool):
+        ...     name = 'rstudio'
+        >>> rstudio = RStudio()
+        >>> rstudio.deploy_for(alice)
+        """
+
+        username = user.username.lower()
+        deploy_params = self.deploy_params(user)
+        self.helm.upgrade_release(
+            self.release_name(username),
+            self.chart_name,
+            '--namespace', user.k8s_namespace,
+            *deploy_params
         )
 
-    def _get_auth_client_config(self, key):
-        setting_key = f'{self.name}_AUTH_CLIENT_{key}'
-        return getattr(settings, setting_key.upper())
+
+class RStudio(BaseTool):
+    name = 'rstudio'
+
+
+class JupyterLab(BaseTool):
+    name = 'jupyter-lab'
+
+    def release_name(self, username):
+        return f'{self.name}-{username}'
+
+    def deploy_params(self, user):
+        auth_proxy_cookie_secret = secrets.token_hex(32)
+
+        return [
+            '--set', f'Username={user.username.lower()}',
+            '--set', f'aws.iamRole={user.iam_role_name}',
+            '--set', f'toolsDomain={settings.TOOLS_DOMAIN}',
+            '--set', f'cookie_secret={auth_proxy_cookie_secret}',
+            '--set', f'authProxy.auth0_domain={self.auth_client_domain}',
+            '--set', f'authProxy.auth0_client_id={self.auth_client_id}',
+            '--set', f'authProxy.auth0_client_secret={self.auth_client_secret}',
+        ]
+
+
+class ToolsRepository(UserDict):
+
+    def __init__(self, *tools):
+        super().__init__({toolcls.name: toolcls for toolcls in tools})
+
+    def __getitem__(self, item):
+        try:
+            return super().__getitem__(item)
+        except KeyError:
+            raise UnsupportedToolException()
+
+
+Tools = ToolsRepository(RStudio, JupyterLab)
