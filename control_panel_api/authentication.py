@@ -78,7 +78,7 @@ def get_or_create_user(decoded_payload):
         user.helm_create()
     except Exception:
         # the steps above are essential to the user, so if they don't
-        # complete, we want to runthem again on the user's next attempt
+        # complete, we want to run them again on the user's next attempt
         # request, because there's a good chance the problem was temporary.
         # Examples of errors:
         # * "Max number of attempts exceeded (1) when attempting to retrieve

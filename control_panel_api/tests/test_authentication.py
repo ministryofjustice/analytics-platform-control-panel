@@ -164,3 +164,48 @@ class Auth0JWTAuthenticationTestCase(APITestCase):
 
         mock_helm_create.assert_called()
         mock_aws_create_role.assert_called()
+
+
+@override_settings(OIDC_DOMAIN='dev-analytics-moj.eu.auth0.com',
+                   OIDC_CLIENT_SECRET='secret',
+                   OIDC_CLIENT_ID='audience')
+@patch('control_panel_api.aws.aws.client', MagicMock())
+@patch('control_panel_api.helm.helm.config_user', MagicMock())
+@patch('control_panel_api.helm.helm.init_user', MagicMock())
+class CreateUser(APITestCase):
+
+    @patch('control_panel_api.authentication.get_jwks', mock_get_keys)
+    def test_creates_fine(self):
+        # user has logged into OIDC to get jwt token
+        token = build_jwt()
+        self.client.credentials(HTTP_AUTHORIZATION=f'JWT {token}')
+        # user makes first request with token- in this case to get his own user
+        r = self.client.get(
+            reverse('user-detail', args=['github|12345']))
+        self.assertEqual(HTTP_200_OK, r.status_code, r.content.decode('utf8'))
+        # a suitable user object is created
+        self.assertEqual(
+            {
+                'auth0_id': 'github|12345',
+                'email': 'test@example.com',
+                'email_verified': False,
+                'groups': [],
+                'is_superuser': False,
+                'name': 'Test User',
+                'url': 'http://testserver/users/github%7C12345/',
+                'userapps': [],
+                'username': 'test',
+                'users3buckets': []},
+            r.data, r.content.decode('utf8'))
+        # it also asked AWS to create a role
+        import control_panel_api.aws as aws
+        from unittest.mock import call
+        self.assertEqual(aws.aws.client.mock_calls[0], call('iam'))
+        self.assertEqual(aws.aws.client.mock_calls[1], call().create_role(AssumeRolePolicyDocument='{"Version": "2012-10-17", "Statement": [{"Effect": "Allow", "Principal": {"Service": "ec2.amazonaws.com"}, "Action": "sts:AssumeRole"}, {"Effect": "Allow", "Principal": {"AWS": "arn:aws:iam::123:role/test-k8s-worker-role"}, "Action": "sts:AssumeRole"}, {"Effect": "Allow", "Principal": {"Federated": "arn:aws:iam::123:saml-provider/test"}, "Action": "sts:AssumeRoleWithSAML", "Condition": {"StringEquals": {"SAML:aud": "https://signin.aws.amazon.com/saml"}}}, {"Effect": "Allow", "Principal": {"Federated": "arn:aws:iam::123:oidc-provider/dev-analytics-moj.eu.auth0.com/"}, "Action": "sts:AssumeRoleWithWebIdentity", "Condition": {"StringEquals": {"dev-analytics-moj.eu.auth0.com/:sub": "github|12345"}}}]}', RoleName='test_user_test'))
+        self.assertEqual(aws.aws.client.mock_calls[2], call('iam'))
+        self.assertEqual(aws.aws.client.mock_calls[3], call().attach_role_policy(PolicyArn='arn:aws:iam::123:policy/test-read-user-roles-inline-policies', RoleName='test_user_test'))
+
+        # also it installed helm charts config_user & init_user
+        import control_panel_api.helm as helm
+        helm.helm.config_user.assert_called_with('test')
+        helm.helm.init_user.assert_called_with('test', 'test@example.com', 'Test User')
