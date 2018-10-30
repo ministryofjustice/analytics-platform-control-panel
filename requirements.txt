@@ -13,7 +13,7 @@ Django==2.1.2
 django-extensions==2.1.0
 django-filter==2.0.0
 django-rest-swagger==2.2.0
-djangorestframework==3.8.2
+djangorestframework==3.9.0
 docutils==0.14
 ecdsa==0.13
 elasticsearch==6.3.1
