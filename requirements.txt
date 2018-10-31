@@ -1,6 +1,6 @@
 asn1crypto==0.24.0
 auth0-python==3.3.0
-boto3==1.9.33
+boto3==1.9.34
 botocore==1.12.34
 cachetools==2.1.0
 certifi==2018.10.15
@@ -18,7 +18,7 @@ docutils==0.14
 ecdsa==0.13
 elasticsearch==6.3.1
 elasticsearch-dsl==6.2.1
-future==0.17.0
+future==0.17.1
 google-auth==1.5.1
 gunicorn==19.9.0
 idna==2.7
