@@ -24,6 +24,11 @@ Then browse to http://localhost:8000/
 docker-compose -f docker-compose.test.yml up --abort-on-container-exit
 ```
 
+You can run a particular test using the pytest '-k' parameter:
+```sh
+docker-compose -f docker-compose.test.yml build && docker-compose -f docker-compose.test.yml run app ./run_tests -k TEST-NAME
+```
+
 ## Running directly on your machine
 
 ### Dependencies
