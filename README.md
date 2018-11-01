@@ -21,7 +21,7 @@ Then browse to http://localhost:8000/
 ### Running tests with docker
 
 ```sh
-docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
 ```
 
 You can run a particular test using the pytest '-k' parameter:
