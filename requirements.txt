@@ -27,7 +27,7 @@ itypes==1.1.0
 Jinja2==2.10
 jmespath==0.9.3
 kubernetes==7.0.0
-MarkupSafe==1.0
+MarkupSafe==1.1.0
 model-mommy==1.6.0
 openapi-codec==1.3.2
 psycopg2==2.7.5
