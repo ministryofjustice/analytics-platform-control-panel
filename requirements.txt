@@ -19,7 +19,7 @@ ecdsa==0.13
 elasticsearch==6.3.1
 elasticsearch-dsl==6.2.1
 future==0.17.1
-google-auth==1.5.1
+google-auth==1.6.0
 gunicorn==19.9.0
 idna==2.7
 ipaddress==1.0.22
