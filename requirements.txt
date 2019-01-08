@@ -36,7 +36,7 @@ pyasn1==0.4.4
 pyasn1-modules==0.2.2
 pycparser==2.19
 pytest==3.10.1
-pytest-django==3.4.4
+pytest-django==3.4.5
 pytest-spec==1.1.0
 pytest-testmon==0.9.13
 pytest-watch==4.2.0
