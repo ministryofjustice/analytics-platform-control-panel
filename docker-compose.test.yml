@@ -2,7 +2,7 @@ version: '3'
 services:
   app:
     build: .
-    image: "app"
+    image: "control-panel"
     ports:
       - "8000:8000"
     depends_on:
@@ -14,8 +14,7 @@ services:
       DB_NAME: "controlpanel"
       DB_USER: "postgres"
       DEBUG: "True"
-      DJANGO_SETTINGS_MODULE: "control_panel_api.settings.test"
-    command: ["./run_tests"]
+    command: ["make", "test"]
   db:
     image: "postgres:9.6.2"
     logging:

@@ -2,63 +2,42 @@ FROM alpine:3.7
 
 MAINTAINER Andy Driver <andy.driver@digital.justice.gov.uk>
 
-# install build dependencies (they'll be uninstalled after pip install)
-RUN apk add --no-cache \
-        --virtual build-deps \
-        gcc \
-        musl-dev
-
-# install python3 and 'ca-certificates' so that HTTPS works consistently
-RUN apk add --no-cache \
-        openssl \
-        ca-certificates \
-        libffi-dev \
-        python3-dev
-
-# Temporary bugfix for libressl
-# Postgres needs libressl-dev, but cryptography only works with openssl-dev
-RUN apk add --no-cache --virtual temp-ssl-fix \
-        openssl-dev \
-    && pip3 install cryptography==2.2.2 \
-    && apk del temp-ssl-fix \
-    && apk add --no-cache \
-        libressl-dev \
-        postgresql-dev
-
-# Install helm
 ENV HELM_VERSION 2.9.1
-RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz \
-    && tar xzf helm-v$HELM_VERSION-linux-amd64.tar.gz \
-    && mv linux-amd64/helm /usr/local/bin \
-    && rm -rf helm-v$HELM_VERSION-linux-amd64.tar.gz linux-amd64
-
-# Configure helm
 ENV HELM_HOME /tmp/helm
-RUN helm init --client-only
-COPY helm-repositories.yaml /tmp/helm/repository/repositories.yaml
-RUN helm repo update
+ENV DJANGO_SETTINGS_MODULE "control_panel_api.settings"
+ENV USE_VENV=false
 
 WORKDIR /home/control-panel
 
-# install python dependencies
-ADD requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+# install build dependencies (they'll be uninstalled after pip install)
+RUN apk add --no-cache \
+        build-base \
+        openssl \
+        ca-certificates \
+        libffi-dev \
+        python3-dev \
+        libressl-dev \
+        postgresql-dev
 
-# uninstall build dependencies
-RUN apk del build-deps
+# Install and configure helm
+COPY helm-repositories.yaml /tmp/helm/repository/repositories.yaml
+COPY Makefile ./
+RUN make install-helm \
+ && helm init --client-only \
+ && helm repo update
 
-ENV DJANGO_SETTINGS_MODULE "control_panel_api.settings"
+# install python dependencies (and then remove build dependencies)
+COPY requirements.txt ./
+RUN make dependencies \
+ && apk del build-base \
+ && apk add --no-cache make
 
-ADD manage.py manage.py
-ADD run_api run_api
-ADD run_tests run_tests
-ADD wait_for_db wait_for_db
-ADD control_panel_api control_panel_api
-ADD moj_analytics moj_analytics
+COPY control_panel_api control_panel_api
+COPY moj_analytics moj_analytics
+COPY manage.py wait_for_db ./
 
 # collect static files for deployment
-RUN python3 manage.py collectstatic
+RUN make collectstatic
 
 EXPOSE 8000
-
-CMD ["./run_api"]
+CMD ["gunicorn", "-b", "0.0.0.0:8000", "control_panel_api.wsgi:application"]

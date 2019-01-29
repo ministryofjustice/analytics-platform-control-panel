@@ -21,3 +21,7 @@ ELASTICSEARCH = {
 }
 
 LOGGING['handlers']['console']['level'] = 'CRITICAL'
+ENABLED = {
+    'k8s_rbac': False,
+    'write_to_cluster': True,
+}

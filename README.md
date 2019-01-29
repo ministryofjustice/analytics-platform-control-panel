@@ -9,24 +9,24 @@ https://github.com/ministryofjustice/analytics-platform-control-panel-frontend
 ## Running with Docker
 
 ```sh
-docker-compose build
+docker-compose build  # OR make docker-image
 docker-compose up
 ```
 and then in a separate terminal window,
 ```sh
-docker-compose exec app python3 manage.py createsuperuser
+docker-compose exec app make superuser
 ```
 Then browse to http://localhost:8000/
 
 ### Running tests with docker
 
 ```sh
-docker-compose -f docker-compose.test.yml up --build --abort-on-container-exit
+make docker-test
 ```
 
-You can run a particular test using the pytest '-k' parameter:
+You can run a particular test using the `TEST_NAME` parameter:
 ```sh
-docker-compose -f docker-compose.test.yml build && docker-compose -f docker-compose.test.yml run app ./run_tests -k TEST-NAME
+make docker-test TEST_NAME=test_get_user_teams
 ```
 
 ## Running directly on your machine
@@ -35,11 +35,15 @@ docker-compose -f docker-compose.test.yml build && docker-compose -f docker-comp
 
 The Control Panel app requires Python 3.6+
 
-It is best to use a virtual environment to install python dependencies, eg:
+Install dependencies with the following command:
 ```sh
-python -m venv venv
-. venv/bin/activate
-pip install -r requirements.txt
+make dependencies
+source venv/bin/activate
+```
+
+This will automatically use a virtual environment to install python dependencies, but if you want to install into your system library, you can override this with the `USE_VENV` parameter:
+```sh
+make dependencies USE_VENV=false
 ```
 
 ### Kubernetes setup
@@ -90,18 +94,18 @@ export DJANGO_SETTINGS_MODULE=control_panel_api.settings
 
 The Control Panel app connects to a PostgreSQL database, which should have a database with the expected name:
 ```sh
-createdb $DB_NAME
+make init-database
 ```
 
 Then you can run migrations:
 ```sh
-python manage.py migrate
+make migrations
 ```
 
 ### Create superuser (on first run only)
 
 ```sh
-python manage.py createsuperuser
+make superuser
 ```
 NB `Username` needs to be your GitHub username
 
@@ -109,21 +113,21 @@ NB `Username` needs to be your GitHub username
 
 Before the first run (or after changes to static assets), you need to run
 ```sh
-python manage.py collectstatic
+make collectstatic
 ```
 
 ### Run the app
 
 You can run the app with
 ```sh
-./run_api
+make run
 ```
 Go to http://localhost:8000/
 
 ### How to run the tests
 
 ```sh
-./run_tests
+make test
 ```
 
 # Deployment

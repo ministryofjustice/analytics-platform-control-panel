@@ -2,7 +2,7 @@ version: '3'
 services:
   app:
     build: .
-    image: app
+    image: control-panel
     ports:
       - "8000:8000"
     depends_on:
@@ -22,8 +22,8 @@ services:
       POSTGRES_USER: "controlpanel"
       POSTGRES_DB: "controlpanel"
   migration:
-    image: app:latest
-    command: ["sh", "-c", "python3 wait_for_db && python3 manage.py migrate"]
+    image: control-panel
+    command: ["make", "migrations"]
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"

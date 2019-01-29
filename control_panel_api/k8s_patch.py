@@ -7,15 +7,8 @@ import kubernetes
 from kubernetes.config.kube_config import _is_expired
 
 
-def load_token(self):
-    if 'auth-provider' not in self._user:
-        return
-
-    provider = self._user['auth-provider']
-
-    if ('name' not in provider
-            or 'config' not in provider
-            or provider['name'] != 'oidc'):
+def load_token(self, provider):
+    if 'config' not in provider:
         return
 
     parts = provider['config']['id-token'].split('.')
@@ -23,8 +16,10 @@ def load_token(self):
     if len(parts) != 3:  # Not a valid JWT
         return None
 
+    padding = (4 - len(parts[1]) % 4) * '='
+
     jwt_attributes = json.loads(
-        base64.b64decode(parts[1] + '==').decode('utf-8')
+        base64.b64decode(parts[1] + padding).decode('utf-8')
     )
 
     expire = jwt_attributes.get('exp')
