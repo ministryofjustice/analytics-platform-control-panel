@@ -23,7 +23,7 @@ services:
       POSTGRES_DB: "controlpanel"
   migration:
     image: control-panel
-    command: ["make", "migrations"]
+    command: sh -c "python3 wait_for_db && python3 manage.py migrate"
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"

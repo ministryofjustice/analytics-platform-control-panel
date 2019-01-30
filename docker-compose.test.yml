@@ -14,7 +14,8 @@ services:
       DB_NAME: "controlpanel"
       DB_USER: "postgres"
       DEBUG: "True"
-    command: ["make", "test"]
+      DJANGO_SETTINGS_MODULE: "control_panel_api.settings.test"
+    command: sh -c "python3 wait_for_db && pytest --color=yes control_panel_api"
   db:
     image: "postgres:9.6.2"
     logging:

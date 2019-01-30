@@ -21,23 +21,24 @@ RUN apk add --no-cache \
 
 # Install and configure helm
 COPY helm-repositories.yaml /tmp/helm/repository/repositories.yaml
-COPY Makefile ./
-RUN make install-helm \
+RUN wget https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz -O helm.tgz \
+ && tar fxz helm.tgz \
+ && mv linux-amd64/helm /usr/local/bin \
+ && rm -rf helm.tgz linux-amd64 \
  && helm init --client-only \
  && helm repo update
 
 # install python dependencies (and then remove build dependencies)
 COPY requirements.txt ./
-RUN make dependencies \
- && apk del build-base \
- && apk add --no-cache make
+RUN pip3 install -r requirements.txt \
+ && apk del build-base
 
 COPY control_panel_api control_panel_api
 COPY moj_analytics moj_analytics
 COPY manage.py wait_for_db ./
 
 # collect static files for deployment
-RUN make collectstatic
+RUN python3 manage.py collectstatic
 
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "control_panel_api.wsgi:application"]
