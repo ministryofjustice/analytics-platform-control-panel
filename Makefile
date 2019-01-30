@@ -3,12 +3,7 @@ PORT=8000
 PROJECT=control-panel
 MODULE=control_panel_api
 VENV=venv
-ifneq (${USE_VENV}, false)
-	BIN=${VENV}/bin
-	USE_VENV=true
-else
-	BIN=/usr/bin
-endif
+BIN=${VENV}/bin
 
 -include .env
 export
@@ -16,9 +11,7 @@ export
 .PHONY: collectstatic dependencies help run test wait_for_db
 
 venv/bin:
-	@if ${USE_VENV} && [ ! -d "${VENV}" ] ; then python3 -m venv venv ; fi
-
-usr/bin:
+	@if ${USE_VENV} && [ ! -d "${VENV}" ] ; then python3 -m venv ${VENV} ; fi
 
 ## dependencies: Install dependencies
 dependencies: ${BIN} requirements.txt

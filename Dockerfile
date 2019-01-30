@@ -5,7 +5,6 @@ MAINTAINER Andy Driver <andy.driver@digital.justice.gov.uk>
 ENV HELM_VERSION 2.9.1
 ENV HELM_HOME /tmp/helm
 ENV DJANGO_SETTINGS_MODULE "control_panel_api.settings"
-ENV USE_VENV=false
 
 WORKDIR /home/control-panel
 
