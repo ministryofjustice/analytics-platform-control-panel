@@ -14,7 +14,7 @@ docker-compose up
 ```
 and then in a separate terminal window,
 ```sh
-docker-compose exec app make superuser
+docker-compose exec app python3 manage.py createsuperuser
 ```
 Then browse to http://localhost:8000/
 
@@ -37,13 +37,9 @@ The Control Panel app requires Python 3.6+
 
 Install dependencies with the following command:
 ```sh
-make dependencies
+python3 -m venv venv
 source venv/bin/activate
-```
-
-This will automatically use a virtual environment to install python dependencies, but if you want to install into your system library, you can override this with the `USE_VENV` parameter:
-```sh
-make dependencies USE_VENV=false
+pip3 install -r requirements.txt
 ```
 
 ### Kubernetes setup
@@ -94,18 +90,19 @@ export DJANGO_SETTINGS_MODULE=control_panel_api.settings
 
 The Control Panel app connects to a PostgreSQL database, which should have a database with the expected name:
 ```sh
-make init-database
+createuser -d controlpanel
+createdb -U controlpanel controlpanel
 ```
 
 Then you can run migrations:
 ```sh
-make migrations
+python3 manage.py migrate
 ```
 
 ### Create superuser (on first run only)
 
 ```sh
-make superuser
+python3 manage.py createsuperuser
 ```
 NB `Username` needs to be your GitHub username
 
@@ -113,14 +110,18 @@ NB `Username` needs to be your GitHub username
 
 Before the first run (or after changes to static assets), you need to run
 ```sh
-make collectstatic
+python3 manage.py collectstatic
 ```
 
 ### Run the app
 
-You can run the app with
+You can run the app with the Django development server with
 ```sh
-make run
+python3 manage.py runserver
+```
+Or with Gunicorn WSGI server:
+```sh
+gunicorn -b 0.0.0.0:8000 control_panel_api.wsgi:application
 ```
 Go to http://localhost:8000/
 
@@ -128,6 +129,11 @@ Go to http://localhost:8000/
 
 ```sh
 make test
+```
+
+You can run a specific test class or function by passing the `TEST_NAME` parameter, eg:
+```sh
+make test TEST_NAME=test_something
 ```
 
 # Deployment
