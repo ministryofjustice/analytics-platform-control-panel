@@ -17,7 +17,7 @@ class CustomPageNumberPagination(PageNumberPagination):
         if not self._page_size_is_all(page_size):
             return super().paginate_queryset(queryset, request, view)
 
-        paginator = self.django_paginator_class(queryset, queryset.count())
+        paginator = self.django_paginator_class(queryset, queryset.count() or 1)
         self.page = paginator.page(1)
 
         return list(self.page)
