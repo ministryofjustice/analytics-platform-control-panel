@@ -24,11 +24,6 @@ Then browse to http://localhost:8000/
 make docker-test
 ```
 
-You can run a particular test using the `TEST_NAME` parameter:
-```sh
-make docker-test TEST_NAME=test_get_user_teams
-```
-
 ## Running directly on your machine
 
 ### Dependencies
