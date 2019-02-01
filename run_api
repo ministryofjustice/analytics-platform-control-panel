@@ -1,6 +1,0 @@
-#!/bin/sh
-
-set -e -o pipefail
-
-python3 wait_for_db && \
-    gunicorn -b 0.0.0.0:8000 control_panel_api.wsgi:application

@@ -1,7 +1,0 @@
-#!/bin/sh
-
-set -e -o pipefail
-
-export DJANGO_SETTINGS_MODULE="control_panel_api.settings.test"
-
-python3 wait_for_db && pytest --color=yes --spec control_panel_api $@
