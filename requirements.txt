@@ -1,6 +1,6 @@
 asn1crypto==0.24.0
 auth0-python==3.6.1
-boto3==1.9.108
+boto3==1.9.109
 botocore==1.12.108
 cachetools==3.1.0
 certifi==2018.11.29
