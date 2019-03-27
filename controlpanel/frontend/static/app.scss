@@ -1,0 +1,36 @@
+//$govuk-font-family-nta: "Source Sans Pro";
+//$govuk-font-family-nta-tabular: "Source Sans Pro";
+
+$govuk-assets-path: "/static/govuk-frontend/assets/";
+
+@import "static/govuk-frontend/settings/assets";
+@import "static/govuk-frontend/settings/compatibility";
+@import "static/govuk-frontend/settings/global-styles";
+@import "static/govuk-frontend/settings/ie8";
+@import "static/govuk-frontend/settings/media-queries";
+@import "static/govuk-frontend/settings/colours-palette";
+@import "static/govuk-frontend/settings/colours-organisations";
+@import "static/govuk-frontend/settings/colours-applied";
+@import "static/govuk-frontend/settings/spacing";
+@import "static/govuk-frontend/settings/measurements";
+// comment the line below out to avoid using Transport New font
+@import "static/govuk-frontend/settings/typography-font-families";
+@import "static/govuk-frontend/settings/typography-font";
+@import "static/govuk-frontend/settings/typography-responsive";
+@import "static/govuk-frontend/tools/all";
+@import "static/govuk-frontend/helpers/all";
+@import "static/govuk-frontend/core/all";
+@import "static/govuk-frontend/objects/all";
+@import "static/govuk-frontend/components/all";
+@import "static/govuk-frontend/utilities/all";
+@import "static/govuk-frontend/overrides/all";
+
+@import "static/hmcts-frontend/all";
+
+@import "components/all";
+
+@import "local/buttons";
+@import "local/forms";
+@import "local/markdown";
+@import "local/sign-out";
+@import "local/utilities";

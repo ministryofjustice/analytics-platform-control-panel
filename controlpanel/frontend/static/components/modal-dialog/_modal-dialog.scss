@@ -1,0 +1,41 @@
+.modal-dialog--trigger {
+  display: inline-block;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background-color: govuk-colour("grey-3");
+  top: 2px;
+  left: 2px;
+
+  span {
+    display: none;
+  }
+
+  &:before {
+    content: '?';
+    position: absolute;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 14px;
+    width: 16px;
+    height: 16px;
+    text-indent: center;
+    cursor: pointer;
+    left: 5px;
+    top: 1px;
+  }
+
+  &:hover {
+    background-color: govuk-colour("grey-2");
+  }
+}
+
+.modal-dialog {
+  max-width: 500px;
+
+  &::backdrop {
+    background: rgba(0,0,0,0.8);
+  }
+}

@@ -1,0 +1,12 @@
+{% macro alerts() %}
+  {%- set messages = get_messages(request) -%}
+  {% if messages -%}
+  <div class="alerts">
+    {% for message in messages -%}
+    <div class="alerts--item{% if message.tags %} {{ message.tags }}{% endif %}">
+      <span class="alerts--message">{{ message }}</span>
+    </div>
+    {%- endfor %}
+  </div>
+  {%- endif %}
+{% endmacro %}

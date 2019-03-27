@@ -1,0 +1,14 @@
+.govuk-tag {
+
+  &.cpanel-tag--warning {
+    background-color: govuk-colour("red");
+  }
+
+  &.cpanel-tag--idled {
+    background-color: govuk-colour("grey-1");
+  }
+
+  &.cpanel-tag--deploying {
+    background-color: govuk-colour("yellow");
+  }
+}

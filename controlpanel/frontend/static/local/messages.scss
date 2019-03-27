@@ -1,0 +1,49 @@
+$message-color: $green;
+$warning-color: $red;
+
+.flash-message {
+  @include bold-19;
+  color: $message-color;
+  border: 5px solid $message-color;
+  margin: 1em 0;
+  padding: 1em 2em 1em 1em;
+  position: relative;
+  cursor: pointer;
+
+  &:after {
+    content: '\00d7';
+    border-radius: 50%;
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    text-align: center;
+    color: $message-color;
+
+    position: absolute;
+    right: 1em;
+    top: 1em;
+  }
+
+  &:hover {
+    &:after {
+      color: $white;
+      background-color: $message-color;
+    }
+  }
+
+  &.warning {
+    color: $warning-color;
+    border-color: $warning-color;
+
+    &:after {
+      color: $warning-color;
+    }
+
+    &:hover {
+      &:after {
+        color: $white;
+        background-color: $warning-color;
+      }
+    }
+  }
+}

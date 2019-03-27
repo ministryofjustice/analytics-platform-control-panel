@@ -1,0 +1,18 @@
+{% macro autocomplete(params) %}
+<div class="govuk-form-group">
+  {% if params.label -%}
+  <label class="govuk-label" for="{{ params.id }}">{{ params.label }}</label>
+  {%- endif -%}
+
+  <select class="govuk-form-control autocomplete-select"
+          id="{{ params.id }}"
+          name="{{ params.name|default(params.id) }}">
+    <option value=""></option>
+    {% set items = params["items"] %}
+    {% if items is callable %}{% set items = items() %}{% endif %}
+    {% for item in items %}
+      {{ caller(item) }}
+    {% endfor %}
+  </select>
+</div>
+{% endmacro %}

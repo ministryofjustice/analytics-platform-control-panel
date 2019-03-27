@@ -1,0 +1,19 @@
+{% macro navbar(params) %}
+<nav class="hmcts-sub-navigation {{ params.classes or "" }}"
+     {%- for key, value in params.attributes %} {{key}}="{{value}}"
+     {%- endfor %}>
+  <ul class="hmcts-sub-navigation__list">
+  {% for item in params["items"] %}
+    {% if item.href and not item.hide %}
+    <li class="hmcts-sub-navigation__item">
+      <a class="hmcts-sub-navigation__link"
+         {%- if item.active %} aria-current="page"
+         {%- endif %} href="{{ item.href }}"
+         {%- for key, value in item.attributes %} {{key}}="{{value}}"
+         {%- endfor %}>{{ item.html | safe if item.html else item.text }}</a>
+    </li>
+    {% endif %}
+  {% endfor %}
+  </ul>
+</nav>
+{% endmacro %}

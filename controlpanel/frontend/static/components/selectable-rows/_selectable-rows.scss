@@ -1,0 +1,22 @@
+table.selectable-rows {
+
+  $row-padding: 5px;
+
+  & tr td:nth-of-type(2) {
+    padding-left: $row-padding;
+  }
+
+  & tr td:last-of-type {
+    padding-right: $row-padding;
+  }
+
+  & tr.selected {
+    background-color: govuk-colour("blue");
+    color: govuk-colour("white");
+  }
+
+  & th:first-of-type,
+  & td:first-of-type {
+    display: none;
+  }
+}

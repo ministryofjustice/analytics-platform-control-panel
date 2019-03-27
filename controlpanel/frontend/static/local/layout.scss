@@ -1,0 +1,11 @@
+.grid-row {
+  clear: both;
+}
+
+.clearfix {
+  @include clearfix;
+}
+
+#proposition-menu {
+  position: relative;
+}

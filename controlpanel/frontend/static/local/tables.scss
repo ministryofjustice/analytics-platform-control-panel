@@ -1,0 +1,15 @@
+table {
+  th, td {
+    @include core-16;
+  }
+  th {
+    font-weight: bold;
+  }
+
+  tr {
+    th:last-child,
+    td:last-child {
+      padding-right: 0;
+    }
+  }
+}
