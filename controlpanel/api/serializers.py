@@ -1,9 +1,9 @@
 from collections import defaultdict
-from operator import itemgetter
-import re
 
 from django.conf import settings
 from django.contrib.auth.models import Group
+from operator import itemgetter
+import re
 from rest_framework import serializers
 
 from controlpanel.api.models import (
@@ -17,12 +17,14 @@ from controlpanel.api.models import (
 
 
 class GroupSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Group
         fields = ('id', 'url', 'name')
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = AppS3Bucket
         fields = ('id', 'url', 'app', 's3bucket', 'access_level')

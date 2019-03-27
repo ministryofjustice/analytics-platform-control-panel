@@ -1,8 +1,9 @@
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.contrib import auth
+from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models.signals import post_delete
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -11,7 +12,7 @@ from controlpanel.api.helm import helm
 from controlpanel.utils import github_repository_name, s3_slugify, sanitize_dns_label
 
 
-class User(auth.models.AbstractUser):
+class User(AbstractUser):
     auth0_id = models.CharField(max_length=128, primary_key=True)
     name = models.CharField(max_length=256, blank=True)
     email_verified = models.BooleanField(default=False)
@@ -190,6 +191,7 @@ class S3Bucket(TimeStampedModel):
 
     def aws_create(self):
         result = services.create_bucket(self.name, self.is_data_warehouse)
+
         if result:
             self.location_url = result['Location']
 
@@ -226,6 +228,7 @@ class Team(TimeStampedModel):
         """
         Returns the users (queryset) with the given `role_code `in the team
         """
+
         return self.users.filter(teammembership__role__code=role_code)
 
 
@@ -250,6 +253,9 @@ class TeamMembership(TimeStampedModel):
 class AccessToS3Bucket(TimeStampedModel):
     """
     Abstract model to model access to S3 buckets
+
+    These models will be associated with an s3bucket and have
+    an access level (`readonly` or `readwrite`)
     """
 
     READONLY = 'readonly'
@@ -279,13 +285,17 @@ class AccessToS3Bucket(TimeStampedModel):
 
     def aws_update(self):
         services.grant_bucket_access(
-            self.s3bucket.arn, self.has_readwrite_access(), self.aws_role_name()
+            self.s3bucket.arn,
+            self.has_readwrite_access(),
+            self.aws_role_name(),
         )
 
 
 class AppS3Bucket(AccessToS3Bucket):
     """
     An app (potentially) has access to several S3 buckets.
+
+    We have two access levels, "readonly" (default) and "readwrite".
     """
 
     app = models.ForeignKey(
@@ -293,6 +303,7 @@ class AppS3Bucket(AccessToS3Bucket):
 
     class Meta:
         db_table = "control_panel_api_apps3bucket"
+        # one record per app/s3bucket
         unique_together = ('app', 's3bucket')
         ordering = ('id',)
 
@@ -303,6 +314,10 @@ class AppS3Bucket(AccessToS3Bucket):
 class UserS3Bucket(AccessToS3Bucket):
     """
     A user can have access to several S3 buckets.
+
+    We have two access levels, "readonly" (default) and "readwrite".
+    The `is_admin` field determine if the user has admin privileges on the
+    S3 bucket
     """
 
     user = models.ForeignKey(
@@ -311,6 +326,7 @@ class UserS3Bucket(AccessToS3Bucket):
 
     class Meta:
         db_table = "control_panel_api_users3bucket"
+        # one record per user/s3bucket
         unique_together = ('user', 's3bucket')
         ordering = ('id',)
 
@@ -321,7 +337,7 @@ class UserS3Bucket(AccessToS3Bucket):
         return self.user == user and self.is_admin
 
 
-def access_to_bucket_deleted(sender, **kwargs):
+def _access_to_bucket_deleted(sender, **kwargs):
     access_to_bucket = kwargs['instance']
 
     services.revoke_bucket_access(
@@ -330,15 +346,15 @@ def access_to_bucket_deleted(sender, **kwargs):
     )
 
 
-models.signals.post_delete.connect(
-    access_to_bucket_deleted,
+post_delete.connect(
+    _access_to_bucket_deleted,
     sender=AppS3Bucket,
-    dispatch_uid='controlpanel.api.models.access_to_bucket_deleted',
+    dispatch_uid='controlpanel.api.models._access_to_bucket_deleted',
 )
 
 
-models.signals.post_delete.connect(
-    access_to_bucket_deleted,
+post_delete.connect(
+    _access_to_bucket_deleted,
     sender=UserS3Bucket,
-    dispatch_uid='controlpanel.api.models.access_to_bucket_deleted',
+    dispatch_uid='controlpanel.api.models._access_to_bucket_deleted',
 )
