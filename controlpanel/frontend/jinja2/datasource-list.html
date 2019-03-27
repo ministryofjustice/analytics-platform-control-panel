@@ -1,0 +1,72 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+
+{% extends "base.html" %}
+
+{% set page_name = datasource_type + "-data" %}
+{% set page_title = "Your " + datasource_type + " data sources" %}
+{% set heading_prefix = "Your" %}
+{% set breadcrumbs = {
+  "items": [
+    {"text": "Home", "href": url("index")},
+    {"text": page_title}
+  ]
+} %}
+
+{% set access_levels_html %}
+{% include "modals/data_access_levels.html" %}
+{% endset %}
+
+{% block content %}
+
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if request.user.is_superuser %}
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">Name</th>
+        <th class="govuk-table__header">
+          Your access level
+          {{ modal_dialog(access_levels_html|safe) }}
+        </th>
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for bucket in object_list %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          <a href="{{ url('manage-' + datasource_type + '-datasource', kwargs={ "pk": bucket.s3bucket.id }) }}">{{ bucket.s3bucket.name }}</a>
+        </td>
+        <td class="govuk-table__cell">
+          {% if bucket.user_is_admin(request.user) %}
+            admin
+          {% else %}
+            {{ bucket.access_level }}
+          {% endif %}
+        </td>
+        <td class="govuk-table__cell align-right no-wrap">
+          <a class="govuk-button hmcts-button--secondary" href="{{ bucket.s3bucket.aws_url }}" target="_blank" rel="noopener">Open on AWS</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ object_list|length }} {{ datasource_type }} data source{% if object_list|length != 1 %}s{% endif %}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="govuk-body">
+    <a class="govuk-button" href="{# url('buckets.new', { type: datasource_type }) #}">
+      Create new {{ datasource_type }} data source
+    </a>
+  </p>
+  {% endif %}
+
+{% endblock %}

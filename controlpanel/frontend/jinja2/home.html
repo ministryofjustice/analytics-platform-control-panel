@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% set page_name = "home" %}
+{% set page_title = "Hello " ~ ( request.user.name if request.user ) %}
+{% set heading_prefix = "Your" %}
+{% set breadcrumbs = {
+  "items": [
+    {"text": "Home", "href": url("index")},
+  ]
+} %}
+
+{% block content %}
+
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if request.user.is_superuser %}
+  <h2 class="govuk-heading-m">Superuser functions</h2>
+  <ul class="govuk-list govuk-list--bullet">
+    <li><a href="{# url('users.list') #}">List all users</a></li>
+    <li><a href="{# url('apps.list') #}">List all apps</a></li>
+    <li><a href="{# url('buckets.list') #}">List all data sources</a></li>
+  </ul>
+  {% endif %}
+
+{% endblock %}

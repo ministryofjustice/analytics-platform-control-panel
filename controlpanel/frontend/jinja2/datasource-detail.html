@@ -1,0 +1,192 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "radios/macro.html" import govukRadios %}
+{% from "includes/yesno.html" import yes_no %}
+
+{% extends "base.html" %}
+
+{% set page_title = datasource_type | capitalize + " data source: " + object.s3bucket.name %}
+{% set breadcrumbs = {
+  "items": [
+    {"text": 'Home', "href": url('index')},
+    {"text": datasource_type | capitalize + " data", "href": url('list-' + datasource_type + '-datasources')},
+    {"text": 'Data source details'}
+  ]
+} %}
+{% set user_is_admin = request.user.is_bucket_admin(object.id) or request.user.is_superuser %}
+
+{% set access_levels_html %}
+{% include "modals/data_access_levels.html" %}
+{% endset %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+<div class="govuk-form-group">
+  <a href="{# url('buckets.aws', { id: object.id }) #}" target="_blank" rel="noopener">
+    Open on AWS
+  </a>
+</div>
+
+<section id="data_access_group">
+  <h2 class="govuk-heading-m">Data access group</h2>
+
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">User</th>
+        <th class="govuk-table__header">
+          User access level
+          {{ modal_dialog(access_levels_html|safe) }}
+        </th>
+        {% if user_is_admin %}
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for users3bucket in object.users3buckets %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          <a class="{% if current_user.auth0_id == users3bucket.user.auth0_id %}highlight-current{% endif %}"
+            href="{{ url_for('users.details', { id: users3bucket.user.auth0_id }) }}">
+            {% if users3bucket.user.name %}{{ users3bucket.user.name }} {% endif %}({{ users3bucket.user.username }})
+          </a>
+        </td>
+        <td class="govuk-table__cell">
+          {% if (users3bucket.is_admin) %}admin{% else %}{{ users3bucket.access_level }}{% endif %}
+        </td>
+        {% if user_is_admin %}
+        <td class="govuk-table__cell">
+          {#
+          <div class="govuk-form-group change-data-access-level-panel panel panel-border-narrow js-hidden"
+                id="users3bucket_{{ users3bucket.id }}_change-data-access-level-panel">
+
+            <button class="js-close-panel">Close panel</button>
+
+            <form action="{{ url_for('users3buckets.update', { id: users3bucket.id }) }}" method="post" class="inline-form clearfix">
+              {{ csrf_input }}
+              {{ govukRadios({
+                "name": "data_access_level",
+                "fieldset": {
+                  "legend": {
+                    "text": "Data access level",
+                  },
+                },
+                "hint": {
+                  "html": "<strong>NOTE:</strong> Making user admin will allow them to confer access rights on additional users.",
+                },
+                "items": [
+                  {"value": "readonly", "text": "Read only", "checked": True},
+                  {"value": "readwrite", "text": "Read/write"},
+                  {"value": "admin", "text": "Admin"},
+                ]
+              }) }}
+              <div class="govuk-form-group">
+                <button class="govuk-button hmcts-button--secondary">Save</button>
+              </div>
+            </form>
+
+            <hr>
+            <div class="form-group js-revoke-access" id="users3bucket_{{ users3bucket.id }}_revoke-access">
+              <form action="{{ url_for('users3buckets.delete', { id: users3bucket.id }) }}" method="post" class="inline-form clearfix">
+                {{ csrf_input }}
+                <input type="submit" class="js-confirm button button-warning" value="Revoke access" />
+              </form>
+            </div>
+          </div>
+          #}
+          <button class="govuk-button hmcts-button--secondary js-change-access-level"
+                  id="users3bucket_{{ users3bucket.id }}_change-data-access-level">
+            Edit access level
+          </button>
+        </td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ object.users3buckets|length }}
+          user{%- if object.users3buckets|length != 1 -%}s have{% else %} has{% endif %}
+          access to this {{ datasource_type }} data source
+      </tr>
+    </tfoot>
+  </table>
+
+  {% if user_is_admin %}
+  {% if users_options.length %}
+  <form action="{# url_for('users3buckets.create') #}" method="post">
+    {{ csrf_input }}
+    <div class="govuk-form-group">
+      <label class="govuk-label" for="user_id">Grant access to this data to other users</label>
+      <select class="govuk-form-control no-blank autocomplete-select" id="user_id" name="user_id">
+        <option value="">Select a user</option>
+        {% for user in users_options %}
+        <option value="{{ user.auth0_id }}">{% if user.name %}{{ user.name }} {% endif %}({{ user.username }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
+      {{ govukRadios({
+        "fieldset": {
+          "legend": {
+            "text": "Data access level",
+          },
+        },
+        "hint": {
+          "html": "<strong>NOTE:</strong> Making user admin will allow them to confer access rights on additional users.",
+        },
+        "items": [
+          {"value": "readonly", "text": "Read only", "checked": True},
+          {"value": "readwrite", "text": "Read/write"},
+          {"value": "admin", "text": "Admin"},
+        ]
+      }) }}
+    </div>
+
+    <div class="govuk-form-group">
+      <button class="govuk-button">Grant access</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="govuk-body">(All available users already have access to this data source.)</p>
+  {% endif %}
+  {% endif %}
+</section>
+
+{% if user_is_admin %}
+<section id="access_logs">
+  <h2 class="govuk-heading-m">Data access log</h2>
+  <form action="{# url_for('buckets.access_logs', { id: object.id }) #}">
+    {{ csrf_input }}
+    <p class="govuk-body">Bucket access log period:
+      <select class="govuk-form-control" id="js-access-log-period-dropdown-stop">
+      {% for range in access_log_ranges %}
+        <option value="{{ range.value }}" {% if range.default %}selected{% endif %}>{{ range.text }}</option>
+      {% endfor %}
+      </select>
+    </p>
+  </form>
+  <div id="access-log-results-stop">
+    <p class="govuk-body" id="loading-message"><em>Fetching...</em></p>
+    <div id="results-stop"></div>
+  </div>
+</section>
+{% endif %}
+
+{% if user_is_admin %}
+<section id="delete-datasource">
+  <form action="{# url('buckets.delete', kwargs={ "pk": object.id }) #}" method="post">
+    {{ csrf_input }}
+    <button class="govuk-button cpanel-button__destructive js-confirm"
+            data-confirm-message="Are you sure you want to delete this data source?">
+      Delete data source
+    </button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

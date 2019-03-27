@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% from "autocomplete/macro.html" import autocomplete %}
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "tag/macro.html" import tag %}
+{% from "selectable-rows/macro.html" import row_selector %}
+{% from "includes/app-logs.html" import app_logs with context %}
+{% from "includes/yesno.html" import yes_no %}
+
+{% set page_name = "app_detail" %}
+{% set page_title = "App: " + object.name %}
+{% set breadcrumbs = {
+  "items": [
+    {"text": "Home", "href": url("index")},
+    {"text": "Webapps", "href": url("list-apps")},
+    {"text": "Webapp details"}
+  ]
+} %}
+{% set user_is_admin = request.user.is_app_admin(object.id) or request.user.is_superuser %}
+
+{% set app_customers_html %}
+{% include "modals/app_customers.html" %}
+{% endset %}
+
+{% set app_admins_html %}
+{% include "modals/app_admins.html" %}
+{% endset %}
+
+{% block content %}
+<header>
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if object.description %}
+  <p class="govuk-body">
+    {{ object.description }}
+  </p>
+  {% endif %}
+
+  {% if object.is_deployed %}
+  <h2 class="govuk-heading-m">Deployed URL</h2>
+  <p class="govuk-body">
+      <a href="https://{{ object.deployed_url }}">https://{{ object.deployed_url }}</a>
+  </p>
+  {% endif %}
+
+  <h2 class="govuk-heading-m">Source Code Repository</h2>
+  <p class="govuk-body">
+    {% if object.repo_url %}
+      <a href="{{ object.repo_url }}">{{ object.repo_url }}</a>
+    {% else %}
+      None
+    {% endif %}
+  </p>
+
+  <h2 class="govuk-heading-m">Deployment Pipeline</h2>
+  <p class="govuk-body">
+    <a href="https://concourse.services.{{env}}.mojanalytics.xyz/teams/main/pipelines/{{ object.name }}">
+    https://concourse.services.{{env}}.mojanalytics.xyz/teams/main/pipelines/{{ object.name }}
+    </a>
+  </p>
+</header>
+
+<br><br><br>
+
+<section id="app_customers">
+  {% set customers = object.customers %}
+  {% set num_customers = customers|length %}
+
+  <h2 class="govuk-heading-m">
+    App customers
+    {{ modal_dialog(app_customers_html|safe) }}
+  </h2>
+  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": object.id}) }}">
+    {{ csrf_input }}
+    <table class="govuk-table">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th class="govuk-table__header">Customer email</th>
+          {% if user_is_admin %}
+          <th class="govuk-table__header">
+            <span class="govuk-visually-hidden">Actions</span>
+          </th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for customer in customers %}
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ customer.email }}</td>
+          {% if user_is_admin %}
+          <td class="govuk-table__cell">
+            <button class="govuk-button hmcts-button--secondary right"
+                    name="customer"
+                    value="{{ customer.user_id }}">
+              Remove customer
+            </button>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="govuk-table__foot">
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell" colspan="3">
+            {{ num_customers }} app customer{% if num_customers != 1 %}s{% endif %}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </form>
+
+  {% if user_is_admin %}
+  <form action="{{ url('add-app-customers', kwargs={ "pk": object.id }) }}" method="post">
+    {{ csrf_input }}
+    <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
+      <label class="govuk-label" for="customer_email">
+        Add app customers by entering their email addresses (separated by spaces)
+      </label>
+      {% if errors and errors.customer_email %}
+      <span id="customer_email-error" class="govuk-error-message">
+        <span class="govuk-visually-hidden">Error:</span> {{ errors.customer_email }}
+      </span>
+      {% endif %}
+      <input id="customer_email" class="govuk-input form-control-1-2" name="customer_email" autocomplete="off">
+    </div>
+    <div class="govuk-form-group">
+      <button class="govuk-button">Add customer</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<br>
+
+<section id="app_admins">
+  <h2 class="govuk-heading-m">
+    App admins
+    {{ modal_dialog(app_admins_html|safe) }}
+  </h2>
+
+  <table class="govuk-table app-admins form-group">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">User</th>
+        {% if user_is_admin %}
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for user in app_admins %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
+              href="{# url_for('users.details', { id: user.auth0_id }) #}">
+            {% if user.name %}{{ user.name }} {% endif %}({{ user.username }})
+          </a>
+        </td>
+        {% if user_is_admin %}
+        <td class="govuk-table__cell align-right">
+          <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
+            {{ csrf_input }}
+            <button class="confirm govuk-button hmcts-button--secondary right">
+              Revoke admin
+            </button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ app_admins|length }} app admin{% if app_admins|length != 1 %}s{% endif %}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% if user_is_admin and admin_options|length %}
+  <form action="{{ url('add-app-admin', kwargs={ "pk": app.id }) }}" method="post" class="govuk-form-group">
+    {{ csrf_input }}
+
+    {% call(user) autocomplete({
+      "id": "user_id",
+      "label": "Give a user admin rights to this app",
+      "placeholder": "Start typing to find a user...",
+      "items": admin_options,
+    }) %}
+      <option value="{{ user.auth0_id }}">
+      {%- if user.name -%}
+        {{ user.name }}
+      {%- endif %} ({{ user.username }})</option>
+    {% endcall %}
+
+    <div class="govuk-form-group">
+      <button class="govuk-button">Grant access</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="govuk-body">
+    (All available users are already admins of this app.)
+  </p>
+  {% endif %}
+</section>
+
+<br><br><br>
+
+<section id="app_datasources">
+  <h2 class="govuk-heading-m">App data sources</h2>
+
+  <table class="govuk-table app-data-sources form-group">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">Name</th>
+        <th class="govuk-table__header">App has read/write access</th>
+        {% if user_is_admin %}
+        <th class="govuk-table__header govuk-visually-hidden">Actions</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% set buckets = object.apps3buckets.all() %}
+      {% for bucket in buckets %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          <a href="{# url_for('buckets.details', { id: bucket.s3bucket.id }) #}">{{ bucket.s3bucket.name }}</a>
+        </td>
+        <td class="govuk-table__cell">
+          {{ yes_no(bucket.access_level, 'readwrite') }}
+        </td>
+        <td class="govuk-table__cell align-right">
+          {% if user_is_admin %}
+          <form action="{# url_for('buckets.update', { id: bucket.id }) #}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
+            <button class="confirm govuk-button hmcts-button--secondary right">
+              {{ yes_no(bucket.access_level, 'readwrite', 'Revoke', 'Grant') }} read/write access
+            </button>
+          </form>
+
+          <form action="{# url_for('buckets.delete', { id: bucket.id }) #}" method="post">
+            {{ csrf_input }}
+            <button class="confirm govuk-button hmcts-button--secondary">
+              Disconnect data source
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ buckets|length }} app data source{% if buckets|length != 1 %}s{% endif %}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% if user_is_admin %}
+  {% set num_warehouse_buckets = 0 %}
+  {% if num_warehouse_buckets > 0 %}
+  <form action="{# url_for('apps3buckets.create') #}" method="post">
+    {{ csrf_input }}
+    <div class="govuk-form-group">
+      <label class="govuk-label" for="bucket_id">Connect an app data source</label>
+      <select class="govuk-form-control no-blank" id="bucket_id" name="bucket_id">
+        <option value="">Select app data source</option>
+        {% for bucket in warehouse_buckets %}
+          <option value="{{ bucket.id }}">{{ bucket.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="govuk-form-group">
+      <button class="govuk-button hmcts-button--secondary">
+        Grant access
+      </button>
+    </div>
+  </form>
+  {% else %}
+  <p class="govuk-body">
+    (All available data sources are already connected to this app.)
+  </p>
+  {% endif %}
+  {% endif %}
+</section>
+
+{% if user_is_admin %}
+<br><br><br>
+
+<section id="app_logs">
+  <h2 class="govuk-heading-m">App logs</h2>
+  <p class="govuk-body">
+    <a href="{{ app_logs(app) }}">View logs in Kibana</a>
+  </p>
+</section>
+{% endif %}
+
+{% if user_is_admin %}
+<br><br><br>
+
+<section id="app_management">
+  <form action="{{ url('delete-app', kwargs={ "pk": object.id }) }}" method="post">
+    {{ csrf_input }}
+    <button class="govuk-button cpanel-button--destructive"
+            data-confirm-message="Are you sure you want to delete this app?">
+      Delete app
+    </button>
+  </form>
+</section>
+{% endif %}
+
+{% endblock %}

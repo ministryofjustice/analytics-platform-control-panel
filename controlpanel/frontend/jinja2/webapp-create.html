@@ -1,0 +1,58 @@
+{% from "radios/macro.html" import govukRadios %}
+{% from "autocomplete/macro.html" import autocomplete %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Register an app" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+<p class="govuk-body">
+  After <a
+    href="https://moj-analytical-services.github.io/platform_user_guidance/deploying-a-shiny-app.html">creating
+    an app in Github</a>, use this form to register your app and connect it to
+  sensitive data in S3.
+</p>
+
+<form method="post" action="{{ url("create-app") }}">
+  {{ csrf_input }}
+  <div class="govuk-form-group">
+    <fieldset class="govuk-fieldset">
+      <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+        <h2 class="govuk-fieldset__heading">
+          Github repository URL
+        </h2>
+      </legend>
+      <label for="name" class="govuk-label form-control-prefix">https://github.com/</label>
+      {% call(repo) autocomplete({
+        "id": "repo_url",
+        "items": orgs,
+      }) %}
+        <option value="{{ repo.url }}">
+          {{ repo.name }}
+        </option>
+      {% endcall %}
+    </fieldset>
+  </div>
+  {{ govukRadios({
+    "name": "connect_bucket",
+    "fieldset": {
+      "legend": {
+        "text": "Connect a secure webapp data source",
+        "classes": "govuk-fieldset__legend--m",
+      },
+    },
+    "hint": {
+      "text": "Connect an existing app data source to your app, or create a new one.",
+    },
+    "items": [
+      {"value": "new", "text": "Create a new webapp data source"},
+      {"value": "existing", "text": "Connect an existing webapp data source"},
+      {"value": "later", "text": "Do this later"},
+    ]
+  }) }}
+  <div class="govuk-form-group">
+    <button class="govuk-button">Register app</button>
+  </div>
+</form>
+{% endblock %}
