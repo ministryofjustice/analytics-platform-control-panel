@@ -13,6 +13,10 @@ IDLED = "mojanalytics.xyz/idled"
 SUPPORTED_TOOL_NAMES = list(settings.TOOLS.keys())
 
 
+class DuplicateTool(Exception):
+    pass
+
+
 class ToolNotDeployed(APIException):
     status_code = 400
     default_detail = f"Specified tool not deployed"
@@ -26,16 +30,42 @@ class UnsupportedToolException(APIException):
     default_code = "unsupported_tool"
 
 
-tools_repository = dict()
+class ToolRepository(object):
+
+    def __init__(self):
+        self.tools = dict()
+
+    def __getitem__(self, key):
+        if key not in self.tools:
+            raise UnsupportedToolException(key)
+
+        if key not in self.tools:
+            raise UnsupportedToolException(key)
+
+        return self.tools[key]
+
+    def __setitem__(self, key, value):
+        if key not in SUPPORTED_TOOL_NAMES:
+            raise UnsupportedToolException(key)
+
+        if key in self.tools:
+            raise DuplicateTool(key)
+
+        self.tools[key] = value
 
 
 class ToolMeta(type):
-    """Adds Tool subclasses to tools_repository"""
+    """Adds Tool subclasses to repository"""
+
+    # repository is shared across all Tool subclasses
+    _repository = ToolRepository()
 
     def __init__(cls, name, bases, clsdict):
         super().__init__(name, bases, clsdict)
-        name = clsdict["name"]
-        tools_repository[name] = cls
+        if 'name' not in clsdict:
+            raise AttributeError(f"{name}.name")
+        if name != "Tool":
+            cls._repository[clsdict['name']] = cls
 
 
 class Tool(metaclass=ToolMeta):
@@ -43,10 +73,7 @@ class Tool(metaclass=ToolMeta):
 
     @classmethod
     def create(cls, name):
-        try:
-            return tools_repository[name]()
-        except KeyError:
-            raise UnsupportedToolException()
+        return cls.repository[name]()
 
     @cached_property
     def helm(self):

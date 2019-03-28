@@ -1,13 +1,15 @@
 from collections import OrderedDict
-from urllib.parse import urljoin
 
 from auth0.v3 import authentication, exceptions
 from django.conf import settings
 import requests
+from rest_framework.exceptions import APIException
 
 
-class Auth0Error(Exception):
-    pass
+class Auth0Error(APIException):
+    status_code = 500
+    default_code = "auth0_error"
+    default_detail = "Error querying Auth0 API"
 
 
 class APIClient(object):
@@ -34,7 +36,9 @@ class APIClient(object):
 
             except exceptions.Auth0Error as error:
                 raise Auth0Error(
-                    error, self.client_id, self.domain, self.audience
+                    f"Failed getting Auth0 access token for client "
+                    f"{self.client_id} for audience {self.audience} "
+                    f"at {self.domain}: {error}: {error.details}"
                 )
 
             self._access_token = token["access_token"]
