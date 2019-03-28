@@ -3,11 +3,6 @@
 {% set page_name = "home" %}
 {% set page_title = "Hello " ~ ( request.user.name if request.user ) %}
 {% set heading_prefix = "Your" %}
-{% set breadcrumbs = {
-  "items": [
-    {"text": "Home", "href": url("index")},
-  ]
-} %}
 
 {% block content %}
 

@@ -2,18 +2,12 @@
 
 {% extends "base.html" %}
 
-{% set page_name = datasource_type + "-data" %}
+{% set page_name = datasource_type + "-datasource-list" %}
 {% set page_title = "Your " + datasource_type + " data sources" %}
 {% set heading_prefix = "Your" %}
-{% set breadcrumbs = {
-  "items": [
-    {"text": "Home", "href": url("index")},
-    {"text": page_title}
-  ]
-} %}
 
 {% set access_levels_html %}
-{% include "modals/data_access_levels.html" %}
+{% include "modals/user_data_access_levels.html" %}
 {% endset %}
 
 {% block content %}

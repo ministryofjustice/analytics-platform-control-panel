@@ -1,31 +1,29 @@
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "radios/macro.html" import govukRadios %}
+{% from "user/macro.html" import user_name %}
 {% from "includes/yesno.html" import yes_no %}
 
 {% extends "base.html" %}
 
-{% set page_title = datasource_type | capitalize + " data source: " + object.s3bucket.name %}
-{% set breadcrumbs = {
-  "items": [
-    {"text": 'Home', "href": url('index')},
-    {"text": datasource_type | capitalize + " data", "href": url('list-' + datasource_type + '-datasources')},
-    {"text": 'Data source details'}
-  ]
-} %}
+{% set page_name = datasource_type + "-datasource-list" %}
+{% set page_title = object.s3bucket.name %}
 {% set user_is_admin = request.user.is_bucket_admin(object.id) or request.user.is_superuser %}
 
 {% set access_levels_html %}
-{% include "modals/data_access_levels.html" %}
+{% include "modals/user_data_access_levels.html" %}
 {% endset %}
 
 {% block content %}
+<span class="govuk-caption-xl">{{ datasource_type|capitalize }} data source</span>
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-<div class="govuk-form-group">
+<p class="govuk-body">
   <a href="{# url('buckets.aws', { id: object.id }) #}" target="_blank" rel="noopener">
     Open on AWS
   </a>
-</div>
+</p>
+
+<br><br>
 
 <section id="data_access_group">
   <h2 class="govuk-heading-m">Data access group</h2>
@@ -35,7 +33,7 @@
       <tr class="govuk-table__row">
         <th class="govuk-table__header">User</th>
         <th class="govuk-table__header">
-          User access level
+          Access level
           {{ modal_dialog(access_levels_html|safe) }}
         </th>
         {% if user_is_admin %}
@@ -46,12 +44,12 @@
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-    {% for users3bucket in object.users3buckets %}
+    {% for bucket in object.users3buckets %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
-          <a class="{% if current_user.auth0_id == users3bucket.user.auth0_id %}highlight-current{% endif %}"
-            href="{{ url_for('users.details', { id: users3bucket.user.auth0_id }) }}">
-            {% if users3bucket.user.name %}{{ users3bucket.user.name }} {% endif %}({{ users3bucket.user.username }})
+          <a class="{% if request.user == bucket.user %}highlight-current{% endif %}"
+            href="{# url('users.details', { id: bucket.user.auth0_id }) #}">
+            {{ user_name(bucket.user) }}
           </a>
         </td>
         <td class="govuk-table__cell">
@@ -125,7 +123,7 @@
       <select class="govuk-form-control no-blank autocomplete-select" id="user_id" name="user_id">
         <option value="">Select a user</option>
         {% for user in users_options %}
-        <option value="{{ user.auth0_id }}">{% if user.name %}{{ user.name }} {% endif %}({{ user.username }})</option>
+        <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
         {% endfor %}
       </select>
     </div>
@@ -158,6 +156,8 @@
   {% endif %}
 </section>
 
+<br><br><br>
+
 {% if user_is_admin %}
 <section id="access_logs">
   <h2 class="govuk-heading-m">Data access log</h2>
@@ -179,10 +179,11 @@
 {% endif %}
 
 {% if user_is_admin %}
+<br><br><br>
 <section id="delete-datasource">
   <form action="{# url('buckets.delete', kwargs={ "pk": object.id }) #}" method="post">
     {{ csrf_input }}
-    <button class="govuk-button cpanel-button__destructive js-confirm"
+    <button class="govuk-button cpanel-button--destructive js-confirm"
             data-confirm-message="Are you sure you want to delete this data source?">
       Delete data source
     </button>

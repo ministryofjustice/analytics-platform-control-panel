@@ -3,18 +3,12 @@
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "tag/macro.html" import tag %}
 {% from "selectable-rows/macro.html" import row_selector %}
+{% from "user/macro.html" import user_name %}
 {% from "includes/app-logs.html" import app_logs with context %}
 {% from "includes/yesno.html" import yes_no %}
 
-{% set page_name = "app_detail" %}
-{% set page_title = "App: " + object.name %}
-{% set breadcrumbs = {
-  "items": [
-    {"text": "Home", "href": url("index")},
-    {"text": "Webapps", "href": url("list-apps")},
-    {"text": "Webapp details"}
-  ]
-} %}
+{% set page_name = "webapps" %}
+{% set page_title = object.name %}
 {% set user_is_admin = request.user.is_app_admin(object.id) or request.user.is_superuser %}
 
 {% set app_customers_html %}
@@ -25,8 +19,13 @@
 {% include "modals/app_admins.html" %}
 {% endset %}
 
+{% set app_access_levels_html %}
+{% include "modals/app_data_access_levels.html" %}
+{% endset %}
+
 {% block content %}
 <header>
+  <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
   {% if object.description %}
@@ -154,7 +153,7 @@
         <td class="govuk-table__cell">
           <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
               href="{# url_for('users.details', { id: user.auth0_id }) #}">
-            {% if user.name %}{{ user.name }} {% endif %}({{ user.username }})
+            {{ user_name(user) }}
           </a>
         </td>
         {% if user_is_admin %}
@@ -189,10 +188,7 @@
       "placeholder": "Start typing to find a user...",
       "items": admin_options,
     }) %}
-      <option value="{{ user.auth0_id }}">
-      {%- if user.name -%}
-        {{ user.name }}
-      {%- endif %} ({{ user.username }})</option>
+      <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
     {% endcall %}
 
     <div class="govuk-form-group">
@@ -206,7 +202,7 @@
   {% endif %}
 </section>
 
-<br><br><br>
+<br><br>
 
 <section id="app_datasources">
   <h2 class="govuk-heading-m">App data sources</h2>
@@ -215,9 +211,14 @@
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th class="govuk-table__header">Name</th>
-        <th class="govuk-table__header">App has read/write access</th>
+        <th class="govuk-table__header">
+          Access level
+          {{ modal_dialog(app_access_levels_html|safe) }}
+        </th>
         {% if user_is_admin %}
-        <th class="govuk-table__header govuk-visually-hidden">Actions</th>
+          <th class="govuk-table__header">
+            <span class="govuk-visually-hidden">Actions</span>
+          </th>
         {% endif %}
       </tr>
     </thead>
@@ -229,22 +230,22 @@
           <a href="{# url_for('buckets.details', { id: bucket.s3bucket.id }) #}">{{ bucket.s3bucket.name }}</a>
         </td>
         <td class="govuk-table__cell">
-          {{ yes_no(bucket.access_level, 'readwrite') }}
+          {{ yes_no(bucket.access_level, 'readwrite', "Read/write", "Read only") }}
         </td>
         <td class="govuk-table__cell align-right">
           {% if user_is_admin %}
-          <form action="{# url_for('buckets.update', { id: bucket.id }) #}" method="post">
+          <form action="{# url_for('buckets.update', { id: bucket.id }) #}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
-            <button class="confirm govuk-button hmcts-button--secondary right">
-              {{ yes_no(bucket.access_level, 'readwrite', 'Revoke', 'Grant') }} read/write access
+            <button class="confirm govuk-button hmcts-button--secondary">
+              Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
 
-          <form action="{# url_for('buckets.delete', { id: bucket.id }) #}" method="post">
+          <form action="{# url_for('buckets.delete', { id: bucket.id }) #}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <button class="confirm govuk-button hmcts-button--secondary">
-              Disconnect data source
+              Disconnect
             </button>
           </form>
           {% endif %}
