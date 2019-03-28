@@ -1,3 +1,4 @@
+from collections import UserDict
 import secrets
 
 from django.conf import settings
@@ -30,10 +31,7 @@ class UnsupportedToolException(APIException):
     default_code = "unsupported_tool"
 
 
-class ToolRepository(object):
-
-    def __init__(self):
-        self.tools = dict()
+class ToolRepository(UserDict):
 
     def __getitem__(self, key):
         if key not in self.tools:
@@ -42,7 +40,7 @@ class ToolRepository(object):
         if key not in self.tools:
             raise UnsupportedToolException(key)
 
-        return self.tools[key]
+        return super().__getitem__(key)
 
     def __setitem__(self, key, value):
         if key not in SUPPORTED_TOOL_NAMES:
@@ -51,7 +49,7 @@ class ToolRepository(object):
         if key in self.tools:
             raise DuplicateTool(key)
 
-        self.tools[key] = value
+        super().__setitem__(key, value)
 
 
 class ToolMeta(type):
