@@ -137,9 +137,6 @@ AUTH_USER_MODEL = "api.User"
 # This is set to the mozilla-django-oidc login view name
 LOGIN_URL = "oidc_authentication_init"
 
-# URL where requests are redirected after login (if not specified)
-LOGIN_REDIRECT_URL = "frontend:index"
-
 # URL where requests are redirected after logging out (if not specified)
 LOGOUT_REDIRECT_URL = "/"
 
