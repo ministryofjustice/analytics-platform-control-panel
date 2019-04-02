@@ -181,7 +181,7 @@
 
 {% if user_is_admin %}
 <section class="cpanel-section">
-  <form action="{# url('buckets.delete', kwargs={ "pk": object.id }) #}" method="post">
+  <form action="{{ url('delete-datasource', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive js-confirm"
             data-confirm-message="Are you sure you want to delete this data source?">

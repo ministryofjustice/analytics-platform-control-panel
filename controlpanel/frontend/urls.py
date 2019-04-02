@@ -11,6 +11,12 @@ urlpatterns = [
         views.BucketDetail.as_view(),
         name="manage-datasource",
     ),
+    path(
+        "datasources/<int:pk>/delete",
+        views.DeleteDatasource.as_view(),
+        name="delete-datasource",
+    ),
+    path("datasources/new", views.CreateDatasource.as_view(), name="create-datasource"),
     path("tools", views.ToolsList.as_view(), name="list-tools"),
     path("tools/<str:name>/deploy", views.DeployTool.as_view(), name="deploy-tool"),
     path("tools/<str:name>/restart", views.RestartTool.as_view(), name="restart-tool"),

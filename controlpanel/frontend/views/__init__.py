@@ -14,6 +14,8 @@ from controlpanel.frontend.views.app import (
 from controlpanel.frontend.views.datasource import (
     BucketDetail,
     BucketList,
+    CreateDatasource,
+    DeleteDatasource,
     WarehouseData,
     WebappData,
 )

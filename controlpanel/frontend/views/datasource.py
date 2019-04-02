@@ -1,12 +1,24 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
 from django.views.generic.detail import DetailView
+from django.views.generic.edit import CreateView, DeleteView, FormMixin
 from django.views.generic.list import ListView
 
 from controlpanel.api.models import (
     S3Bucket,
     User,
 )
+from controlpanel.frontend.forms import (
+    CreateDatasourceForm,
+)
+
+
+DATASOURCE_TYPES = [
+    'warehouse',
+    'webapp',
+]
 
 
 class DatasourceMixin(ContextMixin):
@@ -15,7 +27,7 @@ class DatasourceMixin(ContextMixin):
 
     def get_datasource_type(self):
         if self.datasource_type is None:
-            if hasattr(self, 'object'):
+            if hasattr(self, 'object') and self.object:
                 if self.object.is_data_warehouse:
                     return "warehouse"
                 return "webapp"
@@ -74,3 +86,41 @@ class BucketDetail(LoginRequiredMixin, DatasourceMixin, DetailView):
             auth0_id__in=member_ids,
         )
         return context
+
+
+class CreateDatasource(LoginRequiredMixin, DatasourceMixin, CreateView):
+    form_class = CreateDatasourceForm
+    model = S3Bucket
+    template_name = "datasource-create.html"
+
+    def get_context_data(self, **kwargs):
+        if 'type' in self.request.GET and self.request.GET['type'] in DATASOURCE_TYPES:
+            self.datasource_type = self.request.GET['type']
+        return super().get_context_data(**kwargs)
+
+    def get_form_kwargs(self):
+        return FormMixin.get_form_kwargs(self)
+
+    def get_success_url(self):
+        return reverse_lazy("manage-datasource", kwargs={"pk": self.object.pk})
+
+    def form_valid(self, form):
+        name = form.cleaned_data['name']
+        datasource_type = self.request.GET.get("type")
+        self.object = S3Bucket.objects.create(
+            name=name,
+            is_data_warehouse=datasource_type == "warehouse",
+        )
+        messages.success(
+            self.request,
+            f"Successfully created {name} {datasource_type} data source",
+        )
+        return FormMixin.form_valid(self, form)
+
+
+class DeleteDatasource(LoginRequiredMixin, DeleteView):
+    model = S3Bucket
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully delete data source")
+        return reverse_lazy("list-all-datasources")
