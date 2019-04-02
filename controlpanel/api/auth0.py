@@ -38,7 +38,7 @@ class APIClient(object):
                 raise Auth0Error(
                     f"Failed getting Auth0 access token for client "
                     f"{self.client_id} for audience {self.audience} "
-                    f"at {self.domain}: {error}: {error.details}"
+                    f"at {self.domain}: {error}"
                 )
 
             self._access_token = token["access_token"]

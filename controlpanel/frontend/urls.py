@@ -5,23 +5,25 @@ from controlpanel.frontend import views
 
 urlpatterns = [
     path("", views.IndexView.as_view(), name="index"),
+    path("datasources", views.BucketList.as_view(), name="list-all-datasources"),
+    path(
+        "datasources/<int:pk>",
+        views.BucketDetail.as_view(),
+        name="manage-datasource",
+    ),
+    path("tools", views.ToolsList.as_view(), name="list-tools"),
+    path("tools/<str:name>/deploy", views.DeployTool.as_view(), name="deploy-tool"),
+    path("tools/<str:name>/restart", views.RestartTool.as_view(), name="restart-tool"),
+    path("users", views.UserList.as_view(), name="list-users"),
+    path("users/<str:pk>", views.UserDetail.as_view(), name="manage-user"),
     path(
         "warehouse-data",
         views.WarehouseData.as_view(),
         name="list-warehouse-datasources",
     ),
-    path(
-        "warehouse-datasource/<int:pk>",
-        views.WarehouseBucketDetail.as_view(),
-        name="manage-warehouse-datasource",
-    ),
     path("webapp-data", views.WebappData.as_view(), name="list-webapp-datasources"),
-    path(
-        "webapp-datasource/<int:pk>",
-        views.WebappBucketDetail.as_view(),
-        name="manage-webapp-datasource",
-    ),
     path("webapps", views.AppsList.as_view(), name="list-apps"),
+    path("webapps/all", views.AppsList.as_view(all_apps=True), name="list-all-apps"),
     path("webapps/new", views.CreateApp.as_view(), name="create-app"),
     path("webapps/<int:pk>", views.AppDetail.as_view(), name="manage-app"),
     path("webapps/<int:pk>/delete", views.DeleteApp.as_view(), name="delete-app"),
@@ -41,8 +43,5 @@ urlpatterns = [
         views.RevokeAdmin.as_view(),
         name="revoke-app-admin",
     ),
-    path("tools", views.ToolsList.as_view(), name="list-tools"),
-    path("tools/<str:name>/deploy", views.DeployTool.as_view(), name="deploy-tool"),
-    path("tools/<str:name>/restart", views.RestartTool.as_view(), name="restart-tool"),
     path("whats-new", views.WhatsNew.as_view(), name="whats-new"),
 ]

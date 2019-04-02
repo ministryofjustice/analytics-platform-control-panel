@@ -12,15 +12,19 @@ from controlpanel.frontend.views.app import (
     RevokeAdmin,
 )
 from controlpanel.frontend.views.datasource import (
-    WarehouseBucketDetail,
+    BucketDetail,
+    BucketList,
     WarehouseData,
-    WebappBucketDetail,
     WebappData,
 )
 from controlpanel.frontend.views.tool import (
     ToolsList,
     DeployTool,
     RestartTool,
+)
+from controlpanel.frontend.views.user import (
+    UserList,
+    UserDetail,
 )
 from controlpanel.frontend.views.whats_new import WhatsNew
 

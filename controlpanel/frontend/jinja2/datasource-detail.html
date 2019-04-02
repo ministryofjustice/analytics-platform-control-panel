@@ -6,7 +6,7 @@
 {% extends "base.html" %}
 
 {% set page_name = datasource_type + "-datasource-list" %}
-{% set page_title = object.s3bucket.name %}
+{% set page_title = object.name %}
 {% set user_is_admin = request.user.is_bucket_admin(object.id) or request.user.is_superuser %}
 
 {% set access_levels_html %}
@@ -18,14 +18,12 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <p class="govuk-body">
-  <a href="{# url('buckets.aws', { id: object.id }) #}" target="_blank" rel="noopener">
+  <a href="{{ object.aws_url }}" class="govuk-button hmcts-button--secondary" target="_blank" rel="noopener">
     Open on AWS
   </a>
 </p>
 
-<br><br>
-
-<section id="data_access_group">
+<section class="cpanel-section">
   <h2 class="govuk-heading-m">Data access group</h2>
 
   <table class="govuk-table">
@@ -44,16 +42,20 @@
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-    {% for bucket in object.users3buckets %}
+    {% for member in access_group %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
-          <a class="{% if request.user == bucket.user %}highlight-current{% endif %}"
+          <a class="{% if request.user == member.user %}highlight-current{% endif %}"
             href="{# url('users.details', { id: bucket.user.auth0_id }) #}">
-            {{ user_name(bucket.user) }}
+            {{ user_name(member.user) }}
           </a>
         </td>
         <td class="govuk-table__cell">
-          {% if (users3bucket.is_admin) %}admin{% else %}{{ users3bucket.access_level }}{% endif %}
+        {% if (member.is_admin) -%}
+          Admin
+        {%- else -%}
+          {{ yes_no(member.access_level, "readwrite", "Read/write", "Read only") }}
+        {%- endif %}
         </td>
         {% if user_is_admin %}
         <td class="govuk-table__cell">
@@ -95,8 +97,8 @@
             </div>
           </div>
           #}
-          <button class="govuk-button hmcts-button--secondary js-change-access-level"
-                  id="users3bucket_{{ users3bucket.id }}_change-data-access-level">
+          <button class="govuk-button hmcts-button--secondary js-change-access-level right"
+                  id="users3bucket_{{ member.id }}_change-data-access-level">
             Edit access level
           </button>
         </td>
@@ -107,15 +109,15 @@
     <tfoot class="govuk-table__foot">
       <tr class="govuk-table__row">
         <td class="govuk-table__cell" colspan="3">
-          {{ object.users3buckets|length }}
-          user{%- if object.users3buckets|length != 1 -%}s have{% else %} has{% endif %}
+          {{ access_group|length }}
+          user{%- if access_group|length != 1 -%}s have{% else %} has{% endif %}
           access to this {{ datasource_type }} data source
       </tr>
     </tfoot>
   </table>
 
   {% if user_is_admin %}
-  {% if users_options.length %}
+  {% if users_options|length %}
   <form action="{# url_for('users3buckets.create') #}" method="post">
     {{ csrf_input }}
     <div class="govuk-form-group">
@@ -130,13 +132,14 @@
 
     <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
       {{ govukRadios({
+        "name": "access_level",
         "fieldset": {
           "legend": {
             "text": "Data access level",
           },
         },
         "hint": {
-          "html": "<strong>NOTE:</strong> Making user admin will allow them to confer access rights on additional users.",
+          "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users.",
         },
         "items": [
           {"value": "readonly", "text": "Read only", "checked": True},
@@ -156,10 +159,8 @@
   {% endif %}
 </section>
 
-<br><br><br>
-
 {% if user_is_admin %}
-<section id="access_logs">
+<section class="cpanel-section">
   <h2 class="govuk-heading-m">Data access log</h2>
   <form action="{# url_for('buckets.access_logs', { id: object.id }) #}">
     {{ csrf_input }}
@@ -179,8 +180,7 @@
 {% endif %}
 
 {% if user_is_admin %}
-<br><br><br>
-<section id="delete-datasource">
+<section class="cpanel-section">
   <form action="{# url('buckets.delete', kwargs={ "pk": object.id }) #}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive js-confirm"

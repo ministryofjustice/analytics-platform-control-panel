@@ -1,11 +1,19 @@
-.grid-row {
-  clear: both;
-}
+//.grid-row {
+  //clear: both;
+//}
 
-.clearfix {
-  @include clearfix;
-}
+//.clearfix {
+  //@include clearfix;
+//}
 
-#proposition-menu {
-  position: relative;
+//#proposition-menu {
+  //position: relative;
+//}
+
+.cpanel-section {
+  margin-bottom: govuk-spacing(9);
+
+  &:last-of-type {
+    margin-bottom: none;
+  }
 }

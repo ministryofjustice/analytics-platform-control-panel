@@ -19,9 +19,19 @@ from controlpanel.api.models import (
 
 class AppsList(LoginRequiredMixin, ListView):
     template_name = "webapp-list.html"
+    all_apps = False
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['all_webapps'] = self.all_apps
+        return context
 
     def get_queryset(self):
-        return [ua.app for ua in self.request.user.userapps.all()]
+        if self.all_apps:
+            return App.objects.all().prefetch_related('userapps')
+        return [
+            ua.app for ua in self.request.user.userapps.select_related('app').all()
+        ]
 
 
 class AppDetail(LoginRequiredMixin, DetailView):

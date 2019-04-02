@@ -34,10 +34,10 @@ class UnsupportedToolException(APIException):
 class ToolRepository(UserDict):
 
     def __getitem__(self, key):
-        if key not in self.tools:
+        if key not in self:
             raise UnsupportedToolException(key)
 
-        if key not in self.tools:
+        if key not in self:
             raise UnsupportedToolException(key)
 
         return super().__getitem__(key)
@@ -46,7 +46,7 @@ class ToolRepository(UserDict):
         if key not in SUPPORTED_TOOL_NAMES:
             raise UnsupportedToolException(key)
 
-        if key in self.tools:
+        if key in self:
             raise DuplicateTool(key)
 
         super().__setitem__(key, value)

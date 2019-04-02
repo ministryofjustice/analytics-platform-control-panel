@@ -1,34 +1,7 @@
-//.form-label,
-//.form-control,
-//.form-hint {
-  //@include core-16;
-//}
-
-//.form-control-1 {
-  //width: 100%;
-
-  //@include media(tablet) {
-    //width: 100%;
-  //}
-//}
-
-//.form-control-1-2 {
-  //width: 100%;
-
-  //@include media(tablet) {
-    //width: 50%;
-  //}
-//}
-
-//.inline-form {
-  //display: inline-block;
-
-  //&.right {
-    //float: right;
-    //margin-left: 5px;
-  //}
-//}
-
 .form-control-prefix {
   display: inline-block;
+}
+
+.cpanel-input--1-3 {
+  width: 33.3%;
 }

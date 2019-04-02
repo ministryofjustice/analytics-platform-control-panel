@@ -204,6 +204,24 @@ class S3Bucket(TimeStampedModel):
         )
         users3bucket.aws_create()
 
+    def user_is_admin(self, user):
+        return self.users3buckets.filter(
+            user=user,
+            is_admin=True,
+        ).count() != 0
+
+    def access_level(self, user):
+        try:
+            bucket_access = self.users3buckets.get(user=user)
+            if bucket_access.is_admin:
+                return "admin"
+            return bucket_access.access_level
+
+        except UserS3Bucket.DoesNotExist:
+            pass
+
+        return "None"
+
 
 class Role(TimeStampedModel):
     name = models.CharField(max_length=256, blank=False, unique=True)
