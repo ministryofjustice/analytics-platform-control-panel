@@ -88,6 +88,9 @@ class User(AbstractUser):
             is_admin=True,
         ).count() != 0
 
+    def reset_mfa(self):
+        auth0.ManagementAPI().reset_mfa(self.auth0_id)
+
 
 class App(TimeStampedModel):
     name = models.CharField(max_length=100, blank=False)

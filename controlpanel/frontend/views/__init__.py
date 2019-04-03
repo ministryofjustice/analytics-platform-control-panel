@@ -28,7 +28,10 @@ from controlpanel.frontend.views.tool import (
     RestartTool,
 )
 from controlpanel.frontend.views.user import (
+    ResetMFA,
+    SetSuperadmin,
     UserList,
+    UserDelete,
     UserDetail,
 )
 from controlpanel.frontend.views.whats_new import WhatsNew

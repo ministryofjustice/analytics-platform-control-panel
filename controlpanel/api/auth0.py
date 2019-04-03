@@ -192,3 +192,15 @@ class ManagementAPI(APIClient):
             raise Auth0Error("create_user", response)
 
         return response
+
+    def reset_mfa(self, user_id):
+        provider = "google-authenticator"
+        response = self.request(
+            "DELETE",
+            f"users/{user_id}/multifactor/{provider}",
+        )
+
+        if "error" in response:
+            raise Auth0Error("reset_mfa", response)
+
+        return response
