@@ -3,15 +3,24 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
 from django.views.generic.detail import DetailView
-from django.views.generic.edit import CreateView, DeleteView, FormMixin
+from django.views.generic.edit import (
+    CreateView,
+    DeleteView,
+    FormMixin,
+    UpdateView,
+)
 from django.views.generic.list import ListView
 
+from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     S3Bucket,
     User,
+    UserS3Bucket,
 )
+from controlpanel.api.serializers import ESBucketHitsSerializer
 from controlpanel.frontend.forms import (
     CreateDatasourceForm,
+    GrantAccessForm,
 )
 
 
@@ -81,6 +90,10 @@ class BucketDetail(LoginRequiredMixin, DatasourceMixin, DetailView):
         access_group = bucket.users3buckets.all().select_related('user')
         member_ids = [member.user.auth0_id for member in access_group]
         context['access_group'] = access_group
+        context['access_logs'] = ESBucketHitsSerializer(
+            bucket_hits_aggregation(bucket.name)
+        ).data
+        context['grant_access_form'] = GrantAccessForm()
         context['users_options'] = User.objects.exclude(
             auth0_id__isnull=True,
             auth0_id__in=member_ids,
@@ -124,3 +137,51 @@ class DeleteDatasource(LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         messages.success(self.request, "Successfully delete data source")
         return reverse_lazy("list-all-datasources")
+
+
+class UpdateAccessLevel(LoginRequiredMixin, UpdateView):
+    model = UserS3Bucket
+    form_class = GrantAccessForm
+    template_name = "datasource-access-update.html"
+
+    def get_form_kwargs(self):
+        return FormMixin.get_form_kwargs(self)
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully updated access")
+        return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+
+    def form_valid(self, form):
+        self.object.access_level = form.cleaned_data['access_level']
+        self.object.is_admin = form.cleaned_data['is_admin']
+        self.object.save()
+        return FormMixin.form_valid(self, form)
+
+
+class RevokeAccess(LoginRequiredMixin, DeleteView):
+    model = UserS3Bucket
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully revoked access")
+        return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+
+
+class GrantAccess(LoginRequiredMixin, CreateView):
+    form_class = GrantAccessForm
+    model = UserS3Bucket
+
+    def get_form_kwargs(self):
+        return FormMixin.get_form_kwargs(self)
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully granted access")
+        return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+
+    def form_valid(self, form):
+        self.object = UserS3Bucket.objects.create(
+            access_level=form.cleaned_data['access_level'],
+            is_admin=form.cleaned_data['is_admin'],
+            user_id=form.cleaned_data['user_id'],
+            s3bucket_id=self.kwargs['pk'],
+        )
+        return FormMixin.form_valid(self, form)

@@ -1,16 +1,17 @@
 {% from "checkboxes/macro.html" import govukCheckboxes %}
 {% from "fieldset/macro.html" import govukFieldset %}
-{% from "includes/app-list.html" import app_list %}
+{% from "user/macro.html" import user_name %}
+{% from "includes/app-list.html" import app_list with context %}
 {% from "includes/datasource-list.html" import datasource_list with context %}
 
 {% extends "base.html" %}
 
-{% set page_title = object.username %}
+{% set page_title = user_name(object) %}
 {% set pronoun = "Your" if user == request.user else "User's" %}
 
 {% block content %}
 <span class="govuk-caption-xl">User</span>
-<h1 class="govuk-heading-xl">{{ object.username }}</h1>
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 {% if request.user.is_superuser %}
 <section class="cpanel-section">
@@ -71,7 +72,7 @@
 {# user's datasources #}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} webapp data sources</h2>
-  {{ datasource_list(user.users3buckets.filter(s3bucket__is_data_warehouse=False), "webapp", user) }}
+  {{ datasource_list(user.users3buckets.filter(s3bucket__is_data_warehouse=False)|map(attribute="s3bucket")|list, "webapp", user) }}
 </section>
 
 {% if request.user.is_superuser %}

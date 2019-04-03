@@ -398,3 +398,21 @@ GITHUB_ORGS = [
     'ministryofjustice',
     'moj-analytical-services',
 ]
+
+
+# -- Elasticsearch
+
+ELASTICSEARCH = {
+    'hosts': [
+        {
+            'host': os.environ.get('ELASTICSEARCH_HOST'),
+            'port': int(os.environ.get('ELASTICSEARCH_PORT', 9243)),
+            'use_ssl': True,
+            'http_auth': (
+                os.environ.get('ELASTICSEARCH_USERNAME'),
+                os.environ.get('ELASTICSEARCH_PASSWORD')
+            ),
+        },
+    ],
+    'index': os.environ.get('ELASTICSEARCH_INDEX_S3LOGS', 's3logs-*'),
+}

@@ -16,6 +16,9 @@ from controlpanel.frontend.views.datasource import (
     BucketList,
     CreateDatasource,
     DeleteDatasource,
+    GrantAccess,
+    RevokeAccess,
+    UpdateAccessLevel,
     WarehouseData,
     WebappData,
 )

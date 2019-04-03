@@ -46,7 +46,7 @@
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
           <a class="{% if request.user == member.user %}highlight-current{% endif %}"
-            href="{# url('users.details', { id: bucket.user.auth0_id }) #}">
+            href="{{ url('manage-user', kwargs={ "pk": member.user.auth0_id }) }}">
             {{ user_name(member.user) }}
           </a>
         </td>
@@ -97,10 +97,10 @@
             </div>
           </div>
           #}
-          <button class="govuk-button hmcts-button--secondary js-change-access-level right"
-                  id="users3bucket_{{ member.id }}_change-data-access-level">
+          <a href="{{ url("update-access-level", kwargs={"pk": member.id}) }}"
+             class="govuk-button hmcts-button--secondary right">
             Edit access level
-          </button>
+          </a>
         </td>
         {% endif %}
       </tr>
@@ -118,7 +118,7 @@
 
   {% if user_is_admin %}
   {% if users_options|length %}
-  <form action="{# url_for('users3buckets.create') #}" method="post">
+    <form action="{{ url('grant-datasource-access', kwargs={"pk": object.id}) }}" method="post">
     {{ csrf_input }}
     <div class="govuk-form-group">
       <label class="govuk-label" for="user_id">Grant access to this data to other users</label>
@@ -161,21 +161,35 @@
 
 {% if user_is_admin %}
 <section class="cpanel-section">
+  {% set num_log_entries = access_logs|length %}
   <h2 class="govuk-heading-m">Data access log</h2>
-  <form action="{# url_for('buckets.access_logs', { id: object.id }) #}">
-    {{ csrf_input }}
-    <p class="govuk-body">Bucket access log period:
-      <select class="govuk-form-control" id="js-access-log-period-dropdown-stop">
-      {% for range in access_log_ranges %}
-        <option value="{{ range.value }}" {% if range.default %}selected{% endif %}>{{ range.text }}</option>
-      {% endfor %}
-      </select>
-    </p>
-  </form>
-  <div id="access-log-results-stop">
-    <p class="govuk-body" id="loading-message"><em>Fetching...</em></p>
-    <div id="results-stop"></div>
-  </div>
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">Accessed by</th>
+        <th class="govuk-table__header">Count</th>
+        <th class="govuk-table__header">Type</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% for entry in access_logs %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">{{ entry.accessed_by }}</td>
+        <td class="govuk-table__cell">{{ entry.count }}</td>
+        <td class="govuk-table__cell">{{ entry.type }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    {% if num_log_entries < 1 %}
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          No access recorded for this period
+        </td>
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
 </section>
 {% endif %}
 
