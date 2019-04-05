@@ -22,7 +22,7 @@
   </thead>
   <tbody class="govuk-table__body">
   {%- for app in apps %}
-    {%- set user_is_app_admin = app.userapps.filter(is_admin=True, user=request.user) %}
+    {%- set user_is_app_admin = request.user.is_app_admin(app.id) %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         <a href="{{ url('manage-app', kwargs={ "pk": app.id }) }}">{{ app.name }}</a>

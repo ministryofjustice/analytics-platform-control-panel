@@ -1,9 +1,44 @@
-{% from "radios/macro.html" import govukRadios %}
 {% from "autocomplete/macro.html" import autocomplete %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
+{% from "label/macro.html" import govukLabel %}
+{% from "radios/macro.html" import govukRadios %}
 
 {% extends "base.html" %}
 
 {% set page_title = "Register an app" %}
+
+{% set new_datasource_html %}
+  Create a new webapp data source
+  <div class="cpanel-subform" data-show-if-selected="connect_bucket-1">
+  {{ govukInput({
+    "name": "new_datasource_name",
+    "classes": "govuk-!-width-one-half",
+    "label": {
+      "text": "Webapp data source name",
+    },
+    "hint": {
+      "text": '60 chars max, only lowercase letters, numbers, periods and hyphens, auto-prefixed with "' + env + '"'
+    },
+    "errorMessage": {"text": form.new_datasource_name.errors|join("<br>")} if form.new_datasource_name.errors else {},
+    "value": form.new_datasource_name.value()
+  }) }}
+  </div>
+{% endset %}
+
+{% set existing_datasource_html %}
+  Connect an existing webapp data source
+  <div class="cpanel-subform" data-show-if-selected="connect_bucket-2">
+    <div class="govuk-form-group
+                {%- if form.existing_datasource_id.errors %} govuk-form-group--error{% endif %}">
+      {{ govukLabel({"text": "Select webapp data source"}) }}
+      {% if form.existing_datasource_id.errors -%}
+      {{ govukErrorMessage({"text": form.existing_datasource_id.errors|join("<br>")}) }}
+      {%- endif %}
+      {{ form.existing_datasource_id }}
+    </div>
+  </div>
+{% endset %}
 
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
@@ -16,24 +51,21 @@
 
 <form method="post" action="{{ url("create-app") }}">
   {{ csrf_input }}
-  <div class="govuk-form-group">
-    <fieldset class="govuk-fieldset">
-      <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
-        <h2 class="govuk-fieldset__heading">
-          Github repository URL
-        </h2>
-      </legend>
-      <label for="name" class="govuk-label form-control-prefix">https://github.com/</label>
-      {% call(repo) autocomplete({
-        "id": "repo_url",
-        "items": orgs,
-      }) %}
-        <option value="{{ repo.url }}">
-          {{ repo.name }}
-        </option>
-      {% endcall %}
-    </fieldset>
-  </div>
+  {% call(repo) autocomplete({
+    "name": "repo_url",
+    "label": {
+      "text": "Github repository",
+      "classes": "govuk-label--m"
+    },
+    "errorMessage": {"html": form.repo_url.errors|join("<br>")} if form.repo_url.errors else {},
+    "classes": "govuk-input--error" if form.repo_url.errors else "",
+    "value": form.repo_url.value(),
+    "items": repos
+  }) %}
+    <option value="{{ repo.html_url }}"
+            {%- if form.repo_url.value() == repo.html_url %} selected{% endif -%}
+            >{{ repo.full_name }}</option>
+  {% endcall %}
   {{ govukRadios({
     "name": "connect_bucket",
     "fieldset": {
@@ -46,9 +78,21 @@
       "text": "Connect an existing app data source to your app, or create a new one.",
     },
     "items": [
-      {"value": "new", "text": "Create a new webapp data source"},
-      {"value": "existing", "text": "Connect an existing webapp data source"},
-      {"value": "later", "text": "Do this later"},
+      {
+        "value": "new",
+        "html": new_datasource_html|safe,
+        "checked": form.connect_bucket.value() == "new"
+      },
+      {
+        "value": "existing",
+        "html": existing_datasource_html|safe,
+        "checked": form.connect_bucket.value() == "existing"
+      },
+      {
+        "value": "later",
+        "text": "Do this later",
+        "checked": form.connect_bucket.value() == "later"
+      },
     ]
   }) }}
   <div class="govuk-form-group">

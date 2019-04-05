@@ -284,6 +284,10 @@ LOGGING = {
             "handlers": ["console"],
             "level": "WARNING",
         },
+        "botocore": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
         "daphne": {
             "handlers": ["console"],
             "level": "WARNING",
@@ -306,6 +310,10 @@ LOGGING = {
             "level": "WARNING",
         },
         "mozilla_django_oidc": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "urllib3": {
             "handlers": ["console"],
             "level": "WARNING",
         },
@@ -395,7 +403,7 @@ EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
 
 # Allowed Github organizations
 GITHUB_ORGS = [
-    'ministryofjustice',
+    # 'ministryofjustice',
     'moj-analytical-services',
 ]
 

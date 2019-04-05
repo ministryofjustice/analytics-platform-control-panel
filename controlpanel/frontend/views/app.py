@@ -7,14 +7,19 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
-from django.views.generic.edit import CreateView, DeleteView
+from django.views.generic.edit import CreateView, DeleteView, FormMixin
 from django.views.generic.list import ListView
+import requests
 
 from controlpanel.api.models import (
     App,
+    AppS3Bucket,
+    S3Bucket,
     User,
     UserApp,
+    UserS3Bucket,
 )
+from controlpanel.frontend.forms import CreateAppForm
 
 
 class AppsList(LoginRequiredMixin, ListView):
@@ -56,18 +61,81 @@ class AppDetail(LoginRequiredMixin, DetailView):
 
 
 class CreateApp(LoginRequiredMixin, CreateView):
-    fields = ['repo_url']
+    form_class = CreateAppForm
     model = App
-    success_url = reverse_lazy("list-apps")
     template_name = "webapp-create.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['orgs'] = [
-            {"name": org, "url": f"https://github.com/{org}"}
-            for org in settings.GITHUB_ORGS
-        ]
+        context['repos'] = self.get_repositories()
         return context
+
+    def get_form_kwargs(self):
+        return FormMixin.get_form_kwargs(self)
+
+    def get_repositories(self):
+        repos = []
+        for org in settings.GITHUB_ORGS:
+            url = f"https://api.github.com/orgs/{org}/repos"
+            while True:
+                r = requests.get(url)
+                if r.status_code != 200:
+                    break
+                repos.extend(r.json())
+                links = r.headers.get("Link").split(",")
+                links = map(lambda x: x.strip().split("; "), links)
+                links = dict([
+                    (rel[4:].strip('"'), url[1:-1])
+                    for url, rel in links
+                ])
+                if "next" not in links:
+                    break
+                if "last" in links and links["last"] == url:
+                    break
+                url = links["next"]
+        return repos
+
+    def get_success_url(self):
+        messages.success(
+            self.request,
+            f"Successfully registered {self.object.name} webapp",
+        )
+        return reverse_lazy("list-apps")
+
+    def form_valid(self, form):
+        repo_url = form.cleaned_data["repo_url"]
+        _, name = repo_url.rsplit("/", 1)
+        self.object = App.objects.create(
+            name=name,
+            repo_url=repo_url,
+        )
+        if form.cleaned_data.get("new_datasource_name"):
+            bucket = S3Bucket.objects.create(
+                name=form.cleaned_data["new_datasource_name"],
+            )
+            AppS3Bucket.objects.create(
+                app=self.object,
+                s3bucket=bucket,
+                access_level='readonly',
+            )
+            UserS3Bucket.objects.create(
+                user=self.request.user,
+                s3bucket=bucket,
+                access_level='readwrite',
+                is_admin=True,
+            )
+        elif form.cleaned_data.get("existing_datasource_id"):
+            AppS3Bucket.objects.create(
+                app=self.object,
+                s3bucket=form.cleaned_data["existing_datasource_id"],
+                access_level='readonly',
+            )
+        UserApp.objects.create(
+            app=self.object,
+            user=self.request.user,
+            is_admin=True,
+        )
+        return FormMixin.form_valid(self, form)
 
 
 class DeleteApp(LoginRequiredMixin, DeleteView):
