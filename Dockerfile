@@ -2,7 +2,7 @@ FROM alpine:3.7
 
 MAINTAINER Andy Driver <andy.driver@digital.justice.gov.uk>
 
-ENV HELM_VERSION 2.9.1
+ENV HELM_VERSION 2.13.0
 ENV HELM_HOME /tmp/helm
 ENV DJANGO_SETTINGS_MODULE "control_panel_api.settings"
 
