@@ -10,6 +10,8 @@ from controlpanel.frontend.views.app import (
     RemoveCustomer,
     AddAdmin,
     RevokeAdmin,
+    GrantAppAccess,
+    RevokeAppAccess,
 )
 from controlpanel.frontend.views.datasource import (
     BucketDetail,

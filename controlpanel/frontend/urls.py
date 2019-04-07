@@ -31,5 +31,7 @@ urlpatterns = [
     path("webapps/<int:pk>/customers/remove", views.RemoveCustomer.as_view(), name="remove-app-customer"),
     path("webapps/<int:pk>/admins", views.AddAdmin.as_view(), name="add-app-admin"),
     path("webapps/<int:pk>/admins/<str:user_id>/revoke", views.RevokeAdmin.as_view(), name="revoke-app-admin"),
+    path("webapps/<int:pk>/datasource-access", views.GrantAppAccess.as_view(), name="grant-app-access"),
+    path("webapp-datasource-access/<int:pk>/delete", views.RevokeAppAccess.as_view(), name="revoke-app-access"),
     path("whats-new", views.WhatsNew.as_view(), name="whats-new"),
 ]

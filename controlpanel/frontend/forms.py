@@ -73,7 +73,6 @@ class CreateAppForm(forms.Form):
         return cleaned_data
 
 
-
 class CreateDatasourceForm(forms.Form):
     name = forms.CharField(
         max_length=60,
@@ -99,3 +98,22 @@ class GrantAccessForm(forms.Form):
             cleaned_data['access_level'] = 'readwrite'
             cleaned_data['is_admin'] = True
         return cleaned_data
+
+
+class GrantAppAccessForm(forms.Form):
+    access_level = forms.ChoiceField(
+        choices=[
+            ("readonly", "Read only"),
+            ("readwrite", "Read/write"),
+        ],
+    )
+
+    def __init__(self, *args, **kwargs):
+        app = kwargs.pop('app')
+        super().__init__(*args, **kwargs)
+        self.fields['datasource'] = DatasourceChoiceField(
+            empty_label="Select data source",
+            queryset=S3Bucket.objects.exclude(
+                id__in=[a.s3bucket_id for a in app.apps3buckets.all()],
+            ),
+        )

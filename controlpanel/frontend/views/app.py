@@ -7,7 +7,11 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
-from django.views.generic.edit import CreateView, DeleteView, FormMixin
+from django.views.generic.edit import (
+    CreateView,
+    DeleteView,
+    FormMixin,
+)
 from django.views.generic.list import ListView
 import requests
 
@@ -19,7 +23,10 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.frontend.forms import CreateAppForm
+from controlpanel.frontend.forms import (
+    CreateAppForm,
+    GrantAppAccessForm,
+)
 
 
 class AppsList(LoginRequiredMixin, ListView):
@@ -56,6 +63,8 @@ class AppDetail(LoginRequiredMixin, DetailView):
         ).exclude(
             auth0_id__in=app_admins_ids,
         )
+
+        context["grant_access_form"] = GrantAppAccessForm(app=app)
 
         return context
 
@@ -136,6 +145,48 @@ class CreateApp(LoginRequiredMixin, CreateView):
             is_admin=True,
         )
         return FormMixin.form_valid(self, form)
+
+
+class GrantAppAccess(LoginRequiredMixin, CreateView):
+    form_class = GrantAppAccessForm
+    model = AppS3Bucket
+
+    def get_form_kwargs(self):
+        kwargs = FormMixin.get_form_kwargs(self)
+        if "app" not in kwargs:
+            kwargs["app"] = App.objects.get(pk=self.kwargs['pk'])
+        return kwargs
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully granted access")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
+
+    def form_valid(self, form):
+        try:
+            self.object = AppS3Bucket.objects.get(
+                s3bucket=form.cleaned_data['datasource'],
+                app_id=self.kwargs['pk'],
+            )
+            self.object.access_level = form.cleaned_data['access_level']
+            self.object.save()
+        except AppS3Bucket.DoesNotExist:
+            self.object = AppS3Bucket.objects.create(
+                access_level=form.cleaned_data['access_level'],
+                app_id=self.kwargs['pk'],
+                s3bucket=form.cleaned_data['datasource'],
+            )
+        return FormMixin.form_valid(self, form)
+
+    def form_invalid(self, form):
+        raise Exception(form.errors)
+
+
+class RevokeAppAccess(LoginRequiredMixin, DeleteView):
+    model = AppS3Bucket
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully disconnected data source")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
 
 class DeleteApp(LoginRequiredMixin, DeleteView):

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% from "autocomplete/macro.html" import autocomplete %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "label/macro.html" import govukLabel %}
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "tag/macro.html" import tag %}
 {% from "selectable-rows/macro.html" import row_selector %}
@@ -58,9 +60,7 @@
   </p>
 </header>
 
-<br><br><br>
-
-<section id="app_customers">
+<section class="cpanel-section">
   {% set customers = object.customers %}
   {% set num_customers = customers|length %}
 
@@ -128,9 +128,7 @@
   {% endif %}
 </section>
 
-<br>
-
-<section id="app_admins">
+<section class="cpanel-section">
   <h2 class="govuk-heading-m">
     App admins
     {{ modal_dialog(app_admins_html|safe) }}
@@ -202,9 +200,7 @@
   {% endif %}
 </section>
 
-<br><br>
-
-<section id="app_datasources">
+<section class="cpanel-section">
   <h2 class="govuk-heading-m">App data sources</h2>
 
   <table class="govuk-table app-data-sources form-group">
@@ -224,6 +220,7 @@
     </thead>
     <tbody class="govuk-table__body">
       {% set buckets = object.apps3buckets.all() %}
+      {% set num_buckets = buckets|length %}
       {% for bucket in buckets %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
@@ -234,15 +231,16 @@
         </td>
         <td class="govuk-table__cell align-right">
           {% if user_is_admin %}
-          <form action="{# url_for('buckets.update', { id: bucket.id }) #}" method="post" class="form-control-prefix">
+          <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
+            <input type="hidden" name="datasource" value="{{ bucket.s3bucket.id }}">
             <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
             <button class="confirm govuk-button hmcts-button--secondary">
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
 
-          <form action="{# url_for('buckets.delete', { id: bucket.id }) #}" method="post" class="form-control-prefix">
+          <form action="{{ url('revoke-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <button class="confirm govuk-button hmcts-button--secondary">
               Disconnect
@@ -256,25 +254,24 @@
     <tfoot class="govuk-table__foot">
       <tr class="govuk-table__row">
         <td class="govuk-table__cell" colspan="3">
-          {{ buckets|length }} app data source{% if buckets|length != 1 %}s{% endif %}
+          {{ num_buckets }} app data source{% if buckets != 1 %}s{% endif %}
         </td>
       </tr>
     </tfoot>
   </table>
 
-  {% if user_is_admin %}
-  {% set num_warehouse_buckets = 0 %}
-  {% if num_warehouse_buckets > 0 %}
-  <form action="{# url_for('apps3buckets.create') #}" method="post">
+{% if user_is_admin %}
+  {% set num_bucket_options = grant_access_form.datasource|length - 1 %}
+  {% if num_bucket_options %}
+    <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}
+    <input type="hidden" name="access_level" value="readonly">
     <div class="govuk-form-group">
-      <label class="govuk-label" for="bucket_id">Connect an app data source</label>
-      <select class="govuk-form-control no-blank" id="bucket_id" name="bucket_id">
-        <option value="">Select app data source</option>
-        {% for bucket in warehouse_buckets %}
-          <option value="{{ bucket.id }}">{{ bucket.name }}</option>
-        {% endfor %}
-      </select>
+      {{ govukLabel({"text": "Connect an app data source"}) }}
+      {% if grant_access_form.datasource.errors -%}
+      {{ govukErrorMessage({"text": grant_access_form.datasource.errors|join("<br>")}) }}
+      {%- endif %}
+      {{ grant_access_form.datasource }}
     </div>
     <div class="govuk-form-group">
       <button class="govuk-button hmcts-button--secondary">
@@ -287,13 +284,11 @@
     (All available data sources are already connected to this app.)
   </p>
   {% endif %}
-  {% endif %}
+{% endif %}
 </section>
 
 {% if user_is_admin %}
-<br><br><br>
-
-<section id="app_logs">
+<section class="cpanel-section">
   <h2 class="govuk-heading-m">App logs</h2>
   <p class="govuk-body">
     <a href="{{ app_logs(app) }}">View logs in Kibana</a>
@@ -302,9 +297,7 @@
 {% endif %}
 
 {% if user_is_admin %}
-<br><br><br>
-
-<section id="app_management">
+<section class="cpanel-section">
   <form action="{{ url('delete-app', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive"
