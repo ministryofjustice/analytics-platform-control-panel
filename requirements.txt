@@ -42,7 +42,7 @@ pytest-testmon==0.9.15
 pytest-watch==4.2.0
 python-dateutil==2.8.0
 python-jose[cryptography]==3.0.1
-pytz==2018.9
+pytz==2019.1
 PyYAML==4.2b4
 raven==6.10.0
 requests==2.21.0
