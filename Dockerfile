@@ -35,6 +35,7 @@ RUN pip3 install -U pip && \
     apk del build-base
 
 COPY controlpanel controlpanel
+COPY tests tests
 
 
 # fetch javascript dependencies in separate stage

@@ -50,7 +50,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test app sh -c "until pg_isready -h db; do sleep 2; done; pytest --color=yes"
+            docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test -e KUBECONFIG=tests/kubeconfig app sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
 
       - deploy:
           name: Push application Docker image

@@ -86,7 +86,8 @@ docker-test:
 	@echo "> Running tests in Docker..."
 	@docker-compose run \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
-		app sh -c "until pg_isready -h db; do sleep 2; done; pytest --color=yes"
+		-e KUBECONFIG=tests/kubeconfig \
+		app sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
 
 help: Makefile
 	@echo
