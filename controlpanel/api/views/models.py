@@ -1,4 +1,5 @@
 from django.contrib.auth.models import Group
+from django.db.transaction import atomic
 from django.http import HttpResponseRedirect
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
@@ -27,11 +28,13 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.UserPermissions,)
 
+    @atomic
     def perform_create(self, serializer):
         instance = serializer.save()
         instance.aws_create_role()
         instance.helm_create()
 
+    @atomic
     def perform_destroy(self, instance):
         instance.delete()
         instance.aws_delete_role()
@@ -50,6 +53,7 @@ class AppViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.AppPermissions,)
     filterset_fields = ('name', 'repo_url', 'slug')
 
+    @atomic
     def perform_create(self, serializer):
         app = serializer.save(created_by=self.request.user)
         app.aws_create_role()
@@ -63,6 +67,7 @@ class AppViewSet(viewsets.ModelViewSet):
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @atomic
     def perform_destroy(self, instance):
         instance.delete()
         instance.aws_delete_role()
@@ -72,10 +77,12 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
     queryset = AppS3Bucket.objects.all()
     serializer_class = serializers.AppS3BucketSerializer
 
+    @atomic
     def perform_create(self, serializer):
         apps3bucket = serializer.save()
         apps3bucket.aws_create()
 
+    @atomic
     def perform_update(self, serializer):
         apps3bucket = serializer.save()
         apps3bucket.aws_update()
@@ -87,10 +94,12 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.UserS3BucketFilter,)
     permission_classes = (permissions.UserS3BucketPermissions,)
 
+    @atomic
     def perform_create(self, serializer):
         instance = serializer.save()
         instance.aws_create()
 
+    @atomic
     def perform_update(self, serializer):
         instance = serializer.save()
         instance.aws_update()
@@ -103,6 +112,7 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.S3BucketPermissions,)
     filterset_fields = ('is_data_warehouse',)
 
+    @atomic
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)
         instance.aws_create()

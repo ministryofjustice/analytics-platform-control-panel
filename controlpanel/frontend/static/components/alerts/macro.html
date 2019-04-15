@@ -1,6 +1,7 @@
 {% macro alerts() %}
-  {%- set messages = get_messages(request) -%}
-  {% if messages -%}
+  {%- set messages = [] %}
+  {%- if request %}{% set messages = get_messages(request) %}{% endif %}
+  {%- if messages %}
   <div class="alerts">
     {% for message in messages -%}
     <div class="alerts--item{% if message.tags %} {{ message.tags }}{% endif %}">

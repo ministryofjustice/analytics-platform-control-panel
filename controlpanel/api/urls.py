@@ -17,9 +17,10 @@ router.register("users3buckets", views.UserS3BucketViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("apps/<int:pk>/customers/", views.AppCustomersAPIView.as_view()),
+    path("apps/<int:pk>/customers/", views.AppCustomersAPIView.as_view(), name='appcustomers-list'),
     path(
         "apps/<int:pk>/customers/<str:user_id>/",
         views.AppCustomersDetailAPIView.as_view(),
+        name="appcustomers-detail",
     ),
 ]

@@ -71,7 +71,7 @@ class Tool(metaclass=ToolMeta):
 
     @classmethod
     def create(cls, name):
-        return cls.repository[name]()
+        return cls._repository[name]()
 
     @cached_property
     def helm(self):

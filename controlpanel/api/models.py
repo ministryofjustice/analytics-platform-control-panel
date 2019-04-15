@@ -43,6 +43,10 @@ class User(AbstractUser):
     def k8s_namespace(self):
         return sanitize_dns_label(f'user-{self.username}')
 
+    @property
+    def slug(self):
+        return sanitize_dns_label(self.username)
+
     def aws_create_role(self):
         services.create_role(
             self.iam_role_name, add_saml_statement=True,
@@ -61,7 +65,7 @@ class User(AbstractUser):
             "Fullname": self.get_full_name(),
             "Env": settings.ENV,
             "OidcDomain": settings.OIDC_DOMAIN,
-        })
+        }.items())
         helm.upgrade_release(
             f"init-user-{user_slug}",
             "mojanalytics/init-user",

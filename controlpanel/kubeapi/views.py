@@ -2,12 +2,15 @@ import logging
 import os
 
 from django.conf import settings
+from django.core import exceptions
+from django.views.decorators.csrf import csrf_exempt
 from djproxy.views import HttpProxy
 from kubernetes import client, config
 
 # This patch fixes incorrect base64 padding in the Kubernetes Python client.
 # Hopefully it will be fixed in the next release.
 from controlpanel.kubeapi import oidc_patch
+from controlpanel.kubeapi.permissions import K8sPermissions
 
 
 log = logging.getLogger(__name__)
@@ -18,7 +21,6 @@ if 'KUBERNETES_SERVICE_HOST' in os.environ:
 
 else:
     config.load_kube_config()
-
 
 
 class KubeAPIAuthMiddleware(object):
@@ -51,3 +53,18 @@ class KubeAPIProxy(HttpProxy):
     verify_ssl = client.Configuration().ssl_ca_cert
 
     proxy_middleware = ["controlpanel.kubeapi.views.KubeAPIAuthMiddleware"]
+
+    permission_classes = [K8sPermissions]
+
+    @csrf_exempt
+    def dispatch(self, request, *args, **kwargs):
+        self.check_permissions(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def check_permissions(self, request):
+        for permission in self.get_permissions():
+            if not permission.has_permission(request, self):
+                raise exceptions.PermissionDenied()
+
+    def get_permissions(self):
+        return [permission() for permission in self.permission_classes]

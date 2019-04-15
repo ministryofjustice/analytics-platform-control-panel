@@ -28,7 +28,11 @@
   {% block head %}{% endblock %}
   {# The default og:image is added below head so that scrapers see any custom metatags first, and this is just a fallback #}
   {# image url needs to be absolute e.g. http://wwww.domain.com/.../govuk-opengraph-image.png #}
-  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host() }}{{ static('govuk-frontend/assets/images/govuk-opengraph-image.png') }}">
+  {%- set scheme = "http" %}
+  {%- set host = "localhost" %}
+  {%- if request %}{% set scheme = request.scheme %}{% endif %}
+  {%- if request %}{% set host = request.get_host() %}{% endif %}
+  <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('govuk-frontend/assets/images/govuk-opengraph-image.png') }}">
 </head>
 
 <body class="govuk-template__body {{ bodyClasses or "" }}">

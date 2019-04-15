@@ -17,6 +17,7 @@ Jinja2==2.10
 kubernetes==8.0.1
 libsass==0.17.0
 misaka==2.1.1
+model_mommy==1.6.0
 mozilla-django-oidc==1.2.1
 psycopg2-binary==2.7.7
 pytest==4.3.0

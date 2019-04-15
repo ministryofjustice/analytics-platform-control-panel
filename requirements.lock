@@ -18,6 +18,7 @@ channels-redis==2.3.3
 chardet==3.0.4
 Click==7.0
 constantly==15.1.0
+coverage==4.5.3
 cryptography==2.6.1
 daphne==2.2.5
 Django==2.1.7
@@ -52,6 +53,7 @@ libsass==0.17.0
 MarkupSafe==1.1.1
 misaka==2.1.1
 mock==2.0.0
+model-mommy==1.6.0
 more-itertools==6.0.0
 mozilla-django-oidc==1.2.1
 msgpack==0.6.1
@@ -68,6 +70,9 @@ PyHamcrest==1.9.0
 PyJWT==1.7.1
 pyOpenSSL==19.0.0
 pytest==4.3.0
+pytest-cov==2.6.1
+pytest-cover==3.0.0
+pytest-coverage==0.0
 pytest-django==3.4.7
 pytest-spec==1.1.0
 python-dateutil==2.8.0

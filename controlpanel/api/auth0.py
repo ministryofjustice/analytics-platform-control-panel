@@ -114,6 +114,9 @@ class AuthorizationAPI(APIClient):
     base_url = settings.AUTH0["authorization_extension_url"]
     audience = "urn:auth0-authz-api"
 
+    def get_users(self):
+        return self.get_all("users", page=0, per_page=100)
+
     def get_group(self, group_name):
         groups = [
             group for group in self.get_all("groups") if group["name"] == group_name
@@ -134,7 +137,7 @@ class AuthorizationAPI(APIClient):
     def add_group_members(self, group_name, emails, user_options={}):
         group = self.get_group(group_name)
         mgmt = ManagementAPI()
-        users = self.get_all("users", page=0, per_page=100)
+        users = self.get_users()
         user_lookup = {user["email"]: user for user in users if "email" in user}
 
         def has_options(user):
@@ -163,6 +166,8 @@ class AuthorizationAPI(APIClient):
 
         if "error" in response:
             raise Auth0Error("add_group_members", response)
+
+        return users_to_add.values()
 
     def delete_group_members(self, group_name, user_ids):
         group = self.get_group(group_name)

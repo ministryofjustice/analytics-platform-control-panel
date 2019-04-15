@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from functools import wraps
 import logging
 
 from botocore.exceptions import ClientError
@@ -27,6 +28,7 @@ def ignore_aws_exceptions(func):
         'NoSuchEntityException',
     )
 
+    @wraps(func)
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)

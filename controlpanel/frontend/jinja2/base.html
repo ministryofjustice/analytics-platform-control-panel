@@ -6,6 +6,8 @@
 {% extends "govuk-frontend.html" %}
 
 {% set service_name = "Analytical Platform Control Panel" %}
+{% set user = {} %}
+{% if request %}{% set user = request.user %}{% endif %}
 
 {% block page_title %}
   {{ page_title }} | {{ service_name }}
@@ -42,7 +44,7 @@
     'navigation': [
       {
         'href': url('index'),
-        'text': "Signed in as " ~ request.user.name | default(request.user.email),
+        'text': "Signed in as " ~ user.name | default(user.email),
         'active': True
       }
     ]
@@ -54,7 +56,7 @@
   {{ navbar({
     "items": [
       {
-        "hide": not request.user.is_superuser,
+        "hide": not user.is_superuser,
         "text": "Home",
         "href": url("index"),
         "active": page_name == "home"
@@ -70,13 +72,13 @@
         "active": page_name == "warehouse-datasource-list"
       },
       {
-        "hide": not request.user.is_superuser,
+        "hide": not user.is_superuser,
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list"
       },
       {
-        "hide": not request.user.is_superuser,
+        "hide": not user.is_superuser,
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps"

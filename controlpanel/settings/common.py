@@ -7,6 +7,7 @@ from controlpanel.utils import is_truthy
 
 
 # -- Feature flags
+
 ENABLED = {
 
     # Enable Kubernetes Role-based Access Control
@@ -251,6 +252,7 @@ TIME_ZONE = "UTC"
 
 
 # -- Django REST Framework
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
@@ -265,6 +267,7 @@ REST_FRAMEWORK = {
 
 
 # -- Logging
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -279,7 +282,10 @@ LOGGING = {
         }
     },
     "loggers": {
-        "": {"handlers": ["console"], "level": os.environ.get("LOG_LEVEL", "DEBUG")},
+        "": {
+            "handlers": ["console"],
+            "level": os.environ.get("LOG_LEVEL", "DEBUG"),
+        },
         "asyncio": {
             "handlers": ["console"],
             "level": "WARNING",
@@ -326,6 +332,7 @@ LOGGING = {
 
 
 # -- Sentry error tracking
+
 if os.environ.get("SENTRY_DSN"):
     RAVEN_CONFIG = {
         "dsn": os.environ.get("SENTRY_DSN", ""),
@@ -340,6 +347,7 @@ else:
 
 
 # -- Static files
+
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
@@ -361,6 +369,7 @@ WHATS_NEW_URL = (
 
 
 # -- Tool deployments
+
 TOOLS = {
     "rstudio": {
         "domain": os.environ.get("RSTUDIO_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
@@ -377,8 +386,12 @@ TOOLS = {
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 
+# hostname of NFS server for user homes
+NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
+
 
 # -- Async
+
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
 
 CHANNEL_LAYERS = {
@@ -424,3 +437,17 @@ ELASTICSEARCH = {
     ],
     'index': os.environ.get('ELASTICSEARCH_INDEX_S3LOGS', 's3logs-*'),
 }
+
+
+# -- AWS
+
+IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE')
+
+BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
+
+# Auth0 integrated SAML provider, referenced in user policies to allow login via
+# SAML federation
+SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
+
+# Name of S3 bucket where logs are stored
+LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')

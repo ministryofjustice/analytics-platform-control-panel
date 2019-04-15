@@ -20,7 +20,7 @@ class AppCustomersAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         app = self.get_object()
-        customers = app.get_customers()
+        customers = app.customers
 
         if customers is None:
             raise Http404
