@@ -18,8 +18,8 @@ RUN apk add --no-cache \
         libffi-dev=3.2.1-r4 \
         python3-dev=3.6.6-r0 \
         libressl-dev=2.7.5-r0 \
-        postgresql-dev=10.5-r0 \
-        postgresql-client=10.5-r0
+        postgresql-dev=10.7-r0 \
+        postgresql-client=10.7-r0
 
 # download and install helm
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
@@ -50,14 +50,14 @@ FROM base
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.js static/app.js
+COPY --from=jsdep node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 COPY --from=jsdep node_modules/govuk-frontend static/govuk-frontend
+COPY --from=jsdep node_modules/@hmcts/frontend static/hmcts-frontend
 COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
 COPY --from=jsdep node_modules/jquery/dist static/jquery
-COPY --from=jsdep node_modules/jquery-modal static/jquery-modal
-COPY --from=jsdep node_modules/jquery-typeahead/dist static/jquery-typeahead
 
 # collect static files for deployment
-RUN python3 manage.py collectstatic
+RUN python3 manage.py collectstatic --noinput
 
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]
