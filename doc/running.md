@@ -12,11 +12,6 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
-Also install the development dependencies with the following command:
-
-```sh
-pip3 install -r requirements.dev.txt
-```
 
 ## Kubernetes setup
 
@@ -72,7 +67,7 @@ NB `Username` needs to be your GitHub username
 
 Before the first run (or after changes to static assets), you need to run
 ```sh
-make collectstatic
+python3 manage.py collectstatic
 ```
 
 
