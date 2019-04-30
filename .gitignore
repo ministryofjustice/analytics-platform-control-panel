@@ -1,6 +1,10 @@
 *.pyc
+*.rdb
 *.sw?
+*.taskpaper
 .cache
+.coverage
+.ctagsignore
 .env
 .pytest_cache
 .ropeproject

@@ -2,13 +2,13 @@ HOST=0.0.0.0
 PORT=8000
 PROJECT=controlpanel
 MODULE=controlpanel
-VENV=venv
-BIN=${VENV}/bin
+VIRTUAL_ENV ?= venv
+BIN=${VIRTUAL_ENV}/bin
 
 -include .env
 export
 
-.PHONY: clean clean-bytecode clean-static clean-virtualenv collectstatic dependencies docker-image docker-test help node_modules run test
+.PHONY: clean clean-bytecode clean-static collectstatic dependencies docker-image docker-test help node_modules run test
 
 
 clean-static:
@@ -16,20 +16,15 @@ clean-static:
 	@echo "> Removing collected static files..."
 	@rm -rf run/static static/*
 
-clean-venv:
-	@echo
-	@echo "> Removing virtualenv..."
-	@rm -rf ${VENV}
-
 clean-bytecode:
 	@echo
 	@echo "> Removing compiled bytecode..."
 	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
 
-clean: clean-venv clean-bytecode clean-static
+clean: clean-bytecode clean-static
 
 ${BIN}:
-	@if [ -z "$$NO_VENV" -a ! -d "${VENV}" ]; then echo "\n> Initializing virtualenv..."; python3 -m venv ${VENV}; fi
+	@if [ -z "$$NO_VIRTUAL_ENV" -a ! -d "${VIRTUAL_ENV}" ]; then echo "\n> Initializing virtualenv..."; python3 -m venv ${VIRTUAL_ENV}; fi
 
 ## dependencies: Install dependencies
 dependencies: ${BIN} requirements.txt
@@ -58,7 +53,11 @@ node_modules:
 transpile:
 	@echo
 	@echo "> Transpiling ES6..."
-	@./node_modules/.bin/babel controlpanel/frontend/static/module-loader.js controlpanel/frontend/static/components controlpanel/frontend/static/javascripts -o static/app.js -s
+	@./node_modules/.bin/babel \
+		controlpanel/frontend/static/module-loader.js \
+		controlpanel/frontend/static/components \
+		controlpanel/frontend/static/javascripts \
+		-o static/app.js -s
 
 ## run: Run webapp
 run: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.development
@@ -79,6 +78,20 @@ docker-image:
 	@echo
 	@echo "> Building docker image..."
 	@docker build -t ${PROJECT} .
+
+
+## docker-run: Run app in a Docker container
+docker-run:
+	@echo
+	@echo "> Run docker container..."
+	@docker run \
+		-v ${HOME}/.kube/config:/home/${PROJECT}/.kube/config \
+		-p ${PORT}:${PORT} \
+		--env-file=.env \
+		-e ALLOWED_HOSTS="*" \
+		-e DB_HOST=docker.for.mac.host.internal \
+		-e DEBUG=True \
+		${PROJECT}
 
 ## docker-test: Run tests in Docker container
 docker-test:

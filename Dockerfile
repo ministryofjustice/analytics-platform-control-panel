@@ -2,22 +2,27 @@ FROM alpine:3.8 AS base
 
 LABEL maintainer="andy.driver@digital.justice.gov.uk"
 
-ARG HELM_VERSION=2.13.0
+ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://storage.googleapis.com/kubernetes-helm
 
 ENV DJANGO_SETTINGS_MODULE "controlpanel.settings"
 ENV HELM_HOME /tmp/helm
 
+# create a user to run as
+RUN addgroup -g 1000 -S controlpanel && \
+    adduser -u 1000 -S controlpanel -G controlpanel
+
 WORKDIR /home/controlpanel
 
-# install build dependencies (they'll be uninstalled after pip install)
+# install build dependencies
 RUN apk add --no-cache \
         build-base=0.5-r1 \
         ca-certificates=20171114-r3 \
         libffi-dev=3.2.1-r4 \
-        python3-dev=3.6.6-r0 \
+        python3-dev=3.6.8-r0 \
         libressl-dev=2.7.5-r0 \
+        libstdc++=6.4.0-r9 \
         postgresql-dev=10.7-r0 \
         postgresql-client=10.7-r0
 
@@ -34,6 +39,7 @@ RUN pip3 install -U pip && \
     pip3 install -r requirements.lock && \
     apk del build-base
 
+USER controlpanel
 COPY controlpanel controlpanel
 COPY tests tests
 
@@ -41,13 +47,19 @@ COPY tests tests
 # fetch javascript dependencies in separate stage
 FROM node:8-alpine AS jsdep
 COPY package.json package-lock.json ./
-COPY controlpanel/frontend/static/javascripts src
+COPY controlpanel/frontend/static src
 RUN npm install && \
     mkdir -p dist && \
-    ./node_modules/.bin/babel src -o dist/app.js -s
+    ./node_modules/.bin/babel \
+        src/module-loader.js \
+        src/components \
+        src/javascripts \
+        -o dist/app.js -s
 
 
 FROM base
+
+USER controlpanel
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.js static/app.js
@@ -58,7 +70,8 @@ COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
 COPY --from=jsdep node_modules/jquery/dist static/jquery
 
 # collect static files for deployment
-RUN python3 manage.py collectstatic --noinput
+RUN python3 manage.py compilescss --engine django --engine jinja2 && \
+    python3 manage.py collectstatic --noinput --ignore=*.scss
 
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]

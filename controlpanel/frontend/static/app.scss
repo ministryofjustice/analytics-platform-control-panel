@@ -1,5 +1,6 @@
-//$govuk-font-family-nta: "Source Sans Pro";
-//$govuk-font-family-nta-tabular: "Source Sans Pro";
+// override govuk font because we're not allowed to use Transport New
+$govuk-font-family-nta: "Arial";
+$govuk-font-family-nta-tabular: "Arial";
 
 $govuk-assets-path: "/static/govuk-frontend/assets/";
 
@@ -14,7 +15,7 @@ $govuk-assets-path: "/static/govuk-frontend/assets/";
 @import "static/govuk-frontend/settings/spacing";
 @import "static/govuk-frontend/settings/measurements";
 // comment the line below out to avoid using Transport New font
-@import "static/govuk-frontend/settings/typography-font-families";
+//@import "static/govuk-frontend/settings/typography-font-families";
 @import "static/govuk-frontend/settings/typography-font";
 @import "static/govuk-frontend/settings/typography-responsive";
 @import "static/govuk-frontend/tools/all";

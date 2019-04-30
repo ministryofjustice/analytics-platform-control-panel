@@ -2,7 +2,7 @@
 
 The Control Panel Frontend is a OIDC login protected web application which
 allows users of the Analytical Platform to manage their hosted tools (including
-RStudion and Jupyter Lab), web apps and data sources. It also provides an admin
+RStudio and Jupyter Lab), web apps and data sources. It also provides an admin
 interface for superusers to manage other users.
 
 ## Contributing

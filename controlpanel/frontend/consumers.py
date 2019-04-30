@@ -14,17 +14,17 @@ log = logging.getLogger(__name__)
 
 class ToolConsumer(SyncConsumer):
 
-    def deploytool(self, message):
+    def deploy_tool(self, message):
         tool = Tool.create(message['tool_name'])
         user = User.objects.get(auth0_id=message['user_id'])
 
-        log.debug(f'deploytool({tool.name}, {user.id})')
+        log.debug(f'deploy_tool({tool.name}, {user.id})')
 
         try:
             deploy = tool.deploy_for(user)
 
         except HelmError as err:
-            sendToolStatusChange(tool.name, str(err))
+            send_tool_status_change(tool.name, str(err))
             log.error(err)
 
         while deploy.poll() is None:
@@ -32,26 +32,26 @@ class ToolConsumer(SyncConsumer):
 
         if deploy.returncode:
             err_msg = deploy.stderr.read()
-            sendToolStatusChange(tool.name, err_msg)
+            send_tool_status_change(tool.name, err_msg)
             log.error(err_msg)
             return
 
         out = deploy.stdout.read()
-        sendToolStatusChange(tool.name, out)
+        send_tool_status_change(tool.name, out)
         log.debug(out)
 
-    def restarttool(self, message):
+    def restart_tool(self, message):
         tool = Tool.create(message['tool_name'])
         user = User.objects.get(auth0_id=message['user_id'])
 
-        log.debug(f'restarttool({tool.name}, {user.id}')
+        log.debug(f'restart_tool({tool.name}, {user.id}')
 
         tool.restart_for(user)
 
-        sendToolStatusChange(tool.name, "Restarting...")
+        send_tool_status_change(tool.name, "Restarting...")
 
 
-def sendToolStatusChange(tool_name, status):
+def send_tool_status_change(tool_name, status):
     send_event(
         'test',
         'toolStatusChange',

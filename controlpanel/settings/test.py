@@ -14,6 +14,8 @@ MIDDLEWARE.remove('mozilla_django_oidc.middleware.SessionRefresh')
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].remove(
     'mozilla_django_oidc.contrib.drf.OIDCAuthentication',
 )
+OIDC_OP_JWKS_ENDPOINT = "https://example.com/.well-known/jwks.json"
+OIDC_ALLOW_UNSECURED_JWT = True
 
 TOOLS_DOMAIN = 'example.com'
 TOOLS["testtool"] = {

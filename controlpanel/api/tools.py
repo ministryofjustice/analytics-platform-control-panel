@@ -6,7 +6,7 @@ from django.utils.functional import cached_property
 from rest_framework.exceptions import APIException
 
 from controlpanel.api.helm import Helm
-from controlpanel.kubeapi.views import client
+from controlpanel.kubeapi.views import client, requires_kube_config
 
 
 IDLED = "mojanalytics.xyz/idled"
@@ -16,12 +16,6 @@ SUPPORTED_TOOL_NAMES = list(settings.TOOLS.keys())
 
 class DuplicateTool(Exception):
     pass
-
-
-class ToolNotDeployed(APIException):
-    status_code = 400
-    default_detail = f"Specified tool not deployed"
-    default_code = "tool_not_deployed"
 
 
 class UnsupportedToolException(APIException):
@@ -34,9 +28,6 @@ class UnsupportedToolException(APIException):
 class ToolRepository(UserDict):
 
     def __getitem__(self, key):
-        if key not in self:
-            raise UnsupportedToolException(key)
-
         if key not in self:
             raise UnsupportedToolException(key)
 
@@ -120,6 +111,7 @@ class Tool(metaclass=ToolMeta):
             *params,
         )
 
+    @requires_kube_config
     def get_user_deployment(self, user):
         deployments = client.AppsV1Api().list_namespaced_deployment(
             namespace=user.k8s_namespace,
@@ -127,7 +119,7 @@ class Tool(metaclass=ToolMeta):
         )
 
         if len(deployments.items) < 1:
-            raise ToolNotDeployed()
+            return None
 
         return ToolDeployment(deployments.items[0], user)
 
@@ -162,6 +154,7 @@ class ToolDeployment(object):
         self.user = user
 
     @classmethod
+    @requires_kube_config
     def list(cls, user):
         deployments = client.AppsV1Api().list_namespaced_deployment(
             user.k8s_namespace,
@@ -183,6 +176,7 @@ class ToolDeployment(object):
         return f"https://{self.username}-{self.name}.{settings.TOOLS_DOMAIN}"
 
     @property
+    @requires_kube_config
     def pods(self):
         pods = client.CoreV1Api().list_namespaced_pod(
             self.user.k8s_namespace,
@@ -198,6 +192,7 @@ class ToolDeployment(object):
     def idled(self):
         return self.deployment.metadata.labels.get(IDLED) == "true"
 
+    @requires_kube_config
     def restart(self):
         return client.AppsV1Api().delete_collection_namespaced_replica_set(
             namespace=self.user.k8s_namespaces,

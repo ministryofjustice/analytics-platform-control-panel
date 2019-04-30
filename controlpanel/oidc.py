@@ -19,9 +19,8 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             email=claims.get(settings.OIDC_FIELD_EMAIL),
             name=claims.get(settings.OIDC_FIELD_NAME),
         )
-        user.save()
-        # user.aws_create_role()
-        # user.helm_create()
+        user.aws_create_role()
+        user.helm_create()
         return user
 
     def filter_users_by_claims(self, claims):

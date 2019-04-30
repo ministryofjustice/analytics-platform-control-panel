@@ -1,7 +1,11 @@
 *.pyc
+*.rdb
 *.sw?
+*.taskpaper
 .cache
 .circleci
+.coverage
+.ctagsignore
 .env
 .github
 .gitignore

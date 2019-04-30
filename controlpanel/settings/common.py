@@ -126,7 +126,9 @@ TEMPLATES = [
 # -- Auth
 
 # List of classes used when attempting to authenticate a user
-AUTHENTICATION_BACKENDS = ["controlpanel.oidc.OIDCSubAuthenticationBackend"]
+AUTHENTICATION_BACKENDS = [
+    "controlpanel.oidc.OIDCSubAuthenticationBackend",
+]
 
 # List of validators used to check the strength of users' passwords
 AUTH_PASSWORD_VALIDATORS = []
@@ -149,7 +151,7 @@ OIDC_DOMAIN = os.environ.get("OIDC_DOMAIN")
 
 # OIDC endpoints
 OIDC_OP_AUTHORIZATION_ENDPOINT = os.environ.get("OIDC_OP_AUTHORIZATION_ENDPOINT")
-OIDC_OP_JWKS_ENDPOINT = os.environ.get("OIDC_OP_JWKS_ENDPOINT", None)
+OIDC_OP_JWKS_ENDPOINT = os.environ.get("OIDC_OP_JWKS_ENDPOINT")
 OIDC_OP_TOKEN_ENDPOINT = os.environ.get("OIDC_OP_TOKEN_ENDPOINT")
 OIDC_OP_USER_ENDPOINT = os.environ.get("OIDC_OP_USER_ENDPOINT")
 
@@ -157,11 +159,11 @@ OIDC_OP_USER_ENDPOINT = os.environ.get("OIDC_OP_USER_ENDPOINT")
 OIDC_OP_LOGOUT_URL_METHOD = "controlpanel.oidc.logout"
 
 # OIDC client secret
-OIDC_RP_CLIENT_ID = os.environ.get("OIDC_RP_CLIENT_ID")
-OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_RP_CLIENT_SECRET")
+OIDC_RP_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
+OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 
 # OIDC JWT signing algorithm
-OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "HS256")
+OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
 
 # OIDC claims
 OIDC_FIELD_EMAIL = "email"
@@ -177,6 +179,7 @@ AUTH0 = {
     "logout_url": f"https://{OIDC_DOMAIN}/v2/logout",
 }
 
+OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
 
 # -- Security
 
@@ -255,6 +258,8 @@ TIME_ZONE = "UTC"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        # Token authentication
+        "controlpanel.api.jwt_auth.JWTAuthentication",
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
         # required for browsable API
         "rest_framework.authentication.SessionAuthentication",
@@ -415,7 +420,7 @@ EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
 # -- Github
 
 # Allowed Github organizations
-GITHUB_ORGS = [
+GITHUB_ORGS = os.environ.get('GITHUB_ORGS', '').split(',') or [
     # 'ministryofjustice',
     'moj-analytical-services',
 ]

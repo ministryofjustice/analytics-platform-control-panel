@@ -27,7 +27,7 @@ def load_token(self, provider):
 
     padding = (4 - len(parts[1]) % 4) * "="
 
-    jwt_attributes = json.loads(base64.b64decode(parts[1] + padding).decode("utf-8"))
+    jwt_attributes = json.loads(base64.urlsafe_b64decode(parts[1] + padding).decode("utf-8"))
 
     expire = jwt_attributes.get("exp")
 

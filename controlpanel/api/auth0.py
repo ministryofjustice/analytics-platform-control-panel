@@ -12,7 +12,7 @@ class Auth0Error(APIException):
     default_detail = "Error querying Auth0 API"
 
 
-class APIClient(object):
+class APIClient:
     base_url = None
     audience = None
 
