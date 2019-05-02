@@ -123,6 +123,11 @@ class JupyterLab(BaseTool):
 class Airflow(BaseTool):
     name = 'airflow-sqlite'
 
+    def _get_auth_client_config(self, key):
+        setting_key = sanitize_environment_variable(
+            f'AIRFLOW_AUTH_CLIENT_{key}')
+        return getattr(settings, setting_key.upper())
+
     def deploy_params(self, user):
         auth_proxy_cookie_secret = secrets.token_hex(32)
 
