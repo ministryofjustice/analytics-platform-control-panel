@@ -38,7 +38,8 @@ class Auth0ClientConfigMixin:
 
 SUPPORTED_TOOL_NAMES = [
     'rstudio',
-    'jupyter-lab'
+    'jupyter-lab',
+    'airflow-sqlite',
 ]
 
 
@@ -119,6 +120,25 @@ class JupyterLab(BaseTool):
         ]
 
 
+class Airflow(BaseTool):
+    name = 'airflow-sqlite'
+
+    def deploy_params(self, user):
+        auth_proxy_cookie_secret = secrets.token_hex(32)
+
+        return [
+            '--set', f'Username={user.username.lower()}',
+            '--set', f'aws.iamRole={user.iam_role_name}',
+            '--set', f'toolsDomain={settings.TOOLS_DOMAIN}',
+            '--set', f'cookie_secret={auth_proxy_cookie_secret}',
+            '--set', f'authProxy.auth0_domain={self.auth_client_domain}',
+            '--set', f'authProxy.auth0_client_id={self.auth_client_id}',
+            '--set', f'authProxy.auth0_client_secret={self.auth_client_secret}',
+            '--set', f'airflow.secretKey={settings.AIRFLOW_SECRET_KEY}',
+            '--set', f'airflow.fernetKey={settings.AIRFLOW_FERNET_KEY}',
+        ]
+
+
 class ToolsRepository(UserDict):
 
     def __init__(self, *tools):
@@ -131,4 +151,4 @@ class ToolsRepository(UserDict):
             raise UnsupportedToolException()
 
 
-Tools = ToolsRepository(RStudio, JupyterLab)
+Tools = ToolsRepository(RStudio, JupyterLab, Airflow)
