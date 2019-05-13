@@ -1,5 +1,7 @@
+asgiref==3.1.2
 auth0-python==3.6.1
-boto3==1.9.106
+boto3==1.9.146
+botocore=1.12.146
 channels==2.1.7
 channels-redis==2.3.3
 Django==2.1.7
@@ -26,4 +28,5 @@ pytest-spec==1.1.0
 python-jose[cryptography]==3.0.1
 raven==6.10.0
 service_identity==18.1.0
+urllib3<1.25
 uvicorn==0.6.1
