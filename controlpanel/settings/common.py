@@ -386,6 +386,11 @@ TOOLS = {
         "client_id": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_ID"),
         "client_secret": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_SECRET"),
     },
+    "airflow-sqlite": {
+        "domain": os.environ.get("AIRFLOW_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
+        "client_id": os.environ.get("AIRFLOW_AUTH_CLIENT_ID"),
+        "client_secret": os.environ.get("AIRFLOW_AUTH_CLIENT_SECRET"),
+    },
 }
 
 # domain where tools are deployed
@@ -456,3 +461,8 @@ SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
 
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
+
+
+# -- Airflow
+AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
+AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')

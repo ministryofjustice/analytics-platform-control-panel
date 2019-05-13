@@ -147,6 +147,24 @@ class JupyterLab(Tool):
         }
 
 
+class Airflow(Tool):
+    name = "airflow-sqlite"
+
+    def deploy_params(self, user):
+        conf = settings.TOOLS[self.name]
+        return {
+            "Username": user.username.lower(),
+            "aws.iamRole": user.iam_role_name,
+            "toolsDomain": settings.TOOLS_DOMAIN,
+            "cookie_secret": secrets.token_hex(32),
+            "authProxy.auth0_domain": conf["domain"],
+            "authProxy.auth0_client_id": conf["client_id"],
+            "authProxy.auth0_client_secret": conf["client_secret"],
+            'airflow.secretKey': settings.AIRFLOW_SECRET_KEY,
+            'airflow.fernetKey': settings.AIRFLOW_FERNET_KEY,
+        }
+
+
 class ToolDeployment(object):
 
     def __init__(self, deployment, user):
