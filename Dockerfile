@@ -23,8 +23,8 @@ RUN apk add --no-cache \
         python3-dev=3.6.8-r0 \
         libressl-dev=2.7.5-r0 \
         libstdc++=6.4.0-r9 \
-        postgresql-dev=10.7-r0 \
-        postgresql-client=10.7-r0
+        postgresql-dev=10.8-r0 \
+        postgresql-client=10.8-r0
 
 # download and install helm
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
