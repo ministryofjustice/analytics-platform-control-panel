@@ -39,6 +39,8 @@ RUN pip3 install -U pip && \
     pip3 install -r requirements.lock && \
     apk del build-base
 
+RUN pip3 install django-debug-toolbar
+
 USER controlpanel
 COPY controlpanel controlpanel
 COPY tests tests

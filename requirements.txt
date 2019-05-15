@@ -1,9 +1,9 @@
 asgiref==3.1.2
 auth0-python==3.6.1
 boto3==1.9.146
-botocore=1.12.146
-channels==2.1.7
-channels-redis==2.3.3
+botocore==1.12.146
+channels==2.2.0
+channels-redis==2.4.0
 Django==2.1.7
 django_compressor==2.2
 django-dotenv==1.4.2
