@@ -15,6 +15,9 @@ ENABLED = {
 
     # Enable writes to Kubernetes cluster
     "write_to_cluster": is_truthy(os.environ.get("ENABLE_WRITE_TO_CLUSTER", True)),
+
+    # Enable redirecting legacy API URLs to new API app
+    "redirect_legacy_api_urls": is_truthy(os.environ.get("ENABLE_LEGACY_API_REDIRECT", True)),
 }
 
 # Name of the deployment environment (dev/alpha)
@@ -87,6 +90,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "controlpanel.middleware.LegacyAPIRedirectMiddleware",
     # used by django_eventstream
     "django_grip.GripMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -180,6 +184,7 @@ AUTH0 = {
 }
 
 OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
+
 
 # -- Security
 

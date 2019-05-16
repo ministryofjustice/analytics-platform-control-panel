@@ -1,6 +1,6 @@
 from django.conf import settings
-from django.urls import include, path
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.urls import include, path
 
 
 urlpatterns = [
@@ -9,6 +9,8 @@ urlpatterns = [
     path("api/k8s/", include("controlpanel.kubeapi.urls")),
     path("oidc/", include("mozilla_django_oidc.urls")),
     path("events/", include("django_eventstream.urls")),
+    # redirect old k8s api requests to new paths
+    path("k8s/", include('controlpanel.kubeapi.urls')),
 ]
 
 if settings.DEBUG:

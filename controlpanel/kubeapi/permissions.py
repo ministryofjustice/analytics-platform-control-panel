@@ -12,16 +12,24 @@ class K8sPermissions(BasePermission):
     ]
 
     def has_permission(self, request, view):
-        if not request.user or request.user.is_anonymous:
-            return False
-
-        if request.user and request.user.is_superuser:
+        if request.user.is_superuser:
             return True
 
-        path = request.path.lower()
+        if not has_access_token(request):
+            if not request.user.is_authenticated:
+                return False
+
+        path = request.path_info.lower()
         for api in self.ALLOWED_APIS:
-            if path.startswith(
-                    f'/api/k8s/{api}/namespaces/{request.user.k8s_namespace}/'):
+            if path.startswith(api):
                 return True
 
         return False
+
+
+def has_access_token(request):
+    auth_header = request.META.get("HTTP_AUTHORIZATION")
+    return auth_header and (
+        auth_header.startswith("Bearer ") or
+        auth_header.startswith("JWT ")
+    )
