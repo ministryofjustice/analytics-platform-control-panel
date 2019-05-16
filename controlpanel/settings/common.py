@@ -430,10 +430,13 @@ EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
 # -- Github
 
 # Allowed Github organizations
-GITHUB_ORGS = os.environ.get('GITHUB_ORGS', '').split(',') or [
-    # 'ministryofjustice',
-    'moj-analytical-services',
-]
+GITHUB_ORGS = list(filter(
+    None,
+    set(os.environ.get("GITHUB_ORGS", "").split(",") + [
+        # 'ministryofjustice',
+        'moj-analytical-services',
+    ]),
+))
 
 
 # -- Elasticsearch
