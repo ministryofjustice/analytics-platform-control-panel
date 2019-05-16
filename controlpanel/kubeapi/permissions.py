@@ -9,6 +9,7 @@ class K8sPermissions(BasePermission):
     ALLOWED_APIS = [
         'api/v1',
         'apis/apps/v1beta2',
+        'apis/extensions/v1beta1',
     ]
 
     def has_permission(self, request, view):
