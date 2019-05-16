@@ -124,6 +124,11 @@ class CreateDatasource(LoginRequiredMixin, DatasourceMixin, CreateView):
             name=name,
             is_data_warehouse=datasource_type == "warehouse",
         )
+        UserS3Bucket.objects.create(
+            s3bucket=self.object,
+            user=self.request.user,
+            is_admin=True,
+        )
         messages.success(
             self.request,
             f"Successfully created {name} {datasource_type} data source",
