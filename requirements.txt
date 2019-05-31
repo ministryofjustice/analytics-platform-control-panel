@@ -8,7 +8,7 @@ cffi==1.12.3
 chardet==3.0.4
 coreapi==2.3.3
 coreschema==0.0.4
-cryptography==2.6.1
+cryptography==2.7
 Django==2.2.1
 django-extensions==2.1.7
 django-filter==2.1.0
