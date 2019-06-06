@@ -15,6 +15,7 @@ from django.views.generic.edit import (
 from django.views.generic.list import ListView
 import requests
 
+from controlpanel.api.github import OrgRepositories
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -85,23 +86,7 @@ class CreateApp(LoginRequiredMixin, CreateView):
     def get_repositories(self):
         repos = []
         for org in settings.GITHUB_ORGS:
-            url = f"https://api.github.com/orgs/{org}/repos"
-            while True:
-                r = requests.get(url)
-                if r.status_code != 200:
-                    break
-                repos.extend(r.json())
-                links = r.headers.get("Link").split(",")
-                links = map(lambda x: x.strip().split("; "), links)
-                links = dict([
-                    (rel[4:].strip('"'), url[1:-1])
-                    for url, rel in links
-                ])
-                if "next" not in links:
-                    break
-                if "last" in links and links["last"] == url:
-                    break
-                url = links["next"]
+            repos.extend(OrgRepositories(org))
         return repos
 
     def get_success_url(self):
