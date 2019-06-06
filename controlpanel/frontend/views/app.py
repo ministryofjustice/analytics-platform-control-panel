@@ -54,15 +54,14 @@ class AppDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
+        admins = app.admins
 
-        app_admins = [ua.user for ua in app.userapps.filter(is_admin=True)]
-        context["app_admins"] = app_admins
+        context["app_admins"] = admins
 
-        app_admins_ids = [user.auth0_id for user in app_admins]
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
         ).exclude(
-            auth0_id__in=app_admins_ids,
+            auth0_id__in=[user.auth0_id for user in admins],
         )
 
         context["grant_access_form"] = GrantAppAccessForm(app=app)
