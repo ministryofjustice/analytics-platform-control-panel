@@ -458,7 +458,7 @@ ELASTICSEARCH = {
 
 
 # -- AWS
-
+AWS_ACCOUNT_ID = os.environ.get('AWS_ACCOUNT_ID')
 IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE')
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME')
 

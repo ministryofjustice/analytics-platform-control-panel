@@ -5,26 +5,16 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import User
-from controlpanel.api.services import READ_INLINE_POLICIES_POLICY_NAME
-from tests.api import USER_IAM_ROLE_ASSUME_POLICY
+from controlpanel.api.cluster import READ_INLINE_POLICIES, iam_arn
 
 
-@pytest.yield_fixture
-def helm():
-    with patch('controlpanel.api.models.helm') as helm:
-        yield helm
-
-
-@pytest.yield_fixture
-def aws():
-    with patch('controlpanel.api.services.aws') as aws:
-        yield aws
+@pytest.fixture(autouse=True)
+def enable_db_for_all_tests(db):
+    pass
 
 
 def test_helm_create_user(helm):
     user = mommy.prepare('api.User')
-
-    user.helm_create()
 
     expected_calls = [
         call(
@@ -50,7 +40,7 @@ def test_helm_create_user(helm):
 def test_helm_delete_user(helm):
     user = mommy.prepare('api.User')
 
-    user.helm_delete()
+    user.delete()
 
     helm.list_releases.assert_called_with(f"--namespace=user-{user.slug}")
     expected_calls = [
@@ -61,24 +51,19 @@ def test_helm_delete_user(helm):
 
 
 def test_aws_create_role_calls_service(aws):
-    user = mommy.prepare('api.User', auth0_id="github|user_1")
+    user = User.objects.create(auth0_id="github|user_1")
 
-    user.aws_create_role()
-
-    aws.create_role.assert_called_with(
-        user.iam_role_name,
-        USER_IAM_ROLE_ASSUME_POLICY,
-    )
+    aws.create_role.assert_called()
     aws.attach_policy_to_role.assert_called_with(
         role_name=user.iam_role_name,
-        policy_arn=f"{settings.IAM_ARN_BASE}:policy/{READ_INLINE_POLICIES_POLICY_NAME}",
+        policy_arn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
     )
 
 
 def test_aws_delete_role_calls_service(aws):
     user = mommy.prepare('api.User')
 
-    user.aws_delete_role()
+    user.delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
 

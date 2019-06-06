@@ -62,20 +62,18 @@ def test_detail(client, apps3buckets):
     assert set(response.data) == expected_fields
 
 
-def test_delete(client, apps3buckets, services):
+def test_delete(client, apps3buckets, aws):
     response = client.delete(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    services.revoke_bucket_access.assert_called_with(
-        apps3buckets[1].s3bucket.arn,
-        apps3buckets[1].aws_role_name(),
-    )
+    aws.put_role_policy.assert_called()
+    # TODO get policy document JSON from call and assert bucket ARN not present
 
     response = client.get(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, apps, buckets, services):
+def test_create(client, apps, buckets, aws):
     data = {
         'app': apps[1].id,
         's3bucket': buckets[3].id,
@@ -84,10 +82,11 @@ def test_create(client, apps, buckets, services):
     response = client.post(reverse('apps3bucket-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    services.grant_bucket_access.assert_called()
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and check for presence of bucket ARN
 
 
-def test_update(client, apps, apps3buckets, buckets, services):
+def test_update(client, apps, apps3buckets, buckets, aws):
     data = {
         'app': apps[1].id,
         's3bucket': buckets[1].id,
@@ -101,10 +100,11 @@ def test_update(client, apps, apps3buckets, buckets, services):
     assert response.status_code == status.HTTP_200_OK
     assert response.data['access_level'] == data['access_level']
 
-    services.grant_bucket_access.assert_called()
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and check for presence of bucket ARN
 
 
-def test_update_bad_requests(client, apps, apps3buckets, buckets, services):
+def test_update_bad_requests(client, apps, apps3buckets, buckets):
     fixtures = (
         {
             'app': apps[2].id,  # when app changed
@@ -127,7 +127,7 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets, services):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
-def test_create_with_s3_data_warehouse_not_allowed(client, apps, services):
+def test_create_with_s3_data_warehouse_not_allowed(client, apps):
     s3_bucket_app = mommy.make(
         'api.S3Bucket',
         is_data_warehouse=False,

@@ -87,22 +87,22 @@ def test_detail(client, app):
     assert set(userapp['user']) == expected_fields
 
 
-def test_delete(client, app, services):
+def test_delete(client, app, aws):
     response = client.delete(reverse('app-detail', (app.id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    services.delete_role.assert_called_with(app.iam_role_name)
+    aws.delete_role.assert_called_with(app.iam_role_name)
 
     response = client.get(reverse('app-detail', (app.id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, users, services):
+def test_create(client, users, aws):
     data = {'name': 'bar', 'repo_url': 'https://example.com/bar.git'}
     response = client.post(reverse('app-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    services.create_role.assert_called()
+    aws.create_role.assert_called()
 
     assert response.data['created_by'] == users['superuser'].auth0_id
     assert response.data['repo_url'] == 'https://example.com/bar'
@@ -120,8 +120,8 @@ def test_update(client, app):
     assert response.data['repo_url'] == 'http://foo.com'
 
 
-def test_aws_error_and_transaction(client, services):
-    services.create_role.side_effect = ClientError({}, "CreateRole")
+def test_aws_error_and_transaction(client, aws):
+    aws.create_role.side_effect = ClientError({}, "CreateRole")
     data = {'name': 'quux', 'repo_url': 'https://example.com/quux.git'}
 
     with pytest.raises(ClientError):

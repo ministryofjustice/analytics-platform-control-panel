@@ -53,18 +53,6 @@ def jwks():
         yield requests
 
 
-@pytest.yield_fixture(autouse=True)
-def services():
-    with patch('controlpanel.api.models.services') as services:
-        yield services
-
-
-@pytest.yield_fixture(autouse=True)
-def helm():
-    with patch('controlpanel.api.models.helm') as helm:
-        yield helm
-
-
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
@@ -120,15 +108,12 @@ def test_token_auth(api_request, auth_header, status):
     assert api_request(HTTP_AUTHORIZATION=auth_header).status_code == status
 
 
-def test_unknown_user_created(api_request, services, helm):
+def test_unknown_user_created(api_request):
     with pytest.raises(User.DoesNotExist):
         User.objects.get(pk=TEST_SUB)
 
     assert api_request(HTTP_AUTHORIZATION=f'Bearer {token()}').status_code == 200
 
-    services.create_role.assert_called()
-    services.grant_read_inline_policies.assert_called()
-    helm.upgrade_release.assert_called()
     assert User.objects.get(pk=TEST_SUB)
 
 

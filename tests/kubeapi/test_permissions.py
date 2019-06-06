@@ -1,12 +1,26 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from model_mommy import mommy
 import pytest
 from rest_framework import status
 
 
-@pytest.yield_fixture()
-def mock_k8s_api():
+TEST_K8S_API_URL = 'https://k8s.example.com'
+
+
+@pytest.yield_fixture(autouse=True)
+def k8s():
+    with patch('controlpanel.kubeapi.views.kubernetes') as k8s:
+        config = k8s.client.Configuration.return_value
+        config.host = TEST_K8S_API_URL
+        config.api_key = {
+            "authorization": "Bearer test-token",
+        }
+        yield k8s
+
+
+@pytest.yield_fixture(autouse=True)
+def k8s_api():
     with patch('djproxy.views.request') as request:
         request.return_value.status_code = 200
         yield request
@@ -17,13 +31,14 @@ def users():
     return {
         "superuser": mommy.make(
             'api.User',
-            auth0_id='github|user_1',
+            auth0_id='github|0',
             is_superuser=True,
+            username='alice',
         ),
         "normal_user": mommy.make(
             'api.User',
-            username='alice',
-            auth0_id='github|user_2',
+            username='bob',
+            auth0_id='github|1',
             is_superuser=False,
         ),
     }
@@ -68,10 +83,12 @@ not_authenticated = None
     ],
 )
 @pytest.mark.django_db
-def test_permission(
-        client, users, mock_k8s_api, view, user, expected_status):
+def test_permission(client, users, view, user, expected_status):
+    print('start', flush=True)
     if user:
         user = users[user]
         client.force_login(user)
+    print('getting view', flush=True)
     response = view(client, user)
+    print('got response', flush=True)
     assert response.status_code == expected_status

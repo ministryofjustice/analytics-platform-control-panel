@@ -51,7 +51,7 @@ def test_detail(client, users3buckets):
     assert response.data['access_level'] == 'readonly'
 
 
-def test_create(client, buckets, users, services):
+def test_create(client, buckets, users, aws):
     data = {
         'user': users[2].auth0_id,
         's3bucket': buckets[1].id,
@@ -60,23 +60,22 @@ def test_create(client, buckets, users, services):
     response = client.post(reverse('users3bucket-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    services.grant_bucket_access.assert_called()
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and assert bucket ARN exists
 
 
-def test_delete(client, users3buckets, services):
+def test_delete(client, users3buckets, aws):
     response = client.delete(reverse('users3bucket-detail', (users3buckets[1].id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    services.revoke_bucket_access.assert_called_with(
-        users3buckets[1].s3bucket.arn,
-        users3buckets[1].aws_role_name(),
-    )
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and assert bucket ARN not contained
 
     response = client.get(reverse('users3bucket-detail', (users3buckets[1].id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_update(client, buckets, users, users3buckets, services):
+def test_update(client, buckets, users, users3buckets, aws):
     data = {
         'user': users[1].auth0_id,
         's3bucket': buckets[1].id,
@@ -90,7 +89,8 @@ def test_update(client, buckets, users, users3buckets, services):
     assert response.status_code == status.HTTP_200_OK
     assert response.data['access_level'] == data['access_level']
 
-    services.grant_bucket_access.assert_called()
+    aws.put_role_policy.assert_called()
+    # TODO get policy and assert ARN present in correct place
 
 
 @pytest.mark.parametrize(

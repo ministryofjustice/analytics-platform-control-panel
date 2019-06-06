@@ -12,12 +12,6 @@ def app():
     return mommy.make("api.App", name="App 1")
 
 
-@pytest.yield_fixture(autouse=True)
-def mock_services():
-    with patch('controlpanel.api.services.aws'):
-        yield
-
-
 def app_list(client, *args):
     return client.get(reverse('app-list'))
 

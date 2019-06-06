@@ -13,7 +13,7 @@ def app():
 
 @pytest.yield_fixture
 def AuthorizationAPI():
-    with patch('controlpanel.api.models.auth0.AuthorizationAPI') as authz:
+    with patch('controlpanel.api.models.app.auth0.AuthorizationAPI') as authz:
         yield authz.return_value
 
 

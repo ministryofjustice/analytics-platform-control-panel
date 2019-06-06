@@ -6,6 +6,24 @@ from botocore.exceptions import ClientError
 from django.conf import settings
 
 
+def arn(service, resource, region="", account=""):
+    service = service.lower()
+    region = region.lower()
+    regionless = ["iam", "s3"]
+    if service in regionless:
+        region = ""
+
+    return f"arn:aws:{service}:{region}:{account}:{resource}"
+
+
+def s3_arn(resource):
+    return arn("s3", resource)
+
+
+def iam_arn(resource, account=settings.AWS_ACCOUNT_ID):
+    return arn("iam", resource, account=account)
+
+
 class AWSClient(object):
 
     def __init__(self):
@@ -76,7 +94,7 @@ class AWSClient(object):
             else:
                 raise e
 
-    def put_role_policy(self, role_name, policy_name,  policy_document):
+    def put_role_policy(self, role_name, policy_name, policy_document):
         self._do('iam', 'put_role_policy',
             RoleName=role_name,
             PolicyName=policy_name,

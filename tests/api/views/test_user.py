@@ -71,25 +71,26 @@ def test_detail(client, users):
     assert set(users3bucket['s3bucket']) == expected_fields
 
 
-def test_delete(client, helm, services, users):
+def test_delete(client, helm, aws, users):
     response = client.delete(reverse('user-detail', (users[1].auth0_id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    services.delete_role.assert_called()
+    aws.delete_role.assert_called()
     helm.delete.assert_called()
 
     response = client.get(reverse('user-detail', (users[1].auth0_id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, helm, services):
+def test_create(client, helm, aws):
     data = {'auth0_id': 'github|3', 'username': 'foo'}
     response = client.post(reverse('user-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
     assert response.data['auth0_id'] == data['auth0_id']
 
-    services.create_role.assert_called()
+    aws.create_role.assert_called()
+    aws.attach_policy_to_role.assert_called()
     helm.upgrade_release.assert_called()
 
 
@@ -108,6 +109,8 @@ def test_update(client, users):
 def test_aws_error_and_transaction(client, aws, helm):
     aws.create_role.side_effect = ClientError({"foo": "bar"}, "bar")
     data = {'auth0_id': 'github|3', 'username': 'foo'}
+
+    helm.reset_mock()
 
     with pytest.raises(ClientError):
         client.post(reverse('user-list'), data)

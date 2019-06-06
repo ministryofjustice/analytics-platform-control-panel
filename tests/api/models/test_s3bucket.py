@@ -1,9 +1,10 @@
 from unittest.mock import call, patch
 
+from django.conf import settings
 from model_mommy import mommy
 import pytest
 
-from controlpanel.api.models import S3Bucket
+from controlpanel.api.models import S3Bucket, UserS3Bucket
 
 
 @pytest.fixture(autouse=True)
@@ -20,39 +21,43 @@ def test_arn(bucket):
     assert 'arn:aws:s3:::test-bucket-1' == bucket.arn
 
 
-def test_delete_revokes_permissions(bucket):
+def test_delete_revokes_permissions(bucket, aws):
     users3bucket = mommy.make('api.UserS3Bucket', s3bucket=bucket)
     apps3bucket = mommy.make('api.AppS3Bucket', s3bucket=bucket)
 
-    with patch('controlpanel.api.services.revoke_bucket_access') as revoke:
-        bucket.delete()
+    bucket.delete()
 
-        expected_calls = (
-            call(bucket.arn, users3bucket.aws_role_name()),
-            call(bucket.arn, apps3bucket.aws_role_name()),
-        )
-        revoke.assert_has_calls(expected_calls, any_order=True)
+    # expected_calls = (
+        # call(bucket.arn, users3bucket.aws_role_name()),
+        # call(bucket.arn, apps3bucket.aws_role_name()),
+    # )
+    # aws.put_role_policy.assert_has_calls(expected_calls, any_order=True)
+    aws.put_role_policy.assert_called()
+    # TODO assert calls remove bucket ARN
 
 
-def test_bucket_create(bucket):
+def test_bucket_create(aws):
     url = 'http://foo.com/'
 
-    with patch('controlpanel.api.services.create_bucket') as create:
-        create.return_value = {'Location': url}
+    aws.create_bucket.return_value = {'Location': url}
 
-        bucket.aws_create()
+    bucket = S3Bucket.objects.create(name="test-bucket-1")
 
-        create.assert_called_with(
-            bucket.name,
-            bucket.is_data_warehouse,
-        )
+    aws.create_bucket.assert_called_with(
+        bucket.name,
+        region=settings.BUCKET_REGION,
+        acl='private',
+    )
 
     assert url == bucket.location_url
 
 
-def test_create_users3bucket(bucket):
-    with patch('controlpanel.api.models.UserS3Bucket.aws_create') as aws_create:
+def test_create_users3bucket(aws, superuser):
+    bucket = S3Bucket.objects.create(
+        name="test-bucket-1",
+        created_by=superuser,
+    )
 
-        bucket.create_users3bucket(mommy.make('api.User'))
+    aws.create_bucket.assert_called()
 
-        aws_create.assert_called()
+    assert UserS3Bucket.objects.get(user=superuser, s3bucket=bucket)

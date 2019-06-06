@@ -4,7 +4,7 @@ from django.db.utils import IntegrityError
 from model_mommy import mommy
 import pytest
 
-from controlpanel.api.models import AppS3Bucket
+from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def bucket():
 def users3bucket(user, bucket):
     return user.users3buckets.create(
         s3bucket=bucket,
-        access_level=AppS3Bucket.READONLY,
+        access_level=AccessToS3Bucket.READONLY,
     )
 
 
@@ -31,27 +31,25 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 
         user.users3buckets.create(
             s3bucket=bucket,
-            access_level=users3bucket.READWRITE,
+            access_level=AccessToS3Bucket.READWRITE,
         )
 
 
 @pytest.mark.django_db
-def test_aws_create(user, bucket, users3bucket):
-    with patch('controlpanel.api.services.grant_bucket_access') as grant:
+def test_aws_create(user, bucket, aws):
 
-        users3bucket.aws_create()
+    user.users3buckets.create(
+        s3bucket=bucket,
+        access_level=AccessToS3Bucket.READONLY,
+    )
 
-        grant.assert_called_with(
-            bucket.arn,
-            users3bucket.has_readwrite_access(),
-            user.iam_role_name,
-        )
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and assert bucket ARN present
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(user, bucket, users3bucket):
-    with patch('controlpanel.api.services.revoke_bucket_access') as revoke:
+def test_delete_revoke_permissions(user, bucket, users3bucket, aws):
+    users3bucket.delete()
 
-        users3bucket.delete()
-
-        revoke.assert_called_with(bucket.arn, user.iam_role_name)
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and assert bucket ARN removed

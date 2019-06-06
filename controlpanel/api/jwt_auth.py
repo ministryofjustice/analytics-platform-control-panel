@@ -93,8 +93,4 @@ class JWTAuthentication(authentication.BaseAuthentication):
             email=payload[settings.OIDC_FIELD_EMAIL],
             name=payload[settings.OIDC_FIELD_NAME],
         )
-        if created:
-            user.aws_create_role()
-            user.helm_create()
-
         return user

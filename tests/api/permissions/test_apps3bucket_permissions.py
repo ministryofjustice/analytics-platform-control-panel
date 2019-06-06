@@ -9,12 +9,6 @@ from rest_framework.reverse import reverse
 from controlpanel.api.models import AppS3Bucket
 
 
-@pytest.yield_fixture(autouse=True)
-def mock_services():
-    with patch('controlpanel.api.services.aws'):
-        yield
-
-
 @pytest.fixture
 def app():
     return mommy.make("api.App", name="App 1")

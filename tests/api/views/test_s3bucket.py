@@ -85,7 +85,7 @@ def test_detail(client, bucket):
     assert set(users3bucket['user']) == expected_user_fields
 
 
-def test_delete(client, bucket, services):
+def test_delete(client, bucket):
     response = client.delete(reverse('s3bucket-detail', (bucket.id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -93,7 +93,7 @@ def test_delete(client, bucket, services):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, superuser, services):
+def test_create(client, superuser, aws):
     data = {'name': 'test-bucket-123'}
     response = client.post(reverse('s3bucket-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
@@ -101,7 +101,7 @@ def test_create(client, superuser, services):
     assert response.data['created_by'] == superuser.auth0_id
     assert not response.data['is_data_warehouse']
 
-    services.create_bucket.assert_called()
+    aws.create_bucket.assert_called()
 
     users3bucket = UserS3Bucket.objects.get(
         user_id=superuser.auth0_id,

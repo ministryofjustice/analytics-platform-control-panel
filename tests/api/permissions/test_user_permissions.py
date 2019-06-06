@@ -6,12 +6,6 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 
 
-@pytest.yield_fixture(autouse=True)
-def mock_services():
-    with patch('controlpanel.api.services.aws'), patch('controlpanel.api.models.helm'):
-        yield
-
-
 def list(client, users):
     return client.get(reverse('user-list'))
 

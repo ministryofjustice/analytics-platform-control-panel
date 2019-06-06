@@ -11,7 +11,7 @@ from rest_framework.status import (
 )
 from rest_framework.test import APITestCase
 
-from controlpanel.api.models import AccessToS3Bucket
+from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
 @patch('controlpanel.api.aws.aws.client', MagicMock())

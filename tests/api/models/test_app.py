@@ -4,18 +4,12 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import App
-from tests.api import APP_IAM_ROLE_ASSUME_POLICY
-
-
-@pytest.yield_fixture
-def aws():
-    with patch("controlpanel.api.services.aws") as aws:
-        yield aws
+from controlpanel.api.cluster import BASE_ROLE_POLICY
 
 
 @pytest.yield_fixture
 def auth0():
-    with patch("controlpanel.api.models.auth0") as auth0:
+    with patch("controlpanel.api.models.app.auth0") as auth0:
         yield auth0
 
 
@@ -39,11 +33,9 @@ def test_slug_collisions_increments():
 def test_aws_create_role_calls_service(aws):
     app = App.objects.create(repo_url="https://example.com/repo_name")
 
-    app.aws_create_role()
-
     aws.create_role.assert_called_with(
         app.iam_role_name,
-        APP_IAM_ROLE_ASSUME_POLICY,
+        BASE_ROLE_POLICY,
     )
 
 
@@ -51,7 +43,7 @@ def test_aws_create_role_calls_service(aws):
 def test_aws_delete_role_calls_service(aws):
     app = App.objects.create(repo_url="https://example.com/repo_name")
 
-    app.aws_delete_role()
+    app.delete()
 
     aws.delete_role.assert_called_with(app.iam_role_name)
 

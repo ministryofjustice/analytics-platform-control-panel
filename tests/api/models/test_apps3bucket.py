@@ -18,12 +18,6 @@ def bucket():
 
 
 @pytest.yield_fixture
-def grant_bucket_access():
-    with patch('controlpanel.api.services.grant_bucket_access') as p:
-        yield p
-
-
-@pytest.yield_fixture
 def revoke_bucket_access():
     with patch('controlpanel.api.services.revoke_bucket_access') as p:
         yield p
@@ -45,41 +39,35 @@ def test_one_record_per_app_per_s3bucket(app, bucket):
 
 
 @pytest.mark.django_db
-def test_update_aws_permissions(app, bucket, grant_bucket_access):
+def test_update_aws_permissions(app, bucket, aws):
     apps3bucket = AppS3Bucket(
         app=app,
         s3bucket=bucket,
         access_level=AppS3Bucket.READONLY,
     )
 
-    apps3bucket.aws_update()
+    apps3bucket.save()
 
-    grant_bucket_access.assert_called_with(
-        bucket.arn,
-        apps3bucket.has_readwrite_access(),
-        app.iam_role_name,
-    )
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and assert ARN in correct place
 
 
 @pytest.mark.django_db
-def test_aws_create(app, bucket, grant_bucket_access):
+def test_aws_create(app, bucket, aws):
     apps3bucket = AppS3Bucket(
         app=app,
         s3bucket=bucket,
         access_level=AppS3Bucket.READONLY,
     )
 
-    apps3bucket.aws_create()
+    apps3bucket.save()
 
-    grant_bucket_access.assert_called_with(
-        bucket.arn,
-        apps3bucket.has_readwrite_access(),
-        app.iam_role_name
-    )
+    aws.put_role_policy.assert_called()
+    # TODO make this test a case on previous
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(app, bucket, revoke_bucket_access):
+def test_delete_revoke_permissions(app, bucket, aws):
     apps3bucket = mommy.make(
         'api.AppS3Bucket',
         app=app,
@@ -89,7 +77,5 @@ def test_delete_revoke_permissions(app, bucket, revoke_bucket_access):
 
     apps3bucket.delete()
 
-    revoke_bucket_access.assert_called_with(
-        bucket.arn,
-        app.iam_role_name,
-    )
+    aws.put_role_policy.assert_called()
+    # TODO get policy from call and assert ARN removed

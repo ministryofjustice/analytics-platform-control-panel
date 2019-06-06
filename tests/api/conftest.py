@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 from model_mommy import mommy
 import pytest
 

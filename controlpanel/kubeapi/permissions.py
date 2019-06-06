@@ -16,13 +16,12 @@ class K8sPermissions(BasePermission):
         if request.user.is_superuser:
             return True
 
-        if not has_access_token(request):
-            if not request.user.is_authenticated:
-                return False
+        if not has_access_token(request) and not request.user.is_authenticated:
+            return False
 
         path = request.path_info.lower()
         for api in self.ALLOWED_APIS:
-            if path.startswith(api):
+            if path.startswith(f"{api}/namespaces/{request.user.k8s_namespace}/"):
                 return True
 
         return False

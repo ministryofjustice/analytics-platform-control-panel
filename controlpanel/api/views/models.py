@@ -28,18 +28,6 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.UserPermissions,)
 
-    @atomic
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        instance.aws_create_role()
-        instance.helm_create()
-
-    @atomic
-    def perform_destroy(self, instance):
-        instance.delete()
-        instance.aws_delete_role()
-        instance.helm_delete()
-
 
 class GroupViewSet(viewsets.ModelViewSet):
     queryset = Group.objects.all()
@@ -56,7 +44,6 @@ class AppViewSet(viewsets.ModelViewSet):
     @atomic
     def perform_create(self, serializer):
         app = serializer.save(created_by=self.request.user)
-        app.aws_create_role()
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -67,25 +54,10 @@ class AppViewSet(viewsets.ModelViewSet):
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @atomic
-    def perform_destroy(self, instance):
-        instance.delete()
-        instance.aws_delete_role()
-
 
 class AppS3BucketViewSet(viewsets.ModelViewSet):
     queryset = AppS3Bucket.objects.all()
     serializer_class = serializers.AppS3BucketSerializer
-
-    @atomic
-    def perform_create(self, serializer):
-        apps3bucket = serializer.save()
-        apps3bucket.aws_create()
-
-    @atomic
-    def perform_update(self, serializer):
-        apps3bucket = serializer.save()
-        apps3bucket.aws_update()
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
@@ -93,16 +65,6 @@ class UserS3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.UserS3BucketSerializer
     filter_backends = (filters.UserS3BucketFilter,)
     permission_classes = (permissions.UserS3BucketPermissions,)
-
-    @atomic
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        instance.aws_create()
-
-    @atomic
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        instance.aws_update()
 
 
 class S3BucketViewSet(viewsets.ModelViewSet):
@@ -115,8 +77,6 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     @atomic
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)
-        instance.aws_create()
-        instance.create_users3bucket(user=self.request.user)
 
     @action(detail=True)
     def access_logs(self, request, pk=None):

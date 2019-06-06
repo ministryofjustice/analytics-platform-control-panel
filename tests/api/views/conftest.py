@@ -34,24 +34,6 @@ def login_superuser(client, superuser):
 
 
 @pytest.yield_fixture
-def services():
-    with patch('controlpanel.api.models.services') as services:
-        yield services
-
-
-@pytest.yield_fixture
-def aws():
-    with patch('controlpanel.api.services.aws') as aws:
-        yield aws
-
-
-@pytest.yield_fixture
 def elasticsearch():
     with patch('controlpanel.api.elasticsearch.Elasticsearch') as es:
         yield es.return_value
-
-
-@pytest.yield_fixture
-def helm():
-    with patch('controlpanel.api.models.helm') as helm:
-        yield helm

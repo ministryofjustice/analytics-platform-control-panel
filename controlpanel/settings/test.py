@@ -16,6 +16,7 @@ REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].remove(
 )
 OIDC_OP_JWKS_ENDPOINT = "https://example.com/.well-known/jwks.json"
 OIDC_ALLOW_UNSECURED_JWT = True
+OIDC_DOMAIN = "oidc.idp.example.com"
 
 TOOLS_DOMAIN = 'example.com'
 TOOLS["testtool"] = {
