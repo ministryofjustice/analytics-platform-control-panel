@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% set page_title = "Your tools" %}
+{% set page_name = "tools" %}
+
+{% block content %}
+
+<h1 class="govuk-heading-xl">Your tools</h1>
+
+<p class="govuk-body">The status of your tools will update automatically.</p>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">Status</th>
+      <th class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+    {% for tool in object_list %}
+    {% set deployed = tool.url is defined %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ tool.name }}</td>
+      <td class="govuk-table__cell">
+        <div class="sse-listener tool-status" data-tool-name="{{ tool.name }}">
+        {% if deployed %}
+          {% if tool.idled %}
+            Idled
+          {% else %}
+            {% for pod in tool.pods.items %}
+              {{ loop.index }}. {{ pod.display_status }}<br>
+            {% endfor %}
+          {% endif %}
+        {% else %}
+          {% if True or is_deploying[tool.name] %}
+          Deploying
+          {% else %}
+          Not deployed
+          {% endif %}
+        {% endif %}
+        </div>
+      </td>
+      <td class="govuk-table__cell align-right no-wrap">
+      {% if deployed %}
+        <a class="govuk-button hmcts-button--secondary" target="_blank" rel="noopener" href="{{ tool.url }}">
+          Open
+        </a>
+        {% if tool.available %}
+        <a class="govuk-button hmcts-button--secondary" href="{{ url('restart-tool', kwargs={ "name": tool.metadata.name }) }}">
+          Restart
+        </a>
+        {% endif %}
+      {% else %}
+        {% if True or not is_deploying[tool.name] %}
+        <form action="{{ url('deploy-tool', kwargs={"name": tool.name} ) }}" method="post">
+          {{ csrf_input }}
+          <button class="govuk-button hmcts-button--secondary right">Deploy</button>
+        </form>
+        {% endif %}
+      {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ object_list|length }} tool{% if object_list|length != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<p class="govuk-body">
+  {% if env == "alpha" %}
+    You can <a href="{{ grafana_url }}" target="_blank" rel="noopener">view your resource utilisation on Grafana (opens in new tab)</a>.
+  {% else %}
+    <em>(Grafana not available in {{ env }} environment)</em>
+  {% endif %}
+</p>
+{% endblock %}

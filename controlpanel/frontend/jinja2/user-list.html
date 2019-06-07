@@ -1,0 +1,47 @@
+{% from "user/macro.html" import user_name %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Users" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">User</th>
+      <th class="govuk-table__header">Email</th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {% for user in object_list %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
+           href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}">
+          {{ user_name(user) }}
+        </a>
+      </td>
+      <td class="govuk-table__cell">{{ user.email }}</td>
+      <td class="govuk-table__cell">
+        <a href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}"
+           class="govuk-button hmcts-button--secondary">
+          Manage user
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ object_list|length }} user{% if object_list|length != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endblock %}

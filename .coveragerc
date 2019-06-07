@@ -1,0 +1,12 @@
+[run]
+branch = True
+source =
+    controlpanel
+omit =
+    */migrations/*
+
+[report]
+fail_under = 75
+
+[html]
+directory = coverage-report

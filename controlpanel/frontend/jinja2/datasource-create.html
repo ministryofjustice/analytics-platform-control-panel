@@ -1,0 +1,47 @@
+{% from "input/macro.html" import govukInput %}
+{% from "fieldset/macro.html" import govukFieldset %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Create new secure data storage folder" %}
+{% set legend -%}
+  {%- if datasource_type == "warehouse" -%}
+  Create a new folder to store data, with an associated data access group.
+  Only you will have access to this data until you add colleagues to the data access group.
+  {%- else -%}
+  Create a working copy of a warehouse data source for use by a webapp.
+  {%- endif -%}
+{%- endset %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if form.error %}
+    <div class="error">{{ form.error }}</div>
+  {% endif %}
+
+  <form action="{{ url('create-datasource') }}?type={{ datasource_type }}" method="post">
+    {{ csrf_input }}
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+    {{ govukInput({
+      "label": {
+        "text": datasource_type|capitalize + " data source name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": '60 chars max, only lowercase letters, numbers, periods and hyphens, auto-prefixed with "' + env + '"'
+      },
+      "name": "name",
+      "attributes": {
+        "data-bucket-prefix": env,
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.name.value(),
+      "errorMessage": { "html": form.name.errors|join("<br>") } if form.name.errors else {}
+    }) }}
+    <button class="govuk-button">Create data source</button>
+  </form>
+  {% endcall %}
+{% endblock %}

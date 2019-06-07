@@ -1,0 +1,11 @@
+.typeahead__container {
+  display: inline-block;
+  width: 33.33%;
+  @include core-16;
+}
+
+.typeahead__field {
+  input {
+    border: 2px solid $black;
+  }
+}

@@ -1,0 +1,91 @@
+{% macro app_logs(app) -%}
+{% filter replace(" ", "") -%}
+{% filter replace("\n", "") -%}
+https://kibana.services.{{env}}.mojanalytics.xyz/app/kibana#/discover?_g=()&_a=
+(
+columns:!(message),
+filters:!(
+  (
+    '$state':(store:appState),
+    meta:(
+      alias:!n,
+      disabled:!f,
+      index:'logstash-apps-{{env}}-*',
+      key:query,
+      negate:!f,
+      type:custom,
+      value:'{% filter urlencode %}{% filter replace(" ", "") %}{% filter replace("\n", "") -%}
+      {
+        "constant_score":{
+          "filter":{
+            "bool":{
+              "must":{
+                "exists":{
+                  "field":"message"
+                }
+              },
+              "must_not":{
+                "term":{
+                  "message":""
+                }
+              }
+            }
+          }
+        }
+      }
+      {%- endfilter %}{% endfilter %}{% endfilter %}'
+    ),
+    query:(
+      constant_score:(
+        filter:(
+          bool:(
+            must:(
+              exists:(
+                field:message
+              )
+            ),
+            must_not:(
+              term:(
+                message:''
+              )
+            )
+          )
+        )
+      )
+    )
+  ),
+  (
+    '$state':(
+      store:appState
+    ),
+    meta:(
+      alias:!n,
+      disabled:!f,
+      index:'logstash-apps-{{env}}-*',
+      key:app_name,
+      negate:!f,
+      params:(
+        query:{{object.name}}-webapp,
+        type:phrase
+      ),
+      type:phrase,
+      value:{{object.name}}-webapp
+    ),
+    query:(
+      match:(
+        app_name:(
+          query:{{object.name}}-webapp,
+          type:phrase
+        )
+      )
+    )
+  )
+),
+index:'logstash-apps-{{env}}-*',
+interval:auto,
+query:(language:lucene,query:''),
+sort:!(time_nano,asc),
+uiState:(spy:!n))
+{%- endfilter %}
+{%- endfilter %}
+{%- endmacro %}

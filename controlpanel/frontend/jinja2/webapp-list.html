@@ -1,0 +1,19 @@
+{% from "includes/app-list.html" import app_list with context %}
+
+{% extends "base.html" %}
+
+{% set page_name = "webapps" %}
+{% set page_title = "All webapps" if all_webapps else "Your webapps" %}
+
+{% block content %}
+{% set num_apps = object_list|length %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+{{ app_list(object_list, request.user) }}
+
+<p class="govuk-body">
+  <a class="govuk-button" href="{{ url('create-app') }}">
+    Register an app
+  </a>
+</p>
+{% endblock %}

@@ -1,0 +1,3 @@
+{% macro tag(value, type="") -%}
+<strong class="govuk-tag{% if type %} cpanel-tag--{{ type }}{% endif %}">{{ value }}</strong>
+{%- endmacro %}

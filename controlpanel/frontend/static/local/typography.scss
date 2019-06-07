@@ -1,0 +1,26 @@
+strong {
+  font-weight: bold;
+}
+
+ul {
+  @include core-16;
+}
+
+.category-count {
+  display: block;
+  @include core-19;
+  color: $grey-1;
+}
+
+.highlight-current {
+  font-weight: bold;
+}
+
+pre {
+  @include core-14;
+  font-family: monospace;
+}
+
+label.heading-medium {
+  @include bold-24;
+}

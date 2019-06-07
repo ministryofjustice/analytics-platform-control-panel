@@ -1,0 +1,29 @@
+{
+  "name": "controlpanel",
+  "version": "0.1.0",
+  "description": "Analytical Platform Control Panel",
+  "repository": "https://github.com/ministryofjustice/analytics-platform-control-panel.git",
+  "license": "MIT",
+  "dependencies": {
+    "accessible-autocomplete": "^1.6.2",
+    "govuk-frontend": "^2.7.0",
+    "@hmcts/frontend": "^0.0.30-alpha",
+    "html5shiv": "^3.7.3",
+    "jquery": "^3.3.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.0",
+    "@babel/preset-env": "^7.3.4"
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "useBuiltIns": "entry"
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,138 @@
+{% from "header/macro.html" import govukHeader with context %}
+{% from "footer/macro.html" import govukFooter %}
+{% from "navbar/macro.html" import navbar %}
+{% from "alerts/macro.html" import alerts with context %}
+
+{% extends "govuk-frontend.html" %}
+
+{% set service_name = "Analytical Platform Control Panel" %}
+{% set user = {} %}
+{% if request %}{% set user = request.user %}{% endif %}
+
+{% block page_title %}
+  {{ page_title }} | {{ service_name }}
+{% endblock %}
+
+{% block head %}
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,700" rel="stylesheet">
+
+  <link href="{{ static('accessible-autocomplete/accessible-autocomplete.min.css') }}" rel="stylesheet">
+
+  <!--[if !IE 8]><!-->
+    <link href="{% sass_src('app.scss') %}" rel="stylesheet">
+  <!--<![endif]-->
+
+  <!--[if IE 8]>
+    <link href="{{ static('govuk-frontend/all-ie8.min.css') }}" rel="stylesheet">
+  <![endif]-->
+
+  <!--[if lt IE 9]>
+    <script src="{{ static('html5-shiv/html5shiv.js') }}"></script>
+  <![endif]-->
+
+  <meta name="whats-new-hash" content="{{ whats_new_hash | default("") }}">
+{% endblock %}
+
+{% block cookie_message %}
+  <p>{{cookieText | safe }}</p>
+{% endblock %}
+
+{% block header %}
+  {{ govukHeader({
+    'serviceName': service_name,
+    'serviceUrl': '#',
+    'navigation': [
+      {
+        'href': url('index'),
+        'text': "Signed in as " ~ user.name | default(user.email),
+        'active': True
+      }
+    ]
+  }) }}
+{% endblock %}
+
+{% block beforeContent %}
+  {% if not hide_nav %}
+  {{ navbar({
+    "items": [
+      {
+        "hide": not user.is_superuser,
+        "text": "Home",
+        "href": url("index"),
+        "active": page_name == "home"
+      },
+      {
+        "text": "Analytical tools",
+        "href": url("list-tools"),
+        "active": page_name == "tools"
+      },
+      {
+        "text": "Warehouse data",
+        "href": url("list-warehouse-datasources"),
+        "active": page_name == "warehouse-datasource-list"
+      },
+      {
+        "hide": not user.is_superuser,
+        "text": "Webapp data",
+        "href": url("list-webapp-datasources"),
+        "active": page_name == "webapp-datasource-list"
+      },
+      {
+        "hide": not user.is_superuser,
+        "text": "Webapps",
+        "href": url("list-apps"),
+        "active": page_name == "webapps"
+      }
+    ]
+  }) }}
+  {% endif %}
+
+  {{ alerts() }}
+{% endblock %}
+
+{% block footer %}
+  {{ govukFooter({
+    'meta': {
+      'items': [
+        {
+          'href': "https://moj-analytical-services.github.io/platform_user_guidance",
+          'text': "Platform user guidance"
+        },
+        {
+          'href': "https://moj-analytical-services.github.io/platform_user_guidance/how-to-get-support.html",
+          'text': "Platform support"
+        },
+        {
+          'href': "https://asdslack.slack.com/messages/C1PUCG719/#",
+          'text': "R Slack channel"
+        },
+        {
+          'href': "https://asdslack.slack.com/messages/C1Q09V86S/#",
+          'text': "Python slack channel"
+        },
+        {
+          'href': "https://asdslack.slack.com/messages/C4PF7QAJZ#",
+          'text': "Analytical platform slack channel"
+        },
+        {
+          'href': url('whats-new'),
+          'text': "What's new?"
+        }
+      ]
+    }
+  }) }}
+{% endblock %}
+
+{% block body_end %}
+  {% block scripts %}
+    <script src="{{ static('govuk-frontend/all.js') }}"></script>
+    <script>window.GOVUKFrontend.initAll()</script>
+    <script src="{{ static('accessible-autocomplete/accessible-autocomplete.min.js') }}"></script>
+    <script src="{{ static('jquery/jquery.min.js') }}"></script>
+
+    <script src="{{ static('app.js') }}"></script>
+    <script>window.moj.init();</script>
+
+    {% block page_scripts %}{% endblock %}
+  {% endblock %}
+{% endblock %}

@@ -1,0 +1,27 @@
+.govuk-table__cell .govuk-button {
+  margin: 0;
+}
+
+.govuk-button.right {
+  margin-left: 5px;
+}
+
+.cpanel-button--destructive {
+  $cpanel-destructive-colour: govuk-colour("red");
+  $cpanel-destructive-hover-colour: darken($cpanel-destructive-colour, 5%);
+  $cpanel-destructive-shadow-colour: darken($cpanel-destructive-colour, 15%);
+
+  background-color: $cpanel-destructive-colour;
+  box-shadow: 0 2px 0 $cpanel-destructive-shadow-colour;
+
+  &:active,
+  &:link,
+  &:visited,{
+    background-color: $cpanel-destructive-colour;
+  }
+
+  &:hover,
+  &:focus{
+    background-color: $cpanel-destructive-hover-colour;
+  }
+}

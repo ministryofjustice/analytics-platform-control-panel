@@ -1,0 +1,9 @@
+{# examples:
+   - {{ yes_no(is_admin) }} => 'Yes' / 'No'
+   - {{ yes_no(access_level, 'readwrite') }} => 'Yes' / 'No'
+   - {{ yes_no(is_admin, true, '(Admin)', '') }} => '(Admin)' / ''
+   - {{ yes_no(access, 'readwrite', 'Revoke', 'Grant') }} => 'Revoke / 'Grant'
+#}
+{% macro yes_no(value, truth=true, yes='Yes', no='No') -%}
+  {% if value == truth %}{{ yes }}{% else %}{{ no }}{% endif %}
+{%- endmacro %}

@@ -1,0 +1,59 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+
+{% set access_levels_html %}{% include "modals/user_data_access_levels.html" %}{% endset %}
+
+{% macro datasource_list(datasources, datasource_type, user) %}
+{%- set pronoun = "Your" if user == request.user else "User's" %}
+{%- set num_datasources = datasources|length %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">
+      {% if all_datasources %}
+        Type
+      {% else %}
+        {{ pronoun }} access level
+        {{ modal_dialog(access_levels_html|safe) }}
+      {% endif %}
+      </th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {% for datasource in datasources %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a href="{{ url('manage-datasource', kwargs={ "pk": datasource.id }) }}">{{ datasource.name }}</a>
+      </td>
+      <td class="govuk-table__cell">
+      {%- if all_datasources %}
+        {%- if datasource.is_data_warehouse -%}
+          Warehouse
+        {%- else -%}
+          Webapp
+        {%- endif -%}
+      {%- else -%}
+        {{ datasource.access_level(user)|capitalize }}
+      {%- endif -%}
+      </td>
+      <td class="govuk-table__cell align-right no-wrap">
+        <a class="govuk-button hmcts-button--secondary"
+           href="{{ url('manage-datasource', kwargs={ "pk": datasource.pk }) }}">
+          Manage data source
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ num_datasources }} {{ datasource_type if datasource_type else "" }} data source{% if num_datasources != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endmacro %}

@@ -1,0 +1,52 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "includes/yesno.html" import yes_no %}
+
+{% set admin_access_html %}
+{% include "modals/app_admins.html" %}
+{% endset %}
+
+{% macro app_list(apps, user) %}
+{%- set num_apps = apps|length %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">App name</th>
+      <th class="govuk-table__header">
+        Admin access
+        {{ modal_dialog(admin_access_html|safe) }}
+      </th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {%- for app in apps %}
+    {%- set user_is_app_admin = request.user.is_app_admin(app.id) %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a href="{{ url('manage-app', kwargs={ "pk": app.id }) }}">{{ app.name }}</a>
+      </td>
+      <td class="govuk-table__cell">
+        {{ yes_no(user_is_app_admin) }}
+      </td>
+      <td class="govuk-table__cell">
+      {% if user_is_app_admin or request.user.is_superuser %}
+        <a class="govuk-button hmcts-button--secondary right"
+          href="{{ url("manage-app", kwargs={ "pk": app.id }) }}">
+          Manage app
+        </a>
+      {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ num_apps }} app{% if num_apps != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endmacro %}

@@ -1,0 +1,32 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "includes/datasource-list.html" import datasource_list with context %}
+
+{% extends "base.html" %}
+
+{% if datasource_type %}
+  {% set page_name = datasource_type + "-datasource-list" %}
+  {% set page_title = "Your " + datasource_type + " data sources" %}
+{% else %}
+  {% set page_name = "all-datasources" %}
+  {% set page_title = "All data sources" %}
+{% endif %}
+
+{% set access_levels_html %}
+{% include "modals/user_data_access_levels.html" %}
+{% endset %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+{% if request.user.is_superuser %}
+{{ datasource_list(object_list, datasource_type|default(""), request.user) }}
+
+{% if not all_datasources %}
+<p class="govuk-body">
+<a class="govuk-button" href="{{ url('create-datasource') }}?type={{ datasource_type|urlencode }}">
+    Create new {{ datasource_type }} data source
+  </a>
+</p>
+{% endif %}
+{% endif %}
+{% endblock %}

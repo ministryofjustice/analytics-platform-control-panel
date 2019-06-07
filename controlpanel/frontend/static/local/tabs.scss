@@ -1,0 +1,34 @@
+ul.tabs {
+  @include clearfix;
+
+  border-bottom: 1px solid $grey-3;
+
+  li {
+    float: left;
+    display: block;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin-right: 5px;
+    margin-bottom: -1px;
+    border: 1px solid $grey-3;
+    border-bottom: none;
+    background-color: $grey-3;
+
+    &:hover {
+      border-color: $grey-2;
+    }
+
+    &.active {
+      font-weight: bold;
+      background-color: $white;
+    }
+  }
+}
+
+section.tab-panel {
+  display: none;
+
+  &.active {
+    display: block;
+  }
+}

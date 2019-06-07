@@ -1,0 +1,7 @@
+.cpanel-section {
+  margin-bottom: govuk-spacing(9);
+
+  &:last-of-type {
+    margin-bottom: none;
+  }
+}
