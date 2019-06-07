@@ -87,6 +87,11 @@ INSTALLED_APPS = [
     "controlpanel.api",
     # Analytics Platform Control Panel Frontend
     "controlpanel.frontend",
+    # Health check
+    "health_check",
+    "health_check.db",
+    "health_check.cache",
+    "health_check.storage",
 ]
 
 MIDDLEWARE = [
@@ -459,7 +464,6 @@ ELASTICSEARCH = {
 
 # -- AWS
 AWS_ACCOUNT_ID = os.environ.get('AWS_ACCOUNT_ID')
-IAM_ARN_BASE = os.environ.get('IAM_ARN_BASE')
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME')
 
 BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
