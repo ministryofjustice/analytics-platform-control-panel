@@ -3,7 +3,6 @@ from controlpanel.settings.common import *
 
 ENV = 'test'
 
-IAM_ARN_BASE = "arn:test:iam::12345678"
 K8S_WORKER_ROLE_NAME = "nodes.example.com"
 SAML_PROVIDER = "test-saml"
 

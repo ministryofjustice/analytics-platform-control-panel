@@ -11,6 +11,7 @@ urlpatterns = [
     path("events/", include("django_eventstream.urls")),
     # redirect old k8s api requests to new paths
     path("k8s/", include('controlpanel.kubeapi.urls')),
+    path("health/", include('health_check.urls')),
 ]
 
 if settings.DEBUG:
