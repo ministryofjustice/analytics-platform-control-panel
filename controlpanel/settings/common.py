@@ -351,7 +351,7 @@ LOGGING = {
 if os.environ.get("SENTRY_DSN"):
     RAVEN_CONFIG = {
         "dsn": os.environ.get("SENTRY_DSN", ""),
-        "environment": os.environment.get("ENV", "dev"),
+        "environment": os.environ.get("ENV", "dev"),
         "ignore_exceptions": [],
     }
     if "shell" in sys.argv or "shell_plus" in sys.argv:
