@@ -46,13 +46,6 @@ STATICFILES_DIRS = [
     join(PROJECT_ROOT, "static"),
 ]
 
-# Django looks in these locations for additional templates
-PROJECT_TEMPLATES = [
-
-    # find local component templates
-    join(DJANGO_ROOT, "frontend", "static", "components"),
-]
-
 
 # -- Application
 
@@ -81,8 +74,6 @@ INSTALLED_APPS = [
     "rest_framework",
     # Sentry error tracking
     "raven.contrib.django.raven_compat",
-    # Use SASS with Django static files
-    "sass_processor",
     # Analytics Platform Control Panel API
     "controlpanel.api",
     # Analytics Platform Control Panel Frontend
@@ -112,13 +103,18 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.jinja2.Jinja2",
-        "DIRS": PROJECT_TEMPLATES,
+        "DIRS": [
+            # find local component templates
+            join(DJANGO_ROOT, "frontend", "static", "components"),
+        ],
         "APP_DIRS": True,
-        "OPTIONS": {"environment": f"{PROJECT_NAME}.frontend.jinja2.environment"},
+        "OPTIONS": {
+            "environment": f"{PROJECT_NAME}.frontend.jinja2.environment",
+        },
     },
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": PROJECT_TEMPLATES,
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -366,13 +362,7 @@ else:
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
-    "sass_processor.finders.CssFinder",
 ]
-
-COMPRESS_JINJA2_GET_ENVIRONMENT = environment
-
-SASS_PROCESSOR_AUTO_INCLUDE = False
-SASS_PROCESSOR_ROOT = STATIC_ROOT
 
 
 # -- What's new

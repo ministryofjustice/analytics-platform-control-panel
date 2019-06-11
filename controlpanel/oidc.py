@@ -13,15 +13,12 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
     """
 
     def create_user(self, claims):
-        user = User.objects.create(
+        return User.objects.create(
             pk=claims.get("sub"),
             username=claims.get(settings.OIDC_FIELD_USERNAME),
             email=claims.get(settings.OIDC_FIELD_EMAIL),
             name=claims.get(settings.OIDC_FIELD_NAME),
         )
-        user.aws_create_role()
-        user.helm_create()
-        return user
 
     def filter_users_by_claims(self, claims):
         sub = claims.get("sub")

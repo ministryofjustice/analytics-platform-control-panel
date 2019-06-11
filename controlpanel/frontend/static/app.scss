@@ -4,29 +4,29 @@ $govuk-font-family-nta-tabular: "Arial";
 
 $govuk-assets-path: "/static/govuk-frontend/assets/";
 
-@import "static/govuk-frontend/settings/assets";
-@import "static/govuk-frontend/settings/compatibility";
-@import "static/govuk-frontend/settings/global-styles";
-@import "static/govuk-frontend/settings/ie8";
-@import "static/govuk-frontend/settings/media-queries";
-@import "static/govuk-frontend/settings/colours-palette";
-@import "static/govuk-frontend/settings/colours-organisations";
-@import "static/govuk-frontend/settings/colours-applied";
-@import "static/govuk-frontend/settings/spacing";
-@import "static/govuk-frontend/settings/measurements";
+@import "govuk-frontend/settings/assets";
+@import "govuk-frontend/settings/compatibility";
+@import "govuk-frontend/settings/global-styles";
+@import "govuk-frontend/settings/ie8";
+@import "govuk-frontend/settings/media-queries";
+@import "govuk-frontend/settings/colours-palette";
+@import "govuk-frontend/settings/colours-organisations";
+@import "govuk-frontend/settings/colours-applied";
+@import "govuk-frontend/settings/spacing";
+@import "govuk-frontend/settings/measurements";
 // comment the line below out to avoid using Transport New font
-//@import "static/govuk-frontend/settings/typography-font-families";
-@import "static/govuk-frontend/settings/typography-font";
-@import "static/govuk-frontend/settings/typography-responsive";
-@import "static/govuk-frontend/tools/all";
-@import "static/govuk-frontend/helpers/all";
-@import "static/govuk-frontend/core/all";
-@import "static/govuk-frontend/objects/all";
-@import "static/govuk-frontend/components/all";
-@import "static/govuk-frontend/utilities/all";
-@import "static/govuk-frontend/overrides/all";
+//@import "govuk-frontend/settings/typography-font-families";
+@import "govuk-frontend/settings/typography-font";
+@import "govuk-frontend/settings/typography-responsive";
+@import "govuk-frontend/tools/all";
+@import "govuk-frontend/helpers/all";
+@import "govuk-frontend/core/all";
+@import "govuk-frontend/objects/all";
+@import "govuk-frontend/components/all";
+@import "govuk-frontend/utilities/all";
+@import "govuk-frontend/overrides/all";
 
-@import "static/hmcts-frontend/all";
+@import "@hmcts/frontend/all";
 
 @import "components/all";
 

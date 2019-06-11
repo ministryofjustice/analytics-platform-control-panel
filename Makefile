@@ -35,7 +35,7 @@ dependencies: ${BIN} requirements.txt
 	@${BIN}/pip3 install -r requirements.dev.txt
 
 ## collectstatic: Collect assets into static folder
-collectstatic: dependencies node_modules transpile
+collectstatic: dependencies node_modules compilescss transpile
 	@echo
 	@echo "> Collecting static assets..."
 	@${BIN}/python3 manage.py collectstatic --noinput
@@ -49,6 +49,15 @@ node_modules:
 	@cp -R node_modules/@hmcts/frontend/ static/hmcts-frontend
 	@cp -R node_modules/html5shiv/dist/ static/html5-shiv
 	@cp -R node_modules/jquery/dist/ static/jquery
+
+compilescss:
+	@echo
+	@echo "> Compiling SCSS..."
+	@./node_modules/.bin/node-sass \
+		--include-path node_modules/ \
+		-o static/ \
+		--output-style compact \
+		controlpanel/frontend/static/app.scss
 
 transpile:
 	@echo
