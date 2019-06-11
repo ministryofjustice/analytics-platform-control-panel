@@ -7,7 +7,7 @@
 {% extends "base.html" %}
 
 {% set page_title = user_name(object) %}
-{% set pronoun = "Your" if user == request.user else "User's" %}
+{% set pronoun = "Your" if object == request.user else "User's" %}
 
 {% block content %}
 <span class="govuk-caption-xl">User</span>
@@ -15,7 +15,7 @@
 
 {% if request.user.is_superuser %}
 <section class="cpanel-section">
-  <form action="{{ url('set-superadmin', kwargs={ "pk": user.auth0_id }) }}" method="post">
+  <form action="{{ url('set-superadmin', kwargs={ "pk": object.auth0_id }) }}" method="post">
     {{ csrf_input }}
     {{ govukCheckboxes({
       "name": "is_superuser",
@@ -32,7 +32,7 @@
         {
           "value": "True",
           "text": "Super Admin",
-          "checked": user.is_superuser
+          "checked": object.is_superuser
         },
       ]
     }) }}
@@ -45,7 +45,7 @@
 
 {% if request.user.is_superuser %}
 <section class="cpanel-section">
-  <form action="{{ url('reset-mfa', kwargs={ "pk": user.auth0_id }) }}" method="post">
+  <form action="{{ url('reset-mfa', kwargs={ "pk": object.auth0_id }) }}" method="post">
     {{ csrf_input }}
     {% call govukFieldset({
       "legend": {
@@ -66,18 +66,19 @@
 
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} apps</h2>
-  {{ app_list(user.userapps.all()|map(attribute="app")|list, user) }}
+  {{ app_list(object.userapps.all()|map(attribute="app")|list, object) }}
 </section>
 
 {# user's datasources #}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} webapp data sources</h2>
-  {{ datasource_list(user.users3buckets.filter(s3bucket__is_data_warehouse=False)|map(attribute="s3bucket")|list, "webapp", user) }}
+  {{
+  datasource_list(object.users3buckets.filter(s3bucket__is_data_warehouse=False)|map(attribute="s3bucket")|list, "webapp", object) }}
 </section>
 
 {% if request.user.is_superuser %}
 <section class="cpanel-section">
-  <form action="{{ url("delete-user", kwargs={ "pk": user.auth0_id }) }}" method="post">
+  <form action="{{ url("delete-user", kwargs={ "pk": object.auth0_id }) }}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive confirm"
             data-confirmation-prompt="Are you sure you want to delete this user?">

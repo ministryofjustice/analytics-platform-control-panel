@@ -6,7 +6,7 @@ from django.utils.functional import cached_property
 from rest_framework.exceptions import APIException
 
 from controlpanel.api.helm import Helm
-from controlpanel.kubeapi.views import kubernetes
+from controlpanel.kubeapi.views import load_kube_config, kubernetes
 
 
 IDLED = "mojanalytics.xyz/idled"
@@ -112,6 +112,7 @@ class Tool(metaclass=ToolMeta):
         )
 
     def get_user_deployment(self, user):
+        load_kube_config()
         deployments = kubernetes.client.AppsV1Api().list_namespaced_deployment(
             namespace=user.k8s_namespace,
             label_selector=f"app={self.name}"
@@ -172,6 +173,7 @@ class ToolDeployment(object):
 
     @classmethod
     def list(cls, user):
+        load_kube_config()
         deployments = kubernetes.client.AppsV1Api().list_namespaced_deployment(
             user.k8s_namespace,
         )
@@ -193,6 +195,7 @@ class ToolDeployment(object):
 
     @property
     def pods(self):
+        load_kube_config()
         pods = kubernetes.client.CoreV1Api().list_namespaced_pod(
             self.user.k8s_namespace,
             label_selector=f"app={self.name}",
@@ -208,6 +211,7 @@ class ToolDeployment(object):
         return self.deployment.metadata.labels.get(IDLED) == "true"
 
     def restart(self):
+        load_kube_config()
         return kubernetes.client.AppsV1Api().delete_collection_namespaced_replica_set(
             namespace=self.user.k8s_namespaces,
             label_selector=f"app={self.name}",
