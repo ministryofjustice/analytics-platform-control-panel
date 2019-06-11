@@ -14,11 +14,9 @@ def render_markdown(text):
     return jinja2.Markup(markdown(text))
 
 
-def environment(**options):
-    extensions = options.get("extensions", [])
-    extensions.append("sass_processor.jinja2.ext.SassSrc")
-    options["extensions"] = extensions
-    env = jinja2.Environment(**options)
+def environment(**kwargs):
+    env = jinja2.Environment(**kwargs)
+
     env.filters["markdown"] = render_markdown
     env.globals.update(
         {
@@ -28,4 +26,5 @@ def environment(**options):
             "url": reverse,
         }
     )
+
     return env

@@ -56,7 +56,12 @@ RUN npm install && \
         src/module-loader.js \
         src/components \
         src/javascripts \
-        -o dist/app.js -s
+        -o dist/app.js -s && \
+    ./node_modules/.bin/node-sass \
+      --include-path ./node_modules/ \
+      -o dist/ \
+      --output-style compact \
+      src/app.scss
 
 
 FROM base
@@ -64,7 +69,7 @@ FROM base
 USER controlpanel
 
 # install javascript dependencies
-COPY --from=jsdep dist/app.js static/app.js
+COPY --from=jsdep dist/app.css dist/app.js static/
 COPY --from=jsdep node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 COPY --from=jsdep node_modules/govuk-frontend static/govuk-frontend
 COPY --from=jsdep node_modules/@hmcts/frontend static/hmcts-frontend
@@ -72,8 +77,7 @@ COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
 COPY --from=jsdep node_modules/jquery/dist static/jquery
 
 # collect static files for deployment
-RUN python3 manage.py compilescss --engine django --engine jinja2 && \
-    python3 manage.py collectstatic --noinput --ignore=*.scss
+RUN python3 manage.py collectstatic --noinput --ignore=*.scss
 
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]
