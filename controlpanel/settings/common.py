@@ -66,6 +66,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     # Django collect static files into a single location
     "django.contrib.staticfiles",
+    # Make current request available anywhere
+    "crequest",
     # Provides shell_plus, runserver_plus, etc
     "django_extensions",
     # Provides filter backend for use with Django REST Framework
@@ -96,6 +98,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Make current request available anywhere
+    "crequest.middleware.CrequestMiddleware",
     # Check user's OIDC token is still valid
     "mozilla_django_oidc.middleware.SessionRefresh",
 ]
@@ -174,6 +178,7 @@ OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
 OIDC_FIELD_EMAIL = "email"
 OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
+OIDC_STORE_ID_TOKEN = True
 
 # Auth0
 AUTH0 = {
