@@ -24,6 +24,12 @@ from controlpanel.frontend.views.datasource import (
     WarehouseData,
     WebappData,
 )
+from controlpanel.frontend.views.parameter import (
+    ParameterList,
+    ParameterCreate,
+    ParameterDelete,
+    ParameterFormRoleList,
+)
 from controlpanel.frontend.views.tool import (
     ToolsList,
     DeployTool,

@@ -156,6 +156,30 @@ class AWSClient(object):
             RoleName=role_name,
             PolicyArn=policy_arn)
 
+    def create_parameter(self, name, value, role_name, description=''):
+        self._do('ssm', 'put_parameter',
+            Name=name,
+            Value=value,
+            Description=description,
+            Type='SecureString',
+            Tags=[
+                {
+                    'Key': 'role',
+                    'Value':  role_name
+                },
+            ],
+        )
+
+    def delete_parameter(self, name):
+        self._do('ssm', 'delete_parameter',
+            Name=name,
+        )
+
+    def list_role_names(self, prefix="/"):
+        roles = self._do('iam', 'list_roles',
+            PathPrefix=prefix).get('Roles')
+        return [r['RoleName'] for r in roles]
+
 
 aws = AWSClient()
 

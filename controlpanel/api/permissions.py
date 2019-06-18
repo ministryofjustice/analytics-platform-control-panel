@@ -114,3 +114,27 @@ class UserS3BucketPermissions(BasePermission):
 class ToolDeploymentPermissions(BasePermission):
     def has_permission(self, request, view):
         return not request.user.is_anonymous
+
+
+class ParameterPermissions(BasePermission):
+    """
+    Superusers can do anything.
+    Normal users can list/delete only parameters they created.
+    Normal users can create a parameter
+    Unauthenticated users cannot do anything.
+    """
+
+    def has_permission(self, request, view):
+        if is_superuser(request.user):
+            return True
+
+        if request.user.is_anonymous:
+            return False
+
+        return view.action in ('create', 'list', 'retrieve', 'delete')
+
+    def has_object_permission(self, request, view, obj):
+        if is_superuser(request.user):
+            return True
+
+        return request.user == obj.created_by
