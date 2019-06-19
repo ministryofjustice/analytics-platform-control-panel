@@ -84,11 +84,8 @@ not_authenticated = None
 )
 @pytest.mark.django_db
 def test_permission(client, users, view, user, expected_status):
-    print('start', flush=True)
     if user:
         user = users[user]
         client.force_login(user)
-    print('getting view', flush=True)
     response = view(client, user)
-    print('got response', flush=True)
     assert response.status_code == expected_status

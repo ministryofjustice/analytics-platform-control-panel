@@ -78,6 +78,8 @@ INSTALLED_APPS = [
     "raven.contrib.django.raven_compat",
     # Analytics Platform Control Panel API
     "controlpanel.api",
+    # Analytics Platform Control Panel Kubernetes API proxy
+    "controlpanel.kubeapi",
     # Analytics Platform Control Panel Frontend
     "controlpanel.frontend",
     # Health check
@@ -174,10 +176,13 @@ OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 # OIDC JWT signing algorithm
 OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
 
+OIDC_RP_SCOPES = "openid profile offline-access"
+
 # OIDC claims
 OIDC_FIELD_EMAIL = "email"
 OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
+OIDC_STORE_ACCESS_TOKEN = True
 OIDC_STORE_ID_TOKEN = True
 
 # Auth0

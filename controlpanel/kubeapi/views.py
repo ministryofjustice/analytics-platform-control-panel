@@ -2,11 +2,13 @@ from functools import wraps
 import os
 from urllib.parse import urljoin
 
+from django.conf import settings
 from django.core import exceptions
 from django.views.decorators.csrf import csrf_exempt
 from djproxy.views import HttpProxy
 import kubernetes
 
+from controlpanel.jwt import JWT
 # This patch fixes incorrect base64 padding in the Kubernetes Python client.
 # Hopefully it will be fixed in the next release.
 from controlpanel.kubeapi import oidc_patch
@@ -31,15 +33,8 @@ class KubeAPIAuthMiddleware(object):
     """
 
     def process_request(self, proxy, request, **kwargs):
-        _, token = request.META.get("HTTP_AUTHORIZATION", " ").split(" ", 1)
-
-        if token:
-            auth = f"Bearer {token}"
-
-        else:
-            auth = kubernetes.client.Configuration().api_key["authorization"]
-
-        kwargs["headers"]["Authorization"] = auth
+        jwt = JWT.from_auth_header(request)
+        kwargs["headers"]["Authorization"] = f'Bearer {str(jwt)}'
         return kwargs
 
 
@@ -83,7 +78,7 @@ def strip_path_prefix(request):
     if request.path_info.startswith("/api/k8s/"):
         request.path_info = request.path_info[9:]
 
-    # accept old API URLs
+    # accept old kubernetes proxy URLs
     if request.path_info.startswith("/k8s/"):
         request.path_info = request.path_info[5:]
 
