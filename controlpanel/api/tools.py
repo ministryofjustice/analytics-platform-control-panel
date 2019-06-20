@@ -111,7 +111,7 @@ class Tool(metaclass=ToolMeta):
             *params,
         )
 
-    def get_user_deployment(self, request):
+    def get_user_deployment(self, user):
         client = RequestUserKubernetesClient()
         deployments = client.AppsV1Api.list_namespaced_deployment(
             namespace=user.k8s_namespace,

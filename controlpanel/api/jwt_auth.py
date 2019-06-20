@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import authentication, exceptions
 
 from controlpanel.api.models import User
@@ -26,9 +27,9 @@ def get_or_create_user(jwt):
     except User.DoesNotExist:
         return User.objects.create(
             pk=jwt.payload['sub'],
-            username=jwt.payload['nickname'],
-            email=jwt.payload['email'],
-            name=jwt.payload['name'],
+            username=jwt.payload[settings.OIDC_FIELD_USERNAME],
+            email=jwt.payload[settings.OIDC_FIELD_EMAIL],
+            name=jwt.payload[settings.OIDC_FIELD_NAME],
         )
 
     except JWTDecodeError as jwt_error:

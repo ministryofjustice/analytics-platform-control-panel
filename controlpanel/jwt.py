@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from jose import jwt
+from jose.exceptions import JWTError
 import requests
 from requests.exceptions import RequestException
 from rest_framework import HTTP_HEADER_ENCODING
@@ -46,7 +47,7 @@ class JWT:
 
     @property
     def jwk(self):
-        if not self._jwk:
+        if not self._jwk and self.header:
             try:
                 response = requests.get(self.jwks_url, verify=False)
                 response.raise_for_status()
@@ -61,7 +62,7 @@ class JWT:
                     return self._jwk
 
             raise JWTDecodeError(
-                f'No JWK with id {key_id} found at {self.jwks_url} '
+                f'No JWK with id {self.header["kid"]} found at {self.jwks_url} '
                 f'while decoding {self._raw_token}'
             )
 
@@ -76,7 +77,7 @@ class JWT:
                     key=self.jwk,
                     **self.decode_options,
                 )
-            except (jwt.JWTError, KeyError) as error:
+            except (JWTError, KeyError) as error:
                 raise JWTDecodeError(f'Failed decoding JWT: {error}')
         return self._payload
 
@@ -86,7 +87,10 @@ class JWT:
         Parse the HTTP_AUTHORIZATION header from the given request and extract the
         JWT if present
         """
-        header = request.META['HTTP_AUTHORIZATION']
+        header = request.META.get('HTTP_AUTHORIZATION')
+
+        if header is None:
+            return None
 
         # workaround for Django test client
         if isinstance(header, bytes):
