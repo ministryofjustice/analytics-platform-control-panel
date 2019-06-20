@@ -33,10 +33,13 @@
             {% endfor %}
           {% endif %}
         {% else %}
-          {% if True or is_deploying[tool.name] %}
-          Deploying
+          {% if True %}
           {% else %}
-          Not deployed
+            {% if is_deploying[tool.name] %}
+            Deploying
+            {% else %}
+            Not deployed
+            {% endif %}
           {% endif %}
         {% endif %}
         </div>

@@ -4,6 +4,7 @@ PROJECT=controlpanel
 MODULE=controlpanel
 VIRTUAL_ENV ?= venv
 BIN=${VIRTUAL_ENV}/bin
+DEV=false
 
 -include .env
 export
@@ -32,7 +33,7 @@ dependencies: ${BIN} requirements.txt
 	@echo "> Fetching dependencies..."
 	@${BIN}/pip3 install -r requirements.txt
 	@${BIN}/pip3 freeze > requirements.lock
-	@${BIN}/pip3 install -r requirements.dev.txt
+	@if [ ! "${DEV}" = "false" ]; then ${BIN}/pip3 install -r requirements.dev.txt; fi
 
 ## collectstatic: Collect assets into static folder
 collectstatic: dependencies node_modules compilescss transpile

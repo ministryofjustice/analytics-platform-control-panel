@@ -31,6 +31,9 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         except User.DoesNotExist:
             return self.UserModel.objects.none()
 
+    def verify_claims(self, claims):
+        return True
+
 
 def logout(request):
     params = urlencode({

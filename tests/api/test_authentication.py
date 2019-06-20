@@ -47,7 +47,7 @@ def jwks():
     key = jwk.construct(TEST_PUBLIC_KEY, "RS256")
     jwk_dict = key.to_dict()
     jwk_dict["kid"] = TEST_KID
-    with patch('controlpanel.api.jwt_auth.requests') as requests:
+    with patch('controlpanel.jwt.requests') as requests:
         response = requests.get.return_value
         response.json.return_value = {"keys": [jwk_dict]}
         yield requests
@@ -123,7 +123,7 @@ def test_bad_request_for_jwks(api_request, jwks):
 
 
 def test_decode_jwt_error(api_request):
-    with patch('controlpanel.api.jwt_auth.jwt') as jwt:
+    with patch('controlpanel.jwt.jwt') as jwt:
         jwt.decode.side_effect = JWTError("test_decode_jwt_error")
 
         assert api_request(HTTP_AUTHORIZATION=f'Bearer {token()}').status_code == 403

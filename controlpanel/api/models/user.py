@@ -1,3 +1,4 @@
+from crequest.middleware import CrequestMiddleware
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -25,6 +26,14 @@ class User(AbstractUser):
     @property
     def id(self):
         return self.pk
+
+    def get_id_token(self):
+        """
+        Retrieve the user's Id token if they are the logged in user
+        """
+        request = CrequestMiddleware.get_request()
+        if request.user == self:
+            return request.session.get('oidc_id_token')
 
     @property
     def iam_role_name(self):
