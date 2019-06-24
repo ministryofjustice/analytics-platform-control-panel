@@ -44,10 +44,12 @@
   </form>
 </section>
 
+{% if request.user.is_superuser %}
 <section class="cpanel-section">
   <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": object.id}) }}">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive">Revoke access</button>
   </form>
 </section>
+{% endif %}
 {% endblock %}

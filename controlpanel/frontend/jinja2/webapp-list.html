@@ -11,9 +11,11 @@
 
 {{ app_list(object_list, request.user) }}
 
+{% if request.user.is_superuser %}
 <p class="govuk-body">
   <a class="govuk-button" href="{{ url('create-app') }}">
     Register an app
   </a>
 </p>
+{% endif %}
 {% endblock %}

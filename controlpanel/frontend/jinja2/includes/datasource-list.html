@@ -36,7 +36,11 @@
           Webapp
         {%- endif -%}
       {%- else -%}
-        {{ datasource.access_level(user)|capitalize }}
+        {% if datasource.access_level(user).lower() == 'readwrite' -%}
+          Read/write
+        {%- else -%}
+          Read only
+        {%- endif %}
       {%- endif -%}
       </td>
       <td class="govuk-table__cell align-right no-wrap">

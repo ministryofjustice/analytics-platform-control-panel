@@ -138,7 +138,7 @@
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th class="govuk-table__header">User</th>
-        {% if user_is_admin %}
+        {% if request.user.is_superuser %}
         <th class="govuk-table__header">
           <span class="govuk-visually-hidden">Actions</span>
         </th>
@@ -150,11 +150,11 @@
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
           <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
-              href="{# url_for('users.details', { id: user.auth0_id }) #}">
+              href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}">
             {{ user_name(user) }}
           </a>
         </td>
-        {% if user_is_admin %}
+        {% if request.user.is_superuser %}
         <td class="govuk-table__cell align-right">
           <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
             {{ csrf_input }}
@@ -176,7 +176,8 @@
     </tfoot>
   </table>
 
-  {% if user_is_admin and admin_options|length %}
+{% if request.user.is_superuser %}
+  {% if admin_options|length %}
   <form action="{{ url('add-app-admin', kwargs={ "pk": app.id }) }}" method="post" class="govuk-form-group">
     {{ csrf_input }}
 
@@ -198,6 +199,7 @@
     (All available users are already admins of this app.)
   </p>
   {% endif %}
+{% endif %}
 </section>
 
 <section class="cpanel-section">
@@ -239,13 +241,14 @@
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
-
+          {% if request.user.is_superuser %}
           <form action="{{ url('revoke-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <button class="confirm govuk-button hmcts-button--secondary">
               Disconnect
             </button>
           </form>
+        {% endif %}
           {% endif %}
         </td>
       </tr>
@@ -260,7 +263,7 @@
     </tfoot>
   </table>
 
-{% if user_is_admin %}
+{% if request.user.is_superuser %}
   {% set num_bucket_options = grant_access_form.datasource|length - 1 %}
   {% if num_bucket_options %}
     <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post">
@@ -296,7 +299,7 @@
 </section>
 {% endif %}
 
-{% if user_is_admin %}
+{% if request.user.is_superuser %}
 <section class="cpanel-section">
   <form action="{{ url('delete-app', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}

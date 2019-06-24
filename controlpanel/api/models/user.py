@@ -48,7 +48,10 @@ class User(AbstractUser):
         return sanitize_dns_label(self.username)
 
     def is_app_admin(self, app_id):
-        return self.userapps.filter(app_id=app_id).count() != 0
+        return self.userapps.filter(
+            app_id=app_id,
+            is_admin=True,
+        ).count() != 0
 
     def is_bucket_admin(self, bucket_id):
         return self.users3buckets.filter(

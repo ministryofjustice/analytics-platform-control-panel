@@ -72,13 +72,11 @@
         "active": page_name == "warehouse-datasource-list"
       },
       {
-        "hide": not user.is_superuser,
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list"
       },
       {
-        "hide": not user.is_superuser,
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps"
