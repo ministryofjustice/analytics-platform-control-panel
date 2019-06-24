@@ -182,7 +182,6 @@ OIDC_RP_SCOPES = "openid profile offline-access"
 OIDC_FIELD_EMAIL = "email"
 OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
-OIDC_STORE_ACCESS_TOKEN = True
 OIDC_STORE_ID_TOKEN = True
 
 # Auth0
