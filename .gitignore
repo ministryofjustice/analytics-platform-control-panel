@@ -1,3 +1,4 @@
+*.dump
 *.pyc
 *.rdb
 *.sw?
@@ -6,6 +7,7 @@
 .coverage
 .ctagsignore
 .env
+.mypy_cache
 .pytest_cache
 .ropeproject
 .testmondata
