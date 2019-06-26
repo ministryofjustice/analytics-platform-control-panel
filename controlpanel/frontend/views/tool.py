@@ -12,7 +12,9 @@ from kubernetes.client.rest import ApiException
 
 from controlpanel.api.tools import (
     SUPPORTED_TOOL_NAMES,
+    Tool,
     ToolDeployment,
+    ToolDeploymentError,
 )
 
 
@@ -51,21 +53,18 @@ class DeployTool(LoginRequiredMixin, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         name = self.kwargs["name"]
 
-        async_to_sync(channel_layer.send)(
-            'tools',
-            {
-                'type': 'deploytool',
-                'tool_name': name,
-                'user_id': self.request.user.id,
-            },
-        )
-        send_event(
-            'test', 'toolStatusChange', {'toolName': name, 'status': 'Deploying...'},
-        )
+        try:
+            Tool.create(name).deploy_for(self.request.user)
 
-        messages.success(
-            self.request, f"Deploying {name}... this may take up to 5 minutes",
-        )
+        except ToolDeploymentError as error:
+            messages.error(f"Failed deploying {name}")
+            log.error(error)
+
+        else:
+            messages.success(
+                self.request,
+                f"Deploying {name}... this may take up to 5 minutes",
+            )
         return super().get_redirect_url(*args, **kwargs)
 
 

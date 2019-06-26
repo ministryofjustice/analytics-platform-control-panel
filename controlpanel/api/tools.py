@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils.functional import cached_property
 from rest_framework.exceptions import APIException
 
-from controlpanel.api.helm import Helm
+from controlpanel.api.helm import Helm, HelmError
 from controlpanel.api.kubernetes import RequestUserKubernetesClient
 
 
@@ -23,6 +23,10 @@ class UnsupportedToolException(APIException):
     supported = ", ".join(SUPPORTED_TOOL_NAMES)
     default_detail = f"Unsupported tool, must be one of: {supported}"
     default_code = "unsupported_tool"
+
+
+class ToolDeploymentError(Exception):
+    pass
 
 
 class ToolRepository(UserDict):
@@ -104,12 +108,15 @@ class Tool(metaclass=ToolMeta):
                 "--set",
                 ",".join(f"{key}={val}" for key, val in params.items()),
             ]
-        return self.helm.upgrade_release(
-            self.release_name(username),
-            self.chart_name,
-            f"--namespace={user.k8s_namespace}",
-            *params,
-        )
+        try:
+            return self.helm.upgrade_release(
+                self.release_name(username),
+                self.chart_name,
+                f"--namespace={user.k8s_namespace}",
+                *params,
+            )
+        except HelmError as error:
+            raise ToolDeploymentError(error)
 
     def get_user_deployment(self, user):
         client = RequestUserKubernetesClient()
