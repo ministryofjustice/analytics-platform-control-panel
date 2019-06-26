@@ -12,6 +12,7 @@
     <tr class="govuk-table__row">
       <th class="govuk-table__header">User</th>
       <th class="govuk-table__header">Email</th>
+      <th class="govuk-table__header">Last login</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -28,6 +29,17 @@
       </td>
       <td class="govuk-table__cell">{{ user.email }}</td>
       <td class="govuk-table__cell">
+        {%- with login=last_login.get(user.auth0_id) -%}
+          {%- if login -%}
+          <span data-last-login="{{login}}"
+                title="{{login.strftime("%Y/%m/%d %H:%M:%S")}}">
+            {{ timesince(login) }} ago
+          </span>
+          {%- else -%}
+          {%- endif -%}
+        {%- endwith -%}
+      </td>
+      <td class="govuk-table__cell">
         <a href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}"
            class="govuk-button hmcts-button--secondary">
           Manage user
@@ -38,7 +50,7 @@
   </tbody>
   <tfoot class="govuk-table__foot">
     <tr class="govuk-table__row">
-      <td class="govuk-table__cell" colspan="3">
+      <td class="govuk-table__cell" colspan="4">
         {{ object_list|length }} user{% if object_list|length != 1 %}s{% endif %}
       </td>
     </tr>

@@ -3,6 +3,7 @@ import os
 from django.contrib import messages
 from django.templatetags.static import static
 from django.urls import reverse
+from django.utils.timesince import timesince
 import jinja2
 import misaka
 
@@ -22,6 +23,7 @@ def environment(**kwargs):
         {
             "env": os.environ.get("ENV", "dev"),
             "get_messages": messages.get_messages,
+            "timesince": timesince,
             "static": static,
             "url": reverse,
         }
