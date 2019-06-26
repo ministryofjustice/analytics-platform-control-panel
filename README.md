@@ -23,4 +23,4 @@ Versioned Github releases will trigger another pipeline and deploy to our `alpha
 
 ## Documentation
 
-See [docs](docs/).
+See [docs](doc/).
