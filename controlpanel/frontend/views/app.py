@@ -64,7 +64,10 @@ class AppDetail(LoginRequiredMixin, DetailView):
             auth0_id__in=[user.auth0_id for user in admins],
         )
 
-        context["grant_access_form"] = GrantAppAccessForm(app=app)
+        context["grant_access_form"] = GrantAppAccessForm(
+            app=app,
+            exclude_connected=True,
+        )
 
         return context
 

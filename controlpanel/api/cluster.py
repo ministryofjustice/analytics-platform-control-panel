@@ -200,6 +200,10 @@ class S3AccessPolicy(dict):
             role_name=role_name,
             policy_name=cls.POLICY_NAME,
         )
+
+        if document is None:
+            return cls(role_name=role_name)
+
         policy = cls(role_name=role_name, **document)
         return policy
 
@@ -218,12 +222,12 @@ class S3AccessPolicy(dict):
         )
 
     def _update_statements(self):
-        self["Statement"] = [
+        self["Statement"] = list(filter(None, [
             CONSOLE_STATEMENT,
             self.list_statement(self._ro | self._rw),
             self.readonly_statement(self._ro),
             self.readwrite_statement(self._rw),
-        ]
+        ]))
 
     def grant_access(self, bucket_arn, access_level="readonly"):
         if access_level in ("readonly", "readwrite"):
@@ -241,41 +245,44 @@ class S3AccessPolicy(dict):
         self._update_statements()
 
     def list_statement(self, resources):
-        return {
-            "Sid": "list",
-            "Action": [
-                "s3:ListBucket",
-            ],
-            "Effect": "Allow",
-            "Resource": list(resources),
-        }
+        if resources:
+            return {
+                "Sid": "list",
+                "Action": [
+                    "s3:ListBucket",
+                ],
+                "Effect": "Allow",
+                "Resource": list(resources),
+            }
 
     def readonly_statement(self, resources):
-        return {
-            "Sid": "readonly",
-            "Action": [
-                "s3:GetObject",
-                "s3:GetObjectAcl",
-                "s3:GetObjectVersion",
-            ],
-            "Effect": "Allow",
-            "Resource": [
-                f"{arn}/*"
-                for arn in resources
-            ],
-        }
+        if resources:
+            return {
+                "Sid": "readonly",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectAcl",
+                    "s3:GetObjectVersion",
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    f"{arn}/*"
+                    for arn in resources
+                ],
+            }
 
     def readwrite_statement(self, resources):
-        statement = self.readonly_statement(resources)
-        statement["Sid"] = "readwrite"
-        statement["Action"].extend([
-            "s3:DeleteObject",
-            "s3:DeleteObjectVersion",
-            "s3:PutObject",
-            "s3:PutObjectAcl",
-            "s3:RestoreObject",
-        ])
-        return statement
+        if resources:
+            statement = dict(self.readonly_statement(resources))
+            statement["Sid"] = "readwrite"
+            statement["Action"].extend([
+                "s3:DeleteObject",
+                "s3:DeleteObjectVersion",
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:RestoreObject",
+            ])
+            return statement
 
 
 def create_bucket(bucket_name, is_data_warehouse=False):

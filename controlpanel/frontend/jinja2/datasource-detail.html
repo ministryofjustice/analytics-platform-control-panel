@@ -51,7 +51,7 @@
           </a>
         </td>
         <td class="govuk-table__cell">
-        {% if (member.is_admin) -%}
+        {% if member.is_admin -%}
           Admin
         {%- else -%}
           {{ yes_no(member.access_level, "readwrite", "Read/write", "Read only") }}

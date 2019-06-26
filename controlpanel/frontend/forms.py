@@ -107,13 +107,21 @@ class GrantAppAccessForm(forms.Form):
             ("readwrite", "Read/write"),
         ],
     )
+    datasource = DatasourceChoiceField(
+        empty_label="Select data source",
+        queryset=S3Bucket.objects.none(),
+    )
 
     def __init__(self, *args, **kwargs):
-        app = kwargs.pop('app')
+        self.app = kwargs.pop('app')
+        self.exclude_connected = kwargs.pop('exclude_connected', False)
+
         super().__init__(*args, **kwargs)
-        self.fields['datasource'] = DatasourceChoiceField(
-            empty_label="Select data source",
-            queryset=S3Bucket.objects.exclude(
-                id__in=[a.s3bucket_id for a in app.apps3buckets.all()],
-            ),
-        )
+
+        if self.exclude_connected:
+            self.fields['datasource'].queryset = S3Bucket.objects.exclude(
+                id__in=[a.s3bucket_id for a in self.app.apps3buckets.all()],
+            )
+        else:
+            self.fields['datasource'].queryset = S3Bucket.objects.all()
+

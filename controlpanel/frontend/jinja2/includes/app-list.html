@@ -31,12 +31,10 @@
         {{ yes_no(user_is_app_admin) }}
       </td>
       <td class="govuk-table__cell">
-      {% if user_is_app_admin or request.user.is_superuser %}
         <a class="govuk-button hmcts-button--secondary right"
           href="{{ url("manage-app", kwargs={ "pk": app.id }) }}">
           Manage app
         </a>
-      {% endif %}
       </td>
     </tr>
   {% endfor %}
