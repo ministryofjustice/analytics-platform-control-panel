@@ -4,7 +4,7 @@ from controlpanel.frontend import views
 
 
 urlpatterns = [
-    path("/", views.IndexView.as_view(), name="index"),
+    path("", views.IndexView.as_view(), name="index"),
     path("datasources/", views.BucketList.as_view(), name="list-all-datasources"),
     path("datasources/<int:pk>/", views.BucketDetail.as_view(), name="manage-datasource"),
     path("datasources/<int:pk>/access/", views.GrantAccess.as_view(), name="grant-datasource-access"),
