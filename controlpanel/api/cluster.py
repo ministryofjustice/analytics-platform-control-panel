@@ -290,6 +290,8 @@ class S3AccessPolicy(dict):
                     for arn in statement["Resource"]
                 ])
 
+        self._update_statements()
+
     @classmethod
     def load(cls, role_name):
         document = aws.get_inline_policy_document(
