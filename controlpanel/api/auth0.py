@@ -198,6 +198,14 @@ class ManagementAPI(APIClient):
 
         return response
 
+    def list_users(self):
+        response = self.request("GET", "users")
+
+        if "error" in response:
+            raise Auth0Error("list_users", response)
+
+        return response
+
     def reset_mfa(self, user_id):
         provider = "google-authenticator"
         response = self.request(
