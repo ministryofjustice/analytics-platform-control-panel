@@ -45,6 +45,7 @@ RUN pip3 install django-debug-toolbar
 
 USER controlpanel
 COPY controlpanel controlpanel
+COPY docker docker
 COPY tests tests
 
 

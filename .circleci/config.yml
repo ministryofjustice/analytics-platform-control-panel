@@ -34,13 +34,13 @@ jobs:
       - run:
           name: Build application Docker image
           command: |
-            docker build --cache-from=app -t app .
+            docker build --cache-from=controlpanel -t controlpanel .
 
       - run:
           name: Save Docker image layer cache
           command: |
             mkdir -p /caches
-            docker save -o /caches/app.tar app
+            docker save -o /caches/app.tar controlpanel
 
       - save_cache:
           key: v1-{{ .Branch }}-{{ epoch }}
@@ -50,14 +50,15 @@ jobs:
       - run:
           name: Run tests
           command: |
-            docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test -e KUBECONFIG=tests/kubeconfig app sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
+            touch .env  # empty .env file to avoid error
+            docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test -e KUBECONFIG=tests/kubeconfig cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
 
       - deploy:
           name: Push application Docker image
           command: |
             BRANCH=$(echo -n $CIRCLE_BRANCH | tr '/' '-')
             docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
-            docker tag app "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
-            docker tag app "quay.io/mojanalytics/control-panel:${BRANCH}"
+            docker tag controlpanel "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
+            docker tag controlpanel "quay.io/mojanalytics/control-panel:${BRANCH}"
             docker push "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
             docker push "quay.io/mojanalytics/control-panel:${BRANCH}"
