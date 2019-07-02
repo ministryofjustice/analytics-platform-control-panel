@@ -138,6 +138,7 @@ TEMPLATES = [
 
 # List of classes used when attempting to authenticate a user
 AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
     "controlpanel.oidc.OIDCSubAuthenticationBackend",
 ]
 
@@ -277,6 +278,7 @@ REST_FRAMEWORK = {
         "controlpanel.api.jwt_auth.JWTAuthentication",
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
         # required for browsable API
+        'rest_framework.authentication.BasicAuthentication',
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": ["controlpanel.api.filters.SuperusersOnlyFilter"],

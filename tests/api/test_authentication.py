@@ -61,10 +61,14 @@ def enable_db_for_all_tests(db):
 @pytest.fixture
 def api_request(client):
     def make_request(**headers):
+        filtered = {}
+        for header, value in headers.items():
+            if value is not None:
+                filtered[header] = value
         return client.get(
             "/api/cpanel/v1/users",
             follow=True,
-            **headers,
+            **filtered,
         )
     return make_request
 
