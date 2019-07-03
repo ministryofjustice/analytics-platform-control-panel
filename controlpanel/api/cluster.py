@@ -101,8 +101,8 @@ def initialize_user(user):
     helm.upgrade_release(
         f"config-user-{user.slug}",
         "mojanalytics/config-user",
-        "--namespace=user-{user.slug}",
-        "--set=Username={user.slug}",
+        f"--namespace=user-{user.slug}",
+        f"--set=Username={user.slug}",
     )
 
 

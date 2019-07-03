@@ -23,15 +23,17 @@ RUN apk add --no-cache \
         python3-dev=3.6.8-r0 \
         libressl-dev=2.7.5-r0 \
         libstdc++=6.4.0-r9 \
-        postgresql-dev=10.8-r0 \
-        postgresql-client=10.8-r0
+        postgresql-dev \
+        postgresql-client
 
 # download and install helm
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
 RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
     tar xz -C /usr/local/bin --strip 1 linux-amd64/helm && \
     helm init --client-only && \
-    helm repo update
+    helm repo update && \
+    chown -R root:controlpanel ${HELM_HOME} && \
+    chmod -R g+rwX ${HELM_HOME}
 
 # install python dependencies (and then remove build dependencies)
 COPY requirements.lock manage.py ./
