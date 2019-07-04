@@ -3,13 +3,13 @@
 
     Error: file "mojanalytics/rstudio" not found
 
-It ran a Helm command but it can't find the chart. See [Helm set-up](doc/helm.md).
+It ran a Helm command but it can't find the chart. See [Helm set-up](helm.md).
 
 ---
 
     django.core.exceptions.ImproperlyConfigured: Requested setting DATABASES, but settings are not configured. You must either define the environment variable DJANGO_SETTINGS_MODULE or call settings.configure() before accessing settings.
 
-You need to [set environment variable `DJANGO_SETTINGS_MODULE`](doc/environment.md).
+You need to [set environment variable `DJANGO_SETTINGS_MODULE`](environment.md).
 
 ---
 
