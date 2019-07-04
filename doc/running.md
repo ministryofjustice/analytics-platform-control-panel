@@ -65,7 +65,31 @@ NB `Username` needs to be your GitHub username
 
 ## Compile Sass and Javascript
 
-Before the first run (or after changes to static assets), you need to run
+Before the first run (or after changes to static assets), you need to compile
+and collate the static assets.
+
+Static assets are compiled with Node.JS 8.16.0+
+
+```sh
+npm install
+cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
+cp -R node_modules/govuk-frontend/ static/govuk-frontend
+cp -R node_modules/@hmcts/frontend/ static/hmcts-frontend
+cp -R node_modules/html5shiv/dist/ static/html5-shiv
+cp -R node_modules/jquery/dist/ static/jquery
+./node_modules/.bin/babel \
+  controlpanel/frontend/static/module-loader.js \
+  controlpanel/frontend/static/components \
+  controlpanel/frontend/static/javascripts \
+  -o static/app.js -s
+./node_modules/.bin/node-sass \
+  --include-path node_modules/ \
+  -o static/ \
+  --output-style compact \
+  controlpanel/frontend/static/app.scss
+```
+
+Then run collectstatic:
 ```sh
 python3 manage.py collectstatic
 ```
@@ -79,7 +103,7 @@ python3 manage.py runserver
 ```
 Or with Gunicorn WSGI server:
 ```sh
-gunicorn -b 0.0.0.0:8000 controlpanel.wsgi:application
+gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
 Go to http://localhost:8000/
 
