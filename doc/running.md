@@ -37,7 +37,7 @@ At a mininum, you need to set the following environment variable:
 export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
 ```
 
-See [Environment Variables Reference](doc/environment.md) for details of other
+See [Environment Variables Reference](environment.md) for details of other
 environment variable settings.
 
 
