@@ -3,6 +3,7 @@
 | Name | Description | Default |
 | ---- | ----------- | ------- |
 | `ALLOWED_HOSTS` | Space separated. Must be set if DEBUG is False | `[]` |
+| `AWS_ACCOUNT_ID` | Your AWS account ID. You can find this by running `aws sts get-caller-identity --query Account --output text` | |
 | `BUCKET_REGION` | AWS region | `eu-west-1` |
 | `DB_HOST` | Hostname of postgres server | `127.0.0.1` |
 | `DB_NAME` | Postgres database name | `controlpanel` |
@@ -15,11 +16,10 @@
 | `ELASTICSEARCH_PASSWORD` | | |
 | `ELASTICSEARCH_PORT` | | `9243` |
 | `ELASTICSEARCH_USERNAME` | | |
-| `ENABLE_*` | See [Feature flags](doc/feature-flags.md) | |
+| `ENABLE_*` | See [Feature flags](feature-flags.md) | |
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
 | `GITHUB_ORGS` | Comma-separated list of Github organisations searched for
 webapp repositories |
-| `IAM_ARN_BASE` | the initial part of the canonical reference ID to an IAM resource. e.g. given a full ARN of `arn:aws:iam::123456789012:role/Admin`, the ARN base is `arn:aws:iam::123456789012` | |
 | `K8S_WORKER_ROLE_NAME` | the name of the IAM role assigned to Kubernetes nodes, e.g. `nodes.dev.mojanalytics.xyz`. Combined with the ARN base to generate a full ARN like `arn:aws:iam::123456789012:role/nodes.dev.mojanalytics.xyz` | |
 | `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity:
 `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
