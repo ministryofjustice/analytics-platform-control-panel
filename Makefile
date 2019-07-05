@@ -9,7 +9,7 @@ DEV=false
 -include .env
 export
 
-.PHONY: clean clean-bytecode clean-static collectstatic dependencies docker-image docker-test help node_modules run test
+.PHONY: clean clean-bytecode clean-static collectstatic compilescss dependencies docker-image docker-test help node_modules run test transpile
 
 
 clean-static:
@@ -88,7 +88,6 @@ docker-image:
 	@echo
 	@echo "> Building docker image..."
 	@docker build -t ${PROJECT} .
-
 
 ## docker-run: Run app in a Docker container
 docker-run:

@@ -16,7 +16,7 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         return User.objects.create(
             pk=claims.get("sub"),
             username=claims.get(settings.OIDC_FIELD_USERNAME),
-            email=claims.get(settings.OIDC_FIELD_EMAIL),
+            email=claims.get(settings.OIDC_FIELD_EMAIL, ''),
             name=claims.get(settings.OIDC_FIELD_NAME),
         )
 

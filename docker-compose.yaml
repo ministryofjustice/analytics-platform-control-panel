@@ -1,6 +1,6 @@
 version: '3'
 services:
-  app:
+  cpanel:
     build: .
     image: controlpanel
     ports:
@@ -9,13 +9,15 @@ services:
       - db
     links:
       - db
+    env_file: .env
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
       DB_USER: "controlpanel"
       DEBUG: "True"
+      ALLOWED_HOSTS: "*"
     volumes:
-      - ~/.kube/config:/root/.kube/config
+      - ~/.kube/config:/home/controlpanel/.kube/config
   db:
     image: "circleci/postgres:9.6.2"
     logging:
