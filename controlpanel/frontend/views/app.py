@@ -13,9 +13,9 @@ from django.views.generic.edit import (
     FormMixin,
 )
 from django.views.generic.list import ListView
+from github import Github
 import requests
 
-from controlpanel.api.github import OrgRepositories
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -87,8 +87,10 @@ class CreateApp(LoginRequiredMixin, CreateView):
 
     def get_repositories(self):
         repos = []
-        for org in settings.GITHUB_ORGS:
-            repos.extend(OrgRepositories(org))
+        github = Github(self.request.user.github_api_token)
+        for name in settings.GITHUB_ORGS:
+            org = github.get_organization(name)
+            repos.extend(org.get_repos())
         return repos
 
     def get_success_url(self):
