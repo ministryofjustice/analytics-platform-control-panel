@@ -329,6 +329,10 @@ LOGGING = {
             "handlers": ["console"],
             "level": os.environ.get("LOG_LEVEL", "DEBUG"),
         },
+        "github": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
         "gunicorn": {
             "handlers": ["console"],
             "level": "WARNING",

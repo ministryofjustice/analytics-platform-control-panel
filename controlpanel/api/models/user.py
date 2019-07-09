@@ -44,6 +44,19 @@ class User(AbstractUser):
         return f'user-{self.slug}'
 
     @property
+    def github_api_token(self):
+        if not getattr(self, '_github_api_token', None):
+            auth0_user = auth0.ManagementAPI().get_user(self.auth0_id)
+            for identity in auth0_user["identities"]:
+                if identity['provider'] == 'github':
+                    self._github_api_token = identity.get('access_token')
+        return self._github_api_token
+
+    @github_api_token.setter
+    def github_api_token(self, value):
+        self._github_api_token = value
+
+    @property
     def slug(self):
         return sanitize_dns_label(self.username)
 
