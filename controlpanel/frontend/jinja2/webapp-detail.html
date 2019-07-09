@@ -226,7 +226,7 @@
       {% for bucket in buckets %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
-          <a href="{# url_for('buckets.details', { id: bucket.s3bucket.id }) #}">{{ bucket.s3bucket.name }}</a>
+          <a href="{{ url('manage-datasource', kwargs={ "pk": bucket.s3bucket.id }) }}">{{ bucket.s3bucket.name }}</a>
         </td>
         <td class="govuk-table__cell">
           {{ yes_no(bucket.access_level, 'readwrite', "Read/write", "Read only") }}
