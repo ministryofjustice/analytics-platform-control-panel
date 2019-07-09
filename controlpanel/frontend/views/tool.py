@@ -31,7 +31,7 @@ class ToolsList(LoginRequiredMixin, ListView):
         except ApiException as e:
             log.warn(e)
             return []
-        deployable_tools = SUPPORTED_TOOL_NAMES
+        deployable_tools = list(SUPPORTED_TOOL_NAMES)
         for tool in deployed_tools:
             if tool.name in deployable_tools:
                 deployable_tools.remove(tool.name)
