@@ -20,9 +20,11 @@ moj.Modules.roleNames = {
   },
 
   bindEvents() {
-    $('input[name=app_type]').change(() => {
-      this.loadRolesToSelect();
-    })
+    document.querySelector('input[name=app_type]').forEach(input => {
+      input.addEventListener('change', (event) => {
+        this.loadRolesToSelect();
+      });
+    });
   },
 
   getRoles() {
