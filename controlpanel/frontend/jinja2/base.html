@@ -82,6 +82,7 @@
         "active": page_name == "webapps"
       },
       {
+        "hide": not user.is_superuser,
         "text": "Parameters",
         "href": url("list-parameters"),
         "active": page_name == "parameters"
