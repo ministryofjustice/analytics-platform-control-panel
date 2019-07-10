@@ -24,7 +24,7 @@
       <td class="govuk-table__cell">
         <form method="POST" action="{{ url("delete-parameter", kwargs={ "pk": parameter.id }) }}">
             {{ csrf_input }}
-            <button class="govuk-button">Delete parameter</button>
+            <button class="govuk-button cpanel-button--destructive">Delete parameter</button>
         </form>
       </td>
     </tr>
