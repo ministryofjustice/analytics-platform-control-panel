@@ -20,7 +20,7 @@ moj.Modules.roleNames = {
   },
 
   bindEvents() {
-    document.querySelector('input[name=app_type]').forEach(input => {
+    document.querySelectorAll('input[name=app_type]').forEach(input => {
       input.addEventListener('change', (event) => {
         this.loadRolesToSelect();
       });

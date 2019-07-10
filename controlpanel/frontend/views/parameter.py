@@ -85,4 +85,4 @@ class ParameterFormRoleList(LoginRequiredMixin, View):
             if r.startswith(f"airflow")
             or r.startswith(f"{settings.ENV}_app")
         ]
-        return JsonResponse(data)
+        return JsonResponse(data, safe=False)
