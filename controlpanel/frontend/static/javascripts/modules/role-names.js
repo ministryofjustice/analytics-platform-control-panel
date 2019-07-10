@@ -11,7 +11,8 @@ moj.Modules.roleNames = {
   roles: null,
 
   init() {
-    this.roleListEndpoint = $(this.selectId).attr(this.roleEndpointAttr);
+    this.$selectField = $(this.selectId);
+    this.roleListEndpoint = this.$selectField.attr(this.roleEndpointAttr);
     if (document.querySelectorAll(this.formClass).length) {
       this.getRoles().done(() => {
         this.loadRolesToSelect();
@@ -38,13 +39,13 @@ moj.Modules.roleNames = {
   },
 
   loadRolesToSelect() {
-    $(this.selectId).find('option:not([value=""])').remove();
+    this.$selectField.find('option:not([value=""])').remove();
     const appType = $('input[name=app_type]:checked').val();
     let roles = this.roles || [];
     if (roles && appType) {
       roles = this.roles.filter(name => this.roleFilters[appType].test(name));
     }
-    $(this.selectId).attr('id', this.id);
+    this.$selectField.attr('id', this.id);
     $(this.autocompleteWrapperClass).remove();
     accessibleAutocomplete.enhanceSelectElement({
       id: this.id,
