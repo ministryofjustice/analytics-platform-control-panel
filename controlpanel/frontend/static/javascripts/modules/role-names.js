@@ -12,9 +12,9 @@ moj.Modules.roleNames = {
   roles: null,
 
   init() {
-    this.selectField = document.getElementById(this.selectId);
-    this.roleListEndpoint = this.selectField.dataset.roleEndpoint;
     if (document.querySelectorAll(this.formClass).length) {
+      this.selectField = document.getElementById(this.selectId);
+      this.roleListEndpoint = this.selectField.dataset.roleEndpoint;
       this.getRoles().then(() => {
         this.loadRolesToSelect();
         this.bindEvents();
