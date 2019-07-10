@@ -1,9 +1,9 @@
 moj.Modules.roleNames = {
   id: "role_name",
   selectId: "#role_name-select",
+  roleEndpointAttr: "data-role-endpoint",
   formClass: ".appRoles",
   autocompleteWrapperClass: ".autocomplete__wrapper",
-  roleListEndpoint: "/parameters/form/role-list.js",
   roleFilters: {
     airflow: new RegExp('^airflow_'),
     webapp: new RegExp('^(alpha|dev)_app_'),
@@ -11,6 +11,7 @@ moj.Modules.roleNames = {
   roles: null,
 
   init() {
+    this.roleListEndpoint = $(this.selectId).attr(this.roleEndpointAttr);
     if (document.querySelectorAll(this.formClass).length) {
       this.getRoles().done(() => {
         this.loadRolesToSelect();

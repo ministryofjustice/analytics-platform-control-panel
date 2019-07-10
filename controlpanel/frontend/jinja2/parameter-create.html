@@ -52,9 +52,10 @@
         "attributes": {
           "pattern": "[a-z_]{1,60}",
           "maxlength": "60",
+          "data-role-endpoint": url("parameters-list-roles"),
         },
         "errorMessage": {"html": form.role_name.errors|join("<br>")} if form.role_name.errors else {},
-        "classes": "govuk-input--error" if form.role_name.errors else "",
+        "classes": "govuk-input--error govuk-!-width-two-thirds" if form.role_name.errors else "govuk-!-width-two-thirds",
         "value": form.role_name.value(),
         "items": []
       }) %}
