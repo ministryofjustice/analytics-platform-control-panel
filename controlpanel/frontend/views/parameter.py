@@ -55,7 +55,7 @@ class ParameterCreate(LoginRequiredMixin, CreateView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['app_type_choices'] = [
-            {"text": c[0], "value": c[1]}
+            {"text": c[1], "value": c[0]}
             for c in APP_TYPE_CHOICES
         ]
         return context
