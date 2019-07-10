@@ -12,10 +12,10 @@ moj.Modules.roleNames = {
   roles: null,
 
   init() {
-    this.$selectField = $(this.selectSelector);
-    this.roleListEndpoint = this.$selectField.attr(this.roleEndpointAttr);
+    this.selectField = document.getElementById(this.selectId);
+    this.roleListEndpoint = this.selectField.dataset.roleEndpoint;
     if (document.querySelectorAll(this.formClass).length) {
-      this.getRoles().done(() => {
+      this.getRoles().then(() => {
         this.loadRolesToSelect();
         this.bindEvents();
       });
@@ -31,31 +31,30 @@ moj.Modules.roleNames = {
   },
 
   getRoles() {
-    return $.get(
-      this.roleListEndpoint,
-      (data) => {
-        this.roles = data;
-      }
-    )
+    return fetch(this.roleListEndpoint, {
+      method: "GET"
+    }).then(response => response.json()).then(data => {
+      this.roles = data;
+    })
   },
 
   loadRolesToSelect() {
-    const appType = $('input[name=app_type]:checked').val();
+    const appTypeRadio = document.querySelector('input[name=app_type]:checked')
+    const appType = appTypeRadio ? appTypeRadio.value : null;
     let roles = this.roles || [];
     if (roles && appType) {
       roles = this.roles.filter(name => this.roleFilters[appType].test(name));
     }
-    this.$selectField.find('option:not([value=""])').remove();
-    this.$selectField.attr('id', this.id);
-    $(this.autocompleteWrapperClass).remove();
+    this.selectField.querySelectorAll('option:not([value=""])').forEach(option => option.remove());
+    this.selectField.id = this.id;
+    document.querySelector(this.autocompleteWrapperClass).remove();
     accessibleAutocomplete.enhanceSelectElement({
       id: this.id,
       selectElement: document.querySelector('#' + this.id),
       source: roles
     });
-    const select = document.getElementById(this.selectId);
     roles.forEach(role => {
-      select.options[select.options.length] = new Option(role, role);
+      this.selectField.options[this.selectField.options.length] = new Option(role, role);
     });
   }
 };
