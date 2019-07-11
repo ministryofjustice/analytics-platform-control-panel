@@ -12,7 +12,7 @@ moj.Modules.roleNames = {
   roles: null,
 
   init() {
-    if (document.querySelectorAll(this.formClass).length) {
+    if (document.querySelector(this.formClass)) {
       this.selectField = document.getElementById(this.selectId);
       this.roleListEndpoint = this.selectField.dataset.roleEndpoint;
       this.getRoles().then(() => {
@@ -50,7 +50,7 @@ moj.Modules.roleNames = {
     document.querySelector(this.autocompleteWrapperClass).remove();
     accessibleAutocomplete.enhanceSelectElement({
       id: this.id,
-      selectElement: document.querySelector('#' + this.id),
+      selectElement: this.selectField,
       source: roles
     });
     roles.forEach(role => {
