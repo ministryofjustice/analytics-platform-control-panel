@@ -1,7 +1,11 @@
-from rest_framework import status, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 
 from controlpanel.api import permissions
+from controlpanel.api.serializers import (
+    ToolSerializer,
+    ToolDeploymentSerializer
+)
 from controlpanel.api.tools import (
     SUPPORTED_TOOL_NAMES,
     Tool,
@@ -9,20 +13,20 @@ from controlpanel.api.tools import (
 )
 
 
-class ToolViewSet(viewsets.ViewSet):
+class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = (permissions.ToolDeploymentPermissions,)
+    queryset = [{"name": n} for n in SUPPORTED_TOOL_NAMES]
+    serializer_class = ToolSerializer
 
-    def list(self, request):
-        return Response([{"name": n} for n in SUPPORTED_TOOL_NAMES])
 
-
-class ToolDeploymentViewSet(viewsets.ViewSet):
+class ToolDeploymentViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = (permissions.ToolDeploymentPermissions,)
+    serializer_class = ToolDeploymentSerializer
 
     def create(self, request):
         tool = Tool.create(request.data["name"])
         tool.deploy_for(request.user)
         return Response({}, status=status.HTTP_201_CREATED)
 
-    def list(self, request):
-        return Response(ToolDeployment.list(request.user))
+    def get_queryset(self):
+        return ToolDeployment.list(self.request.user)
