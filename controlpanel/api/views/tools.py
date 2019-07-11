@@ -16,12 +16,16 @@ from controlpanel.api.tools import (
 class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = (permissions.ToolDeploymentPermissions,)
     queryset = [{"name": n} for n in SUPPORTED_TOOL_NAMES]
+    filter_backends = []
     serializer_class = ToolSerializer
+    pagination_class = None
 
 
 class ToolDeploymentViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     permission_classes = (permissions.ToolDeploymentPermissions,)
     serializer_class = ToolDeploymentSerializer
+    filter_backends = []
+    pagination_class = None
 
     def create(self, request):
         tool = Tool.create(request.data["name"])
