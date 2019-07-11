@@ -5,7 +5,8 @@ from django.core.validators import RegexValidator
 import requests
 
 from controlpanel.api import validators
-from controlpanel.api.models import S3Bucket
+from controlpanel.api.models import S3Bucket, Parameter
+from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 
 def validate_github_repo_url(value):
@@ -125,3 +126,13 @@ class GrantAppAccessForm(forms.Form):
         else:
             self.fields['datasource'].queryset = S3Bucket.objects.all()
 
+
+class CreateParameterForm(forms.Form):
+    key = forms.CharField(
+        validators=[RegexValidator(r'[a-zA-Z0-9_]{1,50}')]
+    )
+    role_name = forms.CharField(
+        validators=[RegexValidator(r'[a-zA-Z0-9_-]{1,60}')]
+    )
+    value = forms.CharField(widget=forms.PasswordInput)
+    app_type = forms.ChoiceField(choices=APP_TYPE_CHOICES)

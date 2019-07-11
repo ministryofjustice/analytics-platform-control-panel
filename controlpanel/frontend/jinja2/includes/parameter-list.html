@@ -1,0 +1,37 @@
+{% macro parameter_list(parameters) %}
+{%- set num_parameters = parameters|length %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Key</th>
+      <th class="govuk-table__header">Arn</th>
+      <th class="govuk-table__header">Role name</th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {%- for parameter in parameters %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ parameter.key }}</td>
+      <td class="govuk-table__cell">{{ parameter.arn }}</td>
+      <td class="govuk-table__cell">{{ parameter.role_name }}</td>
+      <td class="govuk-table__cell">
+        <form method="POST" action="{{ url("delete-parameter", kwargs={ "pk": parameter.id }) }}">
+            {{ csrf_input }}
+            <button class="govuk-button cpanel-button--destructive">Delete parameter</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ num_parameters }} parameter{% if num_apps != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endmacro %}

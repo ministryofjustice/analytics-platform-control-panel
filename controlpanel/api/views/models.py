@@ -19,6 +19,7 @@ from controlpanel.api.models import (
     User,
     UserApp,
     UserS3Bucket,
+    Parameter,
 )
 
 
@@ -92,3 +93,14 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()
     serializer_class = serializers.UserAppSerializer
+
+
+class ParameterViewSet(viewsets.ModelViewSet):
+    queryset = Parameter.objects.all()
+    serializer_class = serializers.ParameterSerializer
+    filter_backends = (filters.ParameterFilter,)
+    permission_classes = (permissions.ParameterPermissions,)
+
+    @atomic
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)

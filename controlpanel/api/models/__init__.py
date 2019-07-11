@@ -1,5 +1,6 @@
 from controlpanel.api.models.app import App
 from controlpanel.api.models.apps3bucket import AppS3Bucket
+from controlpanel.api.models.parameter import Parameter
 from controlpanel.api.models.role import Role
 from controlpanel.api.models.s3bucket import S3Bucket
 from controlpanel.api.models.team import Team

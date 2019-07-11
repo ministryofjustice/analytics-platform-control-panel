@@ -1,0 +1,18 @@
+{% from "includes/parameter-list.html" import parameter_list with context %}
+
+{% extends "base.html" %}
+
+{% set page_name = "parameters" %}
+{% set page_title = "Your parameters" %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {{ parameter_list(object_list) }}
+
+  <p class="govuk-body">
+  <a class="govuk-button" href="{{ url('create-parameter') }}">
+      Create new parameter
+    </a>
+  </p>
+{% endblock %}

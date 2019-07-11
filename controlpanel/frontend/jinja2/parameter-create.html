@@ -1,0 +1,104 @@
+{% from "autocomplete/macro.html" import autocomplete %}
+{% from "input/macro.html" import govukInput %}
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "radios/macro.html" import govukRadios %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Create a secret parameter for your webapp or airflow task" %}
+{% set legend -%}
+  Create a secret parameter for your webapp or airflow task
+{%- endset %}
+
+{% set page_name = "parameters" %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if form.error %}
+    <div class="error">{{ form.error }}</div>
+  {% endif %}
+
+  <form action="{{ url('create-parameter') }}" method="post" class="appRoles">
+    {{ csrf_input }}
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+      {{
+        govukRadios({
+          "label": {
+            "text": "Airflow or Web app",
+            "classes": "govuk-label--m",
+          },
+          "classes": "govuk-!-width-two-thirds",
+          "hint": {
+            "text": 'Will the secret param be used in Airflow or in a Web app?'
+          },
+          "name": "app_type",
+          "attributes": {},
+          "items": app_type_choices,
+          "value": form.app_type.value(),
+          "errorMessage": { "html": form.app_type.errors|join("<br>") } if form.app_type.errors else {}
+        })
+      }}
+    
+      {% call(role_name) autocomplete({
+        "name": "role_name",
+        "label": {
+          "text": "Role name",
+          "classes": "govuk-label--m govuk-!-width-two-thirds"
+        },
+        "hint": {
+          "text": '60 chars max, only lowercase letters and underscores'
+        },
+        "attributes": {
+          "pattern": "[a-z_]{1,60}",
+          "maxlength": "60",
+          "data-role-endpoint": url("parameters-list-roles"),
+        },
+        "errorMessage": {"html": form.role_name.errors|join("<br>")} if form.role_name.errors else {},
+        "classes": "govuk-input--error govuk-!-width-two-thirds" if form.role_name.errors else "govuk-!-width-two-thirds",
+        "value": form.role_name.value(),
+        "items": []
+      }) %}
+        <option value="{{ role_name }}"
+                {%- if form.role_name.value() == role_name %} selected{% endif -%}
+                >{{ role_name }}</option>
+      {% endcall %}
+
+      {{
+        govukInput({
+          "label": {
+            "text": "Key",
+            "classes": "govuk-label--m",
+          },
+          "classes": "govuk-!-width-two-thirds",
+          "hint": {
+            "text": '60 chars max, only letters, numbers and underscores'
+          },
+          "name": "key",
+          "attributes": {
+            "pattern": "[a-zA-Z0-9_]{1,60}",
+            "maxlength": "60",
+          },
+          "value": form.key.value(),
+          "errorMessage": { "html": form.key.errors|join("<br>") } if form.key.errors else {}
+        })
+      }}
+
+      {{
+        govukInput({
+          "label": {
+            "text": "Value",
+            "classes": "govuk-label--m",
+          },
+          "classes": "govuk-!-width-two-thirds",
+          "name": "value",
+          "attributes": {
+          },
+          "value": form.value.value(),
+          "errorMessage": { "html": form.value.errors|join("<br>") } if form.value.errors else {}
+        })
+      }}
+      <button class="govuk-button">Create parameter</button>
+    {% endcall %}
+  </form>
+{% endblock %}

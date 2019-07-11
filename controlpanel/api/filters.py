@@ -62,3 +62,20 @@ class UserS3BucketFilter(DjangoFilterBackend):
         accessible_buckets = S3Bucket.objects.accessible_by(request.user)
 
         return queryset.filter(s3bucket__in=accessible_buckets)
+
+
+class ParameterFilter(DjangoFilterBackend):
+    """
+    Filter to get visible Parameters.
+
+    - Superusers see everything
+    - Normal users see only Parameters they created
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        queryset = super().filter_queryset(request, queryset, view)
+
+        if is_superuser(request.user):
+            return queryset
+
+        return queryset.filter(created_by=request.user)

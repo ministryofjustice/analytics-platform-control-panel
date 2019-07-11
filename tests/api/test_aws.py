@@ -127,3 +127,18 @@ class AwsTestCase(TestCase):
         aws.client.return_value.delete_role.assert_called_with(
             RoleName=role_name,
         )
+
+    def test_create_parameter(self):
+        aws.create_parameter(
+            "test",
+            "test_val",
+            "role_name",
+            description="test desc"
+        )
+        aws.client.return_value.put_parameter.assert_called()
+
+    def test_delete_parameter(self):
+        aws.delete_parameter(
+            "test"
+        )
+        aws.client.return_value.delete_parameter.assert_called()
