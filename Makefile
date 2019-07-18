@@ -4,7 +4,7 @@ PROJECT=controlpanel
 MODULE=controlpanel
 VIRTUAL_ENV ?= venv
 BIN=${VIRTUAL_ENV}/bin
-DEV=false
+DEV=true
 
 -include .env
 export
