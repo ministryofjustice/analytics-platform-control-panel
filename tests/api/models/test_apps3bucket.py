@@ -23,6 +23,12 @@ def revoke_bucket_access():
         yield p
 
 
+@pytest.yield_fixture
+def s3_access_policy():
+    with patch('controlpanel.api.models.access_to_s3bucket.S3AccessPolicy') as S3AccessPolicy:
+        yield S3AccessPolicy
+
+
 @pytest.mark.django_db
 def test_one_record_per_app_per_s3bucket(app, bucket):
     # Give app access to bucket (read-only)
@@ -67,7 +73,7 @@ def test_aws_create(app, bucket, aws):
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(app, bucket, aws):
+def test_delete_revoke_permissions(app, bucket, s3_access_policy):
     apps3bucket = mommy.make(
         'api.AppS3Bucket',
         app=app,
@@ -77,5 +83,6 @@ def test_delete_revoke_permissions(app, bucket, aws):
 
     apps3bucket.delete()
 
-    aws.put_role_policy.assert_called()
-    # TODO get policy from call and assert ARN removed
+    s3_access_policy.load.assert_called_with(apps3bucket.aws_role_name())
+    policy = s3_access_policy.load.return_value.__enter__.return_value
+    policy.revoke_access.assert_called_with(bucket.arn)
