@@ -42,9 +42,9 @@ class AccessToS3Bucket(TimeStampedModel):
 
         return self
 
+    def delete(self, *args, **kwargs):
+        with S3AccessPolicy.load(self.aws_role_name()) as policy:
+            policy.revoke_access(self.s3bucket.arn)
 
-def _access_to_bucket_deleted(sender, **kwargs):
-    access_to_bucket = kwargs['instance']
+        super().delete(*args, **kwargs)
 
-    with S3AccessPolicy.load(access_to_bucket.aws_role_name()) as policy:
-        policy.revoke_access(access_to_bucket.s3bucket.arn)
