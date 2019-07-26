@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     "rest_framework",
     # Sentry error tracking
     "raven.contrib.django.raven_compat",
+    # Django Rules object permissions
+    "rules",
     # Analytics Platform Control Panel API
     "controlpanel.api",
     # Analytics Platform Control Panel Kubernetes API proxy
@@ -138,8 +140,12 @@ TEMPLATES = [
 
 # List of classes used when attempting to authenticate a user
 AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
+    # Needed for OIDC auth
     "controlpanel.oidc.OIDCSubAuthenticationBackend",
+    # Needed for Basic Auth
+    "django.contrib.auth.backends.ModelBackend",
+    # Needed for object permissions
+    'rules.permissions.ObjectPermissionBackend',
 ]
 
 # List of validators used to check the strength of users' passwords

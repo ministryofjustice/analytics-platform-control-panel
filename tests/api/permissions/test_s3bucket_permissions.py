@@ -1,114 +1,121 @@
-from unittest.mock import MagicMock, patch
+"S3Bucket permissions tests"
+
+import json
 
 from model_mommy import mommy
+import pytest
 from rest_framework.reverse import reverse
-from rest_framework.status import (
-    HTTP_200_OK,
-    HTTP_201_CREATED,
-    HTTP_204_NO_CONTENT,
-    HTTP_403_FORBIDDEN,
-    HTTP_404_NOT_FOUND,
+from rest_framework import status
+
+from controlpanel.api.models import S3Bucket, UserS3Bucket
+import controlpanel.api.rules
+
+
+@pytest.fixture
+def users(users):
+    for i, role in enumerate(('viewer', 'editor', 'admin')):
+        users.update({
+            f'bucket_{role}': mommy.make(
+                'api.User',
+                username=role,
+                auth0_id=f'github|user_{5 + i}',
+            ),
+        })
+    return users
+
+
+@pytest.fixture
+def bucket(users):
+    bucket = S3Bucket.objects.create(name="test-bucket-1")
+    UserS3Bucket.objects.create(
+        user=users["bucket_viewer"],
+        s3bucket=bucket,
+        access_level=UserS3Bucket.READONLY,
+    )
+    UserS3Bucket.objects.create(
+        user=users["bucket_editor"],
+        s3bucket=bucket,
+        access_level=UserS3Bucket.READWRITE,
+    )
+    UserS3Bucket.objects.create(
+        user=users["bucket_admin"],
+        s3bucket=bucket,
+        access_level=UserS3Bucket.READWRITE,
+        is_admin=True,
+    )
+    return bucket
+
+
+def bucket_list(client, *args):
+    return client.get(reverse('s3bucket-list'))
+
+
+def bucket_detail(client, bucket, *args):
+    return client.get(reverse('s3bucket-detail', (bucket.id,)))
+
+
+def bucket_delete(client, bucket, *args):
+    return client.delete(reverse('s3bucket-detail', (bucket.id,)))
+
+
+def bucket_create(client, *args):
+    data = {
+        'name': 'test-bucket',
+    }
+    return client.post(
+        reverse('s3bucket-list'),
+        json.dumps(data),
+        content_type="application/json",
+    )
+
+
+def bucket_update(client, bucket, users, *args):
+    data = {
+        'name': bucket.name,
+    }
+    return client.put(
+        reverse('s3bucket-detail', (bucket.id,)),
+        json.dumps(data),
+        content_type='application/json',
+    )
+
+
+@pytest.mark.parametrize(
+    'view,user,expected_status',
+    [
+        (bucket_list, 'superuser', status.HTTP_200_OK),
+        (bucket_detail, 'superuser', status.HTTP_200_OK),
+        (bucket_delete, 'superuser', status.HTTP_204_NO_CONTENT),
+        (bucket_create, 'superuser', status.HTTP_201_CREATED),
+        (bucket_update, 'superuser', status.HTTP_200_OK),
+
+        (bucket_list, 'normal_user', status.HTTP_200_OK),
+        (bucket_detail, 'normal_user', status.HTTP_404_NOT_FOUND),
+        (bucket_delete, 'normal_user', status.HTTP_404_NOT_FOUND),
+        (bucket_create, 'normal_user', status.HTTP_201_CREATED),
+        (bucket_update, 'normal_user', status.HTTP_404_NOT_FOUND),
+
+        (bucket_list, 'bucket_viewer', status.HTTP_200_OK),
+        (bucket_detail, 'bucket_viewer', status.HTTP_200_OK),
+        (bucket_delete, 'bucket_viewer', status.HTTP_403_FORBIDDEN),
+        (bucket_create, 'bucket_viewer', status.HTTP_201_CREATED),
+        (bucket_update, 'bucket_viewer', status.HTTP_403_FORBIDDEN),
+
+        (bucket_list, 'bucket_editor', status.HTTP_200_OK),
+        (bucket_detail, 'bucket_editor', status.HTTP_200_OK),
+        (bucket_delete, 'bucket_editor', status.HTTP_403_FORBIDDEN),
+        (bucket_create, 'bucket_editor', status.HTTP_201_CREATED),
+        (bucket_update, 'bucket_editor', status.HTTP_200_OK),
+
+        (bucket_list, 'bucket_admin', status.HTTP_200_OK),
+        (bucket_detail, 'bucket_admin', status.HTTP_200_OK),
+        (bucket_delete, 'bucket_admin', status.HTTP_204_NO_CONTENT),
+        (bucket_create, 'bucket_admin', status.HTTP_201_CREATED),
+        (bucket_update, 'bucket_admin', status.HTTP_200_OK),
+    ],
 )
-from rest_framework.test import APITestCase
-
-
-@patch('controlpanel.api.aws.aws.client', MagicMock())
-class S3BucketPermissionsTest(APITestCase):
-    def setUp(self):
-        super().setUp()
-
-        self.superuser = mommy.make(
-            'api.User',
-            is_superuser=True)
-        self.normal_user = mommy.make(
-            'api.User',
-            is_superuser=False)
-
-        self.s3bucket_1 = mommy.make(
-            "api.S3Bucket",
-            name="test-bucket-1")
-        self.s3bucket_2 = mommy.make(
-            "api.S3Bucket",
-            name="test-bucket-2")
-
-        mommy.make(
-            "api.UserS3Bucket",
-            user=self.normal_user,
-            s3bucket=self.s3bucket_1)
-
-    def test_list_as_superuser_responds_OK(self):
-        self.client.force_login(self.superuser)
-
-        response = self.client.get(reverse('s3bucket-list'))
-        self.assertEqual(HTTP_200_OK, response.status_code)
-
-    def test_list_as_normal_user_responds_OK(self):
-        self.client.force_login(self.normal_user)
-
-        response = self.client.get(reverse('s3bucket-list'))
-        self.assertEqual(HTTP_200_OK, response.status_code)
-
-    def test_detail_as_superuser_responds_OK(self):
-        self.client.force_login(self.superuser)
-
-        response = self.client.get(
-            reverse('s3bucket-detail', (self.s3bucket_1.id,)))
-        self.assertEqual(HTTP_200_OK, response.status_code)
-
-    def test_detail_as_normal_user_responds_200_if_has_access(self):
-        self.client.force_login(self.normal_user)
-
-        response = self.client.get(
-            reverse('s3bucket-detail', (self.s3bucket_1.id,)))
-        self.assertEqual(HTTP_200_OK, response.status_code)
-
-    def test_detail_as_normal_user_responds_404_if_has_not_access(self):
-        self.client.force_login(self.normal_user)
-
-        response = self.client.get(
-            reverse('s3bucket-detail', (self.s3bucket_2.id,)))
-        self.assertEqual(HTTP_404_NOT_FOUND, response.status_code)
-
-    def test_delete_as_superuser_responds_OK(self):
-        self.client.force_login(self.superuser)
-
-        response = self.client.delete(
-            reverse('s3bucket-detail', (self.s3bucket_1.id,)))
-        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
-
-    def test_delete_as_normal_user_responds_403(self):
-        self.client.force_login(self.normal_user)
-
-        response = self.client.delete(
-            reverse('s3bucket-detail', (self.s3bucket_1.id,)))
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
-
-    def test_create_as_superuser_responds_OK(self):
-        self.client.force_login(self.superuser)
-
-        data = {'name': 'test-bucket'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
-
-    def test_create_as_normal_user_responds_OK(self):
-        self.client.force_login(self.normal_user)
-
-        data = {'name': 'test-bucket'}
-        response = self.client.post(reverse('s3bucket-list'), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
-
-    def test_update_as_superuser_responds_OK(self):
-        self.client.force_login(self.superuser)
-
-        data = {'name': 'test-bucket-updated'}
-        response = self.client.put(
-            reverse('s3bucket-detail', (self.s3bucket_1.id,)), data)
-        self.assertEqual(HTTP_200_OK, response.status_code)
-
-    def test_update_as_normal_user_responds_403(self):
-        self.client.force_login(self.normal_user)
-
-        data = {'name': 'test-bucket-updated'}
-        response = self.client.put(
-            reverse('s3bucket-detail', (self.s3bucket_1.id,)), data)
-        self.assertEqual(HTTP_403_FORBIDDEN, response.status_code)
+@pytest.mark.django_db
+def test_permission(client, bucket, users, view, user, expected_status):
+    client.force_login(users[user])
+    response = view(client, bucket, users)
+    assert response.status_code == expected_status

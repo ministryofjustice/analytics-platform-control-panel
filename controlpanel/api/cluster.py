@@ -310,3 +310,22 @@ def create_bucket(bucket_name, is_data_warehouse=False):
     except Exception as e:
         if not is_ignored_exception(e):
             raise e
+
+
+def create_parameter(name, value, role, description):
+    try:
+        return aws.create_parameter(name, value, role, description)
+
+    except Exception as e:
+        if not is_ignored_exception(e):
+            raise e
+
+
+def delete_parameter(name):
+    try:
+        aws.delete_parameter(name)
+
+    except Exception as e:
+        if not is_ignored_exception(e):
+            raise e
+

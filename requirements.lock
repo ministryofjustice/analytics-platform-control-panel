@@ -6,7 +6,7 @@ async-timeout==3.0.1
 atomicwrites==1.3.0
 attrs==19.1.0
 auth0-python==3.6.1
-autobahn==19.7.1
+autobahn==19.7.2
 Automat==0.7.0
 boto3==1.9.146
 botocore==1.12.146
@@ -31,7 +31,7 @@ django-grip==2.0.1
 django-health-check==3.10.2
 djangorestframework==3.9.1
 djproxy==2.3.4
-docutils==0.14
+docutils==0.15
 ecdsa==0.13.2
 elasticsearch==6.4.0
 elasticsearch-dsl==6.3.1
@@ -53,7 +53,7 @@ kubernetes==8.0.1
 MarkupSafe==1.1.1
 misaka==2.1.1
 model-mommy==1.6.0
-more-itertools==7.1.0
+more-itertools==7.2.0
 mozilla-django-oidc==1.2.1
 msgpack==0.6.1
 oauthlib==3.0.2
@@ -69,7 +69,7 @@ PyHamcrest==1.9.0
 PyJWT==1.7.1
 pyOpenSSL==19.0.0
 pytest==4.3.0
-pytest-django==3.4.7
+pytest-django==3.5.1
 python-dateutil==2.8.0
 python-jose==3.0.1
 pytz==2019.1
@@ -78,6 +78,7 @@ raven==6.10.0
 requests==2.22.0
 requests-oauthlib==1.2.0
 rsa==4.0
+rules==2.0.1
 s3transfer==0.2.1
 service-identity==18.1.0
 six==1.12.0
@@ -89,7 +90,7 @@ uvicorn==0.6.1
 uvloop==0.12.2
 websocket-client==0.56.0
 websockets==7.0
-Werkzeug==0.15.4
+Werkzeug==0.15.5
 wrapt==1.11.2
 zipp==0.5.2
 zope.interface==4.6.0

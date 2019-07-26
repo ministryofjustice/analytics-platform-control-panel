@@ -59,6 +59,8 @@ class AppViewSet(viewsets.ModelViewSet):
 class AppS3BucketViewSet(viewsets.ModelViewSet):
     queryset = AppS3Bucket.objects.all()
     serializer_class = serializers.AppS3BucketSerializer
+    permission_classes = (permissions.AppS3BucketPermissions,)
+    filter_backends = (filters.AppS3BucketFilter,)
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
