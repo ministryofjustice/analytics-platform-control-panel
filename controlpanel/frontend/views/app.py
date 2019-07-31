@@ -15,6 +15,7 @@ from django.views.generic.edit import (
 from django.views.generic.list import ListView
 from github import Github
 import requests
+from rules.contrib.views import PermissionRequiredMixin
 
 from controlpanel.api.cluster import get_repositories
 from controlpanel.api.models import (
@@ -31,38 +32,41 @@ from controlpanel.frontend.forms import (
 )
 
 
-class AppsList(LoginRequiredMixin, ListView):
+class AppList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    model = App
+    permission_required = 'api.list_app'
     template_name = "webapp-list.html"
-    all_apps = False
+
+    def get_queryset(self):
+        qs = App.objects.all().prefetch_related('userapps')
+        return qs.filter(userapps__user=self.request.user)
+
+
+class AdminAppList(AppList):
+    permission_required = 'api.is_superuser'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['all_webapps'] = self.all_apps
+        context['all_webapps'] = True
         return context
 
     def get_queryset(self):
-        if self.all_apps:
-            return App.objects.all().prefetch_related('userapps')
-        return [
-            ua.app for ua in self.request.user.userapps.select_related('app').all()
-        ]
+        return App.objects.all().prefetch_related('userapps')
 
 
-class AppDetail(LoginRequiredMixin, DetailView):
+class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = App
+    permission_required = 'api.retrieve_app'
     template_name = "webapp-detail.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
-        admins = app.admins
-
-        context["app_admins"] = admins
 
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
         ).exclude(
-            auth0_id__in=[user.auth0_id for user in admins],
+            auth0_id__in=[user.auth0_id for user in app.admins],
         )
 
         context["grant_access_form"] = GrantAppAccessForm(
@@ -73,9 +77,10 @@ class AppDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class CreateApp(LoginRequiredMixin, CreateView):
+class CreateApp(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = CreateAppForm
     model = App
+    permission_required = 'api.create_app'
     template_name = "webapp-create.html"
 
     def get_context_data(self, **kwargs):
@@ -131,9 +136,14 @@ class CreateApp(LoginRequiredMixin, CreateView):
         return FormMixin.form_valid(self, form)
 
 
-class GrantAppAccess(LoginRequiredMixin, CreateView):
+class GrantAppAccess(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    CreateView,
+):
     form_class = GrantAppAccessForm
     model = AppS3Bucket
+    permission_required = 'api.add_app_bucket'
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
@@ -165,16 +175,18 @@ class GrantAppAccess(LoginRequiredMixin, CreateView):
         raise Exception(form.errors)
 
 
-class RevokeAppAccess(LoginRequiredMixin, DeleteView):
+class RevokeAppAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = AppS3Bucket
+    permission_required = 'api.remove_app_bucket'
 
     def get_success_url(self):
         messages.success(self.request, "Successfully disconnected data source")
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
 
-class DeleteApp(LoginRequiredMixin, DeleteView):
+class DeleteApp(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = App
+    permission_required = 'api.destroy_app'
     success_url = reverse_lazy("list-apps")
 
     def delete(self, request, *args, **kwargs):
@@ -183,35 +195,49 @@ class DeleteApp(LoginRequiredMixin, DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-class AddCustomers(LoginRequiredMixin, RedirectView):
-    http_method_names = ["post"]
+class UpdateApp(
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    SingleObjectMixin,
+    RedirectView,
+):
+    http_method_names = ['post']
+    model = App
 
     def get_redirect_url(self, *args, **kwargs):
-        app = get_object_or_404(App, pk=kwargs.get('pk'))
+        return reverse_lazy("manage-app", kwargs={'pk': kwargs['pk']})
+
+    def post(self, request, *args, **kwargs):
+        self.perform_update(**kwargs)
+        return super().post(request, *args, **kwargs)
+
+
+class AddCustomers(UpdateApp):
+    permission_required = 'api.add_app_customer'
+
+    def perform_update(self, **kwargs):
+        app = self.get_object()
         emails = self.request.POST.get('customer_email')
         emails = re.split(r'[,; ]+', emails)
         emails = [email.strip() for email in emails]
         app.add_customers(emails)
         messages.success(self.request, f"Successfully added customers")
-        return reverse_lazy("manage-app", kwargs=kwargs)
 
 
-class RemoveCustomer(LoginRequiredMixin, RedirectView):
-    http_method_names = ["post"]
+class RemoveCustomer(UpdateApp):
+    permission_required = 'api.remove_app_customer'
 
-    def get_redirect_url(self, *args, **kwargs):
-        app = get_object_or_404(App, pk=kwargs.get('pk'))
+    def perform_update(self, **kwargs):
+        app = self.get_object()
         user_id = self.request.POST.get('customer')
         app.delete_customers([user_id])
         messages.success(self.request, "Successfully removed customer")
-        return reverse_lazy("manage-app", kwargs=kwargs)
 
 
-class AddAdmin(LoginRequiredMixin, SingleObjectMixin, RedirectView):
-    http_method_names = ['post']
-    model = App
+class AddAdmin(UpdateApp):
+    permission_required = 'api.add_app_admin'
 
-    def get_redirect_url(self, *args, **kwargs):
+    def perform_update(self, **kwargs):
         app = self.get_object()
         user = get_object_or_404(User, pk=self.request.POST['user_id'])
         userapp = UserApp.objects.create(
@@ -221,16 +247,15 @@ class AddAdmin(LoginRequiredMixin, SingleObjectMixin, RedirectView):
         )
         userapp.save()
         messages.success(self.request, f"Granted admin access to {user.name}")
-        return reverse_lazy("manage-app", kwargs={"pk": app.pk})
 
 
-class RevokeAdmin(LoginRequiredMixin, SingleObjectMixin, RedirectView):
-    model = App
+class RevokeAdmin(UpdateApp):
+    permission_required = 'api.revoke_app_admin'
 
-    def get_redirect_url(self, *args, **kwargs):
+    def perform_update(self, **kwargs):
         app = self.get_object()
         user = get_object_or_404(User, pk=kwargs['user_id'])
         userapp = get_object_or_404(UserApp, app=app, user=user)
         userapp.delete()
         messages.success(self.request, f"Revoked admin access for {user.name}")
-        return reverse_lazy("manage-app", kwargs={"pk": app.pk})
+
