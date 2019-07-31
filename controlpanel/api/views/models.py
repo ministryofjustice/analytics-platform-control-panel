@@ -1,4 +1,3 @@
-from django.contrib.auth.models import Group
 from django.db.transaction import atomic
 from django.http import HttpResponseRedirect
 from django_filters.rest_framework import DjangoFilterBackend
@@ -28,11 +27,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.UserSerializer
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.UserPermissions,)
-
-
-class GroupViewSet(viewsets.ModelViewSet):
-    queryset = Group.objects.all()
-    serializer_class = serializers.GroupSerializer
 
 
 class AppViewSet(viewsets.ModelViewSet):
