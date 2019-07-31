@@ -5,30 +5,9 @@ from django.core.validators import RegexValidator
 import requests
 
 from controlpanel.api import validators
+from controlpanel.api.cluster import get_repository
 from controlpanel.api.models import S3Bucket, Parameter
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
-
-
-def validate_github_repo_url(value):
-    github_base_url = "https://github.com/"
-
-    if not value.startswith(github_base_url):
-        raise ValidationError("Invalid Github repository URL")
-
-    repo_name = value[len(github_base_url):]
-    org, repo = repo_name.split("/", 1)
-
-    if org not in settings.GITHUB_ORGS:
-        orgs = ", ".join(settings.GITHUB_ORGS)
-        raise ValidationError(
-            f"Unknown Github organization, must be one of {orgs}",
-        )
-
-    r = requests.head(f"https://api.github.com/repos/{repo_name}")
-    if r.status_code != 200:
-        raise ValidationError(
-            f"Github repository not found - it may be private",
-        )
 
 
 class DatasourceChoiceField(forms.ModelChoiceField):
@@ -42,7 +21,7 @@ class DatasourceChoiceField(forms.ModelChoiceField):
 
 
 class CreateAppForm(forms.Form):
-    repo_url = forms.CharField(validators=[validate_github_repo_url])
+    repo_url = forms.CharField()
     connect_bucket = forms.ChoiceField(choices=[
         ("new", "new"),
         ("existing", "existing"),
@@ -62,6 +41,10 @@ class CreateAppForm(forms.Form):
         required=False,
     )
 
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -72,6 +55,28 @@ class CreateAppForm(forms.Form):
             self.add_error('existing_datasource_id', "This field is required.")
 
         return cleaned_data
+
+    def clean_repo_url(self):
+        github_base_url = "https://github.com/"
+        value = self.cleaned_data['repo_url']
+
+        if not value.startswith(github_base_url):
+            raise ValidationError("Invalid Github repository URL")
+
+        repo_name = value[len(github_base_url):]
+        org, _ = repo_name.split("/", 1)
+
+        if org not in settings.GITHUB_ORGS:
+            orgs = ", ".join(settings.GITHUB_ORGS)
+            raise ValidationError(
+                f"Unknown Github organization, must be one of {orgs}",
+            )
+
+        repo = get_repository(self.request.user, repo_name)
+        if repo is None:
+            raise ValidationError(
+                f"Github repository not found - it may be private",
+            )
 
 
 class CreateDatasourceForm(forms.Form):

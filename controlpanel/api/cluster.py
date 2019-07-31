@@ -2,6 +2,7 @@ import json
 import logging
 
 from django.conf import settings
+from github import Github, GithubException
 
 from controlpanel.api.aws import aws, iam_arn
 from controlpanel.api.helm import helm
@@ -329,3 +330,20 @@ def delete_parameter(name):
         if not is_ignored_exception(e):
             raise e
 
+
+def get_repositories(user):
+    repos = []
+    github = Github(user.github_api_token)
+    for name in settings.GITHUB_ORGS:
+        org = github.get_organization(name)
+        repos.extend(org.get_repos())
+    return list(repos)
+
+
+def get_repository(user, repo_name):
+    return None
+    github = Github(user.github_api_token)
+    try:
+        return github.get_repo(repo_name)
+    except GithubException.UnknownObjectException:
+        return None

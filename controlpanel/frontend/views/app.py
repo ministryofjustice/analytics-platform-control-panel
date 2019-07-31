@@ -16,6 +16,7 @@ from django.views.generic.list import ListView
 from github import Github
 import requests
 
+from controlpanel.api.cluster import get_repositories
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -79,19 +80,13 @@ class CreateApp(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['repos'] = self.get_repositories()
+        context['repos'] = get_repositories(self.request.user)
         return context
 
     def get_form_kwargs(self):
-        return FormMixin.get_form_kwargs(self)
-
-    def get_repositories(self):
-        repos = []
-        github = Github(self.request.user.github_api_token)
-        for name in settings.GITHUB_ORGS:
-            org = github.get_organization(name)
-            repos.extend(org.get_repos())
-        return repos
+        kwargs = FormMixin.get_form_kwargs(self)
+        kwargs.update(request=self.request)
+        return kwargs
 
     def get_success_url(self):
         messages.success(
