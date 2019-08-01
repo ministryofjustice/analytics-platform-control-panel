@@ -80,7 +80,7 @@
 
 <p class="govuk-body">
   {% if env == "alpha" %}
-    You can <a href="{{ grafana_url }}" target="_blank" rel="noopener">view your resource utilisation on Grafana (opens in new tab)</a>.
+    You can <a href="https://grafana.services.{{ env }}.mojanalytics.xyz/d/platformusers/platform-users?refresh=10s&orgId=1&var-Username={{ request.user.username }}" target="_blank" rel="noopener">view your resource utilisation on Grafana (opens in new tab)</a>.
   {% else %}
     <em>(Grafana not available in {{ env }} environment)</em>
   {% endif %}
