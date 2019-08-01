@@ -14,6 +14,15 @@ def aws():
 
 
 @pytest.yield_fixture(autouse=True)
+def elasticsearch():
+    """
+    Mock calls to Elasticsearch
+    """
+    with patch('controlpanel.api.elasticsearch.Elasticsearch') as es:
+        yield es.return_value
+
+
+@pytest.yield_fixture(autouse=True)
 def github():
     """
     Mock calls to Github

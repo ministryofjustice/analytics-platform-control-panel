@@ -341,7 +341,6 @@ def get_repositories(user):
 
 
 def get_repository(user, repo_name):
-    return None
     github = Github(user.github_api_token)
     try:
         return github.get_repo(repo_name)

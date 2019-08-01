@@ -21,7 +21,7 @@ class DatasourceChoiceField(forms.ModelChoiceField):
 
 
 class CreateAppForm(forms.Form):
-    repo_url = forms.CharField()
+    repo_url = forms.CharField(max_length=512)
     connect_bucket = forms.ChoiceField(choices=[
         ("new", "new"),
         ("existing", "existing"),
@@ -77,6 +77,8 @@ class CreateAppForm(forms.Form):
             raise ValidationError(
                 f"Github repository not found - it may be private",
             )
+
+        return value
 
 
 class CreateDatasourceForm(forms.Form):

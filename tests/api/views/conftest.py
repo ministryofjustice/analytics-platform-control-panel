@@ -32,8 +32,3 @@ def users(superuser):
 def login_superuser(client, superuser):
     client.force_login(superuser)
 
-
-@pytest.yield_fixture
-def elasticsearch():
-    with patch('controlpanel.api.elasticsearch.Elasticsearch') as es:
-        yield es.return_value

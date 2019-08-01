@@ -150,7 +150,7 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (detail, 'app_admin', status.HTTP_200_OK),
         (detail, 'normal_user', status.HTTP_403_FORBIDDEN),
 
-        (create, 'superuser', status.HTTP_200_OK),
+        (create, 'superuser', status.HTTP_302_FOUND),
         (create, 'app_admin', status.HTTP_403_FORBIDDEN),
         (create, 'normal_user', status.HTTP_403_FORBIDDEN),
 

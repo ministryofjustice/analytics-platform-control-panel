@@ -15,6 +15,7 @@ from controlpanel.frontend.views.app import (
     RevokeAppAccess,
 )
 from controlpanel.frontend.views.datasource import (
+    AdminBucketList,
     BucketDetail,
     BucketList,
     CreateDatasource,
@@ -22,8 +23,7 @@ from controlpanel.frontend.views.datasource import (
     GrantAccess,
     RevokeAccess,
     UpdateAccessLevel,
-    WarehouseData,
-    WebappData,
+    WebappBucketList,
 )
 from controlpanel.frontend.views.parameter import (
     ParameterList,

@@ -5,7 +5,7 @@ from controlpanel.frontend import views
 
 urlpatterns = [
     path("", views.IndexView.as_view(), name="index"),
-    path("datasources/", views.BucketList.as_view(), name="list-all-datasources"),
+    path("datasources/", views.AdminBucketList.as_view(), name="list-all-datasources"),
     path("datasources/<int:pk>/", views.BucketDetail.as_view(), name="manage-datasource"),
     path("datasources/<int:pk>/access/", views.GrantAccess.as_view(), name="grant-datasource-access"),
     path("datasources/<int:pk>/delete/", views.DeleteDatasource.as_view(), name="delete-datasource"),
@@ -24,8 +24,8 @@ urlpatterns = [
     path("users/<str:pk>/delete/", views.UserDelete.as_view(), name="delete-user"),
     path("users/<str:pk>/edit/", views.SetSuperadmin.as_view(), name="set-superadmin"),
     path("users/<str:pk>/reset-mfa/", views.ResetMFA.as_view(), name="reset-mfa"),
-    path("warehouse-data/", views.WarehouseData.as_view(), name="list-warehouse-datasources"),
-    path("webapp-data/", views.WebappData.as_view(), name="list-webapp-datasources"),
+    path("warehouse-data/", views.BucketList.as_view(), name="list-warehouse-datasources"),
+    path("webapp-data/", views.WebappBucketList.as_view(), name="list-webapp-datasources"),
     path("webapps/", views.AppList.as_view(), name="list-apps"),
     path("webapps/all/", views.AdminAppList.as_view(), name="list-all-apps"),
     path("webapps/new/", views.CreateApp.as_view(), name="create-app"),

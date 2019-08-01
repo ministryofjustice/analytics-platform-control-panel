@@ -157,7 +157,7 @@ add_perm('api.destroy_apps3bucket', is_authenticated & is_superuser)
 
 
 add_perm('api.list_users3bucket', is_authenticated)
-add_perm('api.create_users3bucket', is_authenticated)
+add_perm('api.create_users3bucket', is_authenticated & is_bucket_admin)
 add_perm('api.retrieve_users3bucket', is_authenticated & is_bucket_admin)
 add_perm('api.update_users3bucket', is_authenticated & is_bucket_admin)
 add_perm('api.destroy_users3bucket', is_authenticated & is_bucket_admin)
