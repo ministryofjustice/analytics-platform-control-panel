@@ -30,11 +30,7 @@ def is_app_admin(user, obj):
         return True
 
     if isinstance(obj, App):
-        try:
-            UserApp.objects.get(user=user, app=obj, is_admin=True)
-        except UserApp.DoesNotExist:
-            return False
-        return True
+        return user in obj.admins
 
     if isinstance(obj, AppS3Bucket):
         return is_app_admin(user, obj.app)

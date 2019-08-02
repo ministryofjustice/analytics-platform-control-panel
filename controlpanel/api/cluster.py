@@ -337,7 +337,7 @@ def get_repositories(user):
     for name in settings.GITHUB_ORGS:
         org = github.get_organization(name)
         repos.extend(org.get_repos())
-    return list(repos)
+    return repos
 
 
 def get_repository(user, repo_name):
