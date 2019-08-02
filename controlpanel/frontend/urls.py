@@ -13,6 +13,7 @@ urlpatterns = [
     path("datasource-access/<int:pk>/", views.UpdateAccessLevel.as_view(), name="update-access-level"),
     path("datasource-access/<int:pk>/delete/", views.RevokeAccess.as_view(), name="revoke-datasource-access"),
     path("parameters/", views.ParameterList.as_view(), name="list-parameters"),
+    path("parameters/all/", views.AdminParameterList.as_view(), name="list-all-parameters"),
     path("parameters/form/role-list.js", views.ParameterFormRoleList.as_view(), name="parameters-list-roles"),
     path("parameters/new/", views.ParameterCreate.as_view(), name="create-parameter"),
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),

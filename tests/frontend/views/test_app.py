@@ -8,6 +8,9 @@ import pytest
 from rest_framework import status
 
 
+NUM_APPS = 3
+
+
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
@@ -43,6 +46,7 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def app(users):
+    mommy.make('api.App', NUM_APPS - 1)
     app = mommy.make('api.App')
     mommy.make('api.UserApp', user=users['app_admin'], app=app, is_admin=True)
     return app
@@ -182,7 +186,6 @@ def connect_bucket(client, app, _, s3buckets, *args):
 def test_permissions(client, app, s3buckets, users, view, user, expected_status):
     client.force_login(users[user])
     response = view(client, app, users, s3buckets)
-    # assert len(response.context_data['object_list']) == expected
     assert response.status_code == expected_status
 
 
@@ -202,4 +205,20 @@ def test_bucket_permissions(client, apps3bucket, users, view, user, expected_sta
     client.force_login(users[user])
     response = view(client, apps3bucket, users)
     assert response.status_code == expected_status
+
+
+@pytest.mark.parametrize(
+    'view,user,expected_count',
+    [
+        (list, 'superuser', 0),
+        (list, 'normal_user', 0),
+        (list, 'app_admin', 1),
+
+        (list_all, 'superuser', NUM_APPS),
+    ],
+)
+def test_list(client, app, users, view, user, expected_count):
+    client.force_login(users[user])
+    response = view(client, app, users)
+    assert len(response.context_data['object_list']) == expected_count
 

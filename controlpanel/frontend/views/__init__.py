@@ -26,6 +26,7 @@ from controlpanel.frontend.views.datasource import (
     WebappBucketList,
 )
 from controlpanel.frontend.views.parameter import (
+    AdminParameterList,
     ParameterList,
     ParameterCreate,
     ParameterDelete,

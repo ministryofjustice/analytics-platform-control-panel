@@ -14,12 +14,17 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def param(users):
+    mommy.make('api.Parameter', 3, created_by=users['other_user'])
     param = mommy.make('api.Parameter', created_by=users['owner'])
     return param
 
 
 def list(client, *args):
     return client.get(reverse('list-parameters'))
+
+
+def list_all(client, *args):
+    return client.get(reverse('list-all-parameters'))
 
 
 def create(client, *args):
@@ -43,6 +48,10 @@ def delete(client, param, *args):
         (list, 'owner', status.HTTP_200_OK),
         (list, 'normal_user', status.HTTP_200_OK),
 
+        (list_all, 'superuser', status.HTTP_200_OK),
+        (list_all, 'owner', status.HTTP_403_FORBIDDEN),
+        (list_all, 'normal_user', status.HTTP_403_FORBIDDEN),
+
         (create, 'superuser', status.HTTP_302_FOUND),
         (create, 'owner', status.HTTP_302_FOUND),
         (create, 'normal_user', status.HTTP_302_FOUND),
@@ -56,4 +65,21 @@ def test_permission(client, param, users, view, user, expected_status):
     client.force_login(users[user])
     response = view(client, param, users)
     assert response.status_code == expected_status
+
+
+@pytest.mark.parametrize(
+    'view,user,expected_count',
+    [
+        (list, 'superuser', 0),
+        (list, 'normal_user', 0),
+        (list, 'owner', 1),
+        (list, 'other_user', 3),
+
+        (list_all, 'superuser', 4),
+    ],
+)
+def test_list(client, param, users, view, user, expected_count):
+    client.force_login(users[user])
+    response = view(client, param, users)
+    assert len(response.context_data['object_list']) == expected_count
 

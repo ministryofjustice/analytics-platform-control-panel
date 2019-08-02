@@ -21,10 +21,14 @@ class ParameterList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = "parameter-list.html"
 
     def get_queryset(self):
-        queryset = Parameter.objects.all()
-        if is_superuser(self.request.user):
-            return queryset
-        return queryset.filter(created_by=self.request.user)
+        return Parameter.objects.filter(created_by=self.request.user)
+
+
+class AdminParameterList(ParameterList):
+    permission_required = 'api.is_superuser'
+
+    def get_queryset(self):
+        return Parameter.objects.all()
 
 
 class ParameterCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):

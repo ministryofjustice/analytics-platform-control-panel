@@ -67,3 +67,16 @@ def test_permission(client, users, view, user, expected_status):
     response = view(client, users)
     assert response.status_code == expected_status
 
+
+@pytest.mark.parametrize(
+    'view,user,expected_count',
+    [
+        (list, 'superuser', 3),
+        (list, 'normal_user', 3),
+    ],
+)
+def test_list(client, users, view, user, expected_count):
+    client.force_login(users[user])
+    response = view(client, users)
+    assert len(response.context_data['object_list']) == expected_count
+
