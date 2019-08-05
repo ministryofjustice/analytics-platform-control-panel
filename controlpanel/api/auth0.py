@@ -206,8 +206,8 @@ class ManagementAPI(APIClient):
 
         return response
 
-    def list_users(self):
-        response = self.request("GET", "users")
+    def list_users(self, **kwargs):
+        response = self.request("GET", "users", **kwargs)
 
         if "error" in response:
             raise Auth0Error("list_users", response)

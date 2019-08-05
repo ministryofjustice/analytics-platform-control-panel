@@ -6,6 +6,7 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import ListView, CreateView
 from django.views.generic.edit import FormMixin, DeleteView
+from rules.contrib.views import PermissionRequiredMixin
 
 from controlpanel.api.aws import aws
 from controlpanel.api.models import Parameter
@@ -14,20 +15,26 @@ from controlpanel.api.permissions import is_superuser
 from controlpanel.frontend.forms import CreateParameterForm
 
 
-class ParameterList(LoginRequiredMixin, ListView):
+class ParameterList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Parameter
+    permission_required = 'api.list_parameter'
     template_name = "parameter-list.html"
 
     def get_queryset(self):
-        queryset = Parameter.objects.all()
-        if is_superuser(self.request.user):
-            return queryset
-        return queryset.filter(created_by=self.request.user)
+        return Parameter.objects.filter(created_by=self.request.user)
 
 
-class ParameterCreate(LoginRequiredMixin, CreateView):
+class AdminParameterList(ParameterList):
+    permission_required = 'api.is_superuser'
+
+    def get_queryset(self):
+        return Parameter.objects.all()
+
+
+class ParameterCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = CreateParameterForm
     model = Parameter
+    permission_required = 'api.create_parameter'
     template_name = "parameter-create.html"
 
     def get_form_kwargs(self):
@@ -62,8 +69,9 @@ class ParameterCreate(LoginRequiredMixin, CreateView):
 
 
 
-class ParameterDelete(LoginRequiredMixin, DeleteView):
+class ParameterDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Parameter
+    permission_required = 'api.destroy_parameter'
 
     def get_success_url(self):
         messages.success(self.request, "Successfully delete data source")

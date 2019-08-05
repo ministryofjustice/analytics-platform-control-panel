@@ -14,7 +14,7 @@ from controlpanel.api.tools import (
 
 
 class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    permission_classes = (permissions.ToolDeploymentPermissions,)
+    permission_classes = (permissions.ToolPermissions,)
     queryset = [{"name": n} for n in SUPPORTED_TOOL_NAMES]
     filter_backends = []
     serializer_class = ToolSerializer

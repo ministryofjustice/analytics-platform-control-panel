@@ -4,6 +4,8 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
+import controlpanel.api.rules
+
 
 @pytest.yield_fixture(autouse=True)
 def mock_tool():

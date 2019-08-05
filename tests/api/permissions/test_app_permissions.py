@@ -1,15 +1,36 @@
-import json
-from unittest.mock import patch
+"App permissions tests"
 
+import json
+
+from django.contrib import auth
+from django.contrib.auth import get_user
 from model_mommy import mommy
 import pytest
 from rest_framework.reverse import reverse
 from rest_framework import status
+from rules import perm_exists, has_perm
+
+import controlpanel.api.rules
+
+
+@pytest.fixture
+def users(users):
+    users.update({
+        "app_admin": mommy.make(
+            "api.User",
+            username="dave",
+            auth0_id="github|user_4",
+        ),
+    })
+    return users
 
 
 @pytest.fixture(autouse=True)
-def app():
-    return mommy.make("api.App", name="App 1")
+def app(users):
+    app = mommy.make("api.App", name="Test App 1")
+    user = users["app_admin"]
+    mommy.make("api.UserApp", user=user, app=app, is_admin=True)
+    return app
 
 
 def app_list(client, *args):
@@ -38,6 +59,17 @@ def app_update(client, app, *args):
     )
 
 
+def test_perm_rules_setup():
+    assert perm_exists('api.list_app')
+
+
+def test_authenticated_user_has_basic_perms(client, users):
+    anonymous_user = get_user(client)
+    assert not anonymous_user.has_perm('api.list_app')
+
+    assert users['normal_user'].has_perm('api.list_app')
+
+
 @pytest.mark.parametrize(
     'view,user,expected_status',
     [
@@ -46,15 +78,23 @@ def app_update(client, app, *args):
         (app_delete, 'superuser', status.HTTP_204_NO_CONTENT),
         (app_create, 'superuser', status.HTTP_201_CREATED),
         (app_update, 'superuser', status.HTTP_200_OK),
+
         (app_list, 'normal_user', status.HTTP_200_OK),
         (app_detail, 'normal_user', status.HTTP_403_FORBIDDEN),
         (app_delete, 'normal_user', status.HTTP_403_FORBIDDEN),
         (app_create, 'normal_user', status.HTTP_403_FORBIDDEN),
         (app_update, 'normal_user', status.HTTP_403_FORBIDDEN),
+
+        (app_list, 'app_admin', status.HTTP_200_OK),
+        (app_detail, 'app_admin', status.HTTP_200_OK),
+        (app_delete, 'app_admin', status.HTTP_403_FORBIDDEN),
+        (app_create, 'app_admin', status.HTTP_403_FORBIDDEN),
+        (app_update, 'app_admin', status.HTTP_403_FORBIDDEN),
     ],
 )
 @pytest.mark.django_db
 def test_permission(client, app, users, view, user, expected_status):
-    client.force_login(users[user])
+    u = users[user]
+    client.force_login(u)
     response = view(client, app)
     assert response.status_code == expected_status

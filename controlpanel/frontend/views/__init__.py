@@ -2,7 +2,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import TemplateView
 
 from controlpanel.frontend.views.app import (
-    AppsList,
+    AdminAppList,
+    AppList,
     AppDetail,
     CreateApp,
     DeleteApp,
@@ -14,6 +15,7 @@ from controlpanel.frontend.views.app import (
     RevokeAppAccess,
 )
 from controlpanel.frontend.views.datasource import (
+    AdminBucketList,
     BucketDetail,
     BucketList,
     CreateDatasource,
@@ -21,10 +23,10 @@ from controlpanel.frontend.views.datasource import (
     GrantAccess,
     RevokeAccess,
     UpdateAccessLevel,
-    WarehouseData,
-    WebappData,
+    WebappBucketList,
 )
 from controlpanel.frontend.views.parameter import (
+    AdminParameterList,
     ParameterList,
     ParameterCreate,
     ParameterDelete,

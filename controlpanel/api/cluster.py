@@ -2,6 +2,7 @@ import json
 import logging
 
 from django.conf import settings
+from github import Github, GithubException
 
 from controlpanel.api.aws import aws, iam_arn
 from controlpanel.api.helm import helm
@@ -310,3 +311,38 @@ def create_bucket(bucket_name, is_data_warehouse=False):
     except Exception as e:
         if not is_ignored_exception(e):
             raise e
+
+
+def create_parameter(name, value, role, description):
+    try:
+        return aws.create_parameter(name, value, role, description)
+
+    except Exception as e:
+        if not is_ignored_exception(e):
+            raise e
+
+
+def delete_parameter(name):
+    try:
+        aws.delete_parameter(name)
+
+    except Exception as e:
+        if not is_ignored_exception(e):
+            raise e
+
+
+def get_repositories(user):
+    repos = []
+    github = Github(user.github_api_token)
+    for name in settings.GITHUB_ORGS:
+        org = github.get_organization(name)
+        repos.extend(org.get_repos())
+    return repos
+
+
+def get_repository(user, repo_name):
+    github = Github(user.github_api_token)
+    try:
+        return github.get_repo(repo_name)
+    except GithubException.UnknownObjectException:
+        return None

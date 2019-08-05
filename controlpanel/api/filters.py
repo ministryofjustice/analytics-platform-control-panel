@@ -4,6 +4,7 @@ Custom filters
 See: http://www.django-rest-framework.org/api-guide/filtering/#custom-generic-filtering
 """
 
+from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
 from controlpanel.api.models import S3Bucket
@@ -40,6 +41,27 @@ class S3BucketFilter(DjangoFilterBackend):
             return queryset
 
         return queryset.accessible_by(request.user)
+
+
+class AppS3BucketFilter(DjangoFilterBackend):
+
+    def filter_queryset(self, request, queryset, view):
+        queryset = super().filter_queryset(request, queryset, view)
+
+        if is_superuser(request.user):
+            return queryset
+
+        is_app_admin = Q(
+            app__userapps__user=request.user,
+            app__userapps__is_admin=True,
+        )
+
+        is_bucket_admin = Q(
+            s3bucket__users3buckets__user=request.user,
+            s3bucket__users3buckets__is_admin=True,
+        )
+
+        return queryset.filter(is_app_admin | is_bucket_admin).distinct()
 
 
 class UserS3BucketFilter(DjangoFilterBackend):

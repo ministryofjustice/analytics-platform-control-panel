@@ -12,8 +12,6 @@ class User(AbstractUser):
     name = models.CharField(max_length=256, blank=True)
     email_verified = models.BooleanField(default=False)
 
-    teams = models.ManyToManyField('Team', through='TeamMembership')
-
     REQUIRED_FIELDS = ['email', 'auth0_id']
 
     class Meta:

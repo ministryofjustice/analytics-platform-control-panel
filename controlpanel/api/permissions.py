@@ -7,6 +7,7 @@ See: http://www.django-rest-framework.org/api-guide/permissions/#custom-permissi
 from rest_framework.permissions import BasePermission
 
 from controlpanel.api.models import S3Bucket
+from controlpanel.api.rules import is_bucket_admin
 from controlpanel.api.serializers import UserS3BucketSerializer
 
 
@@ -23,118 +24,66 @@ class IsSuperuser(BasePermission):
         return is_superuser(request.user)
 
 
-class AppPermissions(IsSuperuser):
+class RulesBasePermissions(BasePermission):
     """
-    - Superusers can do anything
-    - Normal users can only list apps
+    Delegate to permissions defined in `controlpanel.api.rules`
     """
+
+    resource = None
 
     def has_permission(self, request, view):
-        if is_superuser(request.user):
-            return True
-
-        if request.user.is_anonymous:
-            return False
-
-        return view.action == 'list'
-
-
-class S3BucketPermissions(BasePermission):
-    """
-    - Superusers can do anything
-    - Normal users can create S3 buckets and list/retrieve buckets they have
-      access to
-
-    NOTE: Filters are applied before permissions
-    """
-
-    def has_permission(self, request, view):
-        if is_superuser(request.user):
-            return True
-
-        if request.user.is_anonymous:
-            return False
-
-        return view.action in ('create', 'list', 'retrieve')
-
-
-class UserPermissions(BasePermission):
-    """
-    Superusers can do anything.
-    Normal users can list all, retrieve/update only themselves.
-    Unauthenticated users cannot do anything.
-    """
-
-    def has_permission(self, request, view):
-        if is_superuser(request.user):
-            return True
-
-        if request.user.is_anonymous:
-            return False
-
-        return view.action in ('list', 'retrieve', 'update', 'partial_update')
+        return request.user.has_perm(f'api.{view.action}_{self.resource}')
 
     def has_object_permission(self, request, view, obj):
-        if is_superuser(request.user):
-            return True
-
-        return request.user == obj
+        return request.user.has_perm(f'api.{view.action}_{self.resource}', obj)
 
 
-class UserS3BucketPermissions(BasePermission):
+class AppPermissions(RulesBasePermissions):
+    resource = 'app'
+
+
+class S3BucketPermissions(RulesBasePermissions):
+    resource = 's3bucket'
+
+
+class UserPermissions(RulesBasePermissions):
+    resource = 'user'
+
+
+class AppS3BucketPermissions(RulesBasePermissions):
+    resource = 'apps3bucket'
+
+
+class UserS3BucketPermissions(RulesBasePermissions):
+    resource = 'users3bucket'
+
     def has_permission(self, request, view):
-        if is_superuser(request.user):
+        if request.user.is_superuser:
             return True
 
-        if request.user.is_anonymous:
+        ok = super().has_permission(request, view)
+
+        if not ok:
             return False
 
-        if view.action != 'create':
-            return True
+        if view.action == 'create':
 
-        serializer = UserS3BucketSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+            serializer = UserS3BucketSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
 
-        accessible_buckets = S3Bucket.objects.administered_by(request.user)
+            return is_bucket_admin(request.user, serializer.validated_data['s3bucket'])
 
-        if serializer.validated_data['s3bucket'] in accessible_buckets:
-            return True
-
-    def has_object_permission(self, request, view, obj):
-        if is_superuser(request.user):
-            return True
-
-        if obj.user_is_admin(request.user):
-            return True
-
-        if obj.s3bucket in S3Bucket.objects.administered_by(request.user):
-            return True
+        return ok
 
 
-class ToolDeploymentPermissions(BasePermission):
-    def has_permission(self, request, view):
-        return not request.user.is_anonymous
+class ToolPermissions(RulesBasePermissions):
+    resource = 'tool'
 
 
-class ParameterPermissions(BasePermission):
-    """
-    Superusers can do anything.
-    Normal users can list/delete only parameters they created.
-    Normal users can create a parameter
-    Unauthenticated users cannot do anything.
-    """
+class ToolDeploymentPermissions(RulesBasePermissions):
+    resource = 'deployment'
 
-    def has_permission(self, request, view):
-        if is_superuser(request.user):
-            return True
 
-        if request.user.is_anonymous:
-            return False
+class ParameterPermissions(RulesBasePermissions):
+    resource = 'parameter'
 
-        return view.action in ('create', 'list', 'retrieve', 'delete')
-
-    def has_object_permission(self, request, view, obj):
-        if is_superuser(request.user):
-            return True
-
-        return request.user == obj.created_by

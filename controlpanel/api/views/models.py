@@ -1,4 +1,3 @@
-from django.contrib.auth.models import Group
 from django.db.transaction import atomic
 from django.http import HttpResponseRedirect
 from django_filters.rest_framework import DjangoFilterBackend
@@ -30,11 +29,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.UserPermissions,)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
-    queryset = Group.objects.all()
-    serializer_class = serializers.GroupSerializer
-
-
 class AppViewSet(viewsets.ModelViewSet):
     queryset = App.objects.all()
     serializer_class = serializers.AppSerializer
@@ -59,6 +53,8 @@ class AppViewSet(viewsets.ModelViewSet):
 class AppS3BucketViewSet(viewsets.ModelViewSet):
     queryset = AppS3Bucket.objects.all()
     serializer_class = serializers.AppS3BucketSerializer
+    permission_classes = (permissions.AppS3BucketPermissions,)
+    filter_backends = (filters.AppS3BucketFilter,)
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):

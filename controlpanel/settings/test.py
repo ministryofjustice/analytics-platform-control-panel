@@ -8,7 +8,10 @@ SAML_PROVIDER = "test-saml"
 
 LOGGING["loggers"]["django"]["level"] = "WARNING"
 
-AUTHENTICATION_BACKENDS = ['django.contrib.auth.backends.ModelBackend']
+AUTHENTICATION_BACKENDS = [
+    'rules.permissions.ObjectPermissionBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 MIDDLEWARE.remove('mozilla_django_oidc.middleware.SessionRefresh')
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'].remove(
     'mozilla_django_oidc.contrib.drf.OIDCAuthentication',

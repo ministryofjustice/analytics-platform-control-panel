@@ -4,7 +4,6 @@ from controlpanel.api.views.customers import (
 )
 from controlpanel.api.views.models import (
     UserViewSet,
-    GroupViewSet,
     AppViewSet,
     AppS3BucketViewSet,
     UserS3BucketViewSet,

@@ -1,12 +1,11 @@
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
-from django.db.models.signals import pre_delete, pre_save
-from django.dispatch import receiver
 
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api.aws import aws, arn
+from controlpanel.api.aws import arn
+from controlpanel.api import cluster
 
 
 APP_TYPE_CHOICES = (
@@ -58,24 +57,21 @@ class Parameter(TimeStampedModel):
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_parameter"
 
+    def save(self, *args, **kwargs):
+        is_create = not self.pk
 
-@receiver(pre_save, sender=Parameter)
-def save_aws_parameter(sender, **kwargs):
-    parameter = kwargs['instance']
-    is_create = not parameter.pk
+        super().save(*args, **kwargs)
 
-    if is_create:
-        aws.create_parameter(
-            parameter.name,
-            parameter.value,
-            parameter.role_name,
-            description=parameter.description
-        )
+        if is_create:
+            cluster.create_parameter(
+                self.name,
+                self.value,
+                self.role_name,
+                self.description,
+            )
 
+        return self
 
-@receiver(pre_delete, sender=Parameter)
-def delete_aws_parameter(sender, **kwargs):
-    parameter = kwargs['instance']
-    aws.delete_parameter(
-        parameter.name
-    )
+    def delete(self, *args, **kwargs):
+        cluster.delete_parameter(self.name)
+        super().delete(*args, **kwargs)
