@@ -79,11 +79,11 @@ COPY --from=jsdep node_modules/@hmcts/frontend static/hmcts-frontend
 COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
 COPY --from=jsdep node_modules/jquery/dist static/jquery
 
-# collect static files for deployment
-RUN python3 manage.py collectstatic --noinput --ignore=*.scss
-
 # empty .env file to prevent warning messages
 RUN touch .env
+
+# collect static files for deployment
+RUN python3 manage.py collectstatic --noinput --ignore=*.scss
 
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]
