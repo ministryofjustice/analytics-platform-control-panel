@@ -5,19 +5,13 @@ jobs:
 
     docker:
 
-      - image: docker:17.06.0-ce-git
+      - image: tmaier/docker-compose
 
     steps:
 
       - checkout
 
       - setup_remote_docker
-
-      - run:
-          name: Install dependencies
-          command: |
-            apk update && apk add --no-progress curl curl-dev py2-pip
-            pip install docker-compose==1.15.0 | cat
 
       - restore_cache:
           keys:
