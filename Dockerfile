@@ -47,6 +47,7 @@ USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
+COPY docker-compose.yaml docker-compose.yaml
 
 
 # fetch javascript dependencies in separate stage
