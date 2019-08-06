@@ -51,7 +51,11 @@ jobs:
           name: Run tests
           command: |
             touch .env  # empty .env file to avoid error
-            docker-compose run -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test -e KUBECONFIG=tests/kubeconfig cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
+            docker-compose run \
+              -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test \
+              -e KUBECONFIG=tests/kubeconfig \
+              cpanel \
+              sh -c "until pg_isready -h db; do sleep 2; done; pytest"
 
       - deploy:
           name: Push application Docker image

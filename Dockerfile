@@ -47,7 +47,6 @@ USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
-COPY docker-compose.yaml .
 
 
 # fetch javascript dependencies in separate stage
@@ -82,6 +81,9 @@ COPY --from=jsdep node_modules/jquery/dist static/jquery
 
 # collect static files for deployment
 RUN python3 manage.py collectstatic --noinput --ignore=*.scss
+
+# empty .env file to prevent warning messages
+RUN touch .env
 
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]

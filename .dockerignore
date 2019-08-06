@@ -19,6 +19,7 @@ Makefile
 README.md
 __pycache__
 doc
+docker-compose.yaml
 govuk-frontend
 node_modules
 requirements.txt
