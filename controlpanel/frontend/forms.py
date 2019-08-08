@@ -81,10 +81,20 @@ class CreateAppForm(forms.Form):
         return value
 
 
+def has_env_prefix(value):
+    if not value.startswith(f'{settings.ENV}-'):
+        raise ValidationError(
+            f"Bucket name must be prefixed with {settings.ENV}-"
+        )
+
+
 class CreateDatasourceForm(forms.Form):
     name = forms.CharField(
         max_length=60,
-        validators=[RegexValidator(r'[a-z0-9.-]{1,60}')],
+        validators=[
+            has_env_prefix,
+            RegexValidator(r'[a-z0-9.-]{1,60}'),
+        ],
     )
 
 

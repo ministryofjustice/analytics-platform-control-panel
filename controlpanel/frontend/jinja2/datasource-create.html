@@ -30,11 +30,11 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": '60 chars max, only lowercase letters, numbers, periods and hyphens, auto-prefixed with "' + env + '"'
+        "text": '60 chars max, only lowercase letters, numbers, periods and hyphens, auto-prefixed with "' + env + '-"'
       },
       "name": "name",
       "attributes": {
-        "data-bucket-prefix": env,
+        "data-bucket-prefix": env + "-",
         "pattern": "[a-z0-9.-]{1,60}",
         "maxlength": "60",
       },

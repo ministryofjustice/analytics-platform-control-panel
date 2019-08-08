@@ -52,6 +52,12 @@ class S3Bucket(TimeStampedModel):
         db_table = "control_panel_api_s3bucket"
         ordering = ('name',)
 
+    def __repr__(self):
+        warehouse = ""
+        if self.is_data_warehouse:
+            warehouse = " (warehouse)"
+        return f"<{self.__class__.__name__}: {self.name}{warehouse}>"
+
     @property
     def arn(self):
         return s3_arn(self.name)

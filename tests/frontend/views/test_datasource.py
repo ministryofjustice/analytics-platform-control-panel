@@ -99,7 +99,7 @@ def detail(client, buckets, *args):
 
 def create(client, *args):
     data = {
-        'name': 'new_bucket',
+        'name': 'test-new-bucket',
     }
     return client.post(reverse('create-datasource') + '?type=warehouse', data)
 

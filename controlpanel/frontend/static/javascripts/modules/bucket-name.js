@@ -1,29 +1,23 @@
 moj.Modules.bucketName = {
-  inputName: 'new-datasource-name',
+  selector: '[data-bucket-prefix]',
 
   init() {
-    this.$input = $(`#${this.inputName}`);
-
-    if (this.$input.length) {
-      this.prefix = this.$input.data('bucket-prefix');
-      this.bindEvents();
+    const input = document.querySelector(this.selector);
+    if (input) {
+      this.bindEvents(input);
     }
   },
 
-  bindEvents() {
-    this.$input.on('keypress blur', () => {
-      this.formatBucketName();
-    });
+  bindEvents(input) {
+    input.addEventListener('keypress', this.ensurePrefix.bind(input));
+    input.addEventListener('blur', this.ensurePrefix.bind(input));
   },
 
-  formatBucketName() {
-    let val = this.$input.val();
-
-    if (val.length < this.prefix.length) {
-      val = this.prefix;
+  ensurePrefix(e) {
+    let val = this.value;
+    if (val.length < this.dataset.bucketPrefix.length) {
+      val = this.dataset.bucketPrefix;
     }
-
-    val = val.toLowerCase().replace(/ /gi, '-');
-    this.$input.val(val);
+    this.value = val.toLowerCase().replace(/ /gi, '-');
   },
 };
