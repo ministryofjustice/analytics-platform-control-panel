@@ -161,8 +161,14 @@ LOGIN_URL = "oidc_authentication_init"
 # URL where requests are redirected after logging out (if not specified)
 LOGOUT_REDIRECT_URL = "/"
 
+# URL where requests are redirected after a failed login
+LOGIN_REDIRECT_URL_FAILURE = "/"
+
 # Length of time it takes for an OIDC ID token to expire (default 15m)
 OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 15 * 60
+
+# Gracefully handle state mismatch
+OIDC_CALLBACK_CLASS = 'controlpanel.oidc.StateMismatchHandler'
 
 # Hostname of the OIDC provider
 OIDC_DOMAIN = os.environ.get("OIDC_DOMAIN")
