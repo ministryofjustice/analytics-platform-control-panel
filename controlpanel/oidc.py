@@ -1,10 +1,17 @@
+import logging
 from urllib.parse import urlencode
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousOperation
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
+from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
 from controlpanel.api.models import User
+
+
+log = logging.getLogger(__name__)
 
 
 class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
@@ -33,6 +40,16 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
 
     def verify_claims(self, claims):
         return True
+
+
+class StateMismatchHandler(OIDCAuthenticationCallbackView):
+
+    def get(self, *args, **kwargs):
+        try:
+            return super().get(*args, **kwargs)
+        except SuspiciousOperation as e:
+            log.warning(f'Caught {e}: redirecting to login')
+            return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL_FAILURE)
 
 
 def logout(request):
