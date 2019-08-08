@@ -187,6 +187,9 @@ class ManagementAPI(APIClient):
     audience = base_url
 
     def create_user(self, email, email_verified=False, **kwargs):
+        if "nickname" not in kwargs:
+            kwargs["nickname"], _, _ = email.partition('@')
+
         response = self.request(
             "POST",
             "users",
