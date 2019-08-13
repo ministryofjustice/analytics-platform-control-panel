@@ -32,7 +32,7 @@ class App(TimeStampedModel):
 
     @property
     def customers(self):
-        return auth0.AuthorizationAPI().get_group_members(group_name=self.slug)
+        return auth0.AuthorizationAPI().get_group_members(group_name=self.slug) or []
 
     def add_customers(self, emails):
         auth0.AuthorizationAPI().add_group_members(

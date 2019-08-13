@@ -7,7 +7,6 @@
 
 {% set page_name = datasource_type + "-datasource-list" %}
 {% set page_title = object.name %}
-{% set user_is_admin = request.user.is_bucket_admin(object.id) or request.user.is_superuser %}
 
 {% set access_levels_html %}
 {% include "modals/user_data_access_levels.html" %}
@@ -34,11 +33,9 @@
           Access level
           {{ modal_dialog(access_levels_html|safe) }}
         </th>
-        {% if user_is_admin %}
         <th class="govuk-table__header">
           <span class="govuk-visually-hidden">Actions</span>
         </th>
-        {% endif %}
       </tr>
     </thead>
     <tbody class="govuk-table__body">
@@ -57,7 +54,6 @@
           {{ yes_no(member.access_level, "readwrite", "Read/write", "Read only") }}
         {%- endif %}
         </td>
-        {% if user_is_admin %}
         <td class="govuk-table__cell">
           {#
           <div class="govuk-form-group change-data-access-level-panel panel panel-border-narrow js-hidden"
@@ -97,12 +93,13 @@
             </div>
           </div>
           #}
+          {% if request.user.has_perm('api.update_users3bucket', member) %}
           <a href="{{ url("update-access-level", kwargs={"pk": member.id}) }}"
              class="govuk-button hmcts-button--secondary right">
             Edit access level
           </a>
+          {% endif %}
         </td>
-        {% endif %}
       </tr>
     {% endfor %}
     </tbody>
@@ -116,7 +113,7 @@
     </tfoot>
   </table>
 
-  {% if user_is_admin %}
+  {% if request.user.has_perm('api.create_users3bucket', object) %}
   {% if users_options|length %}
     <form action="{{ url('grant-datasource-access', kwargs={"pk": object.id}) }}" method="post">
     {{ csrf_input }}
@@ -159,7 +156,7 @@
   {% endif %}
 </section>
 
-{% if user_is_admin %}
+{% if request.user.has_perm('api.destroy_s3bucket', object) %}
 <section class="cpanel-section">
   {% set num_log_entries = access_logs|length %}
   <h2 class="govuk-heading-m">Data access log</h2>
@@ -193,7 +190,7 @@
 </section>
 {% endif %}
 
-{% if user_is_admin %}
+{% if request.user.has_perm('api.destroy_s3bucket') %}
 <section class="cpanel-section">
   <form action="{{ url('delete-datasource', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}

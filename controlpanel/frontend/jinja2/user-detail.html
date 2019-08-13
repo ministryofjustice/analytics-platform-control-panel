@@ -13,7 +13,7 @@
 <span class="govuk-caption-xl">User</span>
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
   <form action="{{ url('set-superadmin', kwargs={ "pk": object.auth0_id }) }}" method="post">
     {{ csrf_input }}
@@ -43,7 +43,7 @@
 </section>
 {% endif %}
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.reset_mfa') %}
 <section class="cpanel-section">
   <form action="{{ url('reset-mfa', kwargs={ "pk": object.auth0_id }) }}" method="post">
     {{ csrf_input }}
@@ -72,11 +72,10 @@
 {# user's datasources #}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} webapp data sources</h2>
-  {{
-  datasource_list(object.users3buckets.filter(s3bucket__is_data_warehouse=False)|map(attribute="s3bucket")|list, "webapp", object) }}
+  {{ datasource_list(object.users3buckets.filter(s3bucket__is_data_warehouse=False)|map(attribute="s3bucket")|list, "webapp", object) }}
 </section>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.destroy_user', object) %}
 <section class="cpanel-section">
   <form action="{{ url("delete-user", kwargs={ "pk": object.auth0_id }) }}" method="post">
     {{ csrf_input }}

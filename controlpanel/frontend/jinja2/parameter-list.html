@@ -8,11 +8,15 @@
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+  {% if request.user.has_perm('api.list_parameter') %}
   {{ parameter_list(object_list) }}
 
+  {% if request.user.has_perm('api.create_parameter') %}
   <p class="govuk-body">
   <a class="govuk-button" href="{{ url('create-parameter') }}">
       Create new parameter
     </a>
   </p>
+  {% endif %}
+  {% endif %}
 {% endblock %}

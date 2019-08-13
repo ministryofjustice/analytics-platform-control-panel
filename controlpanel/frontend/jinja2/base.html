@@ -72,11 +72,13 @@
         "active": page_name == "warehouse-datasource-list"
       },
       {
+        "hide": not user or not user.userapps.filter(is_admin=True).exists(),
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list"
       },
       {
+        "hide": not user or not user.userapps.filter(is_admin=True).exists(),
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps"

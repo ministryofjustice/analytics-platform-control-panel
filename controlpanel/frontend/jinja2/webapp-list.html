@@ -9,13 +9,15 @@
 {% set num_apps = object_list|length %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+{% if request.user.has_perm('api.list_app') %}
 {{ app_list(object_list, request.user) }}
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.create_app') %}
 <p class="govuk-body">
   <a class="govuk-button" href="{{ url('create-app') }}">
     Register an app
   </a>
 </p>
+{% endif %}
 {% endif %}
 {% endblock %}

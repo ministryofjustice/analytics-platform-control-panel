@@ -44,7 +44,7 @@
   </form>
 </section>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.destroy_users3bucket', object) %}
 <section class="cpanel-section">
   <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": object.id}) }}">
     {{ csrf_input }}

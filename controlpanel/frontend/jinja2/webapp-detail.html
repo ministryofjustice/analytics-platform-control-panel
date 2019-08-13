@@ -11,7 +11,6 @@
 
 {% set page_name = "webapps" %}
 {% set page_title = object.name %}
-{% set user_is_admin = request.user.is_app_admin(object.id) or request.user.is_superuser %}
 
 {% set app_customers_html %}
 {% include "modals/app_customers.html" %}
@@ -74,18 +73,16 @@
       <thead class="govuk-table__head">
         <tr class="govuk-table__row">
           <th class="govuk-table__header">Customer email</th>
-          {% if user_is_admin %}
           <th class="govuk-table__header">
             <span class="govuk-visually-hidden">Actions</span>
           </th>
-          {% endif %}
         </tr>
       </thead>
       <tbody class="govuk-table__body">
         {% for customer in customers %}
         <tr class="govuk-table__row">
           <td class="govuk-table__cell">{{ customer.email }}</td>
-          {% if user_is_admin %}
+          {% if request.user.has_perm('api.remove_app_customer', object) %}
           <td class="govuk-table__cell">
             <button class="govuk-button hmcts-button--secondary right"
                     name="customer"
@@ -107,7 +104,7 @@
     </table>
   </form>
 
-  {% if user_is_admin %}
+  {% if request.user.has_perm('api.add_app_customer', object) %}
   <form action="{{ url('add-app-customers', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}
     <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
@@ -138,14 +135,13 @@
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th class="govuk-table__header">User</th>
-        {% if request.user.is_superuser %}
         <th class="govuk-table__header">
           <span class="govuk-visually-hidden">Actions</span>
         </th>
-        {% endif %}
       </tr>
     </thead>
     <tbody class="govuk-table__body">
+    {% set app_admins = app.admins %}
     {% for user in app_admins %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
@@ -154,9 +150,9 @@
             {{ user_name(user) }}
           </a>
         </td>
-        {% if request.user.is_superuser %}
+        {% if request.user.has_perm('api.revoke_app_admin', object) %}
         <td class="govuk-table__cell align-right">
-          <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
+          <form action="{{ url('revoke-app-admin', kwargs={ "pk": object.id, "user_id": user.id }) }}" method="post">
             {{ csrf_input }}
             <button class="confirm govuk-button hmcts-button--secondary right">
               Revoke admin
@@ -176,9 +172,9 @@
     </tfoot>
   </table>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.add_app_admin', object) %}
   {% if admin_options|length %}
-  <form action="{{ url('add-app-admin', kwargs={ "pk": app.id }) }}" method="post" class="govuk-form-group">
+  <form action="{{ url('add-app-admin', kwargs={ "pk": object.id }) }}" method="post" class="govuk-form-group">
     {{ csrf_input }}
 
     {% call(user) autocomplete({
@@ -213,11 +209,9 @@
           Access level
           {{ modal_dialog(app_access_levels_html|safe) }}
         </th>
-        {% if user_is_admin %}
-          <th class="govuk-table__header">
-            <span class="govuk-visually-hidden">Actions</span>
-          </th>
-        {% endif %}
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
       </tr>
     </thead>
     <tbody class="govuk-table__body">
@@ -232,7 +226,7 @@
           {{ yes_no(bucket.access_level, 'readwrite', "Read/write", "Read only") }}
         </td>
         <td class="govuk-table__cell align-right">
-          {% if user_is_admin %}
+          {% if request.user.has_perm('api.add_app_bucket', object) %}
           <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <input type="hidden" name="datasource" value="{{ bucket.s3bucket.id }}">
@@ -241,7 +235,7 @@
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
-          {% if request.user.is_superuser %}
+          {% if request.user.has_perm('api.remove_app_bucket', object) %}
           <form action="{{ url('revoke-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <button class="confirm govuk-button hmcts-button--secondary">
@@ -263,7 +257,7 @@
     </tfoot>
   </table>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.add_app_bucket', object) %}
   {% set num_bucket_options = grant_access_form.datasource|length - 1 %}
   {% if num_bucket_options %}
     <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post">
@@ -290,16 +284,16 @@
 {% endif %}
 </section>
 
-{% if user_is_admin %}
+{% if request.user.has_perm('api.view_app_logs', object) %}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">App logs</h2>
   <p class="govuk-body">
-    <a href="{{ app_logs(app) }}">View logs in Kibana</a>
+    <a href="{{ app_logs(object) }}">View logs in Kibana</a>
   </p>
 </section>
 {% endif %}
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.destroy_app', object) %}
 <section class="cpanel-section">
   <form action="{{ url('delete-app', kwargs={ "pk": object.id }) }}" method="post">
     {{ csrf_input }}
