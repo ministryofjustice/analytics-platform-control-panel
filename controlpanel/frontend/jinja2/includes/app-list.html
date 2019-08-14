@@ -22,13 +22,12 @@
   </thead>
   <tbody class="govuk-table__body">
   {%- for app in apps %}
-    {%- set user_is_app_admin = request.user.is_app_admin(app.id) %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         <a href="{{ url('manage-app', kwargs={ "pk": app.id }) }}">{{ app.name }}</a>
       </td>
       <td class="govuk-table__cell">
-        {{ yes_no(user_is_app_admin) }}
+        {{ yes_no(user.is_app_admin(app.id)) }}
       </td>
       <td class="govuk-table__cell">
         <a class="govuk-button hmcts-button--secondary right"
