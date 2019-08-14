@@ -156,7 +156,7 @@
   {% endif %}
 </section>
 
-{% if request.user.has_perm('api.destroy_s3bucket', object) %}
+{% if request.user.has_perm('api.view_s3bucket_logs', object) %}
 <section class="cpanel-section">
   {% set num_log_entries = access_logs|length %}
   <h2 class="govuk-heading-m">Data access log</h2>

@@ -114,6 +114,7 @@ add_perm('api.destroy_s3bucket', is_authenticated & is_bucket_admin)
 add_perm('api.add_s3bucket_admin', is_authenticated & is_superuser)
 add_perm('api.remove_s3bucket_admin', is_authenticated & is_superuser)
 add_perm('api.grant_s3bucket_access', is_authenticated & is_bucket_admin)
+add_perm('api.view_s3bucket_logs', is_authenticated & is_bucket_admin)
 
 
 @predicate
