@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 
 class ToolsList(LoginRequiredMixin, ListView):
+    context_object_name = 'tools'
     template_name = "tools.html"
 
     def get_queryset(self):

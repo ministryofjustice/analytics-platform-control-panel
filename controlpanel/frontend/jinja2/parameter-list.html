@@ -9,7 +9,7 @@
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
   {% if request.user.has_perm('api.list_parameter') %}
-  {{ parameter_list(object_list) }}
+  {{ parameter_list(parameters) }}
 
   {% if request.user.has_perm('api.create_parameter') %}
   <p class="govuk-body">

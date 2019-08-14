@@ -13,6 +13,7 @@ from controlpanel.api.models import User
 
 
 class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    context_object_name = 'users'
     model = User
     permission_required = 'api.list_user'
     queryset = User.objects.exclude(auth0_id='')
@@ -56,6 +57,7 @@ class UserDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
 
 class UserDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    context_object_name = 'user'
     model = User
     permission_required = 'api.retrieve_user'
     template_name = "user-detail.html"

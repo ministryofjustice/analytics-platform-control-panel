@@ -6,11 +6,11 @@
 {% set page_title = "All webapps" if all_webapps else "Your webapps" %}
 
 {% block content %}
-{% set num_apps = object_list|length %}
+{% set num_apps = apps|length %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 {% if request.user.has_perm('api.list_app') %}
-{{ app_list(object_list, request.user) }}
+{{ app_list(apps, request.user) }}
 
 {% if request.user.has_perm('api.create_app') %}
 <p class="govuk-body">

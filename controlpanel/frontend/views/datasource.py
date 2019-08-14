@@ -60,6 +60,7 @@ class BucketList(
     ListView,
 ):
     all_datasources = False
+    context_object_name = 'buckets'
     datasource_type = 'warehouse'
     model = S3Bucket
     permission_required = 'api.list_s3bucket'
@@ -90,6 +91,7 @@ class BucketDetail(
     DatasourceMixin,
     DetailView,
 ):
+    context_object_name = 'bucket'
     model = S3Bucket
     permission_required = 'api.retrieve_s3bucket'
     template_name = "datasource-detail.html"
@@ -170,6 +172,7 @@ class UpdateAccessLevel(
     PermissionRequiredMixin,
     UpdateView,
 ):
+    context_object_name = 'users3bucket'
     form_class = GrantAccessForm
     model = UserS3Bucket
     permission_required = 'api.update_users3bucket'

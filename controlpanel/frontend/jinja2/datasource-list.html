@@ -19,7 +19,7 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 {% if request.user.has_perm('api.list_s3bucket') %}
-  {{ datasource_list(object_list, datasource_type|default(""), request.user) }}
+  {{ datasource_list(buckets, datasource_type|default(""), request.user) }}
 
   {% if request.user.has_perm('api.create_s3bucket') %}
   <p class="govuk-body">

@@ -34,6 +34,7 @@ from controlpanel.frontend.forms import (
 
 
 class AppList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    context_object_name = 'apps'
     model = App
     permission_required = 'api.list_app'
     template_name = "webapp-list.html"
@@ -56,6 +57,7 @@ class AdminAppList(AppList):
 
 
 class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    context_object_name = 'app'
     model = App
     permission_required = 'api.retrieve_app'
     template_name = "webapp-detail.html"

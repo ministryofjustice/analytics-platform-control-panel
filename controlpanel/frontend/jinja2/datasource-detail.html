@@ -6,7 +6,7 @@
 {% extends "base.html" %}
 
 {% set page_name = datasource_type + "-datasource-list" %}
-{% set page_title = object.name %}
+{% set page_title = bucket.name %}
 
 {% set access_levels_html %}
 {% include "modals/user_data_access_levels.html" %}
@@ -17,7 +17,7 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <p class="govuk-body">
-  <a href="{{ object.aws_url }}" class="govuk-button hmcts-button--secondary" target="_blank" rel="noopener">
+  <a href="{{ bucket.aws_url }}" class="govuk-button hmcts-button--secondary" target="_blank" rel="noopener">
     Open on AWS
   </a>
 </p>
@@ -113,9 +113,9 @@
     </tfoot>
   </table>
 
-  {% if request.user.has_perm('api.create_users3bucket', object) %}
+  {% if request.user.has_perm('api.create_users3bucket', bucket) %}
   {% if users_options|length %}
-    <form action="{{ url('grant-datasource-access', kwargs={"pk": object.id}) }}" method="post">
+    <form action="{{ url('grant-datasource-access', kwargs={"pk": bucket.id}) }}" method="post">
     {{ csrf_input }}
     <div class="govuk-form-group">
       <label class="govuk-label" for="user_id">Grant access to this data to other users</label>
@@ -156,7 +156,7 @@
   {% endif %}
 </section>
 
-{% if request.user.has_perm('api.view_s3bucket_logs', object) %}
+{% if request.user.has_perm('api.view_s3bucket_logs', bucket) %}
 <section class="cpanel-section">
   {% set num_log_entries = access_logs|length %}
   <h2 class="govuk-heading-m">Data access log</h2>
@@ -192,7 +192,7 @@
 
 {% if request.user.has_perm('api.destroy_s3bucket') %}
 <section class="cpanel-section">
-  <form action="{{ url('delete-datasource', kwargs={ "pk": object.id }) }}" method="post">
+  <form action="{{ url('delete-datasource', kwargs={ "pk": bucket.id }) }}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive js-confirm"
             data-confirm-message="Are you sure you want to delete this data source?">
