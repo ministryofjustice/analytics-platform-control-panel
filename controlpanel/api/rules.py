@@ -50,7 +50,7 @@ add_perm('api.destroy_app', is_authenticated & is_superuser)
 add_perm('api.add_app_customer', is_authenticated & is_app_admin)
 add_perm('api.remove_app_customer', is_authenticated & is_app_admin)
 add_perm('api.add_app_admin', is_authenticated & is_superuser)
-add_perm('api.remove_app_admin', is_authenticated & is_superuser)
+add_perm('api.revoke_app_admin', is_authenticated & is_superuser)
 add_perm('api.add_app_bucket', is_authenticated & is_superuser)
 add_perm('api.remove_app_bucket', is_authenticated & is_superuser)
 add_perm('api.view_app_logs', is_authenticated & is_app_admin)
@@ -114,6 +114,7 @@ add_perm('api.destroy_s3bucket', is_authenticated & is_bucket_admin)
 add_perm('api.add_s3bucket_admin', is_authenticated & is_superuser)
 add_perm('api.remove_s3bucket_admin', is_authenticated & is_superuser)
 add_perm('api.grant_s3bucket_access', is_authenticated & is_bucket_admin)
+add_perm('api.view_s3bucket_logs', is_authenticated & is_bucket_admin)
 
 
 @predicate

@@ -10,8 +10,7 @@
 {% from "includes/yesno.html" import yes_no %}
 
 {% set page_name = "webapps" %}
-{% set page_title = object.name %}
-{% set user_is_admin = request.user.is_app_admin(object.id) or request.user.is_superuser %}
+{% set page_title = app.name %}
 
 {% set app_customers_html %}
 {% include "modals/app_customers.html" %}
@@ -30,23 +29,23 @@
   <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if object.description %}
+  {% if app.description %}
   <p class="govuk-body">
-    {{ object.description }}
+    {{ app.description }}
   </p>
   {% endif %}
 
-  {% if object.is_deployed %}
+  {% if app.is_deployed %}
   <h2 class="govuk-heading-m">Deployed URL</h2>
   <p class="govuk-body">
-      <a href="https://{{ object.deployed_url }}">https://{{ object.deployed_url }}</a>
+      <a href="https://{{ app.deployed_url }}">https://{{ app.deployed_url }}</a>
   </p>
   {% endif %}
 
   <h2 class="govuk-heading-m">Source Code Repository</h2>
   <p class="govuk-body">
-    {% if object.repo_url %}
-      <a href="{{ object.repo_url }}">{{ object.repo_url }}</a>
+    {% if app.repo_url %}
+      <a href="{{ app.repo_url }}">{{ app.repo_url }}</a>
     {% else %}
       None
     {% endif %}
@@ -54,38 +53,36 @@
 
   <h2 class="govuk-heading-m">Deployment Pipeline</h2>
   <p class="govuk-body">
-    <a href="https://concourse.services.{{env}}.mojanalytics.xyz/teams/main/pipelines/{{ object.name }}">
-    https://concourse.services.{{env}}.mojanalytics.xyz/teams/main/pipelines/{{ object.name }}
+    <a href="https://concourse.services.{{env}}.mojanalytics.xyz/teams/main/pipelines/{{ app.name }}">
+    https://concourse.services.{{env}}.mojanalytics.xyz/teams/main/pipelines/{{ app.name }}
     </a>
   </p>
 </header>
 
 <section class="cpanel-section">
-  {% set customers = object.customers %}
+  {% set customers = app.customers %}
   {% set num_customers = customers|length %}
 
   <h2 class="govuk-heading-m">
     App customers
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
-  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": object.id}) }}">
+  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
     {{ csrf_input }}
     <table class="govuk-table">
       <thead class="govuk-table__head">
         <tr class="govuk-table__row">
           <th class="govuk-table__header">Customer email</th>
-          {% if user_is_admin %}
           <th class="govuk-table__header">
             <span class="govuk-visually-hidden">Actions</span>
           </th>
-          {% endif %}
         </tr>
       </thead>
       <tbody class="govuk-table__body">
         {% for customer in customers %}
         <tr class="govuk-table__row">
           <td class="govuk-table__cell">{{ customer.email }}</td>
-          {% if user_is_admin %}
+          {% if request.user.has_perm('api.remove_app_customer', app) %}
           <td class="govuk-table__cell">
             <button class="govuk-button hmcts-button--secondary right"
                     name="customer"
@@ -107,8 +104,8 @@
     </table>
   </form>
 
-  {% if user_is_admin %}
-  <form action="{{ url('add-app-customers', kwargs={ "pk": object.id }) }}" method="post">
+  {% if request.user.has_perm('api.add_app_customer', app) %}
+  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
     <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
       <label class="govuk-label" for="customer_email">
@@ -138,14 +135,13 @@
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th class="govuk-table__header">User</th>
-        {% if request.user.is_superuser %}
         <th class="govuk-table__header">
           <span class="govuk-visually-hidden">Actions</span>
         </th>
-        {% endif %}
       </tr>
     </thead>
     <tbody class="govuk-table__body">
+    {% set app_admins = app.admins %}
     {% for user in app_admins %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
@@ -154,7 +150,7 @@
             {{ user_name(user) }}
           </a>
         </td>
-        {% if request.user.is_superuser %}
+        {% if request.user.has_perm('api.revoke_app_admin', app) %}
         <td class="govuk-table__cell align-right">
           <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
             {{ csrf_input }}
@@ -176,7 +172,7 @@
     </tfoot>
   </table>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.add_app_admin', app) %}
   {% if admin_options|length %}
   <form action="{{ url('add-app-admin', kwargs={ "pk": app.id }) }}" method="post" class="govuk-form-group">
     {{ csrf_input }}
@@ -213,15 +209,13 @@
           Access level
           {{ modal_dialog(app_access_levels_html|safe) }}
         </th>
-        {% if user_is_admin %}
-          <th class="govuk-table__header">
-            <span class="govuk-visually-hidden">Actions</span>
-          </th>
-        {% endif %}
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-      {% set buckets = object.apps3buckets.all() %}
+      {% set buckets = app.apps3buckets.all() %}
       {% set num_buckets = buckets|length %}
       {% for bucket in buckets %}
       <tr class="govuk-table__row">
@@ -232,16 +226,15 @@
           {{ yes_no(bucket.access_level, 'readwrite', "Read/write", "Read only") }}
         </td>
         <td class="govuk-table__cell align-right">
-          {% if user_is_admin %}
-          <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post" class="form-control-prefix">
+          {% if request.user.has_perm('api.update_apps3bucket', bucket) %}
+          <form action="{{ url('update-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
-            <input type="hidden" name="datasource" value="{{ bucket.s3bucket.id }}">
             <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
             <button class="confirm govuk-button hmcts-button--secondary">
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
-          {% if request.user.is_superuser %}
+          {% if request.user.has_perm('api.remove_app_bucket', app) %}
           <form action="{{ url('revoke-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <button class="confirm govuk-button hmcts-button--secondary">
@@ -263,10 +256,10 @@
     </tfoot>
   </table>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.add_app_bucket', app) %}
   {% set num_bucket_options = grant_access_form.datasource|length - 1 %}
   {% if num_bucket_options %}
-    <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post">
+    <form action="{{ url('grant-app-access', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
     <input type="hidden" name="access_level" value="readonly">
     <div class="govuk-form-group">
@@ -290,7 +283,7 @@
 {% endif %}
 </section>
 
-{% if user_is_admin %}
+{% if request.user.has_perm('api.view_app_logs', app) %}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">App logs</h2>
   <p class="govuk-body">
@@ -299,9 +292,9 @@
 </section>
 {% endif %}
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.destroy_app', app) %}
 <section class="cpanel-section">
-  <form action="{{ url('delete-app', kwargs={ "pk": object.id }) }}" method="post">
+  <form action="{{ url('delete-app', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive"
             data-confirm-message="Are you sure you want to delete this app?">

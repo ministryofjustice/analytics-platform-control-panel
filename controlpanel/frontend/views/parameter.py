@@ -16,6 +16,7 @@ from controlpanel.frontend.forms import CreateParameterForm
 
 
 class ParameterList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+    context_object_name = 'parameters'
     model = Parameter
     permission_required = 'api.list_parameter'
     template_name = "parameter-list.html"

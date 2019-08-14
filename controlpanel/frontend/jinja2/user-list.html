@@ -19,7 +19,7 @@
     </tr>
   </thead>
   <tbody class="govuk-table__body">
-  {% for user in object_list %}
+  {% for user in users %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
@@ -51,7 +51,7 @@
   <tfoot class="govuk-table__foot">
     <tr class="govuk-table__row">
       <td class="govuk-table__cell" colspan="4">
-        {{ object_list|length }} user{% if object_list|length != 1 %}s{% endif %}
+        {{ users|length }} user{% if users|length != 1 %}s{% endif %}
       </td>
     </tr>
   </tfoot>

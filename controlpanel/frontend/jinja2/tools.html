@@ -19,7 +19,7 @@
     </tr>
   </thead>
   <tbody class="govuk-table__body">
-    {% for tool in object_list %}
+    {% for tool in tools %}
     {% set deployed = tool.url is defined %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">{{ tool.name }}</td>
@@ -72,7 +72,7 @@
   <tfoot class="govuk-table__foot">
     <tr class="govuk-table__row">
       <td class="govuk-table__cell" colspan="3">
-        {{ object_list|length }} tool{% if object_list|length != 1 %}s{% endif %}
+        {{ tools|length }} tool{% if tools|length != 1 %}s{% endif %}
       </td>
     </tr>
   </tfoot>

@@ -8,9 +8,9 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <section class="cpanel-section">
-  <form method="post" action="{{ url('update-access-level', kwargs={ "pk": object.id }) }}">
+  <form method="post" action="{{ url('update-access-level', kwargs={ "pk": users3bucket.id }) }}">
     {{ csrf_input }}
-    <input type="hidden" name="user_id" value="{{ object.user.id }}">
+    <input type="hidden" name="user_id" value="{{ users3bucket.user.id }}">
     {{ govukRadios({
       "name": "access_level",
       "fieldset": {
@@ -26,17 +26,17 @@
         {
           "value": "readonly",
           "text": "Read only",
-          "checked": not object.is_admin and object.access_level == "readonly"
+          "checked": not users3bucket.is_admin and users3bucket.access_level == "readonly"
         },
         {
           "value": "readwrite",
           "text": "Read/write",
-          "checked": not object.is_admin and object.access_level == "readwrite"
+          "checked": not users3bucket.is_admin and users3bucket.access_level == "readwrite"
         },
         {
           "value": "admin",
           "text": "Admin",
-          "checked": object.is_admin,
+          "checked": users3bucket.is_admin,
         }
       ]
     }) }}
@@ -44,9 +44,9 @@
   </form>
 </section>
 
-{% if request.user.is_superuser %}
+{% if request.user.has_perm('api.destroy_users3bucket', users3bucket) %}
 <section class="cpanel-section">
-  <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": object.id}) }}">
+  <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": users3bucket.id}) }}">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive">Revoke access</button>
   </form>
