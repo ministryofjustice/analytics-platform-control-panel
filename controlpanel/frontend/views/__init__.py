@@ -12,6 +12,7 @@ from controlpanel.frontend.views.app import (
     AddAdmin,
     RevokeAdmin,
     GrantAppAccess,
+    UpdateAppAccess,
     RevokeAppAccess,
 )
 from controlpanel.frontend.views.datasource import (

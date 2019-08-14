@@ -226,10 +226,9 @@
           {{ yes_no(bucket.access_level, 'readwrite', "Read/write", "Read only") }}
         </td>
         <td class="govuk-table__cell align-right">
-          {% if request.user.has_perm('api.add_app_bucket', object) %}
-          <form action="{{ url('grant-app-access', kwargs={ "pk": object.id }) }}" method="post" class="form-control-prefix">
+          {% if request.user.has_perm('api.update_apps3bucket', bucket) %}
+          <form action="{{ url('update-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
-            <input type="hidden" name="datasource" value="{{ bucket.s3bucket.id }}">
             <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
             <button class="confirm govuk-button hmcts-button--secondary">
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}

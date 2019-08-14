@@ -11,6 +11,7 @@ from django.views.generic.edit import (
     CreateView,
     DeleteView,
     FormMixin,
+    UpdateView,
 )
 from django.views.generic.list import ListView
 from github import Github
@@ -181,6 +182,16 @@ class RevokeAppAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
     def get_success_url(self):
         messages.success(self.request, "Successfully disconnected data source")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
+
+
+class UpdateAppAccess(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = AppS3Bucket
+    permission_required = 'api.update_apps3bucket'
+    fields = ['access_level']
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully updated access")
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
 
