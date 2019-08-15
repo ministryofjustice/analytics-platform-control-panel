@@ -2,6 +2,16 @@
 
 {% set page_title = "Sorry, there is a problem with the service" %}
 
+{% block header %}
+  {{ govukHeader({
+    'serviceName': service_name,
+    'serviceUrl': '#',
+    'navigation': [],
+  }) }}
+{% endblock %}
+
+{% set hide_nav = True %}
+
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
