@@ -6,8 +6,6 @@
 {% extends "govuk-frontend.html" %}
 
 {% set service_name = "Analytical Platform Control Panel" %}
-{% set user = {} %}
-{% if request %}{% set user = request.user %}{% endif %}
 
 {% block page_title %}
   {{ page_title }} | {{ service_name }}
@@ -44,7 +42,7 @@
     'navigation': [
       {
         'href': url('index'),
-        'text': "Signed in as " ~ user.name | default(user.email),
+        'text': "Signed in as " ~ request.user.name | default(request.user.email),
         'active': True
       }
     ]
@@ -56,7 +54,7 @@
   {{ navbar({
     "items": [
       {
-        "hide": not user.is_superuser,
+        "hide": not request.user.is_superuser,
         "text": "Home",
         "href": url("index"),
         "active": page_name == "home"
@@ -72,19 +70,19 @@
         "active": page_name == "warehouse-datasource-list"
       },
       {
-        "hide": not user or not user.userapps.filter(is_admin=True).exists(),
+        "hide": not request.user or not request.user.userapps.filter(is_admin=True).exists(),
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list"
       },
       {
-        "hide": not user or not user.userapps.filter(is_admin=True).exists(),
+        "hide": not request.user or not request.user.userapps.filter(is_admin=True).exists(),
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps"
       },
       {
-        "hide": not user.is_superuser,
+        "hide": not request.user.is_superuser,
         "text": "Parameters",
         "href": url("list-parameters"),
         "active": page_name == "parameters"
