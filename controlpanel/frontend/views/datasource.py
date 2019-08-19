@@ -161,10 +161,21 @@ class DeleteDatasource(
 ):
     model = S3Bucket
     permission_required = 'api.destroy_s3bucket'
+    success_url = reverse_lazy('list-warehouse-datasources')
 
-    def get_success_url(self):
-        messages.success(self.request, "Successfully delete data source")
-        return reverse_lazy("list-all-datasources")
+    def delete(self, *args, **kwargs):
+        bucket = self.get_object()
+        session = self.request.session
+        user = self.request.user
+
+        if not bucket.is_data_warehouse:
+            self.success_url = reverse_lazy('list-webapp-datasources')
+
+        response = super().delete(*args, **kwargs)
+
+        messages.success(self.request, "Successfully deleted data source")
+
+        return response
 
 
 class UpdateAccessLevel(
