@@ -190,7 +190,7 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.destroy_s3bucket') %}
+{% if request.user.has_perm('api.destroy_s3bucket', bucket) %}
 <section class="cpanel-section">
   <form action="{{ url('delete-datasource', kwargs={ "pk": bucket.id }) }}" method="post">
     {{ csrf_input }}
