@@ -1,15 +1,16 @@
 moj.Modules.toolStatus = {
   eventType: "toolStatusChange",
-  listenerClass: ".sse-listener.tool-status",
+  listenerClass: ".tool-status",
 
   init() {
-    if (document.querySelectorAll(this.listenerClass).length) {
-      this.bindEvents();
+    const toolStatusListeners = document.querySelectorAll(this.listenerClass);
+    if (toolStatusListeners) {
+      this.bindEvents(toolStatusListeners);
     }
   },
 
-  bindEvents() {
-    document.querySelectorAll(this.listenerClass).forEach(listener => {
+  bindEvents(listeners) {
+    listeners.forEach(listener => {
       moj.Modules.eventStream.addEventListener(
         this.eventType,
         this.buildEventHandler(listener)

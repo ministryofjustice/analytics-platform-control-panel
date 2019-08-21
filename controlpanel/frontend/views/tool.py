@@ -7,7 +7,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
-from django_eventstream import send_event
 from kubernetes.client.rest import ApiException
 
 from controlpanel.api.tools import (
@@ -41,10 +40,13 @@ class ToolsList(LoginRequiredMixin, ListView):
             for name in deployable_tools
         ]
 
-        return [
-            *deployed_tools,
-            *deployable_tools,
-        ]
+        return sorted(
+            [
+                *deployed_tools,
+                *deployable_tools,
+            ],
+            key=lambda tool: tool['name'] if isinstance(tool, dict) else tool.name,
+        )
 
 
 class DeployTool(LoginRequiredMixin, RedirectView):
@@ -54,18 +56,20 @@ class DeployTool(LoginRequiredMixin, RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         name = self.kwargs["name"]
 
-        try:
-            Tool.create(name).deploy_for(self.request.user)
+        async_to_sync(channel_layer.send)(
+            'background_tasks',
+            {
+                'type': 'tool.deploy',
+                'tool_name': name,
+                'user_id': self.request.user.id,
+            },
+        )
 
-        except ToolDeploymentError as error:
-            messages.error(f"Failed deploying {name}")
-            log.error(error)
+        messages.success(
+            self.request,
+            f"Deploying {name}... this may take up to 5 minutes",
+        )
 
-        else:
-            messages.success(
-                self.request,
-                f"Deploying {name}... this may take up to 5 minutes",
-            )
         return super().get_redirect_url(*args, **kwargs)
 
 
@@ -77,15 +81,12 @@ class RestartTool(LoginRequiredMixin, RedirectView):
         name = self.kwargs['name']
 
         async_to_sync(channel_layer.send)(
-            'tools',
+            'background_tasks',
             {
-                'type': 'restarttool',
+                'type': 'tool.restart',
                 'tool_name': name,
                 'user_id': self.request.user.id,
             },
-        )
-        send_event(
-            'test', 'toolStatusChange', {'toolName': name, 'status': 'Restarting...'},
         )
 
         messages.success(

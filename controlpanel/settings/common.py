@@ -52,8 +52,6 @@ STATICFILES_DIRS = [
 INSTALLED_APPS = [
     # Django channels for asynchronous support
     "channels",
-    # Django eventstream for SSE support
-    "django_eventstream",
     # Django auth system
     "django.contrib.auth",
     # OIDC client
@@ -93,8 +91,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "controlpanel.middleware.LegacyAPIRedirectMiddleware",
-    # used by django_eventstream
-    "django_grip.GripMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -320,6 +316,10 @@ LOGGING = {
             "handlers": ["console"],
             "level": os.environ.get("LOG_LEVEL", "DEBUG"),
         },
+        "aioredis": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
         "asyncio": {
             "handlers": ["console"],
             "level": "WARNING",
@@ -427,6 +427,10 @@ TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
 
 
+# -- Redis
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+
 # -- Async
 
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
@@ -436,17 +440,11 @@ CHANNEL_LAYERS = {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             'hosts': [
-                (
-                    os.environ.get('REDIS_HOST', 'localhost'),
-                    os.environ.get('REDIS_PORT', '6379'),
-                ),
+                (REDIS_HOST, REDIS_PORT),
             ],
         },
     },
 }
-
-# Store Server Sent Events for 24 hours
-EVENTSTREAM_STORAGE_CLASS = 'django_eventstream.storage.DjangoModelStorage'
 
 
 # -- Github

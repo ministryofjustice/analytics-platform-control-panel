@@ -8,7 +8,6 @@ urlpatterns = [
     path("api/cpanel/v1/", include("controlpanel.api.urls")),
     path("api/k8s/", include("controlpanel.kubeapi.urls")),
     path("oidc/", include("mozilla_django_oidc.urls")),
-    path("events/", include("django_eventstream.urls")),
     # redirect old k8s api requests to new paths
     path("k8s/", include('controlpanel.kubeapi.urls')),
     path("health/", include('health_check.urls')),
