@@ -27,6 +27,10 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
     Server Sent Events filtered by the request user's id - so a user only
     receives SSEs intended for them and not any other user.
     """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.streaming = False
 
     async def handle(self, body):
         """
