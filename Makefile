@@ -69,12 +69,23 @@ transpile:
 		controlpanel/frontend/static/javascripts \
 		-o static/app.js -s
 
+redis: /usr/local/var/run/redis.pid
+	@echo
+	@echo "> Running Redis server..."
+	@redis-server &>/tmp/redis.log &
+
 ## run: Run webapp
 run: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.development
-run: collectstatic
+run: collectstatic redis
 	@echo
 	@echo "> Running webapp..."
 	@${BIN}/python3 manage.py runserver
+
+run-worker: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.development
+run-worker: redis
+	@echo
+	@echo "> Running background task worker..."
+	@${BIN}/python3 manage.py runworker background_tasks
 
 ## test: Run tests
 test: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.test
@@ -109,7 +120,7 @@ docker-test:
 	@docker-compose run \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
 		-e KUBECONFIG=tests/kubeconfig \
-		app sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
+		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
 
 help: Makefile
 	@echo

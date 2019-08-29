@@ -1,5 +1,7 @@
 import re
 
+from channels.exceptions import StopConsumer
+from channels.generic.http import AsyncHttpConsumer
 from django.template.defaultfilters import slugify
 
 
@@ -49,3 +51,35 @@ def sanitize_dns_label(label):
 
 def sanitize_environment_variable(s):
     return name.upper().replace("-", "_")
+
+
+class PatchedAsyncHttpConsumer(AsyncHttpConsumer):
+    """
+    Patch AsyncHttpConsumer so that it doesn't disconnect immediately
+    This should be removed when Django Channels is fixed
+    See: https://github.com/django/channels/issues/1302
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.keepalive = False
+
+    async def send_body(self, body, *, more_body=False):
+        if more_body:
+            self.keepalive = True
+        assert isinstance(body, bytes), "Body is not bytes"
+        await self.send(
+            {"type": "http.response.body", "body": body, "more_body": more_body},
+        )
+
+    async def http_request(self, message):
+        if "body" in message:
+            self.body.append(message["body"])
+        if not message.get('more_body'):
+            try:
+                await self.handle(b''.join(self.body))
+            finally:
+                if not self.keepalive:
+                    await self.disconnect()
+                    raise StopConsumer()
+

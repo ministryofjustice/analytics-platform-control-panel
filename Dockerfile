@@ -1,4 +1,4 @@
-FROM alpine:3.8 AS base
+FROM alpine:3.10 AS base
 
 LABEL maintainer="andy.driver@digital.justice.gov.uk"
 
@@ -19,10 +19,10 @@ WORKDIR /home/controlpanel
 RUN apk add --no-cache \
         build-base=0.5-r1 \
         ca-certificates=20190108-r0 \
-        libffi-dev=3.2.1-r4 \
-        python3-dev=3.6.8-r0 \
+        libffi-dev=3.2.1-r6 \
+        python3-dev=3.7.3-r0 \
         libressl-dev=2.7.5-r0 \
-        libstdc++=6.4.0-r9 \
+        libstdc++=8.3.0-r0 \
         postgresql-dev \
         postgresql-client
 

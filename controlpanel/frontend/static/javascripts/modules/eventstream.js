@@ -1,11 +1,12 @@
 /* Listen for Server Sent Events */
 moj.Modules.eventStream = {
-  eventsPath: '/events',
+  eventsPath: '/events/',
   eventSource: null,
   listenerClass: '.sse-listener',
 
   init() {
-    if (document.querySelectorAll(this.listenerClass).length) {
+    const listeners = document.querySelectorAll(this.listenerClass);
+    if (listeners) {
       this.eventSource = new EventSource(this.eventsPath);
     }
   },

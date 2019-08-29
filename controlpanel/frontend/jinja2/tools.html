@@ -7,14 +7,13 @@
 
 <h1 class="govuk-heading-xl">Your tools</h1>
 
-{# <p class="govuk-body">The status of your tools will update automatically.</p>
-#}
+<p class="govuk-body">The status of your tools will update automatically.</p>
 
 <table class="govuk-table">
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Name</th>
-      <th class="govuk-table__header">{# Status #}</th>
+      <th class="govuk-table__header">Status</th>
       <th class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
     </tr>
   </thead>
@@ -24,7 +23,6 @@
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">{{ tool.name }}</td>
       <td class="govuk-table__cell">
-        {#
         <div class="sse-listener tool-status" data-tool-name="{{ tool.name }}">
         {% if deployed %}
           {% if tool.idled %}
@@ -45,7 +43,6 @@
           {% endif %}
         {% endif %}
         </div>
-        #}
       </td>
       <td class="govuk-table__cell align-right no-wrap">
       {% if deployed %}
@@ -59,7 +56,7 @@
         {% endif %}
       {% else %}
         {% if True or not is_deploying[tool.name] %}
-        <form action="{{ url('deploy-tool', kwargs={"name": tool.name} ) }}" method="post">
+        <form action="{{ url('deploy-tool', kwargs={"name": tool.name} ) }}" method="post" class="deploy-tool">
           {{ csrf_input }}
           <button class="govuk-button hmcts-button--secondary right">Deploy</button>
         </form>

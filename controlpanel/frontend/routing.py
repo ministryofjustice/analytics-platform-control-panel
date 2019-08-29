@@ -1,13 +1,8 @@
-from django.conf.urls import url
-from channels.routing import URLRouter
-from channels.http import AsgiHandler
-from channels.auth import AuthMiddlewareStack
-import django_eventstream
+from django.urls import path
+
+from controlpanel.frontend.consumers import SSEConsumer
 
 
 urlpatterns = [
-    url('events', AuthMiddlewareStack(
-        URLRouter(django_eventstream.routing.urlpatterns)
-    ), {'channels': ['test']}),
-    url('', AsgiHandler),
+    path('events/', SSEConsumer),
 ]
