@@ -171,20 +171,20 @@ OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 15 * 60
 OIDC_CALLBACK_CLASS = 'controlpanel.oidc.StateMismatchHandler'
 
 # Hostname of the OIDC provider
-OIDC_DOMAIN = os.environ.get("OIDC_DOMAIN")
+OIDC_DOMAIN = os.environ["OIDC_DOMAIN"]
 
 # OIDC endpoints
-OIDC_OP_AUTHORIZATION_ENDPOINT = os.environ.get("OIDC_OP_AUTHORIZATION_ENDPOINT")
-OIDC_OP_JWKS_ENDPOINT = os.environ.get("OIDC_OP_JWKS_ENDPOINT")
-OIDC_OP_TOKEN_ENDPOINT = os.environ.get("OIDC_OP_TOKEN_ENDPOINT")
-OIDC_OP_USER_ENDPOINT = os.environ.get("OIDC_OP_USER_ENDPOINT")
+OIDC_OP_AUTHORIZATION_ENDPOINT = os.environ["OIDC_OP_AUTHORIZATION_ENDPOINT"]
+OIDC_OP_JWKS_ENDPOINT = os.environ["OIDC_OP_JWKS_ENDPOINT"]
+OIDC_OP_TOKEN_ENDPOINT = os.environ["OIDC_OP_TOKEN_ENDPOINT"]
+OIDC_OP_USER_ENDPOINT = os.environ["OIDC_OP_USER_ENDPOINT"]
 
 # Function called to logout of OIDC provider
 OIDC_OP_LOGOUT_URL_METHOD = "controlpanel.oidc.logout"
 
 # OIDC client secret
-OIDC_RP_CLIENT_ID = os.environ.get("OIDC_CLIENT_ID")
-OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
+OIDC_RP_CLIENT_ID = os.environ["OIDC_CLIENT_ID"]
+OIDC_RP_CLIENT_SECRET = os.environ["OIDC_CLIENT_SECRET"]
 
 # OIDC JWT signing algorithm
 OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
@@ -202,7 +202,7 @@ AUTH0 = {
     "client_id": OIDC_RP_CLIENT_ID,
     "client_secret": OIDC_RP_CLIENT_SECRET,
     "domain": OIDC_DOMAIN,
-    "authorization_extension_url": os.environ.get("OIDC_AUTH_EXTENSION_URL"),
+    "authorization_extension_url": os.environ["OIDC_AUTH_EXTENSION_URL"],
     "logout_url": f"https://{OIDC_DOMAIN}/v2/logout",
 }
 
@@ -252,9 +252,9 @@ DEBUG = is_truthy(os.environ.get("DEBUG", False))
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME", PROJECT_NAME),
-        "USER": os.environ.get("DB_USER", ""),
-        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "NAME": os.environ["DB_NAME"],
+        "USER": os.environ["DB_USER"],
+        "PASSWORD": os.environ["DB_PASSWORD"],
         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         "PORT": os.environ.get("DB_PORT", "5432"),
     }
@@ -373,7 +373,7 @@ LOGGING = {
 
 if os.environ.get("SENTRY_DSN"):
     RAVEN_CONFIG = {
-        "dsn": os.environ.get("SENTRY_DSN", ""),
+        "dsn": os.environ["SENTRY_DSN"],
         "environment": os.environ.get("ENV", "dev"),
         "ignore_exceptions": [],
     }
@@ -405,26 +405,26 @@ WHATS_NEW_URL = (
 TOOLS = {
     "rstudio": {
         "domain": os.environ.get("RSTUDIO_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("RSTUDIO_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("RSTUDIO_AUTH_CLIENT_SECRET"),
+        "client_id": os.environ["RSTUDIO_AUTH_CLIENT_ID"],
+        "client_secret": os.environ["RSTUDIO_AUTH_CLIENT_SECRET"],
     },
     "jupyter-lab": {
         "domain": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_SECRET"),
+        "client_id": os.environ["JUPYTER_LAB_AUTH_CLIENT_ID"],
+        "client_secret": os.environ["JUPYTER_LAB_AUTH_CLIENT_SECRET"],
     },
     "airflow-sqlite": {
         "domain": os.environ.get("AIRFLOW_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("AIRFLOW_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("AIRFLOW_AUTH_CLIENT_SECRET"),
+        "client_id": os.environ["AIRFLOW_AUTH_CLIENT_ID"],
+        "client_secret": os.environ["AIRFLOW_AUTH_CLIENT_SECRET"],
     },
 }
 
 # domain where tools are deployed
-TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
+TOOLS_DOMAIN = os.environ['TOOLS_DOMAIN']
 
 # hostname of NFS server for user homes
-NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
+NFS_HOSTNAME = os.environ["NFS_HOSTNAME"]
 
 
 # -- Async
@@ -466,12 +466,12 @@ GITHUB_ORGS = list(filter(
 ELASTICSEARCH = {
     'hosts': [
         {
-            'host': os.environ.get('ELASTICSEARCH_HOST'),
+            'host': os.environ['ELASTICSEARCH_HOST'],
             'port': int(os.environ.get('ELASTICSEARCH_PORT', 9243)),
             'use_ssl': True,
             'http_auth': (
-                os.environ.get('ELASTICSEARCH_USERNAME'),
-                os.environ.get('ELASTICSEARCH_PASSWORD')
+                os.environ['ELASTICSEARCH_USERNAME'],
+                os.environ['ELASTICSEARCH_PASSWORD'],
             ),
         },
     ],
@@ -480,19 +480,19 @@ ELASTICSEARCH = {
 
 
 # -- AWS
-AWS_ACCOUNT_ID = os.environ.get('AWS_ACCOUNT_ID')
-K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME')
+AWS_ACCOUNT_ID = os.environ['AWS_ACCOUNT_ID']
+K8S_WORKER_ROLE_NAME = os.environ['K8S_WORKER_ROLE_NAME']
 
 BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 
 # Auth0 integrated SAML provider, referenced in user policies to allow login via
 # SAML federation
-SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
+SAML_PROVIDER = os.environ['SAML_PROVIDER']
 
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 
 
 # -- Airflow
-AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
-AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
+AIRFLOW_SECRET_KEY = os.environ['AIRFLOW_SECRET_KEY']
+AIRFLOW_FERNET_KEY = os.environ['AIRFLOW_FERNET_KEY']
