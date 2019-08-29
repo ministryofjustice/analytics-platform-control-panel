@@ -207,7 +207,7 @@ OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
 
 # -- Security
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "")
+SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
 
 # A list of people who get code error notifications when DEBUG=False
 ADMINS = []
