@@ -78,6 +78,24 @@ class AWSClient(object):
                 'TagSet': [{'Key': str(k), 'Value': str(v)} for k, v in tags.items()]
             })
 
+    def put_public_access_block(
+        self,
+        bucket_name,
+        block_public_acls=True,
+        ignore_public_acls=True,
+        block_public_policy=True,
+        restrict_public_buckets=True,
+    ):
+        self._do('s3', 'put_public_access_block',
+            Bucket=bucket_name,
+            PublicAccessBlockConfiguration={
+                'BlockPublicAcls': block_public_acls,
+                'IgnorePublicAcls': ignore_public_acls,
+                'BlockPublicPolicy': block_public_policy,
+                'RestrictPublicBuckets': restrict_public_buckets,
+            }
+        )
+
     def get_inline_policy_document(self, role_name, policy_name):
         if not self.enabled:
             return None
