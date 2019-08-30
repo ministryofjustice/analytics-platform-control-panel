@@ -25,7 +25,7 @@ def userapps(apps, users):
             is_admin=True,
         ),
         2: UserApp.objects.create(
-            user=users[1],
+            user=users['normal_user'],
             app=apps[1],
             is_admin=True,
         ),
@@ -51,7 +51,7 @@ def test_detail(client, userapps):
 def test_create(client, apps, users):
     data = {
         'app': apps[2].id,
-        'user': users[1].auth0_id,
+        'user': users['normal_user'].auth0_id,
         'is_admin': False,
     }
     response = client.post(reverse('userapp-list'), data)
@@ -61,7 +61,7 @@ def test_create(client, apps, users):
 def test_update(client, apps, users, userapps):
     data = {
         'app': apps[1].id,
-        'user': users[1].auth0_id,
+        'user': users['normal_user'].auth0_id,
         'is_admin': False,
     }
     response = client.put(
@@ -84,7 +84,7 @@ def test_delete(client, userapps):
 @pytest.mark.parametrize(
     "app, user, is_admin",
     [
-        (2, 1, True),
+        (2, "normal_user", True),
         (1, "superuser", True),
     ],
     ids=[
