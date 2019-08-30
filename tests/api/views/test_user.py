@@ -12,8 +12,8 @@ from controlpanel.api.models import User
 
 @pytest.fixture(autouse=True)
 def models(users):
-    mommy.make('api.UserS3Bucket', user=users[1])
-    mommy.make('api.UserApp', user=users[1])
+    mommy.make('api.UserS3Bucket', user=users['normal_user'])
+    mommy.make('api.UserApp', user=users['normal_user'])
 
 
 def test_list(client, users):
@@ -23,7 +23,7 @@ def test_list(client, users):
 
 
 def test_detail(client, users):
-    response = client.get(reverse('user-detail', (users[1].auth0_id,)))
+    response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_200_OK
 
     expected_fields = {
@@ -72,13 +72,13 @@ def test_detail(client, users):
 
 
 def test_delete(client, helm, aws, users):
-    response = client.delete(reverse('user-detail', (users[1].auth0_id,)))
+    response = client.delete(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     aws.delete_role.assert_called()
     helm.delete.assert_called()
 
-    response = client.get(reverse('user-detail', (users[1].auth0_id,)))
+    response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -97,7 +97,7 @@ def test_create(client, helm, aws):
 def test_update(client, users):
     data = {'username': 'foo', 'auth0_id': 'github|888'}
     response = client.put(
-        reverse('user-detail', (users[1].auth0_id,)),
+        reverse('user-detail', (users['normal_user'].auth0_id,)),
         json.dumps(data),
         content_type="application/json",
     )

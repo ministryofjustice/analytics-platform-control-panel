@@ -22,7 +22,7 @@ def buckets():
 @pytest.fixture
 def users3buckets(users, buckets):
     return {
-        1: users[1].users3buckets.create(
+        1: users['normal_user'].users3buckets.create(
             s3bucket=buckets[1],
             access_level=AppS3Bucket.READONLY,
         ),
@@ -53,7 +53,7 @@ def test_detail(client, users3buckets):
 
 def test_create(client, buckets, users, aws):
     data = {
-        'user': users[2].auth0_id,
+        'user': users['other_user'].auth0_id,
         's3bucket': buckets[1].id,
         'access_level': AppS3Bucket.READONLY,
     }
@@ -77,7 +77,7 @@ def test_delete(client, users3buckets, aws):
 
 def test_update(client, buckets, users, users3buckets, aws):
     data = {
-        'user': users[1].auth0_id,
+        'user': users['normal_user'].auth0_id,
         's3bucket': buckets[1].id,
         'access_level': UserS3Bucket.READWRITE,
     }
@@ -96,8 +96,8 @@ def test_update(client, buckets, users, users3buckets, aws):
 @pytest.mark.parametrize(
     "user, s3bucket, access_level",
     [
-        (2, 1, UserS3Bucket.READWRITE),
-        (1, 2, UserS3Bucket.READWRITE),
+        ('other_user', 1, UserS3Bucket.READWRITE),
+        ('normal_user', 2, UserS3Bucket.READWRITE),
     ],
     ids=[
         'app-changed',
