@@ -38,6 +38,11 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         """
         self.streaming = True
 
+        user = self.scope.get('user')
+        if not user or not user.is_authenticated:
+            await self.send_response(403, b'Forbidden')
+            return
+
         await self.send_headers(headers=[
             (b"Cache-Control", b"no-cache"),
             (b"Content-Type", b"text/event-stream"),
