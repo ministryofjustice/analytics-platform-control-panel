@@ -299,7 +299,7 @@ def create_bucket(bucket_name, is_data_warehouse=False):
             target_prefix=f"{bucket_name}/",
         )
         aws.put_bucket_encryption(bucket_name)
-
+        aws.put_public_access_block(bucket_name)
         if is_data_warehouse:
             aws.put_bucket_tagging(
                 bucket_name,
