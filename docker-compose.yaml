@@ -10,6 +10,7 @@ services:
 
   redis:
     image: "redis"
+    command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
     environment:
       REDIS_PASSWORD: "controlpanel"
 
