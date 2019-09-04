@@ -330,14 +330,9 @@ LOGGING = {
             "handlers": ["console"],
             "level": "WARNING",
         },
-        "django.template": {
-            "handlers": ["console"],
-            "level": os.environ.get("LOG_LEVEL", "INFO"),
-            "propagate": False,
-        },
         "django": {
             "handlers": ["console"],
-            "level": os.environ.get("LOG_LEVEL", "DEBUG"),
+            "level": "WARNING",
         },
         "github": {
             "handlers": ["console"],
@@ -352,6 +347,14 @@ LOGGING = {
             "level": "WARNING",
         },
         "mozilla_django_oidc": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "requests_oauthlib": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "rules": {
             "handlers": ["console"],
             "level": "WARNING",
         },
