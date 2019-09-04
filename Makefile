@@ -72,7 +72,8 @@ transpile:
 redis: /usr/local/var/run/redis.pid
 	@echo
 	@echo "> Running Redis server..."
-	@redis-server &>/tmp/redis.log &
+	@if [ -z "$$REDIS_PASSWORD" ]; then REQUIREPASS="--requirepass=$$REDIS_PASSWORD"; fi
+	@redis-server $$REQUIREPASS &>/tmp/redis.log &
 
 ## run: Run webapp
 run: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.development

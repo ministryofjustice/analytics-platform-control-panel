@@ -438,15 +438,12 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [
-                {
-                    'address': (REDIS_HOST, REDIS_PORT),
-                    'password': REDIS_PASSWORD,
-                },
-            ],
+            'hosts': [{'address': (REDIS_HOST, REDIS_PORT)}],
         },
     },
 }
+if REDIS_PASSWORD:
+    CHANNEL_LAYERS['default']['CONFIG']['hosts'][0]['password'] = REDIS_PASSWORD
 
 
 # -- Github

@@ -12,6 +12,7 @@ services:
     image: "redis"
     environment:
       REDIS_PASSWORD: "controlpanel"
+    command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
     image: controlpanel
