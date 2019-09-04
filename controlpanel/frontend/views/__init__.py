@@ -34,7 +34,7 @@ from controlpanel.frontend.views.parameter import (
     ParameterFormRoleList,
 )
 from controlpanel.frontend.views.tool import (
-    ToolsList,
+    ToolList,
     DeployTool,
     RestartTool,
 )

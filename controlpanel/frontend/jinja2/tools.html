@@ -12,56 +12,45 @@
 <table class="govuk-table">
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
-      <th class="govuk-table__header">Name</th>
-      <th class="govuk-table__header">Status</th>
-      <th class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+      <th class="govuk-table__header govuk-!-width-one-half">Name</th>
+      <th class="govuk-table__header govuk-!-width-one-quarter">Status</th>
+      <th class="govuk-table__header govuk-!-width-one-quarter"><span class="govuk-visually-hidden">Actions</span></th>
     </tr>
   </thead>
   <tbody class="govuk-table__body">
-    {% for tool in tools %}
-    {% set deployed = tool.url is defined %}
-    <tr class="govuk-table__row">
-      <td class="govuk-table__cell">{{ tool.name }}</td>
+  {% for tool in tools %}
+    {% set deployment = deployed_tools.get(tool) %}
+    <tr class="govuk-table__row sse-listener tool-status" data-tool-name="{{ tool.chart_name }}">
       <td class="govuk-table__cell">
-        <div class="sse-listener tool-status" data-tool-name="{{ tool.name }}">
-        {% if deployed %}
-          {% if tool.idled %}
-            Idled
-          {% else %}
-            {% for pod in tool.pods.items %}
-              {{ loop.index }}. {{ pod.display_status }}<br>
-            {% endfor %}
-          {% endif %}
-        {% else %}
-          {% if True %}
-          {% else %}
-            {% if is_deploying[tool.name] %}
-            Deploying
-            {% else %}
-            Not deployed
-            {% endif %}
-          {% endif %}
-        {% endif %}
+        {{ tool.name }}<br>
+        <small>{{ tool.description }}</small>
+      </td>
+      <td class="govuk-table__cell">
+        <div class="tool-status-label">
+          {{ deployment.status | default("") }}
         </div>
       </td>
       <td class="govuk-table__cell align-right no-wrap">
-      {% if deployed %}
-        <a class="govuk-button hmcts-button--secondary" target="_blank" rel="noopener" href="{{ tool.url }}">
+        <a class="govuk-button hmcts-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+           data-action-name="open"
+           href="{{ tool.url(request.user) }}"
+           rel="noopener"
+           target="_blank">
           Open
         </a>
-        {% if tool.available %}
-        <a class="govuk-button hmcts-button--secondary" href="{{ url('restart-tool', kwargs={ "name": tool.metadata.name }) }}">
-          Restart
+        <a class="govuk-button hmcts-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+           data-action-name="restart"
+           href="{{ url('restart-tool', kwargs={'name': tool.chart_name}) }}">
+          Reset
         </a>
-        {% endif %}
-      {% else %}
-        {% if True or not is_deploying[tool.name] %}
-        <form action="{{ url('deploy-tool', kwargs={"name": tool.name} ) }}" method="post" class="deploy-tool">
+        <form action="{{ url('deploy-tool', kwargs={"name": tool.chart_name}) }}"
+              class="tool-deploy-form tool-action {% if deployment %} govuk-visually-hidden {% endif %}"
+              data-action-name="deploy"
+              method="post">
           {{ csrf_input }}
+          <input type="hidden" value="{{ tool.version }}" name="version">
           <button class="govuk-button hmcts-button--secondary right">Deploy</button>
         </form>
-        {% endif %}
-      {% endif %}
       </td>
     </tr>
     {% endfor %}

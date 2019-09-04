@@ -6,26 +6,26 @@ from django.conf import settings
 from controlpanel.kubeapi.views import kubernetes, load_kube_config
 
 
-def config_from_current_user_id_token():
-    request = CrequestMiddleware.get_request()
-    config = kubernetes.client.Configuration()
-
-    if request.user.is_authenticated and settings.ENABLED['k8s_rbac']:
-        config.api_key_prefix['authorization'] = 'Bearer'
-        config.api_key['authorization'] = request.session.get('oidc_id_token')
-
-    return config
-
-
-class RequestUserKubernetesClient:
+class KubernetesClient:
     """
     Wraps kubernetes.client default configuration with currently logged-in
     user's credentials
     """
 
-    def __init__(self):
+    def __init__(self, id_token=None):
         load_kube_config()
-        config = config_from_current_user_id_token()
+        config = kubernetes.client.Configuration()
+
+        if settings.ENABLED['k8s_rbac']:
+
+            if id_token is None:
+                request = CrequestMiddleware.get_request()
+                if request and request.user and request.user.is_authenticated:
+                    id_token = request.session.get('oidc_id_token')
+
+            config.api_key_prefix['authorization'] = 'Bearer'
+            config.api_key['authorization'] = id_token
+
         self.api_client = kubernetes.client.ApiClient(config)
 
     def __getattr__(self, name):

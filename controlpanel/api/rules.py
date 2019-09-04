@@ -9,10 +9,10 @@ from controlpanel.api.models import (
     AppS3Bucket,
     Parameter,
     S3Bucket,
+    ToolDeployment,
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.api.tools import ToolDeployment
 
 
 @predicate

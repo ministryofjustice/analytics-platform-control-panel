@@ -11,9 +11,13 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 from django.urls import reverse
 
-from controlpanel.api.helm import HelmError
-from controlpanel.api.models import User
-from controlpanel.api.tools import Tool
+from controlpanel.api import cluster
+from controlpanel.api.cluster import (
+    TOOL_DEPLOYING,
+    TOOL_DEPLOY_FAILED,
+    TOOL_READY,
+)
+from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
 
 
@@ -27,7 +31,7 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
     Server Sent Events filtered by the request user's id - so a user only
     receives SSEs intended for them and not any other user.
     """
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.streaming = False
@@ -99,32 +103,49 @@ class BackgroundTaskConsumer(SyncConsumer):
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
-        Expects a message with `tool_name` and `user_id` values, eg:
-        message = {'tool_name': 'rstudio', 'user_id': 'github|1234'}
+        Expects a message with `tool_name`, `version` and `user_id` values
         """
-        tool = Tool.create(message['tool_name'])
+
+        tool = Tool.objects.get(
+            chart_name=message['tool_name'],
+            version=message['version'],
+        )
         user = User.objects.get(auth0_id=message['user_id'])
 
-        send_tool_status_update(user.auth0_id, tool.name, 'Deploying...')
+        def update_status(status):
+            send_sse(user.auth0_id, {
+                "event": "toolStatus",
+                "data": json.dumps({
+                    'toolName': tool.chart_name,
+                    'version': tool.version,
+                    'status': status,
+                }),
+            })
+
+        update_status(TOOL_DEPLOYING)
 
         try:
-            deploy = tool.deploy_for(user)
+            deployment = ToolDeployment.objects.create(tool, user)
 
-        except HelmError as err:
-            send_tool_status_update(user.auth0_id, tool.name, f"Error: {str(err)}")
-            raise err
-
-        while deploy.poll() is None:
-            send_tool_status_update(user.auth0_id, tool.name, "Deploying...")
-            sleep(1)
-
-        if deploy.returncode:
-            err_msg = deploy.stderr.read()
-            send_tool_status_update(user.auth0_id, tool.name, err_msg)
-            log.error(err_msg)
+        except ToolDeployment.Error as err:
+            update_status(str(err))
+            log.error(err)
             return
 
-        send_tool_status_update(user.auth0_id, tool.name, "Ready")
+        while True:
+            status = deployment.status
+            if status in (TOOL_DEPLOY_FAILED, TOOL_READY):
+                break
+            update_status(status)
+            sleep(1)
+
+        status = deployment.status
+        update_status(status)
+
+        if status == TOOL_DEPLOY_FAILED:
+            log.error(f"Failed deploying {tool.name} for {user}")
+        else:
+            log.debug(f"Deployed {tool.name} for {user}")
 
     def tool_restart(self, message):
         tool = Tool.create(message['tool_name'])
@@ -148,18 +169,12 @@ def send_sse(user_id, event):
     )
 
 
-def send_tool_status_update(user_id, tool_name, status):
-    """
-    Convenience function for sending SSE tool updates
-    """
-    send_sse(
-        user_id,
+def start_background_task(task, message):
+    async_to_sync(channel_layer.send)(
+        'background_tasks',
         {
-            "event": "toolStatusChange",
-            "data": json.dumps({
-                'toolName': tool_name,
-                'status': status,
-            }),
+            'type': task,
+            **message,
         },
     )
 

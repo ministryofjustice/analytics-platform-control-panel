@@ -1,5 +1,5 @@
 moj.Modules.tool_deploy = {
-  class: ".deploy-tool",
+  class: ".tool-deploy-form",
 
   init() {
     if (document.querySelector(this.class)) {
