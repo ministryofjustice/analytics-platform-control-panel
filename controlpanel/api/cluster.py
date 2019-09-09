@@ -99,7 +99,7 @@ def initialize_user(user):
 
     helm.upgrade_release(
         f"init-user-{user.slug}",
-        "mojanalytics/init-user",
+        f"{settings.HELM_REPO}/init-user",
         f"--set=" + (
             f"Env={settings.ENV},"
             f"NFSHostname={settings.NFS_HOSTNAME},"
@@ -111,7 +111,7 @@ def initialize_user(user):
     )
     helm.upgrade_release(
         f"config-user-{user.slug}",
-        "mojanalytics/config-user",
+        f"{settings.HELM_REPO}/config-user",
         f"--namespace=user-{user.slug}",
         f"--set=Username={user.slug}",
     )
@@ -382,7 +382,7 @@ def deploy_tool(tool, user, **kwargs):
     try:
         return helm.upgrade_release(
             f'{tool.chart_name}-{user.slug}',
-            f'mojanalytics/{tool.chart_name}',  # XXX assumes repo name
+            f'{settings.HELM_REPO}/{tool.chart_name}',  # XXX assumes repo name
             # f'--version', tool.version,
             f'--namespace', user.k8s_namespace,
             f'--set', values,

@@ -421,6 +421,9 @@ TOOLS = {
     },
 }
 
+# Helm repo where tool charts are hosted
+HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
+
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 
