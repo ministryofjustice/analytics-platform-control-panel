@@ -6,19 +6,18 @@ from controlpanel.api.serializers import (
     ToolSerializer,
     ToolDeploymentSerializer
 )
-from controlpanel.api.tools import (
-    SUPPORTED_TOOL_NAMES,
+from controlpanel.api.models import (
     Tool,
     ToolDeployment,
 )
 
 
 class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
-    permission_classes = (permissions.ToolPermissions,)
-    queryset = [{"name": n} for n in SUPPORTED_TOOL_NAMES]
     filter_backends = []
-    serializer_class = ToolSerializer
+    model = Tool
     pagination_class = None
+    permission_classes = (permissions.ToolPermissions,)
+    serializer_class = ToolSerializer
 
 
 class ToolDeploymentViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -28,9 +27,13 @@ class ToolDeploymentViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     pagination_class = None
 
     def create(self, request):
-        tool = Tool.create(request.data["name"])
-        tool.deploy_for(request.user)
+        try:
+            tool = Tool.objects.get(chart_name=request.data["name"])
+        except Tool.DoesNotExist:
+            return Response({}, status=status.HTTP_400_BAD_REQUEST)
+        tool_deployment = ToolDeployment(tool, request.user)
+        tool_deployment.save()
         return Response({}, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        return ToolDeployment.list(self.request.user)
+        return ToolDeployment.objects.filter(user=self.request.user)

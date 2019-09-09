@@ -330,14 +330,9 @@ LOGGING = {
             "handlers": ["console"],
             "level": "WARNING",
         },
-        "django.template": {
-            "handlers": ["console"],
-            "level": os.environ.get("LOG_LEVEL", "INFO"),
-            "propagate": False,
-        },
         "django": {
             "handlers": ["console"],
-            "level": os.environ.get("LOG_LEVEL", "DEBUG"),
+            "level": "WARNING",
         },
         "github": {
             "handlers": ["console"],
@@ -352,6 +347,14 @@ LOGGING = {
             "level": "WARNING",
         },
         "mozilla_django_oidc": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "requests_oauthlib": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "rules": {
             "handlers": ["console"],
             "level": "WARNING",
         },
@@ -418,6 +421,9 @@ TOOLS = {
     },
 }
 
+# Helm repo where tool charts are hosted
+HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
+
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 
@@ -438,15 +444,12 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [
-                {
-                    'address': (REDIS_HOST, REDIS_PORT),
-                    'password': REDIS_PASSWORD,
-                },
-            ],
+            'hosts': [{'address': (REDIS_HOST, REDIS_PORT)}],
         },
     },
 }
+if REDIS_PASSWORD:
+    CHANNEL_LAYERS['default']['CONFIG']['hosts'][0]['password'] = REDIS_PASSWORD
 
 
 # -- Github

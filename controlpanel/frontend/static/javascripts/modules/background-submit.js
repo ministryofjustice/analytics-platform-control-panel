@@ -1,5 +1,5 @@
-moj.Modules.tool_deploy = {
-  class: ".deploy-tool",
+moj.Modules.background_submit = {
+  class: ".background-submit",
 
   init() {
     if (document.querySelector(this.class)) {

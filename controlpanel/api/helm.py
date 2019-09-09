@@ -31,6 +31,7 @@ class Helm(object):
             timeout = kwargs.pop('timeout')
 
         try:
+            log.debug(' '.join(['helm', *args]))
             proc = subprocess.Popen(
                 ["helm", *args],
                 stderr=subprocess.PIPE,

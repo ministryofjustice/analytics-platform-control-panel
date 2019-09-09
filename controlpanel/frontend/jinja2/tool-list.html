@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% set page_title = "Your tools" %}
+{% set page_name = "tools" %}
+
+{% block content %}
+
+<h1 class="govuk-heading-xl">Your tools</h1>
+
+<p class="govuk-body">The status of your tools will update automatically.</p>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header govuk-!-width-one-half">Name</th>
+      <th class="govuk-table__header govuk-!-width-one-quarter">Status</th>
+      <th class="govuk-table__header govuk-!-width-one-quarter"><span class="govuk-visually-hidden">Actions</span></th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {% for tool in tools %}
+    {% set deployment = deployed_tools.get(tool) %}
+    <tr class="govuk-table__row sse-listener tool-status" data-tool-name="{{ tool.chart_name }}">
+      <td class="govuk-table__cell">
+        {{ tool.name }}
+        {# <br><small>{{ tool.description }}</small> #}
+      </td>
+      <td class="govuk-table__cell">
+        <div class="tool-status-label">
+          {{ deployment.status | default("") }}
+        </div>
+      </td>
+      <td class="govuk-table__cell align-right no-wrap">
+        <a class="govuk-button hmcts-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+           data-action-name="open"
+           href="{{ tool.url(request.user) }}"
+           rel="noopener"
+           target="_blank">
+          Open
+        </a>
+        <form action="{{ url('restart-tool', kwargs={'name': tool.chart_name}) }}"
+              class="background-submit tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+              data-action-name="restart"
+              method="post">
+          {{ csrf_input }}
+          {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
+          <button class="govuk-button hmcts-button--secondary">Restart</button>
+        </form>
+        <form action="{{ url('deploy-tool', kwargs={"name": tool.chart_name}) }}"
+              class="background-submit tool-action {% if deployment %} govuk-visually-hidden {% endif %}"
+              data-action-name="deploy"
+              method="post">
+          {{ csrf_input }}
+          {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
+          <button class="govuk-button hmcts-button--secondary right">Deploy</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ tools|length }} tool{% if tools|length != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<p class="govuk-body">
+  {% if env == "alpha" %}
+    You can <a href="https://grafana.services.{{ env }}.mojanalytics.xyz/d/platformusers/platform-users?refresh=10s&orgId=1&var-Username={{ request.user.username }}" target="_blank" rel="noopener">view your resource utilisation on Grafana (opens in new tab)</a>.
+  {% else %}
+    <em>(Grafana not available in {{ env }} environment)</em>
+  {% endif %}
+</p>
+{% endblock %}
