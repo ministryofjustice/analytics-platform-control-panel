@@ -129,3 +129,9 @@ class ToolDeployment:
     def url(self):
         return f"https://{self.host}/"
 
+    def restart(self):
+        """
+        Restart the tool deployment
+        """
+        cluster.restart_tool_deployment(self)
+

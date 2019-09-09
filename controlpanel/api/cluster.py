@@ -456,7 +456,7 @@ def get_tool_deployment_status(tool_deployment):
             return TOOL_READY
 
     if 'Progressing' in conditions:
-        progressing_status = condition['Progressing'].status
+        progressing_status = conditions['Progressing'].status
         if progressing_status == 'True':
             return TOOL_DEPLOYING
         elif progressing_status == 'False':
@@ -472,7 +472,7 @@ def restart_tool_deployment(tool_deployment):
     return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
         tool_deployment.user.k8s_namespace,
         label_selector=(
-            f'chart={tool_deployment.tool.chart_name}'
-            f'-{tool_deployment.tool.version}'
+            f'app={tool_deployment.tool.chart_name}'
+            # f'-{tool_deployment.tool.version}'
         ),
     )

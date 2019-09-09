@@ -38,13 +38,16 @@
            target="_blank">
           Open
         </a>
-        <a class="govuk-button hmcts-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
-           data-action-name="restart"
-           href="{{ url('restart-tool', kwargs={'name': tool.chart_name}) }}">
-          Reset
-        </a>
+        <form action="{{ url('restart-tool', kwargs={'name': tool.chart_name}) }}"
+              class="background-submit tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+              data-action-name="restart"
+              method="post">
+          {{ csrf_input }}
+          {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
+          <button class="govuk-button hmcts-button--secondary">Restart</button>
+        </form>
         <form action="{{ url('deploy-tool', kwargs={"name": tool.chart_name}) }}"
-              class="tool-deploy-form tool-action {% if deployment %} govuk-visually-hidden {% endif %}"
+              class="background-submit tool-action {% if deployment %} govuk-visually-hidden {% endif %}"
               data-action-name="deploy"
               method="post">
           {{ csrf_input }}

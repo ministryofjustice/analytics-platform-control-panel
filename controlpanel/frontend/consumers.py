@@ -112,35 +112,20 @@ class BackgroundTaskConsumer(SyncConsumer):
         )
         user = User.objects.get(auth0_id=message['user_id'])
 
-        def update_status(status):
-            send_sse(user.auth0_id, {
-                "event": "toolStatus",
-                "data": json.dumps({
-                    'toolName': tool.chart_name,
-                    'version': tool.version,
-                    'status': status,
-                }),
-            })
-
-        update_status(TOOL_DEPLOYING)
+        update_tool_status(user, tool, TOOL_DEPLOYING)
 
         try:
             deployment = ToolDeployment.objects.create(tool, user)
 
         except ToolDeployment.Error as err:
-            update_status(str(err))
+            update_tool_status(user, tool, str(err))
             log.error(err)
             return
 
-        while True:
-            status = deployment.status
-            if status in (TOOL_DEPLOY_FAILED, TOOL_READY):
-                break
-            update_status(status)
-            sleep(1)
+        wait_for_deployment(user, tool, deployment)
 
         status = deployment.status
-        update_status(status)
+        update_tool_status(user, tool, status)
 
         if status == TOOL_DEPLOY_FAILED:
             log.error(f"Failed deploying {tool.name} for {user}")
@@ -148,12 +133,27 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Deployed {tool.name} for {user}")
 
     def tool_restart(self, message):
-        tool = Tool.create(message['tool_name'])
+        tool = Tool.objects.get(
+            chart_name=message['tool_name'],
+            # version=message['version'],
+        )
         user = User.objects.get(auth0_id=message['user_id'])
 
-        send_tool_status_update(user.auth0_id, tool.name, "Restarting...")
+        update_tool_status(user, tool, "Restarting")
 
-        tool.restart_for(user)
+        deployment = ToolDeployment(tool, user)
+        deployment.restart()
+
+        wait_for_deployment(user, tool, deployment)
+
+        status = deployment.status
+        update_tool_status(user, tool, status)
+
+        if status == TOOL_DEPLOY_FAILED:
+            log.error(f"Failed restarting {tool.name} for {user}")
+        else:
+            log.debug(f"Restarted {tool.name} for {user}")
+
 
 
 def send_sse(user_id, event):
@@ -169,6 +169,17 @@ def send_sse(user_id, event):
     )
 
 
+def update_tool_status(user, tool, status):
+    send_sse(user.auth0_id, {
+        "event": "toolStatus",
+        "data": json.dumps({
+            'toolName': tool.chart_name,
+            'version': tool.version,
+            'status': status,
+        }),
+    })
+
+
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
         'background_tasks',
@@ -177,4 +188,13 @@ def start_background_task(task, message):
             **message,
         },
     )
+
+
+def wait_for_deployment(user, tool, deployment):
+    while True:
+        status = deployment.status
+        if status in (TOOL_DEPLOY_FAILED, TOOL_READY):
+            break
+        update_tool_status(user, tool, status)
+        sleep(1)
 
