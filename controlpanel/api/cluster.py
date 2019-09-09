@@ -462,6 +462,9 @@ def get_tool_deployment_status(tool_deployment):
         elif progressing_status == 'False':
             return TOOL_DEPLOY_FAILED
 
+    log.warning(
+        f"Unknown status for {tool_deployment}: {deployment.status.conditions}"
+    )
     return TOOL_STATUS_UNKNOWN
 
 def restart_tool_deployment(tool_deployment):

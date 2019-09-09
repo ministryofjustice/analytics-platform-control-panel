@@ -76,5 +76,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(initialize_tools, lambda *args: None),
+        migrations.RunPython(initialize_tools, migrations.RunPython.noop),
     ]
