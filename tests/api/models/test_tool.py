@@ -35,10 +35,8 @@ def test_deploy_for_generic(helm, token_hex, tool, users):
         f'mojanalytics/{tool.chart_name}',
         # '--version', tool.version,
         '--namespace', user.k8s_namespace,
-        '--set', ','.join([
-            f'username={user.username}',
-            f'Username={user.username}',
-            f'aws.iamRole={user.iam_role_name}',
-            f'toolsDomain={settings.TOOLS_DOMAIN}',
-        ])
+        '--set', f'username={user.username}',
+        '--set', f'Username={user.username}',
+        '--set', f'aws.iamRole={user.iam_role_name}',
+        '--set', f'toolsDomain={settings.TOOLS_DOMAIN}',
     )
