@@ -122,10 +122,7 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.error(err)
             return
 
-        wait_for_deployment(user, tool, deployment)
-
-        status = deployment.status
-        update_tool_status(user, tool, status)
+        status = wait_for_deployment(user, tool, deployment)
 
         if status == TOOL_DEPLOY_FAILED:
             log.error(f"Failed deploying {tool.name} for {user}")
@@ -144,16 +141,12 @@ class BackgroundTaskConsumer(SyncConsumer):
         deployment = ToolDeployment(tool, user)
         deployment.restart()
 
-        wait_for_deployment(user, tool, deployment)
-
-        status = deployment.status
-        update_tool_status(user, tool, status)
+        status = wait_for_deployment(user, tool, deployment)
 
         if status == TOOL_DEPLOY_FAILED:
             log.error(f"Failed restarting {tool.name} for {user}")
         else:
             log.debug(f"Restarted {tool.name} for {user}")
-
 
 
 def send_sse(user_id, event):
@@ -193,8 +186,8 @@ def start_background_task(task, message):
 def wait_for_deployment(user, tool, deployment):
     while True:
         status = deployment.status
-        if status in (TOOL_DEPLOY_FAILED, TOOL_READY):
-            break
         update_tool_status(user, tool, status)
+        if status in (TOOL_DEPLOY_FAILED, TOOL_READY):
+            return status
         sleep(1)
 
