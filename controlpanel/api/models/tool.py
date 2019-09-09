@@ -54,8 +54,8 @@ class ToolDeploymentManager:
         for deployment in cluster.list_tool_deployments(user):
             _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
             filter = filter | (
-                Q(chart_name=deployment.metadata.labels["app"]) &
-                Q(version=version)
+                Q(chart_name=deployment.metadata.labels["app"])
+                # & Q(version=version)
             )
 
         tools = Tool.objects.filter(filter)
@@ -120,7 +120,7 @@ class ToolDeployment:
             return cluster.TOOL_DEPLOYING
 
         if self._subprocess.returncode:
-            log.error(err_msg)
+            log.error(self._subprocess.stderr.read().strip())
             return cluster.TOOL_DEPLOY_FAILED
 
         self._subprocess = None

@@ -108,7 +108,7 @@ class BackgroundTaskConsumer(SyncConsumer):
 
         tool = Tool.objects.get(
             chart_name=message['tool_name'],
-            version=message['version'],
+            # version=message['version'],
         )
         user = User.objects.get(auth0_id=message['user_id'])
 

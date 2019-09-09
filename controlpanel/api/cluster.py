@@ -383,7 +383,7 @@ def deploy_tool(tool, user, **kwargs):
         return helm.upgrade_release(
             f'{tool.chart_name}-{user.slug}',
             f'mojanalytics/{tool.chart_name}',  # XXX assumes repo name
-            f'--version', tool.version,
+            # f'--version', tool.version,
             f'--namespace', user.k8s_namespace,
             f'--set', values,
         )
@@ -411,7 +411,7 @@ def get_tool_deployment(tool_deployment):
     deployments = list_tool_deployments(
         tool_deployment.user,
         search_name=tool_deployment.tool.chart_name,
-        search_version=tool_deployment.tool.version,
+        # search_version=tool_deployment.tool.version,
     )
 
     if not deployments:

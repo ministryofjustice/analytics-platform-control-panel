@@ -23,7 +23,7 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'tools'
     model = Tool
     permission_required = 'api.list_tool'
-    template_name = "tools.html"
+    template_name = "tool-list.html"
 
     def get_context_data(self, *args, **kwargs):
         deployments = ToolDeployment.objects.filter(user=self.request.user)
@@ -44,7 +44,7 @@ class DeployTool(LoginRequiredMixin, RedirectView):
 
         start_background_task('tool.deploy', {
             'tool_name': name,
-            'version': self.request.POST['version'],
+            # 'version': self.request.POST['version'],
             'user_id': self.request.user.id,
         })
 
