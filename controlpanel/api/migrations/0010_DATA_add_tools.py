@@ -17,8 +17,8 @@ TOOLS = [
         'values': {
             'authProxy.cookieSecret': '<SECRET_TOKEN>',
             'authProxy.auth0.domain': '%(domain)s',
-            'authProxy.auth0.client_id': '%(client_id)s',
-            'authProxy.auth0.client_secret': '%(client_secret)s',
+            'authProxy.auth0.clientId': '%(client_id)s',
+            'authProxy.auth0.clientSecret': '%(client_secret)s',
             'rstudio.secureCookieKey': '<SECRET_TOKEN>',
         },
     },
@@ -40,7 +40,7 @@ TOOLS = [
         'name': 'Airflow',
         'description': '1.10.3',
         'values': {
-            'airflow.secretkey': settings.AIRFLOW_SECRET_KEY,
+            'airflow.secretKey': settings.AIRFLOW_SECRET_KEY,
             'airflow.fernetKey': settings.AIRFLOW_FERNET_KEY,
             'authProxy.auth0_domain': '%(domain)s',
             'authProxy.auth0_client_id': '%(client_id)s',

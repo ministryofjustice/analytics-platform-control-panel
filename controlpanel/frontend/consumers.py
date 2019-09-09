@@ -118,7 +118,7 @@ class BackgroundTaskConsumer(SyncConsumer):
             deployment = ToolDeployment.objects.create(tool, user)
 
         except ToolDeployment.Error as err:
-            update_tool_status(user, tool, str(err))
+            update_tool_status(user, tool, TOOL_DEPLOY_FAILED)
             log.error(err)
             return
 

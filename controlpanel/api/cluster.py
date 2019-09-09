@@ -377,7 +377,10 @@ def deploy_tool(tool, user, **kwargs):
 
     values.update(tool.values)
     values.update(kwargs)
-    values = ','.join(f'{key}={val}' for key, val in values.items())
+    set_values = []
+    for key, val in values.items():
+        escaped_val = val.replace(',', '\,')
+        set_values.extend(['--set', f'{key}={escaped_val}'])
 
     try:
         return helm.upgrade_release(
@@ -385,7 +388,7 @@ def deploy_tool(tool, user, **kwargs):
             f'{settings.HELM_REPO}/{tool.chart_name}',  # XXX assumes repo name
             # f'--version', tool.version,
             f'--namespace', user.k8s_namespace,
-            f'--set', values,
+            *set_values,
         )
 
     except HelmError as error:
