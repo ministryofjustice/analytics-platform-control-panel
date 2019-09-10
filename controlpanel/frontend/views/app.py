@@ -69,6 +69,8 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
         ).exclude(
+            auth0_id='',
+        ).exclude(
             auth0_id__in=[user.auth0_id for user in app.admins],
         )
 
