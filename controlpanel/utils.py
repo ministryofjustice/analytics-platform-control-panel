@@ -5,6 +5,10 @@ from channels.generic.http import AsyncHttpConsumer
 from django.template.defaultfilters import slugify
 
 
+INVALID_CHARS = re.compile(r"[^-a-z0-9]")
+SURROUNDING_HYPHENS = re.compile(r"^-*|-*$")
+
+
 def github_repository_name(url):
     """
     Get the repository name from a Github URL
@@ -51,6 +55,12 @@ def sanitize_dns_label(label):
 
 def sanitize_environment_variable(s):
     return name.upper().replace("-", "_")
+
+
+def webapp_release_name(repo_name):
+    name = repo_name.lower()
+    name = SURROUNDING_HYPHENS.sub("", INVALID_CHARS.sub("-", name))
+    return name[:50]
 
 
 class PatchedAsyncHttpConsumer(AsyncHttpConsumer):
