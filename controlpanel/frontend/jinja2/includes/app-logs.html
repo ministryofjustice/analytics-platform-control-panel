@@ -65,16 +65,16 @@ filters:!(
       key:app_name,
       negate:!f,
       params:(
-        query:{{object.name}}-webapp,
+        query:{{app.release_name}}-webapp,
         type:phrase
       ),
       type:phrase,
-      value:{{object.name}}-webapp
+      value:{{app.release_name}}-webapp
     ),
     query:(
       match:(
         app_name:(
-          query:{{object.name}}-webapp,
+          query:{{app.release_name}}-webapp,
           type:phrase
         )
       )

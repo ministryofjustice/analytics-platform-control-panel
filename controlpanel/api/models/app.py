@@ -4,7 +4,11 @@ from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import auth0, cluster
-from controlpanel.utils import github_repository_name, s3_slugify
+from controlpanel.utils import (
+    github_repository_name,
+    s3_slugify,
+    webapp_release_name,
+)
 
 
 class App(TimeStampedModel):
@@ -29,6 +33,10 @@ class App(TimeStampedModel):
     @property
     def _repo_name(self):
         return github_repository_name(self.repo_url)
+
+    @property
+    def release_name(self):
+        return webapp_release_name(self._repo_name)
 
     @property
     def customers(self):
@@ -59,7 +67,6 @@ class App(TimeStampedModel):
             cluster.create_app_role(self.iam_role_name)
 
         return self
-
 
     def delete(self, *args, **kwargs):
         cluster.delete_app_role(self.iam_role_name)
