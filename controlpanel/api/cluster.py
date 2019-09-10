@@ -395,9 +395,9 @@ def deploy_tool(tool, user, **kwargs):
         raise ToolDeploymentError(error)
 
 
-def list_tool_deployments(user, search_name=None, search_version=None):
+def list_tool_deployments(user, id_token=None, search_name=None, search_version=None):
     deployments = []
-    k8s = KubernetesClient()
+    k8s = KubernetesClient(id_token=id_token)
     results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
     for deployment in results.items:
         app_name = deployment.metadata.labels["app"]
@@ -410,11 +410,12 @@ def list_tool_deployments(user, search_name=None, search_version=None):
     return deployments
 
 
-def get_tool_deployment(tool_deployment):
+def get_tool_deployment(tool_deployment, **kwargs):
     deployments = list_tool_deployments(
         tool_deployment.user,
         search_name=tool_deployment.tool.chart_name,
         # search_version=tool_deployment.tool.version,
+        **kwargs,
     )
 
     if not deployments:
@@ -427,17 +428,17 @@ def get_tool_deployment(tool_deployment):
     return deployments[0]
 
 
-def delete_tool_deployment(tool_deployment):
-    deployment = get_tool_deployment(tool_deployment)
+def delete_tool_deployment(tool_deployment, **kwargs):
+    deployment = get_tool_deployment(tool_deployment, **kwargs)
     helm.delete(
         deployment.metadata.name,
         f"--namespace={tool_deployment.user.k8s_namespace}",
     )
 
 
-def get_tool_deployment_status(tool_deployment):
+def get_tool_deployment_status(tool_deployment, **kwargs):
     try:
-        deployment = get_tool_deployment(tool_deployment)
+        deployment = get_tool_deployment(tool_deployment, **kwargs)
 
     except ObjectDoesNotExist:
         log.warning(f"{tool_deployment} not found")
@@ -470,8 +471,8 @@ def get_tool_deployment_status(tool_deployment):
     )
     return TOOL_STATUS_UNKNOWN
 
-def restart_tool_deployment(tool_deployment):
-    k8s = KubernetesClient()
+def restart_tool_deployment(tool_deployment, id_token=None):
+    k8s = KubernetesClient(id_token=id_token)
     return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
         tool_deployment.user.k8s_namespace,
         label_selector=(

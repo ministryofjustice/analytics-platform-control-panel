@@ -106,16 +106,13 @@ class BackgroundTaskConsumer(SyncConsumer):
         Expects a message with `tool_name`, `version` and `user_id` values
         """
 
-        tool = Tool.objects.get(
-            chart_name=message['tool_name'],
-            # version=message['version'],
-        )
-        user = User.objects.get(auth0_id=message['user_id'])
+        tool, user = self.get_tool_and_user(message)
 
         update_tool_status(user, tool, TOOL_DEPLOYING)
 
         try:
-            deployment = ToolDeployment.objects.create(tool, user)
+            deployment = ToolDeployment(tool, user)
+            deployment.save(id_token=message.get('id_token'))
 
         except ToolDeployment.Error as err:
             update_tool_status(user, tool, TOOL_DEPLOY_FAILED)
@@ -130,16 +127,15 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Deployed {tool.name} for {user}")
 
     def tool_restart(self, message):
-        tool = Tool.objects.get(
-            chart_name=message['tool_name'],
-            # version=message['version'],
-        )
-        user = User.objects.get(auth0_id=message['user_id'])
+        """
+        Restart the named tool for the specified user
+        """
+        tool, user = self.get_tool_and_user(message)
 
         update_tool_status(user, tool, "Restarting")
 
         deployment = ToolDeployment(tool, user)
-        deployment.restart()
+        deployment.restart(id_token=message.get('id_token'))
 
         status = wait_for_deployment(user, tool, deployment)
 
@@ -147,6 +143,14 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.error(f"Failed restarting {tool.name} for {user}")
         else:
             log.debug(f"Restarted {tool.name} for {user}")
+
+    def get_tool_and_user(self, message):
+        tool = Tool.objects.get(
+            chart_name=message['tool_name'],
+            # version=message['version'],
+        )
+        user = User.objects.get(auth0_id=message['user_id'])
+        return tool, user
 
 
 def send_sse(user_id, event):
