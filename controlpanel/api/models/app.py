@@ -35,11 +35,13 @@ class App(TimeStampedModel):
         return auth0.AuthorizationAPI().get_group_members(group_name=self.slug) or []
 
     def add_customers(self, emails):
-        auth0.AuthorizationAPI().add_group_members(
-            group_name=self.slug,
-            emails=emails,
-            user_options={"connection": "email"},
-        )
+        emails = list(filter(None, emails))
+        if emails:
+            auth0.AuthorizationAPI().add_group_members(
+                group_name=self.slug,
+                emails=emails,
+                user_options={"connection": "email"},
+            )
 
     def delete_customers(self, user_ids):
         auth0.AuthorizationAPI().delete_group_members(
