@@ -46,6 +46,7 @@ class DeployTool(LoginRequiredMixin, RedirectView):
             'tool_name': name,
             # 'version': self.request.POST['version'],
             'user_id': self.request.user.id,
+            'id_token': self.request.user.get_id_token(),
         })
 
         messages.success(
@@ -64,6 +65,7 @@ class RestartTool(LoginRequiredMixin, RedirectView):
         start_background_task('tool.restart', {
             'tool_name': name,
             'user_id': self.request.user.id,
+            'id_token': self.request.user.get_id_token(),
         })
 
         messages.success(

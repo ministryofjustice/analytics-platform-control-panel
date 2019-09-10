@@ -74,6 +74,7 @@ class ToolDeployment:
     objects = ToolDeploymentManager()
 
     def __init__(self, tool, user):
+        self._id_token = None
         self._subprocess = None
         self.tool = tool
         self.user = user
@@ -95,6 +96,7 @@ class ToolDeployment:
         """
         Deploy the tool to the cluster (asynchronous)
         """
+        self._id_token = kwargs.get('id_token')
         self._subprocess = cluster.deploy_tool(self.tool, self.user)
 
     @property
@@ -109,7 +111,10 @@ class ToolDeployment:
             if status:
                 return status
 
-        return cluster.get_tool_deployment_status(self)
+        return cluster.get_tool_deployment_status(
+            self,
+            id_token=self._id_token,
+        )
 
     def _poll(self):
         """
@@ -129,9 +134,13 @@ class ToolDeployment:
     def url(self):
         return f"https://{self.host}/"
 
-    def restart(self):
+    def restart(self, **kwargs):
         """
         Restart the tool deployment
         """
-        cluster.restart_tool_deployment(self)
+        self._id_token = kwargs.get('id_token')
+        cluster.restart_tool_deployment(
+            self,
+            id_token=self._id_token,
+        )
 
