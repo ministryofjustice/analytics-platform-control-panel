@@ -56,8 +56,3 @@
     {{ caller() }}
   </fieldset>
 {%- endmacro %}
-
-{% macro delete_button(label, confirm="") -%}
-  <input type="submit" class="button button-warning right js-confirm" value="{{
-  label }}" data-confirm-message="{{ confirm | default("Are you sure?") }}">
-{%- endmacro %}
