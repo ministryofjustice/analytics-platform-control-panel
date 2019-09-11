@@ -1,4 +1,3 @@
-{% from "sign-out/macro.html" import sign_out_link with context %}
 {% from "whats-new/macro.html" import whats_new_notification %}
 
 {% macro govukHeader(params) %}
@@ -81,11 +80,12 @@
               {{ item.text }}
             </a>
           </li>
+          {% elif item.html %}
+          <li class="govuk-header__navigation-item {% if item.active %}govuk-header__navigation-item--active{% endif %}">
+            {{ item.html|safe }}
+          </li>
           {% endif %}
         {% endfor %}
-          <li class="govuk-header__navigation-item">
-            {{ sign_out_link() }}
-          </li>
         </ul>
         {{ whats_new_notification() }}
       </nav>

@@ -2,6 +2,7 @@
 {% from "footer/macro.html" import govukFooter %}
 {% from "navbar/macro.html" import navbar %}
 {% from "alerts/macro.html" import alerts with context %}
+{% from "sign-out/macro.html" import sign_out_link with context %}
 
 {% extends "govuk-frontend.html" %}
 
@@ -36,17 +37,27 @@
 {% endblock %}
 
 {% block header %}
-  {{ govukHeader({
-    'serviceName': service_name,
-    'serviceUrl': '#',
-    'navigation': [
-      {
-        'href': url('index'),
-        'text': "Signed in as " ~ request.user.name | default(request.user.email),
-        'active': True
-      }
-    ]
-  }) }}
+  {% if request.user.is_authenticated -%}
+    {{ govukHeader({
+      'serviceName': service_name,
+      'serviceUrl': '#',
+      'navigation': [
+        {
+          'href': url('index'),
+          'text': "Signed in as " ~ request.user.name | default(request.user.email),
+          'active': True
+        },
+        {
+          'html': sign_out_link(),
+        }
+      ]
+    }) }}
+  {%- else -%}
+    {{ govukHeader({
+      'serviceName': service_name,
+      'serviceUrl': '#',
+    }) }}
+  {%- endif %}
 {% endblock %}
 
 {% block beforeContent %}
