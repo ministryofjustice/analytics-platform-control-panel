@@ -140,12 +140,8 @@ class CreateDatasource(
         datasource_type = self.request.GET.get("type")
         self.object = S3Bucket.objects.create(
             name=name,
+            created_by=self.request.user,
             is_data_warehouse=datasource_type == "warehouse",
-        )
-        UserS3Bucket.objects.create(
-            s3bucket=self.object,
-            user=self.request.user,
-            is_admin=True,
         )
         messages.success(
             self.request,

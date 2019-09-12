@@ -226,3 +226,13 @@ def test_list(client, buckets, users, view, user, expected_count):
     response = view(client, buckets, users)
     assert len(response.context_data['object_list']) == expected_count
 
+
+def test_bucket_creator_has_readwrite_and_admin_access(client, users):
+    user = users['normal_user']
+    client.force_login(user)
+    response = create(client)
+    assert user.users3buckets.count() == 1
+    ub = user.users3buckets.all()[0]
+    assert ub.access_level == UserS3Bucket.READWRITE
+    assert ub.is_admin
+
