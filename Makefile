@@ -69,7 +69,7 @@ transpile:
 		controlpanel/frontend/static/javascripts \
 		-o static/app.js -s
 
-redis: /usr/local/var/run/redis.pid
+redis:
 	@echo
 	@echo "> Running Redis server..."
 	@if [ -z "$$REDIS_PASSWORD" ]; then REQUIREPASS="--requirepass=$$REDIS_PASSWORD"; fi
