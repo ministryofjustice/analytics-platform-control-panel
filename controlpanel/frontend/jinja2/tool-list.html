@@ -44,7 +44,7 @@
               method="post">
           {{ csrf_input }}
           {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
-          <button class="govuk-button hmcts-button--secondary">Restart</button>
+          <button class="govuk-button hmcts-button--secondary right">Restart</button>
         </form>
         <form action="{{ url('deploy-tool', kwargs={"name": tool.chart_name}) }}"
               class="background-submit tool-action {% if deployment %} govuk-visually-hidden {% endif %}"
