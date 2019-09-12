@@ -19,6 +19,7 @@ urlpatterns = [
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
     path("tools/", views.ToolList.as_view(), name="list-tools"),
     path("tools/<str:name>/deploy/", views.DeployTool.as_view(), name="deploy-tool"),
+    path("tools/<str:name>/upgrade/", views.UpgradeTool.as_view(), name="upgrade-tool"),
     path("tools/<str:name>/restart/", views.RestartTool.as_view(), name="restart-tool"),
     path("users/", views.UserList.as_view(), name="list-users"),
     path("users/<str:pk>/", views.UserDetail.as_view(), name="manage-user"),

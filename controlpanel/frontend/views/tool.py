@@ -55,6 +55,25 @@ class DeployTool(LoginRequiredMixin, RedirectView):
         return super().get_redirect_url(*args, **kwargs)
 
 
+class UpgradeTool(LoginRequiredMixin, RedirectView):
+    http_method_names = ['post']
+    url = reverse_lazy("list-tools")
+
+    def get_redirect_url(self, *args, **kwargs):
+        name = kwargs['name']
+
+        start_background_task('tool.upgrade', {
+            'tool_name': name,
+            'user_id': self.request.user.id,
+            'id_token': self.request.user.get_id_token(),
+        })
+
+        messages.success(
+            self.request, f"Upgrading {name}... this may take several minutes",
+        )
+        return super().get_redirect_url(*args, **kwargs)
+
+
 class RestartTool(LoginRequiredMixin, RedirectView):
     http_method_names = ["post"]
     url = reverse_lazy("list-tools")

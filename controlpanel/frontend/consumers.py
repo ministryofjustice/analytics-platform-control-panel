@@ -126,6 +126,12 @@ class BackgroundTaskConsumer(SyncConsumer):
         else:
             log.debug(f"Deployed {tool.name} for {user}")
 
+    def tool_upgrade(self, message):
+        """
+        Upgrade simply means re-installing the helm chart for the tool
+        """
+        self.tool_deploy(message)
+
     def tool_restart(self, message):
         """
         Restart the named tool for the specified user

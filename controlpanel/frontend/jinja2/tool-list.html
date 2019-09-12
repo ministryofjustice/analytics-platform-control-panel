@@ -32,12 +32,12 @@
       </td>
       <td class="govuk-table__cell align-right no-wrap">
         <a class="govuk-button hmcts-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
-           data-action-name="open"
-           href="{{ tool.url(request.user) }}"
-           rel="noopener"
-           target="_blank">
-          Open
-        </a>
+          data-action-name="open"
+          href="{{ tool.url(request.user) }}"
+          rel="noopener"
+          target="_blank">
+         Open
+       </a>
         <form action="{{ url('restart-tool', kwargs={'name': tool.chart_name}) }}"
               class="background-submit tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
               data-action-name="restart"
@@ -53,6 +53,13 @@
           {{ csrf_input }}
           {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
           <button class="govuk-button hmcts-button--secondary right">Deploy</button>
+        </form>
+        <form action="{{ url('upgrade-tool', kwargs={"name": tool.chart_name}) }}"
+              class="background-submit tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+              data-action-name="upgrade"
+              method="post">
+          {{ csrf_input }}
+          <button class="govuk-button hmcts-button--secondary right">Upgrade</button>
         </form>
       </td>
     </tr>
