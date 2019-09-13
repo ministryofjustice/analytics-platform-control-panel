@@ -1,4 +1,5 @@
 {% from "radios/macro.html" import govukRadios %}
+{% from "includes/data-access-level-options.html" import data_access_level_options with context %}
 
 {% extends "base.html" %}
 
@@ -11,45 +12,17 @@
   <form method="post" action="{{ url('update-access-level', kwargs={ "pk": users3bucket.id }) }}">
     {{ csrf_input }}
     <input type="hidden" name="user_id" value="{{ users3bucket.user.id }}">
-    {{ govukRadios({
-      "name": "access_level",
-      "fieldset": {
-        "legend": {
-          "text": "Data access level",
-          "classes": "govuk-fieldset__legend--m",
-        },
-      },
-      "hint": {
-        "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users.",
-      },
-      "items": [
-        {
-          "value": "readonly",
-          "text": "Read only",
-          "checked": not users3bucket.is_admin and users3bucket.access_level == "readonly"
-        },
-        {
-          "value": "readwrite",
-          "text": "Read/write",
-          "checked": not users3bucket.is_admin and users3bucket.access_level == "readwrite"
-        },
-        {
-          "value": "admin",
-          "text": "Admin",
-          "checked": users3bucket.is_admin,
-        }
-      ]
-    }) }}
+    {{ data_access_level_options(users3bucket) }}
     <button class="govuk-button">Save</button>
   </form>
 </section>
 
-{% if request.user.has_perm('api.destroy_users3bucket', users3bucket) %}
-<section class="cpanel-section">
-  <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": users3bucket.id}) }}">
-    {{ csrf_input }}
-    <button class="govuk-button cpanel-button--destructive">Revoke access</button>
-  </form>
-</section>
-{% endif %}
+{% if request.user.has_perm('api.destroy_users3bucket', users3bucket) -%}
+  <section class="cpanel-section">
+    <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": users3bucket.id}) }}">
+      {{ csrf_input }}
+      <button class="govuk-button cpanel-button--destructive">Revoke access</button>
+    </form>
+  </section>
+{%- endif %}
 {% endblock %}

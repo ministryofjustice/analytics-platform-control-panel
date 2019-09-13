@@ -1,0 +1,34 @@
+{% from "radios/macro.html" import govukRadios %}
+{% from "user/macro.html" import user_name %}
+{% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Grant user access to datasource" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+<section class="cpanel-section">
+  <form action="{{ url('grant-datasource-access', kwargs={"pk": bucket.id}) }}" method="post">
+    {{ csrf_input }}
+    <div class="govuk-form-group">
+      <label class="govuk-label" for="user_id">Grant access to this data to other users</label>
+      <select class="govuk-form-control no-blank autocomplete-select" id="user_id" name="user_id">
+        <option value="">Select a user</option>
+        {% for user in users_options %}
+        <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
+      {{ data_access_level_options() }}
+    </div>
+
+    <div class="govuk-form-group">
+      <button class="govuk-button">Grant access</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
