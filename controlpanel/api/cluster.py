@@ -72,6 +72,7 @@ TOOL_DEPLOY_FAILED = 'Failed'
 TOOL_IDLED = 'Idled'
 TOOL_NOT_DEPLOYED = 'Not deployed'
 TOOL_READY = 'Ready'
+TOOL_UPGRADED = 'Upgraded'
 TOOL_STATUS_UNKNOWN = 'Unknown'
 
 

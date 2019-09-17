@@ -15,7 +15,9 @@ from controlpanel.api import cluster
 from controlpanel.api.cluster import (
     TOOL_DEPLOYING,
     TOOL_DEPLOY_FAILED,
+    TOOL_IDLED,
     TOOL_READY,
+    TOOL_UPGRADED,
 )
 from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
@@ -132,6 +134,9 @@ class BackgroundTaskConsumer(SyncConsumer):
         """
         self.tool_deploy(message)
 
+        tool, user = self.get_tool_and_user(message)
+        update_tool_status(user, tool, TOOL_UPGRADED)
+
     def tool_restart(self, message):
         """
         Restart the named tool for the specified user
@@ -197,7 +202,7 @@ def wait_for_deployment(user, tool, deployment):
     while True:
         status = deployment.status
         update_tool_status(user, tool, status)
-        if status in (TOOL_DEPLOY_FAILED, TOOL_READY):
+        if status in (TOOL_DEPLOY_FAILED, TOOL_READY, TOOL_IDLED):
             return status
         sleep(1)
 

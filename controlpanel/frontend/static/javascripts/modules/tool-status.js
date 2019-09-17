@@ -40,8 +40,11 @@ moj.Modules.toolStatus = {
         case 'IDLED':
           this.showActions(listener, ['open', 'restart', 'upgrade', 'remove']);
           break;
+        case 'UPGRADED':
+          this.showActions(listener, ['open']);
+          break;
         case 'FAILED':
-          this.showActions(listener, ['restart', 'remove']);
+          this.showActions(listener, ['restart', 'upgrade', 'remove']);
           break;
       }
     };
