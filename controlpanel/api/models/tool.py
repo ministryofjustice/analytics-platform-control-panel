@@ -49,17 +49,24 @@ class ToolDeploymentManager:
         return tool_deployment
 
     def filter(self, **kwargs):
+        deployed_versions = {}
         user = kwargs.get('user')
         filter = Q(chart_name=None)  # Always False
         for deployment in cluster.list_tool_deployments(user):
-            _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            chart_name, version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            deployed_versions[chart_name] = version
             filter = filter | (
-                Q(chart_name=deployment.metadata.labels["app"])
+                Q(chart_name=chart_name)
                 # & Q(version=version)
             )
 
         tools = Tool.objects.filter(filter)
-        return [ToolDeployment(tool, user) for tool in tools]
+        results = []
+        for tool in tools:
+            outdated = tool.version != deployed_versions[tool.chart_name]
+            tool_deployment = ToolDeployment(tool, user, outdated)
+            results.append(tool_deployment)
+        return results
 
 
 class ToolDeployment:
@@ -73,11 +80,12 @@ class ToolDeployment:
 
     objects = ToolDeploymentManager()
 
-    def __init__(self, tool, user):
+    def __init__(self, tool, user, outdated=False):
         self._id_token = None
         self._subprocess = None
         self.tool = tool
         self.user = user
+        self.outdated = outdated
 
     def __repr__(self):
         return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
