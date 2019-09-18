@@ -222,11 +222,13 @@ class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         context = super().get_context_data()
         bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
         context['bucket'] = bucket
-        access_group = bucket.users3buckets.all().select_related('user')
-        member_ids = [member.user.auth0_id for member in access_group]
-        context['access_group'] = access_group
+        member_ids = list(bucket.users3buckets.all().select_related('user').values_list(
+            'user__auth0_id',
+            flat=True,
+        ))
         context['users_options'] = User.objects.exclude(
-            auth0_id__isnull=True,
+            auth0_id__isnull=True
+        ).exclude(
             auth0_id__in=member_ids,
         )
         return context
