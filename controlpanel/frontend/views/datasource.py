@@ -209,12 +209,29 @@ class RevokeAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
 
 class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    context_object_name = 'users3bucket'
     form_class = GrantAccessForm
     model = UserS3Bucket
     permission_required = 'api.create_users3bucket'
+    template_name = 'datasource-access-grant.html'
 
     def get_form_kwargs(self):
         return FormMixin.get_form_kwargs(self)
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
+        context['bucket'] = bucket
+        member_ids = list(bucket.users3buckets.all().select_related('user').values_list(
+            'user__auth0_id',
+            flat=True,
+        ))
+        context['users_options'] = User.objects.exclude(
+            auth0_id__isnull=True
+        ).exclude(
+            auth0_id__in=member_ids,
+        )
+        return context
 
     def get_success_url(self):
         messages.success(self.request, "Successfully granted access")
@@ -239,3 +256,4 @@ class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             s3bucket_id=self.kwargs['pk'],
         )
         return FormMixin.form_valid(self, form)
+

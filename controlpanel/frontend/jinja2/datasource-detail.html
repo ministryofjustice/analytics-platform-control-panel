@@ -2,6 +2,7 @@
 {% from "radios/macro.html" import govukRadios %}
 {% from "user/macro.html" import user_name %}
 {% from "includes/yesno.html" import yes_no %}
+{% from "includes/data-access-level-options.html" import data_access_level_options with context %}
 
 {% extends "base.html" %}
 
@@ -55,44 +56,6 @@
         {%- endif %}
         </td>
         <td class="govuk-table__cell">
-          {#
-          <div class="govuk-form-group change-data-access-level-panel panel panel-border-narrow js-hidden"
-                id="users3bucket_{{ users3bucket.id }}_change-data-access-level-panel">
-
-            <button class="js-close-panel">Close panel</button>
-
-            <form action="{{ url_for('users3buckets.update', { id: users3bucket.id }) }}" method="post" class="inline-form clearfix">
-              {{ csrf_input }}
-              {{ govukRadios({
-                "name": "data_access_level",
-                "fieldset": {
-                  "legend": {
-                    "text": "Data access level",
-                  },
-                },
-                "hint": {
-                  "html": "<strong>NOTE:</strong> Making user admin will allow them to confer access rights on additional users.",
-                },
-                "items": [
-                  {"value": "readonly", "text": "Read only", "checked": True},
-                  {"value": "readwrite", "text": "Read/write"},
-                  {"value": "admin", "text": "Admin"},
-                ]
-              }) }}
-              <div class="govuk-form-group">
-                <button class="govuk-button hmcts-button--secondary">Save</button>
-              </div>
-            </form>
-
-            <hr>
-            <div class="form-group js-revoke-access" id="users3bucket_{{ users3bucket.id }}_revoke-access">
-              <form action="{{ url_for('users3buckets.delete', { id: users3bucket.id }) }}" method="post" class="inline-form clearfix">
-                {{ csrf_input }}
-                <input type="submit" class="js-confirm button button-warning" value="Revoke access" />
-              </form>
-            </div>
-          </div>
-          #}
           {% if request.user.has_perm('api.update_users3bucket', member) %}
           <a href="{{ url("update-access-level", kwargs={"pk": member.id}) }}"
              class="govuk-button hmcts-button--secondary right">
@@ -113,46 +76,11 @@
     </tfoot>
   </table>
 
-  {% if request.user.has_perm('api.create_users3bucket', bucket) %}
-  {% if users_options|length %}
-    <form action="{{ url('grant-datasource-access', kwargs={"pk": bucket.id}) }}" method="post">
-    {{ csrf_input }}
-    <div class="govuk-form-group">
-      <label class="govuk-label" for="user_id">Grant access to this data to other users</label>
-      <select class="govuk-form-control no-blank autocomplete-select" id="user_id" name="user_id">
-        <option value="">Select a user</option>
-        {% for user in users_options %}
-        <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
-      {{ govukRadios({
-        "name": "access_level",
-        "fieldset": {
-          "legend": {
-            "text": "Data access level",
-          },
-        },
-        "hint": {
-          "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users.",
-        },
-        "items": [
-          {"value": "readonly", "text": "Read only", "checked": True},
-          {"value": "readwrite", "text": "Read/write"},
-          {"value": "admin", "text": "Admin"},
-        ]
-      }) }}
-    </div>
-
-    <div class="govuk-form-group">
-      <button class="govuk-button">Grant access</button>
-    </div>
-  </form>
-  {% else %}
-  <p class="govuk-body">(All available users already have access to this data source.)</p>
-  {% endif %}
+  {% if request.user.has_perm('api.create_users3bucket', bucket) and users_options|length %}
+    <a href="{{ url('grant-datasource-access', kwargs={'pk': bucket.pk}) }}"
+       class="govuk-button hmcts-button--secondary">
+      Grant user access
+    </a>
   {% endif %}
 </section>
 

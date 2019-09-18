@@ -52,7 +52,7 @@
     {% set conditionalId = "conditional-" + id %}
     {%- if item.divider %}
     <div class="govuk-radios__divider">{{ item.divider }}</div>
-    {%- else %}
+    {%- elif not item.hide %}
     {% set hasHint = item.hint and (item.hint.text or item.hint.html) %}
     {% set itemHintId = id + '-item-hint' %}
     <div class="govuk-radios__item">

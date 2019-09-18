@@ -1,0 +1,33 @@
+{% macro data_access_level_options(users3bucket=None) %}
+  {% set can_add_admin = request.user.has_perm('api.add_s3bucket_admin') %}
+  {{ govukRadios({
+    "name": "access_level",
+    "fieldset": {
+      "legend": {
+        "text": "Data access level",
+        "classes": "govuk-fieldset__legend--m",
+      },
+    },
+    "hint": {
+      "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users." if can_add_admin else "",
+    },
+    "items": [
+      {
+        "value": "readonly",
+        "text": "Read only",
+        "checked": not users3bucket or (not users3bucket.is_admin and users3bucket.access_level == "readonly")
+      },
+      {
+        "value": "readwrite",
+        "text": "Read/write",
+        "checked": users3bucket and not users3bucket.is_admin and users3bucket.access_level == "readwrite"
+      },
+      {
+        "hide": not can_add_admin,
+        "value": "admin",
+        "text": "Admin",
+        "checked": users3bucket and users3bucket.is_admin,
+      }
+    ]
+  }) }}
+{% endmacro %}
