@@ -61,7 +61,7 @@
 {% endblock %}
 
 {% block beforeContent %}
-  {% if not hide_nav %}
+  {% if not hide_nav and request.user.is_authenticated %}
   {{ navbar({
     "items": [
       {
@@ -81,13 +81,13 @@
         "active": page_name == "warehouse-datasource-list"
       },
       {
-        "hide": not request.user or not request.user.userapps or not request.user.userapps.filter(is_admin=True).exists(),
+        "hide": not request.user.users3buckets.filter(s3bucket__is_data_warehouse=False).exists(),
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list"
       },
       {
-        "hide": not request.user or not request.user.userapps or not request.user.userapps.filter(is_admin=True).exists(),
+        "hide": not request.user.userapps.filter(is_admin=True).exists(),
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps"
