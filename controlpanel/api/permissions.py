@@ -87,3 +87,7 @@ class ToolDeploymentPermissions(RulesBasePermissions):
 class ParameterPermissions(RulesBasePermissions):
     resource = 'parameter'
 
+
+class IAMManagedPolicyPermissions(RulesBasePermissions):
+    resource = 'policy'
+

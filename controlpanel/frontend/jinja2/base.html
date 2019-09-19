@@ -97,6 +97,12 @@
         "text": "Parameters",
         "href": url("list-parameters"),
         "active": page_name == "parameters"
+      },
+      {
+        "hide": not request.user.is_superuser,
+        "text": "Managed Policies",
+        "href": url("list-policies"),
+        "active": page_name == "policies"
       }
     ]
   }) }}

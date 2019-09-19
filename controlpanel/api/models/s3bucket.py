@@ -2,6 +2,7 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster, validators
@@ -22,7 +23,11 @@ def s3bucket_console_url(name):
 class S3BucketQuerySet(models.QuerySet):
     def accessible_by(self, user):
         return self.filter(
-            users3buckets__user=user,
+            Q(
+                users3buckets__user=user
+            ) | Q(
+                policys3buckets__users=user
+            )
         )
 
     def administered_by(self, user):

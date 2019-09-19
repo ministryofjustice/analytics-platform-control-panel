@@ -62,6 +62,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     # Django flash messages
     "django.contrib.messages",
+    # Django postgress form and model
+    "django.contrib.postgres",
     # Django collect static files into a single location
     "django.contrib.staticfiles",
     # Make current request available anywhere
@@ -70,6 +72,8 @@ INSTALLED_APPS = [
     "django_extensions",
     # Provides filter backend for use with Django REST Framework
     "django_filters",
+    # Provides to redis cache
+    "django_redis",
     # Django REST Framework
     "rest_framework",
     # Sentry error tracking
@@ -499,3 +503,26 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 # -- Airflow
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
+
+REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_PORT = os.environ.get("REDIS_PORT")
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+
+if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "PASSWORD": f"{REDIS_PASSWORD}"
+            }
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'control-panel',
+        }
+    }

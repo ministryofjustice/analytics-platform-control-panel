@@ -1,5 +1,6 @@
 from django.db import models
 
+from controlpanel.api.cluster import S3AccessPolicy
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
@@ -11,9 +12,14 @@ class UserS3Bucket(AccessToS3Bucket):
     The `is_admin` field determine if the user has admin privileges on the
     S3 bucket
     """
+    policy_class = S3AccessPolicy
 
     user = models.ForeignKey(
-        "User", related_name='users3buckets', on_delete=models.CASCADE)
+        "User",
+        related_name='users3buckets',
+        on_delete=models.CASCADE,
+        null=True
+    )
     is_admin = models.BooleanField(default=False)
 
     class Meta:
@@ -22,7 +28,7 @@ class UserS3Bucket(AccessToS3Bucket):
         unique_together = ('user', 's3bucket')
         ordering = ('id',)
 
-    def aws_role_name(self):
+    def aws_name(self):
         return self.user.iam_role_name
 
     def __repr__(self):

@@ -1,0 +1,61 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "user/macro.html" import user_name %}
+{% from "includes/yesno.html" import yes_no %}
+
+{% macro datasource_access_list(access_type, access_list, request, datasource_type) -%}
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">{{ access_type }}</th>
+        <th class="govuk-table__header">
+          Access level
+          {{ modal_dialog(access_levels_html|safe) }}
+        </th>
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for member in access_list %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          {% if member.user %}
+            <a class="{% if request.user == member.user %}highlight-current{% endif %}"
+              href="{{ url('manage-user', kwargs={ "pk": member.user.auth0_id }) }}">
+              {{ user_name(member.user) }}
+            </a>
+          {% elif member.policy %}
+            <a href="{{ url('manage-policy', kwargs={ "pk": member.policy.id }) }}">
+              {{ member.policy.name }}
+            </a>
+          {% endif %}
+        </td>
+        <td class="govuk-table__cell">
+        {% if member.is_admin -%}
+          Admin
+        {%- else -%}
+          {{ yes_no(member.access_level, "readwrite", "Read/write", "Read only") }}
+        {%- endif %}
+        </td>
+        <td class="govuk-table__cell">
+          {% if request.user.has_perm('api.update_users3bucket', member) %}
+          <a href="{% if member.user -%}{{ url("update-access-level", kwargs={"pk": member.id}) }}{%- else -%}{{ url("update-policy-access-level", kwargs={"pk": member.id}) }}{%- endif %}"
+             class="govuk-button hmcts-button--secondary right">
+            Edit access level
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ access_list|length }}
+          {{ access_type|lower }}{%- if access_list|length != 1 -%}s have{% else %} has{% endif %}
+          access to this {{ datasource_type }} data source
+      </tr>
+    </tfoot>
+  </table>
+{%- endmacro %}

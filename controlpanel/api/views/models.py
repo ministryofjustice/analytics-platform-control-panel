@@ -20,6 +20,7 @@ from controlpanel.api.models import (
     UserS3Bucket,
     Parameter,
 )
+from controlpanel.api.models import IAMManagedPolicy
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -96,6 +97,17 @@ class ParameterViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ParameterSerializer
     filter_backends = (filters.ParameterFilter,)
     permission_classes = (permissions.ParameterPermissions,)
+
+    @atomic
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+class IAMManagedPolicyViewSet(viewsets.ModelViewSet):
+    queryset = IAMManagedPolicy.objects.all()
+    serializer_class = serializers.IAMManagedPolicySerializer
+    filter_backends = (filters.IAMManagedPolicyFilter,)
+    permission_classes = (permissions.IAMManagedPolicyPermissions,)
 
     @atomic
     def perform_create(self, serializer):

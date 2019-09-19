@@ -1,6 +1,7 @@
 {% from "radios/macro.html" import govukRadios %}
 {% from "user/macro.html" import user_name %}
 {% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+{% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
 
 {% extends "base.html" %}
 
@@ -23,12 +24,44 @@
     </div>
 
     <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
-      {{ data_access_level_options() }}
+      {{ data_access_level_options(bucket) }}
     </div>
+
+    {{ data_access_paths_textarea(grant_access_form.paths) }}
 
     <div class="govuk-form-group">
       <button class="govuk-button">Grant access</button>
     </div>
-  </form>
+
+    </form>
+
+    {% if request.user.is_superuser %}
+      <h2 class="govuk-heading-m">Data access managed policies</h2>{% if request.user.has_perm('api.create_users3bucket', bucket) %}
+        {% if policies_options|length %}
+          <form action="{{ url('grant-datasource-access', kwargs={"pk": bucket.id}) }}" method="post">
+          {{ csrf_input }}
+          <div class="govuk-form-group">
+            <label class="govuk-label" for="user_id">Grant access to this data to groups of users</label>
+            <select class="govuk-form-control no-blank autocomplete-select" id="policy_id" name="policy_id">
+              <option value="">Select a managed policy</option>
+              {% for policy in policies_options %}
+              <option value="{{ policy.id }}">{{ policy.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {{ data_access_level_options(bucket) }}
+
+          {{ data_access_paths_textarea(grant_access_form.paths) }}
+
+          <div class="govuk-form-group">
+            <button class="govuk-button">Grant access</button>
+          </div>
+        </form>
+        {% else %}
+          <p class="govuk-body">(All available managed policies already have access to this data source.)</p>
+        {% endif %}
+      {% endif %}
+    {% endif %}
 </section>
 {% endblock %}

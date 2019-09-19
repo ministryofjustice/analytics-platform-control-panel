@@ -101,3 +101,20 @@ class ParameterFilter(DjangoFilterBackend):
             return queryset
 
         return queryset.filter(created_by=request.user)
+
+
+class IAMManagedPolicyFilter(DjangoFilterBackend):
+    """
+    Filter to get visible IAMManagedPolicys.
+
+    - Superusers see everything
+    - Normal users see only IAMManagedPolicys they created
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        queryset = super().filter_queryset(request, queryset, view)
+
+        if is_superuser(request.user):
+            return queryset
+
+        return queryset.filter(created_by=request.user)

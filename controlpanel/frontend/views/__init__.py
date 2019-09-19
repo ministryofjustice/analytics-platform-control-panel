@@ -22,9 +22,21 @@ from controlpanel.frontend.views.datasource import (
     CreateDatasource,
     DeleteDatasource,
     GrantAccess,
+    GrantPolicyAccess,
     RevokeAccess,
     UpdateAccessLevel,
+    UpdateIAMManagedPolicyAccessLevel,
+    RevokeIAMManagedPolicyAccess,
     WebappBucketList,
+)
+from controlpanel.frontend.views.policy import (
+    AdminIAMManagedPolicyList,
+    IAMManagedPolicyList,
+    IAMManagedPolicyCreate,
+    IAMManagedPolicyDelete,
+    IAMManagedPolicyDetail,
+    IAMManagedPolicyFormRoleList,
+    IAMManagedPolicyRemoveUser,
 )
 from controlpanel.frontend.views.parameter import (
     AdminParameterList,

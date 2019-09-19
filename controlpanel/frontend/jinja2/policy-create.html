@@ -1,0 +1,47 @@
+{% from "input/macro.html" import govukInput %}
+{% from "fieldset/macro.html" import govukFieldset %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Create an IAM managed policy for use with s3 permissions" %}
+{% set legend -%}
+  Create an IAM managed policy for use with s3 permissions
+{%- endset %}
+
+{% set page_name = "policies" %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if form.error %}
+    <div class="error">{{ form.error }}</div>
+  {% endif %}
+
+  <form action="{{ url('create-policy') }}" method="post" class="appRoles">
+    {{ csrf_input }}
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+
+      {{
+        govukInput({
+          "label": {
+            "text": "Name",
+            "classes": "govuk-label--m",
+          },
+          "classes": "govuk-!-width-two-thirds",
+          "hint": {
+            "text": '60 chars max, only letters, numbers and underscores'
+          },
+          "name": "name",
+          "attributes": {
+            "pattern": "[a-zA-Z0-9_-]{1,60}",
+            "maxlength": "60",
+          },
+          "value": form.name.value(),
+          "errorMessage": { "html": form.name.errors|join("<br>") } if form.name.errors else {}
+        })
+      }}
+
+      <button class="govuk-button">Create IAM managed policy</button>
+    {% endcall %}
+  </form>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% macro policy_list(policies) %}
+{%- set num_policies = policies|length %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">Arn</th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {%- for policy in policies %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell"><a href="{{ url("manage-policy", kwargs={ "pk": policy.id }) }}">{{ policy.name }}</a></td>
+      <td class="govuk-table__cell">{{ policy.arn }}</td>
+      <td class="govuk-table__cell">
+        <form method="POST" action="{{ url("delete-policy", kwargs={ "pk": policy.id }) }}">
+            {{ csrf_input }}
+            <button class="govuk-button cpanel-button--destructive">Delete policy</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ num_policies }} managed polic{% if num_apps != 1 %}ies{% else %}y{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endmacro %}

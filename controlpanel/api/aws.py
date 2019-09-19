@@ -96,14 +96,18 @@ class AWSClient(object):
             }
         )
 
-    def get_inline_policy_document(self, role_name, policy_name):
+    def _get_inline_policy_document(self, name, resource_type, policy_name):
         if not self.enabled:
             return None
 
+        aws_kwargs = {
+            f"{resource_type.capitalize()}Name": name,
+            "PolicyName": policy_name,
+        }
+
         try:
-            result = self._do('iam', 'get_role_policy',
-                RoleName=role_name,
-                PolicyName=policy_name,
+            result = self._do('iam', f'get_{resource_type}_policy',
+                **aws_kwargs
             )
             return result['PolicyDocument']
         except ClientError as e:
@@ -111,6 +115,10 @@ class AWSClient(object):
                 pass
             else:
                 raise e
+
+    def get_inline_policy_document(self, role_name, policy_name):
+        return self._get_inline_policy_document(
+            role_name, 'role', policy_name)
 
     def put_role_policy(self, role_name, policy_name, policy_document):
         self._do('iam', 'put_role_policy',
@@ -174,6 +182,65 @@ class AWSClient(object):
             RoleName=role_name,
             PolicyArn=policy_arn)
 
+    def list_entities_for_policy(self, policy_arn, entity_filter="Role"):
+        return self._do('iam', 'list_entities_for_policy',
+                 PolicyArn=policy_arn,
+                 EntityFilter=entity_filter)
+
+    def create_policy(self, policy_name, policy_document, path="/"):
+        self._do('iam', 'create_policy',
+                 PolicyName=policy_name,
+                 Path=path,
+                 PolicyDocument=json.dumps(policy_document))
+
+    def create_policy_version(self, policy_arn, policy_document):
+        self._do('iam', 'create_policy_version',
+                 PolicyArn=policy_arn,
+                 PolicyDocument=json.dumps(policy_document),
+                 SetAsDefault=True)
+        self._delete_policy_versions(policy_arn)
+
+    def get_policy(self, policy_arn):
+        return self._do('iam', 'get_policy',
+            PolicyArn=policy_arn)
+
+    def get_policy_version(self, policy_arn, version_id):
+        return self._do('iam', 'get_policy_version',
+            PolicyArn=policy_arn,
+            VersionId=version_id)
+
+    def _detach_policy_from_roles(self, policy_arn):
+        """Detaches policy from all roles that it is attached to"""
+
+        roles = self.list_entities_for_policy(policy_arn).get("PolicyRoles")
+        if roles:
+            for role in roles:
+                self.detach_policy_from_role(
+                    role_name=role["RoleName"],
+                    policy_arn=policy_arn,
+                )
+
+    def delete_policy(self, policy_arn):
+        self._detach_policy_from_roles(policy_arn)
+        self._delete_policy_versions(policy_arn)
+        self._do('iam', 'delete_policy',
+            PolicyArn=policy_arn)
+
+    def _delete_policy_version(self, policy_arn, version_id):
+        self._do('iam', 'delete_policy_version',
+            PolicyArn=policy_arn,
+            VersionId=version_id)
+
+    def _delete_policy_versions(self, policy_arn):
+        versions = self.list_policy_versions(policy_arn).get("Versions", [])
+        for version in versions:
+            if not version["IsDefaultVersion"]:
+                self._delete_policy_version(policy_arn, version["VersionId"])
+
+    def list_policy_versions(self, policy_arn):
+        return self._do('iam', 'list_policy_versions',
+            PolicyArn=policy_arn)
+
     def create_parameter(self, name, value, role_name, description=''):
         self._do('ssm', 'put_parameter',
             Name=name,
@@ -197,6 +264,64 @@ class AWSClient(object):
         roles = self._do('iam', 'list_roles',
             PathPrefix=prefix).get('Roles')
         return [r['RoleName'] for r in roles]
+
+    def create_group(self, name, path="/"):
+        self._do('iam', 'create_group',
+            Path=path,
+            GroupName=name,
+        )
+
+    def get_group(self, name):
+        return self._do('iam', 'get_group',
+            GroupName=name,
+        )
+
+    def add_user_to_group(self, group_name, user_name):
+        self._do('iam', 'add_user_to_group',
+            GroupName=group_name,
+            UserName=user_name,
+        )
+
+    def remove_user_from_group(self, group_name, user_name):
+        self._do('iam', 'remove_user_from_group',
+            GroupName=group_name,
+            UserName=user_name,
+        )
+
+    def delete_group(self, name):
+        self._delete_group_inline_policies(name)
+        self._do('iam', 'delete_group',
+            GroupName=name,
+        )
+
+    def get_group_inline_policy_document(self, group_name, policy_name):
+        return self._get_inline_policy_document(
+            group_name, 'group', policy_name)
+
+    def put_group_policy(self, group_name, policy_name, policy_document):
+        self._do('iam', 'put_group_policy',
+            GroupName=group_name,
+            PolicyName=policy_name,
+            PolicyDocument=json.dumps(policy_document)
+        )
+
+    def _delete_group_inline_policies(self, group_name):
+        """Deletes all inline policies in the given group"""
+
+        policies = self._do(
+            'iam', 'list_group_policies', GroupName=group_name)
+
+        if policies:
+            for policy_name in policies["PolicyNames"]:
+                self.delete_group_inline_policy(
+                    group_name=group_name,
+                    policy_name=policy_name,
+                )
+
+    def delete_group_inline_policy(self, policy_name, group_name):
+        self._do('iam', 'delete_group_policy',
+            GroupName=group_name,
+            PolicyName=policy_name)
 
 
 aws = AWSClient()

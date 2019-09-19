@@ -1,0 +1,22 @@
+{% from "includes/policy-list.html" import policy_list with context %}
+
+{% extends "base.html" %}
+
+{% set page_name = "policies" %}
+{% set page_title = "Your policies" %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if request.user.has_perm('api.list_policy') %}
+  {{ policy_list(policies) }}
+
+  {% if request.user.has_perm('api.create_policy') %}
+  <p class="govuk-body">
+  <a class="govuk-button" href="{{ url('create-policy') }}">
+      Create new managed policy
+    </a>
+  </p>
+  {% endif %}
+  {% endif %}
+{% endblock %}

@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
@@ -16,15 +17,16 @@ from rules.contrib.views import PermissionRequiredMixin
 
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
+    IAMManagedPolicy,
     S3Bucket,
     User,
     UserS3Bucket,
-)
+    PolicyS3Bucket)
 from controlpanel.api.serializers import ESBucketHitsSerializer
 from controlpanel.frontend.forms import (
     CreateDatasourceForm,
     GrantAccessForm,
-)
+    GrantIAMManagedPolicyAccessForm)
 
 
 DATASOURCE_TYPES = [
@@ -99,16 +101,23 @@ class BucketDetail(
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         bucket = kwargs['object']
-        access_group = bucket.users3buckets.all().select_related('user')
-        member_ids = [member.user.auth0_id for member in access_group]
-        context['access_group'] = access_group
+        access_users = bucket.users3buckets.all().select_related('user')
+        member_ids = [member.user.auth0_id for member in access_users]
+        context['access_users'] = access_users
         context['access_logs'] = ESBucketHitsSerializer(
             bucket_hits_aggregation(bucket.name)
         ).data
         context['grant_access_form'] = GrantAccessForm()
         context['users_options'] = User.objects.exclude(
-            auth0_id__isnull=True,
-            auth0_id__in=member_ids,
+            auth0_id__isnull=True
+        ).exclude(
+            auth0_id__in=member_ids
+        )
+        access_policies = bucket.policys3buckets.all().select_related('policy')
+        policy_ids = [access.policy.id for access in access_policies]
+        context['access_policies'] = access_policies
+        context['policies_options'] = IAMManagedPolicy.objects.exclude(
+            pk__in=policy_ids
         )
         return context
 
@@ -174,16 +183,18 @@ class DeleteDatasource(
         return response
 
 
-class UpdateAccessLevel(
-    LoginRequiredMixin,
-    PermissionRequiredMixin,
-    UpdateView,
-):
-    context_object_name = 'users3bucket'
-    form_class = GrantAccessForm
-    model = UserS3Bucket
+class UpdateAccessLevelMixin:
+    context_object_name = 'items3bucket'
+    form_class = None
+    model = None
     permission_required = 'api.update_users3bucket'
     template_name = "datasource-access-update.html"
+
+    def get_initial(self):
+        initial = self.initial.copy()
+        if hasattr(self, "object"):
+            initial.update(self.object.__dict__)
+        return initial
 
     def get_form_kwargs(self):
         return FormMixin.get_form_kwargs(self)
@@ -194,9 +205,30 @@ class UpdateAccessLevel(
 
     def form_valid(self, form):
         self.object.access_level = form.cleaned_data['access_level']
-        self.object.is_admin = form.cleaned_data['is_admin']
+        self.object.is_admin = form.cleaned_data.get('is_admin')
+        self.object.paths = form.cleaned_data['paths']
         self.object.save()
         return FormMixin.form_valid(self, form)
+
+
+class UpdateAccessLevel(
+    UpdateAccessLevelMixin,
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UpdateView,
+):
+    form_class = GrantAccessForm
+    model = UserS3Bucket
+
+
+class UpdateIAMManagedPolicyAccessLevel(
+    UpdateAccessLevelMixin,
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    UpdateView,
+):
+    form_class = GrantIAMManagedPolicyAccessForm
+    model = PolicyS3Bucket
 
 
 class RevokeAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
@@ -206,6 +238,10 @@ class RevokeAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+
+
+class RevokeIAMManagedPolicyAccess(RevokeAccess):
+    model = PolicyS3Bucket
 
 
 class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
@@ -231,11 +267,35 @@ class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         ).exclude(
             auth0_id__in=member_ids,
         )
+        context['grant_access_form'] = GrantAccessForm()
+        access_policies = bucket.policys3buckets.all().select_related('policy')
+        policy_ids = [access.policy.id for access in access_policies]
+        context['access_policies'] = access_policies
+        context['policies_options'] = IAMManagedPolicy.objects.exclude(
+            pk__in=policy_ids
+        )
         return context
+
+    def get_form_class(self):
+        if self.request.POST.get('policy_id'):
+            return GrantIAMManagedPolicyAccessForm
+        return self.form_class
+
+    def form_invalid(self, form):
+        bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
+        return HttpResponseRedirect(
+            reverse_lazy(
+                "manage-datasource",
+                kwargs={"pk": bucket.id}
+            )
+        )
 
     def get_success_url(self):
         messages.success(self.request, "Successfully granted access")
-        return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+        return reverse_lazy(
+            "manage-datasource",
+            kwargs={"pk": self.object.s3bucket.id}
+        )
 
     def form_valid(self, form):
         user = self.request.user
@@ -244,16 +304,32 @@ class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         if not user.has_perm('api.grant_s3bucket_access', bucket):
             raise PermissionDenied()
 
-        is_admin = form.cleaned_data['is_admin']
+        is_admin = form.cleaned_data.get('is_admin')
 
         if is_admin and not user.has_perm('api.add_s3bucket_admin', bucket):
             raise PermissionDenied()
 
-        self.object = UserS3Bucket.objects.create(
-            access_level=form.cleaned_data['access_level'],
-            is_admin=is_admin,
-            user_id=form.cleaned_data['user_id'],
-            s3bucket_id=self.kwargs['pk'],
-        )
+        values = {
+            "access_level": form.cleaned_data['access_level'],
+            "s3bucket_id": self.kwargs['pk'],
+            "paths": form.cleaned_data['paths']
+        }
+
+        if form.cleaned_data.get('user_id'):
+            model = UserS3Bucket
+            values["is_admin"] = is_admin
+            values["user_id"] = form.cleaned_data['user_id']
+        elif form.cleaned_data.get('policy_id'):
+            model = PolicyS3Bucket
+            values["policy_id"] = form.cleaned_data['policy_id']
+
+        self.object = model.objects.create(**values)
         return FormMixin.form_valid(self, form)
 
+
+class GrantPolicyAccess(GrantAccess):
+    context_object_name = 'users3bucket'
+    form_class = GrantIAMManagedPolicyAccessForm
+    model = PolicyS3Bucket
+    permission_required = 'api.create_policys3bucket'
+    template_name = 'datasource-policy-access-grant.html'

@@ -1,25 +1,40 @@
 {% from "radios/macro.html" import govukRadios %}
 {% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+{% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
 
 {% extends "base.html" %}
 
 {% set page_title = "Edit data access level" %}
+{% if items3bucket.user %}
+  {% set revoke_url = url('revoke-datasource-access', kwargs={"pk": items3bucket.id}) %}
+  {% set action_url = url('update-access-level', kwargs={ "pk": items3bucket.id }) %}
+{% else %}
+  {% set revoke_url = url('revoke-datasource-policy-access', kwargs={"pk": items3bucket.id}) %}
+  {% set action_url = url('update-policy-access-level', kwargs={ "pk": items3bucket.id }) %}
+{% endif %}
 
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <section class="cpanel-section">
-  <form method="post" action="{{ url('update-access-level', kwargs={ "pk": users3bucket.id }) }}">
+  <form method="post" action="{{ action_url }}">
     {{ csrf_input }}
-    <input type="hidden" name="user_id" value="{{ users3bucket.user.id }}">
-    {{ data_access_level_options(users3bucket) }}
+    {% if items3bucket.user %}
+      <input type="hidden" name="user_id" value="{{ items3bucket.user.id }}">
+    {% else %}
+      <input type="hidden" name="policy_id" value="{{ items3bucket.policy.id }}">
+    {% endif %}
+    {{ data_access_level_options(items3bucket) }}
+
+    {{ data_access_paths_textarea(form.paths) }}
+
     <button class="govuk-button">Save</button>
   </form>
 </section>
 
-{% if request.user.has_perm('api.destroy_users3bucket', users3bucket) %}
+{% if request.user.has_perm('api.destroy_items3bucket', items3bucket) %}
 <section class="cpanel-section">
-  <form method="post" action="{{ url('revoke-datasource-access', kwargs={"pk": users3bucket.id}) }}">
+  <form method="post" action="{{ revoke_url }}">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive">Revoke access</button>
   </form>

@@ -1,0 +1,13 @@
+{% from "includes/list-field.html" import list_field, list_field_textarea %}
+
+{% macro data_access_paths(field) -%}
+  <div class="govuk-form-group panel panel-border-narrow js-list-field">
+    {{ list_field(field.name, field.label, field.help_text, field.value() or "", field.errors) }}
+  </div>
+{%- endmacro %}
+
+{% macro data_access_paths_textarea(field) -%}
+  <div class="govuk-form-group panel panel-border-narrow js-list-field">
+    {{ list_field_textarea(field.name, field.label, field.help_text, field.value() or "", field.errors) }}
+  </div>
+{%- endmacro %}

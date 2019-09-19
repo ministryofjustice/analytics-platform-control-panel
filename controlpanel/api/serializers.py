@@ -1,7 +1,5 @@
 from collections import defaultdict
 
-from django.conf import settings
-from django.contrib.auth.models import Group
 from operator import itemgetter
 import re
 from rest_framework import serializers
@@ -14,14 +12,15 @@ from controlpanel.api.models import (
     User,
     UserApp,
     UserS3Bucket,
+    IAMManagedPolicy,
 )
 
 
-class GroupSerializer(serializers.ModelSerializer):
+class IAMManagedPolicySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Group
-        fields = ('id', 'url', 'name')
+        model = IAMManagedPolicy
+        fields = ('id', 'arn', 'name')
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):

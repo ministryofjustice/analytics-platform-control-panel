@@ -1,0 +1,40 @@
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "user/macro.html" import user_name %}
+{% from "includes/policy-user-list.html" import policy_users_list %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Manage " + object.name + " group" %}
+{% set legend -%}
+  Add user to group {{ object.name }}
+{%- endset %}
+
+{% set page_name = "manage-policy" %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {{ policy_users_list(object, request) }}
+
+  {% if form.error %}
+    <div class="error">{{ form.error }}</div>
+  {% endif %}
+
+  <form action="" method="post">
+    {{ csrf_input }}
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+
+      <div class="govuk-form-group">
+        <label class="govuk-label" for="user_id">User</label>
+        <select class="govuk-form-control no-blank autocomplete-select" id="user_id" name="user_id">
+          <option value="">Select a user</option>
+          {% for user in users_options %}
+            <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button class="govuk-button">Add</button>
+    {% endcall %}
+  </form>
+{% endblock %}
