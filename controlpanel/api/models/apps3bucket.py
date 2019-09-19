@@ -24,3 +24,7 @@ class AppS3Bucket(AccessToS3Bucket):
 
     def aws_role_name(self):
         return self.app.iam_role_name
+
+    def __repr__(self):
+        return f'<AppS3Bucket: {self.app!r} {self.s3bucket!r} {self.access_level}>'
+

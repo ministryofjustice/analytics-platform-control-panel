@@ -25,5 +25,9 @@ class UserS3Bucket(AccessToS3Bucket):
     def aws_role_name(self):
         return self.user.iam_role_name
 
-    def user_is_admin(self, user):
-        return self.user == user and self.is_admin
+    def __repr__(self):
+        return (
+            f'<UserS3Bucket: {self.user!r} {self.s3bucket!r} {self.access_level}'
+            f'{" admin" if self.admin else ""}>'
+        )
+

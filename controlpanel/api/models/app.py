@@ -22,6 +22,9 @@ class App(TimeStampedModel):
         db_table = "control_panel_api_app"
         ordering = ('name',)
 
+    def __repr__(self):
+        return f'<App: {self.slug}>'
+
     @property
     def admins(self):
         return [ua.user for ua in self.userapps.filter(is_admin=True)]
