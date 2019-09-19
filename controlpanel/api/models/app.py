@@ -31,7 +31,7 @@ class App(TimeStampedModel):
 
     @property
     def iam_role_name(self):
-        return f"{settings.ENV}_app_{self.slug}"
+        return cluster.App(self).iam_role_name
 
     @property
     def _repo_name(self):
@@ -72,10 +72,10 @@ class App(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            cluster.create_app_role(self.iam_role_name)
+            cluster.App(self).create_iam_role()
 
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.delete_app_role(self.iam_role_name)
+        cluster.App(self).delete_iam_role()
         super().delete(*args, **kwargs)

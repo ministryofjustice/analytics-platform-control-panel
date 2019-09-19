@@ -134,16 +134,6 @@ def purge_user(user):
     helm.delete(f"init-user-{user.slug}")
 
 
-def create_app_role(name):
-    role = IAMRole(name)
-    role.save()
-
-
-@ignore_unwanted_exception
-def delete_app_role(name):
-    aws.delete_role(name)
-
-
 @ignore_unwanted_exception
 def create_policy(policy_name, path="/"):
     policy_document = {
@@ -185,6 +175,30 @@ def update_policy_roles(policy_arn, stored_roles):
 
     for role in (live_roles - stored_roles):
         aws.attach_policy_to_role(policy_arn, role)
+
+
+class App:
+    """
+    Responsible for the apps-related interactions with the k8s cluster and AWS
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    @property
+    def iam_role_name(self):
+        return f"{settings.ENV}_app_{self.app.slug}"
+
+    def create_iam_role(self):
+        role = IAMRole(self.iam_role_name)
+        role.save()
+
+    def delete_iam_role(self):
+        try:
+            aws.delete_role(self.iam_role_name)
+        except Exception as e:
+            if not is_ignored_exception(e):
+                raise e
 
 
 class IAMRole:
