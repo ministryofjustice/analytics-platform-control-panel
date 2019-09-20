@@ -1,8 +1,13 @@
 {% macro app_logs(app) -%}
 {% filter replace(" ", "") -%}
 {% filter replace("\n", "") -%}
-https://kibana.services.{{env}}.mojanalytics.xyz/app/kibana#/discover?_g=()&_a=
-(
+https://kibana.services.{{env}}.mojanalytics.xyz/app/kibana#/discover?_g=(
+time:(
+  from:now-24h,
+  mode:quick,
+  to:now
+)
+)&_a=(
 columns:!(message),
 filters:!(
   (
