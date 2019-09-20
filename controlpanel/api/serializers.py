@@ -12,15 +12,7 @@ from controlpanel.api.models import (
     User,
     UserApp,
     UserS3Bucket,
-    IAMManagedPolicy,
 )
-
-
-class IAMManagedPolicySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = IAMManagedPolicy
-        fields = ('id', 'arn', 'name')
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
