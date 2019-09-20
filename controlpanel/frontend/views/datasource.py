@@ -315,13 +315,13 @@ class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
             "paths": form.cleaned_data['paths']
         }
 
-        if form.cleaned_data.get('user_id'):
+        if form.cleaned_data.get('policy_id'):
+            model = PolicyS3Bucket
+            values["policy_id"] = form.cleaned_data['policy_id']
+        else:
             model = UserS3Bucket
             values["is_admin"] = is_admin
             values["user_id"] = form.cleaned_data['user_id']
-        elif form.cleaned_data.get('policy_id'):
-            model = PolicyS3Bucket
-            values["policy_id"] = form.cleaned_data['policy_id']
 
         self.object = model.objects.create(**values)
         return FormMixin.form_valid(self, form)
