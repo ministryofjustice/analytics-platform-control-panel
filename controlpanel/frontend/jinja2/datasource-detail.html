@@ -24,7 +24,7 @@
 </p>
 
 <section class="cpanel-section">
-  <h2 class="govuk-heading-m">Data access group</h2>
+  <h2 class="govuk-heading-m">Users with access</h2>
 
   <table class="govuk-table">
     <thead class="govuk-table__head">
@@ -72,6 +72,7 @@
           {{ access_group|length }}
           user{%- if access_group|length != 1 -%}s have{% else %} has{% endif %}
           access to this {{ datasource_type }} data source
+        </td>
       </tr>
     </tfoot>
   </table>
@@ -83,6 +84,84 @@
     </a>
   {% endif %}
 </section>
+
+{% if not bucket.is_data_warehouse %}
+{% set apps3buckets = bucket.apps3buckets.all() %}
+<section class="cpanel-section">
+  <h2 class="govuk-heading-m">Apps with access</h2>
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">App</th>
+        <th class="govuk-table__header">
+          Access level
+          {{ modal_dialog(access_levels_html|safe) }}
+        </th>
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for apps3bucket in apps3buckets %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          {% if request.user.has_perm('api.retrieve_app', apps3bucket.app) %}
+            <a href="{{ url('manage-app', kwargs={ "pk": apps3bucket.app.id }) }}">{{ apps3bucket.app.name }}</a>
+          {% else %}
+            {{ apps3bucket.app.name }}
+          {% endif %}
+        </td>
+        <td class="govuk-table__cell">
+          {{ yes_no(apps3bucket.access_level, 'readwrite', "Read/write", "Read only") }}
+        </td>
+        <td class="govuk-table__cell">
+          {% if request.user.has_perm('api.update_apps3bucket', apps3bucket) %}
+            <form action="{{ url('update-app-access', kwargs={ "pk": apps3bucket.id }) }}"
+                  method="post"
+                  class="form-control-prefix">
+              {{ csrf_input }}
+              <input type="hidden"
+                     name="access_level"
+                     value="{{ yes_no(apps3bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
+              <input type="hidden" name="return_to" value="manage-datasource">
+              <button class="confirm govuk-button hmcts-button--secondary">
+                Set {{ yes_no(apps3bucket.access_level, 'readwrite', 'read only', 'read/write') }}
+              </button>
+            </form>
+          {% endif %}
+          {% if request.user.has_perm('api.remove_app_bucket', apps3bucket.app) %}
+            <form action="{{ url('revoke-app-access', kwargs={ "pk": apps3bucket.id }) }}"
+                  method="post"
+                  class="form-control-prefix">
+              {{ csrf_input }}
+              <button class="confirm govuk-button hmcts-button--secondary">
+                Revoke access
+              </button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ apps3buckets|length }}
+          app{%- if apps3buckets|length != 1 %}s have{% else %} has{% endif %}
+          access to this {{ datasource_type }} data source
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+  {% if request.user.has_perm('api.create_apps3bucket', bucket) and app_options|length %}
+    <a href="{{ url('grant-app-access', kwargs={'pk': bucket.pk}) }}"
+       class="govuk-button hmcts-button--secondary">
+      Grant app access
+    </a>
+  {% endif %}
+</section>
+{% endif %}
 
 {% if request.user.has_perm('api.view_s3bucket_logs', bucket) %}
 <section class="cpanel-section">
