@@ -1,5 +1,7 @@
-{% macro data_access_level_options(users3bucket=None) %}
-  {% set can_add_admin = request.user.has_perm('api.add_s3bucket_admin') %}
+{% macro data_access_level_options(access_to_s3bucket=None, hide_admin=False) %}
+  {% if not hide_admin %}
+  {% set hide_admin = request.user.has_perm('api.add_s3bucket_admin') %}
+  {% endif %}
   {{ govukRadios({
     "name": "access_level",
     "fieldset": {
@@ -9,24 +11,24 @@
       },
     },
     "hint": {
-      "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users." if can_add_admin else "",
+      "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users." if not hide_admin else "",
     },
     "items": [
       {
         "value": "readonly",
         "text": "Read only",
-        "checked": not users3bucket or (not users3bucket.is_admin and users3bucket.access_level == "readonly")
+        "checked": not access_to_s3bucket or (not access_to_s3bucket.is_admin and access_to_s3bucket.access_level == "readonly")
       },
       {
         "value": "readwrite",
         "text": "Read/write",
-        "checked": users3bucket and not users3bucket.is_admin and users3bucket.access_level == "readwrite"
+        "checked": access_to_s3bucket and not access_to_s3bucket.is_admin and access_to_s3bucket.access_level == "readwrite"
       },
       {
-        "hide": not can_add_admin,
+        "hide": hide_admin,
         "value": "admin",
         "text": "Admin",
-        "checked": users3bucket and users3bucket.is_admin,
+        "checked": access_to_s3bucket and access_to_s3bucket.is_admin,
       }
     ]
   }) }}

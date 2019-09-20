@@ -24,13 +24,17 @@
   {%- for app in apps %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
-        <a href="{{ url('manage-app', kwargs={ "pk": app.id }) }}">{{ app.name }}</a>
+        {% if not request.user.has_perm('api.retrieve_app', app) -%}
+          {{ app.name }}
+        {%- else -%}
+          <a href="{{ url('manage-app', kwargs={ "pk": app.id }) }}">{{ app.name }}</a>
+        {%- endif %}
       </td>
       <td class="govuk-table__cell">
         {{ yes_no(user.is_app_admin(app.id)) }}
       </td>
       <td class="govuk-table__cell">
-        <a class="govuk-button hmcts-button--secondary right"
+        <a class="govuk-button hmcts-button--secondary right {%- if not request.user.has_perm('api.retrieve_app', app) %} govuk-visually-hidden{% endif %}"
           href="{{ url("manage-app", kwargs={ "pk": app.id }) }}">
           Manage app
         </a>

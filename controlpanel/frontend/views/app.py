@@ -196,6 +196,8 @@ class UpdateAppAccess(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated access")
+        if self.request.POST.get('return_to') == 'manage-datasource':
+            return reverse_lazy('manage-datasource', kwargs={'pk': self.object.s3bucket.id})
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
 
