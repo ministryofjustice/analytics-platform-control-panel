@@ -265,64 +265,6 @@ class AWSClient(object):
             PathPrefix=prefix).get('Roles')
         return [r['RoleName'] for r in roles]
 
-    def create_group(self, name, path="/"):
-        self._do('iam', 'create_group',
-            Path=path,
-            GroupName=name,
-        )
-
-    def get_group(self, name):
-        return self._do('iam', 'get_group',
-            GroupName=name,
-        )
-
-    def add_user_to_group(self, group_name, user_name):
-        self._do('iam', 'add_user_to_group',
-            GroupName=group_name,
-            UserName=user_name,
-        )
-
-    def remove_user_from_group(self, group_name, user_name):
-        self._do('iam', 'remove_user_from_group',
-            GroupName=group_name,
-            UserName=user_name,
-        )
-
-    def delete_group(self, name):
-        self._delete_group_inline_policies(name)
-        self._do('iam', 'delete_group',
-            GroupName=name,
-        )
-
-    def get_group_inline_policy_document(self, group_name, policy_name):
-        return self._get_inline_policy_document(
-            group_name, 'group', policy_name)
-
-    def put_group_policy(self, group_name, policy_name, policy_document):
-        self._do('iam', 'put_group_policy',
-            GroupName=group_name,
-            PolicyName=policy_name,
-            PolicyDocument=json.dumps(policy_document)
-        )
-
-    def _delete_group_inline_policies(self, group_name):
-        """Deletes all inline policies in the given group"""
-
-        policies = self._do(
-            'iam', 'list_group_policies', GroupName=group_name)
-
-        if policies:
-            for policy_name in policies["PolicyNames"]:
-                self.delete_group_inline_policy(
-                    group_name=group_name,
-                    policy_name=policy_name,
-                )
-
-    def delete_group_inline_policy(self, policy_name, group_name):
-        self._do('iam', 'delete_group_policy',
-            GroupName=group_name,
-            PolicyName=policy_name)
-
 
 aws = AWSClient()
 

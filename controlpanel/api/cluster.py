@@ -399,31 +399,6 @@ def delete_parameter(name):
     aws.delete_parameter(name)
 
 
-@ignore_unwanted_exception
-def create_group(name, path="/"):
-    return aws.create_group(name, path)
-
-
-@ignore_unwanted_exception
-def get_group(name):
-    return aws.get_group(name)
-
-
-@ignore_unwanted_exception
-def add_user_to_group(group_name, user_name):
-    return aws.add_user_to_group(group_name, user_name)
-
-
-@ignore_unwanted_exception
-def remove_user_from_group(group_name, user_name):
-    return aws.remove_user_from_group(group_name, user_name)
-
-
-@ignore_unwanted_exception
-def delete_group(name):
-    aws.delete_group(name)
-
-
 def get_repositories(user):
     repos = []
     github = Github(user.github_api_token)
