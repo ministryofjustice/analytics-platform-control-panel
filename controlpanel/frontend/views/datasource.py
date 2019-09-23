@@ -107,7 +107,6 @@ class BucketDetail(
         context['access_logs'] = ESBucketHitsSerializer(
             bucket_hits_aggregation(bucket.name)
         ).data
-        context['grant_access_form'] = GrantAccessForm()
         context['users_options'] = User.objects.exclude(
             auth0_id__isnull=True
         ).exclude(
@@ -244,51 +243,9 @@ class RevokeIAMManagedPolicyAccess(RevokeAccess):
     model = PolicyS3Bucket
 
 
-class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
-    context_object_name = 'users3bucket'
-    form_class = GrantAccessForm
-    model = UserS3Bucket
-    permission_required = 'api.create_users3bucket'
-    template_name = 'datasource-access-grant.html'
-
+class GrantAccessMixin:
     def get_form_kwargs(self):
         return FormMixin.get_form_kwargs(self)
-
-    def get_context_data(self):
-        context = super().get_context_data()
-        bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
-        context['bucket'] = bucket
-        member_ids = list(bucket.users3buckets.all().select_related('user').values_list(
-            'user__auth0_id',
-            flat=True,
-        ))
-        context['users_options'] = User.objects.exclude(
-            auth0_id__isnull=True
-        ).exclude(
-            auth0_id__in=member_ids,
-        )
-        context['grant_access_form'] = GrantAccessForm()
-        access_policies = bucket.policys3buckets.all().select_related('policy')
-        policy_ids = [access.policy.id for access in access_policies]
-        context['access_policies'] = access_policies
-        context['policies_options'] = IAMManagedPolicy.objects.exclude(
-            pk__in=policy_ids
-        )
-        return context
-
-    def get_form_class(self):
-        if self.request.POST.get('policy_id'):
-            return GrantIAMManagedPolicyAccessForm
-        return self.form_class
-
-    def form_invalid(self, form):
-        bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
-        return HttpResponseRedirect(
-            reverse_lazy(
-                "manage-datasource",
-                kwargs={"pk": bucket.id}
-            )
-        )
 
     def get_success_url(self):
         messages.success(self.request, "Successfully granted access")
@@ -309,27 +266,76 @@ class GrantAccess(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
         if is_admin and not user.has_perm('api.add_s3bucket_admin', bucket):
             raise PermissionDenied()
 
-        values = {
-            "access_level": form.cleaned_data['access_level'],
-            "s3bucket_id": self.kwargs['pk'],
-            "paths": form.cleaned_data['paths']
-        }
-
-        if form.cleaned_data.get('policy_id'):
-            model = PolicyS3Bucket
-            values["policy_id"] = form.cleaned_data['policy_id']
-        else:
-            model = UserS3Bucket
-            values["is_admin"] = is_admin
-            values["user_id"] = form.cleaned_data['user_id']
-
-        self.object = model.objects.create(**values)
+        self.object = self.model.objects.create(**self.values(form))
         return FormMixin.form_valid(self, form)
 
 
-class GrantPolicyAccess(GrantAccess):
+class GrantAccess(
+    GrantAccessMixin,
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    CreateView,
+):
     context_object_name = 'users3bucket'
+    form_class = GrantAccessForm
+    model = UserS3Bucket
+    permission_required = 'api.create_users3bucket'
+    template_name = 'datasource-access-grant.html'
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
+        context['bucket'] = bucket
+        member_ids = list(
+            bucket.users3buckets.all().select_related('user').values_list(
+                'user__auth0_id',
+                flat=True,
+            ))
+        context['users_options'] = User.objects.exclude(
+            auth0_id__isnull=True
+        ).exclude(
+            auth0_id__in=member_ids,
+        )
+        return context
+
+    def values(self, form):
+        return {
+            "access_level": form.cleaned_data['access_level'],
+            "s3bucket_id": self.kwargs['pk'],
+            "paths": form.cleaned_data['paths'],
+            "is_admin": form.cleaned_data.get('is_admin'),
+            "user_id": form.cleaned_data['user_id'],
+        }
+
+
+class GrantPolicyAccess(
+    GrantAccessMixin,
+    LoginRequiredMixin,
+    PermissionRequiredMixin,
+    CreateView,
+):
+    context_object_name = 'policys3bucket'
     form_class = GrantIAMManagedPolicyAccessForm
     model = PolicyS3Bucket
     permission_required = 'api.create_policys3bucket'
     template_name = 'datasource-policy-access-grant.html'
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        bucket = get_object_or_404(S3Bucket, pk=self.kwargs['pk'])
+        context['bucket'] = bucket
+        access_policies = bucket.policys3buckets.all().select_related('policy')
+        policy_ids = [access.policy.id for access in access_policies]
+        context['access_policies'] = access_policies
+        context['policies_options'] = IAMManagedPolicy.objects.exclude(
+            pk__in=policy_ids
+        )
+        return context
+
+    def values(self, form):
+        return {
+            "access_level": form.cleaned_data['access_level'],
+            "s3bucket_id": self.kwargs['pk'],
+            "paths": form.cleaned_data['paths'],
+            "policy_id": form.cleaned_data['policy_id']
+        }

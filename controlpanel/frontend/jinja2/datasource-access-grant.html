@@ -45,14 +45,14 @@
             <select class="govuk-form-control no-blank autocomplete-select" id="policy_id" name="policy_id">
               <option value="">Select a managed policy</option>
               {% for policy in policies_options %}
-              <option value="{{ policy.id }}">{{ policy.name }}</option>
+                <option value="{{ policy.id }}">{{ policy.name }}</option>
               {% endfor %}
             </select>
           </div>
 
           {{ data_access_level_options(bucket) }}
 
-          {{ data_access_paths_textarea(grant_access_form.paths) }}
+          {{ data_access_paths_textarea(form.paths) }}
 
           <div class="govuk-form-group">
             <button class="govuk-button">Grant access</button>
