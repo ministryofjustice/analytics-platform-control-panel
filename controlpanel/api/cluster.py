@@ -8,7 +8,7 @@ from github import Github, GithubException
 from controlpanel.api.aws import aws, iam_arn
 from controlpanel.api.helm import helm
 from controlpanel.api.kubernetes import KubernetesClient
-
+from controlpanel.utils import github_repository_name
 
 log = logging.getLogger(__name__)
 
@@ -182,6 +182,8 @@ class App:
     Responsible for the apps-related interactions with the k8s cluster and AWS
     """
 
+    APPS_NS = "apps-prod"
+
     def __init__(self, app):
         self.app = app
 
@@ -199,6 +201,20 @@ class App:
         except Exception as e:
             if not is_ignored_exception(e):
                 raise e
+
+    def url(self, id_token):
+        repo_name = github_repository_name(self.app.repo_url)
+
+        k8s = KubernetesClient(id_token=id_token)
+        ingresses = k8s.ExtensionsV1beta1Api.list_namespaced_ingress(
+            self.APPS_NS,
+            label_selector=f"repo={repo_name}",
+        ).items
+
+        if len(ingresses) != 1:
+            return ""
+
+        return f"https://{ingresses[0].spec.rules[0].host}"
 
 
 class IAMRole:

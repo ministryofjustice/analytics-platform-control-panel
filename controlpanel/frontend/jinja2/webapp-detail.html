@@ -35,10 +35,10 @@
   </p>
   {% endif %}
 
-  {% if app.is_deployed %}
+  {% if app_url %}
   <h2 class="govuk-heading-m">Deployed URL</h2>
   <p class="govuk-body">
-      <a href="https://{{ app.deployed_url }}">https://{{ app.deployed_url }}</a>
+      <a href="{{ app_url }}">{{ app_url }}</a>
   </p>
   {% endif %}
 

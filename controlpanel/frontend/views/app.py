@@ -18,6 +18,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 from controlpanel.api.cluster import get_repositories
+from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -64,6 +65,9 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
+
+        id_token = self.request.user.get_id_token()
+        context["app_url"] = cluster.App(app).url(id_token)
 
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,

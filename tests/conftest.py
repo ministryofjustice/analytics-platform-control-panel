@@ -14,6 +14,15 @@ def aws():
 
 
 @pytest.yield_fixture(autouse=True)
+def k8s_client():
+    """
+    Mock calls to kubernetes
+    """
+    with patch('controlpanel.api.cluster.KubernetesClient') as k8s_client:
+        yield k8s_client.return_value
+
+
+@pytest.yield_fixture(autouse=True)
 def elasticsearch():
     """
     Mock calls to Elasticsearch
