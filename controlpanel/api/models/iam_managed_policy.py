@@ -22,7 +22,8 @@ class IAMManagedPolicy(TimeStampedModel):
 
     name = models.CharField(
         max_length=63,
-        validators=[RegexValidator(r"[a-zA-Z0-9_-]{1,63}")]
+        validators=[RegexValidator(r"[a-zA-Z0-9_-]{1,63}")],
+        unique=True
     )
     users = models.ManyToManyField("User")
     created_by = models.ForeignKey(

@@ -146,7 +146,11 @@ def delete_app_role(name):
 
 @ignore_unwanted_exception
 def create_policy(policy_name, path="/"):
-    aws.create_policy(policy_name, CONSOLE_STATEMENT, path=path)
+    policy_document = {
+        "Version": "2012-10-17",
+        "Statement": [CONSOLE_STATEMENT]
+    }
+    aws.create_policy(policy_name, policy_document, path=path)
 
 
 @ignore_unwanted_exception
