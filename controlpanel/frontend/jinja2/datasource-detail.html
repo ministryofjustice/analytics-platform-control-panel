@@ -37,7 +37,7 @@
   {% endif %}
 
   {% if request.user.is_superuser %}
-    <h2 class="govuk-heading-m">Groups with access</h2>
+    <h2 class="govuk-heading-m">Managed policies with access</h2>
     {{ datasource_access_list("Managed Policy", access_policies, request, datasource_type) }}
 
     {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length %}
