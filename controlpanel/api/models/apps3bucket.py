@@ -1,5 +1,6 @@
 from django.db import models
 
+from controlpanel.api.cluster import S3AccessPolicy
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
@@ -9,6 +10,7 @@ class AppS3Bucket(AccessToS3Bucket):
 
     We have two access levels, "readonly" (default) and "readwrite".
     """
+    policy_class = S3AccessPolicy
 
     app = models.ForeignKey(
         "App",
@@ -22,7 +24,7 @@ class AppS3Bucket(AccessToS3Bucket):
         unique_together = ('app', 's3bucket')
         ordering = ('id',)
 
-    def aws_role_name(self):
+    def aws_name(self):
         return self.app.iam_role_name
 
     def __repr__(self):

@@ -17,8 +17,7 @@ class UserS3Bucket(AccessToS3Bucket):
     user = models.ForeignKey(
         "User",
         related_name='users3buckets',
-        on_delete=models.CASCADE,
-        null=True
+        on_delete=models.CASCADE
     )
     is_admin = models.BooleanField(default=False)
 

@@ -26,7 +26,7 @@ class S3BucketQuerySet(models.QuerySet):
             Q(
                 users3buckets__user=user
             ) | Q(
-                policys3buckets__users=user
+                policys3buckets__policy__users=user
             )
         )
 

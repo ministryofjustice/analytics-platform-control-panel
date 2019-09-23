@@ -13,8 +13,7 @@ class PolicyS3Bucket(AccessToS3Bucket):
     policy = models.ForeignKey(
         "IAMManagedPolicy",
         related_name="policys3buckets",
-        on_delete=models.CASCADE,
-        null=True
+        on_delete=models.CASCADE
     )
 
     class Meta:
