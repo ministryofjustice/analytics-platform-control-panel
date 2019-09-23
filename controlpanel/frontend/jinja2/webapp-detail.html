@@ -6,7 +6,7 @@
 {% from "tag/macro.html" import tag %}
 {% from "selectable-rows/macro.html" import row_selector %}
 {% from "user/macro.html" import user_name %}
-{% from "includes/app-logs.html" import app_logs with context %}
+{% from "app-logs/macro.html" import app_logs with context %}
 {% from "includes/yesno.html" import yes_no %}
 
 {% set page_name = "webapps" %}
@@ -286,9 +286,7 @@
 {% if request.user.has_perm('api.view_app_logs', app) %}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">App logs</h2>
-  <p class="govuk-body">
-    <a href="{{ app_logs(app) }}">View logs in Kibana</a>
-  </p>
+  {{ app_logs(app) }}
 </section>
 {% endif %}
 
