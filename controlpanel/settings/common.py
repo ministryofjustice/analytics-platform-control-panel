@@ -455,6 +455,26 @@ CHANNEL_LAYERS = {
 if REDIS_PASSWORD:
     CHANNEL_LAYERS['default']['CONFIG']['hosts'][0]['password'] = REDIS_PASSWORD
 
+# -- Cache
+if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "PASSWORD": f"{REDIS_PASSWORD}"
+            }
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'control-panel',
+        }
+    }
+
 
 # -- Github
 
@@ -504,25 +524,3 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
-REDIS_HOST = os.environ.get("REDIS_HOST")
-REDIS_PORT = os.environ.get("REDIS_PORT")
-REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
-
-if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:
-    CACHES = {
-        "default": {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                "PASSWORD": f"{REDIS_PASSWORD}"
-            }
-        }
-    }
-else:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'control-panel',
-        }
-    }
