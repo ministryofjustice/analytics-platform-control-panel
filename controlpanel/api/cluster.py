@@ -173,6 +173,19 @@ def detach_policy_from_role(policy_arn, role_name):
     aws.detach_policy_from_role(policy_arn, role_name)
 
 
+@ignore_unwanted_exception
+def update_policy_roles(policy_arn, stored_roles):
+    live_roles = {
+        r["RoleName"] for r in
+        list_entities_for_policy(policy_arn).get('PolicyRoles', [])
+    }
+    for role in (stored_roles - live_roles):
+        aws.detach_policy_from_role(policy_arn, role)
+
+    for role in (live_roles - stored_roles):
+        aws.attach_policy_to_role(policy_arn, role)
+
+
 class IAMRole:
 
     def __init__(self, role_name):

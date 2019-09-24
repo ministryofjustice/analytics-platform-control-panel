@@ -47,18 +47,9 @@ class IAMManagedPolicy(TimeStampedModel):
                 self.path
             )
 
-        current_users = [
-            r["RoleName"] for r in
-            cluster.list_entities_for_policy(self.arn).get('PolicyRoles', [])
-        ]
-        user_names = [u.iam_role_name for u in self.users.all()]
-        users_set = {*current_users, *user_names}
+        stored_roles = {u.iam_role_name for u in self.users.all()}
 
-        for user_name in users_set:
-            if user_name not in current_users:
-                cluster.attach_policy_to_role(self.arn, user_name)
-            elif user_name not in user_names:
-                cluster.detach_policy_from_role(self.arn, user_name)
+        cluster.update_policy_roles(self.arn, stored_roles)
 
         return self
 
