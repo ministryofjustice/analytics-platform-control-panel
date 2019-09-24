@@ -1,7 +1,12 @@
+import re
+
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
+
+
+S3BUCKET_PATH_REGEX = re.compile(r'[a-zA-Z0-9_/\*-]')
 
 
 class AccessToS3Bucket(TimeStampedModel):
@@ -28,7 +33,7 @@ class AccessToS3Bucket(TimeStampedModel):
     paths = ArrayField(
         models.CharField(
             max_length=255,
-            validators=[RegexValidator(r'[a-zA-Z0-9_/\*-]')],
+            validators=[RegexValidator(S3BUCKET_PATH_REGEX)],
         ),
         default=list,
     )

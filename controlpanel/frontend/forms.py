@@ -1,12 +1,13 @@
 from django import forms
 from django.conf import settings
-from django.contrib.postgres.forms import SimpleArrayField, SplitArrayField
+from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 
 from controlpanel.api import validators
 from controlpanel.api.cluster import get_repository
 from controlpanel.api.models import S3Bucket
+from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 
@@ -110,7 +111,7 @@ class GrantAccessBaseForm(forms.Form):
         forms.CharField(
             max_length=255,
             validators=[
-                RegexValidator(r'[a-zA-Z0-9_/\*-]'),
+                RegexValidator(S3BUCKET_PATH_REGEX),
             ],
             required=True,
         ),
