@@ -18,7 +18,7 @@ class IAMManagedPolicy(TimeStampedModel):
 
     @property
     def path(self):
-        return f"/{settings.ENV}/cpanel/"
+        return f"/{settings.ENV}/group/"
 
     name = models.CharField(
         max_length=63,
