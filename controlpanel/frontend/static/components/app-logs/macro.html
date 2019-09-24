@@ -12,7 +12,7 @@
 {% macro kibana_link(app) -%}
 {% filter replace(" ", "") -%}
 {% filter replace("\n", "") -%}
-https://kibana.services.{{env}}.mojanalytics.xyz/app/kibana#/discover?_g=(
+{{ settings.KIBANA_BASE_URL }}#/discover?_g=(
 time:(
   from:now-24h,
   mode:quick,
