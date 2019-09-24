@@ -14,20 +14,6 @@
   </fieldset>
 {%- endmacro %}
 
-{% macro list_field(name, label, help_text="", value="", errors={}) -%}
-  {% call fieldset(name, label, help_text) -%}
-  <div class="js-list-field-list" data-name="{{ name}}">
-    {% for val in value %}
-      <div class="govuk-form-group">
-        <input type="text" class="govuk-input govuk-!-width-two-thirds js-list-field-input" name="{{ name }}_{{ loop.index - 1 }}" value="{{ val }}">
-        <button class="govuk-button hmcts-button--secondary js-list-field-remove-item">Remove</button>
-      </div>
-    {% endfor %}
-  </div>
-  <button class="govuk-button hmcts-button--secondary js-list-field-add-item" name="{{ name }}_add" id="{{ name }}_add_id">Add item</button>
-  {%- endcall %}
-{%- endmacro %}
-
 {% macro list_field_textarea(name, label, help_text="", value="", errors={}) -%}
   {% call fieldset(name, label, help_text) -%}
   <textarea rows="8" class="govuk-textarea govuk-!-width-two-thirds" name="{{ name }}" id="{{ name }}_id">{{ value }}</textarea>
