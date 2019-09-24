@@ -495,7 +495,7 @@ ELASTICSEARCH = {
 }
 
 KIBANA_BASE_URL = os.environ.get(
-    KIBANA_BASE_URL,
+    'KIBANA_BASE_URL',
     f'https://kibana.services.{{ENV}}.mojanalytics.xyz/app/kibana',
 )
 

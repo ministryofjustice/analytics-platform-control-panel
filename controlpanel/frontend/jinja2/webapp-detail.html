@@ -286,7 +286,7 @@
 {% if request.user.has_perm('api.view_app_logs', app) %}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">App logs</h2>
-  {{ app_logs(app) }}
+  {{ app_logs(app, kibana_base_url) }}
 </section>
 {% endif %}
 
