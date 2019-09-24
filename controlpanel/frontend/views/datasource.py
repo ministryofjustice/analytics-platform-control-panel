@@ -290,7 +290,8 @@ class GrantAccess(
             bucket.users3buckets.all().select_related('user').values_list(
                 'user__auth0_id',
                 flat=True,
-            ))
+            )
+        )
         context['users_options'] = User.objects.exclude(
             auth0_id__isnull=True
         ).exclude(

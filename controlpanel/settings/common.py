@@ -62,7 +62,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     # Django flash messages
     "django.contrib.messages",
-    # Django postgress form and model
+    # Django postgres form and model
     "django.contrib.postgres",
     # Django collect static files into a single location
     "django.contrib.staticfiles",
@@ -72,7 +72,7 @@ INSTALLED_APPS = [
     "django_extensions",
     # Provides filter backend for use with Django REST Framework
     "django_filters",
-    # Provides to redis cache
+    # Provides redis cache
     "django_redis",
     # Django REST Framework
     "rest_framework",
