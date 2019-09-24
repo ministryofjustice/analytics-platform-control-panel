@@ -334,6 +334,10 @@ LOGGING = {
             "handlers": ["console"],
             "level": "WARNING",
         },
+        "elasticsearch": {
+            "handlers": ['console'],
+            "level": "WARNING",
+        },
         "github": {
             "handlers": ["console"],
             "level": "WARNING",
@@ -478,8 +482,22 @@ ELASTICSEARCH = {
             ),
         },
     ],
-    'index': os.environ.get('ELASTICSEARCH_INDEX_S3LOGS', 's3logs-*'),
+    'indices': {
+        's3-logs': os.environ.get(
+            'ELASTICSEARCH_INDEX_S3LOGS',
+            's3logs-*',
+        ),
+        'app-logs': os.environ.get(
+            'ELASTICSEARCH_INDEX_APPLOGS',
+            f'logstash-apps-{ENV}-*',
+        ),
+    },
 }
+
+KIBANA_BASE_URL = os.environ.get(
+    'KIBANA_BASE_URL',
+    f'https://kibana.services.{{ENV}}.mojanalytics.xyz/app/kibana',
+)
 
 
 # -- AWS

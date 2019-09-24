@@ -79,6 +79,8 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             exclude_connected=True,
         )
 
+        context['kibana_base_url'] = settings.KIBANA_BASE_URL
+
         return context
 
 

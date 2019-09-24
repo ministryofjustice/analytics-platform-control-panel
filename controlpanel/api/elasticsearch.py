@@ -1,3 +1,4 @@
+from dateutil.parser import parse
 from django.conf import settings
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Q, Search
@@ -7,7 +8,7 @@ from elasticsearch_dsl.query import Range
 def bucket_hits_aggregation(bucket_name, num_days=None):
     conn = Elasticsearch(hosts=settings.ELASTICSEARCH['hosts'])
 
-    s = Search(using=conn, index=settings.ELASTICSEARCH['index'])
+    s = Search(using=conn, index=settings.ELASTICSEARCH['indices']['s3-logs'])
 
     q1 = Q('term', **{'bucket.keyword': bucket_name})
     q2 = Q('terms',
@@ -23,3 +24,32 @@ def bucket_hits_aggregation(bucket_name, num_days=None):
                   size=100)
 
     return s.execute().aggregations.bucket_hits
+
+
+def app_logs(app, num_hours=None):
+    if not num_hours:
+        num_hours = 1
+
+    conn = Elasticsearch(hosts=settings.ELASTICSEARCH['hosts'])
+    s = Search(using=conn, index=settings.ELASTICSEARCH['indices']['app-logs'])
+
+    s = s.query(
+        Q('exists', field='message')
+        & Q('match', app_name=f'{app.release_name}-webapp')
+    )
+
+    s = s.filter(Range(**{
+        '@timestamp': {
+            'lte': 'now',
+            'gte': f'now-{num_hours}h',
+        },
+    }))
+
+    s = s.sort('time_nano')
+
+    s = s.params(preserve_order=True)
+
+    for entry in s.scan():
+        entry['timestamp'] = parse(entry['@timestamp'])
+        yield entry
+

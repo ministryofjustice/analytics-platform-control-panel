@@ -3,7 +3,7 @@ from django.db import models
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api import auth0, cluster
+from controlpanel.api import auth0, cluster, elasticsearch
 from controlpanel.utils import (
     github_repository_name,
     s3_slugify,
@@ -40,6 +40,9 @@ class App(TimeStampedModel):
     @property
     def release_name(self):
         return webapp_release_name(self._repo_name)
+
+    def get_logs(self, num_hours=None):
+        return elasticsearch.app_logs(self, num_hours=num_hours)
 
     @property
     def customers(self):

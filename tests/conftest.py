@@ -18,7 +18,7 @@ def elasticsearch():
     """
     Mock calls to Elasticsearch
     """
-    with patch('controlpanel.api.elasticsearch.Elasticsearch') as es:
+    with patch('controlpanel.api.elasticsearch.Elasticsearch') as es, patch('elasticsearch_dsl.search.scan') as scan:
         yield es.return_value
 
 
