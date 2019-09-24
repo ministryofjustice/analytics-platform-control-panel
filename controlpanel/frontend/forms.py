@@ -99,26 +99,6 @@ class CreateDatasourceForm(forms.Form):
 
 
 class GrantAccessBaseForm(forms.Form):
-    """
-    Base form for granting access to a bucket
-
-    To have a javascript field for adding to paths use:
-
-    paths = SplitArrayField(
-        forms.CharField(
-            max_length=255,
-            validators=[
-                RegexValidator(r'[a-zA-Z0-9_/\*-]'),
-            ],
-            required=True,
-        ),
-        label="Paths",
-        help_text="Add specific paths for this user or group to access",
-        required=False,
-        remove_trailing_nulls=True,
-        size=20,
-    )
-    """
     access_level = forms.ChoiceField(
         choices=[
             ("readonly", "Read only"),
