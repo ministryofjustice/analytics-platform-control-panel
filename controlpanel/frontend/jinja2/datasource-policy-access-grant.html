@@ -14,7 +14,7 @@
     <div class="govuk-form-group">
       <label class="govuk-label" for="user_id">Grant access to this data to groups of users</label>
       <select class="govuk-form-control no-blank autocomplete-select" id="policy_id" name="policy_id">
-        <option value="">Select a managed policy</option>
+        <option value="">Select a group</option>
         {% for policy in policies_options %}
           <option value="{{ policy.id }}">{{ policy.name }}</option>
         {% endfor %}
