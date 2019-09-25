@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
@@ -5,6 +7,10 @@ from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api.aws import arn
 from controlpanel.api import cluster
+
+
+POLICY_NAME_PATTERN = r"[a-z0-9_+@,.:=-]{2,63}"
+POLICY_NAME_REGEX = re.compile(POLICY_NAME_PATTERN)
 
 
 class IAMManagedPolicy(TimeStampedModel):
@@ -22,7 +28,7 @@ class IAMManagedPolicy(TimeStampedModel):
 
     name = models.CharField(
         max_length=63,
-        validators=[RegexValidator(r"[a-zA-Z0-9_-]{1,63}")],
+        validators=[RegexValidator(POLICY_NAME_PATTERN)],
         unique=True
     )
     users = models.ManyToManyField("User")

@@ -8,6 +8,7 @@ from controlpanel.api import validators
 from controlpanel.api.cluster import get_repository
 from controlpanel.api.models import S3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
+from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 
@@ -178,7 +179,7 @@ class CreateParameterForm(forms.Form):
 
 class CreateIAMManagedPolicyForm(forms.Form):
     name = forms.CharField(
-        validators=[RegexValidator(r'[a-zA-Z0-9_-]{1,60}')]
+        validators=[RegexValidator(POLICY_NAME_REGEX)]
     )
 
 

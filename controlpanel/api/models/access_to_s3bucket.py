@@ -6,7 +6,8 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
 
-S3BUCKET_PATH_REGEX = re.compile(r'[a-zA-Z0-9_/\*-]')
+S3BUCKET_PATH_PATTERN = r"[a-zA-Z0-9_/\*-]"
+S3BUCKET_PATH_REGEX = re.compile(S3BUCKET_PATH_PATTERN)
 
 
 class AccessToS3Bucket(TimeStampedModel):
@@ -33,7 +34,7 @@ class AccessToS3Bucket(TimeStampedModel):
     paths = ArrayField(
         models.CharField(
             max_length=255,
-            validators=[RegexValidator(S3BUCKET_PATH_REGEX)],
+            validators=[RegexValidator(S3BUCKET_PATH_PATTERN)],
         ),
         default=list,
     )
