@@ -52,7 +52,7 @@ class AccessToS3Bucket(TimeStampedModel):
         super().save(*args, **kwargs)
 
         with self.policy_class.load(self.aws_name()) as policy:
-            policy.reset_access(self.s3bucket.arn)
+            policy.revoke_access(self.s3bucket.arn)
             for resource in self.resources:
                 policy.grant_access(resource, self.access_level)
 

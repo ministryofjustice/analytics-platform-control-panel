@@ -301,11 +301,6 @@ class S3AccessPolicy(dict):
             self._update_statements()
 
     def revoke_access(self, bucket_arn):
-        self._rw.discard(bucket_arn)
-        self._ro.discard(bucket_arn)
-        self._update_statements()
-
-    def reset_access(self, bucket_arn):
         self._rw = {r for r in self._rw if not r.startswith(bucket_arn)}
         self._ro = {r for r in self._ro if not r.startswith(bucket_arn)}
         self._update_statements()
