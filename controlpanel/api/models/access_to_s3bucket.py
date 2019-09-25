@@ -65,10 +65,7 @@ class AccessToS3Bucket(TimeStampedModel):
 
         super().delete(*args, **kwargs)
 
-    def arn_from_path(self, path):
-        return f"{self.s3bucket.arn}{path}"
-
     @property
     def resources(self):
-        resources = [self.arn_from_path(p) for p in self.paths]
+        resources = [self.s3bucket.arn_from_path(p) for p in self.paths]
         return resources or [self.s3bucket.arn]

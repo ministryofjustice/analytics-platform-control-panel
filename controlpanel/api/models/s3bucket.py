@@ -67,6 +67,9 @@ class S3Bucket(TimeStampedModel):
     def arn(self):
         return s3_arn(self.name)
 
+    def arn_from_path(self, path):
+        return f"{self.arn}{path}"
+
     @property
     def aws_url(self):
         return s3bucket_console_url(self.name)
