@@ -5,13 +5,6 @@
 {% extends "base.html" %}
 
 {% set page_title = "Edit data access level" %}
-{% if items3bucket.user %}
-  {% set revoke_url = url('revoke-datasource-access', kwargs={"pk": items3bucket.id}) %}
-  {% set action_url = url('update-access-level', kwargs={ "pk": items3bucket.id }) %}
-{% else %}
-  {% set revoke_url = url('revoke-datasource-policy-access', kwargs={"pk": items3bucket.id}) %}
-  {% set action_url = url('update-policy-access-level', kwargs={ "pk": items3bucket.id }) %}
-{% endif %}
 
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>

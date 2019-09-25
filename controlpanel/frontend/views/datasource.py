@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.template.defaulttags import url
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
 from django.views.generic.detail import DetailView
@@ -219,6 +220,20 @@ class UpdateAccessLevel(
     form_class = GrantAccessForm
     model = UserS3Bucket
 
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data.update({
+            "revoke_url": url(
+                'revoke-datasource-access',
+                kwargs={"pk": self.object.id}
+            ),
+            "action_url": url(
+                'update-access-level',
+                kwargs={"pk": self.object.id}
+            )
+        })
+        return context_data
+
 
 class UpdateIAMManagedPolicyAccessLevel(
     UpdateAccessLevelMixin,
@@ -228,6 +243,20 @@ class UpdateIAMManagedPolicyAccessLevel(
 ):
     form_class = GrantIAMManagedPolicyAccessForm
     model = PolicyS3Bucket
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        context_data.update({
+            "revoke_url": url(
+                'revoke-datasource-policy-access',
+                kwargs={"pk": self.object.id}
+            ),
+            "action_url": url(
+                'update-policy-access-level',
+                kwargs={"pk": self.object.id}
+            )
+        })
+        return context_data
 
 
 class RevokeAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
