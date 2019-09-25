@@ -54,20 +54,12 @@ node_modules:
 compilescss:
 	@echo
 	@echo "> Compiling SCSS..."
-	@./node_modules/.bin/node-sass \
-		--include-path node_modules/ \
-		-o static/ \
-		--output-style compact \
-		controlpanel/frontend/static/app.scss
+	@npm run css
 
 transpile:
 	@echo
 	@echo "> Transpiling ES6..."
-	@./node_modules/.bin/babel \
-		controlpanel/frontend/static/module-loader.js \
-		controlpanel/frontend/static/components \
-		controlpanel/frontend/static/javascripts \
-		-o static/app.js -s
+	@npm run babel
 
 redis:
 	@echo
