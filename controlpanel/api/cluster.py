@@ -240,6 +240,9 @@ class S3AccessPolicy(dict):
         self._ro = set()
         self._rw = set()
 
+        if "Version" not in self:
+            self["Version"] = "2012-10-17",
+
         for statement in self.get("Statement", []):
             sid = statement.get("Sid")
 
@@ -347,7 +350,7 @@ class S3AccessPolicy(dict):
 
 
 class S3ManagedPolicy(S3AccessPolicy):
-    def __init__(self, policy_arn, *args, **kwargs):
+    def __init__(self, policy_arn=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.policy_arn = policy_arn
 
