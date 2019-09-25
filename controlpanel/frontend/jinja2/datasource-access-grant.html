@@ -35,7 +35,7 @@
 
     </form>
 
-    {% if request.user.is_superuser %}
+    {% if request.user.has_perm('api.manage_groups') %}
       <h2 class="govuk-heading-m">Data access groups</h2>{% if request.user.has_perm('api.create_users3bucket', bucket) %}
         {% if policies_options|length %}
           <form action="{{ url('grant-datasource-access', kwargs={"pk": bucket.id}) }}" method="post">

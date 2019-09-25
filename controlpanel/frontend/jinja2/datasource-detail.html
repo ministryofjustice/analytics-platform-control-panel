@@ -36,7 +36,7 @@
     </a>
   {% endif %}
 
-  {% if request.user.is_superuser %}
+  {% if request.user.has_perm('api.manage_groups') %}
     <h2 class="govuk-heading-m">Groups with access</h2>
     {{ datasource_access_list("Group", access_policies, request, datasource_type) }}
 
