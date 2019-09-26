@@ -1,6 +1,5 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
-from model_mommy import mommy
 import pytest
 
 from controlpanel.api.cluster import (
@@ -46,7 +45,7 @@ def test_app_delete_iam_role(aws, app):
 def test_app_url_when_no_ingresses(k8s_client, app, app_model):
     k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = []
 
-    assert app.url(id_token="test") == ""
+    assert app.url == ""
     k8s_client \
         .ExtensionsV1beta1Api \
         .list_namespaced_ingress \
@@ -56,7 +55,7 @@ def test_app_url_when_no_ingresses(k8s_client, app, app_model):
 def test_app_url_when_multiple_ingresses_found(k8s_client, app, app_model):
     k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = ["ing_1", "ing_2"]
 
-    assert app.url(id_token="test") == ""
+    assert app.url == ""
     k8s_client \
         .ExtensionsV1beta1Api \
         .list_namespaced_ingress \
@@ -68,7 +67,7 @@ def test_app_url_when_single_ingress_found(k8s_client, app, app_model):
     ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
     k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = [ingress]
 
-    assert app.url(id_token="test") == "https://test-app.example.com"
+    assert app.url == "https://test-app.example.com"
     k8s_client \
         .ExtensionsV1beta1Api \
         .list_namespaced_ingress \

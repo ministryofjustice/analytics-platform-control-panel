@@ -66,9 +66,7 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
 
-        id_token = self.request.user.get_id_token()
-        context["app_url"] = cluster.App(app).url(id_token)
-
+        context["app_url"] = cluster.App(app).url
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
         ).exclude(
