@@ -69,9 +69,17 @@
   </h2>
   <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
     {{ csrf_input }}
-    <table class="govuk-table">
+    <button class="govuk-button hmcts-button--secondary right selectable-rows__enable-on-selections"
+            type="submit"
+            name="submit"
+            disabled="disabled"
+            value="submit">
+      Remove all selected customers
+    </button>
+    <table class="govuk-table selectable-rows">
       <thead class="govuk-table__head">
         <tr class="govuk-table__row">
+          <th class="govuk-table__header"></th>
           <th class="govuk-table__header">Customer email</th>
           <th class="govuk-table__header">
             <span class="govuk-visually-hidden">Actions</span>
@@ -81,6 +89,7 @@
       <tbody class="govuk-table__body">
         {% for customer in customers %}
         <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ row_selector('customer', customer.user_id) }}</td>
           <td class="govuk-table__cell">{{ customer.email }}</td>
           {% if request.user.has_perm('api.remove_app_customer', app) %}
           <td class="govuk-table__cell">

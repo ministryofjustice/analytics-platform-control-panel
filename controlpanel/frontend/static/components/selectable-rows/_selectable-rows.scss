@@ -2,6 +2,13 @@ table.selectable-rows {
 
   $row-padding: 5px;
 
+  & tr td {
+    cursor: pointer;
+    & button {
+      transition: opacity 0.5s;
+    }
+  }
+
   & tr td:nth-of-type(2) {
     padding-left: $row-padding;
   }
@@ -10,7 +17,7 @@ table.selectable-rows {
     padding-right: $row-padding;
   }
 
-  & tr.selected {
+  & tr.selectable-rows__row-selected {
     background-color: govuk-colour("blue");
     color: govuk-colour("white");
   }
