@@ -43,7 +43,7 @@
     {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length %}
       <a href="{{ url('grant-datasource-policy-access', kwargs={'pk': bucket.pk}) }}"
          class="govuk-button hmcts-button--secondary">
-        Grant policy access
+        Grant group access
       </a>
     {% endif %}
   {% endif %}
