@@ -23,7 +23,7 @@
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-    {% for user in policy.users.all() %}
+    {% for user in object.users.all() %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
           <a class="{% if request.user == user %}highlight-current{% endif %}"
@@ -32,7 +32,7 @@
           </a>
         </td>
         <td class="govuk-table__cell">
-          <a href="{{ url('policy-remove-user', kwargs={ "pk": policy.id, "user_id": user.auth0_id }) }}" class="govuk-button hmcts-button--secondary">Remove</a>
+          <a href="{{ url('policy-remove-user', kwargs={ "pk": object.id, "user_id": user.auth0_id }) }}" class="govuk-button hmcts-button--secondary">Remove</a>
         </td>
       </tr>
     {% endfor %}
