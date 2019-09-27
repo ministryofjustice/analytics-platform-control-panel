@@ -36,8 +36,7 @@ class KubernetesClient:
         load_kube_config()
         config = kubernetes.client.Configuration()
 
-        if settings.ENABLED['k8s_rbac']:
-
+        if settings.ENABLED["k8s_rbac"] and not use_cpanel_creds:
             if id_token is None:
                 request = CrequestMiddleware.get_request()
                 if request and request.user and request.user.is_authenticated:
