@@ -34,35 +34,24 @@ def test_app_delete_iam_role(aws, app):
     aws.delete_role.assert_called_with(app.iam_role_name)
 
 
-def test_app_url_when_no_ingresses(k8s_client, app, app_model):
-    k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = []
-
-    assert app.url == None
-    k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.assert_called_once_with(
-        "apps-prod", label_selector="repo=test-repo"
-    )
+mock_ingress = MagicMock(name="Ingress")
+mock_ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
 
 
-def test_app_url_when_multiple_ingresses_found(k8s_client, app, app_model):
-    k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = [
-        "ing_1",
-        "ing_2",
-    ]
+@pytest.mark.parametrize(
+    "ingresses, expected_url",
+    [
+        ([], None),
+        (["ing_1", "ing_2"], None),
+        ([mock_ingress], "https://test-app.example.com"),
+    ],
+    ids=["no-ingresses", "multiple-ingresses", "single-ingress"],
+)
+def test_app_url(k8s_client, app, app_model, ingresses, expected_url):
+    list_namespaced_ingress = k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress
 
-    assert app.url == None
-    k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.assert_called_once_with(
-        "apps-prod", label_selector="repo=test-repo"
-    )
-
-
-def test_app_url_when_single_ingress_found(k8s_client, app, app_model):
-    ingress = MagicMock(name="Ingress")
-    ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
-    k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = [
-        ingress
-    ]
-
-    assert app.url == "https://test-app.example.com"
-    k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.assert_called_once_with(
+    list_namespaced_ingress.return_value.items = ingresses
+    assert app.url == expected_url
+    list_namespaced_ingress.assert_called_once_with(
         "apps-prod", label_selector="repo=test-repo"
     )
