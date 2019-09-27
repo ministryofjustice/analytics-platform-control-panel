@@ -1,3 +1,5 @@
+from itertools import chain
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
@@ -104,7 +106,6 @@ class BucketDetail(
         bucket = kwargs['object']
         access_users = bucket.users3buckets.all().select_related('user')
         member_ids = [member.user.auth0_id for member in access_users]
-        context['access_users'] = access_users
         context['access_logs'] = ESBucketHitsSerializer(
             bucket_hits_aggregation(bucket.name)
         ).data
@@ -115,10 +116,10 @@ class BucketDetail(
         )
         access_policies = bucket.policys3buckets.all().select_related('policy')
         policy_ids = [access.policy.id for access in access_policies]
-        context['access_policies'] = access_policies
         context['policies_options'] = IAMManagedPolicy.objects.exclude(
             pk__in=policy_ids
         )
+        context["access_list"] = list(chain(access_users, access_policies))
         return context
 
 
