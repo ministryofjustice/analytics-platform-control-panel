@@ -45,7 +45,7 @@ def test_app_delete_iam_role(aws, app):
 def test_app_url_when_no_ingresses(k8s_client, app, app_model):
     k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = []
 
-    assert app.url == ""
+    assert app.url == None
     k8s_client \
         .ExtensionsV1beta1Api \
         .list_namespaced_ingress \
@@ -55,7 +55,7 @@ def test_app_url_when_no_ingresses(k8s_client, app, app_model):
 def test_app_url_when_multiple_ingresses_found(k8s_client, app, app_model):
     k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress.return_value.items = ["ing_1", "ing_2"]
 
-    assert app.url == ""
+    assert app.url == None
     k8s_client \
         .ExtensionsV1beta1Api \
         .list_namespaced_ingress \

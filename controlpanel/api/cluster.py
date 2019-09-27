@@ -213,7 +213,7 @@ class App:
         ).items
 
         if len(ingresses) != 1:
-            return ""
+            return None
 
         return f"https://{ingresses[0].spec.rules[0].host}"
 
