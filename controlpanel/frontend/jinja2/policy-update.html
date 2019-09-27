@@ -32,7 +32,7 @@
           </a>
         </td>
         <td class="govuk-table__cell">
-          <a href="{{ url('policy-remove-user', kwargs={ "pk": policy.id, "user_id": user.auth0_id }) }}" class="govuk-button hmcts-button--secondary">Remove</a>
+          <a href="{{ url('policy-remove-user', kwargs={ "pk":  policy.id, "user_id": user.auth0_id }) }}" class="govuk-button hmcts-button--secondary">Remove</a>
         </td>
       </tr>
     {% endfor %}
@@ -61,7 +61,7 @@
     {% endcall %}
   </form>
 
-  <form method="POST" action="{{ url("delete-policy", kwargs={ "pk": object.id }) }}">
+  <form method="POST" action="{{ url("delete-policy", kwargs={ "pk": policy.id }) }}">
       {{ csrf_input }}
       <button class="govuk-button cpanel-button--destructive">Delete group</button>
   </form>

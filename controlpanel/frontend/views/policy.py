@@ -63,6 +63,7 @@ class IAMManagedPolicyDetail(LoginRequiredMixin, PermissionRequiredMixin, Update
     model = IAMManagedPolicy
     permission_required = 'api.create_policy'
     template_name = "policy-update.html"
+    context_object_name = "policy"
 
     def get_form_kwargs(self):
         return FormMixin.get_form_kwargs(self)
