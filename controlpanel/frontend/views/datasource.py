@@ -3,7 +3,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.template.defaulttags import url
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
 from django.views.generic.detail import DetailView
@@ -22,12 +21,13 @@ from controlpanel.api.models import (
     S3Bucket,
     User,
     UserS3Bucket,
-    PolicyS3Bucket)
+    PolicyS3Bucket,
+)
 from controlpanel.api.serializers import ESBucketHitsSerializer
 from controlpanel.frontend.forms import (
     CreateDatasourceForm,
     GrantAccessForm,
-    GrantIAMManagedPolicyAccessForm)
+)
 
 
 DATASOURCE_TYPES = [
@@ -185,7 +185,7 @@ class DeleteDatasource(
 
 class UpdateAccessLevelMixin:
     context_object_name = 'items3bucket'
-    form_class = None
+    form_class = GrantAccessForm
     model = None
     permission_required = 'api.update_users3bucket'
     template_name = "datasource-access-update.html"
@@ -217,20 +217,21 @@ class UpdateAccessLevel(
     PermissionRequiredMixin,
     UpdateView,
 ):
-    form_class = GrantAccessForm
     model = UserS3Bucket
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data.update({
-            "revoke_url": url(
+            "revoke_url": reverse_lazy(
                 'revoke-datasource-access',
                 kwargs={"pk": self.object.id}
             ),
-            "action_url": url(
+            "action_url": reverse_lazy(
                 'update-access-level',
                 kwargs={"pk": self.object.id}
-            )
+            ),
+            "entity_type": "user",
+            "entity_id": self.object.user.id
         })
         return context_data
 
@@ -241,20 +242,21 @@ class UpdateIAMManagedPolicyAccessLevel(
     PermissionRequiredMixin,
     UpdateView,
 ):
-    form_class = GrantIAMManagedPolicyAccessForm
     model = PolicyS3Bucket
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
         context_data.update({
-            "revoke_url": url(
+            "revoke_url": reverse_lazy(
                 'revoke-datasource-policy-access',
                 kwargs={"pk": self.object.id}
             ),
-            "action_url": url(
+            "action_url": reverse_lazy(
                 'update-policy-access-level',
                 kwargs={"pk": self.object.id}
-            )
+            ),
+            "entity_type": "group",
+            "entity_id": self.object.policy.id
         })
         return context_data
 
@@ -273,6 +275,9 @@ class RevokeIAMManagedPolicyAccess(RevokeAccess):
 
 
 class GrantAccessMixin:
+    form_class = GrantAccessForm
+    template_name = 'datasource-access-grant.html'
+
     def get_form_kwargs(self):
         return FormMixin.get_form_kwargs(self)
 
@@ -306,10 +311,8 @@ class GrantAccess(
     CreateView,
 ):
     context_object_name = 'users3bucket'
-    form_class = GrantAccessForm
     model = UserS3Bucket
     permission_required = 'api.create_users3bucket'
-    template_name = 'datasource-access-grant.html'
 
     def get_context_data(self):
         context = super().get_context_data()
@@ -321,10 +324,15 @@ class GrantAccess(
                 flat=True,
             )
         )
-        context['users_options'] = User.objects.exclude(
+        context['entity_options'] = User.objects.exclude(
             auth0_id__isnull=True
         ).exclude(
             auth0_id__in=member_ids,
+        )
+        context['entity_type'] = "user"
+        context["grant_url"] = reverse_lazy(
+            'grant-datasource-access',
+            kwargs={"pk": bucket.id}
         )
         return context
 
@@ -345,10 +353,8 @@ class GrantPolicyAccess(
     CreateView,
 ):
     context_object_name = 'policys3bucket'
-    form_class = GrantIAMManagedPolicyAccessForm
     model = PolicyS3Bucket
     permission_required = 'api.create_policys3bucket'
-    template_name = 'datasource-policy-access-grant.html'
 
     def get_context_data(self):
         context = super().get_context_data()
@@ -357,8 +363,13 @@ class GrantPolicyAccess(
         access_policies = bucket.policys3buckets.all().select_related('policy')
         policy_ids = [access.policy.id for access in access_policies]
         context['access_policies'] = access_policies
-        context['policies_options'] = IAMManagedPolicy.objects.exclude(
+        context['entity_options'] = IAMManagedPolicy.objects.exclude(
             pk__in=policy_ids
+        )
+        context['entity_type'] = "group"
+        context["grant_url"] = reverse_lazy(
+            'grant-datasource-policy-access',
+            kwargs={"pk": bucket.id}
         )
         return context
 

@@ -37,4 +37,9 @@
       <button class="govuk-button">Add</button>
     {% endcall %}
   </form>
+
+  <form method="POST" action="{{ url("delete-policy", kwargs={ "pk": object.id }) }}">
+      {{ csrf_input }}
+      <button class="govuk-button cpanel-button--destructive">Delete group</button>
+  </form>
 {% endblock %}

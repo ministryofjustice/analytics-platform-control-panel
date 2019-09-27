@@ -100,7 +100,7 @@ class CreateDatasourceForm(forms.Form):
     )
 
 
-class GrantAccessBaseForm(forms.Form):
+class GrantAccessForm(forms.Form):
     access_level = forms.ChoiceField(
         choices=[
             ("readonly", "Read only"),
@@ -121,6 +121,15 @@ class GrantAccessBaseForm(forms.Form):
         required=False,
         delimiter="\n",
     )
+    is_admin = forms.BooleanField(initial=False, required=False)
+    entity_id = forms.CharField(max_length=128)
+    entity_type = forms.ChoiceField(
+        choices=[
+            ("group", "group"),
+            ("user", "user"),
+        ],
+        widget=forms.HiddenInput()
+    )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -128,16 +137,13 @@ class GrantAccessBaseForm(forms.Form):
         if access_level == 'admin':
             cleaned_data['access_level'] = 'readwrite'
             cleaned_data['is_admin'] = True
+
+        if cleaned_data["entity_type"] == "user":
+            cleaned_data['user_id'] = cleaned_data["entity_id"]
+        elif cleaned_data["entity_type"] == "group":
+            cleaned_data['policy_id'] = cleaned_data["entity_id"]
+
         return cleaned_data
-
-
-class GrantAccessForm(GrantAccessBaseForm):
-    is_admin = forms.BooleanField(initial=False, required=False)
-    user_id = forms.CharField(max_length=128)
-
-
-class GrantIAMManagedPolicyAccessForm(GrantAccessBaseForm):
-    policy_id = forms.IntegerField()
 
 
 class GrantAppAccessForm(forms.Form):

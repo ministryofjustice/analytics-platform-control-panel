@@ -175,9 +175,10 @@ def detach_policy_from_role(policy_arn, role_name):
 
 @ignore_unwanted_exception
 def update_policy_roles(policy_arn, stored_roles):
+    entities = list_entities_for_policy(policy_arn) or {}
     live_roles = {
         r["RoleName"] for r in
-        list_entities_for_policy(policy_arn).get('PolicyRoles', [])
+        entities.get('PolicyRoles', [])
     }
     for role in (stored_roles - live_roles):
         aws.detach_policy_from_role(policy_arn, role)
