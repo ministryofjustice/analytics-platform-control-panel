@@ -95,6 +95,12 @@
         "text": "Parameters",
         "href": url("list-parameters"),
         "active": page_name == "parameters"
+      },
+      {
+        "hide": not request.user.is_superuser,
+        "text": "Groups",
+        "href": url("list-policies"),
+        "active": page_name == "groups"
       }
     ]
   }) }}

@@ -9,7 +9,7 @@ from controlpanel.api.views.models import (
     UserS3BucketViewSet,
     S3BucketViewSet,
     UserAppViewSet,
-    ParameterViewSet,
+    ParameterViewSet
 )
 from controlpanel.api.views.tools import (
     ToolViewSet,

@@ -146,9 +146,10 @@ def test_bucket_permissions(client, buckets, users, view, user, expected_status)
 
 def update_access(client, users3buckets, users, *args):
     data = {
-        'user_id': users['bucket_viewer'].auth0_id,
+        'entity_id': users['bucket_viewer'].auth0_id,
         'access_level': UserS3Bucket.READWRITE,
         'is_admin': False,
+        'entity_type': 'user'
     }
     return client.post(
         reverse(
@@ -172,7 +173,8 @@ def grant_access(client, users3buckets, users, *args):
     data = {
         'access_level': UserS3Bucket.READWRITE,
         'is_admin': False,
-        'user_id': users['other_user'].auth0_id,
+        'entity_id': users['other_user'].auth0_id,
+        'entity_type': 'user',
     }
     return client.post(
         reverse(

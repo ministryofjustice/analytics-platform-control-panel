@@ -1,12 +1,14 @@
 from django import forms
 from django.conf import settings
+from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-import requests
 
 from controlpanel.api import validators
 from controlpanel.api.cluster import get_repository
-from controlpanel.api.models import S3Bucket, Parameter
+from controlpanel.api.models import S3Bucket
+from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
+from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 
@@ -99,14 +101,35 @@ class CreateDatasourceForm(forms.Form):
 
 
 class GrantAccessForm(forms.Form):
-    is_admin = forms.BooleanField(initial=False, required=False)
-    user_id = forms.CharField(max_length=128)
     access_level = forms.ChoiceField(
         choices=[
             ("readonly", "Read only"),
             ("readwrite", "Read/write"),
             ("admin", "Admin"),
         ],
+    )
+    paths = SimpleArrayField(
+        forms.CharField(
+            max_length=255,
+            validators=[
+                RegexValidator(S3BUCKET_PATH_REGEX),
+            ],
+            required=True,
+        ),
+        label="Paths",
+        help_text="Add specific paths for this user or group to access",
+        required=False,
+        delimiter="\n",
+    )
+    is_admin = forms.BooleanField(initial=False, required=False)
+    entity_id = forms.CharField(max_length=128)
+    entity_type = forms.ChoiceField(
+        choices=[
+            ("group", "group"),
+            ("user", "user"),
+        ],
+        widget=forms.HiddenInput(),
+        required=True,
     )
 
     def clean(self):
@@ -115,6 +138,12 @@ class GrantAccessForm(forms.Form):
         if access_level == 'admin':
             cleaned_data['access_level'] = 'readwrite'
             cleaned_data['is_admin'] = True
+
+        if cleaned_data["entity_type"] == "user":
+            cleaned_data['user_id'] = cleaned_data["entity_id"]
+        elif cleaned_data["entity_type"] == "group":
+            cleaned_data['policy_id'] = cleaned_data["entity_id"]
+
         return cleaned_data
 
 
@@ -153,3 +182,13 @@ class CreateParameterForm(forms.Form):
     )
     value = forms.CharField(widget=forms.PasswordInput)
     app_type = forms.ChoiceField(choices=APP_TYPE_CHOICES)
+
+
+class CreateIAMManagedPolicyForm(forms.Form):
+    name = forms.CharField(
+        validators=[RegexValidator(POLICY_NAME_REGEX)]
+    )
+
+
+class AddUserToIAMManagedPolicyForm(forms.Form):
+    user_id = forms.CharField(max_length=128)

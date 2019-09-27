@@ -1,8 +1,10 @@
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "radios/macro.html" import govukRadios %}
 {% from "user/macro.html" import user_name %}
+{% from "includes/datasource-access-list.html" import datasource_access_list %}
 {% from "includes/yesno.html" import yes_no %}
 {% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+{% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
 
 {% extends "base.html" %}
 
@@ -24,12 +26,11 @@
 </p>
 
 <section class="cpanel-section">
-  <h2 class="govuk-heading-m">Users with access</h2>
-
+  <h2 class="govuk-heading-m">Users and groups with access</h2>
   <table class="govuk-table">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
-        <th class="govuk-table__header">User</th>
+        <th class="govuk-table__header">Users and groups</th>
         <th class="govuk-table__header">
           Access level
           {{ modal_dialog(access_levels_html|safe) }}
@@ -40,13 +41,19 @@
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-    {% for member in access_group %}
+    {% for member in access_list %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
-          <a class="{% if request.user == member.user %}highlight-current{% endif %}"
-            href="{{ url('manage-user', kwargs={ "pk": member.user.auth0_id }) }}">
-            {{ user_name(member.user) }}
-          </a>
+          {% if member.user %}
+            <a class="{% if request.user == member.user %}highlight-current{% endif %}"
+              href="{{ url('manage-user', kwargs={ "pk": member.user.auth0_id }) }}">
+              {{ user_name(member.user) }} (user)
+            </a>
+          {% elif member.policy %}
+            <a href="{{ url('manage-policy', kwargs={ "pk": member.policy.id }) }}">
+              {{ member.policy.name }} (group)
+            </a>
+          {% endif %}
         </td>
         <td class="govuk-table__cell">
         {% if member.is_admin -%}
@@ -57,7 +64,7 @@
         </td>
         <td class="govuk-table__cell">
           {% if request.user.has_perm('api.update_users3bucket', member) %}
-          <a href="{{ url("update-access-level", kwargs={"pk": member.id}) }}"
+          <a href="{% if member.user -%}{{ url("update-access-level", kwargs={"pk": member.id}) }}{%- else -%}{{ url("update-policy-access-level", kwargs={"pk": member.id}) }}{%- endif %}"
              class="govuk-button hmcts-button--secondary right">
             Edit access level
           </a>
@@ -69,10 +76,9 @@
     <tfoot class="govuk-table__foot">
       <tr class="govuk-table__row">
         <td class="govuk-table__cell" colspan="3">
-          {{ access_group|length }}
-          user{%- if access_group|length != 1 -%}s have{% else %} has{% endif %}
+          {{ access_list|length }}
+          user{%- if access_list|length != 1 -%}s{% endif %} or group{%- if access_list|length != 1 -%}s have{% else %} has{% endif %}
           access to this {{ datasource_type }} data source
-        </td>
       </tr>
     </tfoot>
   </table>
@@ -82,6 +88,15 @@
        class="govuk-button hmcts-button--secondary">
       Grant user access
     </a>
+  {% endif %}
+
+  {% if request.user.has_perm('api.manage_groups') %}
+    {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length %}
+      <a href="{{ url('grant-datasource-policy-access', kwargs={'pk': bucket.pk}) }}"
+         class="govuk-button hmcts-button--secondary">
+        Grant group access
+      </a>
+    {% endif %}
   {% endif %}
 </section>
 

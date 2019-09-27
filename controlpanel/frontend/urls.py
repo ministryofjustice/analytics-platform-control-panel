@@ -12,6 +12,17 @@ urlpatterns = [
     path("datasources/new/", views.CreateDatasource.as_view(), name="create-datasource"),
     path("datasource-access/<int:pk>/", views.UpdateAccessLevel.as_view(), name="update-access-level"),
     path("datasource-access/<int:pk>/delete/", views.RevokeAccess.as_view(), name="revoke-datasource-access"),
+
+    path("groups/", views.IAMManagedPolicyList.as_view(), name="list-policies"),
+    path("groups/all/", views.AdminIAMManagedPolicyList.as_view(), name="list-all-policies"),
+    path("groups/new/", views.IAMManagedPolicyCreate.as_view(), name="create-policy"),
+    path("groups/<int:pk>/delete/", views.IAMManagedPolicyDelete.as_view(), name="delete-policy"),
+    path("groups/<int:pk>/", views.IAMManagedPolicyDetail.as_view(), name="manage-policy"),
+    path("groups/<int:pk>/user/<str:user_id>/delete/", views.IAMManagedPolicyRemoveUser.as_view(), name="policy-remove-user"),
+    path("datasources/<int:pk>/update-group-access/", views.UpdateIAMManagedPolicyAccessLevel.as_view(), name="update-policy-access-level"),
+    path("datasources/<int:pk>/delete-group-access/", views.RevokeIAMManagedPolicyAccess.as_view(), name="revoke-datasource-policy-access"),
+    path("datasources/<int:pk>/group-access/", views.GrantPolicyAccess.as_view(), name="grant-datasource-policy-access"),
+
     path("parameters/", views.ParameterList.as_view(), name="list-parameters"),
     path("parameters/all/", views.AdminParameterList.as_view(), name="list-all-parameters"),
     path("parameters/form/role-list.js", views.ParameterFormRoleList.as_view(), name="parameters-list-roles"),

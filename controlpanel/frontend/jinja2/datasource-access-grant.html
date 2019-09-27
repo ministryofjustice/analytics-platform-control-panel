@@ -1,34 +1,43 @@
 {% from "radios/macro.html" import govukRadios %}
 {% from "user/macro.html" import user_name %}
 {% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+{% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
 
 {% extends "base.html" %}
 
-{% set page_title = "Grant user access to datasource" %}
+{% set page_title = "Grant " + entity_type + " access to datasource" %}
 
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <section class="cpanel-section">
-  <form action="{{ url('grant-datasource-access', kwargs={"pk": bucket.id}) }}" method="post">
+  <form action="{{ grant_url }}" method="post">
     {{ csrf_input }}
+    <input type="hidden" name="entity_type" value="{{ entity_type }}">
     <div class="govuk-form-group">
-      <label class="govuk-label" for="user_id">Grant access to this data to other users</label>
-      <select class="govuk-form-control no-blank autocomplete-select" id="user_id" name="user_id">
+      <label class="govuk-label" for="entity_id">Grant access to this data to other {{ entity_type }}s</label>
+      <select class="govuk-form-control no-blank autocomplete-select" id="entity_id" name="entity_id">
         <option value="">Select a user</option>
-        {% for user in users_options %}
-        <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
+        {% for entity in entity_options %}
+          {% if entity_type == "user" %}
+            <option value="{{ entity.auth0_id }}">{{ user_name(entity) }}</option>
+          {% else %}
+            <option value="{{ entity.id }}">{{ entity.name }}</option>
+          {% endif %}
         {% endfor %}
       </select>
     </div>
 
     <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
-      {{ data_access_level_options() }}
+      {{ data_access_level_options(bucket) }}
     </div>
+
+    {{ data_access_paths_textarea(form.paths) }}
 
     <div class="govuk-form-group">
       <button class="govuk-button">Grant access</button>
     </div>
+
   </form>
 </section>
 {% endblock %}

@@ -25,7 +25,9 @@ def revoke_bucket_access():
 
 @pytest.yield_fixture
 def s3_access_policy():
-    with patch('controlpanel.api.models.access_to_s3bucket.S3AccessPolicy') as S3AccessPolicy:
+    with patch(
+            'controlpanel.api.models.apps3bucket.AppS3Bucket.policy_class'
+    ) as S3AccessPolicy:
         yield S3AccessPolicy
 
 
@@ -83,6 +85,6 @@ def test_delete_revoke_permissions(app, bucket, s3_access_policy):
 
     apps3bucket.delete()
 
-    s3_access_policy.load.assert_called_with(apps3bucket.aws_role_name())
+    s3_access_policy.load.assert_called_with(apps3bucket.aws_name())
     policy = s3_access_policy.load.return_value.__enter__.return_value
     policy.revoke_access.assert_called_with(bucket.arn)

@@ -1,0 +1,14 @@
+{% from "fieldset/macro.html" import govukFieldset %}
+
+
+{% macro list_field_textarea(name, label, help_text="", value="", errors={}) -%}
+  {% call govukFieldset({
+    "legend": {
+      "text": label,
+      "classes": "govuk-fieldset__legend--m",
+    },
+    "help_text": help_text
+  }) %}
+    <textarea rows="8" class="govuk-textarea govuk-!-width-two-thirds" name="{{ name }}" id="{{ name }}_id">{{ value }}</textarea>
+  {%- endcall %}
+{%- endmacro %}

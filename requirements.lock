@@ -33,6 +33,7 @@ django-extensions==2.2.1
 django-filter==2.2.0
 django-grip==2.0.1
 django-health-check==3.10.2
+django-redis==4.10.0
 djangorestframework==3.10.2
 djproxy==2.3.4
 docutils==0.15.2

@@ -1,4 +1,3 @@
-import json
 import logging
 import secrets
 
@@ -87,6 +86,17 @@ def is_ignored_exception(e):
         return True
 
 
+def ignore_unwanted_exception(fn):
+    def wraps(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+
+        except Exception as e:
+            if not is_ignored_exception(e):
+                raise e
+    return wraps
+
+
 def initialize_user(user):
     role = IAMRole(user.iam_role_name)
     role.allow_assume_role_with_saml()
@@ -129,12 +139,52 @@ def create_app_role(name):
     role.save()
 
 
+@ignore_unwanted_exception
 def delete_app_role(name):
-    try:
-        aws.delete_role(name)
-    except Exception as e:
-        if not is_ignored_exception(e):
-            raise e
+    aws.delete_role(name)
+
+
+@ignore_unwanted_exception
+def create_policy(policy_name, path="/"):
+    policy_document = {
+        "Version": "2012-10-17",
+        "Statement": [CONSOLE_STATEMENT]
+    }
+    aws.create_policy(policy_name, policy_document, path=path)
+
+
+@ignore_unwanted_exception
+def delete_policy(policy_arn):
+    aws.delete_policy(policy_arn)
+
+
+@ignore_unwanted_exception
+def list_entities_for_policy(policy_arn, entity_filter="Role"):
+    return aws.list_entities_for_policy(policy_arn, entity_filter)
+
+
+@ignore_unwanted_exception
+def attach_policy_to_role(policy_arn, role_name):
+    aws.attach_policy_to_role(policy_arn, role_name)
+
+
+@ignore_unwanted_exception
+def detach_policy_from_role(policy_arn, role_name):
+    aws.detach_policy_from_role(policy_arn, role_name)
+
+
+@ignore_unwanted_exception
+def update_policy_roles(policy_arn, stored_roles):
+    entities = list_entities_for_policy(policy_arn) or {}
+    live_roles = {
+        r["RoleName"] for r in
+        entities.get('PolicyRoles', [])
+    }
+    for role in (stored_roles - live_roles):
+        aws.detach_policy_from_role(policy_arn, role)
+
+    for role in (live_roles - stored_roles):
+        aws.attach_policy_to_role(policy_arn, role)
 
 
 class IAMRole:
@@ -190,6 +240,9 @@ class S3AccessPolicy(dict):
         self.role_name = role_name
         self._ro = set()
         self._rw = set()
+
+        if "Version" not in self:
+            self["Version"] = "2012-10-17",
 
         for statement in self.get("Statement", []):
             sid = statement.get("Sid")
@@ -252,8 +305,8 @@ class S3AccessPolicy(dict):
             self._update_statements()
 
     def revoke_access(self, bucket_arn):
-        self._rw.discard(bucket_arn)
-        self._ro.discard(bucket_arn)
+        self._rw = {r for r in self._rw if not r.startswith(bucket_arn)}
+        self._ro = {r for r in self._ro if not r.startswith(bucket_arn)}
         self._update_statements()
 
     def list_statement(self, resources):
@@ -278,7 +331,7 @@ class S3AccessPolicy(dict):
                 ],
                 "Effect": "Allow",
                 "Resource": [
-                    f"{arn}/*"
+                    f"{arn.rstrip('/*')}/*"
                     for arn in resources
                 ],
             }
@@ -297,49 +350,65 @@ class S3AccessPolicy(dict):
             return statement
 
 
+class S3ManagedPolicy(S3AccessPolicy):
+    def __init__(self, policy_arn=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.policy_arn = policy_arn
+
+    @classmethod
+    def load(cls, policy_arn):
+        current_policy = aws.get_policy(
+            policy_arn=policy_arn
+        )
+
+        if current_policy is None:
+            return cls(policy_arn=policy_arn)
+
+        document = aws.get_policy_version(
+            policy_arn=policy_arn,
+            version_id=current_policy["Policy"]["DefaultVersionId"],
+        )["PolicyVersion"]["Document"]
+
+        policy = cls(policy_arn=policy_arn, **document)
+        return policy
+
+    def save(self):
+        aws.create_policy_version(
+            self.policy_arn,
+            policy_document=self,
+        )
+
+@ignore_unwanted_exception
 def create_bucket(bucket_name, is_data_warehouse=False):
-    try:
-        result = aws.create_bucket(
+    result = aws.create_bucket(
+        bucket_name,
+        region=settings.BUCKET_REGION,
+        acl='private',
+    )
+    aws.put_bucket_logging(
+        bucket_name,
+        target_bucket=settings.LOGS_BUCKET_NAME,
+        target_prefix=f"{bucket_name}/",
+    )
+    aws.put_bucket_encryption(bucket_name)
+    aws.put_public_access_block(bucket_name)
+    if is_data_warehouse:
+        aws.put_bucket_tagging(
             bucket_name,
-            region=settings.BUCKET_REGION,
-            acl='private',
+            tags={'buckettype': 'datawarehouse'},
         )
-        aws.put_bucket_logging(
-            bucket_name,
-            target_bucket=settings.LOGS_BUCKET_NAME,
-            target_prefix=f"{bucket_name}/",
-        )
-        aws.put_bucket_encryption(bucket_name)
-        aws.put_public_access_block(bucket_name)
-        if is_data_warehouse:
-            aws.put_bucket_tagging(
-                bucket_name,
-                tags={'buckettype': 'datawarehouse'},
-            )
 
-        return result
-
-    except Exception as e:
-        if not is_ignored_exception(e):
-            raise e
+    return result
 
 
+@ignore_unwanted_exception
 def create_parameter(name, value, role, description):
-    try:
-        return aws.create_parameter(name, value, role, description)
-
-    except Exception as e:
-        if not is_ignored_exception(e):
-            raise e
+    return aws.create_parameter(name, value, role, description)
 
 
+@ignore_unwanted_exception
 def delete_parameter(name):
-    try:
-        aws.delete_parameter(name)
-
-    except Exception as e:
-        if not is_ignored_exception(e):
-            raise e
+    aws.delete_parameter(name)
 
 
 def get_repositories(user):
