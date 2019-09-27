@@ -1,6 +1,5 @@
 {% from "fieldset/macro.html" import govukFieldset %}
 {% from "user/macro.html" import user_name %}
-{% from "includes/policy-user-list.html" import policy_users_list %}
 
 {% extends "base.html" %}
 
@@ -14,7 +13,31 @@
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {{ policy_users_list(object, request) }}
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">User</th>
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for user in policy.users.all() %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          <a class="{% if request.user == user %}highlight-current{% endif %}"
+            href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}">
+            {{ user_name(user) }}
+          </a>
+        </td>
+        <td class="govuk-table__cell">
+          <a href="{{ url('policy-remove-user', kwargs={ "pk": policy.id, "user_id": user.auth0_id }) }}" class="govuk-button hmcts-button--secondary">Remove</a>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
 
   {% if form.error %}
     <div class="error">{{ form.error }}</div>
