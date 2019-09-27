@@ -128,7 +128,8 @@ class GrantAccessForm(forms.Form):
             ("group", "group"),
             ("user", "user"),
         ],
-        widget=forms.HiddenInput()
+        widget=forms.HiddenInput(),
+        required=True,
     )
 
     def clean(self):
