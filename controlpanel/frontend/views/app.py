@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.template.defaultfilters import pluralize
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import (
@@ -14,8 +15,6 @@ from django.views.generic.edit import (
     UpdateView,
 )
 from django.views.generic.list import ListView
-from github import Github
-import requests
 from rules.contrib.views import PermissionRequiredMixin
 
 from controlpanel.api.cluster import get_repositories
@@ -248,9 +247,9 @@ class RemoveCustomer(UpdateApp):
 
     def perform_update(self, **kwargs):
         app = self.get_object()
-        user_id = self.request.POST.get('customer')
-        app.delete_customers([user_id])
-        messages.success(self.request, "Successfully removed customer")
+        user_ids = self.request.POST.getlist('customer')
+        app.delete_customers(user_ids)
+        messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
 
 
 class AddAdmin(UpdateApp):
