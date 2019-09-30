@@ -116,8 +116,9 @@ class GrantAccessForm(forms.Form):
             ],
             required=True,
         ),
-        label="Paths",
-        help_text="Add specific paths for this user or group to access",
+        label="Paths (optional)",
+        help_text="Add specific paths for this user or group to access or leave blank "
+                  "for whole bucket access",
         required=False,
         delimiter="\n",
     )
