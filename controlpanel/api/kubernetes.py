@@ -47,12 +47,12 @@ class KubernetesClient:
     """
 
     def __init__(self, id_token=None, use_cpanel_creds=False):
-        # if not use_cpanel_creds and not id_token:
-        #     raise ValueError(
-        #         "please provide an id_token (preferred) or pass use_cpanel_creds"
-        #         "=True (this would cause the use of the host credentials so "
-        #         "be careful when using it)"
-        #     )
+        if not use_cpanel_creds and not id_token:
+            raise ValueError(
+                "please provide an id_token (preferred) or pass use_cpanel_creds"
+                "=True (this would cause the use of the host credentials so "
+                "be careful when using it)"
+            )
 
         if id_token and use_cpanel_creds:
             raise ValueError(
