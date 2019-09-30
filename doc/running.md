@@ -113,3 +113,13 @@ Go to http://localhost:8000/
 ```sh
 make test
 ```
+
+or directly using `pytest`:
+
+```sh
+DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
+```
+
+**NOTE** Set the `DJANGO_SETTINGS_MODULE` is important or otherwise you
+may accidentally run the tests with the `development` settings with
+unpredictable results.
