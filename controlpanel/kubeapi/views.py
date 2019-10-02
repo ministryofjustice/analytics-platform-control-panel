@@ -1,5 +1,4 @@
 from functools import wraps
-import os
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -8,23 +7,11 @@ from django.views.decorators.csrf import csrf_exempt
 from djproxy.views import HttpProxy
 import kubernetes
 
+from controlpanel import api
 from controlpanel.jwt import JWT
-# This patch fixes incorrect base64 padding in the Kubernetes Python client.
-# Hopefully it will be fixed in the next release.
-from controlpanel.kubeapi import oidc_patch
+
 from controlpanel.kubeapi.permissions import K8sPermissions
 
-
-def load_kube_config():
-    """
-    Load Kubernetes config. Avoid running at import time.
-    """
-
-    if 'KUBERNETES_SERVICE_HOST' in os.environ:
-        kubernetes.config.load_incluster_config()
-
-    else:
-        kubernetes.config.load_kube_config()
 
 
 class KubeAPIAuthMiddleware(object):
@@ -58,7 +45,7 @@ class KubeAPIProxy(HttpProxy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        load_kube_config()
+        api.kubernetes.load_kube_config()
         self.proxy_middleware.append(
             "controlpanel.kubeapi.views.KubeAPIAuthMiddleware",
         )

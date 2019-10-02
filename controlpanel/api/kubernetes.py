@@ -1,9 +1,24 @@
 import inspect
+import kubernetes
+import os
 
 from crequest.middleware import CrequestMiddleware
 from django.conf import settings
 
-from controlpanel.kubeapi.views import kubernetes, load_kube_config
+# This patch fixes incorrect base64 padding in the Kubernetes Python client.
+# Hopefully it will be fixed in the next release.
+from controlpanel.kubeapi import oidc_patch
+
+
+def load_kube_config():
+    """
+    Load Kubernetes config. Avoid running at import time.
+    """
+
+    if 'KUBERNETES_SERVICE_HOST' in os.environ:
+        kubernetes.config.load_incluster_config()
+    else:
+        kubernetes.config.load_kube_config()
 
 
 class KubernetesClient:
