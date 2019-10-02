@@ -1,8 +1,6 @@
 import json
 
 import boto3
-from botocore.exceptions import ClientError
-
 from django.conf import settings
 
 
@@ -24,248 +22,415 @@ def iam_arn(resource, account=settings.AWS_ACCOUNT_ID):
     return arn("iam", resource, account=account)
 
 
-class AWSClient(object):
-    def __init__(self):
-        self.enabled = settings.ENABLED["write_to_cluster"]
-        self.client = boto3.client
-
-    def _do(self, service, method, **kwargs):
-        if self.enabled:
-            client = self.client(service)
-            return getattr(client, method)(**kwargs)
-
-    def create_bucket(self, name, region, acl="private"):
-        return self._do(
-            "s3",
-            "create_bucket",
-            Bucket=name,
-            ACL=acl,
-            CreateBucketConfiguration={"LocationConstraint": region},
-        )
-
-    def put_bucket_encryption(self, name):
-        self._do(
-            "s3",
-            "put_bucket_encryption",
-            Bucket=name,
-            ServerSideEncryptionConfiguration={
-                "Rules": [
-                    {"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}
-                ]
+BASE_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com",
             },
-        )
-
-    def put_bucket_logging(self, name, target_bucket, target_prefix):
-        self._do(
-            "s3",
-            "put_bucket_logging",
-            Bucket=name,
-            BucketLoggingStatus={
-                "LoggingEnabled": {
-                    "TargetBucket": target_bucket,
-                    "TargetPrefix": target_prefix,
-                }
+            "Action": "sts:AssumeRole",
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": iam_arn(f"role/{settings.K8S_WORKER_ROLE_NAME}"),
             },
+            "Action": "sts:AssumeRole",
+        },
+    ],
+}
+
+OIDC_STATEMENT = {
+    "Effect": "Allow",
+    "Principal": {
+        "Federated": iam_arn(f"oidc-provider/{settings.OIDC_DOMAIN}"),
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+}
+
+SAML_STATEMENT = {
+    "Effect": "Allow",
+    "Principal": {
+        "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
+    },
+    "Action": "sts:AssumeRoleWithSAML",
+    "Condition": {
+        "StringEquals": {
+            "SAML:aud": "https://signin.aws.amazon.com/saml",
+        },
+    },
+}
+
+READ_INLINE_POLICIES = f'{settings.ENV}-read-user-roles-inline-policies'
+
+BASE_S3_ACCESS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "console",
+            "Action": [
+                "s3:GetBucketLocation",
+                "s3:ListAllMyBuckets",
+            ],
+            "Effect": "Allow",
+            "Resource": ["arn:aws:s3:::*"],
+        },
+    ],
+}
+
+BASE_S3_ACCESS_STATEMENT = {
+    'list': {
+        'Sid': 'list',
+        'Action': [
+            's3:ListBucket',
+        ],
+        'Effect': 'Allow',
+    },
+    'readonly': {
+        'Sid': 'readonly',
+        'Action': [
+            's3:GetObject',
+            's3:GetObjectAcl',
+            's3:GetObjectVersion',
+        ],
+        'Effect': 'Allow',
+    },
+}
+
+BASE_S3_ACCESS_STATEMENT['readwrite'] = {
+    'Sid': 'readwrite',
+    'Action': BASE_S3_ACCESS_STATEMENT['readonly']['Action'] + [
+        's3:DeleteObject',
+        's3:DeleteObjectVersion',
+        's3:PutObject',
+        's3:PutObjectAcl',
+        's3:RestoreObject',
+    ],
+    'Effect': 'Allow',
+}
+
+
+def create_app_role(app):
+    iam = boto3.resource('iam')
+    try:
+        return iam.create_role(
+            RoleName=app.iam_role_name,
+            AssumeRolePolicyDocument=json.dumps(BASE_ROLE_POLICY),
         )
+    except iam.meta.client.exceptions.EntityAlreadyExistsException:
+        log.warning(f'Skipping creating Role {app.iam_role_name}: Already exists')
 
-    def put_bucket_tagging(self, name, tags):
-        """Put bucket tagging
 
-        :param name: Bucket name
-        :param tags: Tags {key: value} e.g. {'buckettype': 'datawarehouse'}
-        :type name: str
-        :type tags: dict
-        """
-        self._do(
-            "s3",
-            "put_bucket_tagging",
-            Bucket=name,
-            Tagging={
-                "TagSet": [{"Key": str(k), "Value": str(v)} for k, v in tags.items()]
-            },
+def create_user_role(user):
+    policy = dict(BASE_ROLE_POLICY)
+    policy['Statement'].append(SAML_STATEMENT)
+    oidc_statement = dict(OIDC_STATEMENT)
+    oidc_statement['Condition'] = {'StringEquals': {
+        f'{settings.OIDC_DOMAIN}/:sub': user.auth0_id,
+    }}
+    policy['Statement'].append(oidc_statement)
+
+    iam = boto3.resource('iam')
+    try:
+        iam.create_role(
+            RoleName=user.iam_role_name,
+            AssumeRolePolicyDocument=json.dumps(policy),
         )
+    except iam.meta.client.exceptions.EntityAlreadyExistsException:
+        log.warning(f'Skipping creating Role {user.iam_role_name}: Already exists')
 
-    def put_public_access_block(
-        self,
-        bucket_name,
-        block_public_acls=True,
-        ignore_public_acls=True,
-        block_public_policy=True,
-        restrict_public_buckets=True,
-    ):
-        self._do(
-            "s3",
-            "put_public_access_block",
+    role = iam.Role(user.iam_role_name)
+    role.attach_policy(
+        PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
+    )
+
+
+def delete_role(name):
+    """Delete the given IAM role and all inline policies"""
+    try:
+        role = boto3.resource('iam').Role(name)
+        role.load()
+    except role.meta.client.exceptions.NoSuchEntityException:
+        log.warning(f'Skipping delete of Role {name}: Does not exist')
+        return
+
+    for policy in role.attached_policies.all():
+        role.detach_policy(PolicyArn=policy.arn)
+
+    for policy in role.policies.all():
+        policy.delete()
+
+    role.delete()
+
+
+def create_bucket(bucket_name, is_data_warehouse=False):
+    try:
+        bucket = boto3.resource('s3').create_bucket(
             Bucket=bucket_name,
-            PublicAccessBlockConfiguration={
-                "BlockPublicAcls": block_public_acls,
-                "IgnorePublicAcls": ignore_public_acls,
-                "BlockPublicPolicy": block_public_policy,
-                "RestrictPublicBuckets": restrict_public_buckets,
+            ACL='private',
+            CreateBucketConfiguration={
+                'LocationConstraint': settings.BUCKET_REGION,
             },
         )
+        if is_data_warehouse:
+            bucket.Tagging().put(Tagging={'TagSet': [{
+                'Key': 'buckettype',
+                'Value': 'datawarehouse',
+            }]})
 
-    def _get_inline_policy_document(self, name, resource_type, policy_name):
-        if not self.enabled:
-            return None
+    except bucket.meta.client.exceptions.BucketAlreadyOwnedByYou:
+        log.warning(f'Skipping creating Bucket {bucket_name}: Already exists')
+        return
 
-        aws_kwargs = {
-            f"{resource_type.capitalize()}Name": name,
-            "PolicyName": policy_name,
-        }
+    bucket.Logging().put(BucketLoggingStatus={'LoggingEnabled': {
+        'TargetBucket': settings.LOGS_BUCKET_NAME,
+        'TargetPrefix': f"{bucket_name}/",
+    }})
+    bucket.meta.client.put_bucket_encryption(
+        Bucket=bucket_name,
+        ServerSideEncryptionConfiguration={'Rules': [{
+            'ApplyServerSideEncryptionByDefault': {
+                'SSEAlgorithm': 'AES256',
+            },
+        }]},
+    )
+    bucket.meta.client.put_public_access_block(
+        Bucket=bucket_name,
+        PublicAccessBlockConfiguration={
+            'BlockPublicAcls': True,
+            'IgnorePublicAcls': True,
+            'BlockPublicPolicy': True,
+            'RestrictPublicBuckets': True,
+        },
+    )
+    return bucket
 
+
+class S3AccessPolicy:
+    """Provides a convenience wrapper around a RolePolicy object"""
+
+    def __init__(self, policy):
+        self.policy = policy
+        self._policy_document = None
+        self.statements = {}
+
+        self._load()
+
+    def _load(self):
         try:
-            result = self._do("iam", f"get_{resource_type}_policy", **aws_kwargs)
-            return result["PolicyDocument"]
-        except ClientError as e:
-            if e.response["Error"]["Code"] == "NoSuchEntity":
-                pass
-            else:
-                raise e
+            # ensure version is set
+            self.policy_document['Version'] = '2012-10-17'
 
-    def get_inline_policy_document(self, role_name, policy_name):
-        return self._get_inline_policy_document(role_name, "role", policy_name)
+        except self.policy.meta.client.exceptions.NoSuchEntityException:
+            # create an empty s3 access policy
+            self.put(policy_document=dict(BASE_S3_ACCESS_POLICY))
 
-    def put_role_policy(self, role_name, policy_name, policy_document):
-        self._do(
-            "iam",
-            "put_role_policy",
-            RoleName=role_name,
-            PolicyName=policy_name,
+        # ensure statements are correctly configured and build a lookup table
+        for stmt in self.policy_document.setdefault('Statement', []):
+            sid = stmt.get('Sid')
+            if sid in ('list', 'readonly', 'readwrite'):
+                stmt.update(BASE_S3_ACCESS_STATEMENT[sid])
+                self.statements[sid] = stmt
+
+    @property
+    def policy_document(self):
+        if self._policy_document is None:
+            self._policy_document = self.policy.policy_document
+        return self._policy_document
+
+    def statement(self, sid):
+        if sid in ('list', 'readonly', 'readwrite'):
+            if sid not in self.statements:
+                stmt = dict(BASE_S3_ACCESS_STATEMENT[sid])
+                self.statements[sid] = stmt
+                self.policy_document['Statement'].append(stmt)
+            return self.statements[sid]
+
+    def add_resource(self, arn, sid):
+        statement = self.statement(sid)
+        if statement:
+            resources = statement.setdefault('Resource', [])
+            if arn not in resources:
+                resources.append(arn)
+
+    def remove_resource(self, arn, sid):
+        statement = self.statement(sid)
+        if statement:
+            resources = statement.get('Resource', [])
+            for resource in list(resources):
+                if resource.startswith(arn):
+                    resources.remove(resource)
+
+    def grant_access(self, bucket_arn, access_level):
+        other_level = 'readwrite' if access_level == 'readonly' else 'readonly'
+
+        self.add_resource(f'{bucket_arn}/*', access_level)
+        self.remove_resource(f'{bucket_arn}/*', other_level)
+        self.add_resource(bucket_arn, 'list')
+
+    def revoke_access(self, bucket_arn):
+        self.remove_resource(f'{bucket_arn}/*', 'readonly')
+        self.remove_resource(f'{bucket_arn}/*', 'readwrite')
+        self.remove_resource(bucket_arn, 'list')
+
+    def put(self, policy_document=None):
+        if policy_document is None:
+            policy_document = self.policy_document
+
+        # remove statements with no resources
+        policy_document['Statement'][:] = [
+            stmt for stmt in policy_document['Statement']
+            if stmt.get('Resource')
+        ]
+
+        return self.policy.put(
             PolicyDocument=json.dumps(policy_document),
         )
 
-    def create_role(self, role_name, assume_role_policy):
-        """Creates IAM role with the given name"""
 
-        self._do(
-            "iam",
-            "create_role",
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(assume_role_policy),
-        )
+class ManagedS3AccessPolicy(S3AccessPolicy):
+    """Provides a convenience wrapper around a Policy object"""
 
-    def delete_role(self, role_name):
-        """Delete the given IAM role."""
+    @property
+    def policy_document(self):
+        if self._policy_document is None:
+            self._policy_document = self.policy.default_version.document
+        return self._policy_document
 
-        self._detach_role_policies(role_name)
-        self._delete_role_inline_policies(role_name)
-        self._do("iam", "delete_role", RoleName=role_name)
+    def put(self, policy_document=None):
+        if policy_document is None:
+            policy_document = self.policy_document
 
-    def _detach_role_policies(self, role_name):
-        """Detaches all the policies from the given role"""
+        policy_document['Statement'][:] = [
+            stmt for stmt in policy_document['Statement']
+            if stmt.get('Resource')
+        ]
 
-        policies = self._do("iam", "list_attached_role_policies", RoleName=role_name)
-
-        if policies:
-            for policy in policies["AttachedPolicies"]:
-                self.detach_policy_from_role(
-                    role_name=role_name, policy_arn=policy["PolicyArn"]
-                )
-
-    def _delete_role_inline_policies(self, role_name):
-        """Deletes all inline policies in the given role"""
-
-        policies = self._do("iam", "list_role_policies", RoleName=role_name)
-
-        if policies:
-            for policy_name in policies["PolicyNames"]:
-                self.delete_role_inline_policy(
-                    role_name=role_name, policy_name=policy_name
-                )
-
-    def delete_role_inline_policy(self, policy_name, role_name):
-        self._do(
-            "iam", "delete_role_policy", RoleName=role_name, PolicyName=policy_name
-        )
-
-    def attach_policy_to_role(self, policy_arn, role_name):
-        self._do("iam", "attach_role_policy", RoleName=role_name, PolicyArn=policy_arn)
-
-    def detach_policy_from_role(self, policy_arn, role_name):
-        self._do("iam", "detach_role_policy", RoleName=role_name, PolicyArn=policy_arn)
-
-    def list_entities_for_policy(self, policy_arn, entity_filter="Role"):
-        return self._do(
-            "iam",
-            "list_entities_for_policy",
-            PolicyArn=policy_arn,
-            EntityFilter=entity_filter,
-        )
-
-    def create_policy(self, policy_name, policy_document, path="/"):
-        self._do(
-            "iam",
-            "create_policy",
-            PolicyName=policy_name,
-            Path=path,
-            PolicyDocument=json.dumps(policy_document),
-        )
-
-    def create_policy_version(self, policy_arn, policy_document):
-        self._do(
-            "iam",
-            "create_policy_version",
-            PolicyArn=policy_arn,
+        self.policy.create_version(
             PolicyDocument=json.dumps(policy_document),
             SetAsDefault=True,
         )
-        self._delete_policy_versions(policy_arn)
 
-    def get_policy(self, policy_arn):
-        return self._do("iam", "get_policy", PolicyArn=policy_arn)
+        for version in self.policy.versions.all():
+            if version.version_id != self.policy.default_version_id:
+                version.delete()
 
-    def get_policy_version(self, policy_arn, version_id):
-        return self._do(
-            "iam", "get_policy_version", PolicyArn=policy_arn, VersionId=version_id
+        return self
+
+
+def grant_bucket_access(role_name, bucket_arn, access_level):
+    if access_level not in ('readonly', 'readwrite'):
+        raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
+
+    role = boto3.resource('iam').Role(role_name)
+    policy = S3AccessPolicy(role.Policy('s3-access'))
+    policy.grant_access(bucket_arn, access_level)
+    policy.put()
+
+
+def revoke_bucket_access(role_name, bucket_arn):
+    role = boto3.resource('iam').Role(role_name)
+    policy = S3AccessPolicy(role.Policy('s3-access'))
+    policy.revoke_access(bucket_arn)
+    policy.put()
+
+
+def create_group(name, path):
+    iam = boto3.resource('iam')
+    try:
+        iam.create_policy(
+            PolicyName=name,
+            Path=path,
+            PolicyDocument=json.dumps(BASE_S3_ACCESS_POLICY),
         )
+    except iam.meta.client.exceptions.EntityAlreadyExistsException:
+        log.warning(f'Skipping creating policy {path}{name}: Already exists')
 
-    def _detach_policy_from_roles(self, policy_arn):
-        """Detaches policy from all roles that it is attached to"""
 
-        roles = self.list_entities_for_policy(policy_arn).get("PolicyRoles")
-        if roles:
-            for role in roles:
-                self.detach_policy_from_role(
-                    role_name=role["RoleName"], policy_arn=policy_arn
-                )
+def update_group_members(group_arn, role_names):
+    policy = boto3.resource('iam').Policy(group_arn)
+    members = set(policy.attached_roles.all())
+    existing = {member.role_name for member in members}
 
-    def delete_policy(self, policy_arn):
-        self._detach_policy_from_roles(policy_arn)
-        self._delete_policy_versions(policy_arn)
-        self._do("iam", "delete_policy", PolicyArn=policy_arn)
+    for role in role_names - existing:
+        policy.attach_role(RoleName=role)
 
-    def _delete_policy_version(self, policy_arn, version_id):
-        self._do(
-            "iam", "delete_policy_version", PolicyArn=policy_arn, VersionId=version_id
-        )
+    for role in existing - role_names:
+        policy.detach_role(RoleName=role)
 
-    def _delete_policy_versions(self, policy_arn):
-        versions = self.list_policy_versions(policy_arn).get("Versions", [])
-        for version in versions:
-            if not version["IsDefaultVersion"]:
-                self._delete_policy_version(policy_arn, version["VersionId"])
 
-    def list_policy_versions(self, policy_arn):
-        return self._do("iam", "list_policy_versions", PolicyArn=policy_arn)
+def delete_group(group_arn):
+    policy = boto3.resource('iam').Policy(group_arn)
+    try:
+        policy.load()
+    except policy.meta.client.exceptions.NoSuchEntityException:
+        log.warning(f"Skipping deletion of policy {group_arn}: Does not exist")
+        return
 
-    def create_parameter(self, name, value, role_name, description=""):
-        self._do(
-            "ssm",
-            "put_parameter",
+    for role in policy.attached_roles.all():
+        policy.detach_role(RoleName=role.name)
+
+    # for group in policy.attached_groups.all():
+    #     policy.detach_group(GroupName=group.name)
+
+    # for user in policy.attached_users.all():
+    #     policy.detach_user(UserName=user.name)
+
+    for version in policy.versions.all():
+        if version.version_id != policy.default_version_id:
+            version.delete()
+
+    policy.delete()
+
+
+def grant_group_bucket_access(group_policy_arn, bucket_arn, access_level):
+    if access_level not in ('readonly', 'readwrite'):
+        raise ValueError("access_level must be 'readonly' or 'readwrite'")
+
+    policy = boto3.resource('iam').Policy(group_policy_arn)
+    policy = ManagedS3AccessPolicy(policy)
+    policy.grant_access(bucket_arn, access_level)
+    policy.put()
+
+
+def revoke_group_bucket_access(group_policy_arn, bucket_arn):
+    policy = boto3.resource('iam').Policy(group_policy_arn)
+    policy = ManagedS3AccessPolicy(policy)
+    policy.revoke_access(bucket_arn)
+    policy.put()
+
+
+def create_parameter(name, value, role_name, description=''):
+    ssm = boto3.client('ssm')
+    try:
+        ssm.put_parameter(
             Name=name,
             Value=value,
             Description=description,
-            Type="SecureString",
-            Tags=[{"Key": "role", "Value": role_name}],
+            Type='SecureString',
+            Tags=[{
+                'Key': 'role',
+                'Value':  role_name
+            }],
+        )
+    except ssm.exceptions.ParameterAlreadyExists:
+        # TODO do parameter names need to be unique across the platform?
+        log.warning(
+            f'Skipping creating Parameter {name} for {role_name}: Already exists'
         )
 
-    def delete_parameter(self, name):
-        self._do("ssm", "delete_parameter", Name=name)
 
-    def list_role_names(self, prefix="/"):
-        roles = self._do("iam", "list_roles", PathPrefix=prefix).get("Roles")
-        return [r["RoleName"] for r in roles]
+def delete_parameter(name):
+    ssm = boto3.client('ssm')
+    try:
+        ssm.delete_parameter(Name=name)
+    except ssm.exceptions.ParameterNotFound:
+        log.warning(f'Skipping deleting Parameter {name}: Does not exist')
 
 
-aws = AWSClient()
+def list_role_names(prefix="/"):
+    roles = boto3.resource('iam').roles.filter(PathPrefix=prefix).all()
+    return [role.name for role in list(roles)]
+

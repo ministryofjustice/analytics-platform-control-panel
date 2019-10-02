@@ -49,6 +49,7 @@ class S3Bucket(TimeStampedModel):
         null=True,
     )
     is_data_warehouse = models.BooleanField(default=False)
+    # TODO remove this field - it's unused
     location_url = models.CharField(max_length=128, null=True)
 
     objects = S3BucketQuerySet.as_manager()
@@ -65,7 +66,7 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def arn(self):
-        return s3_arn(self.name)
+        return cluster.Bucket(self).arn
 
     def arn_from_path(self, path):
         return f"{self.arn}{path}"
@@ -98,9 +99,7 @@ class S3Bucket(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            bucket = cluster.create_bucket(self.name, self.is_data_warehouse)
-            if bucket:
-                self.location_url = bucket['Location']
+            bucket = cluster.Bucket(self).create()
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:

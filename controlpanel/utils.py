@@ -1,3 +1,4 @@
+import json
 import re
 
 from channels.exceptions import StopConsumer

@@ -1,48 +1,51 @@
 from model_mommy import mommy
+import pytest
+from rest_framework import status
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK
-from rest_framework.test import APITestCase
 
 
-class S3BucketFilterTest(APITestCase):
+@pytest.fixture(autouse=True)
+def enable_db_for_all_tests(db):
+    pass
 
-    def setUp(self):
-        self.superuser = mommy.make(
-            "api.User",
-            is_superuser=True)
-        self.normal_user = mommy.make(
-            "api.User",
-            is_superuser=False)
 
-        self.s3_bucket_1 = mommy.make(
-            "api.S3Bucket",
-            name="test-bucket-1")
-        self.s3_bucket_2 = mommy.make(
-            "api.S3Bucket",
-            name="test-bucket-2")
+@pytest.fixture(autouse=True)
+def buckets(db):
+    return {
+        1: mommy.make("api.S3Bucket", name="test-bucket-1"),
+        2: mommy.make("api.S3Bucket", name="test-bucket-2"),
+    }
 
-        mommy.make(
-            "api.UserS3Bucket",
-            user=self.normal_user,
-            s3bucket=self.s3_bucket_1,
-            access_level='readonly',
-            is_admin=False)
 
-    def test_superuser_sees_everything(self):
-        self.client.force_login(self.superuser)
+@pytest.fixture(autouse=True)
+def users3bucket(db, buckets, users):
+    return mommy.make(
+        "api.UserS3Bucket",
+        user=users['normal_user'],
+        s3bucket=buckets[1],
+        access_level='readonly',
+        is_admin=False,
+    )
 
-        response = self.client.get(reverse("s3bucket-list"))
-        s3_bucket_ids = [b["id"] for b in response.data["results"]]
-        self.assertEqual(len(s3_bucket_ids), 2)
-        self.assertIn(self.s3_bucket_1.id, s3_bucket_ids)
-        self.assertIn(self.s3_bucket_2.id, s3_bucket_ids)
 
-    def test_normal_user_sees_only_buckets_has_access_to(self):
-        self.client.force_login(self.normal_user)
+def test_superuser_sees_everything(client, buckets, users):
+    client.force_login(users['superuser'])
 
-        response = self.client.get(reverse("s3bucket-list"))
-        self.assertEqual(HTTP_200_OK, response.status_code)
+    response = client.get(reverse('s3bucket-list'))
 
-        s3_bucket_ids = [b["id"] for b in response.data["results"]]
-        self.assertIn(self.s3_bucket_1.id, s3_bucket_ids)
-        self.assertNotIn(self.s3_bucket_2.id, s3_bucket_ids)
+    s3_bucket_ids = [b["id"] for b in response.data["results"]]
+    assert len(s3_bucket_ids) == 2
+    assert buckets[1].id in s3_bucket_ids
+    assert buckets[2].id in s3_bucket_ids
+
+
+def test_normal_user_sees_only_buckets_has_access_to(client, buckets, users):
+    client.force_login(users['normal_user'])
+
+    response = client.get(reverse("s3bucket-list"))
+    assert response.status_code == status.HTTP_200_OK
+
+    s3_bucket_ids = [b["id"] for b in response.data["results"]]
+    assert buckets[1].id in s3_bucket_ids
+    assert buckets[2].id not in s3_bucket_ids
+
