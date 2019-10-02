@@ -66,8 +66,7 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
 
-        # Temporarily hiding App URL until we fix the `KubernetesClient` bug causing the 401
-        context["app_url"] = None # cluster.App(app).url
+        context["app_url"] = cluster.App(app).url
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
         ).exclude(
