@@ -2,7 +2,7 @@
 
 {% macro data_access_level_options(access_to_s3bucket=None, hide_admin=False) %}
   {% if not hide_admin %}
-  {% set hide_admin = request.user.has_perm('api.add_s3bucket_admin') %}
+  {% set hide_admin = not request.user.has_perm('api.add_s3bucket_admin', access_to_s3bucket.s3bucket) %}
   {% endif %}
   {{ govukRadios({
     "name": "access_level",
