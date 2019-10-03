@@ -1,7 +1,5 @@
-from functools import wraps
 from urllib.parse import urljoin
 
-from django.conf import settings
 from django.core import exceptions
 from django.views.decorators.csrf import csrf_exempt
 from djproxy.views import HttpProxy

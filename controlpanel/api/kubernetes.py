@@ -23,7 +23,9 @@ def get_config():
 
     config = kubernetes.client.Configuration()
 
-    # The deepcopy is to avoid a race conditions on the credentials keys
+    # A deepcopy of the configuration is used to avoid a race condition
+    # caused by subsequent calls to Configuration() reusing a singleton
+    # datastructure
     #
     # See: https://github.com/kubernetes-client/python/issues/932
     config.api_key_prefix = deepcopy(config.api_key_prefix)
