@@ -1,18 +1,40 @@
 version: 2
 jobs:
 
-  build:
-
+  testjs:
     docker:
+      - image: circleci/node:lts
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-npm-deps-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - v1-npm-deps-{{ .Branch }}
+            - v1-npm-deps-
+      - run:
+          name: npm install
+          command: npm install
 
+      - save_cache:
+          key: v1-npm-deps-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/usr/local/lib/node_modules
+            - ./node_modules
+
+      - run:
+          name: Run js tests
+          command: npm run test -- --coverage --collectCoverage=true
+
+      - store_artifacts:
+          path: coverage
+
+  build:
+    docker:
       - image: tmaier/docker-compose
 
     steps:
-
       - checkout
-
       - setup_remote_docker
-
       - restore_cache:
           keys:
             - v1-{{ .Branch }}
@@ -42,7 +64,7 @@ jobs:
             - /caches/app.tar
 
       - run:
-          name: Run tests
+          name: Run python tests
           command: |
             touch .env  # empty .env file to avoid error
             docker-compose run \
@@ -60,3 +82,12 @@ jobs:
             docker tag controlpanel "quay.io/mojanalytics/control-panel:${BRANCH}"
             docker push "quay.io/mojanalytics/control-panel:${CIRCLE_SHA1}"
             docker push "quay.io/mojanalytics/control-panel:${BRANCH}"
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - testjs
+      - build:
+          requires:
+            - testjs
