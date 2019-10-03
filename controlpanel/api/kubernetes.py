@@ -1,3 +1,4 @@
+from copy import deepcopy
 import inspect
 import kubernetes
 import os
@@ -22,6 +23,13 @@ def get_config():
         kubernetes.config.load_kube_config()
 
     config = kubernetes.client.Configuration()
+
+    # The deepcopy is to avoid a race conditions on the credentials keys
+    #
+    # See: https://github.com/kubernetes-client/python/issues/932
+    config.api_key_prefix = deepcopy(config.api_key_prefix)
+    config.api_key = deepcopy(config.api_key)
+
     return config
 
 
