@@ -5,7 +5,6 @@ from django.conf import settings
 from django.core import exceptions
 from django.views.decorators.csrf import csrf_exempt
 from djproxy.views import HttpProxy
-import kubernetes
 
 from controlpanel import api
 from controlpanel.jwt import JWT
@@ -32,12 +31,12 @@ class KubeAPIProxy(HttpProxy):
 
     @property
     def base_url(self):
-        return kubernetes.client.Configuration().host
+        return self.kubernetes_config.host
 
     # Without this, we get SSL: CERTIFICATE_VERIFY_FAILED
     @property
     def verify_ssl(self):
-        return kubernetes.client.Configuration().ssl_ca_cert
+        return self.kubernetes_config.ssl_ca_cert
 
     @property
     def proxy_url(self):
@@ -45,7 +44,7 @@ class KubeAPIProxy(HttpProxy):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        api.kubernetes.load_kube_config()
+        self.kubernetes_config = api.kubernetes.get_config()
         self.proxy_middleware.append(
             "controlpanel.kubeapi.views.KubeAPIAuthMiddleware",
         )

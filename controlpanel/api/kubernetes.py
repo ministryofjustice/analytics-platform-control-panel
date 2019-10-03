@@ -10,7 +10,8 @@ from django.conf import settings
 from controlpanel.kubeapi import oidc_patch
 
 
-def load_kube_config():
+
+def get_config():
     """
     Load Kubernetes config. Avoid running at import time.
     """
@@ -19,6 +20,9 @@ def load_kube_config():
         kubernetes.config.load_incluster_config()
     else:
         kubernetes.config.load_kube_config()
+
+    config = kubernetes.client.Configuration()
+    return config
 
 
 class KubernetesClient:
@@ -48,8 +52,7 @@ class KubernetesClient:
                 "the k8s API unless stricly necessary."
             )
 
-        load_kube_config()
-        config = kubernetes.client.Configuration()
+        config = get_config()
 
         if settings.ENABLED["k8s_rbac"] and not use_cpanel_creds:
             if id_token is None:
