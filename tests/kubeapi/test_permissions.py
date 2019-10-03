@@ -5,18 +5,20 @@ import pytest
 from rest_framework import status
 
 
-TEST_K8S_API_URL = 'https://k8s.example.com'
-
 
 @pytest.yield_fixture(autouse=True)
-def k8s():
-    with patch('controlpanel.kubeapi.views.kubernetes') as k8s:
-        config = k8s.client.Configuration.return_value
-        config.host = TEST_K8S_API_URL
-        config.api_key = {
-            "authorization": "Bearer test-token",
-        }
-        yield k8s
+def k8s_get_config():
+    with patch('controlpanel.kubeapi.views.api.kubernetes.get_config') as get_config:
+        config = MagicMock("k8s config")
+
+        config.host = "http://api.k8s.localhost"
+        config.ssl_ca_cert = "test ssl_ca_cert"
+
+        config.api_key_prefix = {"authorization": "Bearer"}
+        config.api_key = {"authorization": "test-token"}
+
+        get_config.return_value = config
+        yield get_config
 
 
 @pytest.yield_fixture(autouse=True)
