@@ -13,7 +13,7 @@ from controlpanel.kubeapi import oidc_patch
 
 def get_config():
     """
-    Load Kubernetes config. Avoid running at import time.
+    Load and returns a kubernetes Configuration instance
     """
 
     if "KUBERNETES_SERVICE_HOST" in os.environ:
