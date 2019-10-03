@@ -11,13 +11,12 @@ from django.conf import settings
 from controlpanel.kubeapi import oidc_patch
 
 
-
 def get_config():
     """
     Load Kubernetes config. Avoid running at import time.
     """
 
-    if 'KUBERNETES_SERVICE_HOST' in os.environ:
+    if "KUBERNETES_SERVICE_HOST" in os.environ:
         kubernetes.config.load_incluster_config()
     else:
         kubernetes.config.load_kube_config()
@@ -66,10 +65,10 @@ class KubernetesClient:
             if id_token is None:
                 request = CrequestMiddleware.get_request()
                 if request and request.user and request.user.is_authenticated:
-                    id_token = request.session.get('oidc_id_token')
+                    id_token = request.session.get("oidc_id_token")
 
-            config.api_key_prefix['authorization'] = 'Bearer'
-            config.api_key['authorization'] = id_token
+            config.api_key_prefix["authorization"] = "Bearer"
+            config.api_key["authorization"] = id_token
 
         self.api_client = kubernetes.client.ApiClient(config)
 
