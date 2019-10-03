@@ -1,9 +1,37 @@
+from copy import deepcopy
 import inspect
+import kubernetes
+import os
 
 from crequest.middleware import CrequestMiddleware
 from django.conf import settings
 
-from controlpanel.kubeapi.views import kubernetes, load_kube_config
+# This patch fixes incorrect base64 padding in the Kubernetes Python client.
+# Hopefully it will be fixed in the next release.
+from controlpanel.kubeapi import oidc_patch
+
+
+def get_config():
+    """
+    Load and returns a kubernetes Configuration instance
+    """
+
+    if "KUBERNETES_SERVICE_HOST" in os.environ:
+        kubernetes.config.load_incluster_config()
+    else:
+        kubernetes.config.load_kube_config()
+
+    config = kubernetes.client.Configuration()
+
+    # A deepcopy of the configuration is used to avoid a race condition
+    # caused by subsequent calls to Configuration() reusing a singleton
+    # datastructure
+    #
+    # See: https://github.com/kubernetes-client/python/issues/932
+    config.api_key_prefix = deepcopy(config.api_key_prefix)
+    config.api_key = deepcopy(config.api_key)
+
+    return config
 
 
 class KubernetesClient:
@@ -33,17 +61,16 @@ class KubernetesClient:
                 "the k8s API unless stricly necessary."
             )
 
-        load_kube_config()
-        config = kubernetes.client.Configuration()
+        config = get_config()
 
         if settings.ENABLED["k8s_rbac"] and not use_cpanel_creds:
             if id_token is None:
                 request = CrequestMiddleware.get_request()
                 if request and request.user and request.user.is_authenticated:
-                    id_token = request.session.get('oidc_id_token')
+                    id_token = request.session.get("oidc_id_token")
 
-            config.api_key_prefix['authorization'] = 'Bearer'
-            config.api_key['authorization'] = id_token
+            config.api_key_prefix["authorization"] = "Bearer"
+            config.api_key["authorization"] = id_token
 
         self.api_client = kubernetes.client.ApiClient(config)
 
