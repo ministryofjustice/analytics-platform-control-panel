@@ -1,7 +1,7 @@
 .app-logs {
   display: flex;
   flex-direction: column-reverse;
-  overflow-y: scroll;
+  overflow: scroll;
   border: 2px inset govuk-colour('grey-3');
   padding: 10px;
   margin-bottom: 1em;
