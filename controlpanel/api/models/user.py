@@ -30,6 +30,12 @@ class User(AbstractUser):
         Retrieve the user's Id token if they are the logged in user
         """
         request = CrequestMiddleware.get_request()
+        if not request:
+            raise Exception(
+                "request not found: have you called get_id_token() in a "
+                "background worker?"
+            )
+
         if request.user == self:
             return request.session.get('oidc_id_token')
 
