@@ -9,10 +9,6 @@ from controlpanel.utils import is_truthy
 # -- Feature flags
 
 ENABLED = {
-
-    # Enable Kubernetes Role-based Access Control
-    "k8s_rbac": is_truthy(os.environ.get("ENABLE_K8S_RBAC", False)),
-
     # Enable writes to Kubernetes cluster
     "write_to_cluster": is_truthy(os.environ.get("ENABLE_WRITE_TO_CLUSTER", True)),
 
