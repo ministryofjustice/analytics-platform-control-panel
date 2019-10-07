@@ -36,4 +36,9 @@ class ToolDeploymentViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return Response({}, status=status.HTTP_201_CREATED)
 
     def get_queryset(self):
-        return ToolDeployment.objects.filter(user=self.request.user)
+        user = self.request.user
+        id_token = user.get_id_token()
+        return ToolDeployment.objects.filter(
+            user=user,
+            id_token=id_token,
+        )

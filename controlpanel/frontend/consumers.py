@@ -109,19 +109,20 @@ class BackgroundTaskConsumer(SyncConsumer):
         """
 
         tool, user = self.get_tool_and_user(message)
+        id_token = message["id_token"]
 
         update_tool_status(user, tool, TOOL_DEPLOYING)
 
         try:
             deployment = ToolDeployment(tool, user)
-            deployment.save(id_token=message.get('id_token'))
+            deployment.save()
 
         except ToolDeployment.Error as err:
             update_tool_status(user, tool, TOOL_DEPLOY_FAILED)
             log.error(err)
             return
 
-        status = wait_for_deployment(user, tool, deployment)
+        status = wait_for_deployment(deployment, id_token)
 
         if status == TOOL_DEPLOY_FAILED:
             log.error(f"Failed deploying {tool.name} for {user}")
@@ -142,14 +143,14 @@ class BackgroundTaskConsumer(SyncConsumer):
         Restart the named tool for the specified user
         """
         tool, user = self.get_tool_and_user(message)
-        id_token = message.get("id_token")
+        id_token = message["id_token"]
 
         update_tool_status(user, tool, "Restarting")
 
         deployment = ToolDeployment(tool, user)
         deployment.restart(id_token=id_token)
 
-        status = wait_for_deployment(user, tool, deployment)
+        status = wait_for_deployment(deployment, id_token)
 
         if status == TOOL_DEPLOY_FAILED:
             log.error(f"Failed restarting {tool.name} for {user}")
@@ -198,11 +199,10 @@ def start_background_task(task, message):
         },
     )
 
-
-def wait_for_deployment(user, tool, deployment):
+def wait_for_deployment(deployment, id_token):
     while True:
-        status = deployment.status
-        update_tool_status(user, tool, status)
+        status = deployment.get_status(id_token)
+        update_tool_status(deployment.user, deployment.tool, status)
         if status in (TOOL_DEPLOY_FAILED, TOOL_READY, TOOL_IDLED):
             return status
         sleep(1)
