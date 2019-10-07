@@ -94,7 +94,7 @@ docker-image:
 	@docker build -t ${PROJECT} .
 
 ## docker-run: Run app in a Docker container
-docker-run:
+docker-run: redis
 	@echo
 	@echo "> Run docker container..."
 	@docker run \
@@ -102,8 +102,11 @@ docker-run:
 		-p ${PORT}:${PORT} \
 		--env-file=.env \
 		-e ALLOWED_HOSTS="*" \
-		-e DB_HOST=docker.for.mac.host.internal \
+		-e DB_HOST=host.docker.internal \
+		-e DB_NAME=${PROJECT} \
+		-e DB_USER=${PROJECT} \
 		-e DEBUG=True \
+		-e REDIS_HOST=host.docker.internal \
 		${PROJECT}
 
 ## docker-test: Run tests in Docker container
