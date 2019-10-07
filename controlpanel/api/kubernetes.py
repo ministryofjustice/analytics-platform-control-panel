@@ -3,7 +3,6 @@ import inspect
 import kubernetes
 import os
 
-from crequest.middleware import CrequestMiddleware
 from django.conf import settings
 
 # This patch fixes incorrect base64 padding in the Kubernetes Python client.
@@ -63,12 +62,7 @@ class KubernetesClient:
 
         config = get_config()
 
-        if not use_cpanel_creds:
-            if id_token is None:
-                request = CrequestMiddleware.get_request()
-                if request and request.user and request.user.is_authenticated:
-                    id_token = request.session.get("oidc_id_token")
-
+        if id_token:
             config.api_key_prefix["authorization"] = "Bearer"
             config.api_key["authorization"] = id_token
 
