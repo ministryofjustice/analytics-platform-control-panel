@@ -142,11 +142,12 @@ class BackgroundTaskConsumer(SyncConsumer):
         Restart the named tool for the specified user
         """
         tool, user = self.get_tool_and_user(message)
+        id_token = message.get("id_token")
 
         update_tool_status(user, tool, "Restarting")
 
         deployment = ToolDeployment(tool, user)
-        deployment.restart(id_token=message.get('id_token'))
+        deployment.restart(id_token=id_token)
 
         status = wait_for_deployment(user, tool, deployment)
 

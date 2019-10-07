@@ -142,13 +142,10 @@ class ToolDeployment:
     def url(self):
         return f"https://{self.host}/"
 
-    def restart(self, **kwargs):
+    def restart(self, id_token):
         """
         Restart the tool deployment
         """
-        self._id_token = kwargs.get('id_token')
-        cluster.restart_tool_deployment(
-            self,
-            id_token=self._id_token,
-        )
 
+        self._id_token = id_token
+        cluster.restart_tool_deployment(self, id_token)

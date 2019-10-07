@@ -572,7 +572,7 @@ def get_tool_deployment_status(tool_deployment, **kwargs):
     )
     return TOOL_STATUS_UNKNOWN
 
-def restart_tool_deployment(tool_deployment, id_token=None):
+def restart_tool_deployment(tool_deployment, id_token):
     k8s = KubernetesClient(id_token=id_token)
     return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
         tool_deployment.user.k8s_namespace,
