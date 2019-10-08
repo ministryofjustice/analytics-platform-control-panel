@@ -176,8 +176,12 @@ def get_repositories(user):
     repos = []
     github = Github(user.github_api_token)
     for name in settings.GITHUB_ORGS:
-        org = github.get_organization(name)
-        repos.extend(org.get_repos())
+        try:
+            org = github.get_organization(name)
+            repos.extend(org.get_repos())
+        except GithubException as err:
+            log.warning(f'Failed getting {name} Github org repos for {user}: {err}')
+            raise err
     return repos
 
 
@@ -186,6 +190,7 @@ def get_repository(user, repo_name):
     try:
         return github.get_repo(repo_name)
     except GithubException.UnknownObjectException:
+        log.warning(f'Failed getting {repo_name} Github repo for {user}: {err}')
         return None
 
 
