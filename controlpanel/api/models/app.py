@@ -72,10 +72,10 @@ class App(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            cluster.App(self).create_iam_role()
+            cluster.App(self).create()
 
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.App(self).delete_iam_role()
+        cluster.App(self).delete()
         super().delete(*args, **kwargs)

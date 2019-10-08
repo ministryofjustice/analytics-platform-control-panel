@@ -164,6 +164,7 @@ class GrantAppAccess(
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
     def form_valid(self, form):
+        # TODO this can be replaced with AppS3Bucket.objects.get_or_create()
         try:
             self.object = AppS3Bucket.objects.get(
                 s3bucket=form.cleaned_data['datasource'],

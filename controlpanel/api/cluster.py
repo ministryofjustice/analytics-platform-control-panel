@@ -82,10 +82,10 @@ class App:
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
 
-    def create_iam_role(self):
+    def create(self):
         aws.create_app_role(self.iam_role_name)
 
-    def delete_iam_role(self):
+    def delete(self):
         aws.delete_role(self.iam_role_name)
 
     def grant_bucket_access(self, bucket_arn, access_level):

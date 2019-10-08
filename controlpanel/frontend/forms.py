@@ -6,7 +6,7 @@ from django.core.validators import RegexValidator
 
 from controlpanel.api import validators
 from controlpanel.api.cluster import get_repository
-from controlpanel.api.models import S3Bucket
+from controlpanel.api.models import App, S3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
@@ -23,13 +23,19 @@ class DatasourceChoiceField(forms.ModelChoiceField):
 
 
 class CreateAppForm(forms.Form):
-    repo_url = forms.CharField(max_length=512)
+    repo_url = forms.CharField(
+        max_length=512,
+        validators=[
+            validators.validate_github_repository_url,
+        ],
+    )
     connect_bucket = forms.ChoiceField(choices=[
         ("new", "new"),
         ("existing", "existing"),
         ("later", "later"),
     ])
     new_datasource_name = forms.CharField(
+        max_length=63,
         validators=[
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
@@ -49,31 +55,31 @@ class CreateAppForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
+        connect = cleaned_data['connect_bucket']
+        new_datasource = cleaned_data.get('new_datasource_name')
+        existing_datasource = cleaned_data.get('existing_datasource_id')
 
-        if cleaned_data['connect_bucket'] == "new" and not cleaned_data.get('new_datasource_name'):
-            self.add_error('new_datasource_name', "This field is required.")
+        if connect == "new":
+            if new_datasource:
+                try:
+                    S3Bucket.objects.get(name=new_datasource)
+                    self.add_error(
+                        f"Datasource named {new_datasource} already exists"
+                    )
+                except S3Bucket.DoesNotExist:
+                    pass
 
-        if cleaned_data['connect_bucket'] == "existing" and not cleaned_data.get('existing_datasource_id'):
+            else:
+                self.add_error('new_datasource_name', "This field is required.")
+
+        if connect == "existing" and not existing_datasource:
             self.add_error('existing_datasource_id', "This field is required.")
 
         return cleaned_data
 
     def clean_repo_url(self):
-        github_base_url = "https://github.com/"
         value = self.cleaned_data['repo_url']
-
-        if not value.startswith(github_base_url):
-            raise ValidationError("Invalid Github repository URL")
-
-        repo_name = value[len(github_base_url):]
-        org, _ = repo_name.split("/", 1)
-
-        if org not in settings.GITHUB_ORGS:
-            orgs = ", ".join(settings.GITHUB_ORGS)
-            raise ValidationError(
-                f"Unknown Github organization, must be one of {orgs}",
-            )
-
+        repo_name = value.replace("https://github.com/", "", 1)
         repo = get_repository(self.request.user, repo_name)
         if repo is None:
             raise ValidationError(
@@ -89,19 +95,13 @@ class CreateAppForm(forms.Form):
         return value
 
 
-def has_env_prefix(value):
-    if not value.startswith(f'{settings.ENV}-'):
-        raise ValidationError(
-            f"Bucket name must be prefixed with {settings.ENV}-"
-        )
-
-
 class CreateDatasourceForm(forms.Form):
     name = forms.CharField(
-        max_length=60,
+        max_length=63,
         validators=[
-            has_env_prefix,
-            RegexValidator(r'[a-z0-9.-]{1,60}'),
+            validators.validate_env_prefix,
+            validators.validate_s3_bucket_labels,
+            validators.validate_s3_bucket_length,
         ],
     )
 
@@ -123,8 +123,10 @@ class GrantAccessForm(forms.Form):
             required=True,
         ),
         label="Paths (optional)",
-        help_text="Add specific paths for this user or group to access or leave blank "
-                  "for whole bucket access",
+        help_text=(
+            "Add specific paths for this user or group to access or leave blank "
+            "for whole bucket access"
+        ),
         required=False,
         delimiter="\n",
     )
@@ -182,10 +184,22 @@ class GrantAppAccessForm(forms.Form):
 
 class CreateParameterForm(forms.Form):
     key = forms.CharField(
-        validators=[RegexValidator(r'[a-zA-Z0-9_]{1,50}')]
+        max_length=50,
+        validators=[
+            RegexValidator(
+                r'[a-zA-Z0-9_]{1,50}',
+                message="Must contain only alphanumeric characters and underscores",
+            ),
+        ],
     )
     role_name = forms.CharField(
-        validators=[RegexValidator(r'[a-zA-Z0-9_-]{1,60}')]
+        max_length=60,
+        validators=[
+            RegexValidator(
+                r'[a-zA-Z0-9_-]{1,60}',
+                message="Must contain only alphanumeric characters, underscores and hyphens",
+            ),
+        ],
     )
     value = forms.CharField(widget=forms.PasswordInput)
     app_type = forms.ChoiceField(choices=APP_TYPE_CHOICES)
@@ -193,6 +207,7 @@ class CreateParameterForm(forms.Form):
 
 class CreateIAMManagedPolicyForm(forms.Form):
     name = forms.CharField(
+        # TODO restrict allowed characters in group policy name
         validators=[RegexValidator(POLICY_NAME_REGEX)]
     )
 
