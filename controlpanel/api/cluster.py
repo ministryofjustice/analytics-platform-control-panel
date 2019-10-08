@@ -463,90 +463,14 @@ class ToolDeploymentError(Exception):
     pass
 
 
-def list_tool_deployments(user, id_token, search_name=None, search_version=None):
-    deployments = []
-    k8s = KubernetesClient(id_token=id_token)
-    results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
-    for deployment in results.items:
-        app_name = deployment.metadata.labels["app"]
-        _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
-        if search_name and search_name not in app_name:
-            continue
-        if search_version and not version.startswith(search_version):
-            continue
-        deployments.append(deployment)
-    return deployments
-
-
-def get_tool_deployment(tool_deployment, id_token):
-    deployments = list_tool_deployments(
-        tool_deployment.user,
-        id_token,
-        search_name=tool_deployment.tool.chart_name,
-        # search_version=tool_deployment.tool.version,
-    )
-
-    if not deployments:
-        raise ObjectDoesNotExist(tool_deployment)
-
-    if len(deployments) > 1:
-        log.warning(f"Multiple matches for {tool_deployment!r} found")
-        raise MultipleObjectsReturned(tool_deployment)
-
-    return deployments[0]
-
-
-def delete_tool_deployment(tool_deployment, id_token):
-    deployment = get_tool_deployment(tool_deployment, id_token)
-    helm.delete(
-        deployment.metadata.name,
-        f"--namespace={tool_deployment.user.k8s_namespace}",
-    )
-
-
-def get_tool_deployment_status(tool_deployment, id_token):
-    try:
-        deployment = get_tool_deployment(tool_deployment, id_token)
-
-    except ObjectDoesNotExist:
-        log.warning(f"{tool_deployment} not found")
-        return TOOL_NOT_DEPLOYED
-
-    except MultipleObjectsReturned:
-        log.warning(f"Multiple objects returned for {tool_deployment}")
-        return TOOL_STATUS_UNKNOWN
-
-    conditions = {
-        condition.type: condition
-        for condition in deployment.status.conditions
-    }
-
-    if 'Available' in conditions:
-        if conditions['Available'].status == 'True':
-            if deployment.spec.replicas == 0:
-                return TOOL_IDLED
-            return TOOL_READY
-
-    if 'Progressing' in conditions:
-        progressing_status = conditions['Progressing'].status
-        if progressing_status == 'True':
-            return TOOL_DEPLOYING
-        elif progressing_status == 'False':
-            return TOOL_DEPLOY_FAILED
-
-    log.warning(
-        f"Unknown status for {tool_deployment}: {deployment.status.conditions}"
-    )
-    return TOOL_STATUS_UNKNOWN
-
-
-
-
 class ToolDeployment():
 
     def __init__(self, user, tool):
         self.user = user
         self.tool = tool
+
+    def __repr__(self):
+        return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
 
     @property
     def chart_name(self):
@@ -592,7 +516,12 @@ class ToolDeployment():
         except HelmError as error:
             raise ToolDeploymentError(error)
 
-
+    def uninstall(self, id_token):
+        deployment = self.get_deployment(id_token)
+        helm.delete(
+            deployment.metadata.name,
+            f"--namespace={self.k8s_namespace}",
+        )
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
@@ -603,3 +532,70 @@ class ToolDeployment():
                 # f'-{tool_deployment.tool.version}'
             ),
         )
+
+    @classmethod
+    def get_deployments(cls, user, id_token, search_name=None, search_version=None):
+        deployments = []
+        k8s = KubernetesClient(id_token=id_token)
+        results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
+        for deployment in results.items:
+            app_name = deployment.metadata.labels["app"]
+            _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            if search_name and search_name not in app_name:
+                continue
+            if search_version and not version.startswith(search_version):
+                continue
+            deployments.append(deployment)
+        return deployments
+
+    def get_deployment(self, id_token):
+        deployments = self.__class__.get_deployments(
+            self.user,
+            id_token,
+            search_name=self.chart_name,
+            # search_version=tool_deployment.tool.version,
+        )
+
+        if not deployments:
+            raise ObjectDoesNotExist(self)
+
+        if len(deployments) > 1:
+            log.warning(f"Multiple matches for {self!r} found")
+            raise MultipleObjectsReturned(self)
+
+        return deployments[0]
+
+    def get_status(self, id_token):
+        try:
+            deployment = self.get_deployment(id_token)
+
+        except ObjectDoesNotExist:
+            log.warning(f"{self!r} not found")
+            return TOOL_NOT_DEPLOYED
+
+        except MultipleObjectsReturned:
+            log.warning(f"Multiple objects returned for {self!r}")
+            return TOOL_STATUS_UNKNOWN
+
+        conditions = {
+            condition.type: condition
+            for condition in deployment.status.conditions
+        }
+
+        if "Available" in conditions:
+            if conditions["Available"].status == "True":
+                if deployment.spec.replicas == 0:
+                    return TOOL_IDLED
+                return TOOL_READY
+
+        if 'Progressing' in conditions:
+            progressing_status = conditions['Progressing'].status
+            if progressing_status == "True":
+                return TOOL_DEPLOYING
+            elif progressing_status == "False":
+                return TOOL_DEPLOY_FAILED
+
+        log.warning(
+            f"Unknown status for {self!r}: {deployment.status.conditions}"
+        )
+        return TOOL_STATUS_UNKNOWN

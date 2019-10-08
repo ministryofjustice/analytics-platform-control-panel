@@ -18,6 +18,9 @@ class User(AbstractUser):
         db_table = 'control_panel_api_user'
         ordering = ('username',)
 
+    def __repr__(self):
+        return f"<User: {self.username} ({self.auth0_id})>"
+
     def get_full_name(self):
         return self.name
 

@@ -53,7 +53,8 @@ class ToolDeploymentManager:
         user = kwargs["user"]
         id_token = kwargs["id_token"]
         filter = Q(chart_name=None)  # Always False
-        for deployment in cluster.list_tool_deployments(user, id_token):
+        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
+        for deployment in deployments:
             chart_name, version = deployment.metadata.labels["chart"].rsplit("-", 1)
             deployed_versions[chart_name] = version
             filter = filter | (
@@ -94,7 +95,8 @@ class ToolDeployment:
         """
         Remove the release from the cluster
         """
-        cluster.delete_tool_deployment(self, id_token)
+
+        cluster.ToolDeployment(self.user, self.tool).uninstall(id_token)
 
     @property
     def host(self):
@@ -118,7 +120,7 @@ class ToolDeployment:
             if status:
                 return status
 
-        return cluster.get_tool_deployment_status(self, id_token)
+        return cluster.ToolDeployment(self.user, self.tool).get_status(id_token)
 
     def _poll(self):
         """
