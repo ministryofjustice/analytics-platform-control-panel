@@ -143,4 +143,4 @@ class ToolDeployment:
         Restart the tool deployment
         """
 
-        cluster.restart_tool_deployment(self, id_token)
+        cluster.ToolDeployment(self.user, self.tool).restart(id_token)

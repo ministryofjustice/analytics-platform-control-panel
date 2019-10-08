@@ -572,12 +572,29 @@ def get_tool_deployment_status(tool_deployment, id_token):
     )
     return TOOL_STATUS_UNKNOWN
 
-def restart_tool_deployment(tool_deployment, id_token):
-    k8s = KubernetesClient(id_token=id_token)
-    return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
-        tool_deployment.user.k8s_namespace,
-        label_selector=(
-            f'app={tool_deployment.tool.chart_name}'
-            # f'-{tool_deployment.tool.version}'
-        ),
-    )
+
+
+
+class ToolDeployment():
+
+    def __init__(self, user, tool):
+        self.user = user
+        self.tool = tool
+
+    @property
+    def chart_name(self):
+        return self.tool.chart_name
+
+    @property
+    def k8s_namespace(self):
+        return self.user.k8s_namespace
+
+    def restart(self, id_token):
+        k8s = KubernetesClient(id_token=id_token)
+        return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
+            self.k8s_namespace,
+            label_selector=(
+                f"app={self.chart_name}"
+                # f'-{tool_deployment.tool.version}'
+            ),
+        )
