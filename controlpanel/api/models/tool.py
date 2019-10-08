@@ -50,9 +50,10 @@ class ToolDeploymentManager:
 
     def filter(self, **kwargs):
         deployed_versions = {}
-        user = kwargs.get('user')
+        user = kwargs["user"]
+        id_token = kwargs["id_token"]
         filter = Q(chart_name=None)  # Always False
-        for deployment in cluster.list_tool_deployments(user):
+        for deployment in cluster.list_tool_deployments(user, id_token):
             chart_name, version = deployment.metadata.labels["chart"].rsplit("-", 1)
             deployed_versions[chart_name] = version
             filter = filter | (
@@ -81,7 +82,6 @@ class ToolDeployment:
     objects = ToolDeploymentManager()
 
     def __init__(self, tool, user, outdated=False):
-        self._id_token = None
         self._subprocess = None
         self.tool = tool
         self.user = user
@@ -90,11 +90,11 @@ class ToolDeployment:
     def __repr__(self):
         return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
 
-    def delete(self):
+    def delete(self, id_token):
         """
         Remove the release from the cluster
         """
-        cluster.delete_tool_deployment(self)
+        cluster.delete_tool_deployment(self, id_token)
 
     @property
     def host(self):
@@ -104,11 +104,10 @@ class ToolDeployment:
         """
         Deploy the tool to the cluster (asynchronous)
         """
-        self._id_token = kwargs.get('id_token')
+
         self._subprocess = cluster.deploy_tool(self.tool, self.user)
 
-    @property
-    def status(self):
+    def get_status(self, id_token):
         """
         Get the current status of the deployment.
         Polls the subprocess if running, otherwise returns idled status.
@@ -119,10 +118,7 @@ class ToolDeployment:
             if status:
                 return status
 
-        return cluster.get_tool_deployment_status(
-            self,
-            id_token=self._id_token,
-        )
+        return cluster.get_tool_deployment_status(self, id_token)
 
     def _poll(self):
         """
@@ -142,13 +138,9 @@ class ToolDeployment:
     def url(self):
         return f"https://{self.host}/"
 
-    def restart(self, **kwargs):
+    def restart(self, id_token):
         """
         Restart the tool deployment
         """
-        self._id_token = kwargs.get('id_token')
-        cluster.restart_tool_deployment(
-            self,
-            id_token=self._id_token,
-        )
 
+        cluster.restart_tool_deployment(self, id_token)

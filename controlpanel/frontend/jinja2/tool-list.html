@@ -27,7 +27,7 @@
       </td>
       <td class="govuk-table__cell">
         <div class="tool-status-label">
-          {{ deployment.status | default("") }}
+          {{ deployment and deployment.get_status(id_token) | default("") }}
         </div>
       </td>
       <td class="govuk-table__cell align-right no-wrap">

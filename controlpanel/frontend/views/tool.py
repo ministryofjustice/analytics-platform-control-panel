@@ -26,9 +26,17 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = "tool-list.html"
 
     def get_context_data(self, *args, **kwargs):
-        deployments = ToolDeployment.objects.filter(user=self.request.user)
+        user = self.request.user
+        id_token = user.get_id_token()
+
+        deployments = ToolDeployment.objects.filter(
+            user=user,
+            id_token=id_token,
+        )
+
         context = super().get_context_data(*args, **kwargs)
-        context['deployed_tools'] = {
+        context["id_token"] = id_token
+        context["deployed_tools"] = {
             deployment.tool: deployment
             for deployment in deployments
         }
