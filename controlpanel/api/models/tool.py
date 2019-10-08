@@ -105,7 +105,7 @@ class ToolDeployment:
         Deploy the tool to the cluster (asynchronous)
         """
 
-        self._subprocess = cluster.deploy_tool(self.tool, self.user)
+        self._subprocess = cluster.ToolDeployment(self.user, self.tool).install()
 
     def get_status(self, id_token):
         """

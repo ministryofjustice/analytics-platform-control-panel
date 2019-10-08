@@ -6,7 +6,7 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
 from controlpanel.api.aws import aws, iam_arn
-from controlpanel.api.helm import helm
+from controlpanel.api.helm import helm, HelmError
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 
@@ -463,39 +463,6 @@ class ToolDeploymentError(Exception):
     pass
 
 
-def deploy_tool(tool, user, **kwargs):
-    values = {
-        'username': user.username.lower(),
-        'Username': user.username.lower(),  # XXX backwards compatibility
-        'aws.iamRole': user.iam_role_name,
-        'toolsDomain': settings.TOOLS_DOMAIN,
-    }
-
-    # generate per-deployment secrets
-    for key, value in tool.values.items():
-        if value == '<SECRET_TOKEN>':
-            tool.values[key] = secrets.token_hex(32)
-
-    values.update(tool.values)
-    values.update(kwargs)
-    set_values = []
-    for key, val in values.items():
-        escaped_val = val.replace(',', '\,')
-        set_values.extend(['--set', f'{key}={escaped_val}'])
-
-    try:
-        return helm.upgrade_release(
-            f'{tool.chart_name}-{user.slug}',
-            f'{settings.HELM_REPO}/{tool.chart_name}',  # XXX assumes repo name
-            # f'--version', tool.version,
-            f'--namespace', user.k8s_namespace,
-            *set_values,
-        )
-
-    except helm.HelmError as error:
-        raise ToolDeploymentError(error)
-
-
 def list_tool_deployments(user, id_token, search_name=None, search_version=None):
     deployments = []
     k8s = KubernetesClient(id_token=id_token)
@@ -588,6 +555,44 @@ class ToolDeployment():
     @property
     def k8s_namespace(self):
         return self.user.k8s_namespace
+
+    @property
+    def release_name(self):
+        return f"{self.chart_name}-{self.user.slug}"
+
+    def install(self, **kwargs):
+        values = {
+            "username": self.user.username.lower(),
+            "Username": self.user.username.lower(),  # XXX backwards compatibility
+            "aws.iamRole": self.user.iam_role_name,
+            "toolsDomain": settings.TOOLS_DOMAIN,
+        }
+
+        # generate per-deployment secrets
+        for key, value in self.tool.values.items():
+            if value == "<SECRET_TOKEN>":
+                self.tool.values[key] = secrets.token_hex(32)
+
+        values.update(self.tool.values)
+        values.update(kwargs)
+        set_values = []
+        for key, val in values.items():
+            escaped_val = val.replace(',', '\,')
+            set_values.extend(['--set', f'{key}={escaped_val}'])
+
+        try:
+            return helm.upgrade_release(
+                self.release_name,
+                f'{settings.HELM_REPO}/{self.chart_name}',  # XXX assumes repo name
+                # f'--version', tool.version,
+                f'--namespace', self.k8s_namespace,
+                *set_values,
+            )
+
+        except HelmError as error:
+            raise ToolDeploymentError(error)
+
+
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
