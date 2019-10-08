@@ -80,6 +80,12 @@ class CreateAppForm(forms.Form):
                 f"Github repository not found - it may be private",
             )
 
+        try:
+            app = App.objects.get(repo_url=value)
+            raise ValidationError(f"App already exists for this repository URL")
+        except App.DoesNotExist:
+            pass
+
         return value
 
 
