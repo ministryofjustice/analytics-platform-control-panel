@@ -492,7 +492,7 @@ def deploy_tool(tool, user, **kwargs):
             *set_values,
         )
 
-    except HelmError as error:
+    except helm.HelmError as error:
         raise ToolDeploymentError(error)
 
 
