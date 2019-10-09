@@ -1,8 +1,10 @@
+import re
+
 from django import forms
 from django.conf import settings
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, validate_email
 
 from controlpanel.api import validators
 from controlpanel.api.cluster import get_repository
@@ -10,6 +12,9 @@ from controlpanel.api.models import App, S3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
+
+
+APP_CUSTOMERS_DELIMITERS = re.compile(r'[,; ]+')
 
 
 class DatasourceChoiceField(forms.ModelChoiceField):
@@ -214,3 +219,34 @@ class CreateIAMManagedPolicyForm(forms.Form):
 
 class AddUserToIAMManagedPolicyForm(forms.Form):
     user_id = forms.CharField(max_length=128)
+
+
+class AppCustomersField(forms.Field):
+
+    def __init__(self, *, delimiters=APP_CUSTOMERS_DELIMITERS, strip=True, **kwargs):
+        self.delimiters = delimiters
+        self.strip = strip
+        super().__init__(**kwargs)
+
+    def to_python(self, value):
+        emails = self.delimiters.split(value)
+        if self.strip:
+            emails = [email.strip() for email in emails]
+        return emails
+
+    def clean(self, value):
+        value = self.to_python(value)
+        for email in value:
+            try:
+                validate_email(email)
+            except ValidationError:
+                raise ValidationError(
+                    '"%(value)s" is not a valid email address',
+                    params={'value': email},
+                )
+        return value
+
+
+class AddAppCustomersForm(forms.Form):
+    customer_email = AppCustomersField()
+
