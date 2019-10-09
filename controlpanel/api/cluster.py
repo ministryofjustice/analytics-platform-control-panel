@@ -6,7 +6,7 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
 from controlpanel.api.aws import aws, iam_arn
-from controlpanel.api.helm import helm
+from controlpanel.api.helm import helm, HelmError
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 
@@ -463,121 +463,139 @@ class ToolDeploymentError(Exception):
     pass
 
 
-def deploy_tool(tool, user, **kwargs):
-    values = {
-        'username': user.username.lower(),
-        'Username': user.username.lower(),  # XXX backwards compatibility
-        'aws.iamRole': user.iam_role_name,
-        'toolsDomain': settings.TOOLS_DOMAIN,
-    }
+class ToolDeployment():
 
-    # generate per-deployment secrets
-    for key, value in tool.values.items():
-        if value == '<SECRET_TOKEN>':
-            tool.values[key] = secrets.token_hex(32)
+    def __init__(self, user, tool):
+        self.user = user
+        self.tool = tool
 
-    values.update(tool.values)
-    values.update(kwargs)
-    set_values = []
-    for key, val in values.items():
-        escaped_val = val.replace(',', '\,')
-        set_values.extend(['--set', f'{key}={escaped_val}'])
+    def __repr__(self):
+        return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
 
-    try:
-        return helm.upgrade_release(
-            f'{tool.chart_name}-{user.slug}',
-            f'{settings.HELM_REPO}/{tool.chart_name}',  # XXX assumes repo name
-            # f'--version', tool.version,
-            f'--namespace', user.k8s_namespace,
-            *set_values,
+    @property
+    def chart_name(self):
+        return self.tool.chart_name
+
+    @property
+    def k8s_namespace(self):
+        return self.user.k8s_namespace
+
+    @property
+    def release_name(self):
+        return f"{self.chart_name}-{self.user.slug}"
+
+    def install(self, **kwargs):
+        values = {
+            "username": self.user.username.lower(),
+            "Username": self.user.username.lower(),  # XXX backwards compatibility
+            "aws.iamRole": self.user.iam_role_name,
+            "toolsDomain": settings.TOOLS_DOMAIN,
+        }
+
+        # generate per-deployment secrets
+        for key, value in self.tool.values.items():
+            if value == "<SECRET_TOKEN>":
+                self.tool.values[key] = secrets.token_hex(32)
+
+        values.update(self.tool.values)
+        values.update(kwargs)
+        set_values = []
+        for key, val in values.items():
+            escaped_val = val.replace(',', '\,')
+            set_values.extend(['--set', f'{key}={escaped_val}'])
+
+        try:
+            return helm.upgrade_release(
+                self.release_name,
+                f'{settings.HELM_REPO}/{self.chart_name}',  # XXX assumes repo name
+                # f'--version', tool.version,
+                f'--namespace', self.k8s_namespace,
+                *set_values,
+            )
+
+        except HelmError as error:
+            raise ToolDeploymentError(error)
+
+    def uninstall(self, id_token):
+        deployment = self.get_deployment(id_token)
+        helm.delete(
+            deployment.metadata.name,
+            f"--namespace={self.k8s_namespace}",
         )
 
-    except helm.HelmError as error:
-        raise ToolDeploymentError(error)
+    def restart(self, id_token):
+        k8s = KubernetesClient(id_token=id_token)
+        return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
+            self.k8s_namespace,
+            label_selector=(
+                f"app={self.chart_name}"
+                # f'-{tool_deployment.tool.version}'
+            ),
+        )
 
+    @classmethod
+    def get_deployments(cls, user, id_token, search_name=None, search_version=None):
+        deployments = []
+        k8s = KubernetesClient(id_token=id_token)
+        results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
+        for deployment in results.items:
+            app_name = deployment.metadata.labels["app"]
+            _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            if search_name and search_name not in app_name:
+                continue
+            if search_version and not version.startswith(search_version):
+                continue
+            deployments.append(deployment)
+        return deployments
 
-def list_tool_deployments(user, id_token, search_name=None, search_version=None):
-    deployments = []
-    k8s = KubernetesClient(id_token=id_token)
-    results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
-    for deployment in results.items:
-        app_name = deployment.metadata.labels["app"]
-        _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
-        if search_name and search_name not in app_name:
-            continue
-        if search_version and not version.startswith(search_version):
-            continue
-        deployments.append(deployment)
-    return deployments
+    def get_deployment(self, id_token):
+        deployments = self.__class__.get_deployments(
+            self.user,
+            id_token,
+            search_name=self.chart_name,
+            # search_version=tool_deployment.tool.version,
+        )
 
+        if not deployments:
+            raise ObjectDoesNotExist(self)
 
-def get_tool_deployment(tool_deployment, id_token):
-    deployments = list_tool_deployments(
-        tool_deployment.user,
-        id_token,
-        search_name=tool_deployment.tool.chart_name,
-        # search_version=tool_deployment.tool.version,
-    )
+        if len(deployments) > 1:
+            log.warning(f"Multiple matches for {self!r} found")
+            raise MultipleObjectsReturned(self)
 
-    if not deployments:
-        raise ObjectDoesNotExist(tool_deployment)
+        return deployments[0]
 
-    if len(deployments) > 1:
-        log.warning(f"Multiple matches for {tool_deployment!r} found")
-        raise MultipleObjectsReturned(tool_deployment)
+    def get_status(self, id_token):
+        try:
+            deployment = self.get_deployment(id_token)
 
-    return deployments[0]
+        except ObjectDoesNotExist:
+            log.warning(f"{self!r} not found")
+            return TOOL_NOT_DEPLOYED
 
+        except MultipleObjectsReturned:
+            log.warning(f"Multiple objects returned for {self!r}")
+            return TOOL_STATUS_UNKNOWN
 
-def delete_tool_deployment(tool_deployment, id_token):
-    deployment = get_tool_deployment(tool_deployment, id_token)
-    helm.delete(
-        deployment.metadata.name,
-        f"--namespace={tool_deployment.user.k8s_namespace}",
-    )
+        conditions = {
+            condition.type: condition
+            for condition in deployment.status.conditions
+        }
 
+        if "Available" in conditions:
+            if conditions["Available"].status == "True":
+                if deployment.spec.replicas == 0:
+                    return TOOL_IDLED
+                return TOOL_READY
 
-def get_tool_deployment_status(tool_deployment, id_token):
-    try:
-        deployment = get_tool_deployment(tool_deployment, id_token)
+        if 'Progressing' in conditions:
+            progressing_status = conditions['Progressing'].status
+            if progressing_status == "True":
+                return TOOL_DEPLOYING
+            elif progressing_status == "False":
+                return TOOL_DEPLOY_FAILED
 
-    except ObjectDoesNotExist:
-        log.warning(f"{tool_deployment} not found")
-        return TOOL_NOT_DEPLOYED
-
-    except MultipleObjectsReturned:
-        log.warning(f"Multiple objects returned for {tool_deployment}")
+        log.warning(
+            f"Unknown status for {self!r}: {deployment.status.conditions}"
+        )
         return TOOL_STATUS_UNKNOWN
-
-    conditions = {
-        condition.type: condition
-        for condition in deployment.status.conditions
-    }
-
-    if 'Available' in conditions:
-        if conditions['Available'].status == 'True':
-            if deployment.spec.replicas == 0:
-                return TOOL_IDLED
-            return TOOL_READY
-
-    if 'Progressing' in conditions:
-        progressing_status = conditions['Progressing'].status
-        if progressing_status == 'True':
-            return TOOL_DEPLOYING
-        elif progressing_status == 'False':
-            return TOOL_DEPLOY_FAILED
-
-    log.warning(
-        f"Unknown status for {tool_deployment}: {deployment.status.conditions}"
-    )
-    return TOOL_STATUS_UNKNOWN
-
-def restart_tool_deployment(tool_deployment, id_token):
-    k8s = KubernetesClient(id_token=id_token)
-    return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
-        tool_deployment.user.k8s_namespace,
-        label_selector=(
-            f'app={tool_deployment.tool.chart_name}'
-            # f'-{tool_deployment.tool.version}'
-        ),
-    )
