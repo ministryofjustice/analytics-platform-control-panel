@@ -257,10 +257,8 @@ class AddCustomers(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         )
 
     def form_valid(self, form):
-        emails = form.cleaned_data['customer_email']
-        validators = form.fields['customer_email'].validators
-        self.get_object().add_customers(form.cleaned_data['emails'])
-        return super().form_valid(form)
+        self.get_object().add_customers(form.cleaned_data['customer_email'])
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
@@ -268,7 +266,7 @@ class AddCustomers(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, f"Successfully added customers")
-        return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
+        return reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]})
 
 
 class RemoveCustomer(UpdateApp):
@@ -277,8 +275,12 @@ class RemoveCustomer(UpdateApp):
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist('customer')
-        app.delete_customers(user_ids)
-        messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
+        try:
+            app.delete_customers(user_ids)
+        except App.DeleteCustomerError:
+            messages.error(self.request, f"Failed removing customer{pluralize(user_ids)}")
+        else:
+            messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
 
 
 class AddAdmin(UpdateApp):
