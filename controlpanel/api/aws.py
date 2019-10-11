@@ -403,7 +403,7 @@ def revoke_group_bucket_access(group_policy_arn, bucket_arn):
 
 
 def create_parameter(name, value, role_name, description=''):
-    ssm = boto3.client('ssm')
+    ssm = boto3.client('ssm', region_name=settings.BUCKET_REGION)
     try:
         ssm.put_parameter(
             Name=name,
@@ -423,7 +423,7 @@ def create_parameter(name, value, role_name, description=''):
 
 
 def delete_parameter(name):
-    ssm = boto3.client('ssm')
+    ssm = boto3.client('ssm', region_name=settings.BUCKET_REGION)
     try:
         ssm.delete_parameter(Name=name)
     except ssm.exceptions.ParameterNotFound:

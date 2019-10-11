@@ -41,7 +41,7 @@ def s3(aws_creds):
 @pytest.yield_fixture(autouse=True)
 def ssm(aws_creds):
     with moto.mock_ssm():
-        yield boto3.client('ssm')
+        yield boto3.client('ssm', region_name='eu-west-1')
 
 
 @pytest.fixture(autouse=True)
