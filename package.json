@@ -32,7 +32,9 @@
     "test": "jest"
   },
   "babel": {
-    "ignore": ["**/*.test.js"],
+    "ignore": [
+      "**/*.test.js"
+    ],
     "presets": [
       [
         "@babel/preset-env",
