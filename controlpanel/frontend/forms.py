@@ -34,11 +34,15 @@ class CreateAppForm(forms.Form):
             validators.validate_github_repository_url,
         ],
     )
-    connect_bucket = forms.ChoiceField(choices=[
-        ("new", "new"),
-        ("existing", "existing"),
-        ("later", "later"),
-    ])
+    connect_bucket = forms.ChoiceField(
+        required=True,
+        initial="new",
+        choices=[
+            ("new", "new"),
+            ("existing", "existing"),
+            ("later", "later"),
+        ],
+    )
     new_datasource_name = forms.CharField(
         max_length=63,
         validators=[
