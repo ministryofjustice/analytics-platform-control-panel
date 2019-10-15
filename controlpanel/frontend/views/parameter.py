@@ -8,7 +8,7 @@ from django.views.generic import ListView, CreateView
 from django.views.generic.edit import FormMixin, DeleteView
 from rules.contrib.views import PermissionRequiredMixin
 
-from controlpanel.api.aws import aws
+from controlpanel.api import cluster
 from controlpanel.api.models import Parameter
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 from controlpanel.api.permissions import is_superuser
@@ -88,7 +88,7 @@ class ParameterDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 class ParameterFormRoleList(LoginRequiredMixin, View):
 
     def get(self, *args, **kwargs):
-        roles = aws.list_role_names()
+        roles = cluster.list_role_names()
         data = [
             r for r in roles
             if r.startswith(f"airflow")

@@ -17,39 +17,21 @@ def bucket():
     return S3Bucket.objects.create(name="test-bucket-1")
 
 
-def test_arn(bucket):
-    assert 'arn:aws:s3:::test-bucket-1' == bucket.arn
-
-
 def test_delete_revokes_permissions(bucket, aws):
     users3bucket = mommy.make('api.UserS3Bucket', s3bucket=bucket)
     apps3bucket = mommy.make('api.AppS3Bucket', s3bucket=bucket)
 
     bucket.delete()
 
-    # expected_calls = (
-        # call(bucket.arn, users3bucket.aws_role_name()),
-        # call(bucket.arn, apps3bucket.aws_role_name()),
-    # )
-    # aws.put_role_policy.assert_has_calls(expected_calls, any_order=True)
-    aws.put_role_policy.assert_called()
-    # TODO assert calls remove bucket ARN
+    aws.revoke_bucket_access.assert_has_calls([
+        call(apps3bucket.iam_role_name, bucket.arn),
+        call(users3bucket.iam_role_name, bucket.arn),
+    ])
 
 
 def test_bucket_create(aws):
-    url = 'http://foo.com/'
-
-    aws.create_bucket.return_value = {'Location': url}
-
     bucket = S3Bucket.objects.create(name="test-bucket-1")
-
-    aws.create_bucket.assert_called_with(
-        bucket.name,
-        region=settings.BUCKET_REGION,
-        acl='private',
-    )
-
-    assert url == bucket.location_url
+    aws.create_bucket.assert_called_with(bucket.name, False)
 
 
 def test_create_users3bucket(aws, superuser):

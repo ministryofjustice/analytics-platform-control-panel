@@ -7,4 +7,3 @@ Current flags are:
 
 | Name | Description | Default |
 | ---- | ----------- | ------- |
-| `ENABLE_WRITE_TO_CLUSTER` | Enables writing changes to the Kubernetes cluster | `True` |

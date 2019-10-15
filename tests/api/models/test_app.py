@@ -4,7 +4,6 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import App
-from controlpanel.api.cluster import BASE_ROLE_POLICY
 
 
 @pytest.yield_fixture
@@ -32,11 +31,7 @@ def test_slug_collisions_increments():
 @pytest.mark.django_db
 def test_aws_create_role_calls_service(aws):
     app = App.objects.create(repo_url="https://example.com/repo_name")
-
-    aws.create_role.assert_called_with(
-        app.iam_role_name,
-        BASE_ROLE_POLICY,
-    )
+    aws.create_app_role.assert_called_with(app.iam_role_name)
 
 
 @pytest.mark.django_db

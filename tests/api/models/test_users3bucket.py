@@ -43,7 +43,11 @@ def test_aws_create(user, bucket, aws):
         access_level=AccessToS3Bucket.READONLY,
     )
 
-    aws.put_role_policy.assert_called()
+    aws.grant_bucket_access.assert_called_with(
+        user.iam_role_name,
+        bucket.arn,
+        AccessToS3Bucket.READONLY,
+    )
     # TODO get policy from call and assert bucket ARN present
 
 
@@ -51,5 +55,8 @@ def test_aws_create(user, bucket, aws):
 def test_delete_revoke_permissions(user, bucket, users3bucket, aws):
     users3bucket.delete()
 
-    aws.put_role_policy.assert_called()
+    aws.revoke_bucket_access.assert_called_with(
+        user.iam_role_name,
+        bucket.arn,
+    )
     # TODO get policy from call and assert bucket ARN removed

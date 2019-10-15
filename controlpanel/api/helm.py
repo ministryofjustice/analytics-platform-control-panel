@@ -18,13 +18,7 @@ class HelmError(APIException):
 
 class Helm(object):
 
-    def __init__(self):
-        self.enabled = settings.ENABLED['write_to_cluster']
-
     def _execute(self, *args, check=True, **kwargs):
-        if not self.enabled:
-            return None
-
         should_wait = False
         if 'timeout' in kwargs:
             should_wait = True

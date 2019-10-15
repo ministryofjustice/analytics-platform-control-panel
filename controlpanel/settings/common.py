@@ -9,8 +9,6 @@ from controlpanel.utils import is_truthy
 # -- Feature flags
 
 ENABLED = {
-    # Enable writes to Kubernetes cluster
-    "write_to_cluster": is_truthy(os.environ.get("ENABLE_WRITE_TO_CLUSTER", True)),
 
     # Enable redirecting legacy API URLs to new API app
     "redirect_legacy_api_urls": is_truthy(os.environ.get("ENABLE_LEGACY_API_REDIRECT", True)),
@@ -319,6 +317,10 @@ LOGGING = {
             "level": "WARNING",
         },
         "asyncio": {
+            "handlers": ["console"],
+            "level": "WARNING",
+        },
+        "boto3": {
             "handlers": ["console"],
             "level": "WARNING",
         },
