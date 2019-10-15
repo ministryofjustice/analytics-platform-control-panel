@@ -82,10 +82,10 @@ class App:
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
 
-    def create_iam_role(self):
+    def create(self):
         aws.create_app_role(self.iam_role_name)
 
-    def delete_iam_role(self):
+    def delete(self):
         aws.delete_role(self.iam_role_name)
 
     def grant_bucket_access(self, bucket_arn, access_level):
@@ -176,8 +176,12 @@ def get_repositories(user):
     repos = []
     github = Github(user.github_api_token)
     for name in settings.GITHUB_ORGS:
-        org = github.get_organization(name)
-        repos.extend(org.get_repos())
+        try:
+            org = github.get_organization(name)
+            repos.extend(org.get_repos())
+        except GithubException as err:
+            log.warning(f'Failed getting {name} Github org repos for {user}: {err}')
+            raise err
     return repos
 
 
@@ -186,6 +190,7 @@ def get_repository(user, repo_name):
     try:
         return github.get_repo(repo_name)
     except GithubException.UnknownObjectException:
+        log.warning(f'Failed getting {repo_name} Github repo for {user}: {err}')
         return None
 
 
