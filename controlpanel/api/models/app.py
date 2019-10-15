@@ -51,16 +51,23 @@ class App(TimeStampedModel):
     def add_customers(self, emails):
         emails = list(filter(None, emails))
         if emails:
-            auth0.AuthorizationAPI().add_group_members(
-                group_name=self.slug,
-                emails=emails,
-                user_options={"connection": "email"},
-            )
+            try:
+                auth0.AuthorizationAPI().add_group_members(
+                    group_name=self.slug,
+                    emails=emails,
+                    user_options={"connection": "email"},
+                )
+            except auth0.Auth0Error as e:
+                raise AddCustomerError(e)
 
     def delete_customers(self, user_ids):
-        auth0.AuthorizationAPI().delete_group_members(
-            group_name=self.slug, user_ids=user_ids
-        )
+        try:
+            auth0.AuthorizationAPI().delete_group_members(
+                group_name=self.slug,
+                user_ids=user_ids,
+            )
+        except auth0.Auth0Error as e:
+            raise DeleteCustomerError(e)
 
     @property
     def status(self):
@@ -72,10 +79,22 @@ class App(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            cluster.App(self).create_iam_role()
+            cluster.App(self).create()
 
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.App(self).delete_iam_role()
+        cluster.App(self).delete()
         super().delete(*args, **kwargs)
+
+
+class AddCustomerError(Exception):
+    pass
+
+
+class DeleteCustomerError(Exception):
+    pass
+
+
+App.AddCustomerError = AddCustomerError
+App.DeleteCustomerError = DeleteCustomerError

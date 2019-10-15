@@ -1,11 +1,14 @@
 from unittest.mock import patch
 
+from django.contrib.messages import get_messages
 from django.template.response import TemplateResponse
 from django.views.generic.base import TemplateResponseMixin
 from django.urls import reverse
 from model_mommy import mommy
 import pytest
 from rest_framework import status
+
+from controlpanel.api.auth0 import Auth0Error
 
 
 NUM_APPS = 3
@@ -78,7 +81,7 @@ def apps3bucket(app, s3buckets):
     return mommy.make('api.AppS3Bucket', app=app, s3bucket=s3buckets['connected'])
 
 
-def list(client, *args):
+def list_apps(client, *args):
     return client.get(reverse('list-apps'))
 
 
@@ -142,9 +145,9 @@ def connect_bucket(client, app, _, s3buckets, *args):
 @pytest.mark.parametrize(
     'view,user,expected_status',
     [
-        (list, 'superuser', status.HTTP_200_OK),
-        (list, 'app_admin', status.HTTP_200_OK),
-        (list, 'normal_user', status.HTTP_200_OK),
+        (list_apps, 'superuser', status.HTTP_200_OK),
+        (list_apps, 'app_admin', status.HTTP_200_OK),
+        (list_apps, 'normal_user', status.HTTP_200_OK),
 
         (list_all, 'superuser', status.HTTP_200_OK),
         (list_all, 'app_admin', status.HTTP_403_FORBIDDEN),
@@ -210,9 +213,9 @@ def test_bucket_permissions(client, apps3bucket, users, view, user, expected_sta
 @pytest.mark.parametrize(
     'view,user,expected_count',
     [
-        (list, 'superuser', 0),
-        (list, 'normal_user', 0),
-        (list, 'app_admin', 1),
+        (list_apps, 'superuser', 0),
+        (list_apps, 'normal_user', 0),
+        (list_apps, 'app_admin', 1),
 
         (list_all, 'superuser', NUM_APPS),
     ],
@@ -221,4 +224,65 @@ def test_list(client, app, users, view, user, expected_count):
     client.force_login(users[user])
     response = view(client, app, users)
     assert len(response.context_data['object_list']) == expected_count
+
+
+def add_customer_success(client, response):
+    return 'add_customer_form_errors' not in client.session
+
+
+def add_customer_form_error(client, response):
+    return 'add_customer_form_errors' in client.session
+
+
+@pytest.mark.parametrize(
+    'emails, expected_response',
+    [
+        ('foo@example.com', add_customer_success),
+        ('foo@example.com, bar@example.com', add_customer_success),
+        ('foobar', add_customer_form_error),
+        ('foo@example.com, foobar', add_customer_form_error),
+        ('', add_customer_form_error),
+    ],
+    ids=[
+        'single-valid-email',
+        'multiple-delimited-emails',
+        'invalid-email',
+        'mixed-valid-invalid-emails',
+        'no-emails',
+    ],
+)
+def test_add_customers(client, app, users, emails, expected_response):
+    client.force_login(users['superuser'])
+    data = {'customer_email': emails}
+    response = client.post(reverse('add-app-customers', kwargs={'pk': app.id}), data)
+    assert expected_response(client, response)
+
+
+def remove_customer_success(client, response):
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    return f'Successfully removed customer' in messages
+
+
+def remove_customer_failure(client, response):
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    return f'Failed removing customer' in messages
+
+
+@pytest.mark.parametrize(
+    'side_effect, expected_response',
+    [
+        (None, remove_customer_success),
+        (Auth0Error, remove_customer_failure),
+    ],
+    ids=[
+        'success',
+        'failure',
+    ],
+)
+def test_delete_customers(client, app, customers, users, side_effect, expected_response):
+    customers.delete_group_members.side_effect = side_effect
+    client.force_login(users['superuser'])
+    data = {'customer': ['email|1234']}
+    response = client.post(reverse('remove-app-customer', kwargs={'pk': app.id}), data)
+    assert expected_response(client, response)
 
