@@ -95,11 +95,8 @@ class CreateAppForm(forms.Form):
                 f"Github repository not found - it may be private",
             )
 
-        try:
-            app = App.objects.get(repo_url=value)
+        if App.objects.filter(repo_url=value).exists():
             raise ValidationError(f"App already exists for this repository URL")
-        except App.DoesNotExist:
-            pass
 
         return value
 
@@ -197,7 +194,10 @@ class CreateParameterForm(forms.Form):
         validators=[
             RegexValidator(
                 r'[a-zA-Z0-9_]{1,50}',
-                message="Must contain only alphanumeric characters and underscores",
+                message=(
+                    "Must be 50 characters or fewer and contain only alphanumeric "
+                    "characters and underscores"
+                ),
             ),
         ],
     )
@@ -206,7 +206,10 @@ class CreateParameterForm(forms.Form):
         validators=[
             RegexValidator(
                 r'[a-zA-Z0-9_-]{1,60}',
-                message="Must contain only alphanumeric characters, underscores and hyphens",
+                message=(
+                    "Must be 60 characters or fewer and contain only alphanumeric "
+                    "characters, underscores and hyphens"
+                ),
             ),
         ],
     )

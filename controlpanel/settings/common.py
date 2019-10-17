@@ -70,8 +70,6 @@ INSTALLED_APPS = [
     "django_redis",
     # Django REST Framework
     "rest_framework",
-    # Sentry error tracking
-    "raven.contrib.django.raven_compat",
     # Django Rules object permissions
     "rules",
     # Analytics Platform Control Panel API
@@ -379,16 +377,18 @@ LOGGING = {
 # -- Sentry error tracking
 
 if os.environ.get("SENTRY_DSN"):
-    RAVEN_CONFIG = {
-        "dsn": os.environ.get("SENTRY_DSN", ""),
-        "environment": os.environ.get("ENV", "dev"),
-        "ignore_exceptions": [],
-    }
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        environment=os.environ.get("ENV", "dev"),
+        integrations=[DjangoIntegration()],
+    )
     if "shell" in sys.argv or "shell_plus" in sys.argv:
-        RAVEN_CONFIG["ignore_exceptions"] = ["*"]
-
-else:
-    INSTALLED_APPS.remove("raven.contrib.django.raven_compat")
+        sentry_sdk.init(
+            # discard all events
+            before_send=lambda event, hint: None,
+        )
 
 
 # -- Static files

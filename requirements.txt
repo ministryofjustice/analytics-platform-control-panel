@@ -26,8 +26,8 @@ PyGithub==1.43.8
 pytest==5.1.1
 pytest-django==3.5.1
 python-jose[cryptography]==3.0.1
-raven==6.10.0
 rules==2.1
+sentry-sdk==0.12.3
 service_identity==18.1.0
 urllib3==1.25.3
 uvicorn==0.8.6
