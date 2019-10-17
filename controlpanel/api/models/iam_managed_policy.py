@@ -13,6 +13,7 @@ POLICY_NAME_PATTERN = r"[a-z0-9_+@,.:=-]{2,63}"
 POLICY_NAME_REGEX = re.compile(POLICY_NAME_PATTERN)
 
 
+# TODO rename this to RoleGroup
 class IAMManagedPolicy(TimeStampedModel):
     """Represents a group of users who have access to S3 resources"""
 
@@ -34,18 +35,18 @@ class IAMManagedPolicy(TimeStampedModel):
 
     @property
     def arn(self):
-        return cluster.Group(self).arn
+        return cluster.RoleGroup(self).arn
 
     @property
     def path(self):
-        return cluster.Group(self).path
+        return cluster.RoleGroup(self).path
 
     def save(self, *args, **kwargs):
         is_create = not self.pk
 
         super().save(*args, **kwargs)
 
-        group = cluster.Group(self)
+        group = cluster.RoleGroup(self)
         if is_create:
             group.create()
 
@@ -54,6 +55,6 @@ class IAMManagedPolicy(TimeStampedModel):
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.Group(self).delete()
+        cluster.RoleGroup(self).delete()
         super().delete(*args, **kwargs)
 

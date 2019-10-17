@@ -15,13 +15,13 @@ def iam_managed_policy():
 
 
 def test_arn(settings, iam_managed_policy):
-    assert cluster.Group(iam_managed_policy).arn == (
+    assert cluster.RoleGroup(iam_managed_policy).arn == (
         f'arn:aws:iam::{settings.AWS_ACCOUNT_ID}:policy/{settings.ENV}/group/test'
     )
 
 
 def test_create(aws, iam_managed_policy):
-    cluster.Group(iam_managed_policy).create()
+    cluster.RoleGroup(iam_managed_policy).create()
     aws.create_group_policy.assert_called_with(
         iam_managed_policy.name,
         iam_managed_policy.path,

@@ -15,9 +15,9 @@ def bucket():
 
 
 def test_arn(bucket):
-    assert cluster.Bucket(bucket).arn == 'arn:aws:s3:::test-bucket'
+    assert cluster.S3Bucket(bucket).arn == 'arn:aws:s3:::test-bucket'
 
 
 def test_create(aws, bucket):
-    cluster.Bucket(bucket).create()
+    cluster.S3Bucket(bucket).create()
     aws.create_bucket.assert_called_with(bucket.name, False)

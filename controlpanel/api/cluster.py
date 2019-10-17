@@ -25,7 +25,11 @@ TOOL_STATUS_UNKNOWN = 'Unknown'
 
 
 class User:
-    """Wraps User model to provide convenience methods to access K8S and AWS"""
+    """
+    Wraps User model to provide convenience methods to access K8S and AWS
+
+    A user is represented by an IAM role, which is assumed by their tools.
+    """
     def __init__(self, user):
         self.user = user
         self.k8s_namespace = f'user-{self.user.slug}'
@@ -110,7 +114,7 @@ class App:
         return f"https://{ingresses[0].spec.rules[0].host}"
 
 
-class Bucket:
+class S3Bucket:
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
     def __init__(self, bucket):
         self.bucket = bucket
@@ -123,9 +127,13 @@ class Bucket:
         return aws.create_bucket(self.bucket.name, self.bucket.is_data_warehouse)
 
 
-class Group:
+class RoleGroup:
     """
-    Represents a group of cluster users who have access to datasources
+    Uses a managed policy as a way to group IAM roles that have access to same
+    resources.
+
+    This is because IAM doesn't allow adding roles to IAM groups
+    See https://stackoverflow.com/a/48087433/455642
     """
     def __init__(self, iam_managed_policy):
         self.policy = iam_managed_policy

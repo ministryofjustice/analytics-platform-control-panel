@@ -65,7 +65,7 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def arn(self):
-        return cluster.Bucket(self).arn
+        return cluster.S3Bucket(self).arn
 
     def arn_from_path(self, path):
         return f"{self.arn}{path}"
@@ -98,7 +98,7 @@ class S3Bucket(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            bucket = cluster.Bucket(self).create()
+            bucket = cluster.S3Bucket(self).create()
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:

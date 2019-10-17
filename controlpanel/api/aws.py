@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 
 import boto3
@@ -45,7 +46,7 @@ BASE_ROLE_POLICY = {
 OIDC_STATEMENT = {
     "Effect": "Allow",
     "Principal": {
-        "Federated": iam_arn(f"oidc-provider/{settings.OIDC_DOMAIN}"),
+        "Federated": iam_arn(f"oidc-provider/{settings.OIDC_DOMAIN}/"),
     },
     "Action": "sts:AssumeRoleWithWebIdentity",
 }
@@ -80,6 +81,20 @@ BASE_S3_ACCESS_POLICY = {
     ],
 }
 
+READ_ACTIONS = [
+    's3:GetObject',
+    's3:GetObjectAcl',
+    's3:GetObjectVersion',
+]
+
+WRITE_ACTIONS = [
+    's3:DeleteObject',
+    's3:DeleteObjectVersion',
+    's3:PutObject',
+    's3:PutObjectAcl',
+    's3:RestoreObject',
+]
+
 BASE_S3_ACCESS_STATEMENT = {
     'list': {
         'Sid': 'list',
@@ -90,25 +105,14 @@ BASE_S3_ACCESS_STATEMENT = {
     },
     'readonly': {
         'Sid': 'readonly',
-        'Action': [
-            's3:GetObject',
-            's3:GetObjectAcl',
-            's3:GetObjectVersion',
-        ],
+        'Action': READ_ACTIONS,
         'Effect': 'Allow',
     },
-}
-
-BASE_S3_ACCESS_STATEMENT['readwrite'] = {
-    'Sid': 'readwrite',
-    'Action': BASE_S3_ACCESS_STATEMENT['readonly']['Action'] + [
-        's3:DeleteObject',
-        's3:DeleteObjectVersion',
-        's3:PutObject',
-        's3:PutObjectAcl',
-        's3:RestoreObject',
-    ],
-    'Effect': 'Allow',
+    'readwrite': {
+        'Sid': 'readwrite',
+        'Action': READ_ACTIONS + WRITE_ACTIONS,
+        'Effect': 'Allow',
+    },
 }
 
 
@@ -124,9 +128,9 @@ def create_app_role(app):
 
 
 def create_user_role(user):
-    policy = dict(BASE_ROLE_POLICY)
+    policy = deepcopy(BASE_ROLE_POLICY)
     policy['Statement'].append(SAML_STATEMENT)
-    oidc_statement = dict(OIDC_STATEMENT)
+    oidc_statement = deepcopy(OIDC_STATEMENT)
     oidc_statement['Condition'] = {'StringEquals': {
         f'{settings.OIDC_DOMAIN}/:sub': user.auth0_id,
     }}
@@ -225,7 +229,7 @@ class S3AccessPolicy:
 
         except self.policy.meta.client.exceptions.NoSuchEntityException:
             # create an empty s3 access policy
-            self.put(policy_document=dict(BASE_S3_ACCESS_POLICY))
+            self.put(policy_document=deepcopy(BASE_S3_ACCESS_POLICY))
 
         # ensure statements are correctly configured and build a lookup table
         for stmt in self.policy_document.setdefault('Statement', []):
@@ -243,7 +247,7 @@ class S3AccessPolicy:
     def statement(self, sid):
         if sid in ('list', 'readonly', 'readwrite'):
             if sid not in self.statements:
-                stmt = dict(BASE_S3_ACCESS_STATEMENT[sid])
+                stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
                 self.statements[sid] = stmt
                 self.policy_document['Statement'].append(stmt)
             return self.statements[sid]

@@ -99,7 +99,7 @@ def oidc_assume_role(stmt, user):
         stmt,
         Action='sts:AssumeRoleWithWebIdentity',
         Principal={
-            'Federated': f"arn:aws:iam::{settings.AWS_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}",
+            'Federated': f"arn:aws:iam::{settings.AWS_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}/",
         },
         Condition={
             'StringEquals': {f"{settings.OIDC_DOMAIN}/:sub": user.auth0_id},

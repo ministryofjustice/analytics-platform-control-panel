@@ -3,6 +3,7 @@ from django.db import models
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
+# TODO rename this to RoleGroupS3Bucket
 class PolicyS3Bucket(AccessToS3Bucket):
     """
     Similar to UserS3Bucket but with groups
@@ -18,16 +19,12 @@ class PolicyS3Bucket(AccessToS3Bucket):
         unique_together = ("policy", "s3bucket")
         ordering = ("id",)
 
-    @property
-    def aws_name(self):
-        return self.policy.arn
-
     def grant_bucket_access(self):
-        cluster.Group(self.policy).grant_bucket_access(
+        cluster.RoleGroup(self.policy).grant_bucket_access(
             self.s3bucket.arn,
             self.access_level,
         )
 
     def revoke_bucket_access(self):
-        cluster.Group(self.policy).revoke_bucket_access(self.s3bucket.arn)
+        cluster.RoleGroup(self.policy).revoke_bucket_access(self.s3bucket.arn)
 
