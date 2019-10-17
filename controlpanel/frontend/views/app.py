@@ -17,6 +17,7 @@ from django.views.generic.edit import (
 )
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
+import sentry_sdk
 
 from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
@@ -277,7 +278,8 @@ class RemoveCustomer(UpdateApp):
         user_ids = self.request.POST.getlist('customer')
         try:
             app.delete_customers(user_ids)
-        except App.DeleteCustomerError:
+        except App.DeleteCustomerError as e:
+            sentry_sdk.capture_exception(e)
             messages.error(self.request, f"Failed removing customer{pluralize(user_ids)}")
         else:
             messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")

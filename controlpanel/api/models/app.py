@@ -58,7 +58,7 @@ class App(TimeStampedModel):
                     user_options={"connection": "email"},
                 )
             except auth0.Auth0Error as e:
-                raise AddCustomerError(e)
+                raise AddCustomerError from e
 
     def delete_customers(self, user_ids):
         try:
@@ -67,7 +67,7 @@ class App(TimeStampedModel):
                 user_ids=user_ids,
             )
         except auth0.Auth0Error as e:
-            raise DeleteCustomerError(e)
+            raise DeleteCustomerError from e
 
     @property
     def status(self):
@@ -79,12 +79,12 @@ class App(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            cluster.App(self).create()
+            cluster.App(self).create_iam_role()
 
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.App(self).delete()
+        cluster.App(self).delete_iam_role()
         super().delete(*args, **kwargs)
 
 

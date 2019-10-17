@@ -11,12 +11,12 @@ def app():
 
 
 def test_app_create_iam_role(aws, app):
-    cluster.App(app).create()
+    cluster.App(app).create_iam_role()
     aws.create_app_role.assert_called_with(app.iam_role_name)
 
 
 def test_app_delete_iam_role(aws, app):
-    cluster.App(app).delete()
+    cluster.App(app).delete_iam_role()
     aws.delete_role.assert_called_with(app.iam_role_name)
 
 
