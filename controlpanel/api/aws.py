@@ -1,8 +1,12 @@
 from copy import deepcopy
 import json
+import logging
 
 import boto3
 from django.conf import settings
+
+
+log = logging.getLogger(__name__)
 
 
 def arn(service, resource, region="", account=""):
@@ -324,20 +328,33 @@ class ManagedS3AccessPolicy(S3AccessPolicy):
         return self
 
 
-def grant_bucket_access(role_name, bucket_arn, access_level):
+def grant_bucket_access(role_name, bucket_arn, access_level, path_arns=[]):
     if access_level not in ('readonly', 'readwrite'):
         raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
-    role = boto3.resource('iam').Role(role_name)
-    policy = S3AccessPolicy(role.Policy('s3-access'))
-    policy.grant_access(bucket_arn, access_level)
-    policy.put()
+    if bucket_arn and not path_arns:
+        path_arns = [bucket_arn]
 
-
-def revoke_bucket_access(role_name, bucket_arn):
     role = boto3.resource('iam').Role(role_name)
     policy = S3AccessPolicy(role.Policy('s3-access'))
     policy.revoke_access(bucket_arn)
+    for arn in path_arns:
+        policy.grant_access(arn, access_level)
+    policy.put()
+
+
+def revoke_bucket_access(role_name, bucket_arn=None, path_arns=[]):
+    if not path_arns:
+        if bucket_arn:
+            path_arns = [bucket_arn]
+        else:
+            log.warning(f'Asked to revoke {role_name} role access to nothing')
+            return
+
+    role = boto3.resource('iam').Role(role_name)
+    policy = S3AccessPolicy(role.Policy('s3-access'))
+    for arn in path_arns:
+        policy.revoke_access(arn)
     policy.put()
 
 
@@ -389,20 +406,33 @@ def delete_group(group_arn):
     policy.delete()
 
 
-def grant_group_bucket_access(group_policy_arn, bucket_arn, access_level):
+def grant_group_bucket_access(group_policy_arn, bucket_arn, access_level, path_arns=[]):
     if access_level not in ('readonly', 'readwrite'):
         raise ValueError("access_level must be 'readonly' or 'readwrite'")
 
-    policy = boto3.resource('iam').Policy(group_policy_arn)
-    policy = ManagedS3AccessPolicy(policy)
-    policy.grant_access(bucket_arn, access_level)
-    policy.put()
+    if bucket_arn and not path_arns:
+        path_arns = [bucket_arn]
 
-
-def revoke_group_bucket_access(group_policy_arn, bucket_arn):
     policy = boto3.resource('iam').Policy(group_policy_arn)
     policy = ManagedS3AccessPolicy(policy)
     policy.revoke_access(bucket_arn)
+    for arn in path_arns:
+        policy.grant_access(arn, access_level)
+    policy.put()
+
+
+def revoke_group_bucket_access(group_policy_arn, bucket_arn=None, path_arns=[]):
+    if not path_arns:
+        if bucket_arn:
+            path_arns = [bucket_arn]
+        else:
+            log.warning(f'Asked to revoke {group_policy_arn} group access to nothing')
+            return
+
+    policy = boto3.resource('iam').Policy(group_policy_arn)
+    policy = ManagedS3AccessPolicy(policy)
+    for arn in path_arns:
+        policy.revoke_access(arn)
     policy.put()
 
 

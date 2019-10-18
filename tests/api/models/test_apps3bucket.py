@@ -46,6 +46,7 @@ def test_update_aws_permissions(app, bucket, aws):
         app.iam_role_name,
         bucket.arn,
         AppS3Bucket.READONLY,
+        apps3bucket.resources,
     )
     # TODO get policy from call and assert ARN in correct place
 
@@ -64,6 +65,7 @@ def test_aws_create(app, bucket, aws):
         app.iam_role_name,
         bucket.arn,
         AppS3Bucket.READONLY,
+        apps3bucket.resources,
     )
     # TODO make this test a case on previous
 
@@ -82,4 +84,5 @@ def test_delete_revoke_permissions(app, aws, bucket):
     aws.revoke_bucket_access.assert_called_with(
         apps3bucket.iam_role_name,
         bucket.arn,
+        apps3bucket.resources,
     )

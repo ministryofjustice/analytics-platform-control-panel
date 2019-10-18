@@ -1,5 +1,6 @@
 from django.db import models
 
+from controlpanel.api import cluster
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
@@ -23,6 +24,7 @@ class PolicyS3Bucket(AccessToS3Bucket):
         cluster.RoleGroup(self.policy).grant_bucket_access(
             self.s3bucket.arn,
             self.access_level,
+            self.resources,
         )
 
     def revoke_bucket_access(self):

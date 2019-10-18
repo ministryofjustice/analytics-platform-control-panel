@@ -22,7 +22,7 @@ def test_arn(settings, iam_managed_policy):
 
 def test_create(aws, iam_managed_policy):
     cluster.RoleGroup(iam_managed_policy).create()
-    aws.create_group_policy.assert_called_with(
+    aws.create_group.assert_called_with(
         iam_managed_policy.name,
         iam_managed_policy.path,
     )

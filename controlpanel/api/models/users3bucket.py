@@ -39,8 +39,9 @@ class UserS3Bucket(AccessToS3Bucket):
         cluster.User(self.user).grant_bucket_access(
             self.s3bucket.arn,
             self.access_level,
+            self.resources,
         )
 
     def revoke_bucket_access(self):
-        cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)
+        cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn, self.resources)
 

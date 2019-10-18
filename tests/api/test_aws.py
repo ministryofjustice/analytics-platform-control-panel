@@ -275,31 +275,59 @@ def get_statements_by_sid(policy_document):
     return statements
 
 
-# TODO parametrize
-def test_grant_bucket_access(iam, users):
+@pytest.mark.parametrize(
+    'resources',
+    [
+        ([],),
+        (['/foo/bar', '/foo/baz']),
+    ],
+    ids=[
+        'no-paths',
+        'paths',
+    ],
+)
+def test_grant_bucket_access(iam, users, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
     user = users['normal_user']
     aws.create_user_role(user)
 
-    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly')
+    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
 
     policy = iam.RolePolicy(user.iam_role_name, 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
 
-    assert f'{bucket_arn}/*' in statements['readonly']['Resource']
+    if path_arns:
+        assert f'{bucket_arn}/*' not in statements['readonly']['Resource']
+    else:
+        assert f'{bucket_arn}/*' in statements['readonly']['Resource']
     # no readwrite statement because no readwrite access granted
     assert 'readwrite' not in statements
-    assert bucket_arn in statements['list']['Resource']
+    if path_arns:
+        assert set(path_arns) == set(statements['list']['Resource'])
+    else:
+        assert bucket_arn in statements['list']['Resource']
 
 
-# TODO parametrize, test remove by prefix
-def test_revoke_bucket_access(iam, users):
+@pytest.mark.parametrize(
+    'resources',
+    [
+        ([],),
+        (['/foo/bar', '/foo/baz']),
+    ],
+    ids=[
+        'no-paths',
+        'paths',
+    ],
+)
+def test_revoke_bucket_access(iam, users, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
     user = users['normal_user']
     aws.create_user_role(user)
-    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly')
+    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_bucket_access(user.iam_role_name, bucket_arn)
+    aws.revoke_bucket_access(user.iam_role_name, bucket_arn, path_arns)
 
     policy = iam.RolePolicy(user.iam_role_name, 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
@@ -383,24 +411,57 @@ def test_delete_group(iam, group, user_roles):
     assert len(list(role.attached_policies.all())) == 1
 
 
-def test_grant_group_bucket_access(iam, group):
+@pytest.mark.parametrize(
+    'resources',
+    [
+        ([],),
+        (['/foo/bar', '/foo/baz']),
+    ],
+    ids=[
+        'no-paths',
+        'paths',
+    ],
+)
+def test_grant_group_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
 
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly')
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
 
-    assert f'{bucket_arn}/*' in statements['readonly']['Resource']
+    if path_arns:
+        assert f'{bucket_arn}/*' not in statements['readonly']['Resource']
+    else:
+        assert f'{bucket_arn}/*' in statements['readonly']['Resource']
     assert 'readwrite' not in statements
-    assert bucket_arn in statements['list']['Resource']
+    if path_arns:
+        assert set(path_arns) == set(statements['list']['Resource'])
+    else:
+        assert bucket_arn in statements['list']['Resource']
 
 
-def test_revoke_group_bucket_access(iam, group):
+@pytest.mark.parametrize(
+    'resources',
+    [
+        ([],),
+        (['/foo/bar', '/foo/baz']),
+    ],
+    ids=[
+        'no-paths',
+        'paths',
+    ],
+)
+def test_revoke_group_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly')
+    path_arns = [
+        f'{bucket_arn}{resource}'
+        for resource in resources
+    ]
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_group_bucket_access(group.arn, bucket_arn)
+    aws.revoke_group_bucket_access(group.arn, bucket_arn, path_arns)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)

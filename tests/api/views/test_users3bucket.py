@@ -60,10 +60,13 @@ def test_create(client, buckets, users, aws):
     response = client.post(reverse('users3bucket-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
+    users3bucket = UserS3Bucket.objects.get(user=users['other_user'], s3bucket=buckets[1])
+
     aws.grant_bucket_access.assert_called_with(
         users['other_user'].iam_role_name,
         buckets[1].arn,
         AppS3Bucket.READONLY,
+        users3bucket.resources,
     )
     # TODO get policy from call and assert bucket ARN exists
 
@@ -75,6 +78,7 @@ def test_delete(client, users3buckets, aws):
     aws.revoke_bucket_access.assert_called_with(
         users3buckets[1].user.iam_role_name,
         users3buckets[1].s3bucket.arn,
+        users3buckets[1].resources,
     )
     # TODO get policy from call and assert bucket ARN not contained
 
@@ -100,6 +104,7 @@ def test_update(client, buckets, users, users3buckets, aws):
         users['normal_user'].iam_role_name,
         buckets[1].arn,
         UserS3Bucket.READWRITE,
+        users3buckets[1].resources,
     )
     # TODO get policy and assert ARN present in correct place
 

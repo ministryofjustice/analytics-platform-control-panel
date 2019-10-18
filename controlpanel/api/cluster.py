@@ -65,11 +65,11 @@ class User:
         helm.delete(helm.list_releases(f"--namespace={self.k8s_namespace}"))
         helm.delete(f"init-user-{self.user.slug}")
 
-    def grant_bucket_access(self, bucket_arn, access_level):
-        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level)
+    def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
+        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
-    def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+    def revoke_bucket_access(self, bucket_arn, path_arns=[]):
+        aws.revoke_bucket_access(self.iam_role_name, bucket_arn, path_arns)
 
 
 class App:
@@ -92,11 +92,11 @@ class App:
     def delete_iam_role(self):
         aws.delete_role(self.iam_role_name)
 
-    def grant_bucket_access(self, bucket_arn, access_level):
-        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level)
+    def grant_bucket_access(self, bucket_arn, access_level, path_arns):
+        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
-    def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+    def revoke_bucket_access(self, bucket_arn, path_arns=[]):
+        aws.revoke_bucket_access(self.iam_role_name, bucket_arn, path_arns)
 
     @property
     def url(self):
@@ -147,7 +147,7 @@ class RoleGroup:
         return f'/{settings.ENV}/group/'
 
     def create(self):
-        aws.create_group_policy(
+        aws.create_group(
             self.policy.name,
             self.policy.path,
         )
@@ -161,11 +161,11 @@ class RoleGroup:
     def delete(self):
         aws.delete_group(self.arn)
 
-    def grant_bucket_access(self, bucket_arn, access_level):
-        aws.grant_group_bucket_access(self.arn, bucket_arn, access_level)
+    def grant_bucket_access(self, bucket_arn, access_level, path_arns):
+        aws.grant_group_bucket_access(self.arn, bucket_arn, access_level, path_arns)
 
-    def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_group_bucket_access(self.arn, bucket_arn)
+    def revoke_bucket_access(self, bucket_arn, path_arns=[]):
+        aws.revoke_group_bucket_access(self.arn, bucket_arn, path_arns)
 
 
 def create_parameter(name, value, role, description):

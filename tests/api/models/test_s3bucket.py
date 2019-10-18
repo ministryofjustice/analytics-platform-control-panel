@@ -24,8 +24,8 @@ def test_delete_revokes_permissions(bucket, aws):
     bucket.delete()
 
     aws.revoke_bucket_access.assert_has_calls([
-        call(apps3bucket.iam_role_name, bucket.arn),
-        call(users3bucket.iam_role_name, bucket.arn),
+        call(apps3bucket.iam_role_name, bucket.arn, apps3bucket.resources),
+        call(users3bucket.iam_role_name, bucket.arn, users3bucket.resources),
     ])
 
 
