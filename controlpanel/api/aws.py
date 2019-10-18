@@ -387,12 +387,6 @@ def delete_group(group_arn):
     for role in policy.attached_roles.all():
         policy.detach_role(RoleName=role.name)
 
-    # for group in policy.attached_groups.all():
-    #     policy.detach_group(GroupName=group.name)
-
-    # for user in policy.attached_users.all():
-    #     policy.detach_user(UserName=user.name)
-
     for version in policy.versions.all():
         if version.version_id != policy.default_version_id:
             version.delete()
