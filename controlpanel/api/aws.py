@@ -106,16 +106,19 @@ BASE_S3_ACCESS_STATEMENT = {
             's3:ListBucket',
         ],
         'Effect': 'Allow',
+        'Resource': [],
     },
     'readonly': {
         'Sid': 'readonly',
         'Action': READ_ACTIONS,
         'Effect': 'Allow',
+        'Resource': [],
     },
     'readwrite': {
         'Sid': 'readwrite',
         'Action': READ_ACTIONS + WRITE_ACTIONS,
         'Effect': 'Allow',
+        'Resource': [],
     },
 }
 
@@ -221,32 +224,31 @@ class S3AccessPolicy:
 
     def __init__(self, policy):
         self.policy = policy
-        self._policy_document = None
         self.statements = {}
 
-        self._load()
-
-    def _load(self):
         try:
-            # ensure version is set
-            self.policy_document['Version'] = '2012-10-17'
+            policy_document = self.load_policy_document()
 
         except self.policy.meta.client.exceptions.NoSuchEntityException:
             # create an empty s3 access policy
-            self.put(policy_document=deepcopy(BASE_S3_ACCESS_POLICY))
+            policy_document = deepcopy(BASE_S3_ACCESS_POLICY)
+            self.put(policy_document=policy_document)
+
+        # ensure version is set
+        policy_document['Version'] = '2012-10-17'
 
         # ensure statements are correctly configured and build a lookup table
-        for stmt in self.policy_document.setdefault('Statement', []):
+        for stmt in policy_document.setdefault('Statement', []):
             sid = stmt.get('Sid')
             if sid in ('list', 'readonly', 'readwrite'):
-                stmt.update(BASE_S3_ACCESS_STATEMENT[sid])
+                stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
                 self.statements[sid] = stmt
 
-    @property
-    def policy_document(self):
-        if self._policy_document is None:
-            self._policy_document = self.policy.policy_document
-        return self._policy_document
+        self.policy_document = policy_document
+
+    def load_policy_document(self):
+        # triggers API call
+        return self.policy.policy_document
 
     def statement(self, sid):
         if sid in ('list', 'readonly', 'readwrite'):
@@ -259,9 +261,9 @@ class S3AccessPolicy:
     def add_resource(self, arn, sid):
         statement = self.statement(sid)
         if statement:
-            resources = statement.setdefault('Resource', [])
-            if arn not in resources:
-                resources.append(arn)
+            statement['Resource'] = statement.get('Resource', [])
+            if arn not in statement['Resource']:
+                statement['Resource'].append(arn)
 
     def remove_resource(self, arn, sid):
         statement = self.statement(sid)
@@ -293,6 +295,9 @@ class S3AccessPolicy:
             if stmt.get('Resource')
         ]
 
+        return self.save_policy_document(policy_document)
+
+    def save_policy_document(self, policy_document):
         return self.policy.put(
             PolicyDocument=json.dumps(policy_document),
         )
@@ -301,21 +306,10 @@ class S3AccessPolicy:
 class ManagedS3AccessPolicy(S3AccessPolicy):
     """Provides a convenience wrapper around a Policy object"""
 
-    @property
-    def policy_document(self):
-        if self._policy_document is None:
-            self._policy_document = self.policy.default_version.document
-        return self._policy_document
+    def load_policy_document(self):
+        return self.policy.default_version.document
 
-    def put(self, policy_document=None):
-        if policy_document is None:
-            policy_document = self.policy_document
-
-        policy_document['Statement'][:] = [
-            stmt for stmt in policy_document['Statement']
-            if stmt.get('Resource')
-        ]
-
+    def save_policy_document(self, policy_document):
         self.policy.create_version(
             PolicyDocument=json.dumps(policy_document),
             SetAsDefault=True,
