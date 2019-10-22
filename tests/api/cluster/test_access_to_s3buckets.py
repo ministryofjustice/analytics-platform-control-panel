@@ -15,14 +15,14 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def bucket():
-    return mommy.make('api.S3Bucket')
+    return mommy.prepare('api.S3Bucket')
 
 
 @pytest.fixture
 def entities(bucket, users):
     return {
-        'app': App(mommy.make('api.App')),
-        'group': RoleGroup(mommy.make('api.IAMManagedPolicy')),
+        'app': App(mommy.prepare('api.App')),
+        'group': RoleGroup(mommy.prepare('api.IAMManagedPolicy')),
         'user': User(users['normal_user']),
     }
 

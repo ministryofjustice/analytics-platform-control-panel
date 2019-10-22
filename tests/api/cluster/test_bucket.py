@@ -11,7 +11,7 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def bucket():
-    return mommy.make('api.S3Bucket', name='test-bucket')
+    return mommy.prepare('api.S3Bucket', name='test-bucket')
 
 
 def test_arn(bucket):

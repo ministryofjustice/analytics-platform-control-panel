@@ -227,24 +227,23 @@ class S3AccessPolicy:
         self.statements = {}
 
         try:
-            policy_document = self.load_policy_document()
+            self.policy_document = self.load_policy_document()
 
         except self.policy.meta.client.exceptions.NoSuchEntityException:
             # create an empty s3 access policy
-            policy_document = deepcopy(BASE_S3_ACCESS_POLICY)
-            self.put(policy_document=policy_document)
+            self.policy_document = deepcopy(BASE_S3_ACCESS_POLICY)
+            self.put(policy_document=self.policy_document)
 
         # ensure version is set
-        policy_document['Version'] = '2012-10-17'
+        self.policy_document['Version'] = '2012-10-17'
 
         # ensure statements are correctly configured and build a lookup table
-        for stmt in policy_document.setdefault('Statement', []):
+        self.policy_document.setdefault('Statement', [])
+        for stmt in self.policy_document['Statement']:
             sid = stmt.get('Sid')
             if sid in ('list', 'readonly', 'readwrite'):
                 stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
                 self.statements[sid] = stmt
-
-        self.policy_document = policy_document
 
     def load_policy_document(self):
         # triggers API call

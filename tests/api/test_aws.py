@@ -18,10 +18,10 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture(autouse=True)
 def aws_creds():
-    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
-    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
-    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    os.environ['AWS_ACCESS_KEY_ID'] = 'test-access-key-id'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'test-secret-access-key'
+    os.environ['AWS_SECURITY_TOKEN'] = 'test-security-token'
+    os.environ['AWS_SESSION_TOKEN'] = 'test-session-token'
 
 
 @pytest.yield_fixture(autouse=True)
