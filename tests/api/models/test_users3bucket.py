@@ -38,12 +38,17 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 @pytest.mark.django_db
 def test_aws_create(user, bucket, aws):
 
-    user.users3buckets.create(
+    users3bucket = user.users3buckets.create(
         s3bucket=bucket,
         access_level=AccessToS3Bucket.READONLY,
     )
 
-    aws.put_role_policy.assert_called()
+    aws.grant_bucket_access.assert_called_with(
+        user.iam_role_name,
+        bucket.arn,
+        AccessToS3Bucket.READONLY,
+        users3bucket.resources,
+    )
     # TODO get policy from call and assert bucket ARN present
 
 
@@ -51,5 +56,9 @@ def test_aws_create(user, bucket, aws):
 def test_delete_revoke_permissions(user, bucket, users3bucket, aws):
     users3bucket.delete()
 
-    aws.put_role_policy.assert_called()
+    aws.revoke_bucket_access.assert_called_with(
+        user.iam_role_name,
+        bucket.arn,
+        users3bucket.resources,
+    )
     # TODO get policy from call and assert bucket ARN removed

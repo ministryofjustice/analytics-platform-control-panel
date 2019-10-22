@@ -5,7 +5,6 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import User
-from controlpanel.api.cluster import READ_INLINE_POLICIES, iam_arn
 
 
 @pytest.fixture(autouse=True)
@@ -53,11 +52,7 @@ def test_helm_delete_user(helm):
 def test_aws_create_role_calls_service(aws):
     user = User.objects.create(auth0_id="github|user_1")
 
-    aws.create_role.assert_called()
-    aws.attach_policy_to_role.assert_called_with(
-        role_name=user.iam_role_name,
-        policy_arn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
-    )
+    aws.create_user_role.assert_called_with(user)
 
 
 def test_aws_delete_role_calls_service(aws):

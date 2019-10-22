@@ -154,6 +154,7 @@ def test_update(client, bucket):
     assert response.data['name'] == data['name']
 
 
+@pytest.mark.skip(reason="Needs to move to test_aws")
 def test_aws_error_existing_ignored(client, aws):
     e = type('BucketAlreadyOwnedByYou', (ClientError,), {})
     aws.create_bucket.side_effect = e({}, 'Foo')

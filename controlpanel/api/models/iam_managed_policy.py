@@ -5,7 +5,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api.aws import arn
+from controlpanel.api.aws import iam_arn
 from controlpanel.api import cluster
 
 
@@ -13,18 +13,9 @@ POLICY_NAME_PATTERN = r"[a-z0-9_+@,.:=-]{2,63}"
 POLICY_NAME_REGEX = re.compile(POLICY_NAME_PATTERN)
 
 
+# TODO rename this to RoleGroup
 class IAMManagedPolicy(TimeStampedModel):
-    @property
-    def arn(self):
-        return arn(
-            "iam",
-            f"policy{self.path}{self.name}",
-            account=settings.AWS_ACCOUNT_ID
-        )
-
-    @property
-    def path(self):
-        return f"/{settings.ENV}/group/"
+    """Represents a group of users who have access to S3 resources"""
 
     name = models.CharField(
         max_length=63,
@@ -42,23 +33,28 @@ class IAMManagedPolicy(TimeStampedModel):
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_iam_managed_policy"
 
+    @property
+    def arn(self):
+        return cluster.RoleGroup(self).arn
+
+    @property
+    def path(self):
+        return cluster.RoleGroup(self).path
+
     def save(self, *args, **kwargs):
         is_create = not self.pk
 
         super().save(*args, **kwargs)
 
+        group = cluster.RoleGroup(self)
         if is_create:
-            cluster.create_policy(
-                self.name,
-                self.path
-            )
+            group.create()
 
-        stored_roles = {u.iam_role_name for u in self.users.all()}
-
-        cluster.update_policy_roles(self.arn, stored_roles)
+        group.update_members()
 
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.delete_policy(self.arn)
+        cluster.RoleGroup(self).delete()
         super().delete(*args, **kwargs)
+

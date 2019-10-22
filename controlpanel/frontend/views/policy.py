@@ -9,7 +9,7 @@ from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import FormMixin, DeleteView, UpdateView
 from rules.contrib.views import PermissionRequiredMixin
 
-from controlpanel.api.aws import aws
+from controlpanel.api import cluster
 from controlpanel.api.models import IAMManagedPolicy, User
 from controlpanel.api.permissions import is_superuser
 from controlpanel.frontend.forms import CreateIAMManagedPolicyForm, AddUserToIAMManagedPolicyForm
@@ -114,7 +114,7 @@ class IAMManagedPolicyDelete(LoginRequiredMixin, PermissionRequiredMixin, Delete
 class IAMManagedPolicyFormRoleList(LoginRequiredMixin, View):
 
     def get(self, *args, **kwargs):
-        roles = aws.list_role_names()
+        roles = cluster.list_role_names()
         data = [
             r for r in roles
             if r.startswith(f"airflow")

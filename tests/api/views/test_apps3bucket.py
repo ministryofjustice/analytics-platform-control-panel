@@ -66,7 +66,11 @@ def test_delete(client, apps3buckets, aws):
     response = client.delete(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    aws.put_role_policy.assert_called()
+    aws.revoke_bucket_access.assert_called_with(
+        apps3buckets[1].iam_role_name,
+        apps3buckets[1].s3bucket.arn,
+        apps3buckets[1].resources,
+    )
     # TODO get policy document JSON from call and assert bucket ARN not present
 
     response = client.get(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
@@ -82,7 +86,14 @@ def test_create(client, apps, buckets, aws):
     response = client.post(reverse('apps3bucket-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    aws.put_role_policy.assert_called()
+    apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
+
+    aws.grant_bucket_access.assert_called_with(
+        apps[1].iam_role_name,
+        buckets[3].arn,
+        AppS3Bucket.READONLY,
+        apps3bucket.resources,
+    )
     # TODO get policy from call and check for presence of bucket ARN
 
 
@@ -100,7 +111,12 @@ def test_update(client, apps, apps3buckets, buckets, aws):
     assert response.status_code == status.HTTP_200_OK
     assert response.data['access_level'] == data['access_level']
 
-    aws.put_role_policy.assert_called()
+    aws.grant_bucket_access.assert_called_with(
+        apps[1].iam_role_name,
+        buckets[1].arn,
+        AppS3Bucket.READWRITE,
+        apps3buckets[1].resources,
+    )
     # TODO get policy from call and check for presence of bucket ARN
 
 

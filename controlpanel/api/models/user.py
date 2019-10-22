@@ -44,11 +44,11 @@ class User(AbstractUser):
 
     @property
     def iam_role_name(self):
-        return f"{settings.ENV}_user_{self.username.lower()}"
+        return cluster.User(self).iam_role_name
 
     @property
     def k8s_namespace(self):
-        return f'user-{self.slug}'
+        return cluster.User(self).k8s_namespace
 
     @property
     def github_api_token(self):
@@ -86,10 +86,10 @@ class User(AbstractUser):
         try:
             User.objects.get(pk=self.pk)
         except User.DoesNotExist:
-            cluster.initialize_user(self)
+            cluster.User(self).create()
 
         return super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        cluster.purge_user(self)
+        cluster.User(self).delete()
         return super().delete(*args, **kwargs)

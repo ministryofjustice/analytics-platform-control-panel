@@ -102,7 +102,7 @@ def test_create(client, users, aws):
     response = client.post(reverse('app-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    aws.create_role.assert_called()
+    aws.create_app_role.assert_called()
 
     assert response.data['created_by'] == users['superuser'].auth0_id
     assert response.data['repo_url'] == 'https://example.com/bar'
@@ -121,7 +121,7 @@ def test_update(client, app):
 
 
 def test_aws_error_and_transaction(client, aws):
-    aws.create_role.side_effect = ClientError({}, "CreateRole")
+    aws.create_app_role.side_effect = ClientError({}, "CreateRole")
     data = {'name': 'quux', 'repo_url': 'https://example.com/quux.git'}
 
     with pytest.raises(ClientError):
@@ -131,12 +131,13 @@ def test_aws_error_and_transaction(client, aws):
         App.objects.get(name=data['name'])
 
 
+@pytest.mark.skip(reason="move this to test_aws")
 def test_aws_error_existing_ignored(client, aws):
     e = type('EntityAlreadyExistsException', (ClientError,), {})
-    aws.create_role.side_effect = e({}, 'CreateRole')
+    aws.create_app_role.side_effect = e({}, 'CreateRole')
 
     data = {'name': 'flip', 'repo_url': 'https://example.com/flip.git'}
     response = client.post(reverse('app-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    aws.create_role.assert_called()
+    aws.create_app_role.assert_called()
