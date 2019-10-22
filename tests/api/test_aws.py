@@ -308,6 +308,14 @@ def test_grant_bucket_access(iam, users, resources):
     else:
         assert bucket_arn in statements['list']['Resource']
 
+    aws.grant_bucket_access(user.iam_role_name, f'{bucket_arn}-2', 'readonly')
+    policy.reload()
+    statements = get_statements_by_sid(policy.policy_document)
+    expected_num_resources = 2
+    if path_arns:
+        expected_num_resources = len(path_arns) + 1
+    assert len(statements['readonly']['Resource']) == expected_num_resources
+
 
 @pytest.mark.parametrize(
     'resources',

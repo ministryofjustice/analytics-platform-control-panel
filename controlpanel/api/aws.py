@@ -106,19 +106,16 @@ BASE_S3_ACCESS_STATEMENT = {
             's3:ListBucket',
         ],
         'Effect': 'Allow',
-        'Resource': [],
     },
     'readonly': {
         'Sid': 'readonly',
         'Action': READ_ACTIONS,
         'Effect': 'Allow',
-        'Resource': [],
     },
     'readwrite': {
         'Sid': 'readwrite',
         'Action': READ_ACTIONS + WRITE_ACTIONS,
         'Effect': 'Allow',
-        'Resource': [],
     },
 }
 
