@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.template.defaultfilters import pluralize
@@ -16,6 +17,7 @@ from django.views.generic.edit import (
 )
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
+import sentry_sdk
 
 from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
@@ -28,6 +30,7 @@ from controlpanel.api.models import (
     UserS3Bucket,
 )
 from controlpanel.frontend.forms import (
+    AddAppCustomersForm,
     CreateAppForm,
     GrantAppAccessForm,
 )
@@ -79,6 +82,11 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
             app=app,
             exclude_connected=True,
         )
+
+        add_customer_form_errors = self.request.session.pop('add_customer_form_errors', None)
+        if add_customer_form_errors:
+            errors = context.setdefault('errors', {})
+            errors['customer_email'] = add_customer_form_errors['customer_email']
 
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
 
@@ -164,6 +172,7 @@ class GrantAppAccess(
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
     def form_valid(self, form):
+        # TODO this can be replaced with AppS3Bucket.objects.get_or_create()
         try:
             self.object = AppS3Bucket.objects.get(
                 s3bucket=form.cleaned_data['datasource'],
@@ -180,6 +189,11 @@ class GrantAppAccess(
         return FormMixin.form_valid(self, form)
 
     def form_invalid(self, form):
+        # It should be impossible to get here. The form consists of
+        # ChoiceFields, so the only way an invalid input can be submitted is by
+        # constructing the request manually - in which (suspicious) case we should
+        # return as little information as possible
+        log.warning('Received suspicious invalid grant app access request')
         raise Exception(form.errors)
 
 
@@ -232,16 +246,28 @@ class UpdateApp(
         return super().post(request, *args, **kwargs)
 
 
-class AddCustomers(UpdateApp):
+class AddCustomers(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    form_class = AddAppCustomersForm
+    model = App
     permission_required = 'api.add_app_customer'
 
-    def perform_update(self, **kwargs):
-        app = self.get_object()
-        emails = self.request.POST.get('customer_email')
-        emails = re.split(r'[,; ]+', emails)
-        emails = [email.strip() for email in emails]
-        app.add_customers(emails)
+    def form_invalid(self, form):
+        self.request.session['add_customer_form_errors'] = form.errors
+        return HttpResponseRedirect(
+            reverse_lazy("manage-app", kwargs={"pk": self.kwargs['pk']}),
+        )
+
+    def form_valid(self, form):
+        self.get_object().add_customers(form.cleaned_data['customer_email'])
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_form_kwargs(self):
+        kwargs = FormMixin.get_form_kwargs(self)
+        return kwargs
+
+    def get_success_url(self, *args, **kwargs):
         messages.success(self.request, f"Successfully added customers")
+        return reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]})
 
 
 class RemoveCustomer(UpdateApp):
@@ -250,8 +276,13 @@ class RemoveCustomer(UpdateApp):
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist('customer')
-        app.delete_customers(user_ids)
-        messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
+        try:
+            app.delete_customers(user_ids)
+        except App.DeleteCustomerError as e:
+            sentry_sdk.capture_exception(e)
+            messages.error(self.request, f"Failed removing customer{pluralize(user_ids)}")
+        else:
+            messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
 
 
 class AddAdmin(UpdateApp):
