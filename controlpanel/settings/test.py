@@ -27,3 +27,6 @@ TOOLS["testtool"] = {
     "client_id": "42",
     "client_secret": "secret",
 }
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
