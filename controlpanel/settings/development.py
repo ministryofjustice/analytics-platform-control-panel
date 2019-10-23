@@ -34,3 +34,6 @@ if os.environ.get('ENABLE_DJANGO_DEBUG_TOOLBAR'):
     ]
 
 INTERNAL_IPS = ['127.0.0.1']
+
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False

@@ -1,1 +1,2 @@
+from controlpanel.middleware.never_cache import DisableClientSideCachingMiddleware
 from controlpanel.middleware.legacy_api_redirect import LegacyAPIRedirectMiddleware

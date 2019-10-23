@@ -86,6 +86,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "controlpanel.middleware.DisableClientSideCachingMiddleware",
     "controlpanel.middleware.LegacyAPIRedirectMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -214,6 +215,20 @@ MANAGERS = []
 
 # Whitelist values for the HTTP Host header, to prevent certain attacks
 ALLOWED_HOSTS = [host for host in os.environ.get("ALLOWED_HOSTS", "").split() if host]
+
+# Sets the X-XSS-Protection: 1; mode=block header
+SECURE_BROWSER_XSS_FILTER = True
+
+# Sets the X-Content-Type-Options: nosniff header
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Secure the CSRF cookie
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+
+# Secure the session cookie
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
 
 
 # -- Running Django
