@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from controlpanel.api import auth0, cluster
+from controlpanel.api import auth0, cluster, slack
 from controlpanel.utils import sanitize_dns_label
 
 
@@ -84,9 +84,14 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         try:
-            User.objects.get(pk=self.pk)
+            existing = User.objects.get(pk=self.pk)
+
         except User.DoesNotExist:
             cluster.User(self).create()
+            if self.is_superuser:
+                slack.notify_team(
+                    f"`{self.username}` was created as a superuser"
+                )
 
         return super().save(*args, **kwargs)
 

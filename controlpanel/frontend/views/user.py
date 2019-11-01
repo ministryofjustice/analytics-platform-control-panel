@@ -8,7 +8,7 @@ from django.views.generic.edit import DeleteView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
-from controlpanel.api import auth0
+from controlpanel.api import auth0, slack
 from controlpanel.api.models import User
 
 
@@ -70,6 +70,11 @@ class SetSuperadmin(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     permission_required = 'api.dd_superuser'
 
     def get_success_url(self):
+        if self.object.is_superuser:
+            slack.notify_team(
+                f"`{self.request.user.username}` granted superuser status "
+                f"to `{self.object.username}`"
+            )
         messages.success(self.request, "Successfully updated superadmin status")
         return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
 

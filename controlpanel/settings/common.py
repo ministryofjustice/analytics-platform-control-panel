@@ -555,3 +555,9 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
+
+# -- Slack
+SLACK = {
+    "api_token": os.environ.get('SLACK_API_TOKEN'),
+    "channel": os.environ.get('SLACK_CHANNEL', "#analytical-platform"),
+}
