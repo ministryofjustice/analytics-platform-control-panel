@@ -31,7 +31,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
-        if serializer.validated_data['is_superuser']:
+        if serializer.validated_data.get('is_superuser'):
             slack.notify_team(
                 f"`{self.request.user.username}` created a new user "
                 f"`{serializer.data['username']}` with superuser access "
@@ -39,7 +39,10 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     def perform_update(self, serializer):
-        make_superuser = not serializer.instance.is_superuser and serializer.validated_data['is_superuser']
+        make_superuser = (
+            not serializer.instance.is_superuser
+            and serializer.validated_data.get('is_superuser')
+        )
         super().perform_update(serializer)
         if make_superuser:
             slack.notify_team(
