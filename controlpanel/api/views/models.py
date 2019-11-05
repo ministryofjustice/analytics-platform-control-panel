@@ -31,23 +31,26 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         super().perform_create(serializer)
-        if serializer.validated_data.get('is_superuser'):
+        data = serializer.validated_data
+        is_superuser = data.get('is_superuser', False)
+        if is_superuser:
             slack.notify_team(
-                f"`{self.request.user.username}` created a new user "
-                f"`{serializer.data['username']}` with superuser access "
-                "via the REST API"
+                slack.CREATE_SUPERUSER_MESSAGE.format(
+                    username=data['username'],
+                ),
+                request_user=self.request.user,
             )
 
     def perform_update(self, serializer):
-        make_superuser = (
-            not serializer.instance.is_superuser
-            and serializer.validated_data.get('is_superuser')
-        )
+        was_superuser = serializer.instance.is_superuser
         super().perform_update(serializer)
-        if make_superuser:
+        is_superuser = serializer.validated_data.get('is_superuser', False)
+        if not was_superuser and is_superuser:
             slack.notify_team(
-                f"`{self.request.user.username}` granted superuser status "
-                f"to `{serializer.instance.username}` via the REST API"
+                slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(
+                    username=serializer.instance.username,
+                ),
+                request_user=self.request.user,
             )
 
 

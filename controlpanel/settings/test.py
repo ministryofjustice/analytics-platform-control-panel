@@ -30,3 +30,8 @@ TOOLS["testtool"] = {
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
+
+SLACK = {
+    "api_token": "test-slack-api-token",
+    "channel": "test-slack-channel",
+}

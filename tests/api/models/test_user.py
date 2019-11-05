@@ -5,6 +5,10 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import User
+from controlpanel.api.slack import (
+    CREATE_SUPERUSER_MESSAGE,
+    GRANT_SUPERUSER_ACCESS_MESSAGE,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -66,3 +70,20 @@ def test_aws_delete_role_calls_service(aws):
 def test_k8s_namespace():
     user = User(username='AlicE')
     assert user.k8s_namespace == 'user-alice'
+
+
+def test_slack_notification_on_create_superuser(settings, slack_WebClient):
+    user = User.objects.create(
+        username='test-user',
+        is_superuser=True,
+    )
+
+    slack_WebClient.assert_called_with(token=settings.SLACK['api_token'])
+    slack_WebClient.return_value.chat_postMessage.assert_called_with(
+        as_user=False,
+        username=f"Control Panel [{settings.ENV}]",
+        channel=settings.SLACK["channel"],
+        text=CREATE_SUPERUSER_MESSAGE.format(
+            username=user.username,
+        ),
+    )

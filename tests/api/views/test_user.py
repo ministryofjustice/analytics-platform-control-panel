@@ -1,5 +1,6 @@
 import json
 from subprocess import CalledProcessError
+from unittest.mock import patch
 
 from botocore.exceptions import ClientError
 from model_mommy import mommy
@@ -93,6 +94,23 @@ def test_create(client, helm, aws):
     helm.upgrade_release.assert_called()
 
 
+@pytest.yield_fixture(autouse=True)
+def slack():
+    with patch('controlpanel.api.views.models.slack') as slack:
+        yield slack
+
+
+def test_create_superuser(client, slack, superuser):
+    data = {'auth0_id': 'github|3', 'username': 'foo', 'is_superuser': True}
+    response = client.post(reverse('user-list'), data)
+    assert response.status_code == status.HTTP_201_CREATED
+
+    slack.notify_team.assert_called_with(
+        slack.CREATE_SUPERUSER_MESSAGE.format(username=data['username']),
+        request_user=superuser,
+    )
+
+
 def test_update(client, users):
     data = {'username': 'foo', 'auth0_id': 'github|888'}
     response = client.put(
@@ -104,6 +122,20 @@ def test_update(client, users):
     assert response.data['username'] == data['username']
     assert response.data['auth0_id'] == data['auth0_id']
 
+
+def test_update_grants_superuser_access(client, users, slack, superuser):
+    user = users['normal_user']
+    data = {'username': user.username, 'auth0_id': user.auth0_id, 'is_superuser': True}
+    response = client.put(
+        reverse('user-detail', (user.auth0_id,)),
+        json.dumps(data),
+        content_type="application/json",
+    )
+    assert response.status_code == status.HTTP_200_OK
+    slack.notify_team.assert_called_with(
+        slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
+        request_user=superuser,
+    )
 
 def test_aws_error_and_transaction(client, aws, helm):
     aws.create_user_role.side_effect = ClientError({"foo": "bar"}, "bar")

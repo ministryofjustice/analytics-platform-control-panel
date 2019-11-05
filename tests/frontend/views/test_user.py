@@ -28,7 +28,7 @@ def retrieve(client, users, *args):
 
 def set_admin(client, users, *args):
     data = {
-        'is_admin': True,
+        'is_superuser': True,
     }
     kwargs = {'pk': users['other_user'].auth0_id}
     return client.post(reverse('set-superadmin', kwargs=kwargs), data)
@@ -80,3 +80,20 @@ def test_list(client, users, view, user, expected_count):
     response = view(client, users)
     assert len(response.context_data['object_list']) == expected_count
 
+
+@pytest.yield_fixture
+def slack():
+    with patch("controlpanel.frontend.views.user.slack") as slack:
+        yield slack
+
+
+def test_grant_superuser_access(client, users, slack):
+    request_user = users['superuser']
+    user = users['other_user']
+    client.force_login(request_user)
+    response = set_admin(client, users)
+    assert response.status_code == status.HTTP_302_FOUND
+    slack.notify_team.assert_called_with(
+        slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
+        request_user=request_user,
+    )

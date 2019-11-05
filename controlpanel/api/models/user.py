@@ -90,7 +90,7 @@ class User(AbstractUser):
             cluster.User(self).create()
             if self.is_superuser:
                 slack.notify_team(
-                    f"`{self.username}` was created as a superuser"
+                    slack.CREATE_SUPERUSER_MESSAGE.format(username=self.username),
                 )
 
         return super().save(*args, **kwargs)
