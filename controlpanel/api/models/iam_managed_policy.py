@@ -1,11 +1,9 @@
 import re
 
-from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api.aws import iam_arn
 from controlpanel.api import cluster
 
 
