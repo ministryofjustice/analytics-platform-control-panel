@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import boto3
 from django.conf import settings
@@ -52,7 +52,7 @@ def managed_policy(iam):
                 'Sid': 'CanReadUserRolesInlinePolicies',
                 'Effect': 'Allow',
                 'Action': ['iam:GetRolePolicy'],
-                'Resource': ['arn:aws:iam::{settings.AWS_ACCOUNT_ID}:role/{settings.ENV}_user_*'],
+                'Resource': ['arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/{settings.ENV}_user_*'],
             },
         ]}),
     )
@@ -73,12 +73,11 @@ def ec2_assume_role(stmt):
 
 
 def k8s_assume_role(stmt):
-    return stmt_match(
-        stmt,
-        Principal={
-            'AWS': f'arn:aws:iam::{settings.AWS_ACCOUNT_ID}:role/{settings.K8S_WORKER_ROLE_NAME}',
-        },
-    )
+    principal = f"arn:aws:iam::{settings.AWS_COMPUTE_ACCOUNT_ID}:role/{settings.K8S_WORKER_ROLE_NAME}"
+    if settings.AWS_COMPUTE_ACCOUNT_ID != settings.AWS_DATA_ACCOUNT_ID:
+        principal = settings.AWS_COMPUTE_ACCOUNT_ID
+
+    return stmt_match(stmt, Principal={"AWS": principal})
 
 
 def saml_assume_role(stmt):
@@ -86,7 +85,7 @@ def saml_assume_role(stmt):
         stmt,
         Action='sts:AssumeRoleWithSAML',
         Principal={
-            'Federated': f'arn:aws:iam::{settings.AWS_ACCOUNT_ID}:saml-provider/{settings.SAML_PROVIDER}',
+            'Federated': f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:saml-provider/{settings.SAML_PROVIDER}",
         },
         Condition={
             'StringEquals': {'SAML:aud': 'https://signin.aws.amazon.com/saml'},
@@ -99,7 +98,7 @@ def oidc_assume_role(stmt, user):
         stmt,
         Action='sts:AssumeRoleWithWebIdentity',
         Principal={
-            'Federated': f"arn:aws:iam::{settings.AWS_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}/",
+            'Federated': f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}/",
         },
         Condition={
             'StringEquals': {f"{settings.OIDC_DOMAIN}/:sub": user.auth0_id},
@@ -159,6 +158,22 @@ def test_create_user_role(iam, managed_policy, users):
     attached_policies = list(role.attached_policies.all())
     assert len(attached_policies) == 1
     assert attached_policies[0].arn == managed_policy['Arn']
+
+
+@pytest.mark.parametrize(
+    "aws_compute_account_id,aws_data_account_id,expected_principal",
+    [
+        ("test_account_id", "test_account_id", "arn:aws:iam::test_account_id:role/test_k8s_worker"),
+        ("test_compute_account_id", "test_data_account_id", "test_compute_account_id"),
+    ],
+)
+def test_iam_assume_role_principal(iam, aws_compute_account_id, aws_data_account_id,expected_principal):
+    with patch("controlpanel.api.aws.settings") as settings_mock:
+        settings_mock.AWS_COMPUTE_ACCOUNT_ID = aws_compute_account_id
+        settings_mock.AWS_DATA_ACCOUNT_ID = aws_data_account_id
+        settings_mock.K8S_WORKER_ROLE_NAME = "test_k8s_worker"
+
+        assert aws.iam_assume_role_principal() == expected_principal
 
 
 @pytest.fixture
@@ -347,7 +362,7 @@ def test_revoke_bucket_access(iam, users, resources):
 def test_create_group(iam, settings):
     aws.create_group('test', '/group/test/')
 
-    policy = iam.Policy(f'arn:aws:iam::{settings.AWS_ACCOUNT_ID}:policy/group/test/test')
+    policy = iam.Policy(f'arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test')
     pd = policy.default_version.document
     stmt = pd['Statement'][0]
     assert stmt['Action'] == [
@@ -374,7 +389,7 @@ def user_roles(iam, users):
 @pytest.fixture
 def group(iam):
     aws.create_group('test', '/group/test/')
-    group_arn = f'arn:aws:iam::{settings.AWS_ACCOUNT_ID}:policy/group/test/test'
+    group_arn = f'arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test'
     return iam.Policy(group_arn)
 
 
