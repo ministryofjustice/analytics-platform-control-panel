@@ -555,3 +555,9 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
+
+# -- User Guidance
+USER_GUIDANCE_BASE_URL = os.environ.get(
+    'USER_GUIDANCE_BASE_URL',
+    'https://user-guidance.services.alpha.mojanalytics.xyz'
+)
