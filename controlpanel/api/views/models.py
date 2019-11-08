@@ -9,7 +9,6 @@ from controlpanel.api import (
     filters,
     permissions,
     serializers,
-    slack,
 )
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
@@ -28,30 +27,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.UserSerializer
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.UserPermissions,)
-
-    def perform_create(self, serializer):
-        super().perform_create(serializer)
-        data = serializer.validated_data
-        is_superuser = data.get('is_superuser', False)
-        if is_superuser:
-            slack.notify_team(
-                slack.CREATE_SUPERUSER_MESSAGE.format(
-                    username=data['username'],
-                ),
-                request_user=self.request.user,
-            )
-
-    def perform_update(self, serializer):
-        was_superuser = serializer.instance.is_superuser
-        super().perform_update(serializer)
-        is_superuser = serializer.validated_data.get('is_superuser', False)
-        if not was_superuser and is_superuser:
-            slack.notify_team(
-                slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(
-                    username=serializer.instance.username,
-                ),
-                request_user=self.request.user,
-            )
 
 
 class AppViewSet(viewsets.ModelViewSet):

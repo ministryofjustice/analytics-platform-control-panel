@@ -83,7 +83,7 @@ def test_list(client, users, view, user, expected_count):
 
 @pytest.yield_fixture
 def slack():
-    with patch("controlpanel.frontend.views.user.slack") as slack:
+    with patch('controlpanel.api.models.user.slack') as slack:
         yield slack
 
 

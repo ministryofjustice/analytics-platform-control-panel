@@ -5,10 +5,6 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import User
-from controlpanel.api.slack import (
-    CREATE_SUPERUSER_MESSAGE,
-    GRANT_SUPERUSER_ACCESS_MESSAGE,
-)
 
 
 @pytest.fixture(autouse=True)
@@ -72,18 +68,31 @@ def test_k8s_namespace():
     assert user.k8s_namespace == 'user-alice'
 
 
-def test_slack_notification_on_create_superuser(settings, slack_WebClient):
+@pytest.yield_fixture
+def slack():
+    with patch('controlpanel.api.models.user.slack') as slack:
+        yield slack
+
+
+def test_slack_notification_on_create_superuser(slack):
     user = User.objects.create(
         username='test-user',
         is_superuser=True,
     )
 
-    slack_WebClient.assert_called_with(token=settings.SLACK['api_token'])
-    slack_WebClient.return_value.chat_postMessage.assert_called_with(
-        as_user=False,
-        username=f"Control Panel [{settings.ENV}]",
-        channel=settings.SLACK["channel"],
-        text=CREATE_SUPERUSER_MESSAGE.format(
-            username=user.username,
-        ),
+    slack.notify_team.assert_called_once_with(
+        slack.CREATE_SUPERUSER_MESSAGE.format(username=user.username),
+        request_user=None,
     )
+
+
+def test_slack_notification_on_grant_superuser_access(slack, users):
+    user = users['normal_user']
+    user.is_superuser = True
+    user.save()
+
+    slack.notify_team.assert_called_with(
+        slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
+        request_user=None,
+    )
+

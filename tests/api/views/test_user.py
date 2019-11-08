@@ -96,7 +96,7 @@ def test_create(client, helm, aws):
 
 @pytest.yield_fixture(autouse=True)
 def slack():
-    with patch('controlpanel.api.views.models.slack') as slack:
+    with patch('controlpanel.api.models.user.slack') as slack:
         yield slack
 
 
@@ -134,8 +134,9 @@ def test_update_grants_superuser_access(client, users, slack, superuser):
     assert response.status_code == status.HTTP_200_OK
     slack.notify_team.assert_called_with(
         slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
-        request_user=superuser,
+        request_user=superuser
     )
+
 
 def test_aws_error_and_transaction(client, aws, helm):
     aws.create_user_role.side_effect = ClientError({"foo": "bar"}, "bar")

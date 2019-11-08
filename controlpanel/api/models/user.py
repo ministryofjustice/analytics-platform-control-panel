@@ -83,6 +83,11 @@ class User(AbstractUser):
         auth0.ManagementAPI().reset_mfa(self.auth0_id)
 
     def save(self, *args, **kwargs):
+        request_user = None
+        request = CrequestMiddleware.get_request()
+        if request:
+            request_user = request.user
+
         try:
             existing = User.objects.get(pk=self.pk)
 
@@ -91,6 +96,14 @@ class User(AbstractUser):
             if self.is_superuser:
                 slack.notify_team(
                     slack.CREATE_SUPERUSER_MESSAGE.format(username=self.username),
+                    request_user=request_user,
+                )
+
+        else:
+            if self.is_superuser and not existing.is_superuser:
+                slack.notify_team(
+                    slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=self.username),
+                    request_user=request_user,
                 )
 
         return super().save(*args, **kwargs)
