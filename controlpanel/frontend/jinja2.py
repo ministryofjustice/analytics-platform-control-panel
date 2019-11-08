@@ -1,6 +1,7 @@
 import os
 
 from django.contrib import messages
+from django.conf import settings
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.timesince import timesince
@@ -26,6 +27,7 @@ def environment(**kwargs):
             "timesince": timesince,
             "static": static,
             "url": reverse,
+            "google_analytics_id": settings.GOOGLE_ANALYTICS_ID,
         }
     )
 
