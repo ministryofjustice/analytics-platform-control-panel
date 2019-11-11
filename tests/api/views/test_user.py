@@ -105,9 +105,9 @@ def test_create_superuser(client, slack, superuser):
     response = client.post(reverse('user-list'), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    slack.notify_team.assert_called_with(
-        slack.CREATE_SUPERUSER_MESSAGE.format(username=data['username']),
-        request_username=superuser.username,
+    slack.notify_superuser_created.assert_called_with(
+        data['username'],
+        by_username=superuser.username,
     )
 
 
@@ -132,9 +132,9 @@ def test_update_grants_superuser_access(client, users, slack, superuser):
         content_type="application/json",
     )
     assert response.status_code == status.HTTP_200_OK
-    slack.notify_team.assert_called_with(
-        slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
-        request_username=superuser.username
+    slack.notify_superuser_created.assert_called_with(
+        user.username,
+        by_username=superuser.username
     )
 
 

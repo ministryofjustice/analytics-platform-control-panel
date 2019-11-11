@@ -80,9 +80,9 @@ def test_slack_notification_on_create_superuser(slack):
         is_superuser=True,
     )
 
-    slack.notify_team.assert_called_once_with(
-        slack.CREATE_SUPERUSER_MESSAGE.format(username=user.username),
-        request_username=None,
+    slack.notify_superuser_created.assert_called_once_with(
+        user.username,
+        by_username=None,
     )
 
 
@@ -91,8 +91,8 @@ def test_slack_notification_on_grant_superuser_access(slack, users):
     user.is_superuser = True
     user.save()
 
-    slack.notify_team.assert_called_with(
-        slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
-        request_username=None,
+    slack.notify_superuser_created.assert_called_with(
+        user.username,
+        by_username=None,
     )
 
