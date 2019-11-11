@@ -538,7 +538,8 @@ KIBANA_BASE_URL = os.environ.get(
 
 
 # -- AWS
-AWS_ACCOUNT_ID = os.environ.get('AWS_ACCOUNT_ID')
+AWS_COMPUTE_ACCOUNT_ID = os.environ.get("AWS_COMPUTE_ACCOUNT_ID")
+AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
 K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME')
 
 BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
