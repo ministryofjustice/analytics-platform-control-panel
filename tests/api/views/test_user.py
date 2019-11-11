@@ -107,7 +107,7 @@ def test_create_superuser(client, slack, superuser):
 
     slack.notify_team.assert_called_with(
         slack.CREATE_SUPERUSER_MESSAGE.format(username=data['username']),
-        request_user=superuser,
+        request_username=superuser.username,
     )
 
 
@@ -134,7 +134,7 @@ def test_update_grants_superuser_access(client, users, slack, superuser):
     assert response.status_code == status.HTTP_200_OK
     slack.notify_team.assert_called_with(
         slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
-        request_user=superuser
+        request_username=superuser.username
     )
 
 

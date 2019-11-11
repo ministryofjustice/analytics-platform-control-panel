@@ -24,9 +24,10 @@ def test_slack_notify_team(
     request_user,
     expected_message,
 ):
+    request_username = None
     if request_user:
-        request_user = users[request_user]
-    notify_team(message, request_user)
+        request_username = users[request_user].username
+    notify_team(message, request_username)
 
     slack_WebClient.assert_called_with(token=settings.SLACK["api_token"])
     slack_WebClient.return_value.chat_postMessage.assert_called_with(

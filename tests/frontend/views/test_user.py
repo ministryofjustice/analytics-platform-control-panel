@@ -95,5 +95,5 @@ def test_grant_superuser_access(client, users, slack):
     assert response.status_code == status.HTTP_302_FOUND
     slack.notify_team.assert_called_with(
         slack.GRANT_SUPERUSER_ACCESS_MESSAGE.format(username=user.username),
-        request_user=request_user,
+        request_username=request_user.username,
     )
