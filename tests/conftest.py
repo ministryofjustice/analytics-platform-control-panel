@@ -49,8 +49,17 @@ def helm():
         yield helm
 
 
+@pytest.yield_fixture(autouse=True)
+def slack_WebClient():
+    """
+    Mock calls to Slack
+    """
+    with patch('controlpanel.api.slack.slack.WebClient') as WebClient:
+        yield WebClient
+
+
 @pytest.fixture
-def superuser(db):
+def superuser(db, slack_WebClient):
     return mommy.make(
         'api.User',
         auth0_id='github|user_1',

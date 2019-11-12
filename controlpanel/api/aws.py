@@ -23,11 +23,32 @@ def s3_arn(resource):
     return arn("s3", resource)
 
 
-def iam_arn(resource, account=settings.AWS_ACCOUNT_ID):
+def iam_arn(resource, account=settings.AWS_DATA_ACCOUNT_ID):
     return arn("iam", resource, account=account)
 
 
-BASE_ROLE_POLICY = {
+def iam_assume_role_principal():
+    '''
+    returns the princical required to assume the IAM role
+
+    - ARN of the assuming role when both roles are in same account
+    - AWS account ID where the assuming IAM role is if in a different account
+
+    See AWS example: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html#example-delegate-xaccount-S3
+    '''
+
+    cross_account = settings.AWS_COMPUTE_ACCOUNT_ID != settings.AWS_DATA_ACCOUNT_ID
+
+    if cross_account:
+        return settings.AWS_COMPUTE_ACCOUNT_ID
+
+    return iam_arn(
+        f"role/{settings.K8S_WORKER_ROLE_NAME}",
+        account=settings.AWS_COMPUTE_ACCOUNT_ID,
+    )
+
+
+BASE_ASSUME_ROLE_POLICY = {
     "Version": "2012-10-17",
     "Statement": [
         {
@@ -40,7 +61,7 @@ BASE_ROLE_POLICY = {
         {
             "Effect": "Allow",
             "Principal": {
-                "AWS": iam_arn(f"role/{settings.K8S_WORKER_ROLE_NAME}"),
+                "AWS": iam_assume_role_principal(),
             },
             "Action": "sts:AssumeRole",
         },
@@ -125,14 +146,14 @@ def create_app_role(app):
     try:
         return iam.create_role(
             RoleName=app.iam_role_name,
-            AssumeRolePolicyDocument=json.dumps(BASE_ROLE_POLICY),
+            AssumeRolePolicyDocument=json.dumps(BASE_ASSUME_ROLE_POLICY),
         )
     except iam.meta.client.exceptions.EntityAlreadyExistsException:
         log.warning(f'Skipping creating Role {app.iam_role_name}: Already exists')
 
 
 def create_user_role(user):
-    policy = deepcopy(BASE_ROLE_POLICY)
+    policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
     policy['Statement'].append(SAML_STATEMENT)
     oidc_statement = deepcopy(OIDC_STATEMENT)
     oidc_statement['Condition'] = {'StringEquals': {

@@ -16,7 +16,7 @@ def iam_managed_policy():
 
 def test_arn(settings, iam_managed_policy):
     assert cluster.RoleGroup(iam_managed_policy).arn == (
-        f'arn:aws:iam::{settings.AWS_ACCOUNT_ID}:policy/{settings.ENV}/group/test'
+        f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/{settings.ENV}/group/test"
     )
 
 
