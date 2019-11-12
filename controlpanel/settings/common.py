@@ -557,8 +557,16 @@ AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
 
+# -- User Guidance
+USER_GUIDANCE_BASE_URL = os.environ.get(
+    'USER_GUIDANCE_BASE_URL',
+    'https://user-guidance.services.alpha.mojanalytics.xyz'
+)
+
+
 # -- Slack
 SLACK = {
     "api_token": os.environ.get('SLACK_API_TOKEN'),
     "channel": os.environ.get('SLACK_CHANNEL', "#analytical-platform"),
 }
+
