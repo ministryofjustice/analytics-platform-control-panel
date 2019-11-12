@@ -22,7 +22,7 @@
   </form>
 </section>
 
-{% if request.user.has_perm('api.destroy_items3bucket', items3bucket) %}
+{% if request.user.has_perm('api.destroy_users3bucket', items3bucket) %}
 <section class="cpanel-section">
   <form method="post" action="{{ revoke_url }}">
     {{ csrf_input }}
