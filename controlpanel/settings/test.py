@@ -3,7 +3,8 @@ from controlpanel.settings.common import *
 
 ENV = 'test'
 
-AWS_ACCOUNT_ID = '123456789012'  # XXX DO NOT CHANGE - it will break moto tests
+AWS_COMPUTE_ACCOUNT_ID = "test_compute_account_id"
+AWS_DATA_ACCOUNT_ID = "123456789012"  # XXX DO NOT CHANGE - it will break moto tests
 K8S_WORKER_ROLE_NAME = "nodes.example.com"
 SAML_PROVIDER = "test-saml"
 
@@ -30,3 +31,8 @@ TOOLS["testtool"] = {
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
+
+SLACK = {
+    "api_token": "test-slack-api-token",
+    "channel": "test-slack-channel",
+}

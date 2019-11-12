@@ -66,3 +66,33 @@ def test_aws_delete_role_calls_service(aws):
 def test_k8s_namespace():
     user = User(username='AlicE')
     assert user.k8s_namespace == 'user-alice'
+
+
+@pytest.yield_fixture
+def slack():
+    with patch('controlpanel.api.models.user.slack') as slack:
+        yield slack
+
+
+def test_slack_notification_on_create_superuser(slack):
+    user = User.objects.create(
+        username='test-user',
+        is_superuser=True,
+    )
+
+    slack.notify_superuser_created.assert_called_once_with(
+        user.username,
+        by_username=None,
+    )
+
+
+def test_slack_notification_on_grant_superuser_access(slack, users):
+    user = users['normal_user']
+    user.is_superuser = True
+    user.save()
+
+    slack.notify_superuser_created.assert_called_with(
+        user.username,
+        by_username=None,
+    )
+

@@ -67,7 +67,7 @@ class SetSuperadmin(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     fields = ['is_superuser']
     http_method_names = ['post']
     model = User
-    permission_required = 'api.dd_superuser'
+    permission_required = 'api.add_superuser'
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated superadmin status")

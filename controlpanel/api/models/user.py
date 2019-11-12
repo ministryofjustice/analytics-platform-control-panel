@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from controlpanel.api import auth0, cluster
+from controlpanel.api import auth0, cluster, slack
 from controlpanel.utils import sanitize_dns_label
 
 
@@ -83,10 +83,17 @@ class User(AbstractUser):
         auth0.ManagementAPI().reset_mfa(self.auth0_id)
 
     def save(self, *args, **kwargs):
-        try:
-            User.objects.get(pk=self.pk)
-        except User.DoesNotExist:
+        existing = User.objects.filter(pk=self.pk).first()
+        if not existing:
             cluster.User(self).create()
+
+        already_superuser = existing and existing.is_superuser
+        if self.is_superuser and not already_superuser:
+            request = CrequestMiddleware.get_request()
+            slack.notify_superuser_created(
+                self.username,
+                by_username=request.user.username if request else None,
+            )
 
         return super().save(*args, **kwargs)
 
