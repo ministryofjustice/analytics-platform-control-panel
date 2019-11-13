@@ -200,10 +200,10 @@ def start_background_task(task, message):
     )
 
 def wait_for_deployment(deployment, id_token):
-    while True:
+    status = TOOL_DEPLOYING
+    while status == TOOL_DEPLOYING:
         status = deployment.get_status(id_token)
         update_tool_status(deployment.user, deployment.tool, status)
-        if status in (TOOL_DEPLOY_FAILED, TOOL_READY, TOOL_IDLED):
-            return status
         sleep(1)
+    return status
 
