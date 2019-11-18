@@ -75,7 +75,7 @@ USER controlpanel
 COPY --from=jsdep dist/app.css dist/app.js static/
 COPY --from=jsdep node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 COPY --from=jsdep node_modules/govuk-frontend static/govuk-frontend
-COPY --from=jsdep node_modules/@hmcts/frontend static/hmcts-frontend
+COPY --from=jsdep node_modules/@ministryofjustice/frontend/moj static/ministryofjustice-frontend
 COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
 COPY --from=jsdep node_modules/jquery/dist static/jquery
 

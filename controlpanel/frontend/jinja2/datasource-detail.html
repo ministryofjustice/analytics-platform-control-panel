@@ -20,7 +20,7 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <p class="govuk-body">
-  <a href="{{ bucket.aws_url }}" class="govuk-button hmcts-button--secondary" target="_blank" rel="noopener">
+  <a href="{{ bucket.aws_url }}" class="govuk-button govuk-button--secondary" target="_blank" rel="noopener">
     Open on AWS
   </a>
 </p>
@@ -65,7 +65,7 @@
         <td class="govuk-table__cell">
           {% if request.user.has_perm('api.update_users3bucket', member) %}
           <a href="{% if member.user -%}{{ url("update-access-level", kwargs={"pk": member.id}) }}{%- else -%}{{ url("update-policy-access-level", kwargs={"pk": member.id}) }}{%- endif %}"
-             class="govuk-button hmcts-button--secondary right">
+             class="govuk-button govuk-button--secondary right">
             Edit access level
           </a>
           {% endif %}
@@ -85,7 +85,7 @@
 
   {% if request.user.has_perm('api.create_users3bucket', bucket) and users_options|length %}
     <a href="{{ url('grant-datasource-access', kwargs={'pk': bucket.pk}) }}"
-       class="govuk-button hmcts-button--secondary">
+       class="govuk-button govuk-button--secondary">
       Grant user access
     </a>
   {% endif %}
@@ -93,7 +93,7 @@
   {% if request.user.has_perm('api.manage_groups') %}
     {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length %}
       <a href="{{ url('grant-datasource-policy-access', kwargs={'pk': bucket.pk}) }}"
-         class="govuk-button hmcts-button--secondary">
+         class="govuk-button govuk-button--secondary">
         Grant group access
       </a>
     {% endif %}
@@ -139,7 +139,7 @@
                      name="access_level"
                      value="{{ yes_no(apps3bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
               <input type="hidden" name="return_to" value="manage-datasource">
-              <button class="confirm govuk-button hmcts-button--secondary">
+              <button class="confirm govuk-button govuk-button--secondary">
                 Set {{ yes_no(apps3bucket.access_level, 'readwrite', 'read only', 'read/write') }}
               </button>
             </form>
@@ -149,7 +149,7 @@
                   method="post"
                   class="form-control-prefix">
               {{ csrf_input }}
-              <button class="confirm govuk-button hmcts-button--secondary">
+              <button class="confirm govuk-button govuk-button--secondary">
                 Revoke access
               </button>
             </form>
@@ -171,7 +171,7 @@
 
   {% if request.user.has_perm('api.create_apps3bucket', bucket) and app_options|length %}
     <a href="{{ url('grant-app-access', kwargs={'pk': bucket.pk}) }}"
-       class="govuk-button hmcts-button--secondary">
+       class="govuk-button govuk-button--secondary">
       Grant app access
     </a>
   {% endif %}

@@ -47,7 +47,7 @@ node_modules:
 	@npm install
 	@cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 	@cp -R node_modules/govuk-frontend/ static/govuk-frontend
-	@cp -R node_modules/@hmcts/frontend/ static/hmcts-frontend
+	@cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
 	@cp -R node_modules/html5shiv/dist/ static/html5-shiv
 	@cp -R node_modules/jquery/dist/ static/jquery
 

@@ -69,7 +69,7 @@
   </h2>
   <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
     {{ csrf_input }}
-    <button class="govuk-button hmcts-button--secondary right selectable-rows__enable-on-selections"
+    <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
             type="submit"
             name="submit"
             disabled="disabled"
@@ -93,7 +93,7 @@
           <td class="govuk-table__cell">{{ customer.email }}</td>
           {% if request.user.has_perm('api.remove_app_customer', app) %}
           <td class="govuk-table__cell">
-            <button class="govuk-button hmcts-button--secondary right"
+            <button class="govuk-button govuk-button--secondary right"
                     name="customer"
                     value="{{ customer.user_id }}">
               Remove customer
@@ -165,7 +165,7 @@
         <td class="govuk-table__cell align-right">
           <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
             {{ csrf_input }}
-            <button class="confirm govuk-button hmcts-button--secondary right">
+            <button class="confirm govuk-button govuk-button--secondary right">
               Revoke admin
             </button>
           </form>
@@ -241,14 +241,14 @@
           <form action="{{ url('update-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
-            <button class="confirm govuk-button hmcts-button--secondary">
+            <button class="confirm govuk-button govuk-button--secondary">
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
           {% if request.user.has_perm('api.remove_app_bucket', app) %}
           <form action="{{ url('revoke-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
-            <button class="confirm govuk-button hmcts-button--secondary">
+            <button class="confirm govuk-button govuk-button--secondary">
               Disconnect
             </button>
           </form>
@@ -281,7 +281,7 @@
       {{ grant_access_form.datasource }}
     </div>
     <div class="govuk-form-group">
-      <button class="govuk-button hmcts-button--secondary">
+      <button class="govuk-button govuk-button--secondary">
         Grant access
       </button>
     </div>

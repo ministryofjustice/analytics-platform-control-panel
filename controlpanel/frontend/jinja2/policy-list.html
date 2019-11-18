@@ -25,7 +25,7 @@
         <td class="govuk-table__cell"><a href="{{ url("manage-policy", kwargs={ "pk": policy.id }) }}">{{ policy.name }}</a></td>
         <td class="govuk-table__cell">{{ policy.arn }}</td>
         <td class="govuk-table__cell">
-          <a class="govuk-button hmcts-button--secondary"
+          <a class="govuk-button govuk-button--secondary"
              href="{{ url('manage-policy', kwargs={ "pk": policy.pk }) }}">
             Manage group
           </a>

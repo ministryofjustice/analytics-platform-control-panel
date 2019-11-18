@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column-reverse;
   overflow: scroll;
-  border: 2px inset govuk-colour('grey-3');
+  border: 2px inset govuk-colour('light-grey');
   padding: 10px;
   margin-bottom: 1em;
   max-height: 20em;
@@ -12,6 +12,6 @@
   }
 
   .timestamp {
-    color: govuk-colour('grey-1');
+    color: govuk-colour('dark-grey');
   }
 }

@@ -19,7 +19,7 @@
     border: none;
     border-radius: 15px;
     color: govuk-colour("black");
-    background-color: govuk-colour("grey-1");
+    background-color: govuk-colour("dark-grey");
     text-decoration: none;
     text-align: center;
     transition-property: width, background-color;
@@ -31,7 +31,7 @@
 
     &:hover {
       width: 120px;
-      background-color: govuk-colour("grey-2");
+      background-color: govuk-colour("mid-grey");
 
       span {
         display: inline-block;

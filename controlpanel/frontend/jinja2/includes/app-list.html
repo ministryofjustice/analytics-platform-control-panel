@@ -34,7 +34,7 @@
         {{ yes_no(user.is_app_admin(app.id)) }}
       </td>
       <td class="govuk-table__cell">
-        <a class="govuk-button hmcts-button--secondary right {%- if not request.user.has_perm('api.retrieve_app', app) %} govuk-visually-hidden{% endif %}"
+        <a class="govuk-button govuk-button--secondary right {%- if not request.user.has_perm('api.retrieve_app', app) %} govuk-visually-hidden{% endif %}"
           href="{{ url("manage-app", kwargs={ "pk": app.id }) }}">
           Manage app
         </a>

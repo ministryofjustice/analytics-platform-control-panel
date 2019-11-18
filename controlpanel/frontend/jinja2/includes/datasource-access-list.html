@@ -41,7 +41,7 @@
         <td class="govuk-table__cell">
           {% if request.user.has_perm('api.update_users3bucket', member) %}
           <a href="{% if member.user -%}{{ url("update-access-level", kwargs={"pk": member.id}) }}{%- else -%}{{ url("update-policy-access-level", kwargs={"pk": member.id}) }}{%- endif %}"
-             class="govuk-button hmcts-button--secondary right">
+             class="govuk-button govuk-button--secondary right">
             Edit access level
           </a>
           {% endif %}

@@ -1,7 +1,7 @@
 ul.tabs {
   @include clearfix;
 
-  border-bottom: 1px solid $grey-3;
+  border-bottom: 1px solid $light-grey;
 
   li {
     float: left;
@@ -10,12 +10,12 @@ ul.tabs {
     cursor: pointer;
     margin-right: 5px;
     margin-bottom: -1px;
-    border: 1px solid $grey-3;
+    border: 1px solid $light-grey;
     border-bottom: none;
-    background-color: $grey-3;
+    background-color: $light-grey;
 
     &:hover {
-      border-color: $grey-2;
+      border-color: $mid-grey;
     }
 
     &.active {

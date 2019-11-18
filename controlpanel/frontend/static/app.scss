@@ -1,38 +1,31 @@
+$govuk-global-styles: true;
+
 // override govuk font because we're not allowed to use Transport New
 $govuk-font-family-nta: "Arial";
 $govuk-font-family-nta-tabular: "Arial";
 
-$govuk-assets-path: "/static/govuk-frontend/assets/";
+$govuk-assets-path: "/static/govuk-frontend/govuk/assets/";
 
-@import "govuk-frontend/settings/assets";
-@import "govuk-frontend/settings/compatibility";
-@import "govuk-frontend/settings/global-styles";
-@import "govuk-frontend/settings/ie8";
-@import "govuk-frontend/settings/media-queries";
-@import "govuk-frontend/settings/colours-palette";
-@import "govuk-frontend/settings/colours-organisations";
-@import "govuk-frontend/settings/colours-applied";
-@import "govuk-frontend/settings/spacing";
-@import "govuk-frontend/settings/measurements";
-// comment the line below out to avoid using Transport New font
-//@import "govuk-frontend/settings/typography-font-families";
-@import "govuk-frontend/settings/typography-font";
-@import "govuk-frontend/settings/typography-responsive";
-@import "govuk-frontend/tools/all";
-@import "govuk-frontend/helpers/all";
-@import "govuk-frontend/core/all";
-@import "govuk-frontend/objects/all";
-@import "govuk-frontend/components/all";
-@import "govuk-frontend/utilities/all";
-@import "govuk-frontend/overrides/all";
+// GOV.UK Frontend
+@import "govuk-frontend/govuk/all";
 
-@import "@hmcts/frontend/all";
+// MOJ Frontend
+@import "@ministryofjustice/frontend/moj/all";
 
+// Other component styles
 @import "components/all";
 
+// App specific
 @import "local/buttons";
 @import "local/forms";
 @import "local/layout";
 @import "local/markdown";
-@import "local/sign-out";
 @import "local/utilities";
+
+body {
+    margin: 0;
+}
+
+.moj-phase-banner--border {
+    border: none;
+}
