@@ -1,3 +1,5 @@
+[![Docker Repository on Quay](https://quay.io/repository/mojanalytics/control-panel/status "Docker Repository on Quay")](https://quay.io/repository/mojanalytics/control-panel)
+
 # Analytical Platform Control Panel
 
 The Control Panel is a Django project made up of two parts:
