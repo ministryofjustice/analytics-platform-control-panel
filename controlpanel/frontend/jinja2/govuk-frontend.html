@@ -1,15 +1,16 @@
 {%- from "skip-link/macro.html" import govukSkipLink -%}
 {%- from "footer/macro.html" import govukFooter -%}
-{%- from "header/macro.html" import govukHeader with context -%}
+{%- from "header/macro.html" import mojHeader with context -%}
 
 <!DOCTYPE html>
-<html lang="{{ htmlLang | default('en') }}" class="govuk-template {{ htmlClasses or "" }}">
+<!--[if lt IE 9]><html class="lte-ie8" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--><html lang="en"><!--<![endif]-->
 
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>
     {%- block page_title -%}
-      GOV.UK - The best place to find government services and information
+      Ministry of Justice Analytical Platform
     {%- endblock -%}
   </title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,12 +18,11 @@
   {# Ensure that older IE versions always render with the correct rendering engine #}
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {% block headIcons %}
-  <link rel="shortcut icon" sizes="16x16 32x32 48x48" href="{{ static('govuk-frontend/assets/images/favicon.ico') }}" type="image/x-icon">
-  <link rel="mask-icon" href="{{ static('govuk-frontend/assets/images/govuk-mask-icon.svg') }}" color="#0b0c0c">
-  <link rel="apple-touch-icon" sizes="180x180" href="{{ static('govuk-frontend/assets/images/govuk-apple-touch-icon-180x180.png') }}">
-  <link rel="apple-touch-icon" sizes="167x167" href="{{ static('govuk-frontend/assets/images/govuk-apple-touch-icon-167x167.png') }}">
-  <link rel="apple-touch-icon" sizes="152x152" href="{{ static('govuk-frontend/assets/images/govuk-apple-touch-icon-152x152.png') }}">
-  <link rel="apple-touch-icon" href="{{ static('govuk-frontend/assets/images/govuk-apple-touch-icon.png') }}">
+  <link rel="shortcut icon" href="{{ static('govuk-frontend/govuk/assets/images/favicon.ico') }}" type="image/x-icon">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-180x180.png') }}" sizes="180x180">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-167x167.png') }}" sizes="167x167">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-152x152.png') }}" sizes="152x152">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon.png') }}">
   {% endblock %}
 
   {% block head %}{% endblock %}
@@ -32,11 +32,12 @@
   {%- set host = "localhost" %}
   {%- if request %}{% set scheme = request.scheme %}{% endif %}
   {%- if request %}{% set host = request.get_host() %}{% endif %}
-  <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('govuk-frontend/assets/images/govuk-opengraph-image.png') }}">
+  <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('ministryofjustice-frontend/assets/images/moj-opengraph-image.png') }}">
 </head>
 
-<body class="govuk-template__body {{ bodyClasses or "" }}">
+<body class="app-body {{ bodyClasses or "" }}">
   <script>document.body.className = ((document.body.className) ? document.body.className + ' js-enabled' : 'js-enabled');</script>
+  <div class="app-pane">
   {% block bodyStart %}{% endblock %}
 
   {% block skipLink %}
@@ -47,12 +48,12 @@
   {% endblock %}
 
   {% block header %}
-    {{ govukHeader({}) }}
+    {{ mojHeader({}) }}
   {% endblock %}
 
   {% block main %}
+    {% block beforeContent %}{% endblock %}
     <div class="govuk-width-container">
-      {% block beforeContent %}{% endblock %}
       <main class="govuk-main-wrapper {{ mainClasses or "" }}" id="main-content" role="main">
         {% block content %}{% endblock %}
       </main>
@@ -62,6 +63,8 @@
   {% block footer %}
     {{ govukFooter({}) }}
   {% endblock %}
+
+  </div>
 
   {% block body_end %}{% endblock %}
 </body>

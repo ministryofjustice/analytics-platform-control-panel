@@ -1,5 +1,6 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import TemplateView
+from mozilla_django_oidc.views import OIDCLogoutView
 
 from controlpanel.frontend.views.app import (
     AdminAppList,
@@ -63,3 +64,8 @@ from controlpanel.frontend.views.whats_new import WhatsNew
 
 class IndexView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
+
+
+class LogoutView(OIDCLogoutView):
+    def get(self, request):
+        return super().post(request)

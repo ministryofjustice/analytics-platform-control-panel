@@ -5,7 +5,7 @@
   height: 20px;
   border: none;
   border-radius: 50%;
-  background-color: govuk-colour("grey-3");
+  background-color: govuk-colour("light-grey");
   top: 4px;
 
   span {
@@ -26,7 +26,7 @@
   }
 
   &:hover {
-    background-color: govuk-colour("grey-2");
+    background-color: govuk-colour("mid-grey");
   }
 }
 

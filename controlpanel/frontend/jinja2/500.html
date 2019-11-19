@@ -3,9 +3,15 @@
 {% set page_title = "Sorry, there is a problem with the service" %}
 
 {% block header %}
-  {{ govukHeader({
-    'serviceName': service_name,
-    'serviceUrl': '#',
+  {{ mojHeader({
+    'organisationLabel': {
+      'text': 'Ministry of Justice',
+      'href': '#',
+    },
+    'serviceLabel': {
+      'text': service_name,
+      'href': '#',
+    },
     'navigation': [],
   }) }}
 {% endblock %}

@@ -1,8 +1,7 @@
-{% from "header/macro.html" import govukHeader with context %}
+{% from "header/macro.html" import mojHeader with context %}
 {% from "footer/macro.html" import govukFooter %}
-{% from "navbar/macro.html" import navbar %}
+{% from "navbar/macro.html" import mojPrimaryNavigation %}
 {% from "alerts/macro.html" import alerts with context %}
-{% from "sign-out/macro.html" import sign_out_link with context %}
 
 {% extends "govuk-frontend.html" %}
 
@@ -36,31 +35,47 @@
 
 {% block header %}
   {% if request.user.is_authenticated -%}
-    {{ govukHeader({
-      'serviceName': service_name,
-      'serviceUrl': '#',
-      'navigation': [
-        {
-          'href': url('index'),
-          'text': "Signed in as " ~ request.user.name | default(request.user.email),
-          'active': True
-        },
-        {
-          'html': sign_out_link(),
-        }
-      ]
+    {{ mojHeader({
+      'organisationLabel': {
+        'text': 'Ministry of Justice',
+        'href': '#',
+      },
+      'serviceLabel': {
+        'text': service_name,
+        'href': '#',
+      },
+      'navigation': {
+        'label': 'Account navigation',
+        'items': [
+          {
+            'href': url('index'),
+            'text': request.user.name | default(request.user.email),
+            'active': True
+          },
+          {
+            'html': '<a href="' ~ url('oidc_logout') ~ '">Sign out</a>'
+          }
+        ]
+      }
     }) }}
   {%- else -%}
-    {{ govukHeader({
-      'serviceName': service_name,
-      'serviceUrl': '#',
+    {{ mojHeader({
+      'organisationLabel': {
+        'text': 'Ministry of Justice',
+        'href': '#',
+      },
+      'serviceLabel': {
+        'text': service_name,
+        'href': '#',
+      },
     }) }}
   {%- endif %}
 {% endblock %}
 
 {% block beforeContent %}
   {% if not hide_nav and request.user.is_authenticated %}
-  {{ navbar({
+  {{ mojPrimaryNavigation({
+    "label": "Primary navigation",
     "items": [
       {
         "hide": not request.user.is_superuser,
@@ -111,40 +126,43 @@
 
 {% block footer %}
   {{ govukFooter({
-    'meta': {
-      'items': [
-        {
-          'href': user_guidance_base_url,
-          'text': "Platform user guidance"
-        },
-        {
-          'href': user_guidance_base_url + "/support.html",
-          'text': "Platform support"
-        },
-        {
-          'href': "https://asdslack.slack.com/messages/C1PUCG719/#",
-          'text': "R Slack channel"
-        },
-        {
-          'href': "https://asdslack.slack.com/messages/C1Q09V86S/#",
-          'text': "Python slack channel"
-        },
-        {
-          'href': "https://asdslack.slack.com/messages/C4PF7QAJZ#",
-          'text': "Analytical platform slack channel"
-        },
-        {
-          'href': url('whats-new'),
-          'text': "What's new?"
-        }
-      ]
-    }
+    'navigation': [
+      {
+        'title': 'Related resources',
+        'items': [
+          {
+            'href': user_guidance_base_url,
+            'text': "Platform user guidance"
+          },
+          {
+            'href': user_guidance_base_url + "/support.html",
+            'text': "Platform support"
+          },
+          {
+            'href': "https://asdslack.slack.com/messages/C1PUCG719/#",
+            'text': "R Slack channel"
+          },
+          {
+            'href': "https://asdslack.slack.com/messages/C1Q09V86S/#",
+            'text': "Python slack channel"
+          },
+          {
+            'href': "https://asdslack.slack.com/messages/C4PF7QAJZ#",
+            'text': "Analytical platform slack channel"
+          },
+          {
+            'href': url('whats-new'),
+            'text': "What's new?"
+          }
+        ]
+      }
+    ]
   }) }}
 {% endblock %}
 
 {% block body_end %}
   {% block scripts %}
-    <script src="{{ static('govuk-frontend/all.js') }}"></script>
+    <script src="{{ static('govuk-frontend/govuk/all.js') }}"></script>
     <script>window.GOVUKFrontend.initAll()</script>
     <script src="{{ static('accessible-autocomplete/accessible-autocomplete.min.js') }}"></script>
     <script src="{{ static('jquery/jquery.min.js') }}"></script>

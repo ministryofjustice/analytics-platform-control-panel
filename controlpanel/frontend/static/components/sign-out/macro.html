@@ -1,6 +1,0 @@
-{% macro sign_out_link() %}
-<form method="post" action="{{ url('oidc_logout') }}">
-  {{ csrf_input }}
-  <button class="sign-out">Sign out</button>
-</form>
-{% endmacro %}

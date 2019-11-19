@@ -31,7 +31,7 @@
         </div>
       </td>
       <td class="govuk-table__cell align-right no-wrap">
-        <a class="govuk-button hmcts-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
+        <a class="govuk-button govuk-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
           data-action-name="open"
           href="{{ tool.url(request.user) }}"
           rel="noopener"
@@ -44,7 +44,7 @@
               method="post">
           {{ csrf_input }}
           {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
-          <button class="govuk-button hmcts-button--secondary right">Restart</button>
+          <button class="govuk-button govuk-button--secondary right">Restart</button>
         </form>
         <form action="{{ url('deploy-tool', kwargs={"name": tool.chart_name}) }}"
               class="background-submit tool-action {% if deployment %} govuk-visually-hidden {% endif %}"
@@ -52,7 +52,7 @@
               method="post">
           {{ csrf_input }}
           {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
-          <button class="govuk-button hmcts-button--secondary right">Deploy</button>
+          <button class="govuk-button govuk-button--secondary right">Deploy</button>
         </form>
         {% if deployment.outdated %}
           <form action="{{ url('upgrade-tool', kwargs={"name": tool.chart_name}) }}"
@@ -60,7 +60,7 @@
                 data-action-name="upgrade"
                 method="post">
             {{ csrf_input }}
-            <button class="govuk-button hmcts-button--secondary right">Upgrade</button>
+            <button class="govuk-button govuk-button--secondary right">Upgrade</button>
           </form>
         {% endif %}
       </td>

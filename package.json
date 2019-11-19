@@ -5,10 +5,10 @@
   "repository": "https://github.com/ministryofjustice/analytics-platform-control-panel.git",
   "license": "MIT",
   "dependencies": {
-    "@hmcts/frontend": "^0.0.34-alpha",
+    "@ministryofjustice/frontend": "^0.0.17-alpha",
     "accessible-autocomplete": "^1.6.2",
     "core-js": "^2.6.9",
-    "govuk-frontend": "^2.13.0",
+    "govuk-frontend": "^3.0.0",
     "html5shiv": "^3.7.3",
     "jquery": "^3.4.1",
     "node-sass": "^4.12.0"
@@ -32,7 +32,9 @@
     "test": "jest"
   },
   "babel": {
-    "ignore": ["**/*.test.js"],
+    "ignore": [
+      "**/*.test.js"
+    ],
     "presets": [
       [
         "@babel/preset-env",
