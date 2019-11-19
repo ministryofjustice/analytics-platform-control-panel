@@ -87,7 +87,7 @@ class App:
         return f"{settings.ENV}_app_{self.app.slug}"
 
     def create_iam_role(self):
-        aws.create_app_role(self.iam_role_name)
+        aws.create_app_role(self.app)
 
     def delete_iam_role(self):
         aws.delete_role(self.iam_role_name)
