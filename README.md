@@ -19,8 +19,8 @@ machine](doc/running.md).
 
 ## Deployment
 
-Commits to the protected `master` branch will trigger a Concourse CI pipeline which will deploy the changes to our `dev` environment.
-Versioned Github releases will trigger another pipeline and deploy to our `alpha` environment.
+Commits to the protected `master` branch will trigger a [Concourse CI pipeline](https://concourse.services.dev.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) which will deploy the changes to our `dev` environment.
+Versioned Github releases will trigger [another pipeline](https://concourse.services.alpha.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) and deploy to our `alpha` environment.
 
 
 ## Documentation
