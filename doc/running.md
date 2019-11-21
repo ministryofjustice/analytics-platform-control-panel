@@ -15,7 +15,9 @@ pip3 install -r requirements.txt
 
 ## Kubernetes setup
 
-You need a kubeconfig (~/.kube/config) with the credentials for your k8s cluster. Once you've got that, this should work:
+You need a kubeconfig file (`~/.kube/config`) with the credentials for your kubernetes cluster.
+
+Once you've got that, this should work:
 ```sh
 kubectl cluster-info
 ```
