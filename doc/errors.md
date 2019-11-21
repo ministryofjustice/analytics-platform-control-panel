@@ -3,7 +3,7 @@
 
     Error: file "mojanalytics/rstudio" not found
 
-It ran a Helm command but it can't find the chart. See [Helm set-up](helm.md).
+It ran a Helm command but it can't find the chart. See [Helm set-up](running.md#helm).
 
 ---
 
