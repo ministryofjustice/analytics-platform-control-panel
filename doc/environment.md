@@ -19,11 +19,9 @@
 | `ELASTICSEARCH_USERNAME` | | |
 | `ENABLE_*` | See [Feature flags](feature-flags.md) | |
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
-| `GITHUB_ORGS` | Comma-separated list of Github organisations searched for
-webapp repositories |
+| `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
 | `K8S_WORKER_ROLE_NAME` | the name of the IAM role assigned to Kubernetes nodes, e.g. `nodes.dev.mojanalytics.xyz`. Combined with the ARN base to generate a full ARN like `arn:aws:iam::123456789012:role/nodes.dev.mojanalytics.xyz` | |
-| `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity:
-`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
+| `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
 | `LOGS_BUCKET_NAME` | Name of S3 bucket where logs are stored | `moj-analytics-s3-logs` |
 | `NFS_HOSTNAME` | Hostname of NFS server for user homes | |
 | `OIDC_AUTH_EXTENSION_URL` | Base URL of Auth0 authorization API | |
