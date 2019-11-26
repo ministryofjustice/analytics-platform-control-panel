@@ -1,11 +1,9 @@
 {% macro app_logs(app, kibana_base_url) %}
-  {# disable app logs temporarily
   <div class="app-logs">
     <pre>{% for entry in app.get_logs() -%}
 <span class="timestamp">{{ entry.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}:</span> <span class="message">{{ entry.message }}</span>
 {% endfor %}</pre>
   </div>
-  #}
   <p class="govuk-body">
     <a href="{{ kibana_link(app, kibana_base_url) }}">View full logs</a>
   </p>
