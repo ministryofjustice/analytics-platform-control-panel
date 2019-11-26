@@ -33,9 +33,14 @@ def app_logs(app, num_hours=None):
     conn = Elasticsearch(hosts=settings.ELASTICSEARCH['hosts'])
     s = Search(using=conn, index=settings.ELASTICSEARCH['indices']['app-logs'])
 
-    s = s.query(
+    # limit fields returned
+    s = s.source(['@timestamp', 'message'])
+
+    s = s.filter(
         Q('exists', field='message')
-        & Q('match', app_name=f'{app.release_name}-webapp')
+        & Q('term', **{
+            "app_name.keyword": f'{app.release_name}-webapp',
+        })
     )
 
     s = s.filter(Range(**{
