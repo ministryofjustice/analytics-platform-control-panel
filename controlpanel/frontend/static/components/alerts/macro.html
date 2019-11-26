@@ -2,7 +2,7 @@
   {%- set messages = [] %}
   {%- if request %}{% set messages = get_messages(request) %}{% endif %}
   {%- if messages %}
-  <div class="alerts">
+  <div class="alerts govuk-width-container">
     {% for message in messages -%}
     <div class="alerts--item{% if message.tags %} {{ message.tags }}{% endif %}">
       <span class="alerts--message">{{ message }}</span>
