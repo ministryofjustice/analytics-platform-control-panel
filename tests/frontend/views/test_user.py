@@ -43,7 +43,7 @@ def reset_mfa(client, users, *args):
     'view,user,expected_status',
     [
         (list, 'superuser', status.HTTP_200_OK),
-        (list, 'normal_user', status.HTTP_200_OK),
+        (list, 'normal_user', status.HTTP_403_FORBIDDEN),
 
         (delete, 'superuser', status.HTTP_302_FOUND),
         (delete, 'normal_user', status.HTTP_403_FORBIDDEN),
@@ -72,7 +72,6 @@ def test_permission(client, users, view, user, expected_status):
     'view,user,expected_count',
     [
         (list, 'superuser', 3),
-        (list, 'normal_user', 3),
     ],
 )
 def test_list(client, users, view, user, expected_count):

@@ -1,29 +1,23 @@
-from model_mommy import mommy
+from rest_framework import status
 from rest_framework.reverse import reverse
-from rest_framework.status import HTTP_200_OK
-from rest_framework.test import APITestCase
 
 
-class UserFilterTest(APITestCase):
+def user_list(client):
+    return client.get(reverse('user-list'))
 
-    def setUp(self):
-        self.superuser = mommy.make(
-            "api.User", is_superuser=True)
-        self.normal_user = mommy.make(
-            "api.User", is_superuser=False)
 
-    def test_superuser_sees_everything(self):
-        self.client.force_login(self.superuser)
+def test_superuser_sees_everything(client, users):
+    client.force_login(users['superuser'])
+    response = user_list(client)
+    assert response.status_code == status.HTTP_200_OK
 
-        response = self.client.get(reverse("user-list"))
-        user_ids = [user["auth0_id"] for user in response.data["results"]]
-        self.assertEqual(len(user_ids), 2)
-        self.assertIn(self.superuser.auth0_id, user_ids)
-        self.assertIn(self.normal_user.auth0_id, user_ids)
+    all_user_ids = [user.auth0_id for key, user in users.items()]
+    returned_user_ids = [user["auth0_id"] for user in response.data["results"]]
 
-    def test_normal_user_sees_everything(self):
-        self.client.force_login(self.normal_user)
+    assert set(returned_user_ids) == set(all_user_ids)
 
-        response = self.client.get(reverse("user-list"))
-        self.assertEqual(HTTP_200_OK, response.status_code)
-        self.assertEqual(len(response.data["results"]), 2)
+
+def test_normal_user_sees_nothing(client, users):
+    client.force_login(users['normal_user'])
+    response = user_list(client)
+    assert response.status_code == status.HTTP_403_FORBIDDEN

@@ -133,7 +133,7 @@ def is_self(user, other):
     return user == other
 
 
-add_perm('api.list_user', is_authenticated)
+add_perm('api.list_user', is_authenticated & is_superuser)
 add_perm('api.create_user', is_authenticated & is_superuser)
 add_perm('api.retrieve_user', is_authenticated & is_self)
 add_perm('api.update_user', is_authenticated & is_self)
