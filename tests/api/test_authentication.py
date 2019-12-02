@@ -66,7 +66,7 @@ def api_request(client):
             if value is not None:
                 filtered[header] = value
         return client.get(
-            "/api/cpanel/v1/users",
+            "/api/cpanel/v1/apps",
             follow=True,
             **filtered,
         )

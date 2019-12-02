@@ -73,7 +73,7 @@ def user_update_self(client, users):
         (user_create, "superuser", status.HTTP_201_CREATED),
         (user_update, "superuser", status.HTTP_200_OK),
 
-        (user_list, "normal_user", status.HTTP_200_OK),
+        (user_list, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_detail, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_own_detail, "normal_user", status.HTTP_200_OK),
         (user_delete, "normal_user", status.HTTP_403_FORBIDDEN),
