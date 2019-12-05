@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+import os
 import re
 import subprocess
 
@@ -26,11 +27,16 @@ class Helm(object):
 
         try:
             log.debug(' '.join(['helm', *args]))
+            env = os.environ.copy()
+            # helm checks for existence of DEBUG env var
+            if 'DEBUG' in env:
+                del env['DEBUG']
             proc = subprocess.Popen(
                 ["helm", *args],
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 encoding='utf8',
+                env=env,
                 **kwargs,
             )
 
