@@ -290,17 +290,19 @@ class S3AccessPolicy:
                 if resource.startswith(arn):
                     resources.remove(resource)
 
-    def grant_access(self, bucket_arn, access_level):
+    def grant_object_access(self, arn, access_level):
         other_level = 'readwrite' if access_level == 'readonly' else 'readonly'
 
-        self.add_resource(f'{bucket_arn}/*', access_level)
-        self.remove_resource(f'{bucket_arn}/*', other_level)
-        self.add_resource(bucket_arn, 'list')
+        self.add_resource(f'{arn}/*', access_level)
+        self.remove_resource(arn, other_level)
 
-    def revoke_access(self, bucket_arn):
-        self.remove_resource(f'{bucket_arn}/*', 'readonly')
-        self.remove_resource(f'{bucket_arn}/*', 'readwrite')
-        self.remove_resource(bucket_arn, 'list')
+    def grant_list_access(self, arn):
+        self.add_resource(arn, 'list')
+
+    def revoke_access(self, arn):
+        self.remove_resource(arn, 'readonly')
+        self.remove_resource(arn, 'readwrite')
+        self.remove_resource(arn, 'list')
 
     def put(self, policy_document=None):
         if policy_document is None:
@@ -349,23 +351,20 @@ def grant_bucket_access(role_name, bucket_arn, access_level, path_arns=[]):
     role = boto3.resource('iam').Role(role_name)
     policy = S3AccessPolicy(role.Policy('s3-access'))
     policy.revoke_access(bucket_arn)
+    policy.grant_list_access(bucket_arn)
     for arn in path_arns:
-        policy.grant_access(arn, access_level)
+        policy.grant_object_access(arn, access_level)
     policy.put()
 
 
 def revoke_bucket_access(role_name, bucket_arn=None, path_arns=[]):
-    if not path_arns:
-        if bucket_arn:
-            path_arns = [bucket_arn]
-        else:
-            log.warning(f'Asked to revoke {role_name} role access to nothing')
-            return
+    if not bucket_arn and not path_arns:
+        log.warning(f'Asked to revoke {role_name} role access to nothing')
+        return
 
     role = boto3.resource('iam').Role(role_name)
     policy = S3AccessPolicy(role.Policy('s3-access'))
-    for arn in path_arns:
-        policy.revoke_access(arn)
+    policy.revoke_access(bucket_arn)
     policy.put()
 
 
@@ -421,23 +420,20 @@ def grant_group_bucket_access(group_policy_arn, bucket_arn, access_level, path_a
     policy = boto3.resource('iam').Policy(group_policy_arn)
     policy = ManagedS3AccessPolicy(policy)
     policy.revoke_access(bucket_arn)
+    policy.grant_list_access(bucket_arn)
     for arn in path_arns:
-        policy.grant_access(arn, access_level)
+        policy.grant_object_access(arn, access_level)
     policy.put()
 
 
 def revoke_group_bucket_access(group_policy_arn, bucket_arn=None, path_arns=[]):
-    if not path_arns:
-        if bucket_arn:
-            path_arns = [bucket_arn]
-        else:
-            log.warning(f'Asked to revoke {group_policy_arn} group access to nothing')
-            return
+    if not bucket_arn and not path_arns:
+        log.warning(f'Asked to revoke {group_policy_arn} group access to nothing')
+        return
 
     policy = boto3.resource('iam').Policy(group_policy_arn)
     policy = ManagedS3AccessPolicy(policy)
-    for arn in path_arns:
-        policy.revoke_access(arn)
+    policy.revoke_access(bucket_arn)
     policy.put()
 
 
