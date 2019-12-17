@@ -3,6 +3,7 @@ import json
 import logging
 
 import boto3
+import botocore
 from django.conf import settings
 
 
@@ -181,9 +182,11 @@ def delete_role(name):
     try:
         role = boto3.resource('iam').Role(name)
         role.load()
-    except role.meta.client.exceptions.NoSuchEntityException:
-        log.warning(f'Skipping delete of Role {name}: Does not exist')
-        return
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchEntity":
+            log.warning(f'Skipping delete of Role {name}: Does not exist')
+            return
+        raise e
 
     for policy in role.attached_policies.all():
         role.detach_policy(PolicyArn=policy.arn)
