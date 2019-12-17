@@ -84,5 +84,4 @@ def test_delete_revoke_permissions(app, aws, bucket):
     aws.revoke_bucket_access.assert_called_with(
         apps3bucket.iam_role_name,
         bucket.arn,
-        apps3bucket.resources,
     )

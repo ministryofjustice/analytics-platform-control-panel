@@ -293,8 +293,8 @@ def get_statements_by_sid(policy_document):
 @pytest.mark.parametrize(
     'resources',
     [
-        ([]),
-        (['/foo/bar', '/foo/baz']),
+        ([],),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -303,11 +303,8 @@ def get_statements_by_sid(policy_document):
 )
 def test_grant_bucket_access(iam, users, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    path_arns_list = []
-    path_arns_object = []
-    if resources:
-        path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
-        path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
+    path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
     user = users['normal_user']
     aws.create_user_role(user)
 
@@ -337,7 +334,7 @@ def test_grant_bucket_access(iam, users, resources):
 @pytest.mark.parametrize(
     'resources',
     [
-        (['/foo/bar', '/foo/baz'])
+        (['/foo/bar', '/foo/baz'],)
     ],
     ids=[
         'paths'
@@ -405,8 +402,8 @@ def test_update_bucket_path_access(iam, users, resources_1, resources_2):
 @pytest.mark.parametrize(
     'resources',
     [
-        ([]),
-        (['/foo/bar', '/foo/baz']),
+        ([],),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -415,14 +412,12 @@ def test_update_bucket_path_access(iam, users, resources_1, resources_2):
 )
 def test_revoke_bucket_access(iam, users, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    path_arns = []
-    if resources:
-        path_arns = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
     user = users['normal_user']
     aws.create_user_role(user)
     aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_bucket_access(user.iam_role_name, bucket_arn, path_arns)
+    aws.revoke_bucket_access(user.iam_role_name, bucket_arn)
 
     policy = iam.RolePolicy(user.iam_role_name, 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
@@ -509,8 +504,8 @@ def test_delete_group(iam, group, user_roles):
 @pytest.mark.parametrize(
     'resources',
     [
-        ([]),
-        (['/foo/bar', '/foo/baz']),
+        ([],),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -519,11 +514,8 @@ def test_delete_group(iam, group, user_roles):
 )
 def test_grant_group_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    path_arns_list = []
-    path_arns_object = []
-    if resources:
-        path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
-        path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
+    path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
 
     aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list)
 
@@ -551,7 +543,7 @@ def test_grant_group_bucket_access(iam, group, resources):
 @pytest.mark.parametrize(
     'resources',
     [
-        (['/foo/bar', '/foo/baz'])
+        (['/foo/bar', '/foo/baz'],)
     ],
     ids=[
         'paths'
@@ -608,8 +600,8 @@ def test_update_group_bucket_path_access(iam, group, resources_1, resources_2):
 @pytest.mark.parametrize(
     'resources',
     [
-        ([]),
-        (['/foo/bar', '/foo/baz']),
+        ([],),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -618,12 +610,10 @@ def test_update_group_bucket_path_access(iam, group, resources_1, resources_2):
 )
 def test_revoke_group_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    path_arns = []
-    if resources:
-        path_arns = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
     aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_group_bucket_access(group.arn, bucket_arn, path_arns)
+    aws.revoke_group_bucket_access(group.arn, bucket_arn)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)

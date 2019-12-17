@@ -29,4 +29,3 @@ class PolicyS3Bucket(AccessToS3Bucket):
 
     def revoke_bucket_access(self):
         cluster.RoleGroup(self.policy).revoke_bucket_access(self.s3bucket.arn)
-

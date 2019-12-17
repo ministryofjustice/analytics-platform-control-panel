@@ -59,6 +59,5 @@ def test_delete_revoke_permissions(user, bucket, users3bucket, aws):
     aws.revoke_bucket_access.assert_called_with(
         user.iam_role_name,
         bucket.arn,
-        users3bucket.resources,
     )
     # TODO get policy from call and assert bucket ARN removed

@@ -291,10 +291,7 @@ class S3AccessPolicy:
                     resources.remove(resource)
 
     def grant_object_access(self, arn, access_level):
-        other_level = 'readwrite' if access_level == 'readonly' else 'readonly'
-
         self.add_resource(f'{arn}/*', access_level)
-        self.remove_resource(arn, other_level)
 
     def grant_list_access(self, arn):
         self.add_resource(arn, 'list')
@@ -357,8 +354,8 @@ def grant_bucket_access(role_name, bucket_arn, access_level, path_arns=[]):
     policy.put()
 
 
-def revoke_bucket_access(role_name, bucket_arn=None, path_arns=[]):
-    if not bucket_arn and not path_arns:
+def revoke_bucket_access(role_name, bucket_arn=None):
+    if not bucket_arn:
         log.warning(f'Asked to revoke {role_name} role access to nothing')
         return
 
@@ -426,8 +423,8 @@ def grant_group_bucket_access(group_policy_arn, bucket_arn, access_level, path_a
     policy.put()
 
 
-def revoke_group_bucket_access(group_policy_arn, bucket_arn=None, path_arns=[]):
-    if not bucket_arn and not path_arns:
+def revoke_group_bucket_access(group_policy_arn, bucket_arn=None):
+    if not bucket_arn:
         log.warning(f'Asked to revoke {group_policy_arn} group access to nothing')
         return
 
