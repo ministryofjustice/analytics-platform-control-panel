@@ -359,6 +359,18 @@ def test_revoke_bucket_access(iam, users, resources):
     assert 'list' not in statements
 
 
+def test_revoke_bucket_access_when_no_role(iam):
+    role_name = "test_role_non_existent"
+    bucket_arn = "arn:aws:s3:::test-bucket"
+
+    # be sure role doesn't exist before calling revoke_bucket_access()
+    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
+        role = iam.Role(role_name)
+        role.load()
+
+    aws.revoke_bucket_access(role_name, bucket_arn, [])
+
+
 def test_create_group(iam, settings):
     aws.create_group('test', '/group/test/')
 
