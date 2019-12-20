@@ -365,7 +365,15 @@ def revoke_bucket_access(role_name, bucket_arn=None, path_arns=[]):
             log.warning(f'Asked to revoke {role_name} role access to nothing')
             return
 
-    role = boto3.resource('iam').Role(role_name)
+    try:
+        role = boto3.resource("iam").Role(role_name)
+        role.load()
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchEntity":
+            log.warning(f"Role '{role_name}' doesn't exist: Nothing to revoke")
+            return
+        raise e
+
     policy = S3AccessPolicy(role.Policy('s3-access'))
     for arn in path_arns:
         policy.revoke_access(arn)
