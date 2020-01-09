@@ -68,8 +68,8 @@ class User:
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
-    def revoke_bucket_access(self, bucket_arn, path_arns=[]):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn, path_arns)
+    def revoke_bucket_access(self, bucket_arn):
+        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
 
 class App:
@@ -95,8 +95,8 @@ class App:
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
-    def revoke_bucket_access(self, bucket_arn, path_arns=[]):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn, path_arns)
+    def revoke_bucket_access(self, bucket_arn):
+        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     @property
     def url(self):
@@ -164,8 +164,8 @@ class RoleGroup:
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         aws.grant_group_bucket_access(self.arn, bucket_arn, access_level, path_arns)
 
-    def revoke_bucket_access(self, bucket_arn, path_arns=[]):
-        aws.revoke_group_bucket_access(self.arn, bucket_arn, path_arns)
+    def revoke_bucket_access(self, bucket_arn):
+        aws.revoke_group_bucket_access(self.arn, bucket_arn)
 
 
 def create_parameter(name, value, role, description):

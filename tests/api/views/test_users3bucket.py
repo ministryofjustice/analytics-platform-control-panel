@@ -78,7 +78,6 @@ def test_delete(client, users3buckets, aws):
     aws.revoke_bucket_access.assert_called_with(
         users3buckets[1].user.iam_role_name,
         users3buckets[1].s3bucket.arn,
-        users3buckets[1].resources,
     )
     # TODO get policy from call and assert bucket ARN not contained
 

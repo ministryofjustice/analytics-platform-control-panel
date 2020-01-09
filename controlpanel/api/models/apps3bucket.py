@@ -37,5 +37,5 @@ class AppS3Bucket(AccessToS3Bucket):
         )
 
     def revoke_bucket_access(self):
-        cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn, self.resources)
+        cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn)
 

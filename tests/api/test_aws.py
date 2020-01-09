@@ -294,7 +294,7 @@ def get_statements_by_sid(policy_document):
     'resources',
     [
         ([],),
-        (['/foo/bar', '/foo/baz']),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -303,6 +303,45 @@ def get_statements_by_sid(policy_document):
 )
 def test_grant_bucket_access(iam, users, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
+    user = users['normal_user']
+    aws.create_user_role(user)
+
+    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns_list)
+
+    policy = iam.RolePolicy(user.iam_role_name, 's3-access')
+    statements = get_statements_by_sid(policy.policy_document)
+
+    if path_arns_object:
+        assert set(path_arns_object) == set(statements['readonly']['Resource'])
+        assert f'{bucket_arn}/*' not in statements['readonly']['Resource']
+    else:
+        assert set([f'{bucket_arn}/*']) == set(statements['readonly']['Resource'])
+    # no readwrite statement because no readwrite access granted
+    assert 'readwrite' not in statements
+    assert set([bucket_arn]) == set(statements['list']['Resource'])
+
+    aws.grant_bucket_access(user.iam_role_name, f'{bucket_arn}-2', 'readonly')
+    policy.reload()
+    statements = get_statements_by_sid(policy.policy_document)
+    expected_num_resources = 2
+    if path_arns_list:
+        expected_num_resources = len(path_arns_list) + 1
+    assert len(statements['readonly']['Resource']) == expected_num_resources
+
+
+@pytest.mark.parametrize(
+    'resources',
+    [
+        (['/foo/bar', '/foo/baz'],)
+    ],
+    ids=[
+        'paths'
+    ]
+)
+def test_revoke_bucket_path_access(iam, users, resources):
+    bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns = [f'{bucket_arn}{resource}' for resource in resources]
     user = users['normal_user']
     aws.create_user_role(user)
@@ -310,33 +349,61 @@ def test_grant_bucket_access(iam, users, resources):
     aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
 
     policy = iam.RolePolicy(user.iam_role_name, 's3-access')
-    statements = get_statements_by_sid(policy.policy_document)
 
-    if path_arns:
-        assert f'{bucket_arn}/*' not in statements['readonly']['Resource']
-    else:
-        assert f'{bucket_arn}/*' in statements['readonly']['Resource']
-    # no readwrite statement because no readwrite access granted
-    assert 'readwrite' not in statements
-    if path_arns:
-        assert set(path_arns) == set(statements['list']['Resource'])
-    else:
-        assert bucket_arn in statements['list']['Resource']
-
-    aws.grant_bucket_access(user.iam_role_name, f'{bucket_arn}-2', 'readonly')
+    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly')
     policy.reload()
     statements = get_statements_by_sid(policy.policy_document)
-    expected_num_resources = 2
-    if path_arns:
-        expected_num_resources = len(path_arns) + 1
-    assert len(statements['readonly']['Resource']) == expected_num_resources
+
+    assert set([f'{bucket_arn}/*']) == set(statements['readonly']['Resource'])
+    assert set([f'{bucket_arn}']) == set(statements['list']['Resource'])
+
+
+@pytest.mark.parametrize(
+    'resources_1,resources_2',
+    [
+        (['/foo/bar', '/foo/baz'], ['/foo/bar', '/bar/baz']),
+        (['/foo/bar', '/foo/baz'], ['/bar/foo', '/bar/baz']),
+        (['/foo/bar'], ['/foo/bar', '/foo/baz']),
+    ],
+    ids=[
+        'change-some-paths',
+        'change-all-paths',
+        'add-new-paths',
+    ]
+)
+def test_update_bucket_path_access(iam, users, resources_1, resources_2):
+    bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns_list_1 = [f'{bucket_arn}{resource}' for resource in resources_1]
+    path_arns_list_2 = [f'{bucket_arn}{resource}' for resource in resources_2]
+    path_arns_object_1 = [f'{bucket_arn}{resource}/*' for resource in resources_1]
+    path_arns_object_2 = [f'{bucket_arn}{resource}/*' for resource in resources_2]
+    user = users['normal_user']
+    aws.create_user_role(user)
+
+    aws.grant_bucket_access(
+        user.iam_role_name, bucket_arn, 'readonly', path_arns_list_1
+    )
+
+    policy = iam.RolePolicy(user.iam_role_name, 's3-access')
+    statements = get_statements_by_sid(policy.policy_document)
+
+    assert set(path_arns_object_1) == set(statements['readonly']['Resource'])
+
+    aws.grant_bucket_access(
+        user.iam_role_name, bucket_arn, 'readonly', path_arns_list_2
+    )
+
+    policy.reload()
+    statements = get_statements_by_sid(policy.policy_document)
+
+    assert set(path_arns_object_2) == set(statements['readonly']['Resource'])
 
 
 @pytest.mark.parametrize(
     'resources',
     [
         ([],),
-        (['/foo/bar', '/foo/baz']),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -350,7 +417,7 @@ def test_revoke_bucket_access(iam, users, resources):
     aws.create_user_role(user)
     aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_bucket_access(user.iam_role_name, bucket_arn, path_arns)
+    aws.revoke_bucket_access(user.iam_role_name, bucket_arn)
 
     policy = iam.RolePolicy(user.iam_role_name, 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
@@ -450,7 +517,7 @@ def test_delete_group(iam, group, user_roles):
     'resources',
     [
         ([],),
-        (['/foo/bar', '/foo/baz']),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -459,29 +526,94 @@ def test_delete_group(iam, group, user_roles):
 )
 def test_grant_group_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
+    path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
 
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
 
-    if path_arns:
+    if path_arns_object:
+        assert set(path_arns_object) == set(statements['readonly']['Resource'])
         assert f'{bucket_arn}/*' not in statements['readonly']['Resource']
     else:
-        assert f'{bucket_arn}/*' in statements['readonly']['Resource']
+        assert set([f'{bucket_arn}/*']) == set(statements['readonly']['Resource'])
+    # no readwrite statement because no readwrite access granted
     assert 'readwrite' not in statements
-    if path_arns:
-        assert set(path_arns) == set(statements['list']['Resource'])
-    else:
-        assert bucket_arn in statements['list']['Resource']
+    assert set([bucket_arn]) == set(statements['list']['Resource'])
+
+    aws.grant_group_bucket_access(group.arn, f'{bucket_arn}-2', 'readonly')
+    group.reload()
+    statements = get_statements_by_sid(group.default_version.document)
+    expected_num_resources = 2
+    if path_arns_list:
+        expected_num_resources = len(path_arns_list) + 1
+    assert len(statements['readonly']['Resource']) == expected_num_resources
+
+
+@pytest.mark.parametrize(
+    'resources',
+    [
+        (['/foo/bar', '/foo/baz'],)
+    ],
+    ids=[
+        'paths'
+    ],
+)
+def test_revoke_group_bucket_path_access(iam, group, resources):
+    bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
+
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly')
+    group.reload()
+    statements = get_statements_by_sid(group.default_version.document)
+
+    assert set([f'{bucket_arn}/*']) == set(statements['readonly']['Resource'])
+    assert set([f'{bucket_arn}']) == set(statements['list']['Resource'])
+
+
+@pytest.mark.parametrize(
+    'resources_1,resources_2',
+    [
+        (['/foo/bar', '/foo/baz'], ['/foo/bar', '/bar/baz']),
+        (['/foo/bar', '/foo/baz'], ['/bar/foo', '/bar/baz']),
+        (['/foo/bar'], ['/foo/bar', '/foo/baz']),
+    ],
+    ids=[
+        'change-some-paths',
+        'change-all-paths',
+        'add-new-paths',
+    ],
+)
+def test_update_group_bucket_path_access(iam, group, resources_1, resources_2):
+    bucket_arn = 'arn:aws:s3:::test-bucket'
+    path_arns_list_1 = [f'{bucket_arn}{resource}' for resource in resources_1]
+    path_arns_list_2 = [f'{bucket_arn}{resource}' for resource in resources_2]
+    path_arns_object_1 = [f'{bucket_arn}{resource}/*' for resource in resources_1]
+    path_arns_object_2 = [f'{bucket_arn}{resource}/*' for resource in resources_2]
+
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list_1)
+
+    group.reload()
+    statements = get_statements_by_sid(group.default_version.document)
+
+    assert set(path_arns_object_1) == set(statements['readonly']['Resource'])
+
+    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list_2)
+
+    group.reload()
+    statements = get_statements_by_sid(group.default_version.document)
+
+    assert set(path_arns_object_2) == set(statements['readonly']['Resource'])
 
 
 @pytest.mark.parametrize(
     'resources',
     [
         ([],),
-        (['/foo/bar', '/foo/baz']),
+        (['/foo/bar', '/foo/baz'],),
     ],
     ids=[
         'no-paths',
@@ -490,13 +622,10 @@ def test_grant_group_bucket_access(iam, group, resources):
 )
 def test_revoke_group_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
-    path_arns = [
-        f'{bucket_arn}{resource}'
-        for resource in resources
-    ]
+    path_arns = [f'{bucket_arn}{resource}' for resource in resources]
     aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_group_bucket_access(group.arn, bucket_arn, path_arns)
+    aws.revoke_group_bucket_access(group.arn, bucket_arn)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
