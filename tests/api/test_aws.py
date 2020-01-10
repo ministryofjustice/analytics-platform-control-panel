@@ -435,7 +435,7 @@ def test_revoke_bucket_access_when_no_role(iam):
         role = iam.Role(role_name)
         role.load()
 
-    aws.revoke_bucket_access(role_name, bucket_arn, [])
+    aws.revoke_bucket_access(role_name, bucket_arn)
 
 
 def test_create_group(iam, settings):
