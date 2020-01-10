@@ -1,4 +1,4 @@
-FROM alpine:3.10 AS base
+FROM alpine:3.11.2 AS base
 
 LABEL maintainer="andy.driver@digital.justice.gov.uk"
 
@@ -17,12 +17,12 @@ WORKDIR /home/controlpanel
 
 # install build dependencies
 RUN apk add --no-cache \
-        build-base=0.5-r1 \
-        ca-certificates=20190108-r0 \
-        libffi-dev=3.2.1-r6 \
-        python3-dev=3.7.5-r1 \
-        libressl-dev=2.7.5-r0 \
-        libstdc++=8.3.0-r0 \
+        build-base \
+        ca-certificates \
+        libffi-dev \
+        python3-dev=3.8.1-r0 \
+        libressl-dev \
+        libstdc++ \
         postgresql-dev \
         postgresql-client
 
