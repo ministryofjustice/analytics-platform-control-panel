@@ -10,10 +10,8 @@ def message_sent(settings, slack_WebClient):
     def check_sent(message):
         slack_WebClient.assert_called_with(token=settings.SLACK["api_token"])
         slack_WebClient.return_value.chat_postMessage.assert_called_with(
-            as_user=False,
-            username=f"Control Panel [{settings.ENV}]",
             channel=settings.SLACK["channel"],
-            text=message,
+            text=f"{message} [{settings.ENV}]",
         )
         return True
     return check_sent
