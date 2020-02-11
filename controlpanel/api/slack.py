@@ -17,9 +17,8 @@ def notify_superuser_created(username, by_username=None):
 
 
 def send_notification(message):
-    slack.WebClient(token=settings.SLACK['api_token']).chat_postMessage(
-        as_user=False,
-        username=f"Control Panel [{settings.ENV}]",
+    client = slack.WebClient(token=settings.SLACK['api_token'])
+    client.chat_postMessage(
         channel=settings.SLACK["channel"],
-        text=message,
+        text=f"{message} [{settings.ENV}]",
     )
