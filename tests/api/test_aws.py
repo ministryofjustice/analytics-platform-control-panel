@@ -254,12 +254,16 @@ def test_create_bucket(logs_bucket, s3):
     aws.create_bucket(bucket_name, is_data_warehouse=True)
 
     bucket.load()
+    # Check logging
     assert bucket.Logging().logging_enabled['TargetBucket'] == settings.LOGS_BUCKET_NAME
+    # Check tagging
+    tags = { tag["Key"]: tag["Value"] for tag in bucket.Tagging().tag_set }
+    assert tags == {"buckettype": "datawarehouse"}
+
     # XXX moto 1.3.10 doesn't provide get_bucket_encryption(),
     # get_public_access_block() or get_bucket_tagging() yet
     # assert encrypted(bucket, alg='AES256')
     # assert public_access_blocked(bucket)
-    # assert tagged(bucket, buckettype=datawarehouse)
 
 
 def test_create_parameter(ssm):

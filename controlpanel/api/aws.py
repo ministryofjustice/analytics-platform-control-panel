@@ -207,10 +207,7 @@ def create_bucket(bucket_name, is_data_warehouse=False):
             },
         )
         if is_data_warehouse:
-            bucket.Tagging().put(Tagging={'TagSet': [{
-                'Key': 'buckettype',
-                'Value': 'datawarehouse',
-            }]})
+            _tag_bucket(bucket, {"buckettype": "datawarehouse"})
 
     except bucket.meta.client.exceptions.BucketAlreadyOwnedByYou:
         log.warning(f'Skipping creating Bucket {bucket_name}: Already exists')
@@ -238,6 +235,11 @@ def create_bucket(bucket_name, is_data_warehouse=False):
         },
     )
     return bucket
+
+
+def _tag_bucket(boto_bucket, tags):
+    tag_set = [{"Key": k, "Value": v} for k, v in tags.items()]
+    boto_bucket.Tagging().put(Tagging={"TagSet": tag_set})
 
 
 class S3AccessPolicy:
