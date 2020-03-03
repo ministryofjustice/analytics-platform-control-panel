@@ -258,7 +258,7 @@ def test_create_bucket(logs_bucket, s3):
     assert bucket.Logging().logging_enabled['TargetBucket'] == settings.LOGS_BUCKET_NAME
     # Check tagging
     tags = { tag["Key"]: tag["Value"] for tag in bucket.Tagging().tag_set }
-    assert tags == {"buckettype": "datawarehouse"}
+    assert tags["buckettype"] == "datawarehouse"
 
     # XXX moto 1.3.10 doesn't provide get_bucket_encryption(),
     # get_public_access_block() or get_bucket_tagging() yet

@@ -238,8 +238,48 @@ def create_bucket(bucket_name, is_data_warehouse=False):
 
 
 def _tag_bucket(boto_bucket, tags):
-    tag_set = [{"Key": k, "Value": v} for k, v in tags.items()]
-    boto_bucket.Tagging().put(Tagging={"TagSet": tag_set})
+    """
+    Tags the bucket with the given tags
+
+    - `boto_bucket` is boto resource
+    - `tags` is a dictionary
+
+    NOTE: The tags provided are merged with existing tags (if any)
+
+    example:
+
+    existing tags : {"buckettype": "datawarehouse"}
+    new tags: {"to-archive": "true"}
+    result: {"buckettype": "datawarehouse", "to-archive": "true"}
+
+    example:
+
+    existing tags : {"colour": "red", "foo": "bar"}
+    new tags: {"colour": "BLUE", "buckettype": "datawarehouse"}
+    result: {"colour": "BLUE", "foo": "bar", "buckettype": "datawarehouse"}
+    """
+
+    tagging = boto_bucket.Tagging()
+
+    # Get existing tag set
+    existing_tag_set = []
+    try:
+        existing_tag_set = tagging.tag_set
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchTagSet":
+            existing_tag_set = []
+        else:
+            raise e
+
+    # merge existing tags with new ones - new have precedence
+    tags_existing = { tag["Key"]: tag["Value"] for tag in existing_tag_set }
+    tags_new = { **tags_existing, **tags }
+
+    # convert dictionary to boto/TagSet list/format
+    tag_set = [ {"Key": k, "Value": v} for k, v in tags_new.items() ]
+
+    # Update tags
+    tagging.put(Tagging={"TagSet": tag_set})
 
 
 class S3AccessPolicy:
