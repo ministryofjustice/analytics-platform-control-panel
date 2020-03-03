@@ -237,6 +237,13 @@ def create_bucket(bucket_name, is_data_warehouse=False):
     return bucket
 
 
+def tag_bucket(bucket_name, tags):
+    """Add the given `tags` to the S3 bucket called `bucket_name`"""
+
+    bucket = boto3.resource("s3").Bucket(bucket_name)
+    _tag_bucket(bucket, tags)
+
+
 def _tag_bucket(boto_bucket, tags):
     """
     Tags the bucket with the given tags

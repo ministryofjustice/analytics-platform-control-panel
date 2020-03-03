@@ -126,6 +126,9 @@ class S3Bucket:
     def create(self):
         return aws.create_bucket(self.bucket.name, self.bucket.is_data_warehouse)
 
+    def mark_for_archival(self):
+        aws.tag_bucket(self.bucket.name, {"to-archive": "true"})
+
 
 class RoleGroup:
     """

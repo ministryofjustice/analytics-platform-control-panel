@@ -21,3 +21,7 @@ def test_arn(bucket):
 def test_create(aws, bucket):
     cluster.S3Bucket(bucket).create()
     aws.create_bucket.assert_called_with(bucket.name, False)
+
+def test_mark_for_archival(aws, bucket):
+    cluster.S3Bucket(bucket).mark_for_archival()
+    aws.tag_bucket.assert_called_with(bucket.name, {"to-archive": "true"})

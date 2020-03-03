@@ -253,7 +253,6 @@ def test_create_bucket(logs_bucket, s3):
 
     aws.create_bucket(bucket_name, is_data_warehouse=True)
 
-    bucket.load()
     # Check logging
     assert bucket.Logging().logging_enabled['TargetBucket'] == settings.LOGS_BUCKET_NAME
     # Check tagging
@@ -264,6 +263,22 @@ def test_create_bucket(logs_bucket, s3):
     # get_public_access_block() or get_bucket_tagging() yet
     # assert encrypted(bucket, alg='AES256')
     # assert public_access_blocked(bucket)
+
+
+def test_tag_bucket(s3):
+    bucket_name = f"bucket-{id(MagicMock())}"
+    bucket = s3.Bucket(bucket_name)
+    bucket.create()
+
+    aws.tag_bucket(bucket_name, {"env": "test", "test-update": "old-value"})
+    aws.tag_bucket(bucket_name, {"test-update": "new-value", "to-archive": "true"})
+
+    tags = { tag["Key"]: tag["Value"] for tag in bucket.Tagging().tag_set }
+    assert tags == {
+        "env": "test",
+        "test-update": "new-value",
+        "to-archive": "true",
+    }
 
 
 def test_create_parameter(ssm):
