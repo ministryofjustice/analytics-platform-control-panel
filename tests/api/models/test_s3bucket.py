@@ -1,5 +1,6 @@
 from unittest.mock import call, patch
 
+from botocore.exceptions import ClientError
 from django.conf import settings
 from model_mommy import mommy
 import pytest
@@ -27,6 +28,20 @@ def test_delete_revokes_permissions(bucket, aws):
         call(apps3bucket.iam_role_name, bucket.arn),
         call(users3bucket.iam_role_name, bucket.arn),
     ])
+
+
+def test_delete_marks_bucket_for_archival(bucket, aws):
+    bucket.delete()
+    aws.tag_bucket.assert_called_once_with(bucket.name, {"to-archive": "true"})
+
+
+def test_delete_marks_bucket_for_archival_when_tag_bucket_fails(bucket, aws):
+    aws.tag_bucket.side_effect = ClientError({"error": "true"}, "TagFailed")
+    with pytest.raises(ClientError):
+        bucket.delete()
+
+    # The S3 bucket record is not deleted from the DB
+    assert S3Bucket.objects.filter(name=bucket.name).exists()
 
 
 def test_bucket_create(aws):

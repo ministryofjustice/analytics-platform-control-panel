@@ -207,10 +207,7 @@ def create_bucket(bucket_name, is_data_warehouse=False):
             },
         )
         if is_data_warehouse:
-            bucket.Tagging().put(Tagging={'TagSet': [{
-                'Key': 'buckettype',
-                'Value': 'datawarehouse',
-            }]})
+            _tag_bucket(bucket, {"buckettype": "datawarehouse"})
 
     except bucket.meta.client.exceptions.BucketAlreadyOwnedByYou:
         log.warning(f'Skipping creating Bucket {bucket_name}: Already exists')
@@ -238,6 +235,58 @@ def create_bucket(bucket_name, is_data_warehouse=False):
         },
     )
     return bucket
+
+
+def tag_bucket(bucket_name, tags):
+    """Add the given `tags` to the S3 bucket called `bucket_name`"""
+
+    bucket = boto3.resource("s3").Bucket(bucket_name)
+    _tag_bucket(bucket, tags)
+
+
+def _tag_bucket(boto_bucket, tags):
+    """
+    Tags the bucket with the given tags
+
+    - `boto_bucket` is boto resource
+    - `tags` is a dictionary
+
+    NOTE: The tags provided are merged with existing tags (if any)
+
+    example:
+
+    existing tags : {"buckettype": "datawarehouse"}
+    new tags: {"to-archive": "true"}
+    result: {"buckettype": "datawarehouse", "to-archive": "true"}
+
+    example:
+
+    existing tags : {"colour": "red", "foo": "bar"}
+    new tags: {"colour": "BLUE", "buckettype": "datawarehouse"}
+    result: {"colour": "BLUE", "foo": "bar", "buckettype": "datawarehouse"}
+    """
+
+    tagging = boto_bucket.Tagging()
+
+    # Get existing tag set
+    existing_tag_set = []
+    try:
+        existing_tag_set = tagging.tag_set
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "NoSuchTagSet":
+            existing_tag_set = []
+        else:
+            raise e
+
+    # merge existing tags with new ones - new have precedence
+    tags_existing = { tag["Key"]: tag["Value"] for tag in existing_tag_set }
+    tags_new = { **tags_existing, **tags }
+
+    # convert dictionary to boto/TagSet list/format
+    tag_set = [ {"Key": k, "Value": v} for k, v in tags_new.items() ]
+
+    # Update tags
+    tagging.put(Tagging={"TagSet": tag_set})
 
 
 class S3AccessPolicy:

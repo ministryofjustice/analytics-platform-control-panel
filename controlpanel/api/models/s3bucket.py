@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.db.transaction import atomic
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster, validators
@@ -110,3 +111,8 @@ class S3Bucket(TimeStampedModel):
                 )
 
         return self
+
+    @atomic
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        cluster.S3Bucket(self).mark_for_archival()
