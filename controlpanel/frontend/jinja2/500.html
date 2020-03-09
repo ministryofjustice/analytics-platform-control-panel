@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
 {% set page_title = "Sorry, there is a problem with the service" %}
+{% set home_url = url("index") %}
 
 {% block header %}
   {{ mojHeader({
     'organisationLabel': {
       'text': 'Ministry of Justice',
-      'href': '#',
+      'href': home_url,
     },
     'serviceLabel': {
       'text': service_name,
-      'href': '#',
+      'href': home_url,
     },
     'navigation': [],
   }) }}
