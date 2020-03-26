@@ -54,3 +54,17 @@ def test_get_group_by_name(AuthorizationAPI, groups):
     group = AuthorizationAPI.get_group("foo")
     AuthorizationAPI.request.assert_called_with("GET", "groups", params={})
     assert group["name"] == "foo"
+
+@pytest.yield_fixture
+def get_group(AuthorizationAPI):
+    with patch.object(AuthorizationAPI, "get_group") as get_group:
+        get_group.return_value = {"name": "foo", "_id": "foo_id"}
+        yield get_group
+
+
+def test_delete_group(AuthorizationAPI, get_group):
+    with patch.object(AuthorizationAPI, "request") as request:
+        AuthorizationAPI.delete_group(group_name="foo")
+
+        get_group.assert_called_with("foo")
+        request.assert_called_with("DELETE", f"groups/foo_id")

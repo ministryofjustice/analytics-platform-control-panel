@@ -127,6 +127,13 @@ class AuthorizationAPI(APIClient):
 
         return groups[0]
 
+    def delete_group(self, group_name):
+        """Deletes a group from the authorization API"""
+
+        group = self.get_group(group_name)
+        if group:
+            self.request("DELETE", f'groups/{group["_id"]}')
+
     def get_group_members(self, group_name):
         group = self.get_group(group_name)
         if group:

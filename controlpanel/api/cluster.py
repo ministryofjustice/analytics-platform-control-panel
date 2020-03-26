@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
-from controlpanel.api import aws
+from controlpanel.api import auth0, aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
 from controlpanel.api.helm import HelmError, helm
 from controlpanel.api.kubernetes import KubernetesClient
@@ -97,6 +97,11 @@ class App:
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+
+    def delete_authz_group(self):
+        """Deletes the Auth0 authorization group for the app"""
+
+        auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
 
     @property
     def url(self):
