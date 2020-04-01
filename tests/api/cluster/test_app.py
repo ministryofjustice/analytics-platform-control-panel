@@ -21,11 +21,12 @@ def test_app_create_iam_role(aws, app):
     aws.create_app_role.assert_called_with(app)
 
 
-def test_app_delete(aws, app, authz):
+def test_app_delete(aws, app, authz, helm):
     cluster.App(app).delete()
 
     aws.delete_role.assert_called_with(app.iam_role_name)
     authz.delete_group.assert_called_with(group_name=app.slug)
+    helm.delete.assert_called_with(True, app.release_name)
 
 
 mock_ingress = MagicMock(name="Ingress")
