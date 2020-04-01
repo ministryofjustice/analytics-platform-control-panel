@@ -84,9 +84,7 @@ class App(TimeStampedModel):
         return self
 
     def delete(self, *args, **kwargs):
-        cluster_app = cluster.App(self)
-        cluster_app.delete_iam_role()
-        cluster_app.delete_authz_group()
+        cluster.App(self).delete()
 
         super().delete(*args, **kwargs)
 

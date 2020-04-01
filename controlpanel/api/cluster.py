@@ -89,18 +89,14 @@ class App:
     def create_iam_role(self):
         aws.create_app_role(self.app)
 
-    def delete_iam_role(self):
-        aws.delete_role(self.iam_role_name)
-
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
-    def delete_authz_group(self):
-        """Deletes the Auth0 authorization group for the app"""
-
+    def delete(self):
+        aws.delete_role(self.iam_role_name)
         auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
 
     @property
