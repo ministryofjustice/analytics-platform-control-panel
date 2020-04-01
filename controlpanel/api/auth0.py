@@ -127,12 +127,44 @@ class AuthorizationAPI(APIClient):
 
         return groups[0]
 
+    def _delete_group_roles(self, group_id):
+        """
+        Deletes all the roles attached to the group
+
+        See: https://auth0.com/docs/api/authorization-extension#delete-group-roles
+        """
+
+        if role_ids:
+            self.request(
+                "DELETE",
+                f"groups/{group_id}/roles",
+                json=role_ids,
+            )
+
     def delete_group(self, group_name):
-        """Deletes a group from the authorization API"""
+        """
+        Deletes a group from the authorization API
+
+        It also deletes all the roles associated with the
+        group.
+
+        NOTE: Roles in the Auth0 Authorization API are
+        meant to be flexible and they could potentially
+        be attached to different groups.
+        However, in our use-case, each app has 1 group
+        and each group has 1 role (`app-viewer`) so it's
+        safe to delete the (only) associated role.
+
+        See: https://auth0.com/docs/api/authorization-extension#delete-group
+        """
 
         group = self.get_group(group_name)
         if group:
-            self.request("DELETE", f'groups/{group["_id"]}')
+            group_id = group["_id"]
+            role_ids = group.get("roles", [])
+
+            self._delete_group_roles(group_id, role_ids)
+            self.request("DELETE", f"groups/{group_id}")
 
     def get_group_members(self, group_name):
         group = self.get_group(group_name)
