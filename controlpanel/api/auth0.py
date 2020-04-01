@@ -127,7 +127,13 @@ class AuthorizationAPI(APIClient):
 
         return groups[0]
 
-    def _delete_group_roles(self, group_id):
+    def get_group_id(self, group_name):
+        group = self.get_group(group_name)
+        if group:
+            return group["_id"]
+
+
+    def _delete_group_roles(self, group_id, role_ids):
         """
         Deletes all the roles attached to the group
 
@@ -167,14 +173,14 @@ class AuthorizationAPI(APIClient):
             self.request("DELETE", f"groups/{group_id}")
 
     def get_group_members(self, group_name):
-        group = self.get_group(group_name)
-        if group:
+        group_id = self.get_group_id(group_name)
+        if group_id:
             return self.get_all(
-                f'groups/{group["_id"]}/members', key="users", per_page=25
+                f'groups/{group_id}/members', key="users", per_page=25
             )
 
     def add_group_members(self, group_name, emails, user_options={}):
-        group = self.get_group(group_name)
+        group_id = self.get_group_id(group_name)
         mgmt = ManagementAPI()
         users = self.get_users()
         user_lookup = {user["email"]: user for user in users if "email" in user}
@@ -199,7 +205,7 @@ class AuthorizationAPI(APIClient):
 
         response = self.request(
             "PATCH",
-            f'groups/{group["_id"]}/members',
+            f'groups/{group_id}/members',
             json=[user["user_id"] for user in users_to_add.values()],
         )
 
@@ -209,16 +215,16 @@ class AuthorizationAPI(APIClient):
         return users_to_add.values()
 
     def delete_group_members(self, group_name, user_ids):
-        group = self.get_group(group_name)
-        if group is None:
-            return None
+        group_id = self.get_group_id(group_name)
+        if group_id:
+            response = self.request(
+                "DELETE",
+                f'groups/{group_id}/members',
+                json=user_ids,
+            )
 
-        response = self.request(
-            "DELETE", f'groups/{group["_id"]}/members', json=user_ids
-        )
-
-        if "error" in response:
-            raise Auth0Error("delete_group_members", response)
+            if "error" in response:
+                raise Auth0Error("delete_group_members", response)
 
 
 class ManagementAPI(APIClient):
