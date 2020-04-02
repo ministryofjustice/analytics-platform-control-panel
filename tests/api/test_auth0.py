@@ -37,8 +37,8 @@ def groups(AuthorizationAPI):
             {
                 "total": 2,
                 "groups": [
-                    {"name": "foo"},
-                    {"name": "bar"},
+                    {"name": "foo", "_id": "foo-id"},
+                    {"name": "bar", "_id": "bar-id"},
                 ],
             },
         ]
@@ -55,10 +55,11 @@ def test_get_group_by_name(AuthorizationAPI, groups):
     AuthorizationAPI.request.assert_called_with("GET", "groups", params={})
     assert group["name"] == "foo"
 
+
 def test_get_group_id(AuthorizationAPI, groups):
-    group = AuthorizationAPI.get_group("foo")
+    group_id = AuthorizationAPI.get_group_id("foo")
     AuthorizationAPI.request.assert_called_with("GET", "groups", params={})
-    assert group["name"] == "foo"
+    assert group_id == "foo-id"
 
 @pytest.yield_fixture
 def get_group(AuthorizationAPI):
