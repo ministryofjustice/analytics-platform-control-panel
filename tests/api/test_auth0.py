@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 import pytest
 
@@ -64,35 +64,31 @@ def test_get_group_id(AuthorizationAPI, groups):
 def get_group(AuthorizationAPI):
     with patch.object(AuthorizationAPI, "get_group") as get_group:
         get_group.return_value = {
-            "_id": "foo_id",
+            "_id": "foo-id",
             "name": "foo",
             "roles": ["role_1", "role_2"],
         }
         yield get_group
 
 
-@pytest.yield_fixture
-def _delete_group_roles(AuthorizationAPI):
-    with patch.object(AuthorizationAPI, "_delete_group_roles") as _delete_group_roles:
-        yield _delete_group_roles
-
-
-def test_delete_group(AuthorizationAPI, get_group, _delete_group_roles):
+def test_delete_group(AuthorizationAPI, get_group):
     with patch.object(AuthorizationAPI, "request") as request:
+        group_id = "foo-id"
+        role_id = "foo-role-id"
+        permission_id = "foo-permission-id"
+
+        request.return_value = [
+            {"_id": role_id, "permissions": [permission_id]},
+        ]
+
+
         AuthorizationAPI.delete_group(group_name="foo")
 
         get_group.assert_called_with("foo")
-        _delete_group_roles.assert_called_with("foo_id", ["role_1", "role_2"])
-        request.assert_called_with("DELETE", f"groups/foo_id")
 
-def test_delete_group_roles(AuthorizationAPI):
-    with patch.object(AuthorizationAPI, "request") as request:
-        group_id = "group_id_1"
-        role_ids = ["role_id_1", "role_id_2"]
-        AuthorizationAPI._delete_group_roles(group_id, role_ids)
-
-        request.assert_called_with(
-            "DELETE",
-            f"groups/{group_id}/roles",
-            json=role_ids,
-        )
+        request.assert_has_calls([
+            call("GET", f"groups/{group_id}/roles"),
+            call("DELETE", f"groups/{group_id}"),
+            call("DELETE", f"roles/{role_id}"),
+            call("DELETE", f"permissions/{permission_id}"),
+        ])

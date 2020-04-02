@@ -133,20 +133,6 @@ class AuthorizationAPI(APIClient):
             return group["_id"]
 
 
-    def _delete_group_roles(self, group_id, role_ids):
-        """
-        Deletes all the roles attached to the group
-
-        See: https://auth0.com/docs/api/authorization-extension#delete-group-roles
-        """
-
-        if role_ids:
-            self.request(
-                "DELETE",
-                f"groups/{group_id}/roles",
-                json=role_ids,
-            )
-
     def delete_group(self, group_name):
         """
         Deletes a group from the authorization API
@@ -158,19 +144,33 @@ class AuthorizationAPI(APIClient):
         meant to be flexible and they could potentially
         be attached to different groups.
         However, in our use-case, each app has 1 group
-        and each group has 1 role (`app-viewer`) so it's
-        safe to delete the (only) associated role.
+        and each group has 1 role (`app-viewer`) and
+        each role has 1 permission (`view:app`) so it's
+        safe to delete all the associated roles/permissions.
 
-        See: https://auth0.com/docs/api/authorization-extension#delete-group
+        See Auth0 Authorization extension API docs:
+        - https://auth0.com/docs/api/authorization-extension#get-group-roles
+        - https://auth0.com/docs/api/authorization-extension#delete-group
+        - https://auth0.com/docs/api/authorization-extension#delete-role
+        - https://auth0.com/docs/api/authorization-extension#delete-permission
         """
 
-        group = self.get_group(group_name)
-        if group:
-            group_id = group["_id"]
-            role_ids = group.get("roles", [])
+        group_id = self.get_group_id(group_name)
+        if group_id:
+            role_ids = []
+            permission_ids = []
 
-            self._delete_group_roles(group_id, role_ids)
+            roles = self.request("GET", f"groups/{group_id}/roles")
+            for role in roles:
+                role_ids.append(role["_id"])
+                permission_ids.extend(role.get("permissions", []))
+
             self.request("DELETE", f"groups/{group_id}")
+            for role_id in role_ids:
+                self.request("DELETE", f"roles/{role_id}")
+            for permission_id in permission_ids:
+                self.request("DELETE", f"permissions/{permission_id}")
+
 
     def get_group_members(self, group_name):
         group_id = self.get_group_id(group_name)
