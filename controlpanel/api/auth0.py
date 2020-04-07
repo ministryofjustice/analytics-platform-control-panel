@@ -181,6 +181,9 @@ class AuthorizationAPI(APIClient):
 
     def add_group_members(self, group_name, emails, user_options={}):
         group_id = self.get_group_id(group_name)
+        if not group_id:
+            raise Auth0Error("Group for the app not found, was the app released?")
+
         mgmt = ManagementAPI()
         users = self.get_users()
         user_lookup = {user["email"]: user for user in users if "email" in user}
