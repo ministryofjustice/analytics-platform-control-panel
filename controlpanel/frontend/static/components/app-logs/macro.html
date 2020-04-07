@@ -1,8 +1,11 @@
 {% macro app_logs(app, kibana_base_url) %}
   <div class="app-logs">
-    <pre>{% for entry in app.get_logs() -%}
+    <pre>{# for entry in app.get_logs() #}
+         {% for entry in [] -%}
 <span class="timestamp">{{ entry.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}:</span> <span class="message">{{ entry.message }}</span>
-{% endfor %}</pre>
+{% endfor %}
+Logs viewing currently disabled in Control Panel. See logs by following link below.
+</pre>
   </div>
   <p class="govuk-body">
     <a href="{{ kibana_link(app, kibana_base_url) }}">View full logs</a>
