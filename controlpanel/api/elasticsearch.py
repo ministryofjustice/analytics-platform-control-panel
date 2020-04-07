@@ -27,6 +27,11 @@ def bucket_hits_aggregation(bucket_name, num_days=None):
 
 
 def app_logs(app, num_hours=None):
+    # Disable logs for noisy app ("covid19-early-release")
+    # to prevent its App details page to timeout
+    if app.id == 171:
+        return []
+
     if not num_hours:
         num_hours = 1
 
