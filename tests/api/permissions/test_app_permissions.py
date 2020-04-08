@@ -98,6 +98,6 @@ def test_permission(client, app, users, view, user, expected_status):
     u = users[user]
     client.force_login(u)
 
-    with patch("controlpanel.api.views.models.App.delete") as _:
+    with patch("controlpanel.api.views.models.App.delete"):
         response = view(client, app)
         assert response.status_code == expected_status

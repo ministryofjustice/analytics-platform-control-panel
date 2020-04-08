@@ -91,7 +91,7 @@ def test_detail(client, app):
 @pytest.yield_fixture
 def authz():
     with patch("controlpanel.api.cluster.auth0.AuthorizationAPI") as authz:
-        yield authz.return_value
+        yield authz()
 
 
 def test_delete(client, app, aws, authz):
