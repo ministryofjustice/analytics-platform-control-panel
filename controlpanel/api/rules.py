@@ -29,6 +29,9 @@ def is_app_admin(user, obj):
     if obj is None:
         return True
 
+    if is_superuser(user):
+        return True
+
     if isinstance(obj, App):
         return user in obj.admins
 
@@ -49,8 +52,8 @@ add_perm('api.update_app', is_authenticated & is_superuser)
 add_perm('api.destroy_app', is_authenticated & is_superuser)
 add_perm('api.add_app_customer', is_authenticated & is_app_admin)
 add_perm('api.remove_app_customer', is_authenticated & is_app_admin)
-add_perm('api.add_app_admin', is_authenticated & is_superuser)
-add_perm('api.revoke_app_admin', is_authenticated & is_superuser)
+add_perm('api.add_app_admin', is_authenticated & is_app_admin)
+add_perm('api.revoke_app_admin', is_authenticated & is_app_admin)
 add_perm('api.add_app_bucket', is_authenticated & is_superuser)
 add_perm('api.remove_app_bucket', is_authenticated & is_superuser)
 add_perm('api.view_app_logs', is_authenticated & is_app_admin)
