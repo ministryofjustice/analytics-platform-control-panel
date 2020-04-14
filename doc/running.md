@@ -10,6 +10,7 @@ Install python dependencies with the following command:
 python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
+pip3 install -r requirements.dev.txt
 ```
 
 

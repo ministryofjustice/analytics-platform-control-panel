@@ -27,6 +27,7 @@ services:
       DB_USER: "controlpanel"
       DEBUG: "True"
       PYTHONUNBUFFERED: "1"
+      SLACK_API_TOKEN: "dummy"
     command: sh -c "until pg_isready -h db; do sleep 2; done; ./manage.py migrate"
 
   worker:
@@ -47,6 +48,7 @@ services:
       PYTHONUNBUFFERED: "1"
       REDIS_HOST: "redis"
       REDIS_PASSWORD: "controlpanel"
+      SLACK_API_TOKEN: "dummy"
     volumes:
       - ~/.kube/config:/home/controlpanel/.kube/config
     command: ["python3", "manage.py", "runworker", "background_tasks"]
@@ -72,6 +74,7 @@ services:
       PYTHONUNBUFFERED: "1"
       REDIS_HOST: "redis"
       REDIS_PASSWORD: "controlpanel"
+      SLACK_API_TOKEN: "dummy"
     volumes:
       - ~/.kube/config:/home/controlpanel/.kube/config
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
