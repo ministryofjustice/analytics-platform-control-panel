@@ -4,8 +4,8 @@
 ## Dependencies
 
 You must have [Redis](https://redis.io/),
-[PostgreSQL](https://www.postgresql.org/) and possibly
-[direnv](https://direnv.net/), [docker](https://www.docker.com/) and
+[PostgreSQL](https://www.postgresql.org/), [npm](https://www.npmjs.com/) and
+possibly [direnv](https://direnv.net/), [docker](https://www.docker.com/) and
 [virtualbox](https://www.virtualbox.org/).
 These should be installed using your own OS's package manager (`brew`, `apt`
 etc...).
@@ -82,8 +82,8 @@ helm repo update
 
 ## <a name="env"></a>Environment variables
 
-The simplest solution is to ask for a copy of a working `.env` file from one of
-the other developers with the envars set for development.
+The simplest solution is to ask for a copy of a working `.env` or `.envrc` file
+from one of the other developers with the envars set for development.
 
 If this isn't immediately possible and at a mininum, you need to set the
 following environment variables:
@@ -120,7 +120,12 @@ sudo -u postgres psql
 postgres=# create database controlpanel;
 postgres=# create user controlpanel with encrypted password 'password';
 postgres=# grant all privileges on database controlpanel to controlpanel;
+postgres=# ALTER USER controlpanel CREATEDB;
 ```
+
+The last command in the sequence above ensures the `controlpanel` user has the
+required privileges to create and delete throw away databases while running the
+unit tests.
 
 You must make sure the following environment variables are set:
 
@@ -143,7 +148,8 @@ python3 manage.py createsuperuser
 ```
 
 Your `Username` needs to be your GitHub username.
-Your `Auth0 id` needs to be ??? (not working for me yet).
+Your `Auth0 id` needs to be the number associated with you in auth0.com and
+labelled `user_id` (not working for me yet).
 
 
 ## Compile Sass and Javascript
@@ -155,6 +161,7 @@ Static assets are compiled with Node.JS 8.16.0+
 
 ```sh
 npm install
+mkdir static
 cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 cp -R node_modules/govuk-frontend/ static/govuk-frontend
 cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
@@ -178,20 +185,7 @@ python3 manage.py collectstatic
 ```
 
 
-### Run the app
-
-You can run the app with the Django development server with
-```sh
-python3 manage.py runserver
-```
-Or with Gunicorn WSGI server:
-```sh
-gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
-```
-Go to http://localhost:8000/
-
-
-### How to run the tests
+### Run the tests
 
 ```sh
 make test
@@ -206,3 +200,19 @@ DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
 **NOTE** Set the `DJANGO_SETTINGS_MODULE` is important or otherwise you
 may accidentally run the tests with the `development` settings with
 unpredictable results.
+
+
+### Run the app
+
+In order to run the app you'll need various permissions set up for you in the
+wider infrastructure of the project.
+
+You can run the app with the Django development server with
+```sh
+python3 manage.py runserver
+```
+Or with Gunicorn WSGI server:
+```sh
+gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
+```
+Go to http://localhost:8000/
