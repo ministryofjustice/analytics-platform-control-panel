@@ -3,7 +3,21 @@
 
 ## Dependencies
 
-The Control Panel app requires Python 3.6.5+
+You must have [Redis](https://redis.io/),
+[PostgreSQL](https://www.postgresql.org/) and possibly
+[direnv](https://direnv.net/), [docker](https://www.docker.com/) and
+[virtualbox](https://www.virtualbox.org/).
+These should be installed using your own OS's package manager (`brew`, `apt`
+etc...).
+
+For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
+`kubectl`
+[installed too](https://kubernetes.io/docs/tasks/tools/install-kubectl/), and
+possibly [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+(for running a local k8s cluster).
+
+The Control Panel app requires Python 3.6.5+. It has been confirmed to work
+with Python 3.8.2.
 
 Install python dependencies with the following command:
 ```sh
@@ -12,6 +26,10 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 pip3 install -r requirements.dev.txt
 ```
+
+In order to use `direnv` for managing your environment variables, you should
+make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
+You'll be able to get a copy of folks `.envrc` file from colleagues.
 
 
 ## Kubernetes setup
