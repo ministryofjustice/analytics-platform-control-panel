@@ -69,7 +69,7 @@ class KubernetesClient:
         self.api_client = kubernetes.client.ApiClient(config)
 
     def __getattr__(self, name):
-        api_class = kubernetes.client.apis.__dict__.get(name)
+        api_class = kubernetes.client.api.__dict__.get(name)
         if api_class and inspect.isclass(api_class):
             return api_class(self.api_client)
 
