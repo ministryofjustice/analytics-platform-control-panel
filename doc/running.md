@@ -15,9 +15,28 @@ pip3 install -r requirements.txt
 
 ## Kubernetes setup
 
-You need a kubeconfig file (`~/.kube/config`) with the credentials for your kubernetes cluster.
+To run a Kubernetes cluster locally, the most convenient solution is probably
+`minikube`. Follow the
+[installation instructions for your OS](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+and check you have something working:
 
-Once you've got that, this should work:
+```
+$ minikube status
+m01
+host: Running
+kubelet: Running
+apiserver: Running
+kubeconfig: Configured
+```
+
+You'll need a kubeconfig file (`~/.kube/config`) with the credentials for your
+kubernetes cluster. Starting `minikube` (e.g.
+`minikube start --driver=virtualbox`) should create these credentials for you
+for your local machine.
+
+You can check things are working with the following command, which will return
+information about the k8s master and KubeDNS:
+
 ```sh
 kubectl cluster-info
 ```
@@ -25,7 +44,17 @@ kubectl cluster-info
 
 ## Helm
 
-You need to tell Helm to use the Analytical Platform chart repository:
+Install Helm (the K8s package manager) by following
+[these instructions for your OS](https://helm.sh/docs/intro/install/).
+
+You'll need to initialise Helm too:
+
+```sh
+helm init
+```
+
+Tell Helm to use the Analytical Platform chart repository:
+
 ```sh
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 helm repo update
@@ -34,24 +63,55 @@ helm repo update
 
 ## <a name="env"></a>Environment variables
 
-At a mininum, you need to set the following environment variable:
+The simplest solution is to ask for a copy of a working `.env` file from one of
+the other developers with the envars set for development.
+
+If this isn't immediately possible and at a mininum, you need to set the
+following environment variables:
+
 ```sh
 export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
+export SLACK_API_TOKEN=a_slack_token
 ```
 
 See [Environment Variables Reference](environment.md) for details of other
 environment variable settings.
 
+The [Slack token](https://slack.dev/python-slackclient/auth.html) need not be
+valid unless you'll be using the Slack related aspects of the system.
+
 
 ## Database
 
-The Control Panel app connects to a PostgreSQL database, which should have a database with the expected name:
+The Control Panel app connects to a PostgreSQL database called `controlpanel`,
+which should be accessible with the `controlpanel` user.
+
+Assuming you've got PostreSQL set up properly, the following commands should
+get you to this state:
+
 ```sh
 createuser -d controlpanel
 createdb -U controlpanel controlpanel
 ```
 
+Alternatively, if you prefer to use `psql` the following should work:
+
+```
+sudo -u postgres psql
+postgres=# create database controlpanel;
+postgres=# create user controlpanel with encrypted password 'password';
+postgres=# grant all privileges on database controlpanel to controlpanel;
+```
+
+You must make sure the following environment variables are set:
+
+```sh
+export DB_USER=controlpanel
+export DB_PASSWORD=password
+```
+
 Then you can run migrations:
+
 ```sh
 python3 manage.py migrate
 ```
@@ -62,7 +122,9 @@ python3 manage.py migrate
 ```sh
 python3 manage.py createsuperuser
 ```
-NB `Username` needs to be your GitHub username
+
+Your `Username` needs to be your GitHub username.
+Your `Auth0 id` needs to be ??? (not working for me yet).
 
 
 ## Compile Sass and Javascript

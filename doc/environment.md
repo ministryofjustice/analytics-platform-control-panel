@@ -38,6 +38,7 @@
 | `SAML_PROVIDER` | the name of the SAML provider within AWS, which Auth0 integrates with, e.g. `dev-auth0`. This is referenced in user policies to allow them to log in via SAML federation. | |
 | `SECRET_KEY` | Secret key used to encrypt cookies, etc | |
 | `SENTRY_DSN` | Sentry credentials | |
+| `SLACK_API_TOKEN` | Slack token ([more information](https://slack.dev/python-slackclient/auth.html) | Mandatory, but doesn't need to be valid unless you're working with Slack |
 | `TOOLS_DOMAIN` | Domain where tools are deployed | |
 | `*_AUTH_CLIENT_DOMAIN` | OIDC domain for tool instances | [`OIDC_DOMAIN`]() |
 | `*_AUTH_CLIENT_ID` | OIDC client ID for tool instances | |

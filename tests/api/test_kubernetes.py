@@ -61,7 +61,7 @@ def test_kubernetes_client__getattr__(k8s_config):
     k8s_api_1 = client.ExtensionsV1beta1Api
     k8s_api_2 = client.AppsV1Api
 
-    assert type(k8s_api_1) == kubernetes.client.apis.ExtensionsV1beta1Api
+    assert type(k8s_api_1) == kubernetes.client.api.ExtensionsV1beta1Api
     assert k8s_api_1.api_client == api_client
-    assert type(k8s_api_2) == kubernetes.client.apis.AppsV1Api
+    assert type(k8s_api_2) == kubernetes.client.api.AppsV1Api
     assert k8s_api_2.api_client == api_client
