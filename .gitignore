@@ -7,6 +7,7 @@
 .coverage
 .ctagsignore
 .env
+.envrc
 .mypy_cache
 .pytest_cache
 .ropeproject
