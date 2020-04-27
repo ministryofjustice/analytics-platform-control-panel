@@ -18,7 +18,7 @@ WORKDIR /home/controlpanel
 # install build dependencies
 RUN apk add --no-cache \
         build-base=0.5-r1 \
-        ca-certificates=20190108-r0 \
+        ca-certificates \
         libffi-dev=3.2.1-r6 \
         python3-dev=3.7.5-r1 \
         libressl-dev=2.7.5-r0 \
