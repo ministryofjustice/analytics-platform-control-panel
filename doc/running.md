@@ -181,7 +181,22 @@ repository. [This pull request](https://github.com/ministryofjustice/analytical-
 is an example of the sort of thing you'll need to submit (making sure you
 modify it to use your own details). Once the PR is approved, you should merge
 it yourself. Once this happens a pipeline will process your changes and add
-your details to AWS.
+your details to AWS. Remember to follow the remaining instructions in the
+README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
+for which you'll need to ask someone to create an initial password for you.
+
+Once logged in, you'll need to visit the "My Security Credentials" page for
+your user (the same one used to create MFA) and create an access key. Make sure
+that the following environment variables are set:
+
+```
+export aws_access_key_id=??????
+export aws_secret_access_key=??????
+export defaultRegion=eu-west-1
+export iamRole=dev_control_panel_api
+```
+
+(Replacing the ????? with the credentials you've just created.)
 
 For Kubernetes, simply follow the instructions (linked above) for the `dev`
 cluster or set up a local cluster (see below).
