@@ -30,6 +30,9 @@ For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
 possibly [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
 (for running a local k8s cluster).
 
+It may also be useful for when interacting with AWS to have the `aws` command
+line tool [installed on your system](https://aws.amazon.com/cli/).
+
 The Control Panel app requires Python 3.6.5+. It has been confirmed to work
 with Python 3.8.2.
 
@@ -174,6 +177,8 @@ and have [cluster admin access to Kubernetes](https://github.com/ministryofjusti
 A colleague will need to set you with Auth0, and you should ensure you're using
 an account linked to your `@digital.justice.gov.uk` account.
 
+### AWS Configuration
+
 As the docs for AWS (linked above) mention, you'll need to add yourself an AWS
 user account linked to your MoJ email address via the
 [analytical-platform-iam](https://github.com/ministryofjustice/analytical-platform-iam)
@@ -185,21 +190,64 @@ your details to AWS. Remember to follow the remaining instructions in the
 README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
 for which you'll need to ask someone to create an initial password for you.
 
-Once logged in, you'll need to visit the "My Security Credentials" page for
-your user (the same one used to create MFA) and create an access key. Make sure
-that the following environment variables are set:
+Once you're logged you should visit your "security credentials" page (click on
+your username in the top right corner) and follow the steps to create an access key for CLI, SDK and API access.
+
+You should also set up a local profile for using MoJ AWS things from your local
+machine anyway. Assuming you have the `aws` command installed for your
+operating system ([see here](https://aws.amazon.com/cli/)), you can do this
+automatically with the following command / dialog. In the example below, I use
+the profile name `moj`, but this could be something arbitrary and more
+meaningful for you. Then, simply replace the `?????` with your own details. The
+`region` and `output format` values should be as shown below.
 
 ```
-export aws_access_key_id=??????
-export aws_secret_access_key=??????
-export defaultRegion=eu-west-1
-export iamRole=dev_control_panel_api
+$ aws configure --profile moj
+AWS Access Key ID [None]: ?????
+AWS Secret Access Key [None]: ?????
+Default region name [None]: eu-west-1
+Default output format [None]: json
 ```
 
-(Replacing the ????? with the credentials you've just created.)
+Next, you need to assume particular role within AWS in order for the control
+panel to have the correct permissions to work with the resources it needs. This
+is documented
+[here](https://github.com/ministryofjustice/analytical-platform-iam#authenticating),
+but the short version is that you need to assume the [restricted-admin@data](https://signin.aws.amazon.com/switchrole?account=mojanalytics&roleName=restricted-admin-data&displayName=restricted-admin@data)
+role (clicking on the link, if you're signed into your AWS dashboard, should do
+this for you). Once you've assumed this role you need to request temporary
+credentials for working with AWS under this role. To do this type the following
+command and read the resulting JSON payload:
+
+```
+aws sts assume-role --role-arn "arn:aws:iam::593291632749:role/restricted-admin-data" --role-session-name data-session
+```
+
+Finally, you need to set the following environment variables, based upon the
+values in the returned JSON payload:
+
+```
+export AWS_ACCESS_KEY_ID=ASIAX........
+export AWS_SECRET_ACCESS_KEY=0vwDrU5..........
+export AWS_SESSION_TOKEN="FQoGZXIvYXdzEHQaDHBH......."
+```
+
+The last step is to check it worked with the following command (which will
+return a JSON payload containing session details):
+
+```
+aws sts get-caller-identity
+```
+
+If you see an error, ask a colleague!
+
+**You probably notice that the session expires after an hour. If you're getting
+AWS errors, ensure you've not timed out.**
+
+### Kubernetes Configuration
 
 For Kubernetes, simply follow the instructions (linked above) for the `dev`
-cluster or set up a local cluster (see below).
+cluster or set up a local cluster as follows:
 
 To run a Kubernetes cluster locally, the most convenient solution is probably
 `minikube`. Follow the
@@ -227,8 +275,7 @@ information about the k8s master and KubeDNS:
 kubectl cluster-info
 ```
 
-
-## Helm
+#### Helm
 
 Install Helm (the K8s package manager) by following
 [these instructions for your OS](https://helm.sh/docs/intro/install/).
@@ -246,8 +293,9 @@ helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.a
 helm repo update
 ```
 
+## Create superuser (on first run only)
 
-### Create superuser (on first run only)
+This isn't strictly required, so feel free to skip this step.
 
 ```sh
 python3 manage.py createsuperuser
@@ -270,4 +318,5 @@ Or with Gunicorn WSGI server:
 ```sh
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
-Go to http://localhost:8000/
+Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
+runing control panel.
