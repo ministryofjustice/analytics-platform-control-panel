@@ -127,15 +127,63 @@ class AuthorizationAPI(APIClient):
 
         return groups[0]
 
-    def get_group_members(self, group_name):
+    def get_group_id(self, group_name):
         group = self.get_group(group_name)
         if group:
+            return group["_id"]
+
+
+    def delete_group(self, group_name):
+        """
+        Deletes a group from the authorization API
+
+        It also deletes all the roles associated with the
+        group.
+
+        NOTE: Roles in the Auth0 Authorization API are
+        meant to be flexible and they could potentially
+        be attached to different groups.
+        However, in our use-case, each app has 1 group
+        and each group has 1 role (`app-viewer`) and
+        each role has 1 permission (`view:app`) so it's
+        safe to delete all the associated roles/permissions.
+
+        See Auth0 Authorization extension API docs:
+        - https://auth0.com/docs/api/authorization-extension#get-group-roles
+        - https://auth0.com/docs/api/authorization-extension#delete-group
+        - https://auth0.com/docs/api/authorization-extension#delete-role
+        - https://auth0.com/docs/api/authorization-extension#delete-permission
+        """
+
+        group_id = self.get_group_id(group_name)
+        if group_id:
+            role_ids = []
+            permission_ids = []
+
+            roles = self.request("GET", f"groups/{group_id}/roles")
+            for role in roles:
+                role_ids.append(role["_id"])
+                permission_ids.extend(role.get("permissions", []))
+
+            self.request("DELETE", f"groups/{group_id}")
+            for role_id in role_ids:
+                self.request("DELETE", f"roles/{role_id}")
+            for permission_id in permission_ids:
+                self.request("DELETE", f"permissions/{permission_id}")
+
+
+    def get_group_members(self, group_name):
+        group_id = self.get_group_id(group_name)
+        if group_id:
             return self.get_all(
-                f'groups/{group["_id"]}/members', key="users", per_page=25
+                f'groups/{group_id}/members', key="users", per_page=25
             )
 
     def add_group_members(self, group_name, emails, user_options={}):
-        group = self.get_group(group_name)
+        group_id = self.get_group_id(group_name)
+        if not group_id:
+            raise Auth0Error("Group for the app not found, was the app released?")
+
         mgmt = ManagementAPI()
         users = self.get_users()
         user_lookup = {user["email"]: user for user in users if "email" in user}
@@ -160,7 +208,7 @@ class AuthorizationAPI(APIClient):
 
         response = self.request(
             "PATCH",
-            f'groups/{group["_id"]}/members',
+            f'groups/{group_id}/members',
             json=[user["user_id"] for user in users_to_add.values()],
         )
 
@@ -170,16 +218,16 @@ class AuthorizationAPI(APIClient):
         return users_to_add.values()
 
     def delete_group_members(self, group_name, user_ids):
-        group = self.get_group(group_name)
-        if group is None:
-            return None
+        group_id = self.get_group_id(group_name)
+        if group_id:
+            response = self.request(
+                "DELETE",
+                f'groups/{group_id}/members',
+                json=user_ids,
+            )
 
-        response = self.request(
-            "DELETE", f'groups/{group["_id"]}/members', json=user_ids
-        )
-
-        if "error" in response:
-            raise Auth0Error("delete_group_members", response)
+            if "error" in response:
+                raise Auth0Error("delete_group_members", response)
 
 
 class ManagementAPI(APIClient):

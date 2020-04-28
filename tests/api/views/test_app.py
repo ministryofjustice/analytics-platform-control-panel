@@ -3,6 +3,7 @@ from model_mommy import mommy
 import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
+from unittest.mock import patch
 
 from controlpanel.api.models import App
 
@@ -87,10 +88,17 @@ def test_detail(client, app):
     assert set(userapp['user']) == expected_fields
 
 
-def test_delete(client, app, aws):
+@pytest.yield_fixture
+def authz():
+    with patch("controlpanel.api.cluster.auth0.AuthorizationAPI") as authz:
+        yield authz()
+
+
+def test_delete(client, app, aws, authz):
     response = client.delete(reverse('app-detail', (app.id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
+    authz.delete_group.assert_called_with(group_name=app.slug)
     aws.delete_role.assert_called_with(app.iam_role_name)
 
     response = client.get(reverse('app-detail', (app.id,)))

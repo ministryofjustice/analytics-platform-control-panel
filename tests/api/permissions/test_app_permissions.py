@@ -9,6 +9,7 @@ import pytest
 from rest_framework.reverse import reverse
 from rest_framework import status
 from rules import perm_exists, has_perm
+from unittest.mock import patch
 
 import controlpanel.api.rules
 
@@ -96,5 +97,7 @@ def test_authenticated_user_has_basic_perms(client, users):
 def test_permission(client, app, users, view, user, expected_status):
     u = users[user]
     client.force_login(u)
-    response = view(client, app)
-    assert response.status_code == expected_status
+
+    with patch("controlpanel.api.views.models.App.delete"):
+        response = view(client, app)
+        assert response.status_code == expected_status

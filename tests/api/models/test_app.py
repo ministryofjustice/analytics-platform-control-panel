@@ -35,12 +35,14 @@ def test_aws_create_role_calls_service(aws):
 
 
 @pytest.mark.django_db
-def test_aws_delete_role_calls_service(aws):
+def test_delete_also_deletes_app_artifacts():
     app = App.objects.create(repo_url="https://example.com/repo_name")
 
-    app.delete()
+    with patch("controlpanel.api.models.app.cluster") as cluster:
+        app.delete()
 
-    aws.delete_role.assert_called_with(app.iam_role_name)
+        cluster.App.assert_called_with(app)
+        cluster.App.return_value.delete.assert_called()
 
 
 @pytest.mark.django_db
