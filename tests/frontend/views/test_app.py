@@ -166,11 +166,11 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (delete, 'normal_user', status.HTTP_403_FORBIDDEN),
 
         (add_admin, 'superuser', status.HTTP_302_FOUND),
-        (add_admin, 'app_admin', status.HTTP_403_FORBIDDEN),
+        (add_admin, 'app_admin', status.HTTP_302_FOUND),
         (add_admin, 'normal_user', status.HTTP_403_FORBIDDEN),
 
         (revoke_admin, 'superuser', status.HTTP_302_FOUND),
-        (revoke_admin, 'app_admin', status.HTTP_403_FORBIDDEN),
+        (revoke_admin, 'app_admin', status.HTTP_302_FOUND),
         (revoke_admin, 'normal_user', status.HTTP_403_FORBIDDEN),
 
         (add_customers, 'superuser', status.HTTP_302_FOUND),
