@@ -232,7 +232,32 @@ class ToolDeployment():
     def release_name(self):
         return f"{self.chart_name}-{self.user.slug}"
 
-    def install(self, **kwargs):
+    def _delete_legacy_release(self):
+        """
+        At some point the naming scheme for RStudio
+        changed. This cause upgrade problems when
+        an old release with the old release name is
+        present.
+
+        We're going to temporarily check/uninstall
+        releases with the old name before installing
+        the new release with the correct name.
+
+        We can remove this once every user is on new naming
+        scheme for RStudio.
+        """
+
+        old_release_name = f"{self.user.slug}-{self.chart_name}"
+        if old_release_name in helm.list_releases(old_release_name):
+            helm.delete(True, old_release_name)
+
+
+    def _set_values(self, **kwargs):
+        """
+        Return the list of `--set KEY=VALUE` helm upgrade arguments
+
+        Extracted from `install()` method for clarity.
+        """
         values = {
             "username": self.user.username.lower(),
             "Username": self.user.username.lower(),  # XXX backwards compatibility
@@ -252,7 +277,14 @@ class ToolDeployment():
             escaped_val = val.replace(',', '\,')
             set_values.extend(['--set', f'{key}={escaped_val}'])
 
+        return set_values
+
+    def install(self, **kwargs):
+        self._delete_legacy_release()
+
         try:
+            set_values = self._set_values(**kwargs)
+
             return helm.upgrade_release(
                 self.release_name,
                 f'{settings.HELM_REPO}/{self.chart_name}',  # XXX assumes repo name
