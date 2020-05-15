@@ -19,7 +19,8 @@ class HelmError(APIException):
 
 class Helm(object):
 
-    def _execute(self, *args, check=True, **kwargs):
+    @classmethod
+    def _execute(cls, *args, check=True, **kwargs):
         should_wait = False
         if 'timeout' in kwargs:
             should_wait = True
@@ -67,11 +68,12 @@ class Helm(object):
 
         return proc
 
-    def update_repositories(self, *args):
-        self._execute("repo", "update", timeout=None)
+    @classmethod
+    def update_repositories(cls):
+        cls._execute("repo", "update", timeout=None)
 
     def upgrade_release(self, release, chart, *args):
-        self.update_repositories()
+        self.__class__.update_repositories()
 
         return self._execute(
             "upgrade", "--install", "--wait", release, chart, *args,
@@ -81,11 +83,11 @@ class Helm(object):
         default_args = []
         if purge:
             default_args.append("--purge")
-        self._execute("delete", *default_args, *args)
+        self.__class__._execute("delete", *default_args, *args)
 
     def list_releases(self, *args):
         # TODO - use --max and --offset to paginate through releases
-        proc = self._execute("list", "-q", "--max=1024", *args, timeout=None)
+        proc = self.__class__._execute("list", "-q", "--max=1024", *args, timeout=None)
         return proc.stdout.read().split()
 
 
