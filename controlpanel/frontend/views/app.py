@@ -1,4 +1,5 @@
 import re
+import logging
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -36,6 +37,9 @@ from controlpanel.frontend.forms import (
 )
 
 
+log = logging.getLogger(__name__)
+
+
 class AppList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'apps'
     model = App
@@ -68,6 +72,11 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
+
+        # Log data consistency warnings. (Missing Auth0 ID).
+        for user in app.admins:
+            if not user.auth0_id:
+                log.warning("User without Auth0 ID, {}, is admin for app: {}.".format(user, app))
 
         context["app_url"] = cluster.App(app).url
         context["admin_options"] = User.objects.filter(
@@ -291,13 +300,16 @@ class AddAdmin(UpdateApp):
     def perform_update(self, **kwargs):
         app = self.get_object()
         user = get_object_or_404(User, pk=self.request.POST['user_id'])
-        userapp = UserApp.objects.create(
-            app=app,
-            user=user,
-            is_admin=True,
-        )
-        userapp.save()
-        messages.success(self.request, f"Granted admin access to {user.name}")
+        if user.auth0_id:
+            userapp = UserApp.objects.create(
+                app=app,
+                user=user,
+                is_admin=True,
+            )
+            userapp.save()
+            messages.success(self.request, f"Granted admin access to {user.name}")
+        else:
+            messages.error(self.request, f"Failed to grant admin access to {user.name} because they lack an Auth0 ID.")
 
 
 class RevokeAdmin(UpdateApp):
