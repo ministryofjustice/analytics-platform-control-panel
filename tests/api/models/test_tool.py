@@ -25,11 +25,19 @@ def test_deploy_for_generic(helm, token_hex, tool, users):
         cookie_secret_proxy,
         cookie_secret_tool
     ]
-
     user = users['normal_user']
+
+    # simulate release with old naming scheme installed
+    old_release_name = f"{user.username}-{tool.chart_name}"
+    helm.list_releases.return_value = [old_release_name]
+
     tool_deployment = ToolDeployment(tool, user)
     tool_deployment.save()
 
+    # uninstall tool with old naming scheme
+    helm.delete.assert_called_with(True, old_release_name)
+
+    # install new release
     helm.upgrade_release.assert_called_with(
         f'{tool.chart_name}-{user.slug}',
         f'mojanalytics/{tool.chart_name}',
