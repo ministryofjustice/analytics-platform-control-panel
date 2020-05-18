@@ -9,6 +9,7 @@ from django.db.models import Q
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster
+from controlpanel.api.helm import HelmRepository
 
 
 log = logging.getLogger(__name__)
@@ -65,8 +66,8 @@ class ToolDeploymentManager:
         tools = Tool.objects.filter(filter)
         results = []
         for tool in tools:
-            outdated = tool.version != deployed_versions[tool.chart_name]
-            tool_deployment = ToolDeployment(tool, user, outdated)
+            deployed_chart_version = deployed_versions.get(tool.chart_name, None)
+            tool_deployment = ToolDeployment(tool, user, deployed_chart_version)
             results.append(tool_deployment)
         return results
 
@@ -82,14 +83,49 @@ class ToolDeployment:
 
     objects = ToolDeploymentManager()
 
-    def __init__(self, tool, user, outdated=False):
+    def __init__(self, tool, user, deployed_chart_version=None):
         self._subprocess = None
         self.tool = tool
         self.user = user
-        self.outdated = outdated
+        self.deployed_chart_version = deployed_chart_version
 
     def __repr__(self):
         return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
+
+    @property
+    def deployed_tool_version(self):
+        """
+        Returns the version of the tool deployed to the user
+
+        NOTE: This is the version coming from the helm
+        chart `appVersion` field, **not** the version
+        of the chart released in the user namespace.
+
+        e.g. if user has `rstudio-2.2.5` (chart version)
+        installed in his namespace, this would return
+        "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
+        **not** "2.2.5".
+
+        Also bear in mind that Helm added this `appVersion`
+        field only "recently" so if a user has an old
+        version of a tool chart installed this would return
+        `None` as we can't determine the tool version
+        as this information is simply not available
+        in the helm repository index.
+        """
+
+        if self.deployed_chart_version:
+            chart_name = self.tool.chart_name
+            chart_info = HelmRepository.get_chart_info(chart_name)
+
+            if self.deployed_chart_version in chart_info:
+                return chart_info[self.deployed_chart_version].app_version
+
+        return None
+
+    @property
+    def outdated(self):
+        return self.tool.version != self.deployed_chart_version
 
     def delete(self, id_token):
         """

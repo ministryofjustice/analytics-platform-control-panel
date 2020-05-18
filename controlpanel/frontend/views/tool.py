@@ -29,7 +29,7 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         user = self.request.user
         id_token = user.get_id_token()
 
-        deployments = ToolDeployment.objects.filter(
+        tool_deployments = ToolDeployment.objects.filter(
             user=user,
             id_token=id_token,
         )
@@ -37,9 +37,10 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
         context["deployed_tools"] = {
-            deployment.tool: deployment
-            for deployment in deployments
+            tool_deployment.tool: tool_deployment
+            for tool_deployment in tool_deployments
         }
+
         return context
 
 
