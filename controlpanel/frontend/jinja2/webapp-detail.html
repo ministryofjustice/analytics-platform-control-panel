@@ -156,10 +156,14 @@
     {% for user in app_admins %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
+        {% if user.auth0_id %}
           <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
               href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}">
             {{ user_name(user) }}
           </a>
+        {% else %}
+          {{ user_name(user) }}
+        {% endif %}
         </td>
         {% if request.user.has_perm('api.revoke_app_admin', app) %}
         <td class="govuk-table__cell align-right">
