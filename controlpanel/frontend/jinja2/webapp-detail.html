@@ -167,12 +167,14 @@
         </td>
         {% if request.user.has_perm('api.revoke_app_admin', app) %}
         <td class="govuk-table__cell align-right">
-          <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
-            {{ csrf_input }}
-            <button class="confirm govuk-button govuk-button--secondary right">
+          {% if user.id %}
+            <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
+              {{ csrf_input }}
+              <button class="confirm govuk-button govuk-button--secondary right">
               Revoke admin
-            </button>
-          </form>
+              </button>
+            </form>
+          {% endif %}
         </td>
         {% endif %}
       </tr>
