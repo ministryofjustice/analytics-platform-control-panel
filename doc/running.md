@@ -53,9 +53,9 @@ You'll be able to get a copy of folks `.envrc` file from colleagues.
 ### <a name="env"></a>Environment variables
 
 The simplest solution is to ask for a copy of a working `.env` or `.envrc` file
-from one of the other developers with the envars set for development.
+from one of the other developers with the environment variables set for development.
 
-If this isn't immediately possible and at a mininum, you need to set the
+If this isn't immediately possible and at a minimum, you need to set the
 following environment variables:
 
 ```sh
@@ -164,13 +164,13 @@ By this step, all the tests should pass. If not, re-check all the steps above
 and then ask a colleague for help.
 
 
-## Third Party Requirements 
+## Third Party Requirements
 
 Put simply, if you've completed all the steps in the
 [new joiners process](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process)
 then you should be good to go.
 
-In particular, you'll need to make sure you're [set up with Auth0](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#auth0), 
+In particular, you'll need to make sure you're [set up with Auth0](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#auth0),
 [added to AWS](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#aws)
 and have [cluster admin access to Kubernetes](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#kubernetes).
 
