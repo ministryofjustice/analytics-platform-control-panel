@@ -1,12 +1,13 @@
 version: '3'
 services:
   db:
-    image: "circleci/postgres:9.6.2"
+    image: "circleci/postgres:9.6.17-ram"
     logging:
       driver: none
     environment:
       POSTGRES_USER: "controlpanel"
       POSTGRES_DB: "controlpanel"
+      POSTGRES_PASSWORD: "password"
 
   redis:
     image: "redis"
@@ -25,6 +26,7 @@ services:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
       DB_USER: "controlpanel"
+      DB_PASSWORD: "password"
       DEBUG: "True"
       PYTHONUNBUFFERED: "1"
       SLACK_API_TOKEN: "dummy"
@@ -70,6 +72,7 @@ services:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
       DB_USER: "controlpanel"
+      DB_PASSWORD: "password"
       DEBUG: "True"
       PYTHONUNBUFFERED: "1"
       REDIS_HOST: "redis"
