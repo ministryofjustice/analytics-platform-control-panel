@@ -199,12 +199,38 @@ def delete_role(name):
 
 def create_bucket(bucket_name, is_data_warehouse=False):
     try:
-        bucket = boto3.resource('s3').create_bucket(
+        bucket = boto3.resource("s3").create_bucket(
             Bucket=bucket_name,
             ACL='private',
             CreateBucketConfiguration={
                 'LocationConstraint': settings.BUCKET_REGION,
             },
+        )
+        # Enable versioning by default.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning
+        versioning = bucket.Versioning()
+        versioning.enable()
+        # Set bucket lifecycle. Send non-current versions of files to glacier
+        # storage after 30 days.
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration
+        lifecycle_id = f"{bucket_name}_lifecycle_configuration"
+        lifecycle_conf = boto3.client("s3").put_bucket_lifecycle_configuration(
+            Bucket=bucket_name,
+            LifecycleConfiguration={
+                "Rules": [
+                    {
+                        "ID": lifecycle_id,
+                        "Status": "Enabled",
+                        "Prefix": "",
+                        "NoncurrentVersionTransitions": [
+                            {
+                                'NoncurrentDays': 30,
+                                'StorageClass': 'GLACIER',
+                            },
+                        ]
+                    },
+                ]
+            }
         )
         if is_data_warehouse:
             _tag_bucket(bucket, {"buckettype": "datawarehouse"})
