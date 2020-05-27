@@ -24,8 +24,8 @@
       <td class="govuk-table__cell">
         {{ tool.name }}
         {% if deployment %}
-          <br><small>
-            {{ deployment.deployed_tool_version or "Unknown" }}
+          <br><small class="tool-app-version">
+            {{ deployment.get_installed_app_version(id_token) or "Unknown" }}
           </small>
         {% endif %}
       </td>
@@ -58,7 +58,7 @@
           {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
           <button class="govuk-button govuk-button--secondary right">Deploy</button>
         </form>
-        {% if deployment.outdated %}
+        {% if deployment.outdated(id_token) %}
           <form action="{{ url('upgrade-tool', kwargs={"name": tool.chart_name}) }}"
                 class="background-submit tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
                 data-action-name="upgrade"
