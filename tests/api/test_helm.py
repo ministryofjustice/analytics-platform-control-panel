@@ -1,25 +1,16 @@
 from datetime import datetime, timedelta
 import pytest
-from unittest.mock import mock_open, patch
-
-import yaml
+from unittest.mock import patch
 
 from controlpanel.api.helm import (
     Chart,
     HelmRepository,
 )
-from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
 
 
 def setup_function(fn):
     print("Resetting HelmRepository._updated_at ...")
     HelmRepository._updated_at = None
-
-
-@pytest.fixture
-def helm_repository_index():
-    content = yaml.dump(HELM_MOJANALYTICS_INDEX)
-    return mock_open(read_data=content)
 
 
 def test_chart_app_version():

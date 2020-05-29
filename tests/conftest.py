@@ -1,7 +1,10 @@
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 from model_mommy import mommy
+import yaml
 import pytest
+
+from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
 
 
 @pytest.yield_fixture(autouse=True)
@@ -47,6 +50,15 @@ def helm():
     """
     with patch('controlpanel.api.cluster.helm') as helm:
         yield helm
+
+
+@pytest.fixture
+def helm_repository_index(autouse=True):
+    """
+    Mock the helm repository with some data
+    """
+    content = yaml.dump(HELM_MOJANALYTICS_INDEX)
+    return mock_open(read_data=content)
 
 
 @pytest.yield_fixture(autouse=True)
