@@ -82,7 +82,8 @@
         "hide": not request.user.is_superuser,
         "text": "Home",
         "href": home_url,
-        "active": page_name == "home"
+        "active": page_name == "home",
+        "admin": request.user.is_superuser
       },
       {
         "text": "Analytical tools",
@@ -110,13 +111,15 @@
         "hide": not request.user.is_superuser,
         "text": "Parameters",
         "href": url("list-parameters"),
-        "active": page_name == "parameters"
+        "active": page_name == "parameters",
+        "admin": request.user.is_superuser
       },
       {
         "hide": not request.user.is_superuser,
         "text": "Groups",
         "href": url("list-policies"),
-        "active": page_name == "groups"
+        "active": page_name == "groups",
+        "admin": request.user.is_superuser
       }
     ]
   }) }}
