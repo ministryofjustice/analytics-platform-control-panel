@@ -16,6 +16,7 @@ from controlpanel.api.cluster import (
     TOOL_DEPLOY_FAILED,
     TOOL_IDLED,
     TOOL_READY,
+    TOOL_RESTARTING,
     TOOL_UPGRADED,
 )
 from controlpanel.api.models import Tool, ToolDeployment, User
@@ -146,7 +147,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         id_token = message["id_token"]
 
         tool_deployment = ToolDeployment(tool, user)
-        update_tool_status(tool_deployment, id_token, "Restarting")
+        update_tool_status(tool_deployment, id_token, TOOL_RESTARTING)
 
         tool_deployment.restart(id_token=id_token)
 
