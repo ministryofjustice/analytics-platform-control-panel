@@ -14,6 +14,7 @@
             <li class="moj-primary-navigation__item">
               <a class="moj-primary-navigation__link" {{ 'aria-current="page"' | safe if item.active else '' }} href="{{ item.href }}" {%- for attribute, value in item.attributes -%} {{ attribute }}="{{ value }}"{% endfor %}>
                 {{- item.html | safe if item.html else item.text -}}
+                {% if item.admin %}&#128295;{% endif %}
               </a>
             </li>
             {% endif -%}
