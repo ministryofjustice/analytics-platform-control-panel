@@ -83,29 +83,29 @@
         "text": "Home",
         "href": home_url,
         "active": page_name == "home",
-        "admin": request.user.is_superuser
+        "admin": request.user.is_superuser,
       },
       {
         "text": "Analytical tools",
         "href": url("list-tools"),
-        "active": page_name == "tools"
+        "active": page_name == "tools",
       },
       {
         "text": "Warehouse data",
         "href": url("list-warehouse-datasources"),
-        "active": page_name == "warehouse-datasource-list"
+        "active": page_name == "warehouse-datasource-list",
       },
       {
         "hide": not request.user.users3buckets.filter(s3bucket__is_data_warehouse=False).exists(),
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
-        "active": page_name == "webapp-datasource-list"
+        "active": page_name == "webapp-datasource-list",
       },
       {
         "hide": not request.user.userapps.filter(is_admin=True).exists(),
         "text": "Webapps",
         "href": url("list-apps"),
-        "active": page_name == "webapps"
+        "active": page_name == "webapps",
       },
       {
         "text": "Parameters",
@@ -117,9 +117,9 @@
         "text": "Groups",
         "href": url("list-policies"),
         "active": page_name == "groups",
-        "admin": request.user.is_superuser
-      }
-    ]
+        "admin": request.user.is_superuser,
+      },
+    ],
   }) }}
   {% endif %}
 
@@ -134,31 +134,31 @@
         'items': [
           {
             'href': user_guidance_base_url,
-            'text': "Platform user guidance"
+            'text': "Platform user guidance",
           },
           {
             'href': user_guidance_base_url + "/support.html",
-            'text': "Platform support"
+            'text': "Platform support",
           },
           {
             'href': "https://asdslack.slack.com/messages/C1PUCG719/#",
-            'text': "R Slack channel"
+            'text': "R Slack channel",
           },
           {
             'href': "https://asdslack.slack.com/messages/C1Q09V86S/#",
-            'text': "Python slack channel"
+            'text': "Python slack channel",
           },
           {
             'href': "https://asdslack.slack.com/messages/C4PF7QAJZ#",
-            'text': "Analytical platform slack channel"
+            'text': "Analytical platform slack channel",
           },
           {
             'href': url('whats-new'),
-            'text': "What's new?"
-          }
-        ]
-      }
-    ]
+            'text': "What's new?",
+          },
+        ],
+      },
+    ],
   }) }}
 {% endblock %}
 
