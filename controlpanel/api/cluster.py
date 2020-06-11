@@ -20,6 +20,7 @@ TOOL_DEPLOY_FAILED = 'Failed'
 TOOL_IDLED = 'Idled'
 TOOL_NOT_DEPLOYED = 'Not deployed'
 TOOL_READY = 'Ready'
+TOOL_RESTARTING = 'Restarting'
 TOOL_UPGRADED = 'Upgraded'
 TOOL_STATUS_UNKNOWN = 'Unknown'
 
@@ -344,6 +345,23 @@ class ToolDeployment():
             raise MultipleObjectsReturned(self)
 
         return deployments[0]
+
+
+    def get_installed_chart_version(self, id_token):
+        """
+        Returns the installed helm chart version of the tool
+
+        This is extracted from the `chart` label in the corresponding
+        `Deployment`.
+        """
+
+        try:
+            deployment = self.get_deployment(id_token)
+            _, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            return chart_version
+        except ObjectDoesNotExist:
+            return None
+
 
     def get_status(self, id_token):
         try:

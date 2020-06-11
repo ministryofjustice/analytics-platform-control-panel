@@ -4,6 +4,7 @@ moj.Modules.toolStatus = {
   hidden: "govuk-visually-hidden",
   listenerClass: ".tool-status",
   statusLabelClass: ".tool-status-label",
+  toolAppVersionClass: ".tool-app-version",
 
   init() {
     const toolStatusListeners = document.querySelectorAll(this.listenerClass);
@@ -39,15 +40,23 @@ moj.Modules.toolStatus = {
         case 'READY':
         case 'IDLED':
           this.showActions(listener, ['open', 'restart', 'upgrade', 'remove']);
+          this.updateAppVersion(listener, data.appVersion);
           break;
         case 'UPGRADED':
           this.showActions(listener, ['open']);
+          this.updateAppVersion(listener, data.appVersion);
           break;
         case 'FAILED':
           this.showActions(listener, ['restart', 'upgrade', 'remove']);
           break;
       }
     };
+  },
+
+  updateAppVersion(listener, newAppVersion) {
+    if (newAppVersion) {
+      listener.querySelector(this.toolAppVersionClass).innerText = newAppVersion;
+    }
   },
 
   showActions(listener, action_names) {

@@ -9,6 +9,7 @@ from django.db.models import Q
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster
+from controlpanel.api.helm import HelmRepository
 
 
 log = logging.getLogger(__name__)
@@ -49,14 +50,12 @@ class ToolDeploymentManager:
         return tool_deployment
 
     def filter(self, **kwargs):
-        deployed_versions = {}
         user = kwargs["user"]
         id_token = kwargs["id_token"]
         filter = Q(chart_name=None)  # Always False
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
             chart_name, version = deployment.metadata.labels["chart"].rsplit("-", 1)
-            deployed_versions[chart_name] = version
             filter = filter | (
                 Q(chart_name=chart_name)
                 # & Q(version=version)
@@ -65,8 +64,7 @@ class ToolDeploymentManager:
         tools = Tool.objects.filter(filter)
         results = []
         for tool in tools:
-            outdated = tool.version != deployed_versions[tool.chart_name]
-            tool_deployment = ToolDeployment(tool, user, outdated)
+            tool_deployment = ToolDeployment(tool, user)
             results.append(tool_deployment)
         return results
 
@@ -82,14 +80,63 @@ class ToolDeployment:
 
     objects = ToolDeploymentManager()
 
-    def __init__(self, tool, user, outdated=False):
+    def __init__(self, tool, user):
         self._subprocess = None
         self.tool = tool
         self.user = user
-        self.outdated = outdated
 
     def __repr__(self):
         return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
+
+    def get_installed_app_version(self, id_token):
+        """
+        Returns the version of the deployed tool
+
+        NOTE: This is the version coming from the helm
+        chart `appVersion` field, **not** the version
+        of the chart released in the user namespace.
+
+        e.g. if user has `rstudio-2.2.5` (chart version)
+        installed in his namespace, this would return
+        "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
+        **not** "2.2.5".
+
+        Also bear in mind that Helm added this `appVersion`
+        field only "recently" so if a user has an old
+        version of a tool chart installed this would return
+        `None` as we can't determine the tool version
+        as this information is simply not available
+        in the helm repository index.
+        """
+
+        td = cluster.ToolDeployment(self.user, self.tool)
+        chart_version = td.get_installed_chart_version(id_token)
+        if chart_version:
+            chart_info = HelmRepository.get_chart_info(self.tool.chart_name)
+
+            version_info = chart_info.get(chart_version, None)
+            if version_info:
+                return version_info.app_version
+
+        return None
+
+
+    def outdated(self, id_token):
+        """
+        Returns true if the tool helm chart version is old
+
+        NOTE: This is simple/naive at the moment and it returns true if
+        the installed chart for the tool has a different version
+        than the one in the corresponding Tool record.
+        """
+
+        td = cluster.ToolDeployment(self.user, self.tool)
+        chart_version = td.get_installed_chart_version(id_token)
+
+        if chart_version:
+            return self.tool.version != chart_version
+
+        return False
 
     def delete(self, id_token):
         """

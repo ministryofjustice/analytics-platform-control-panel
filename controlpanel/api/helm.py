@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import os
 import re
@@ -6,6 +6,7 @@ import subprocess
 
 from django.conf import settings
 from rest_framework.exceptions import APIException
+import yaml
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +20,8 @@ class HelmError(APIException):
 
 class Helm(object):
 
-    def _execute(self, *args, check=True, **kwargs):
+    @classmethod
+    def execute(cls, *args, check=True, **kwargs):
         should_wait = False
         if 'timeout' in kwargs:
             should_wait = True
@@ -67,13 +69,10 @@ class Helm(object):
 
         return proc
 
-    def update_repositories(self, *args):
-        self._execute("repo", "update", timeout=None)
-
     def upgrade_release(self, release, chart, *args):
-        self.update_repositories()
+        HelmRepository.update()
 
-        return self._execute(
+        return self.__class__.execute(
             "upgrade", "--install", "--wait", release, chart, *args,
         )
 
@@ -81,11 +80,11 @@ class Helm(object):
         default_args = []
         if purge:
             default_args.append("--purge")
-        self._execute("delete", *default_args, *args)
+        self.__class__.execute("delete", *default_args, *args)
 
     def list_releases(self, *args):
         # TODO - use --max and --offset to paginate through releases
-        proc = self._execute("list", "-q", "--max=1024", *args, timeout=None)
+        proc = self.__class__.execute("list", "-q", "--max=1024", *args, timeout=None)
         return proc.stdout.read().split()
 
 
@@ -146,6 +145,106 @@ def parse_upgrade_output(output):
         'resources': resources,
         'notes': '\n'.join(notes),
     }
+
+
+class Chart(object):
+
+    def __init__(self, name, description, version, app_version):
+        self.name = name
+        self.description = description
+        self.version = version
+        self.app_version = app_version
+
+
+class HelmRepository(object):
+
+    CACHE_FOR_MINUTES = 30
+
+    HELM_HOME = Helm.execute("home").stdout.read().strip()
+    REPO_PATH = os.path.join(
+        HELM_HOME,
+        "repository",
+        "cache",
+        f"{settings.HELM_REPO}-index.yaml",
+    )
+
+    _updated_at = None
+    _repository = {}
+
+    @classmethod
+    def update(cls, force=True):
+        if force or cls._outdated():
+            Helm.execute("repo", "update", timeout=None)
+            cls._load()
+            cls._updated_at = datetime.utcnow()
+
+    @classmethod
+    def _load(cls):
+        # Read and parse helm repository YAML file
+        try:
+            with open(cls.REPO_PATH) as f:
+                cls._repository = yaml.load(f, Loader=yaml.FullLoader)
+        except Exception as err:
+            wrapped_err = HelmError(err)
+            wrapped_err.detail = f"Error while opening/parsing helm repository cache: '{cls.REPO_PATH}'"
+            raise HelmError(wrapped_err)
+
+    @classmethod
+    def get_chart_info(cls, name):
+        """
+        Get information about the given chart
+
+        Returns a dictionary with the chart versions as keys and the chart
+        as value (`Chart` instance)
+
+        Returns an empty dictionary when the chart is not in the helm
+        repository index.
+
+        ```
+        rstudio_info = HelmRepository.get_chart_info("rstudio")
+        # rstudio_info = {
+        #   "2.2.5": <Chart name="rstudio" version="2.2.5" app_version=""RStudio: 1.2.13...">,
+        #   "2.2.4": <Chart ...>,
+        # }
+        ```
+        """
+
+        cls.update(force=False)
+
+        try:
+            versions = cls._repository["entries"][name]
+        except KeyError:
+            # No such a chart with this name, returning {}
+            return {}
+
+        # Convert to dictionary
+        chart_info = {}
+        for version_info in versions:
+            chart = Chart(
+                version_info["name"],
+                version_info["description"],
+                version_info["version"],
+                # appVersion is relatively new and some old helm chart don't
+                # have it
+                version_info.get("appVersion", None),
+            )
+            chart_info[chart.version] = chart
+        return chart_info
+
+    @classmethod
+    def _outdated(cls):
+        # helm update never called?
+        if not cls._updated_at:
+            return True
+
+        # helm update called more than `CACHE_FOR_MINUTES` ago
+        now = datetime.utcnow()
+        elapsed = now - cls._updated_at
+        if elapsed > timedelta(minutes=cls.CACHE_FOR_MINUTES):
+            return True
+
+        # helm update called recently
+        return False
 
 
 helm = Helm()
