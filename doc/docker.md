@@ -10,6 +10,8 @@ To build the docker image, use the following command:
 docker build -t controlpanel .
 ```
 
+Hint: If you get error: `Got permission denied while trying to connect to the Docker daemon socket` then it could well be because you're on linux, for which you need to either use sudo or setup to [Manage Docker as a non-root user](https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user)
+
 ## .env file
 
 You need to create a `.env` file with the settings to enable it to connect to external services.
