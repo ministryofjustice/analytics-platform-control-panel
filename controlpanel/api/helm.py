@@ -73,7 +73,7 @@ class Helm(object):
         HelmRepository.update()
 
         return self.__class__.execute(
-            "upgrade", "--install", "--wait", release, chart, *args,
+            "upgrade", "--install", "--wait", "--force", release, chart, *args,
         )
 
     def delete(self, purge=True, *args):
