@@ -253,6 +253,17 @@ def test_create_bucket(logs_bucket, s3):
 
     aws.create_bucket(bucket_name, is_data_warehouse=True)
 
+    # Check versioning.
+    assert bucket.Versioning().status == "Enabled"
+
+    # Check lifecycle.
+    versioning = bucket.LifecycleConfiguration()
+    rule = versioning.rules[0]
+    assert rule["ID"].endswith("_lifecycle_configuration")
+    assert rule["Status"] == "Enabled"
+    assert rule["NoncurrentVersionTransitions"][0]["NoncurrentDays"] == 30
+    assert rule["NoncurrentVersionTransitions"][0]["StorageClass"] == "GLACIER"
+
     # Check logging
     assert bucket.Logging().logging_enabled['TargetBucket'] == settings.LOGS_BUCKET_NAME
     # Check tagging
