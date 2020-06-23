@@ -1,5 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import TemplateView
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from mozilla_django_oidc.views import OIDCLogoutView
 
 from controlpanel.frontend.views.app import (
@@ -64,6 +66,18 @@ from controlpanel.frontend.views.whats_new import WhatsNew
 
 class IndexView(LoginRequiredMixin, TemplateView):
     template_name = "home.html"
+
+    def get(self, request):
+        """
+        If the user is a superuser display the home page (containing useful
+        admin related links). Otherwise, redirect the user to the list of the
+        tools they currently have available on the platform.
+        """
+        if request.user.is_superuser:
+            return super().get(request)
+        else:
+            # Redirect to the tools page.
+            return HttpResponseRedirect(reverse("list-tools"))
 
 
 class LogoutView(OIDCLogoutView):
