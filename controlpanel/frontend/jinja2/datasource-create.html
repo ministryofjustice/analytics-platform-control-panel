@@ -39,7 +39,7 @@
         "maxlength": "60",
       },
       "value": form.name.value(),
-      "errorMessage": { "html": form.name.errors|join("<br>") } if form.name.errors else {}
+      "errorMessage": { "html": form.name.errors|join(". ") } if form.name.errors else {}
     }) }}
     <button class="govuk-button">Create data source</button>
   </form>

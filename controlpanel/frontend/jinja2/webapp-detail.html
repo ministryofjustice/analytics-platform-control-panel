@@ -282,7 +282,7 @@
     <div class="govuk-form-group">
       {{ govukLabel({"text": "Connect an app data source"}) }}
       {% if grant_access_form.datasource.errors -%}
-      {{ govukErrorMessage({"text": grant_access_form.datasource.errors|join("<br>")}) }}
+      {{ govukErrorMessage({"text": grant_access_form.datasource.errors|join(". ")}) }}
       {%- endif %}
       {{ grant_access_form.datasource }}
     </div>

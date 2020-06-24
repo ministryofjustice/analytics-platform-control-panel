@@ -23,7 +23,7 @@
     <tr class="govuk-table__row sse-listener tool-status" data-tool-name="{{ tool.chart_name }}">
       <td class="govuk-table__cell">
         {{ tool.name }}
-        <br>
+        <br/>
         <small class="tool-app-version">
           {% if deployment %}
             {{ deployment.get_installed_app_version(id_token) or "Unknown" }}

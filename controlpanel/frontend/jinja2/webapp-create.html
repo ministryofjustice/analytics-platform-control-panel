@@ -20,7 +20,7 @@
     "hint": {
       "text": '60 chars max, only lowercase letters, numbers, periods and hyphens, auto-prefixed with "' + env + '"'
     },
-    "errorMessage": {"text": form.new_datasource_name.errors|join("<br>")} if form.new_datasource_name.errors else {},
+    "errorMessage": {"text": form.new_datasource_name.errors|join(". ")} if form.new_datasource_name.errors else {},
     "value": form.new_datasource_name.value()
   }) }}
   </div>
@@ -33,7 +33,7 @@
                 {%- if form.existing_datasource_id.errors %} govuk-form-group--error{% endif %}">
       {{ govukLabel({"text": "Select webapp data source"}) }}
       {% if form.existing_datasource_id.errors -%}
-      {{ govukErrorMessage({"text": form.existing_datasource_id.errors|join("<br>")}) }}
+      {{ govukErrorMessage({"text": form.existing_datasource_id.errors|join(". ")}) }}
       {%- endif %}
       {{ form.existing_datasource_id }}
     </div>
@@ -57,7 +57,7 @@
       "text": "Github repository",
       "classes": "govuk-label--m"
     },
-    "errorMessage": {"html": form.repo_url.errors|join("<br>")} if form.repo_url.errors else {},
+    "errorMessage": {"html": form.repo_url.errors|join(". ")} if form.repo_url.errors else {},
     "classes": "govuk-input--error" if form.repo_url.errors else "",
     "value": form.repo_url.value(),
     "items": repos
