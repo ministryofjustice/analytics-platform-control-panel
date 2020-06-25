@@ -30,13 +30,13 @@ class Tool(TimeStampedModel):
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
-        ordering = ('name',)
+        ordering = ("name",)
 
     def __repr__(self):
-        return f'<Tool: {self.chart_name} {self.version}>'
+        return f"<Tool: {self.chart_name} {self.version}>"
 
     def url(self, user):
-        return f'https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/'
+        return f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
 
 
 class ToolDeploymentManager:
@@ -56,9 +56,7 @@ class ToolDeploymentManager:
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
             chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
-            filter = filter | (
-                Q(chart_name=chart_name)
-            )
+            filter = filter | (Q(chart_name=chart_name))
 
         tools = Tool.objects.filter(filter)
         results = []
@@ -85,7 +83,7 @@ class ToolDeployment:
         self.user = user
 
     def __repr__(self):
-        return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
+        return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
 
     def get_installed_app_version(self, id_token):
         """
@@ -119,7 +117,6 @@ class ToolDeployment:
 
         return None
 
-
     def outdated(self, id_token):
         """
         Returns true if the tool helm chart version is old
@@ -146,7 +143,7 @@ class ToolDeployment:
 
     @property
     def host(self):
-        return f'{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}'
+        return f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
 
     def save(self, *args, **kwargs):
         """
