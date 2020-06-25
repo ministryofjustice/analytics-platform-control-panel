@@ -56,7 +56,7 @@
               data-action-name="deploy"
               method="post">
           {{ csrf_input }}
-          {# <input type="hidden" value="{{ tool.version }}" name="version"> #}
+          <input type="hidden" value="{{ tool.version }}" name="version">
           <button class="govuk-button govuk-button--secondary right">Deploy</button>
         </form>
         {% if deployment and deployment.outdated(id_token) %}
@@ -65,6 +65,7 @@
                 data-action-name="upgrade"
                 method="post">
             {{ csrf_input }}
+            <input type="hidden" value="{{ tool.version }}" name="version">
             <button class="govuk-button govuk-button--secondary right">Upgrade</button>
           </form>
         {% endif %}

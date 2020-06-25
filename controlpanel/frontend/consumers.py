@@ -159,10 +159,11 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Restarted {tool.name} for {user}")
 
     def get_tool_and_user(self, message):
-        tool = Tool.objects.get(
-            chart_name=message['tool_name'],
-            # version=message['version'],
-        )
+        tool_args = { "chart_name": message["tool_name"] }
+        if "version" in message:
+            tool_args["version"] = message["version"]
+
+        tool = Tool.objects.get(**tool_args)
         user = User.objects.get(auth0_id=message['user_id'])
         return tool, user
 

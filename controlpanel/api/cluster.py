@@ -289,7 +289,7 @@ class ToolDeployment():
             return helm.upgrade_release(
                 self.release_name,
                 f'{settings.HELM_REPO}/{self.chart_name}',  # XXX assumes repo name
-                # f'--version', tool.version,
+                f'--version', self.tool.version,
                 f'--namespace', self.k8s_namespace,
                 *set_values,
             )
@@ -310,7 +310,6 @@ class ToolDeployment():
             self.k8s_namespace,
             label_selector=(
                 f"app={self.chart_name}"
-                # f'-{tool_deployment.tool.version}'
             ),
         )
 

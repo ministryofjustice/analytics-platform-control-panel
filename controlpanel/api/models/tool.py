@@ -55,10 +55,9 @@ class ToolDeploymentManager:
         filter = Q(chart_name=None)  # Always False
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
-            chart_name, version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
             filter = filter | (
                 Q(chart_name=chart_name)
-                # & Q(version=version)
             )
 
         tools = Tool.objects.filter(filter)

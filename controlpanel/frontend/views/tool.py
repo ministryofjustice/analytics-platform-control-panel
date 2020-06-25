@@ -53,7 +53,7 @@ class DeployTool(LoginRequiredMixin, RedirectView):
 
         start_background_task('tool.deploy', {
             'tool_name': name,
-            # 'version': self.request.POST['version'],
+            'version': self.request.POST['version'],
             'user_id': self.request.user.id,
             'id_token': self.request.user.get_id_token(),
         })
@@ -73,6 +73,7 @@ class UpgradeTool(LoginRequiredMixin, RedirectView):
 
         start_background_task('tool.upgrade', {
             'tool_name': name,
+            'version': self.request.POST['version'],
             'user_id': self.request.user.id,
             'id_token': self.request.user.get_id_token(),
         })
