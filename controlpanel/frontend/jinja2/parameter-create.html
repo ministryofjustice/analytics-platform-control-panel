@@ -36,7 +36,7 @@
           "attributes": {},
           "items": app_type_choices,
           "value": form.app_type.value(),
-          "errorMessage": { "html": form.app_type.errors|join("<br>") } if form.app_type.errors else {}
+          "errorMessage": { "html": form.app_type.errors|join(". ") } if form.app_type.errors else {}
         })
       }}
     
@@ -54,7 +54,7 @@
           "maxlength": "60",
           "data-role-endpoint": url("parameters-list-roles"),
         },
-        "errorMessage": {"html": form.role_name.errors|join("<br>")} if form.role_name.errors else {},
+        "errorMessage": {"html": form.role_name.errors|join(". ")} if form.role_name.errors else {},
         "classes": "govuk-input--error govuk-!-width-two-thirds" if form.role_name.errors else "govuk-!-width-two-thirds",
         "value": form.role_name.value(),
         "items": []
@@ -80,7 +80,7 @@
             "maxlength": "60",
           },
           "value": form.key.value(),
-          "errorMessage": { "html": form.key.errors|join("<br>") } if form.key.errors else {}
+          "errorMessage": { "html": form.key.errors|join(". ") } if form.key.errors else {}
         })
       }}
 
@@ -95,7 +95,7 @@
           "attributes": {
           },
           "value": form.value.value(),
-          "errorMessage": { "html": form.value.errors|join("<br>") } if form.value.errors else {}
+          "errorMessage": { "html": form.value.errors|join(". ") } if form.value.errors else {}
         })
       }}
       <button class="govuk-button">Create parameter</button>
