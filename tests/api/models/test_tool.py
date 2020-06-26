@@ -101,3 +101,18 @@ def test_tool_deployment_get_installed_app_version(
     assert td.get_installed_app_version(id_token) == expected_app_version
     cluster.ToolDeployment.assert_called_with(user, tool)
     cluster_td.get_installed_chart_version.assert_called_with(id_token)
+
+
+@pytest.mark.parametrize(
+    "chart_version, expected_app_version",
+    [
+        ("unknown-version", None),
+        ("1.0.0", None),
+        ("2.2.5", "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"),
+    ],
+    ids=["unknown-version", "chart-with-no-appVersion", "chart-with-appVersion",],
+)
+def test_tool_app_version(helm_repository_index, chart_version, expected_app_version):
+    tool = Tool(chart_name="rstudio", version=chart_version)
+
+    assert tool.app_version == expected_app_version

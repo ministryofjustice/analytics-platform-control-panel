@@ -38,6 +38,23 @@ class Tool(TimeStampedModel):
     def url(self, user):
         return f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
 
+    @property
+    def app_version(self):
+        """
+        Returns the "appVersion" for this tool.
+
+        This is metadata in the helm chart which we use to maintain details
+        of the actual tool version (e.g. "RStudio: 1.2.1335+conda, R: 3.5.1, ...")
+        as opposed to the chart version.
+
+        Returns None if this information is not available for this tool and
+        chart version (e.g. the chart was released before the `appVersion`
+        was introduced) or because the chart doesn't exist in the helm
+        reporitory.
+        """
+
+        return HelmRepository.get_chart_app_version(self.chart_name, self.version)
+
 
 class ToolDeploymentManager:
     """
@@ -109,11 +126,9 @@ class ToolDeployment:
         td = cluster.ToolDeployment(self.user, self.tool)
         chart_version = td.get_installed_chart_version(id_token)
         if chart_version:
-            chart_info = HelmRepository.get_chart_info(self.tool.chart_name)
-
-            version_info = chart_info.get(chart_version, None)
-            if version_info:
-                return version_info.app_version
+            return HelmRepository.get_chart_app_version(
+                self.tool.chart_name, chart_version
+            )
 
         return None
 

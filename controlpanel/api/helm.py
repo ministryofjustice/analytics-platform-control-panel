@@ -232,6 +232,25 @@ class HelmRepository(object):
         return chart_info
 
     @classmethod
+    def get_chart_app_version(cls, name, version):
+        """
+        Returns the "appVersion" metadata for the given
+        chart name/version.
+
+        It returns None if the chart or the chart version
+        are not found or if that version of a chart doesn't
+        have the "appVersion" field (e.g. the chart
+        preceed the introduction of this field)
+        """
+
+        chart_info = cls.get_chart_info(name)
+        version_info = chart_info.get(version, None)
+        if version_info:
+            return version_info.app_version
+
+        return None
+
+    @classmethod
     def _outdated(cls):
         # helm update never called?
         if not cls._updated_at:

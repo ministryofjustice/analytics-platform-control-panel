@@ -57,7 +57,7 @@
               method="post">
           {{ csrf_input }}
           <input type="hidden" value="{{ tool.version }}" name="version">
-          <button class="govuk-button govuk-button--secondary right">Deploy</button>
+          <button class="govuk-button govuk-button--secondary right js-confirm" data-confirm-message="This will install {{ tool.name }} ({% if tool.app_version %}{{ tool.app_version }}{% else %}version information not available{% endif %}), do you wish to continue?">Deploy</button>
         </form>
         {% if deployment and deployment.outdated(id_token) %}
           <form action="{{ url('upgrade-tool', kwargs={"name": tool.chart_name}) }}"
@@ -66,7 +66,7 @@
                 method="post">
             {{ csrf_input }}
             <input type="hidden" value="{{ tool.version }}" name="version">
-            <button class="govuk-button govuk-button--secondary right">Upgrade</button>
+            <button class="govuk-button govuk-button--secondary right js-confirm" data-confirm-message="This will change your {{ tool.name }} instance {% if tool.app_version %}to {{ tool.app_version }}{% else %}(version information not available){% endif %}, do you wish to continue?">Upgrade</button>
           </form>
         {% endif %}
       </td>
