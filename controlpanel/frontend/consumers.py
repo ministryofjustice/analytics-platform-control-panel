@@ -44,20 +44,22 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         """
         self.streaming = True
 
-        user = self.scope.get('user')
+        user = self.scope.get("user")
         if not user or not user.is_authenticated:
-            await self.send_response(403, b'Forbidden')
+            await self.send_response(403, b"Forbidden")
             return
 
-        await self.send_headers(headers=[
-            (b"Cache-Control", b"no-cache"),
-            (b"Content-Type", b"text/event-stream"),
-            (b"Transfer-Encoding", b"chunked"),
-        ])
+        await self.send_headers(
+            headers=[
+                (b"Cache-Control", b"no-cache"),
+                (b"Content-Type", b"text/event-stream"),
+                (b"Transfer-Encoding", b"chunked"),
+            ]
+        )
 
         # headers are not sent until some part of the body is sent, so send an
         # empty string to force them
-        await self.send_body(b'', more_body=True)
+        await self.send_body(b"", more_body=True)
 
         # schedule a coroutine to send keepalive updates
         asyncio.get_event_loop().create_task(self.stream())
@@ -71,10 +73,9 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         Send a keepalive message every minute to prevent timeouts
         """
         while self.streaming:
-            await self.sse_event({
-                "event": "keepalive",
-                "data": datetime.now().isoformat(),
-            })
+            await self.sse_event(
+                {"event": "keepalive", "data": datetime.now().isoformat(),}
+            )
             await asyncio.sleep(60)
 
     async def sse_event(self, event):
@@ -85,8 +86,7 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         payload = "\n".join(f"{key}: {value}" for key, value in event.items())
 
         await self.send_body(
-            f"{payload}\n\n".encode("utf-8"),
-            more_body=self.streaming,
+            f"{payload}\n\n".encode("utf-8"), more_body=self.streaming,
         )
 
     async def disconnect(self):
@@ -101,7 +101,6 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
 
 
 class BackgroundTaskConsumer(SyncConsumer):
-
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
@@ -159,11 +158,12 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Restarted {tool.name} for {user}")
 
     def get_tool_and_user(self, message):
-        tool = Tool.objects.get(
-            chart_name=message['tool_name'],
-            # version=message['version'],
-        )
-        user = User.objects.get(auth0_id=message['user_id'])
+        tool_args = {"chart_name": message["tool_name"]}
+        if "version" in message:
+            tool_args["version"] = message["version"]
+
+        tool = Tool.objects.get(**tool_args)
+        user = User.objects.get(auth0_id=message["user_id"])
         return tool, user
 
 
@@ -172,11 +172,7 @@ def send_sse(user_id, event):
     Tell the SSEConsumer to send an event to the specified user
     """
     async_to_sync(channel_layer.group_send)(
-        sanitize_dns_label(user_id),
-        {
-            "type": "sse.event",
-            **event
-        },
+        sanitize_dns_label(user_id), {"type": "sse.event", **event},
     )
 
 
@@ -192,20 +188,14 @@ def update_tool_status(tool_deployment, id_token, status):
         "appVersion": app_version,
         "status": status,
     }
-    send_sse(user.auth0_id, {
-        "event": "toolStatus",
-        "data": json.dumps(payload),
-    })
+    send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})
 
 
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
-        'background_tasks',
-        {
-            'type': task,
-            **message,
-        },
+        "background_tasks", {"type": task, **message,},
     )
+
 
 def wait_for_deployment(tool_deployment, id_token):
     status = TOOL_DEPLOYING

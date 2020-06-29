@@ -15,14 +15,14 @@ from controlpanel.utils import github_repository_name
 log = logging.getLogger(__name__)
 
 
-TOOL_DEPLOYING = 'Deploying'
-TOOL_DEPLOY_FAILED = 'Failed'
-TOOL_IDLED = 'Idled'
-TOOL_NOT_DEPLOYED = 'Not deployed'
-TOOL_READY = 'Ready'
-TOOL_RESTARTING = 'Restarting'
-TOOL_UPGRADED = 'Upgraded'
-TOOL_STATUS_UNKNOWN = 'Unknown'
+TOOL_DEPLOYING = "Deploying"
+TOOL_DEPLOY_FAILED = "Failed"
+TOOL_IDLED = "Idled"
+TOOL_NOT_DEPLOYED = "Not deployed"
+TOOL_READY = "Ready"
+TOOL_RESTARTING = "Restarting"
+TOOL_UPGRADED = "Upgraded"
+TOOL_STATUS_UNKNOWN = "Unknown"
 
 
 class User:
@@ -31,13 +31,14 @@ class User:
 
     A user is represented by an IAM role, which is assumed by their tools.
     """
+
     def __init__(self, user):
         self.user = user
-        self.k8s_namespace = f'user-{self.user.slug}'
+        self.k8s_namespace = f"user-{self.user.slug}"
 
     @property
     def iam_role_name(self):
-        return f'{settings.ENV}_user_{self.user.username.lower()}'
+        return f"{settings.ENV}_user_{self.user.username.lower()}"
 
     def create(self):
         aws.create_user_role(self.user)
@@ -45,7 +46,8 @@ class User:
         helm.upgrade_release(
             f"init-user-{self.user.slug}",
             f"{settings.HELM_REPO}/init-user",
-            f"--set=" + (
+            f"--set="
+            + (
                 f"Env={settings.ENV},"
                 f"NFSHostname={settings.NFS_HOSTNAME},"
                 f"OidcDomain={settings.OIDC_DOMAIN},"
@@ -107,8 +109,7 @@ class App:
 
         repo_name = github_repository_name(self.app.repo_url)
         ingresses = k8s.ExtensionsV1beta1Api.list_namespaced_ingress(
-            self.APPS_NS,
-            label_selector=f"repo={repo_name}",
+            self.APPS_NS, label_selector=f"repo={repo_name}",
         ).items
 
         if len(ingresses) != 1:
@@ -119,6 +120,7 @@ class App:
 
 class S3Bucket:
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
+
     def __init__(self, bucket):
         self.bucket = bucket
 
@@ -141,6 +143,7 @@ class RoleGroup:
     This is because IAM doesn't allow adding roles to IAM groups
     See https://stackoverflow.com/a/48087433/455642
     """
+
     def __init__(self, iam_managed_policy):
         self.policy = iam_managed_policy
 
@@ -150,18 +153,16 @@ class RoleGroup:
 
     @property
     def path(self):
-        return f'/{settings.ENV}/group/'
+        return f"/{settings.ENV}/group/"
 
     def create(self):
         aws.create_group(
-            self.policy.name,
-            self.policy.path,
+            self.policy.name, self.policy.path,
         )
 
     def update_members(self):
         aws.update_group_members(
-            self.arn,
-            {user.iam_role_name for user in self.policy.users.all()},
+            self.arn, {user.iam_role_name for user in self.policy.users.all()},
         )
 
     def delete(self):
@@ -194,7 +195,7 @@ def get_repositories(user):
             org = github.get_organization(name)
             repos.extend(org.get_repos())
         except GithubException as err:
-            log.warning(f'Failed getting {name} Github org repos for {user}: {err}')
+            log.warning(f"Failed getting {name} Github org repos for {user}: {err}")
             raise err
     return repos
 
@@ -204,7 +205,7 @@ def get_repository(user, repo_name):
     try:
         return github.get_repo(repo_name)
     except GithubException.UnknownObjectException:
-        log.warning(f'Failed getting {repo_name} Github repo for {user}: {err}')
+        log.warning(f"Failed getting {repo_name} Github repo for {user}: {err}")
         return None
 
 
@@ -212,14 +213,13 @@ class ToolDeploymentError(Exception):
     pass
 
 
-class ToolDeployment():
-
+class ToolDeployment:
     def __init__(self, user, tool):
         self.user = user
         self.tool = tool
 
     def __repr__(self):
-        return f'<ToolDeployment: {self.tool!r} {self.user!r}>'
+        return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
 
     @property
     def chart_name(self):
@@ -252,7 +252,6 @@ class ToolDeployment():
         if old_release_name in helm.list_releases(old_release_name):
             helm.delete(True, old_release_name)
 
-
     def _set_values(self, **kwargs):
         """
         Return the list of `--set KEY=VALUE` helm upgrade arguments
@@ -275,8 +274,8 @@ class ToolDeployment():
         values.update(kwargs)
         set_values = []
         for key, val in values.items():
-            escaped_val = val.replace(',', '\,')
-            set_values.extend(['--set', f'{key}={escaped_val}'])
+            escaped_val = val.replace(",", "\,")
+            set_values.extend(["--set", f"{key}={escaped_val}"])
 
         return set_values
 
@@ -288,9 +287,11 @@ class ToolDeployment():
 
             return helm.upgrade_release(
                 self.release_name,
-                f'{settings.HELM_REPO}/{self.chart_name}',  # XXX assumes repo name
-                # f'--version', tool.version,
-                f'--namespace', self.k8s_namespace,
+                f"{settings.HELM_REPO}/{self.chart_name}",  # XXX assumes repo name
+                f"--version",
+                self.tool.version,
+                f"--namespace",
+                self.k8s_namespace,
                 *set_values,
             )
 
@@ -300,18 +301,13 @@ class ToolDeployment():
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
         helm.delete(
-            deployment.metadata.name,
-            f"--namespace={self.k8s_namespace}",
+            deployment.metadata.name, f"--namespace={self.k8s_namespace}",
         )
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
         return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
-            self.k8s_namespace,
-            label_selector=(
-                f"app={self.chart_name}"
-                # f'-{tool_deployment.tool.version}'
-            ),
+            self.k8s_namespace, label_selector=(f"app={self.chart_name}"),
         )
 
     @classmethod
@@ -346,7 +342,6 @@ class ToolDeployment():
 
         return deployments[0]
 
-
     def get_installed_chart_version(self, id_token):
         """
         Returns the installed helm chart version of the tool
@@ -362,7 +357,6 @@ class ToolDeployment():
         except ObjectDoesNotExist:
             return None
 
-
     def get_status(self, id_token):
         try:
             deployment = self.get_deployment(id_token)
@@ -376,8 +370,7 @@ class ToolDeployment():
             return TOOL_STATUS_UNKNOWN
 
         conditions = {
-            condition.type: condition
-            for condition in deployment.status.conditions
+            condition.type: condition for condition in deployment.status.conditions
         }
 
         if "Available" in conditions:
@@ -386,14 +379,12 @@ class ToolDeployment():
                     return TOOL_IDLED
                 return TOOL_READY
 
-        if 'Progressing' in conditions:
-            progressing_status = conditions['Progressing'].status
+        if "Progressing" in conditions:
+            progressing_status = conditions["Progressing"].status
             if progressing_status == "True":
                 return TOOL_DEPLOYING
             elif progressing_status == "False":
                 return TOOL_DEPLOY_FAILED
 
-        log.warning(
-            f"Unknown status for {self!r}: {deployment.status.conditions}"
-        )
+        log.warning(f"Unknown status for {self!r}: {deployment.status.conditions}")
         return TOOL_STATUS_UNKNOWN

@@ -19,25 +19,24 @@ class HelmError(APIException):
 
 
 class Helm(object):
-
     @classmethod
     def execute(cls, *args, check=True, **kwargs):
         should_wait = False
-        if 'timeout' in kwargs:
+        if "timeout" in kwargs:
             should_wait = True
-            timeout = kwargs.pop('timeout')
+            timeout = kwargs.pop("timeout")
 
         try:
-            log.debug(' '.join(['helm', *args]))
+            log.debug(" ".join(["helm", *args]))
             env = os.environ.copy()
             # helm checks for existence of DEBUG env var
-            if 'DEBUG' in env:
-                del env['DEBUG']
+            if "DEBUG" in env:
+                del env["DEBUG"]
             proc = subprocess.Popen(
                 ["helm", *args],
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                encoding='utf8',
+                encoding="utf8",
                 env=env,
                 **kwargs,
             )
@@ -92,47 +91,46 @@ def parse_upgrade_output(output):
     section = None
     columns = None
     last_deployed = None
-    namespace = ''
+    namespace = ""
     resource_type = None
     resources = {}
     notes = []
 
-    for line in output.split('\n'):
+    for line in output.split("\n"):
 
-        if line.startswith('LAST DEPLOYED:'):
+        if line.startswith("LAST DEPLOYED:"):
             last_deployed = datetime.strptime(
-                line.split(':', 1)[1],
-                ' %a %b %d %H:%M:%S %Y',
+                line.split(":", 1)[1], " %a %b %d %H:%M:%S %Y",
             )
             continue
 
-        if line.startswith('NAMESPACE:'):
-            namespace = line.split(':', 1)[1].strip()
+        if line.startswith("NAMESPACE:"):
+            namespace = line.split(":", 1)[1].strip()
             continue
 
-        if line.startswith('==> ') and section == 'RESOURCES':
-            resource_type = line.split(' ', 1)[1].strip()
+        if line.startswith("==> ") and section == "RESOURCES":
+            resource_type = line.split(" ", 1)[1].strip()
             continue
 
-        if line.startswith('RESOURCES:'):
-            section = 'RESOURCES'
+        if line.startswith("RESOURCES:"):
+            section = "RESOURCES"
             continue
 
-        if line.startswith('NAME') and resource_type:
+        if line.startswith("NAME") and resource_type:
             columns = line.lower()
-            columns = re.split(r'\s+', columns)
+            columns = re.split(r"\s+", columns)
             continue
 
-        if section == 'NOTES':
+        if section == "NOTES":
             notes.append(line)
             continue
 
-        if line.startswith('NOTES:'):
-            section = 'NOTES'
+        if line.startswith("NOTES:"):
+            section = "NOTES"
             continue
 
         if section and line.strip():
-            row = re.split(r'\s+', line)
+            row = re.split(r"\s+", line)
             row = dict(zip(columns, row))
             resources[resource_type] = [
                 *resources.get(resource_type, []),
@@ -140,15 +138,14 @@ def parse_upgrade_output(output):
             ]
 
     return {
-        'last_deployed': last_deployed,
-        'namespace': namespace,
-        'resources': resources,
-        'notes': '\n'.join(notes),
+        "last_deployed": last_deployed,
+        "namespace": namespace,
+        "resources": resources,
+        "notes": "\n".join(notes),
     }
 
 
 class Chart(object):
-
     def __init__(self, name, description, version, app_version):
         self.name = name
         self.description = description
@@ -162,10 +159,7 @@ class HelmRepository(object):
 
     HELM_HOME = Helm.execute("home").stdout.read().strip()
     REPO_PATH = os.path.join(
-        HELM_HOME,
-        "repository",
-        "cache",
-        f"{settings.HELM_REPO}-index.yaml",
+        HELM_HOME, "repository", "cache", f"{settings.HELM_REPO}-index.yaml",
     )
 
     _updated_at = None
@@ -186,7 +180,9 @@ class HelmRepository(object):
                 cls._repository = yaml.load(f, Loader=yaml.FullLoader)
         except Exception as err:
             wrapped_err = HelmError(err)
-            wrapped_err.detail = f"Error while opening/parsing helm repository cache: '{cls.REPO_PATH}'"
+            wrapped_err.detail = (
+                f"Error while opening/parsing helm repository cache: '{cls.REPO_PATH}'"
+            )
             raise HelmError(wrapped_err)
 
     @classmethod
@@ -230,6 +226,25 @@ class HelmRepository(object):
             )
             chart_info[chart.version] = chart
         return chart_info
+
+    @classmethod
+    def get_chart_app_version(cls, name, version):
+        """
+        Returns the "appVersion" metadata for the given
+        chart name/version.
+
+        It returns None if the chart or the chart version
+        are not found or if that version of a chart doesn't
+        have the "appVersion" field (e.g. the chart
+        preceed the introduction of this field)
+        """
+
+        chart_info = cls.get_chart_info(name)
+        version_info = chart_info.get(version, None)
+        if version_info:
+            return version_info.app_version
+
+        return None
 
     @classmethod
     def _outdated(cls):
