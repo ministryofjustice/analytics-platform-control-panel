@@ -16,12 +16,8 @@ Hint: If you get error: `Got permission denied while trying to connect to the Do
 
 You need to create a `.env` file with the settings to enable it to connect to external services.
 
-You probably want it to pick up your 'data' AWS profile:
-```sh
-AWS_PROFILE=data
-```
+For testing purposes, you can simply connect to some services used for the dev environment. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml (in the [config repo](https://github.com/ministryofjustice/analytics-platform-config) and if you've not done so already, you'll need to [decrypt the files in that repo](https://github.com/ministryofjustice/analytics-platform-ops/tree/master/git-crypt#decrypting-the-secrets)) and just change the format of each line to `KEY=value`:
 
-For testing purposes, you can simply connect to some services used for the dev environment. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml and just change the format of each line to `KEY=value`.
 ```sh
 # To log in with OIDC
 OIDC_*
@@ -31,6 +27,7 @@ AWS_COMPUTE_ACCOUNT_ID
 ```
 
 Unless you're testing the slack feature, just disable it with this line:
+
 ```sh
 SLACK_API_TOKEN=disabled
 ```
@@ -39,7 +36,7 @@ For more details of environment variable settings, refer to: [Environment Variab
 
 ## AWS setup
 
-Control Panel needs AWS credentials to change S3 bucket IAM permissions, according to user requests. When this runs in the cluster it can get them using kube2iam. But when you run locally you'll need to provide AWS credentials that give access to the mojanalytics account. Typically you'll use configure to use your Landing Account User and use AssumeRole to the mojanalytics account.
+Control Panel needs AWS credentials to change S3 bucket IAM permissions, according to user requests. When it runs in our k8s cluster it can get temporary creds by making a call to kube2iam, which runs in our cluster. But when you run Control Panel locally you'll need to provide AWS credentials that give access to the 'data' AWS account (also known as 'mojanalytics'). The general plan is to configure an AWS access key for your AWS Landing Account's User, and then use AssumeRole to switch to the 'data' (mojanalytics) account.
 
 You can test what AWS Account is currently configured on your command-line, like this:
 
@@ -49,27 +46,29 @@ $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'
 arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
 ```
 
-As an AP developer, if you don't have a Landing AWS Account user account yet, follow the steps here: https://github.com/ministryofjustice/analytical-platform-iam#user-creation Make sure you've completed *all* of the 'First login' section.
+As an AP developer, if you don't have a Landing AWS Account user account yet, follow the steps here:
 
-Now you will create an Access Key and save it in a file on your machine. In the AWS Console, go to IAM | Users | Security credentials | Access keys | Create access key. Now while you've still got the values for AWS Access Key ID and AWS Secret Access Key on the screen, in your terminal run `aws configure` and input those values as answers to the first two questions. Set 'Default region name' to `eu-west-1` and 'Default output format' to blank. This writes those credentials as your `[default]` profile to ~/.aws/credentials.
+1. [Create your AWS user](https://github.com/ministryofjustice/analytical-platform-iam#user-creation). Make sure you're added to the group that gives you access to the 'restricted-admin' role in the 'data' AWS account.
+2. Continue those instructions: 'Approve and apply an IAM change', and 'First login'.
+3. [Configure your AWS CLI](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli)
+4. [Add the special 'data' profile](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli-using-profile).
+5. Test it:
 
-Now edit ~/.aws/credentials and add this second 'profile':
+    ```sh
+    $ AWS_PROFILE=data
+    $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
+    arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
+    ```
 
-```ini
-[data]
-role_arn = arn:aws:iam::593291632749:role/restricted-admin-data
-source_profile = default
-```
-
-You can configure to use this 'data' profile using:
+Note: You'll have to remember to enable your 'data' AWS profile before running Control Panel, as you would to use the AWS cli:
 
 ```sh
-export AWS_PROFILE=data
+AWS_PROFILE=data
 ```
 
-and boto3 or awscli commands will access the mojanalytics/data AWS Account, by using your Landing Account creds and switching.
+With this profile activated, boto3 and awscli (`aws`) commands will access the 'data' AWS Account (by using your Landing Account creds and switching to the 'data' account).
 
-boto3 looks in the [usual places for AWS credentials](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#configuring-credentials). 
+If you find you are getting the wrong AWS credentials, it can be useful to know where boto3 searches for AWS credentials and in what order: [boto3's AWS credential search](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html#configuring-credentials).
 
 ## kubernetes config setup
 
