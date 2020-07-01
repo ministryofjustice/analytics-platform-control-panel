@@ -102,6 +102,16 @@ class ToolDeployment:
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
 
+    def get_installed_chart_version(self, id_token):
+        """
+        Returns the installed chart version for this tool
+
+        Returns None if the chart is not installed for the user
+        """
+
+        td = cluster.ToolDeployment(self.user, self.tool)
+        return td.get_installed_chart_version(id_token)
+
     def get_installed_app_version(self, id_token):
         """
         Returns the version of the deployed tool
@@ -123,8 +133,7 @@ class ToolDeployment:
         in the helm repository index.
         """
 
-        td = cluster.ToolDeployment(self.user, self.tool)
-        chart_version = td.get_installed_chart_version(id_token)
+        chart_version = self.get_installed_chart_version(id_token)
         if chart_version:
             return HelmRepository.get_chart_app_version(
                 self.tool.chart_name, chart_version

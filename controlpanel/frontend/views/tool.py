@@ -9,6 +9,7 @@ from django.views.generic.list import ListView
 from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
 
+from controlpanel.api import cluster
 from controlpanel.api.models import (
     Tool,
     ToolDeployment,
@@ -26,17 +27,67 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = "tool-list.html"
 
     def get_context_data(self, *args, **kwargs):
+        """
+        Retrieve information about tools and arrange them for the
+        template to use them when being rendered.
+
+        The `tool_info` dictionary in the contexts contains information
+        about the tools, whether they're deployed for the user,
+        versions, etc...arranged by `chart_name`.
+
+        For example:
+
+        ```
+        {
+           "tools_info": {
+               "rstudio": {
+                   "name": "RStudio",
+                   "url: "https://john-rstudio.tools.example.com",
+                   "deployment": ToolDeployment(RStudio, John),
+                   "versions": {
+                       "2.2.5": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
+                       "1.0.0": None,
+                    }
+               },
+               # ...
+           }
+        }
+        ```
+        """
+
         user = self.request.user
         id_token = user.get_id_token()
 
-        tool_deployments = ToolDeployment.objects.filter(user=user, id_token=id_token,)
-
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
-        context["deployed_tools"] = {
-            tool_deployment.tool: tool_deployment
-            for tool_deployment in tool_deployments
-        }
+
+        # Get list of deployed tools
+        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
+        deployed_chart_names = []
+        for deployment in deployments:
+            chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
+            deployed_chart_names.append(chart_name)
+
+        # Arrange tools information
+        context["tools_info"] = {}
+        for tool in context["tools"]:
+            chart_name = tool.chart_name
+            if chart_name not in context["tools_info"]:
+                context["tools_info"][chart_name] = {
+                    "name": tool.name,
+                    "url": tool.url(user),
+                    "deployment": None,
+                    "versions": {},
+                }
+
+            if chart_name in deployed_chart_names:
+                context["tools_info"][chart_name]["deployment"] = ToolDeployment(
+                    tool, user
+                )
+
+            context["tools_info"][chart_name]["versions"][
+                tool.version
+            ] = tool.app_version
 
         return context
 
