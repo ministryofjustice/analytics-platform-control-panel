@@ -119,6 +119,12 @@
         "active": page_name == "groups",
         "admin": request.user.is_superuser,
       },
+      {
+        "hide": request.user.is_superuser,
+        "text": "Home reset",
+        "href": url("home-reset"),
+        "active": page_name == "reset",
+      },
     ],
   }) }}
   {% endif %}

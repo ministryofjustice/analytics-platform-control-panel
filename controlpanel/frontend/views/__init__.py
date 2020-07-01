@@ -61,6 +61,7 @@ from controlpanel.frontend.views.user import (
     UserDelete,
     UserDetail,
 )
+from controlpanel.frontend.views.reset import Reset
 from controlpanel.frontend.views.whats_new import WhatsNew
 
 

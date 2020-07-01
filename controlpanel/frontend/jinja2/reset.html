@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% set page_title = "Hard Reset Home Directory" %}
+{% set page_name = "reset" %}
+
+{% block content %}
+  <div class="markdown-container" id="reset-container">
+    <h1>Home Directory Reset</h1>
+    <p>Even the best curated home directories can get into a bad
+    state (for example, a broken conda environment or Jupyter and RStudio won't
+    start).</p>
+
+    <p>Reset your home directory to recreate your conda environment and shell
+    settings to a clean state. Technical details of this process can be
+    <a href="">found here</a>.</p>
+
+    <p>Please ensure:</p>
+    <ul>
+        <li>You've copied any important files from your home directory (Note:
+        <strong>important files should be stored in S3 or GitHub</strong>).</li>
+        <li>You believe something configured in your home directory is amiss
+        (e.g. conda).</li>
+        <li>You're happy to start again from a clean state.</li>
+    </ul>
+
+    <form method="post" action="{{ url("home-reset") }}">
+      {{ csrf_input }}
+      <p>{{ form.confirm }} {{ form.confirm.help_text }}</p>
+      <input type="submit" class="govuk-button govuk-button--warning" value="Reset"/>
+    </form>
+{% endblock %}

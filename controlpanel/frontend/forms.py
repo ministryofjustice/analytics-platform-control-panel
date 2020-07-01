@@ -257,3 +257,8 @@ class AppCustomersField(forms.Field):
 class AddAppCustomersForm(forms.Form):
     customer_email = AppCustomersField()
 
+
+
+class ResetHomeDirectoryForm(forms.Form):
+    confirm = forms.BooleanField(required=True,
+                                 help_text="Confirm reset of your home directory.")
