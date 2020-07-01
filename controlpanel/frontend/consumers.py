@@ -162,7 +162,15 @@ class BackgroundTaskConsumer(SyncConsumer):
         if "version" in message:
             tool_args["version"] = message["version"]
 
-        tool = Tool.objects.get(**tool_args)
+        # On restart we don't specify the version as it doesn't make
+        # sense to do so. As we're now allowing more than one
+        # Tool instance for the same chart name this means we have to
+        # use `filter().first()` (instead of `.get()`) to avoid getting
+        # a Django exception when `get()` finds more than 1 Tool record
+        # with the same chart name
+        tool = Tool.objects.filter(**tool_args).first()
+        if not tool:
+            raise Exception(f"no Tool record found for query {tool_args}")
         user = User.objects.get(auth0_id=message["user_id"])
         return tool, user
 
