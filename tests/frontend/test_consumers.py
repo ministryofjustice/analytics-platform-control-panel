@@ -6,8 +6,8 @@ from unittest.mock import patch, Mock
 from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.api.cluster import (
     TOOL_DEPLOYING,
+    TOOL_READY,
     TOOL_RESTARTING,
-    TOOL_UPGRADED,
 )
 from controlpanel.frontend import consumers
 
@@ -70,37 +70,6 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
         wait_for_deployment.assert_called_with(tool_deployment, id_token)
 
 
-def test_tool_upgrade(users, tools, update_tool_status):
-    user = User.objects.first()
-    tool = Tool.objects.first()
-    id_token = "secret user id_token"
-
-    with patch("controlpanel.frontend.consumers.ToolDeployment") as ToolDeployment:
-        tool_deployment = Mock()
-        ToolDeployment.return_value = tool_deployment
-
-        message = {
-            "user_id": user.auth0_id,
-            "tool_name": tool.chart_name,
-            "id_token": id_token,
-        }
-
-        consumer = consumers.BackgroundTaskConsumer("test")
-        consumer.tool_deploy = Mock() # mock tool_deploy() method
-        consumer.tool_upgrade(message=message)
-
-        # 1. calls/reuse tool_deploy()
-        consumer.tool_deploy.assert_called_with(message)
-        # 2. Instanciate `ToolDeployment` correctly
-        ToolDeployment.assert_called_with(tool, user)
-        # 3. Send status update
-        update_tool_status.assert_called_with(
-            tool_deployment,
-            id_token,
-            TOOL_UPGRADED,
-        )
-
-
 def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
     user = User.objects.first()
     tool = Tool.objects.first()
@@ -152,7 +121,7 @@ def test_update_tool_status():
     tool = Tool(chart_name="a_tool", version="v1.0.0")
     user = User(auth0_id="github|123")
     id_token = "user id_token"
-    status = TOOL_UPGRADED
+    status = TOOL_READY
     app_version = "R: 42, Python: 2.0.0"
 
     tool_deployment = Mock()

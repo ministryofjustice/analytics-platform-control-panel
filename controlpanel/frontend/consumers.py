@@ -17,7 +17,6 @@ from controlpanel.api.cluster import (
     TOOL_IDLED,
     TOOL_READY,
     TOOL_RESTARTING,
-    TOOL_UPGRADED,
 )
 from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
@@ -125,18 +124,6 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.error(f"Failed deploying {tool.name} for {user}")
         else:
             log.debug(f"Deployed {tool.name} for {user}")
-
-    def tool_upgrade(self, message):
-        """
-        Upgrade simply means re-installing the helm chart for the tool
-        """
-        self.tool_deploy(message)
-
-        tool, user = self.get_tool_and_user(message)
-        id_token = message["id_token"]
-
-        tool_deployment = ToolDeployment(tool, user)
-        update_tool_status(tool_deployment, id_token, TOOL_UPGRADED)
 
     def tool_restart(self, message):
         """
