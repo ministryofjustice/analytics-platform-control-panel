@@ -141,23 +141,6 @@ class ToolDeployment:
 
         return None
 
-    def outdated(self, id_token):
-        """
-        Returns true if the tool helm chart version is old
-
-        NOTE: This is simple/naive at the moment and it returns true if
-        the installed chart for the tool has a different version
-        than the one in the corresponding Tool record.
-        """
-
-        td = cluster.ToolDeployment(self.user, self.tool)
-        chart_version = td.get_installed_chart_version(id_token)
-
-        if chart_version:
-            return self.tool.version != chart_version
-
-        return False
-
     def delete(self, id_token):
         """
         Remove the release from the cluster
