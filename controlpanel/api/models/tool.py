@@ -66,22 +66,6 @@ class ToolDeploymentManager:
         tool_deployment.save()
         return tool_deployment
 
-    def filter(self, **kwargs):
-        user = kwargs["user"]
-        id_token = kwargs["id_token"]
-        filter = Q(chart_name=None)  # Always False
-        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
-        for deployment in deployments:
-            chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
-            filter = filter | (Q(chart_name=chart_name))
-
-        tools = Tool.objects.filter(filter)
-        results = []
-        for tool in tools:
-            tool_deployment = ToolDeployment(tool, user)
-            results.append(tool_deployment)
-        return results
-
 
 class ToolDeployment:
     """

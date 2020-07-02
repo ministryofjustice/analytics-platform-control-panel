@@ -13,5 +13,4 @@ from controlpanel.api.views.models import (
 )
 from controlpanel.api.views.tools import (
     ToolViewSet,
-    ToolDeploymentViewSet,
 )
