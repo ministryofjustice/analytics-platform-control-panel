@@ -28,13 +28,17 @@ def tools(db):
 
 @pytest.yield_fixture
 def update_tool_status():
-    with patch("controlpanel.frontend.consumers.update_tool_status") as update_tool_status:
+    with patch(
+        "controlpanel.frontend.consumers.update_tool_status"
+    ) as update_tool_status:
         yield update_tool_status
 
 
 @pytest.yield_fixture
 def wait_for_deployment():
-    with patch("controlpanel.frontend.consumers.wait_for_deployment") as wait_for_deployment:
+    with patch(
+        "controlpanel.frontend.consumers.wait_for_deployment"
+    ) as wait_for_deployment:
         yield wait_for_deployment
 
 
@@ -60,9 +64,7 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
         ToolDeployment.assert_called_with(tool, user)
         # 2. Send status update
         update_tool_status.assert_called_with(
-            tool_deployment,
-            id_token,
-            TOOL_DEPLOYING,
+            tool_deployment, id_token, TOOL_DEPLOYING,
         )
         # 3. Call save() on ToolDeployment (trigger deployment)
         tool_deployment.save.assert_called()
@@ -92,9 +94,7 @@ def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
         ToolDeployment.assert_called_with(tool, user)
         # 2. Send status update
         update_tool_status.assert_called_with(
-            tool_deployment,
-            id_token,
-            TOOL_RESTARTING,
+            tool_deployment, id_token, TOOL_RESTARTING,
         )
         # 3. Call restart() on ToolDeployment (trigger deployment)
         tool_deployment.restart.assert_called_with(id_token=id_token)
@@ -131,19 +131,19 @@ def test_update_tool_status():
 
     expected_sse_event = {
         "event": "toolStatus",
-        "data": json.dumps({
-            "toolName": tool.chart_name,
-            "version": tool.version,
-            "appVersion": app_version,
-            "status": status,
-        }),
+        "data": json.dumps(
+            {
+                "toolName": tool.chart_name,
+                "version": tool.version,
+                "appVersion": app_version,
+                "status": status,
+            }
+        ),
     }
 
     with patch("controlpanel.frontend.consumers.send_sse") as send_sse:
         consumers.update_tool_status(
-            tool_deployment,
-            id_token,
-            status,
+            tool_deployment, id_token, status,
         )
         tool_deployment.get_installed_app_version.assert_called_with(id_token)
         send_sse.assert_called_with(user.auth0_id, expected_sse_event)
