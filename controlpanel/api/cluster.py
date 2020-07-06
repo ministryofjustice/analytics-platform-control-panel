@@ -23,6 +23,16 @@ TOOL_READY = "Ready"
 TOOL_RESTARTING = "Restarting"
 TOOL_UPGRADED = "Upgraded"
 TOOL_STATUS_UNKNOWN = "Unknown"
+HOME_RESETTING = "Resetting"
+HOME_RESET_FAILED = "Failed"
+HOME_RESET = "Reset"
+
+
+class HomeDirectoryResetError(Exception):
+    """
+    Raised if a home directory cannot be reset.
+    """
+    pass
 
 
 class User:
@@ -62,6 +72,12 @@ class User:
             f"--namespace={self.k8s_namespace}",
             f"--set=Username={self.user.slug}",
         )
+
+    def reset(self):
+        """
+        Reset the user's home directory.
+        """
+        helm.reset_home(f"init-user-{self.user.slug}")
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)

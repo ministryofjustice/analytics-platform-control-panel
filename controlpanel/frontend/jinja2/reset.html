@@ -14,14 +14,10 @@
     settings to a clean state. Technical details of this process can be
     <a href="">found here</a>.</p>
 
-    <p>Please ensure:</p>
-    <ul>
-        <li>You've copied any important files from your home directory (Note:
-        <strong>important files should be stored in S3 or GitHub</strong>).</li>
-        <li>You believe something configured in your home directory is amiss
-        (e.g. conda).</li>
-        <li>You're happy to start again from a clean state.</li>
-    </ul>
+    <p>Please ensure you've copied any important files from your home directory
+    (note: <strong>important files should be stored in S3 or GitHub</strong>).</p>
+
+    <p>This process will take several minutes to complete.</p>
 
     <form method="post" action="{{ url("home-reset") }}">
       {{ csrf_input }}
