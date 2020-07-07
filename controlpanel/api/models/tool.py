@@ -206,30 +206,10 @@ class ToolDeployment:
         cluster.ToolDeployment(self.user, self.tool).restart(id_token)
 
 
-class HomeDirectoryManager:
-    """
-    Emulates a Django model manager.
-    """
-
-    def create(self, *args, **kwargs):
-        home_directory = HomeDirectory(*args, **kwargs)
-        home_directory.save()
-        return home_directory 
-
-    def filter(self, **kwargs):
-        return []
-
-
 class HomeDirectory:
     """
     Represents a user's home directory in the cluster
     """
-
-    DoesNotExist = django.core.exceptions.ObjectDoesNotExist
-    Error = cluster.HomeDirectoryResetError
-    MultipleObjectsReturned = django.core.exceptions.MultipleObjectsReturned
-
-    objects = HomeDirectoryManager()
 
     def __init__(self, user):
         self._subprocess = None
@@ -242,7 +222,7 @@ class HomeDirectory:
         """
         Update the user's home directory (asynchronous).
         """
-        self._subprocess = cluster.User(self.user).reset()
+        self._subprocess = cluster.User(self.user).reset_home()
 
     def get_status(self):
         """

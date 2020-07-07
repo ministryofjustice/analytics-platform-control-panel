@@ -53,6 +53,6 @@ urlpatterns = [
     path("webapps/<int:pk>/datasource-access/", views.GrantAppAccess.as_view(), name="grant-app-access"),
     path("webapp-datasource-access/<int:pk>/", views.UpdateAppAccess.as_view(), name="update-app-access"),
     path("webapp-datasource-access/<int:pk>/delete/", views.RevokeAppAccess.as_view(), name="revoke-app-access"),
-    path("reset/", views.Reset.as_view(), name="home-reset"),
+    path("reset-user-home/", views.ResetHome.as_view(), name="home-reset"),
     path("whats-new/", views.WhatsNew.as_view(), name="whats-new"),
 ]

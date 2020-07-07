@@ -8,6 +8,7 @@ from controlpanel.api.cluster import (
     TOOL_DEPLOYING,
     TOOL_RESTARTING,
     TOOL_UPGRADED,
+    HOME_RESETTING,
 )
 from controlpanel.frontend import consumers
 
@@ -33,9 +34,21 @@ def update_tool_status():
 
 
 @pytest.yield_fixture
+def update_home_status():
+    with patch("controlpanel.frontend.consumers.update_home_status") as update_home_status:
+        yield update_home_status
+
+
+@pytest.yield_fixture
 def wait_for_deployment():
     with patch("controlpanel.frontend.consumers.wait_for_deployment") as wait_for_deployment:
         yield wait_for_deployment
+
+
+@pytest.yield_fixture
+def wait_for_home_reset():
+    with patch("controlpanel.frontend.consumers.wait_for_home_reset") as wait_for_home_reset:
+        yield wait_for_home_reset
 
 
 def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
@@ -146,6 +159,35 @@ def test_get_tool_and_user(users, tools):
     tool, user = consumer.get_tool_and_user(message)
     assert expected_user == user
     assert expected_tool == tool
+
+
+def test_get_home_reset(users, update_home_status, wait_for_home_reset):
+    user = User.objects.first()
+
+    with patch(
+        "controlpanel.frontend.consumers.HomeDirectory"
+    ) as HomeDirectory:
+        mock_hd = Mock()  # Mock home directory instance.
+        HomeDirectory.return_value = mock_hd 
+
+        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer.home_reset(
+            message={
+                "user_id": user.auth0_id,
+            }
+        )
+
+        # 1. Instanciate `HomeDirectory` correctly
+        HomeDirectory.assert_called_with(user)
+        # 2. Send status update
+        update_home_status.assert_called_with(
+            mock_hd,
+            HOME_RESETTING,
+        )
+        # 3. Call restart() on ToolDeployment (trigger deployment)
+        mock_hd.reset.assert_called_once_with()
+        # 4. Wait for deployment to complete
+        wait_for_home_reset.assert_called_with(mock_hd)
 
 
 def test_update_tool_status():

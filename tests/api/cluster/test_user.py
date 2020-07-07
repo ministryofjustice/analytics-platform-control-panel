@@ -35,6 +35,21 @@ def test_create(aws, helm, settings, users):
     helm.upgrade_release.has_calls(expected_calls)
 
 
+def test_reset_home(helm, users):
+    user = users['normal_user']
+    cluster.User(user).reset_home()
+
+    expected_calls = [
+        call(
+            f'reset-user-{user.slug}',
+            'mojanalytics/reset-user',
+            f'--namespace=user-{user.slug}',
+            f'--set=Username={user.slug}',
+        ),
+    ]
+    helm.reset_home.assert_has_calls(expected_calls)
+
+
 def test_delete(aws, helm, users):
     user = users['normal_user']
     cluster.User(user).delete()

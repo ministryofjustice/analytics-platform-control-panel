@@ -73,11 +73,16 @@ class User:
             f"--set=Username={self.user.slug}",
         )
 
-    def reset(self):
+    def reset_home(self):
         """
         Reset the user's home directory.
         """
-        helm.reset_home(f"init-user-{self.user.slug}")
+        helm.reset_home(
+            f"reset-user-{self.user.slug}",
+            f"{settings.HELM_REPO}/reset-user",
+            f"--namespace={self.k8s_namespace}",
+            f"--set=Username={self.user.slug}",
+        )
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)

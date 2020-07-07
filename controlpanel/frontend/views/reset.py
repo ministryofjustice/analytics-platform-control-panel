@@ -7,7 +7,7 @@ from controlpanel.frontend.forms import ResetHomeDirectoryForm
 from controlpanel.frontend.consumers import start_background_task
 
 
-class Reset(LoginRequiredMixin, FormView):
+class ResetHome(LoginRequiredMixin, FormView):
     """
     A view to help automate the resetting of the user's home directory. To be
     used when, for example, their conda or r-studio deployment gets into a bad

@@ -1,10 +1,10 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.conf import settings
 from model_mommy import mommy
 import pytest
 
-from controlpanel.api.models import Tool, ToolDeployment, User
+from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
 
 
 @pytest.fixture
@@ -116,3 +116,19 @@ def test_tool_app_version(helm_repository_index, chart_version, expected_app_ver
     tool = Tool(chart_name="rstudio", version=chart_version)
 
     assert tool.app_version == expected_app_version
+
+
+def test_home_directory_reset(cluster):
+    user = User(username="test-user")
+    hd = HomeDirectory(user)
+    hd.reset()
+    assert hd._subprocess == cluster.User(user).reset_home()
+
+
+def test_home_directory_get_status():
+    user = User(username="test-user")
+    hd = HomeDirectory(user)
+    cluster.HOME_RESETTING = "Resetting"
+    hd._poll = MagicMock(return_value=cluster.HOME_RESETTING)
+    hd._subprocess = True
+    assert hd.get_status() == cluster.HOME_RESETTING

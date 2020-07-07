@@ -75,11 +75,10 @@ class Helm(object):
             "upgrade", "--install", "--wait", "--force", release, chart, *args,
         )
 
-    def reset_home(self, user):
+    def reset_home(self, release, chart, *args):
         HelmRepository.update()
-
         return self.__class__.execute(
-            "reset", "--install", "--wait", "--force", user
+            "upgrade", "--install", "--wait", "--force", release, chart, *args,
         )
 
     def delete(self, purge=True, *args):

@@ -212,7 +212,7 @@ def update_tool_status(tool_deployment, id_token, status):
 
 def update_home_status(home_directory, status):
     """
-    Update the user with the status of their homepage reset task.
+    Update the user with the status of their home directory reset task.
     """
     user = home_directory.user
     send_sse(
