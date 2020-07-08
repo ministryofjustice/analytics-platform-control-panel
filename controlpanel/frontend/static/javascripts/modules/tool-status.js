@@ -2,9 +2,13 @@ moj.Modules.toolStatus = {
   actionClass: ".tool-action",
   eventType: "toolStatus",
   hidden: "govuk-visually-hidden",
-  listenerClass: ".tool-status",
+  listenerClass: ".tool",
   statusLabelClass: ".tool-status-label",
-  toolAppVersionClass: ".tool-app-version",
+
+  versionSelector: "select[name='version']",
+  versionNotInstalledClass: "not-installed",
+  versionInstalledClass: "installed",
+  installedSuffix: " (installed)",
 
   init() {
     const toolStatusListeners = document.querySelectorAll(this.listenerClass);
@@ -39,19 +43,41 @@ moj.Modules.toolStatus = {
           break;
         case 'READY':
         case 'IDLED':
-          this.showActions(listener, ['open', 'restart', 'remove']);
-          this.updateAppVersion(listener, data.appVersion);
+          this.showActions(listener, ['deploy', 'open', 'restart', 'remove']);
+          this.updateAppVersion(listener, data.version);
           break;
         case 'FAILED':
-          this.showActions(listener, ['restart', 'remove']);
+          this.showActions(listener, ['deploy', 'restart', 'remove']);
           break;
       }
     };
   },
 
-  updateAppVersion(listener, newAppVersion) {
-    if (newAppVersion) {
-      listener.querySelector(this.toolAppVersionClass).innerText = newAppVersion;
+  // Select the new version from the tool "version" select input
+  updateAppVersion(listener, newVersion) {
+    if (newVersion) {
+      // 1. remove "(not installed)" option
+      let notInstalledOption = listener.querySelector(this.versionSelector + " ." + this.versionNotInstalledClass);
+
+      if (notInstalledOption) {
+        notInstalledOption.remove();
+      }
+
+      // 2. remove "(installed)" suffix and class from old version
+      let oldVersionOption = listener.querySelector(this.versionSelector + " ." + this.versionInstalledClass);
+
+      if (oldVersionOption) {
+        oldVersionOption.innerText = oldVersionOption.innerText.replace(this.installedSuffix, "");
+        oldVersionOption.classList.remove(this.versionInstalledClass);
+      }
+
+      // 3. add "(installed)" suffix and class to new version
+      let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newVersion + "']");
+
+      if (newVersionOption) {
+        newVersionOption.innerText = newVersionOption.innerText + this.installedSuffix;
+        newVersionOption.classList.add(this.versionInstalledClass)
+      }
     }
   },
 
