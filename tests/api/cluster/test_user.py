@@ -41,8 +41,8 @@ def test_reset_home(helm, users):
 
     expected_calls = [
         call(
-            f'reset-user-{user.slug}',
-            'mojanalytics/reset-user',
+            f'0.1.0',
+            'mojanalytics/reset-user-home',
             f'--namespace=user-{user.slug}',
             f'--set=Username={user.slug}',
         ),

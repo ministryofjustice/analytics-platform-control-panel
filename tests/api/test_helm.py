@@ -120,5 +120,5 @@ def test_helm_reset_home():
     )
     helm.reset_home(*reset_args)
     helm.__class__.execute.assert_called_with(
-        "upgrade", "--install", "--wait", "--force", *reset_args,
+        "upgrade", "--install", *reset_args,
     )

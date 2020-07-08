@@ -78,8 +78,8 @@ class User:
         Reset the user's home directory.
         """
         helm.reset_home(
-            f"reset-user-{self.user.slug}",
-            f"{settings.HELM_REPO}/reset-user",
+            f"0.1.0",
+            f"{settings.HELM_REPO}/reset-user-home",
             f"--namespace={self.k8s_namespace}",
             f"--set=Username={self.user.slug}",
         )
