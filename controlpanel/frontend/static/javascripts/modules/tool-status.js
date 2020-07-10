@@ -1,5 +1,6 @@
 moj.Modules.toolStatus = {
   actionClass: ".tool-action",
+  buttonClass: ".govuk-button",
   eventType: "toolStatus",
   hidden: "govuk-visually-hidden",
   listenerClass: ".tool",
@@ -92,9 +93,16 @@ moj.Modules.toolStatus = {
     this.versionSelectChanged(selectElement);
   },
 
-  showActions(listener, action_names) {
+  showActions(listener, actionNames) {
     listener.querySelectorAll(this.actionClass).forEach(action => {
-      action.classList.toggle(this.hidden, !action_names.includes(action.dataset.actionName));
+      const actionName = action.dataset.actionName;
+      const button = listener.querySelector(`${this.buttonClass}[data-action-name='${actionName}']`);
+
+      if (actionNames.includes(actionName)) {
+        button.removeAttribute("disabled");
+      } else {
+        button.setAttribute("disabled", true);
+      }
     });
   },
 
@@ -106,7 +114,7 @@ moj.Modules.toolStatus = {
     const notInstalledSelected = classes.indexOf(this.versionNotInstalledClass) !== -1;
     const installedSelected = classes.indexOf(this.versionInstalledClass) !== -1;
 
-    const deployButton = target.closest(`form${this.actionClass}[data-action-name='deploy']`).querySelector("button");
+    const deployButton = target.closest(`form${this.actionClass}`).querySelector(`${this.buttonClass}[data-action-name='deploy']`);
 
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled

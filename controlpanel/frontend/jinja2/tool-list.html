@@ -36,23 +36,25 @@
         {# 3rd column with Tool actions #}
         <div class="tool-actions" style="grid-column: 3/4; align-self: center;" >
 
-          <a class="govuk-button govuk-button--secondary tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
-              data-action-name="open"
-              href="{{ tool_info['url'] }}"
-              rel="noopener"
-              target="_blank"
-              style="margin: 0px"
-          >
+          <a class="govuk-button govuk-button--secondary tool-action"
+             data-action-name="open"
+             href="{{ tool_info['url'] }}"
+             rel="noopener"
+             target="_blank"
+             style="margin: 0px"
+             {% if not deployment %} disabled {% endif %}>
             Open
           </a>
 
           <form action="{{ url('restart-tool', kwargs={'name': chart_name}) }}"
-                class="background-submit tool-action {% if not deployment %} govuk-visually-hidden {% endif %}"
                 data-action-name="restart"
-                method="post"
-          >
+                class="background-submit tool-action"
+                method="post">
             {{ csrf_input }}
-            <button class="govuk-button govuk-button--secondary right" style="margin: 0px">
+            <button class="govuk-button govuk-button--secondary right"
+                    data-action-name="restart"
+                    style="margin: 0px"
+                    {% if not deployment %} disabled {% endif %}>
               Restart
             </button>
           </form>
@@ -63,11 +65,10 @@
 
       {# 2nd row for version selection #}
       <form action="{{ url('deploy-tool', kwargs={"name": chart_name}) }}"
-            class="background-submit tool-action"
             data-action-name="deploy"
+            class="background-submit tool-action"
             method="post"
-            style="grid-column: 1/2; display: grid; grid-template-columns: 1fr 1fr 1fr;"
-            >
+            style="grid-column: 1/2; display: grid; grid-template-columns: 1fr 1fr 1fr;">
 
         <div style="grid-column: 1/3; align-content:center;">
           <span>Version:</span>
@@ -96,7 +97,11 @@
         </div>
 
         <div style="grid-column: 3/4; align-content:center;">
-          <button class="govuk-button govuk-button--secondary right js-confirm" data-confirm-message="Do you wish to install this version of {{ tool_info['name'] }}?" style="float: left; margin-left: 0px;" disabled>
+          <button class="govuk-button govuk-button--secondary right js-confirm"
+                  data-action-name="deploy"
+                  data-confirm-message="Do you wish to install this version of {{ tool_info['name'] }}?"
+                  style="float: left; margin-left: 0px;"
+                  disabled>
             Deploy
           </button>
           {{ csrf_input }}
