@@ -78,7 +78,13 @@ class Helm(object):
     def reset_home(self, release, chart, *args):
         HelmRepository.update()
         return self.__class__.execute(
-            "upgrade", "--install", release, chart, *args,
+            "upgrade",
+            "prometheus-resources",
+            chart,
+            "--install",
+            "--version",
+            release,
+            *args,
         )
 
     def delete(self, purge=True, *args):
