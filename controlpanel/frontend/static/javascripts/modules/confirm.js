@@ -18,7 +18,7 @@ moj.Modules.jsConfirm = {
 
     // works on any children of a `<form>` with `confirmClass` but it's
     // usually used on `<input type="submit">` or `<button>`
-    $(document).on('click', `form > .${this.confirmClass}`, (e) => {
+    $(document).on('click', `form .${this.confirmClass}`, (e) => {
       const $el = $(e.target);
       e.preventDefault();
 
