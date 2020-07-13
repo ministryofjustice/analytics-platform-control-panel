@@ -29,7 +29,7 @@
         {# 2nd column with Tool status #}
         <div class="tool-status" style="grid-column: 2/3; align-self: center;">
           <span class="tool-status-label">
-            {{ deployment and deployment.get_status(id_token) | default("") }}
+            {{ deployment.get_status(id_token) if deployment }}
           </span>
         </div>
 
