@@ -11,37 +11,36 @@
 
 
 {# Grid Container for the list of tools (1 column, n rows) #}
-<div class="tools-list" style="display: grid; grid-template-columns: 1fr; border-top: 1px solid #b1b4b6; margin-bottom: 30px;">
+<div class="tools-list">
   {% for chart_name, tool_info in tools_info.items() %}
     {% set deployment = tool_info["deployment"] %}
 
     {# Grid Container for a Tool details (1 column, n rows) #}
-    <div class="tool sse-listener" data-tool-name="{{ chart_name }}"  style="display: grid; grid-template-columns: 1fr; border-bottom: 1px solid #b1b4b6;">
+    <div class="tool sse-listener" data-tool-name="{{ chart_name }}">
 
       {# 1st row is also a grid with 3 columns #}
-      <div style="grid-column: 1/2; display: grid; grid-template-columns: 1fr 1fr 1fr;">
+      <div class="info">
 
         {# 1st column with Tool name #}
-        <h3 class="tool-header" style="grid-column: 1/2; align-self: center;">
+        <h3 class="tool-header">
           {{ tool_info["name"] }}
         </h3>
 
         {# 2nd column with Tool status #}
-        <div class="tool-status" style="grid-column: 2/3; align-self: center;">
+        <div class="tool-status">
           <span class="tool-status-label">
             {{ deployment.get_status(id_token) if deployment }}
           </span>
         </div>
 
         {# 3rd column with Tool actions #}
-        <div class="tool-actions" style="grid-column: 3/4; align-self: center;" >
+        <div class="tool-actions">
 
           <a class="govuk-button govuk-button--secondary tool-action"
              data-action-name="open"
              href="{{ tool_info['url'] }}"
              rel="noopener"
              target="_blank"
-             style="margin: 0px"
              {% if not deployment %} disabled {% endif %}>
             Open
           </a>
@@ -53,7 +52,6 @@
             {{ csrf_input }}
             <button class="govuk-button govuk-button--secondary right"
                     data-action-name="restart"
-                    style="margin: 0px"
                     {% if not deployment %} disabled {% endif %}>
               Restart
             </button>
@@ -66,14 +64,13 @@
       {# 2nd row for version selection #}
       <form action="{{ url('deploy-tool', kwargs={"name": chart_name}) }}"
             data-action-name="deploy"
-            class="background-submit tool-action"
-            method="post"
-            style="grid-column: 1/2; display: grid; grid-template-columns: 1fr 1fr 1fr;">
+            class="background-submit tool-action version-form"
+            method="post">
 
-        <div style="grid-column: 1/3; align-content:center;">
+        <div class="version-info">
           <span>Version:</span>
 
-          <select name="version" class="govuk-select" style="width: 570px">
+          <select name="version" class="govuk-select">
             {% set installed_chart_version = None %}
 
             {# Option for current version (if installed) #}
@@ -96,11 +93,10 @@
           </select>
         </div>
 
-        <div style="grid-column: 3/4; align-content:center;">
+        <div class="deploy-action">
           <button class="govuk-button govuk-button--secondary right js-confirm"
                   data-action-name="deploy"
                   data-confirm-message="Do you wish to install this version of {{ tool_info['name'] }}?"
-                  style="float: left; margin-left: 0px;"
                   disabled>
             Deploy
           </button>

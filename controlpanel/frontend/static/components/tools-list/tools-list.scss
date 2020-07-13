@@ -1,0 +1,62 @@
+.tools-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    border-top: 1px solid $govuk-border-colour;
+    margin-bottom: 30px;
+
+    .tool {
+        display: grid;
+        grid-template-columns: 1fr;
+        border-bottom: 1px solid $govuk-border-colour;
+
+        .info {
+            grid-column: 1/2;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+
+            .tool-header {
+                grid-column: 1/2;
+                align-self: center;
+            }
+
+            .tool-status {
+                grid-column: 2/3;
+                align-self: center;
+            }
+
+            .tool-actions {
+                grid-column: 3/4;
+                align-self: center;
+
+                a, form button {
+                    margin: 0px;
+                }
+            }
+        }
+
+        .version-form {
+            grid-column: 1/2;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+
+            .version-info {
+                grid-column: 1/3;
+                align-content:center;
+
+                select[name=version] {
+                    width: 470px;
+                }
+            }
+
+            .deploy-action {
+                grid-column: 3/4;
+                align-content:center;
+
+                button {
+                    float: left;
+                    margin-left: 0px;
+                }
+            }
+        }
+    }
+}
