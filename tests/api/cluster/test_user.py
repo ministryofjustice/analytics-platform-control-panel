@@ -41,10 +41,11 @@ def test_reset_home(helm, users):
 
     expected_calls = [
         call(
-            f'0.1.0',
-            'mojanalytics/reset-user-home',
-            f'--namespace=user-{user.slug}',
-            f'--set=Username={user.slug}',
+            f"reset-user-home-{user.slug}",
+            f"mojanalytics/reset-user-home",
+            "--version=0.4.1",
+            f"--namespace=user-{user.slug}",
+            f"--set=Username={user.slug}",
         ),
     ]
     helm.reset_home.assert_has_calls(expected_calls)

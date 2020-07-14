@@ -79,11 +79,8 @@ class Helm(object):
         HelmRepository.update()
         return self.__class__.execute(
             "upgrade",
-            "prometheus-resources",
-            chart,
-            "--install",
-            "--version",
             release,
+            chart,
             *args,
         )
 

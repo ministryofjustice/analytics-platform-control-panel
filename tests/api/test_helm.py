@@ -115,16 +115,14 @@ def test_helm_reset_home():
     reset_args = (
         "release-name",
         "helm-chart-name",
+        "--version=0.4.1",
         "--namespace=user-alice",
         "--set=username=alice",
     )
     helm.reset_home(*reset_args)
     helm.__class__.execute.assert_called_with(
         "upgrade",
-        "prometheus-resources",
-        "helm-chart-name",
-        "--install",
-        "--version",
         "release-name",
+        "helm-chart-name",
         *reset_args[2:],
     )
