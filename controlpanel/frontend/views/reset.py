@@ -32,6 +32,6 @@ class ResetHome(LoginRequiredMixin, FormView):
 
         messages.success(
             self.request,
-            "Home directory reset started. This will take several minutes.",
+            "Home directory reset. Wait a few seconds and restart RStudio.",
         )
         return reverse_lazy("list-tools")
