@@ -11,8 +11,8 @@ class ResetHome(LoginRequiredMixin, FormView):
     """
     A view to help automate the resetting of the user's home directory. To be
     used when, for example, their conda or r-studio deployment gets into a bad
-    state. See the related helm chart (TBD) for the details of what actually
-    happens in the user's home directory.
+    state. See the related reset-user-home helm chart for the details of what
+    actually happens in the user's home directory:
     """
 
     template_name = "reset.html"

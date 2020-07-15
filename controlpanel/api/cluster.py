@@ -77,10 +77,9 @@ class User:
         """
         Reset the user's home directory.
         """
-        helm.reset_home(
+        helm.upgrade_release(
             f"reset-user-home-{self.user.slug}",
             f"{settings.HELM_REPO}/reset-user-home",
-            "--version=0.4.1",
             f"--namespace=user-{self.user.slug}",
             f"--set=Username={self.user.slug}",
         )

@@ -108,21 +108,3 @@ def test_helm_upgrade_release():
     helm.__class__.execute.assert_called_with(
         "upgrade", "--install", "--wait", "--force", *upgrade_args,
     )
-
-
-def test_helm_reset_home():
-    helm.__class__.execute = MagicMock()
-    reset_args = (
-        "release-name",
-        "helm-chart-name",
-        "--version=0.4.1",
-        "--namespace=user-alice",
-        "--set=username=alice",
-    )
-    helm.reset_home(*reset_args)
-    helm.__class__.execute.assert_called_with(
-        "upgrade",
-        "release-name",
-        "helm-chart-name",
-        *reset_args[2:],
-    )
