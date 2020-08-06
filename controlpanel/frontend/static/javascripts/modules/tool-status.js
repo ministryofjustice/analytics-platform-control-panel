@@ -114,7 +114,8 @@ moj.Modules.toolStatus = {
     const notInstalledSelected = classes.indexOf(this.versionNotInstalledClass) !== -1;
     const installedSelected = classes.indexOf(this.versionInstalledClass) !== -1;
 
-    const deployButton = target.closest(`form${this.actionClass}`).querySelector(`${this.buttonClass}[data-action-name='deploy']`);
+    const targetApp = target.attributes["data-action-target"];
+    const deployButton = document.getElementById("deploy-" + targetApp.value);
 
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled
