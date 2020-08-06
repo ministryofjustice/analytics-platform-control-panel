@@ -17,8 +17,10 @@ from controlpanel.api.cluster import (
     TOOL_IDLED,
     TOOL_READY,
     TOOL_RESTARTING,
+    HOME_RESETTING,
+    HOME_RESET_FAILED,
 )
-from controlpanel.api.models import Tool, ToolDeployment, User
+from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
 
 
@@ -161,6 +163,23 @@ class BackgroundTaskConsumer(SyncConsumer):
         user = User.objects.get(auth0_id=message["user_id"])
         return tool, user
 
+    def home_reset(self, message):
+        """
+        Reset the home directory of the specified user.
+        """
+        user = User.objects.get(auth0_id=message["user_id"])
+        home_directory = HomeDirectory(user)
+        update_home_status(home_directory, HOME_RESETTING)
+        
+        home_directory.reset()
+
+        status = wait_for_home_reset(home_directory)
+
+        if status == HOME_RESET_FAILED:
+            log.error(f"Failed to reset home directory for user {user}")
+        else:
+            log.debug(f"Reset home directory for user {user}")
+
 
 def send_sse(user_id, event):
     """
@@ -186,6 +205,22 @@ def update_tool_status(tool_deployment, id_token, status):
     send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})
 
 
+def update_home_status(home_directory, status):
+    """
+    Update the user with the status of their home directory reset task.
+    """
+    user = home_directory.user
+    send_sse(
+        user.auth0_id,
+        {
+            "event": "homeStatus",
+            "data": json.dumps({
+                "status": status
+            }),
+        }
+    )
+
+
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
         "background_tasks", {"type": task, **message,},
@@ -197,5 +232,17 @@ def wait_for_deployment(tool_deployment, id_token):
     while status == TOOL_DEPLOYING:
         status = tool_deployment.get_status(id_token)
         update_tool_status(tool_deployment, id_token, status)
+        sleep(1)
+    return status
+
+
+def wait_for_home_reset(home_directory):
+    """
+    Check and report upon the reset of the user's home directory.
+    """
+    status = HOME_RESETTING
+    while status == HOME_RESETTING:
+        status = home_directory.get_status()
+        update_home_status(home_directory, status)
         sleep(1)
     return status

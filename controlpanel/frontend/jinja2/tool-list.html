@@ -9,6 +9,9 @@
 
 <p class="govuk-body">The status of your tools will update automatically.</p>
 
+<p class="govuk-body">If your tools get into a broken state, try
+<a href="{{ url('home-reset') }}">resetting your home directory</a>.</p>
+
 {% for chart_name, tool_info in tools_info.items() %}
 {% set deployment = tool_info["deployment"] %}
 <h2 class="govuk-heading-m">{{ tool_info.name }}</h2>

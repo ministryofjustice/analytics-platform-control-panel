@@ -180,3 +180,48 @@ class ToolDeployment:
         """
 
         cluster.ToolDeployment(self.user, self.tool).restart(id_token)
+
+
+class HomeDirectory:
+    """
+    Represents a user's home directory in the cluster
+    """
+
+    def __init__(self, user):
+        self._subprocess = None
+        self.user = user
+
+    def __repr__(self):
+        return f"<HomeDirectoryManager: {self.user!r}>"
+
+    def reset(self):
+        """
+        Update the user's home directory (asynchronous).
+        """
+        self._subprocess = cluster.User(self.user).reset_home()
+
+    def get_status(self):
+        """
+        Get the current status of the reset.
+        Polls the subprocess if running, else returns an "is reset" status.
+        """
+        if self._subprocess:
+            status = self._poll()
+            if status:
+                return status
+
+        return cluster.HOME_RESET
+
+    def _poll(self):
+        """
+        Poll the deployment subprocess for status
+        """
+
+        if self._subprocess.poll() is None:
+            return cluster.HOME_RESETTING
+
+        if self._subprocess.returncode:
+            log.error(self._subprocess.stderr.read().strip())
+            return cluster.HOME_RESET_FAILED
+
+        self._subprocess = None
