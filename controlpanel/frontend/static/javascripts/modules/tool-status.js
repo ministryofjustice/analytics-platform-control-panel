@@ -34,27 +34,28 @@ moj.Modules.toolStatus = {
   },
 
   buildEventHandler(listener) {
+    const toolstatus = this;
     return event => {
       const data = JSON.parse(event.data);
       if (data.toolName != listener.dataset.toolName) {
         return;
       }
-      listener.querySelector(this.statusLabelClass).innerText = data.status;
+      listener.querySelector(toolstatus.statusLabelClass).innerText = data.status;
       switch (data.status.toUpperCase()) {
         case 'NOT DEPLOYED':
-          this.showActions(listener, ['deploy']);
+          toolstatus.showActions(listener, ['deploy']);
           break;
         case 'DEPLOYING':
-          this.showActions(listener, []);
+          toolstatus.showActions(listener, []);
           // maybe have a Cancel button? Report issue?
           break;
         case 'READY':
         case 'IDLED':
-          this.showActions(listener, ['deploy', 'open', 'restart', 'remove']);
-          this.updateAppVersion(listener, data.version);
+          toolstatus.showActions(listener, ['deploy', 'open', 'restart', 'remove']);
+          toolstatus.updateAppVersion(listener, data.version);
           break;
         case 'FAILED':
-          this.showActions(listener, ['deploy', 'restart', 'remove']);
+          toolstatus.showActions(listener, ['deploy', 'restart', 'remove']);
           break;
       }
     };
