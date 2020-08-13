@@ -66,22 +66,6 @@ class ToolDeploymentManager:
         tool_deployment.save()
         return tool_deployment
 
-    def filter(self, **kwargs):
-        user = kwargs["user"]
-        id_token = kwargs["id_token"]
-        filter = Q(chart_name=None)  # Always False
-        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
-        for deployment in deployments:
-            chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
-            filter = filter | (Q(chart_name=chart_name))
-
-        tools = Tool.objects.filter(filter)
-        results = []
-        for tool in tools:
-            tool_deployment = ToolDeployment(tool, user)
-            results.append(tool_deployment)
-        return results
-
 
 class ToolDeployment:
     """
@@ -101,6 +85,16 @@ class ToolDeployment:
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
+
+    def get_installed_chart_version(self, id_token):
+        """
+        Returns the installed chart version for this tool
+
+        Returns None if the chart is not installed for the user
+        """
+
+        td = cluster.ToolDeployment(self.user, self.tool)
+        return td.get_installed_chart_version(id_token)
 
     def get_installed_app_version(self, id_token):
         """
@@ -123,31 +117,13 @@ class ToolDeployment:
         in the helm repository index.
         """
 
-        td = cluster.ToolDeployment(self.user, self.tool)
-        chart_version = td.get_installed_chart_version(id_token)
+        chart_version = self.get_installed_chart_version(id_token)
         if chart_version:
             return HelmRepository.get_chart_app_version(
                 self.tool.chart_name, chart_version
             )
 
         return None
-
-    def outdated(self, id_token):
-        """
-        Returns true if the tool helm chart version is old
-
-        NOTE: This is simple/naive at the moment and it returns true if
-        the installed chart for the tool has a different version
-        than the one in the corresponding Tool record.
-        """
-
-        td = cluster.ToolDeployment(self.user, self.tool)
-        chart_version = td.get_installed_chart_version(id_token)
-
-        if chart_version:
-            return self.tool.version != chart_version
-
-        return False
 
     def delete(self, id_token):
         """
@@ -204,3 +180,48 @@ class ToolDeployment:
         """
 
         cluster.ToolDeployment(self.user, self.tool).restart(id_token)
+
+
+class HomeDirectory:
+    """
+    Represents a user's home directory in the cluster
+    """
+
+    def __init__(self, user):
+        self._subprocess = None
+        self.user = user
+
+    def __repr__(self):
+        return f"<HomeDirectoryManager: {self.user!r}>"
+
+    def reset(self):
+        """
+        Update the user's home directory (asynchronous).
+        """
+        self._subprocess = cluster.User(self.user).reset_home()
+
+    def get_status(self):
+        """
+        Get the current status of the reset.
+        Polls the subprocess if running, else returns an "is reset" status.
+        """
+        if self._subprocess:
+            status = self._poll()
+            if status:
+                return status
+
+        return cluster.HOME_RESET
+
+    def _poll(self):
+        """
+        Poll the deployment subprocess for status
+        """
+
+        if self._subprocess.poll() is None:
+            return cluster.HOME_RESETTING
+
+        if self._subprocess.returncode:
+            log.error(self._subprocess.stderr.read().strip())
+            return cluster.HOME_RESET_FAILED
+
+        self._subprocess = None

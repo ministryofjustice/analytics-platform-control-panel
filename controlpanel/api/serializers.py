@@ -308,18 +308,3 @@ class ParameterSerializer(serializers.ModelSerializer):
 
 class ToolSerializer(serializers.Serializer):
     name = serializers.CharField()
-
-
-class ToolDeploymentSerializer(serializers.Serializer):
-
-    def to_representation(self, tool_deployment):
-        metadata = tool_deployment.deployment.metadata
-        return {
-            'metadata': {
-                'annotations': metadata.annotations,
-                'creation_timestamp': metadata.creation_timestamp.astimezone().isoformat(),
-                'labels': metadata.labels,
-                'name': metadata.name,
-                'namespace': metadata.namespace,
-            },
-        }

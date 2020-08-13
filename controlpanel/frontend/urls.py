@@ -32,7 +32,6 @@ urlpatterns = [
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
     path("tools/", views.ToolList.as_view(), name="list-tools"),
     path("tools/<str:name>/deploy/", views.DeployTool.as_view(), name="deploy-tool"),
-    path("tools/<str:name>/upgrade/", views.UpgradeTool.as_view(), name="upgrade-tool"),
     path("tools/<str:name>/restart/", views.RestartTool.as_view(), name="restart-tool"),
     path("users/", views.UserList.as_view(), name="list-users"),
     path("users/<str:pk>/", views.UserDetail.as_view(), name="manage-user"),
@@ -53,5 +52,6 @@ urlpatterns = [
     path("webapps/<int:pk>/datasource-access/", views.GrantAppAccess.as_view(), name="grant-app-access"),
     path("webapp-datasource-access/<int:pk>/", views.UpdateAppAccess.as_view(), name="update-app-access"),
     path("webapp-datasource-access/<int:pk>/delete/", views.RevokeAppAccess.as_view(), name="revoke-app-access"),
+    path("reset-user-home/", views.ResetHome.as_view(), name="home-reset"),
     path("whats-new/", views.WhatsNew.as_view(), name="whats-new"),
 ]

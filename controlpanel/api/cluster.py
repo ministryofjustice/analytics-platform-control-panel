@@ -21,8 +21,17 @@ TOOL_IDLED = "Idled"
 TOOL_NOT_DEPLOYED = "Not deployed"
 TOOL_READY = "Ready"
 TOOL_RESTARTING = "Restarting"
-TOOL_UPGRADED = "Upgraded"
 TOOL_STATUS_UNKNOWN = "Unknown"
+HOME_RESETTING = "Resetting"
+HOME_RESET_FAILED = "Failed"
+HOME_RESET = "Reset"
+
+
+class HomeDirectoryResetError(Exception):
+    """
+    Raised if a home directory cannot be reset.
+    """
+    pass
 
 
 class User:
@@ -60,6 +69,17 @@ class User:
             f"config-user-{self.user.slug}",
             f"{settings.HELM_REPO}/config-user",
             f"--namespace={self.k8s_namespace}",
+            f"--set=Username={self.user.slug}",
+        )
+
+    def reset_home(self):
+        """
+        Reset the user's home directory.
+        """
+        helm.upgrade_release(
+            f"reset-user-home-{self.user.slug}",
+            f"{settings.HELM_REPO}/reset-user-home",
+            f"--namespace=user-{self.user.slug}",
             f"--set=Username={self.user.slug}",
         )
 

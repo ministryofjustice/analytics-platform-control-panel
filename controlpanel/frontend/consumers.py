@@ -17,9 +17,10 @@ from controlpanel.api.cluster import (
     TOOL_IDLED,
     TOOL_READY,
     TOOL_RESTARTING,
-    TOOL_UPGRADED,
+    HOME_RESETTING,
+    HOME_RESET_FAILED,
 )
-from controlpanel.api.models import Tool, ToolDeployment, User
+from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
 
 
@@ -126,18 +127,6 @@ class BackgroundTaskConsumer(SyncConsumer):
         else:
             log.debug(f"Deployed {tool.name} for {user}")
 
-    def tool_upgrade(self, message):
-        """
-        Upgrade simply means re-installing the helm chart for the tool
-        """
-        self.tool_deploy(message)
-
-        tool, user = self.get_tool_and_user(message)
-        id_token = message["id_token"]
-
-        tool_deployment = ToolDeployment(tool, user)
-        update_tool_status(tool_deployment, id_token, TOOL_UPGRADED)
-
     def tool_restart(self, message):
         """
         Restart the named tool for the specified user
@@ -162,9 +151,34 @@ class BackgroundTaskConsumer(SyncConsumer):
         if "version" in message:
             tool_args["version"] = message["version"]
 
-        tool = Tool.objects.get(**tool_args)
+        # On restart we don't specify the version as it doesn't make
+        # sense to do so. As we're now allowing more than one
+        # Tool instance for the same chart name this means we have to
+        # use `filter().first()` (instead of `.get()`) to avoid getting
+        # a Django exception when `get()` finds more than 1 Tool record
+        # with the same chart name
+        tool = Tool.objects.filter(**tool_args).first()
+        if not tool:
+            raise Exception(f"no Tool record found for query {tool_args}")
         user = User.objects.get(auth0_id=message["user_id"])
         return tool, user
+
+    def home_reset(self, message):
+        """
+        Reset the home directory of the specified user.
+        """
+        user = User.objects.get(auth0_id=message["user_id"])
+        home_directory = HomeDirectory(user)
+        update_home_status(home_directory, HOME_RESETTING)
+        
+        home_directory.reset()
+
+        status = wait_for_home_reset(home_directory)
+
+        if status == HOME_RESET_FAILED:
+            log.error(f"Failed to reset home directory for user {user}")
+        else:
+            log.debug(f"Reset home directory for user {user}")
 
 
 def send_sse(user_id, event):
@@ -191,6 +205,22 @@ def update_tool_status(tool_deployment, id_token, status):
     send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})
 
 
+def update_home_status(home_directory, status):
+    """
+    Update the user with the status of their home directory reset task.
+    """
+    user = home_directory.user
+    send_sse(
+        user.auth0_id,
+        {
+            "event": "homeStatus",
+            "data": json.dumps({
+                "status": status
+            }),
+        }
+    )
+
+
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
         "background_tasks", {"type": task, **message,},
@@ -202,5 +232,17 @@ def wait_for_deployment(tool_deployment, id_token):
     while status == TOOL_DEPLOYING:
         status = tool_deployment.get_status(id_token)
         update_tool_status(tool_deployment, id_token, status)
+        sleep(1)
+    return status
+
+
+def wait_for_home_reset(home_directory):
+    """
+    Check and report upon the reset of the user's home directory.
+    """
+    status = HOME_RESETTING
+    while status == HOME_RESETTING:
+        status = home_directory.get_status()
+        update_home_status(home_directory, status)
         sleep(1)
     return status

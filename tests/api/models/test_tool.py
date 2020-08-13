@@ -1,10 +1,10 @@
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.conf import settings
 from model_mommy import mommy
 import pytest
 
-from controlpanel.api.models import Tool, ToolDeployment, User
+from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
 
 
 @pytest.fixture
@@ -60,25 +60,6 @@ def cluster():
 
 
 @pytest.mark.parametrize(
-    "chart_version, expected_outdated",
-    [(None, False), ("0.0.1", True), ("1.0.0", False),],
-    ids=["no-chart-version", "old-chart-version", "up-to-date-chart-version",],
-)
-def test_tool_deployment_outdated(cluster, chart_version, expected_outdated):
-    tool = Tool(chart_name="test-tool", version="1.0.0")
-    user = User(username="test-user")
-    td = ToolDeployment(tool, user)
-    id_token = "dummy"
-
-    cluster_td = cluster.ToolDeployment.return_value
-    cluster_td.get_installed_chart_version.return_value = chart_version
-
-    assert td.outdated(id_token) == expected_outdated
-    cluster.ToolDeployment.assert_called_with(user, tool)
-    cluster_td.get_installed_chart_version.assert_called_with(id_token)
-
-
-@pytest.mark.parametrize(
     "chart_version, expected_app_version",
     [
         (None, None),
@@ -116,3 +97,19 @@ def test_tool_app_version(helm_repository_index, chart_version, expected_app_ver
     tool = Tool(chart_name="rstudio", version=chart_version)
 
     assert tool.app_version == expected_app_version
+
+
+def test_home_directory_reset(cluster):
+    user = User(username="test-user")
+    hd = HomeDirectory(user)
+    hd.reset()
+    assert hd._subprocess == cluster.User(user).reset_home()
+
+
+def test_home_directory_get_status():
+    user = User(username="test-user")
+    hd = HomeDirectory(user)
+    cluster.HOME_RESETTING = "Resetting"
+    hd._poll = MagicMock(return_value=cluster.HOME_RESETTING)
+    hd._subprocess = True
+    assert hd.get_status() == cluster.HOME_RESETTING

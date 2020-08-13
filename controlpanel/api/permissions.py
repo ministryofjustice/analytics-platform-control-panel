@@ -80,9 +80,5 @@ class ToolPermissions(RulesBasePermissions):
     resource = 'tool'
 
 
-class ToolDeploymentPermissions(RulesBasePermissions):
-    resource = 'deployment'
-
-
 class ParameterPermissions(RulesBasePermissions):
     resource = 'parameter'

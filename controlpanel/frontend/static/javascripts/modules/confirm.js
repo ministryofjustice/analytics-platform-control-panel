@@ -18,12 +18,19 @@ moj.Modules.jsConfirm = {
 
     // works on any children of a `<form>` with `confirmClass` but it's
     // usually used on `<input type="submit">` or `<button>`
-    $(document).on('click', `form > .${this.confirmClass}`, (e) => {
+    $(document).on('click', `form .${this.confirmClass}`, (e) => {
       const $el = $(e.target);
       e.preventDefault();
 
       if (window.confirm(this.getConfirmMessage($el))) {
-        $el.closest('form').submit();
+        // Check if the button has a target form to submit.
+        const target = $el.data("form-target");
+        if(target) {
+            document.getElementById(target).submit();
+        } else {
+            // If not, just submit the closest form.
+            $el.closest('form').submit();
+        }
       }
     });
   },

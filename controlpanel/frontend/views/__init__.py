@@ -51,7 +51,6 @@ from controlpanel.frontend.views.parameter import (
 from controlpanel.frontend.views.tool import (
     ToolList,
     DeployTool,
-    UpgradeTool,
     RestartTool,
 )
 from controlpanel.frontend.views.user import (
@@ -61,6 +60,7 @@ from controlpanel.frontend.views.user import (
     UserDelete,
     UserDetail,
 )
+from controlpanel.frontend.views.reset import ResetHome
 from controlpanel.frontend.views.whats_new import WhatsNew
 
 
