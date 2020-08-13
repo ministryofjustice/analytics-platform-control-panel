@@ -119,6 +119,7 @@ class GrantAccessForm(forms.Form):
             ("readwrite", "Read/write"),
             ("admin", "Admin"),
         ],
+        required=True
     )
     paths = SimpleArrayField(
         forms.CharField(
@@ -149,7 +150,7 @@ class GrantAccessForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        access_level = cleaned_data['access_level']
+        access_level = cleaned_data.get('access_level')
         if access_level == 'admin':
             cleaned_data['access_level'] = 'readwrite'
             cleaned_data['is_admin'] = True
