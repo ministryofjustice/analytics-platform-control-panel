@@ -31,4 +31,4 @@ sentry-sdk==0.14.3
 service-identity==18.1.0
 slackclient==2.5.0
 urllib3==1.25.8
-uvicorn==0.11.3
+uvicorn==0.11.7
