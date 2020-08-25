@@ -52,7 +52,7 @@ services:
       REDIS_PASSWORD: "controlpanel"
       SLACK_API_TOKEN: "dummy"
     volumes:
-      - ~/.kube/config:/home/controlpanel/.kube/config
+      - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
 
   cpanel:
@@ -79,6 +79,7 @@ services:
       REDIS_PASSWORD: "controlpanel"
       SLACK_API_TOKEN: "dummy"
     volumes:
-      - ~/.kube/config:/home/controlpanel/.kube/config
+      - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
+      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
 
