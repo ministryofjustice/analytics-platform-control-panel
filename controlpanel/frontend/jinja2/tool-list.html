@@ -72,14 +72,14 @@
     </button>
   </form>
 
-  <a class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
+  <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
     data-action-name="open"
-    href="{{ tool_info['url'] }}"
+    onclick="window.open('{{ tool_info['url'] }}', '_blank');"
     rel="noopener"
     target="_blank"
     {% if not deployment %} disabled {% endif %}>
       Open
-  </a>
+  </button>
 
   <form action="{{ url('restart-tool', kwargs={'name': chart_name}) }}"
     data-action-name="restart"
