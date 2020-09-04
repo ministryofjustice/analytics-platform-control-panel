@@ -11,7 +11,7 @@
     "govuk-frontend": "^3.0.0",
     "html5shiv": "^3.7.3",
     "jquery": "^3.5.0",
-    "node-sass": "^4.12.0"
+    "node-sass": "^4.13.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
