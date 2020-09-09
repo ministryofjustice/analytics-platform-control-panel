@@ -29,12 +29,17 @@
       </td>
       <td class="govuk-table__cell">{{ user.email }}</td>
       <td class="govuk-table__cell">
-        {%- with login=last_login.get(user.auth0_id) -%}
-          {%- if login -%}
+        {%- with login_details=last_login.get(user.auth0_id) -%}
+          {%- if login_details -%}
+          {%- with login = login_details.get("last_login") -%}
           <span data-last-login="{{login}}"
                 title="{{login.strftime("%Y/%m/%d %H:%M:%S")}}">
             {{ timesince(login) }} ago
           </span>
+          {%- if login_details.get("unused") -%}
+          (<strong><a href="https://github.com/orgs/moj-analytical-services/people/{{ user.username }}" target="_blank">unused?</a></strong>)
+          {%- endif -%}
+          {%- endwith -%}
           {%- else -%}
           {%- endif -%}
         {%- endwith -%}

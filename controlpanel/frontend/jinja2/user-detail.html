@@ -13,6 +13,26 @@
 <span class="govuk-caption-xl">User</span>
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+{% if unused %}
+<div class="govuk-grid-row">
+  <div class="govuk-column-two-thirds">
+
+    <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
+
+      <h2 class="govuk-heading-m govuk-error-summary-heading">
+      This Account Could be Unused
+      </h2>
+
+      <p>
+        <strong>The user of this account has not logged in for over 90 days.</strong>
+      </p>
+
+      <p>If appropriate, please <a href="https://github.com/orgs/moj-analytical-services/people/{{ user.username }}" target="_blank">visit the GitHub page for their membership of the
+      Ministry of Justice organisation</a> to free up space.</p>
+    </div>
+</div>
+{% endif %}
+
 {% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
   <form action="{{ url('set-superadmin', kwargs={ "pk": user.auth0_id }) }}" method="post">

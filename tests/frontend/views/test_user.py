@@ -63,6 +63,8 @@ def reset_mfa(client, users, *args):
     ],
 )
 def test_permission(client, users, view, user, expected_status):
+    for key, val in users.items():
+        client.force_login(val)
     client.force_login(users[user])
     response = view(client, users)
     assert response.status_code == expected_status
