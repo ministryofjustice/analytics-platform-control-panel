@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 import json
 import logging
+from pathlib import Path
 from time import sleep
 import uuid
 
@@ -22,6 +23,9 @@ from controlpanel.api.cluster import (
 )
 from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
+
+
+WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
 
 
 channel_layer = get_channel_layer()
@@ -179,6 +183,11 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.error(f"Failed to reset home directory for user {user}")
         else:
             log.debug(f"Reset home directory for user {user}")
+
+    def workers_health(self, message):
+        Path(WORKER_HEALTH_FILENAME).touch()
+
+        log.debug(f"Worker health ping task executed")
 
 
 def send_sse(user_id, event):
