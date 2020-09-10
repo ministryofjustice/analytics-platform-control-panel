@@ -19,7 +19,7 @@ def ninety_days_ago():
     past, from the current date. The assumption made here is that a month is
     roughly 30 days (so the result is always 90 days in the past).
     """
-    return datetime.now() - timedelta(days=90)
+    return datetime.now().date() - timedelta(days=90)
 
 
 class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -34,7 +34,7 @@ class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         unused_users = []
         for user in self.queryset:
             if user.last_login:
-                if user.last_login.utcnow() < ninety_days_ago():
+                if user.last_login.date() < ninety_days_ago():
                     unused_users.append(user)
             else:
                 unused_users.append(user)
@@ -63,7 +63,7 @@ class UserDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # account maybe unused and thus a candidate for removal.
         context["unused"] = None
         if self.object.last_login:
-            context["unused"] = self.object.last_login.utcnow() < ninety_days_ago()
+            context["unused"] = self.object.last_login.date() < ninety_days_ago()
         else:
             # No last login? They've never logged into the site.
             context["unused"] = True
