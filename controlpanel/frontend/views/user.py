@@ -29,6 +29,13 @@ class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     queryset = User.objects.exclude(auth0_id='')
     template_name = "user-list.html"
 
+    def get_ordering(self):
+        order_by = self.request.GET.get("o", "username")
+        valid_fields = ["username", "email", "last_login", ]
+        if order_by not in valid_fields:
+            order_by = "username"
+        return order_by
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         unused_users = []
