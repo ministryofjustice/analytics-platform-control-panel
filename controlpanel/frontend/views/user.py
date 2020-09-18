@@ -31,8 +31,12 @@ class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        order_by = self.request.GET.get("o", "username")
+        valid_fields = ["username", "email", "last_login", ]
+        if order_by not in valid_fields:
+            order_by = "username"
         unused_users = []
-        for user in self.queryset:
+        for user in self.queryset.order_by(order_by):
             if user.last_login:
                 if user.last_login.date() < ninety_days_ago():
                     unused_users.append(user)
