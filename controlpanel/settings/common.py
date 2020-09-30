@@ -456,16 +456,25 @@ NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_SCHEME = os.environ.get("REDIS_SCHEME", "redis")
+if REDIS_SCHEME not in ["redis", "rediss"]:
+    raise ValueError(f"Invalid value for 'REDIS_SCHEME' environment variable. Must be 'redis' or 'rediss' (to use SSL/TLS). It was '{REDIS_SCHEME}' which is invalid.")
+
+REDIS_URI = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/1"
 
 # -- Async
 
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
 
+# See: https://pypi.org/project/channels-redis/
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [{'address': (REDIS_HOST, REDIS_PORT)}],
+            'hosts': [{
+                "address": REDIS_URI,
+                "timeout": 30,
+            }],
         },
     },
 }
@@ -477,7 +486,7 @@ if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+            "LOCATION": REDIS_URI,
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
                 "PASSWORD": f"{REDIS_PASSWORD}"
