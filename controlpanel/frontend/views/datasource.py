@@ -77,6 +77,17 @@ class BucketList(
             users3buckets__user=self.request.user,
         )
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+
+        all_datasources = S3Bucket.objects.filter(
+            is_data_warehouse=self.datasource_type == "warehouse",
+        )
+        other_datasources = all_datasources.exclude(id__in=self.get_queryset())
+
+        context["other_datasources"] = other_datasources
+        return context
+
 
 class AdminBucketList(BucketList):
     all_datasources = True
