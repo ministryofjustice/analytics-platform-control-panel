@@ -228,6 +228,46 @@ def test_list(client, buckets, users, view, user, expected_count):
     response = view(client, buckets, users)
     assert len(response.context_data['object_list']) == expected_count
 
+@pytest.mark.parametrize(
+    "view,user,n_other_datasources",
+    [
+        (list_warehouse, "superuser", 2),
+        (list_warehouse, "normal_user", 2),
+        (list_warehouse, "bucket_viewer", 1),
+        (list_warehouse, "bucket_admin", 0),
+
+        (list_app_data, "superuser", 3),
+        (list_app_data, "normal_user", 3),
+        (list_app_data, "bucket_viewer", 2),
+        (list_app_data, "bucket_admin", 1),
+    ],
+)
+def test_list_other_datasources(client, buckets, users, view, user, n_other_datasources):
+    client.force_login(users[user])
+    response = view(client, buckets, users)
+    assert len(response.context_data["other_datasources"]) == n_other_datasources
+
+
+def test_list_other_datasources_admins(client, buckets, users):
+    bucket_admin = users["bucket_admin"]
+
+    # Listing of "warehouse datasources"
+    client.force_login(users["normal_user"])
+    response = list_warehouse(client)
+
+    other_datasources_admins = response.context_data["other_datasources_admins"]
+    assert other_datasources_admins[buckets["warehouse1"].id] == [bucket_admin]
+    assert other_datasources_admins[buckets["warehouse2"].id] == [bucket_admin]
+
+    # Listing of "app datasources"
+    client.force_login(users["normal_user"])
+    response = list_app_data(client)
+
+    other_datasources_admins = response.context_data["other_datasources_admins"]
+    assert other_datasources_admins[buckets["app_data1"].id] == [bucket_admin]
+    assert other_datasources_admins[buckets["app_data2"].id] == [bucket_admin]
+    assert other_datasources_admins[buckets["other"].id] == []
+
 
 def test_bucket_creator_has_readwrite_and_admin_access(client, users):
     user = users['normal_user']
