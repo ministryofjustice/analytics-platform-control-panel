@@ -1,0 +1,124 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "input/macro.html" import govukInput %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "includes/yesno.html" import yes_no %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Update tool release" %}
+{% set legend -%}
+  Create a new release of a tool in the analytical platform.
+{%- endset %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if form.error %}
+    <div class="error">{{ form.error }}</div>
+  {% endif %}
+
+  <form action="{{ url('manage-release', kwargs={ "pk": release.pk}) }}" method="post">
+    {{ csrf_input }}
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+    {{ govukInput({
+      "label": {
+        "text": "Name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Human readable name. 60 chars max'
+      },
+      "name": "name",
+      "attributes": {
+        "maxlength": "60",
+      },
+      "value": form.name.value(),
+      "errorMessage": { "html": form.name.errors|join(". ") } if form.name.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Chart Name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Helm chart name. 60 chars max, only lowercase letters and hyphens'
+      },
+      "name": "chart_name",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.chart_name.value(),
+      "errorMessage": { "html": form.chart_name.errors|join(". ") } if form.chart_name.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Version",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Helm chart version. Only lowercase letters, numbers, periods and hyphens'
+      },
+      "name": "version",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.version.value(),
+      "errorMessage": { "html": form.version.errors|join(". ") } if form.version.errors else {}
+    }) }}
+    {{ govukCheckboxes({
+      "fieldset": {
+        "legend": {
+          "text": "Restricted Release",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'A flag to indicate if the release is a release restricted to certain users'
+      },
+      "name": "is_restricted",
+      "items": [
+        {
+          "value": "True",
+          "text": "Is a Restricted Release",
+          "checked": form.is_restricted.value(),
+        },
+      ],
+      "errorMessage": { "html": form.is_restricted.errors|join(". ") } if form.is_restricted.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Target Users",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'A comma separated list of usernames of users who have access to this release'
+      },
+      "name": "target_users_list",
+      "value": target_users if target_users else "",
+      "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
+    }) }}
+    <button class="govuk-button">Update tool release</button>
+  </form>
+  {% endcall %}
+
+{% if request.user.has_perm('api.destroy_release', release) %}
+<section class="cpanel-section">
+  <form action="{{ url("delete-release", kwargs={ "pk": release.pk}) }}" method="post">
+    {{ csrf_input }}
+    <button class="govuk-button cpanel-button--destructive js-confirm"
+            data-confirm-message="Are you sure you want to delete this release?">
+      Delete release 
+    </button>
+  </form>
+</section>
+{% endif %}
+
+{% endblock %}

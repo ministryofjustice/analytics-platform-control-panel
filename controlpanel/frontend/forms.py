@@ -8,7 +8,7 @@ from django.core.validators import RegexValidator, validate_email
 
 from controlpanel.api import validators
 from controlpanel.api.cluster import get_repository
-from controlpanel.api.models import App, S3Bucket
+from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
@@ -266,3 +266,25 @@ class ResetHomeDirectoryForm(forms.Form):
         help_text="I confirm that I want to reset my home directory.",
         widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"})
     )
+
+
+class ToolReleaseForm(forms.ModelForm):
+    target_users_list = forms.CharField(required=False)
+
+    def get_target_users(self):
+        """
+        Returns a collection of User instances of those users who are marked as
+        having access to the restricted release.
+        """
+        target_list = self.data.get("target_users_list", "")
+        if target_list:
+            usernames = set([
+                username.strip() for username in target_list.split(",")
+            ])
+            return User.objects.filter(username__in=usernames)
+        else:
+            return []
+
+    class Meta:
+        model = Tool
+        fields = ["name", "chart_name", "version", "is_restricted", ]
