@@ -77,6 +77,22 @@ class BucketList(
             users3buckets__user=self.request.user,
         )
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+
+        all_datasources = S3Bucket.objects.prefetch_related("users3buckets__user").filter(
+            is_data_warehouse=self.datasource_type == "warehouse",
+        )
+        other_datasources = all_datasources.exclude(id__in=self.get_queryset())
+        other_datasources_admins = {}
+        for datasource in other_datasources:
+            admins = [ m2m.user for m2m in datasource.users3buckets.filter(is_admin=True) ]
+            other_datasources_admins[datasource.id] = admins
+
+        context["other_datasources"] = other_datasources
+        context["other_datasources_admins"] = other_datasources_admins
+        return context
+
 
 class AdminBucketList(BucketList):
     all_datasources = True

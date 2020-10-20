@@ -1,5 +1,6 @@
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "includes/datasource-list.html" import datasource_list with context %}
+{% from "user/macro.html" import user_name %}
 
 {% extends "base.html" %}
 
@@ -29,4 +30,45 @@
   </p>
   {% endif %}
 {% endif %}
+
+{% if other_datasources %}
+  <h3 class="govuk-heading-m">Other {{ datasource_type }} data sources</h3>
+  <p class="govuk-body">
+    You currently <span class="govuk-!-font-weight-bold">do not</span> have access to the following {{ datasource_type }} data sources.
+  </p>
+  <p class="govuk-body">
+    Please refer to the <a href="https://user-guidance.services.alpha.mojanalytics.xyz/data/amazon-s3/#request-access-to-a-bucket" class="govuk-link">user guidance</a> for information on how to get access.
+  </p>
+
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">Name</th>
+        <th class="govuk-table__header">
+          Your access level
+          {{ modal_dialog(access_levels_html|safe) }}
+        </th>
+        <th class="govuk-table__header">Admins</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% for datasource in other_datasources %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          {{ datasource.name }}
+        </td>
+        <td class="govuk-table__cell">
+          No access
+        </td>
+        <td class="govuk-table__cell">
+          {% for admin in other_datasources_admins[datasource.id] %}
+            {{ user_name(admin) }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
 {% endblock %}
