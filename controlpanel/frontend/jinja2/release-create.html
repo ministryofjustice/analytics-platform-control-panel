@@ -16,7 +16,7 @@
     <div class="error">{{ form.error }}</div>
   {% endif %}
 
-  <form action="{{ url('create-release') }}" method="post">
+  <form action="{{ url('create-tool-release') }}" method="post">
     {{ csrf_input }}
     {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
     {{ govukInput({
@@ -97,7 +97,7 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'A comma separated list of usernames of usernames of users who have access to this release'
+        "text": 'A comma separated list of usernames of users who have access to this release'
       },
       "name": "target_users_list",
       "value": release.target_users if release else "",

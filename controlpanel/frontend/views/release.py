@@ -33,7 +33,7 @@ class ReleaseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
     def get_success_url(self):
         messages.success(self.request, "Successfully deleted release")
-        return reverse_lazy("list-releases")
+        return reverse_lazy("list-tool-releases")
 
 
 class ReleaseDetail(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -65,7 +65,7 @@ class ReleaseDetail(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         else:
             self.object.target_users.clear()
         messages.success(self.request, "Successfully updated release")
-        return HttpResponseRedirect(reverse_lazy("list-releases"))
+        return HttpResponseRedirect(reverse_lazy("list-tool-releases"))
 
 
 class ReleaseCreate(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
@@ -87,4 +87,4 @@ class ReleaseCreate(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
         if target_list:
             self.object.target_users.set(target_list)
         messages.success(self.request, "Successfully created new release")
-        return HttpResponseRedirect(reverse_lazy("list-releases"))
+        return HttpResponseRedirect(reverse_lazy("list-tool-releases"))
