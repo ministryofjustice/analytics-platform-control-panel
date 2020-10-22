@@ -18,7 +18,7 @@ class ReleaseList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     """
     context_object_name = 'releases'
     model = Tool 
-    permission_required = 'api.list_release'
+    permission_required = 'api.list_tool_release'
     queryset = Tool.objects.all()
     template_name = "release-list.html"
     ordering = ["name", "version"]
@@ -29,7 +29,7 @@ class ReleaseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     Deletes a release for a tool from the control panel application.
     """
     model = Tool 
-    permission_required = 'api.destroy_release'
+    permission_required = 'api.destroy_tool_release'
 
     def get_success_url(self):
         messages.success(self.request, "Successfully deleted release")
@@ -43,7 +43,7 @@ class ReleaseDetail(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     form_class = ToolReleaseForm
     context_object_name = 'release'
     model = Tool
-    permission_required = 'api.update_release'
+    permission_required = 'api.update_tool_release'
     template_name = "release-detail.html"
 
     def get_context_data(self, **kwargs):
@@ -75,7 +75,7 @@ class ReleaseCreate(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
     form_class = ToolReleaseForm
     context_object_name = 'release'
     model = Tool
-    permission_required = "api.create_release"
+    permission_required = "api.create_tool_release"
     template_name = "release-create.html"
 
     def form_valid(self, form):

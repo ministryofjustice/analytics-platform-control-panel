@@ -109,7 +109,7 @@
   </form>
   {% endcall %}
 
-{% if request.user.has_perm('api.destroy_release', release) %}
+{% if request.user.has_perm('api.destroy_tool_release', release) %}
 <section class="cpanel-section">
   <form action="{{ url("delete-release", kwargs={ "pk": release.pk}) }}" method="post">
     {{ csrf_input }}

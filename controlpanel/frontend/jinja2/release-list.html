@@ -40,7 +40,7 @@
   {% endfor %}
   </tbody>
 </table>
-{% if request.user.has_perm('api.create_release') %}
+{% if request.user.has_perm('api.create_tool_release') %}
   <p class="govuk-body">
   <a class="govuk-button" href="{{ url('create-release') }}">
       Create new release
