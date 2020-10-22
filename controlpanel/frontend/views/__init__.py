@@ -68,6 +68,7 @@ from controlpanel.frontend.views.release import (
 )
 from controlpanel.frontend.views.reset import ResetHome
 from controlpanel.frontend.views.whats_new import WhatsNew
+from controlpanel.frontend.views.accessibility import Accessibility 
 
 
 class IndexView(LoginRequiredMixin, TemplateView):
