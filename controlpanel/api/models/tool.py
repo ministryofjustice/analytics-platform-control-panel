@@ -27,6 +27,10 @@ class Tool(TimeStampedModel):
     name = models.CharField(max_length=100, blank=False)
     values = JSONField(default=dict)
     version = models.CharField(max_length=100, blank=False)
+    # The release is restricted to only certain users.
+    is_restricted = models.BooleanField(default=False)
+    # The users for whom this release is visible
+    target_users = models.ManyToManyField("User")
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"

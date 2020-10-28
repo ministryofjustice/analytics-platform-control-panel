@@ -145,6 +145,12 @@ add_perm('api.add_superuser', is_authenticated & is_superuser)
 add_perm('api.reset_mfa', is_authenticated & is_superuser)
 
 
+add_perm('api.list_tool_release', is_authenticated & is_superuser)
+add_perm('api.create_tool_release', is_authenticated & is_superuser)
+add_perm('api.destroy_tool_release', is_authenticated & is_superuser)
+add_perm('api.update_tool_release', is_authenticated & is_superuser)
+
+
 add_perm('api.list_apps3bucket', is_authenticated)
 add_perm('api.create_apps3bucket', is_authenticated & is_superuser)
 add_perm(

@@ -8,7 +8,7 @@ from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
 from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
-
+from django.db.models import Q
 from controlpanel.api import cluster
 from controlpanel.api.models import (
     Tool,
@@ -25,6 +25,21 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Tool
     permission_required = "api.list_tool"
     template_name = "tool-list.html"
+
+    def get_queryset(self):
+        """
+        Return a queryset for Tool objects where:
+
+        * The tool is not in beta,
+
+        OR
+
+        * The current user is in the beta tester group for the tool.
+        """
+        return Tool.objects.filter(
+            Q(is_restricted=False) |
+            Q(target_users=self.request.user.id)
+        )
 
     def get_context_data(self, *args, **kwargs):
         """

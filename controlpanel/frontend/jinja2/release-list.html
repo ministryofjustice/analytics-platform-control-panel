@@ -1,0 +1,50 @@
+{% from "user/macro.html" import user_name %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Releases" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">Chart</th>
+      <th class="govuk-table__header">Version</th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {% for release in releases%}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}">
+          {{ release.name }}<br/>
+        </a>
+      </td>
+      <td class="govuk-table__cell">{{ release.chart_name}}</td>
+      <td class="govuk-table__cell">
+        {{ release.version }}
+      </td>
+      <td class="govuk-table__cell">
+        <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"
+           class="govuk-button govuk-button--secondary">
+          Manage Release 
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if request.user.has_perm('api.create_tool_release') %}
+  <p class="govuk-body">
+  <a class="govuk-button" href="{{ url('create-tool-release') }}">
+      Create new release
+    </a>
+  </p>
+{% endif %}
+{% endblock %}
