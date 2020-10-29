@@ -23,12 +23,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install JavaScript dependencies
-        run: |
-          npm install
+        run: npm install
 
       - name: Run JavaScript tests
-        run: |
-          npm run test -- --coverage --collectCoverage=true
+        run: npm run test -- --coverage --collectCoverage=true
 
   test-and-push-docker-image-to-quay:
     runs-on: ubuntu-latest
@@ -44,8 +42,7 @@ jobs:
         continue-on-error: true
 
       - name: Build docker image
-        run: |
-          docker build --cache-from=controlpanel -t controlpanel .
+        run: docker build --cache-from=controlpanel -t controlpanel .
 
       # Run Python tests using docker-compose
 
