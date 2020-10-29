@@ -1,0 +1,107 @@
+name: Run tests and push Docker image on success
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+
+  test-js:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [8.x, 10.x, 12.x]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install JavaScript dependencies
+        run: npm install
+
+      - name: Run JavaScript tests
+        run: npm run test -- --coverage --collectCoverage=true
+
+  test-and-push-docker-image-to-quay:
+    runs-on: ubuntu-latest
+    needs: [test-js]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      # Docker build
+
+      - name: Docker Layer Caching
+        uses: satackey/action-docker-layer-caching@v0.0.8
+        continue-on-error: true
+
+      - name: Build docker image
+        run: docker build --cache-from=controlpanel -t controlpanel .
+
+      # Run Python tests using docker-compose
+
+      - name: Run Python tests (docker-compose)
+        run: |
+          touch .env  # empty .env file to avoid error
+          docker-compose run \
+            -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test \
+            -e KUBECONFIG=tests/kubeconfig \
+            cpanel \
+            sh -c "until pg_isready -h db; do sleep 2; done; pytest"
+
+      # Get info to tag Docker image
+      #
+      # This is a bit more complicated than expected, see:
+      # - get branch name: https://stackoverflow.com/a/64210623/455642
+      # - get commit SHA1: https://github.community/t/github-sha-isnt-the-value-expected/17903
+      - name: Get branch name and commit SHA1
+        run: |
+          BRANCH_NAME=""
+          COMMIT_SHA1=""
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BRANCH_NAME="${GITHUB_HEAD_REF}"
+            COMMIT_SHA1="${{ github.event.pull_request.head.sha }}"
+          else
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+            COMMIT_SHA1="${GITHUB_SHA}"
+          fi
+
+          # Replace slashes ("/") with dashes ("-")
+          BRANCH_NAME=$(echo "${BRANCH_NAME}" | tr / -)
+
+          # Print environment variables to output
+          echo "BRANCH_NAME=${BRANCH_NAME}"
+          echo "COMMIT_SHA1=${COMMIT_SHA1}"
+
+          # Save environment variables for future steps
+          echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
+          echo "COMMIT_SHA1=${COMMIT_SHA1}" >> $GITHUB_ENV
+
+      # Tag and push Docker image to Quay.io
+
+      - name: Push Docker image to Quay.io
+        env:
+          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+        run: |
+            docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
+            echo
+
+            echo "tagging quay.io/mojanalytics/control-panel:${COMMIT_SHA1}..."
+            docker tag controlpanel "quay.io/mojanalytics/control-panel:${COMMIT_SHA1}"
+            echo "tagging quay.io/mojanalytics/control-panel:${BRANCH_NAME}..."
+            docker tag controlpanel "quay.io/mojanalytics/control-panel:${BRANCH_NAME}"
+            echo
+
+            echo "pushing quay.io/mojanalytics/control-panel:${COMMIT_SHA1}..."
+            docker push "quay.io/mojanalytics/control-panel:${COMMIT_SHA1}"
+            echo
+            echo "pushing quay.io/mojanalytics/control-panel:${BRANCH_NAME}..."
+            docker push "quay.io/mojanalytics/control-panel:${BRANCH_NAME}"
