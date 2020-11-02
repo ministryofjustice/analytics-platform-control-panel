@@ -1,8 +1,12 @@
+import logging
 from dateutil.parser import parse
 from django.conf import settings
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Q, Search
 from elasticsearch_dsl.query import Range
+
+
+log = logging.getLogger(__name__)
 
 
 def bucket_hits_aggregation(bucket_name, num_days=None):
@@ -29,6 +33,7 @@ def bucket_hits_aggregation(bucket_name, num_days=None):
 def app_logs(app, num_hours=None):
     # Disable logs for noisy app ("covid19-early-release")
     # to prevent its App details page to timeout
+    log.info("Get app logs for: " + str(app.id))
     if app.id == 171:
         return []
 
@@ -36,7 +41,11 @@ def app_logs(app, num_hours=None):
         num_hours = 1
 
     conn = Elasticsearch(hosts=settings.ELASTICSEARCH['hosts'])
-    s = Search(using=conn, index=settings.ELASTICSEARCH['indices']['app-logs'])
+    # Create Search object. Timeout after 1 second. Will retry several times.
+    s = Search(
+        using=conn,
+        index=settings.ELASTICSEARCH['indices']['app-logs']
+    ).params(request_timeout=1)
 
     # limit fields returned
     s = s.source(['@timestamp', 'message'])
@@ -59,7 +68,13 @@ def app_logs(app, num_hours=None):
 
     s = s.params(preserve_order=True)
 
-    for entry in s.scan():
-        entry['timestamp'] = parse(entry['@timestamp'])
-        yield entry
 
+    try:
+        logs = list(s.scan())
+        log.info("Got {} log entries.".format(len(logs)))
+        for entry in logs:
+            entry['timestamp'] = parse(entry['@timestamp'])
+    except Exception as ex:
+        log.error(ex)
+        logs = []
+    return logs 
