@@ -477,6 +477,7 @@ def test_create_group(iam, settings):
     assert stmt['Action'] == [
         's3:GetBucketLocation',
         's3:ListAllMyBuckets',
+        's3:ListBucketVersions',
     ]
     assert stmt['Resource'] == ['arn:aws:s3:::*']
     assert stmt['Effect'] == 'Allow'
