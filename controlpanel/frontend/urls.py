@@ -55,6 +55,7 @@ urlpatterns = [
     path("reset-user-home/", views.ResetHome.as_view(), name="home-reset"),
     path("whats-new/", views.WhatsNew.as_view(), name="whats-new"),
     path("help/", views.Help.as_view(), name="help"),
+    path("help/home-reset", views.HelpHomeReset.as_view(), name="help-home-reset"),
 
     path("releases/", views.ReleaseList.as_view(), name="list-tool-releases"),
     path("release/new/", views.ReleaseCreate.as_view(), name="create-tool-release"),

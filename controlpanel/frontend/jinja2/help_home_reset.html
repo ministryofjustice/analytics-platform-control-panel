@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% set page_title = "Help for Home Reset" %}
+
+{% block content %}
+  <div class="govuk-grid-row" id="reset-container">
+      <div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-xl">Help: Home Directory Reset</h1>
+
+    <h2 class="govuk-heading-m">The Problem</h2>
+
+    <p class="govuk-body">You need to reset your home directory if any of the
+    following applies:</p>
+
+    <ul class="govuk-list govuk-list--bullet">
+        <li>Your RStudio won't start.</li>
+        <li>Your Conda environment is a mess.</li>
+        <li>You need to start RStudio development from a clean state.</li>
+    </ul>
+
+    <h2 class="govuk-heading-m">The Solution</h2>
+
+    <ol class="govuk-list govuk-list--number">
+        <li>From the <a href="{{ url("list-tools")}}">Analytic tools</a> page,
+        follow the link to <a href="{{ url('home-reset') }}">reset your home page</a>.</li>
+        <li>Read the information about what a home reset entails.</li>
+        <li>Enable the confirmation check-box and click the red "Reset" button.</li>
+        <li>You'll be returned to the Analytic tools page, but will see a
+        confirmation that the reset is underway.</li>
+        <li>Depending on the size of your home directory, this process can
+        take between seconds to a couple of minutes. Go make a coffee!</li>
+        <li>Finally, on the <a href="{{ url("list-tools")}}">Analytic tools</a>
+        page, click the "Restart" button for RStudio.</li>
+        <li>Give RStudio a few minutes to start up.</li>
+    </ol>
+
+    <div class="govuk-grid-row">
+    <img src="{{ static('images/home-reset.gif') }}" style="width: 100%; border: 1px solid #ccc;"
+    alt="An illustration of the solution steps described in this page."/>
+
+    <p class="govuk-body">Should you still require help, please visit our
+    <a href="https://asdslack.slack.com/messages/C4PF7QAJZ#">support channel on Slack</a>, ask your question whilst remembering to tell us your
+    username and the name of any affected S3 buckets or applications on the
+    analytical platform that are part of the context of your request.</p>
+
+{% endblock %}
