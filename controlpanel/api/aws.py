@@ -100,6 +100,7 @@ BASE_S3_ACCESS_POLICY = {
             "Action": [
                 "s3:GetBucketLocation",
                 "s3:ListAllMyBuckets",
+                "s3:ListBucketVersions",
             ],
             "Effect": "Allow",
             "Resource": ["arn:aws:s3:::*"],
