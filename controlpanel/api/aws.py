@@ -96,14 +96,14 @@ BASE_S3_ACCESS_POLICY = {
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "console",
+            "Sid": "ListUserBuckets",
             "Action": [
-                "s3:GetBucketLocation",
                 "s3:ListAllMyBuckets",
-                "s3:ListBucketVersions",
+                "s3:ListAccessPoints",
+                "s3:GetAccountPublicAccessBlock"
             ],
             "Effect": "Allow",
-            "Resource": ["arn:aws:s3:::*"],
+            "Resource": "*",
         },
     ],
 }
@@ -112,6 +112,8 @@ READ_ACTIONS = [
     's3:GetObject',
     's3:GetObjectAcl',
     's3:GetObjectVersion',
+    "s3:GetObjectVersionAcl",
+    "s3:GetObjectVersionTagging"
 ]
 
 WRITE_ACTIONS = [
@@ -122,12 +124,23 @@ WRITE_ACTIONS = [
     's3:RestoreObject',
 ]
 
+LIST_ACTIONS = [
+    "s3:ListBucket",
+    "s3:GetBucketPublicAccessBlock",
+    "s3:GetBucketPolicyStatus",
+    "s3:GetBucketTagging",
+    "s3:GetBucketPolicy",
+    "s3:GetBucketAcl",
+    "s3:GetBucketCORS",
+    "s3:GetBucketVersioning",
+    "s3:GetBucketLocation",
+    "s3:ListBucketVersions",
+]
+
 BASE_S3_ACCESS_STATEMENT = {
     'list': {
         'Sid': 'list',
-        'Action': [
-            's3:ListBucket',
-        ],
+        'Action': LIST_ACTIONS,
         'Effect': 'Allow',
     },
     'readonly': {
