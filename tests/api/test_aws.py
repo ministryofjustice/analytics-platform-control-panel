@@ -475,11 +475,11 @@ def test_create_group(iam, settings):
     pd = policy.default_version.document
     stmt = pd['Statement'][0]
     assert stmt['Action'] == [
-        's3:GetBucketLocation',
-        's3:ListAllMyBuckets',
-        's3:ListBucketVersions',
+        "s3:ListAllMyBuckets",
+        "s3:ListAccessPoints",
+        "s3:GetAccountPublicAccessBlock"
     ]
-    assert stmt['Resource'] == ['arn:aws:s3:::*']
+    assert stmt['Resource'] == "*"
     assert stmt['Effect'] == 'Allow'
 
 
