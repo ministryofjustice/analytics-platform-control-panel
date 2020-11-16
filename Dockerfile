@@ -50,7 +50,7 @@ COPY tests tests
 
 
 # fetch javascript dependencies in separate stage
-FROM node:8-alpine AS jsdep
+FROM quay.io/mojanalytics/node:8-alpine AS jsdep
 COPY package.json package-lock.json ./
 COPY controlpanel/frontend/static src
 RUN npm install && \
