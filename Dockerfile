@@ -1,4 +1,4 @@
-FROM alpine:3.10 AS base
+FROM quay.io/mojanalytics/alpine:3.10 AS base
 
 LABEL maintainer="andy.driver@digital.justice.gov.uk"
 
