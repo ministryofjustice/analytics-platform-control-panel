@@ -280,6 +280,8 @@ kubectl cluster-info
 Install Helm (the K8s package manager) by following
 [these instructions for your OS](https://helm.sh/docs/intro/install/).
 
+**NOTE**: Be sure to use Helm 2. Helm 3 may not work (e.g. a new joiner couldn't run the tests because of differences in where Helm keep the repostory cache)
+
 You'll need to initialise Helm too:
 
 ```sh
