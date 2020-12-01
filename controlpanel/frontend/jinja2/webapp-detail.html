@@ -311,7 +311,7 @@
 <section class="cpanel-section">
   <form action="{{ url('delete-app', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
-    <button class="govuk-button cpanel-button--destructive"
+    <button class="govuk-button cpanel-button--destructive js-confirm"
             data-confirm-message="Are you sure you want to delete this app?">
       Delete app
     </button>
