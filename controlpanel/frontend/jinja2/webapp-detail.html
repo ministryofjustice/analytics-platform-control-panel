@@ -170,7 +170,7 @@
           {% if user.id %}
             <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
               {{ csrf_input }}
-              <button class="confirm govuk-button govuk-button--secondary right">
+              <button class="js-confirm govuk-button govuk-button--secondary right">
               Revoke admin
               </button>
             </form>
@@ -247,14 +247,14 @@
           <form action="{{ url('update-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
             <input type="hidden" name="access_level" value="{{ yes_no(bucket.access_level, 'readwrite', 'readonly', 'readwrite') }}">
-            <button class="confirm govuk-button govuk-button--secondary">
+            <button class="js-confirm govuk-button govuk-button--secondary">
               Set {{ yes_no(bucket.access_level, 'readwrite', 'read only', 'read/write') }}
             </button>
           </form>
           {% if request.user.has_perm('api.remove_app_bucket', app) %}
           <form action="{{ url('revoke-app-access', kwargs={ "pk": bucket.id }) }}" method="post" class="form-control-prefix">
             {{ csrf_input }}
-            <button class="confirm govuk-button govuk-button--secondary">
+            <button class="js-confirm govuk-button govuk-button--secondary">
               Disconnect
             </button>
           </form>
