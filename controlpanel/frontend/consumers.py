@@ -100,9 +100,11 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         """
         self.streaming = False
 
-        # leave the group
-        group = sanitize_dns_label(self.scope.get("user").auth0_id)
-        await self.channel_layer.group_discard(group, self.channel_name)
+        # leave the group if user is logged in.
+        user = self.scope.get("user")
+        if user.is_authenticated:
+            group = sanitize_dns_label(user.auth0_id)
+            await self.channel_layer.group_discard(group, self.channel_name)
 
 
 class BackgroundTaskConsumer(SyncConsumer):

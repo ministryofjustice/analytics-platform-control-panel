@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% set page_title = "Login Failure" %}
+
+{% block content %}
+  <div class="govuk-grid-row" id="reset-container">
+   <div class="govuk-grid-column-two-thirds">
+
+
+    <h2 class="govuk-heading-l">Login Failure</h2>
+
+    <p>Something went wrong when you tried to authenticate.</p>
+
+    <p>Please <a href="https://{{ environment }}-analytics-moj.eu.auth0.com/v2/logout?returnTo=https%3A%2F%2Fcontrolpanel.services.{{ environment }}.mojanalytics.xyz%2Foidc%2Flogout%2F">try again</a>.</p>
+   </div>
+  </div>
+{% endblock %}
