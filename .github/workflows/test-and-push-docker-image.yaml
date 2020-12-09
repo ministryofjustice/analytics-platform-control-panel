@@ -1,13 +1,11 @@
 name: Run tests and push Docker image on success
 
-on:
+"on":
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
 jobs:
-
   test-js:
     runs-on: ubuntu-latest
     strategy:
@@ -28,23 +26,35 @@ jobs:
       - name: Run JavaScript tests
         run: npm run test -- --coverage --collectCoverage=true
 
-  test-and-push-docker-image-to-quay:
-    runs-on: ubuntu-latest
+  test-and-push-docker:
+    runs-on: [self-hosted, ecr]
     needs: [test-js]
-
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      # Docker build
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-      - name: Docker Layer Caching
-        uses: satackey/action-docker-layer-caching@v0.0.8
-        continue-on-error: true
+      - name: Set up Docker Context for Buildx
+        id: buildx-context
+        run: docker context create builders
 
-      - name: Build docker image
-        run: docker build --cache-from=controlpanel -t controlpanel .
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+          endpoint: builders
 
-      # Run Python tests using docker-compose
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: eu-west-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Run Python tests (docker-compose)
         run: |
@@ -55,53 +65,18 @@ jobs:
             cpanel \
             sh -c "until pg_isready -h db; do sleep 2; done; pytest"
 
-      # Get info to tag Docker image
-      #
-      # This is a bit more complicated than expected, see:
-      # - get branch name: https://stackoverflow.com/a/64210623/455642
-      # - get commit SHA1: https://github.community/t/github-sha-isnt-the-value-expected/17903
-      - name: Get branch name and commit SHA1
-        run: |
-          BRANCH_NAME=""
-          COMMIT_SHA1=""
+      # Set tags automaticlly based on repository events
+      - name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: ${{ steps.login-ecr.outputs.registry }}/control-panel
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BRANCH_NAME="${GITHUB_HEAD_REF}"
-            COMMIT_SHA1="${{ github.event.pull_request.head.sha }}"
-          else
-            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
-            COMMIT_SHA1="${GITHUB_SHA}"
-          fi
-
-          # Replace slashes ("/") with dashes ("-")
-          BRANCH_NAME=$(echo "${BRANCH_NAME}" | tr / -)
-
-          # Print environment variables to output
-          echo "BRANCH_NAME=${BRANCH_NAME}"
-          echo "COMMIT_SHA1=${COMMIT_SHA1}"
-
-          # Save environment variables for future steps
-          echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
-          echo "COMMIT_SHA1=${COMMIT_SHA1}" >> $GITHUB_ENV
-
-      # Tag and push Docker image to Quay.io
-
-      - name: Push Docker image to Quay.io
-        env:
-          QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
-          QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
-        run: |
-            docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
-            echo
-
-            echo "tagging quay.io/mojanalytics/control-panel:${COMMIT_SHA1}..."
-            docker tag controlpanel "quay.io/mojanalytics/control-panel:${COMMIT_SHA1}"
-            echo "tagging quay.io/mojanalytics/control-panel:${BRANCH_NAME}..."
-            docker tag controlpanel "quay.io/mojanalytics/control-panel:${BRANCH_NAME}"
-            echo
-
-            echo "pushing quay.io/mojanalytics/control-panel:${COMMIT_SHA1}..."
-            docker push "quay.io/mojanalytics/control-panel:${COMMIT_SHA1}"
-            echo
-            echo "pushing quay.io/mojanalytics/control-panel:${BRANCH_NAME}..."
-            docker push "quay.io/mojanalytics/control-panel:${BRANCH_NAME}"
+      - name: Build and Push
+        uses: docker/build-push-action@v2
+        with:
+          file: Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
