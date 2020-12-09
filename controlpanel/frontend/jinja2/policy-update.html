@@ -63,6 +63,6 @@
 
   <form method="POST" action="{{ url("delete-policy", kwargs={ "pk": policy.id }) }}">
       {{ csrf_input }}
-      <button class="govuk-button cpanel-button--destructive">Delete group</button>
+      <button class="govuk-button cpanel-button--destructive js-confirm">Delete group</button>
   </form>
 {% endblock %}
