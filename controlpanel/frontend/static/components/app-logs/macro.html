@@ -26,7 +26,7 @@ filters:!(
     meta:(
       alias:!n,
       disabled:!f,
-      index:'logstash-apps-{{env}}-*',
+      index:'{{env}}-node-*',
       key:query,
       negate:!f,
       type:custom,
@@ -77,7 +77,7 @@ filters:!(
     meta:(
       alias:!n,
       disabled:!f,
-      index:'logstash-apps-{{env}}-*',
+      index:'{{env}}-node-*',
       key:app_name,
       negate:!f,
       params:(
@@ -97,7 +97,7 @@ filters:!(
     )
   )
 ),
-index:'logstash-apps-{{env}}-*',
+index:'{{env}}-node-*',
 interval:auto,
 query:(language:lucene,query:''),
 sort:!(time_nano,asc),
