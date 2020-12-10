@@ -535,7 +535,7 @@ ELASTICSEARCH = {
         ),
         'app-logs': os.environ.get(
             'ELASTICSEARCH_INDEX_APPLOGS',
-            f'logstash-apps-{ENV}-*',
+            f'{ENV}-Node-*',
         ),
     },
 }
