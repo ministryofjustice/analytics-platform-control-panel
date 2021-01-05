@@ -86,5 +86,19 @@ class ReleaseCreate(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
         target_list = form.get_target_users()
         if target_list:
             self.object.target_users.set(target_list)
+        # Populate the JSON values needed as arguments for the referenced helm
+        # chart to run.
+        # These are taken from the most recent valid version of the helm chart
+        # (these settings should remain the same across chart versions).
+        old_release = (
+            # This query is lazy, and starts by matching tools by chart_name...
+            Tool.objects.filter(chart_name=self.object.chart_name)
+            .exclude(values={})  # ...throw away those with empty values, and,
+            .order_by("-created")  # order by latest first, but...
+            .first()  # ...get only the first result.
+        )
+        # Update the values of the new release with those from the old release.
+        self.object.values = old_release.values
+        self.object.save()
         messages.success(self.request, "Successfully created new release")
         return HttpResponseRedirect(reverse_lazy("list-tool-releases"))
