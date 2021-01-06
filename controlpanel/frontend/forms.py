@@ -285,6 +285,26 @@ class ToolReleaseForm(forms.ModelForm):
         else:
             return []
 
+    def clean_chart_name(self):
+        """
+        Ensures that the helm chart name entered by the user is a valid one.
+
+        Why not use a "choice" argument in the Tool model's class? It would
+        result in a new Django migration for the database to enforce this (and
+        we'd have to keep adding new migrations to the database every time we
+        created a new helm chart for a new tool). Furthermore, the HTML select
+        field we'd use in the form isn't supported in the macros we use.
+
+        Hence the path of least resistance with this custom form validation.
+        """
+        valid_charts = ["airflow-sqlite", "jupyter-lab", "rstudio", ]
+        value = self.cleaned_data['chart_name']
+        if value not in valid_charts:
+            raise ValidationError(
+                f"'{value}' is not a valid helm chart name. ",
+            )
+        return value
+
     class Meta:
         model = Tool
         fields = ["name", "chart_name", "version", "is_restricted", ]
