@@ -38,14 +38,14 @@ jobs:
 
       - name: Set up Docker Context for Buildx
         id: buildx-context
-        run: docker context create builders
+        run: docker context create builders-test
 
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
         with:
           version: latest
-          endpoint: builders
+          endpoint: builders-test
 
       - name: Configure AWS credentials
         if: github.event_name != 'pull_request'
