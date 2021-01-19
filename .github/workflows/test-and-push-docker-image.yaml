@@ -82,3 +82,10 @@ jobs:
           push: false
           load: true
           tags: ${{ steps.docker_meta.outputs.tags }}
+
+      - name: Cleanup Contexts
+        if: ${{ always() }}
+        run: |
+          docker context list
+          docker context rm builders-test
+
