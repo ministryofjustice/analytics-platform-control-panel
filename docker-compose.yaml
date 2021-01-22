@@ -1,7 +1,8 @@
-version: '3'
+version: "3"
 services:
   db:
     image: "circleci/postgres:9.6.17-ram"
+    network_mode: ${NETWORK:-default}
     logging:
       driver: none
     environment:
@@ -11,16 +12,15 @@ services:
 
   redis:
     image: "redis"
+    network_mode: ${NETWORK:-default}
     environment:
       REDIS_PASSWORD: "controlpanel"
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
-    image: controlpanel
-    depends_on:
-      - db
-    links:
-      - db
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    network_mode: ${NETWORK:-default}
+    depends_on: [db]
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
@@ -32,14 +32,11 @@ services:
     command: sh -c "until pg_isready -h db; do sleep 2; done; ./manage.py migrate"
 
   worker:
-    image: controlpanel
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    network_mode: ${NETWORK:-default}
     depends_on:
       - migration
       - redis
-    links:
-      - db
-      - redis
-    env_file: .env
     environment:
       ALLOWED_HOSTS: "*"
       DB_HOST: "db"
@@ -55,17 +52,15 @@ services:
     command: ["python3", "manage.py", "runworker", "background_tasks"]
 
   cpanel:
-    build: .
-    image: controlpanel
-    ports:
-      - "8000:8000"
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+    network_mode: ${NETWORK:-default}
+    ports: ["8000:8000"]
     depends_on:
       - migration
       - worker
-    links:
-      - db
-      - redis
-    env_file: .env
     environment:
       ALLOWED_HOSTS: "*"
       DB_HOST: "db"
@@ -81,4 +76,3 @@ services:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
-

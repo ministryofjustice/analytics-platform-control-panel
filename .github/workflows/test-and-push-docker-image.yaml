@@ -33,12 +33,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
       - name: Set up Docker Context for Buildx
         id: buildx-context
-        run: docker context create builders
+        run: docker context use builders || docker context create builders
 
       - name: Set up Docker Buildx
         id: buildx
@@ -48,44 +45,48 @@ jobs:
           endpoint: builders
 
       - name: Configure AWS credentials
-        # if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-1
 
       - name: Login to Amazon ECR
-        # if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Run Python tests (docker-compose)
+        run: make test
+
+      - name: Prep Tags
+        id: prep
         run: |
-          touch .env  # empty .env file to avoid error
-          docker-compose run \
-            -e DJANGO_SETTINGS_MODULE=controlpanel.settings.test \
-            -e KUBECONFIG=tests/kubeconfig \
-            cpanel \
-            sh -c "until pg_isready -h db; do sleep 2; done; pytest"
+          TAG=noop
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            TAG=${GITHUB_REF#refs/tags/}
+          elif [[ $GITHUB_REF == refs/heads/* ]]; then
+            TAG=$(echo ${GITHUB_REF#refs/heads/} | sed -r 's#/+#-#g')
+            if [ "${{ github.event.repository.default_branch }}" = "$TAG" ]; then
+              TAG=edge
+            fi
+          elif [[ $GITHUB_REF == refs/pull/* ]]; then
+            TAG=pr-${{ github.event.number }}
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            TAG="sha-${GITHUB_SHA::8}"
+          fi
+          echo ::set-output name=tag::${TAG}
+          echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-      # Set tags automaticlly based on repository events
-      - name: Docker meta
-        id: docker_meta
-        uses: crazy-max/ghaction-docker-meta@v1
-        with:
-          images: ${{ steps.login-ecr.outputs.registry }}/control-panel
+      - name: Build image
+        run: make build
+        env:
+          NETWORK: host
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.prep.outputs.tag }}
 
-      - name: Build and Push
-        uses: docker/build-push-action@v2
-        with:
-          file: Dockerfile
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: ${{ steps.docker_meta.outputs.tags }}
-
-      - name: Cleanup Contexts
-        if: ${{ always() }}
-        run: |
-          docker context list
-          docker context rm builders
+      - name: Push image
+        run: make push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.prep.outputs.tag }}
 
