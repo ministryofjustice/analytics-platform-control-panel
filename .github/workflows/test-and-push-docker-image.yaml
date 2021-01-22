@@ -45,13 +45,11 @@ jobs:
           endpoint: builders
 
       - name: Configure AWS credentials
-        if: github.event_name != 'pull_request'
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-1
 
       - name: Login to Amazon ECR
-        if: github.event_name != 'pull_request'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
