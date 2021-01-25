@@ -398,6 +398,8 @@ if os.environ.get("SENTRY_DSN"):
         dsn=os.environ["SENTRY_DSN"],
         environment=os.environ.get("ENV", "dev"),
         integrations=[DjangoIntegration()],
+        traces_sample_rate=0.0,
+        send_default_pii=True,
     )
     if "shell" in sys.argv or "shell_plus" in sys.argv:
         sentry_sdk.init(
