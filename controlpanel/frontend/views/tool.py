@@ -1,21 +1,17 @@
 import logging
 
 from asgiref.sync import async_to_sync
+from controlpanel.api import cluster
+from controlpanel.api.models import Tool, ToolDeployment
+from controlpanel.frontend.consumers import start_background_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
 from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
-from django.db.models import Q
-from controlpanel.api import cluster
-from controlpanel.api.models import (
-    Tool,
-    ToolDeployment,
-)
-from controlpanel.frontend.consumers import start_background_task
-
 
 log = logging.getLogger(__name__)
 
