@@ -86,7 +86,7 @@ js-utils:
 
 test-js: js-utils
 	@echo "Running Javascript Tests"
-	@docker run -v /Users/rassilon/development/moj/analytics-platform-control-panel:/root/controlpanel/ -w /root/controlpanel -it controlpanel-js-utils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm run test -- --coverage; rm /root/controlpanel/node_modules"
+	@docker run -v ${PWD}:/root/controlpanel/ -w /root/controlpanel -it controlpanel-js-utils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm run test -- --coverage; rm /root/controlpanel/node_modules"
 
 ## test: Run tests
 test: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.test
