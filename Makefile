@@ -93,6 +93,18 @@ js-utils:
 	@docker build controlpanel-js-utils/ -t controlpanel-js-utils
 
 test-js: js-utils
+	@echo "Running Javascript Tests"
+	@docker run -v ${PWD}:/root/controlpanel/ -w /root/controlpanel -it controlpanel-js-utils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm run test -- --coverage; rm /root/controlpanel/node_modules"
+
+## test: Run tests
+test: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.test
+test:
+	@echo
+	@echo "> Running tests..."
+	${BIN}/pytest --color=yes && \
+	docker run -v /Users/rassilon/development/moj/analytics-platform-control-panel:/root/controlpanel/ -w /root/controlpanel -it npm run test -- --coverage cputils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm test -- --coverage; rm /root/controlpanel/node_modules"
+
+test-js: js-utils
 	@echo
 	@echo "> Running Javascript Tests (In Docker)..."
 	@docker run -v ${PWD}:/root/controlpanel/ -w /root/controlpanel -it controlpanel-js-utils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm run test -- --coverage; rm /root/controlpanel/node_modules"
