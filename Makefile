@@ -104,13 +104,16 @@ docker-run: redis
 		${PROJECT}
 
 ## docker-test: Run tests in Docker container
-test:
+test: up
 	@echo
 	@echo "> Running tests in Docker..."
 	@docker-compose run \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
 		-e KUBECONFIG=tests/kubeconfig \
 		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes && npm run test -- --coverage"
+
+up:
+	docker-compose up -d
 
 push:
 	docker-compose push cpanel
