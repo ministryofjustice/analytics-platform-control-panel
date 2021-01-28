@@ -4,12 +4,7 @@ ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://storage.googleapis.com/kubernetes-helm
 
-ENV DB_PASSWORD=${DB_PASSWORD} \
-  DB_PORT=$DB_PORT \
-  DB_USER=$DB_USER \
-  DB_NAME=$DB_NAME \
-  DB_HOST=$DB_HOST \
-  DJANGO_SETTINGS_MODULE="controlpanel.settings" \
+ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   HELM_HOME=/tmp/helm
 
 # create a user to run as
