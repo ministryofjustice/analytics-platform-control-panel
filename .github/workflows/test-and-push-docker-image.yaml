@@ -80,7 +80,7 @@ jobs:
           IMAGE_TAG: ${{ steps.prep.outputs.tag }}
 
       - name: Run Python tests (docker-compose)
-        run: make clean && ake test
+        run: make clean && make test
         env:
           NETWORK: default
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
