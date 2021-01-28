@@ -1,13 +1,11 @@
 version: "3"
 services:
   db:
-    image: "circleci/postgres:9.6.17-ram"
+    image: "postgres:9.6"
     network_mode: ${NETWORK:-default}
-    # logging:
-    #   driver: none
     environment:
-      POSTGRES_USER: "controlpanel"
       POSTGRES_DB: "controlpanel"
+      POSTGRES_USER: "controlpanel"
       POSTGRES_PASSWORD: "password"
 
   redis:
