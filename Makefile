@@ -89,7 +89,7 @@ build:
 	@docker-compose build cpanel
 
 enter:
-	@docker-compose run --entrypoint sh --rm cpanel
+	@docker-compose run --rm --entrypoint sh --rm cpanel
 
 ## docker-run: Run app in a Docker container
 docker-run: redis
@@ -110,20 +110,20 @@ docker-run: redis
 test: up
 	@echo
 	@echo "> Running tests in Docker..."
-	@docker-compose run \
+	@docker-compose run --rm \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
 		-e KUBECONFIG=tests/kubeconfig \
 		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes && npm run test -- --coverage"
 
 up:
 	@docker-compose up -d db
-	@docker-compose run cpanel sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose run --rm cpanel sh -c "until pg_isready -h db; do sleep 2;done"
 	@docker-compose up migration
-	@docker-compose run cpanel sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose run --rm cpanel sh -c "until pg_isready -h db; do sleep 2;done"
 	@docker-compose up -d cpanel
 
 logs:
-	@docker-compose logs -f 
+	@docker-compose logs -f
 push:
 	docker-compose push cpanel
 
