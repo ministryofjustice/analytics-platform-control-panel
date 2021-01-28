@@ -88,6 +88,9 @@ run-worker: redis
 build:
 	@docker-compose build cpanel
 
+enter:
+	@docker-compose run --entrypoint sh --rm cpanel
+
 ## docker-run: Run app in a Docker container
 docker-run: redis
 	@echo
@@ -113,8 +116,14 @@ test: up
 		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes && npm run test -- --coverage"
 
 up:
-	docker-compose up -d
+	@docker-compose up -d db
+	@docker-compose run cpanel sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose up migration
+	@docker-compose run cpanel sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose up -d cpanel
 
+logs:
+	@docker-compose logs -f 
 push:
 	docker-compose push cpanel
 

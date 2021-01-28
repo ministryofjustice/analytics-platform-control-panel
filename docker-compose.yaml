@@ -3,8 +3,8 @@ services:
   db:
     image: "circleci/postgres:9.6.17-ram"
     network_mode: ${NETWORK:-default}
-    logging:
-      driver: none
+    # logging:
+    #   driver: none
     environment:
       POSTGRES_USER: "controlpanel"
       POSTGRES_DB: "controlpanel"
@@ -21,6 +21,7 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     network_mode: ${NETWORK:-default}
     depends_on: [db]
+    links: [db]
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
@@ -34,9 +35,8 @@ services:
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     network_mode: ${NETWORK:-default}
-    depends_on:
-      - migration
-      - redis
+    depends_on: [redis,db]
+    links: [redis,db]
     environment:
       ALLOWED_HOSTS: "*"
       DB_HOST: "db"
@@ -58,9 +58,8 @@ services:
       network: ${NETWORK:-default}
     network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
-    depends_on:
-      - migration
-      - worker
+    depends_on: [worker, db]
+    links: [worker, db]
     environment:
       ALLOWED_HOSTS: "*"
       DB_HOST: "db"
