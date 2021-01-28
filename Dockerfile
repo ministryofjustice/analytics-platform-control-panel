@@ -1,10 +1,23 @@
 FROM quay.io/mojanalytics/alpine:3.10 AS base
 
 LABEL maintainer="andy.driver@digital.justice.gov.uk"
-
+ARG DB_PORT
+ENV DB_PORT=$DB_PORT
+ARG DB_HOST
+ENV DB_HOST=$DB_HOST
+ARG DB_NAME
+ENV DB_NAME=$DB_NAME
+ARG DB_USER
+ENV DB_USER=$DB_USER
+ARG DB_PASSWORD
+ENV DB_PASSWORD=$DB_PASSWORD
 ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://storage.googleapis.com/kubernetes-helm
+
+RUN apk update
+RUN apk upgrade
+RUN apk add bash
 
 ENV DJANGO_SETTINGS_MODULE "controlpanel.settings"
 ENV HELM_HOME /tmp/helm

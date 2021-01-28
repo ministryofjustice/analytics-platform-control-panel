@@ -52,20 +52,35 @@ services:
     command: ["python3", "manage.py", "runworker", "background_tasks"]
 
   cpanel:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
       network: ${NETWORK:-default}
+      args:
+        ALLOWED_HOSTS: "*"
+        DB_HOST: "db"
+        DB_NAME: "controlpanel"
+        DB_USER: "controlpanel"
+        DB_PASSWORD: "password"
+        DEBUG: "True"
+        PYTHONUNBUFFERED: "1"
+        REDIS_HOST: "redis"
+        REDIS_PASSWORD: "controlpanel"
+        SLACK_API_TOKEN: "dummy"
+        DB_PORT: 5432
     network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
-    depends_on: [worker, db]
-    links: [worker, db]
+    # depends_on: [worker, db]
+    depends_on: [db]
+    # links: [worker, db]
+    links: [db]
     environment:
       ALLOWED_HOSTS: "*"
       DB_HOST: "db"
       DB_NAME: "controlpanel"
       DB_USER: "controlpanel"
       DB_PASSWORD: "password"
+      DB_PORT: 5432
       DEBUG: "True"
       PYTHONUNBUFFERED: "1"
       REDIS_HOST: "redis"
