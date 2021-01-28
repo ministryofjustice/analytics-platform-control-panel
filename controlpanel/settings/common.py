@@ -1,10 +1,9 @@
 import os
-from os.path import abspath, dirname, join
 import sys
+from os.path import abspath, dirname, join
 
 from controlpanel.frontend.jinja2 import environment
 from controlpanel.utils import is_truthy
-
 
 # -- Feature flags
 

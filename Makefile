@@ -5,12 +5,15 @@ MODULE=controlpanel
 VIRTUAL_ENV ?= venv
 BIN=${VIRTUAL_ENV}/bin
 DEV=true
+IMAGE_TAG ?= local
+DOCKER_BUILDKIT?=1
+REPOSITORY?=controlpanel
+REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
+NETWORK?=default
 
--include .env
 export
 
-.PHONY: clean clean-bytecode clean-static collectstatic compilescss dependencies docker-image docker-test help node_modules run test transpile
-
+.PHONY: clean clean-bytecode clean-static collectstatic compilescss dependencies build docker-test help node_modules run test transpile
 
 clean-static:
 	@echo
@@ -23,6 +26,8 @@ clean-bytecode:
 	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
 
 clean: clean-bytecode clean-static
+	docker-compose down --volumes --remove-orphans
+	docker-compose --project-name ${REPOSITORY} down --volumes --remove-orphans
 
 ${BIN}:
 	@if [ -z "$$NO_VIRTUAL_ENV" -a ! -d "${VIRTUAL_ENV}" ]; then echo "\n> Initializing virtualenv..."; python3 -m venv ${VIRTUAL_ENV}; fi
@@ -80,18 +85,11 @@ run-worker: redis
 	@echo "> Running background task worker..."
 	@${BIN}/python3 manage.py runworker background_tasks
 
-## test: Run tests
-test: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.test
-test:
-	@echo
-	@echo "> Running tests..."
-	${BIN}/pytest --color=yes && npm run test -- --coverage
+build:
+	@docker-compose build cpanel
 
-## docker-image: Build docker image
-docker-image:
-	@echo
-	@echo "> Building docker image..."
-	@docker build -t ${PROJECT} .
+enter:
+	@docker-compose run --rm --entrypoint sh --rm cpanel
 
 ## docker-run: Run app in a Docker container
 docker-run: redis
@@ -100,7 +98,6 @@ docker-run: redis
 	@docker run \
 		-v ${HOME}/.kube/config:/home/${PROJECT}/.kube/config \
 		-p ${PORT}:${PORT} \
-		--env-file=.env \
 		-e ALLOWED_HOSTS="*" \
 		-e DB_HOST=host.docker.internal \
 		-e DB_NAME=${PROJECT} \
@@ -110,13 +107,25 @@ docker-run: redis
 		${PROJECT}
 
 ## docker-test: Run tests in Docker container
-docker-test:
+test: up
 	@echo
 	@echo "> Running tests in Docker..."
-	@docker-compose run \
+	@docker-compose run --rm \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
 		-e KUBECONFIG=tests/kubeconfig \
-		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes && npm run test -- --coverage"
+		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
+
+up:
+	@docker-compose up -d db
+	@docker-compose run --rm cpanel sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose up migration
+	@docker-compose run --rm cpanel sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose up -d cpanel
+
+logs:
+	@docker-compose logs -f
+push:
+	docker-compose push cpanel
 
 help: Makefile
 	@echo
