@@ -113,7 +113,7 @@ test: up
 	@docker-compose run --rm \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
 		-e KUBECONFIG=tests/kubeconfig \
-		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes && npm run test -- --coverage"
+		cpanel sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
 
 up:
 	@docker-compose up -d db

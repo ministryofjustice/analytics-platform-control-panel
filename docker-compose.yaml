@@ -50,7 +50,7 @@ services:
     command: ["python3", "manage.py", "runworker", "background_tasks"]
 
   cpanel:
-    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
       network: ${NETWORK:-default}
