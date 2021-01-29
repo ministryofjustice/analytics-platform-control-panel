@@ -39,7 +39,6 @@ services:
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
-
     environment:
       ALLOWED_HOSTS: "*"
       DB_HOST: "db"
