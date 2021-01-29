@@ -20,7 +20,7 @@ Lines in this file are simply of format `KEY=value`.
 
 The full list of settings are documented here: [Environment Variables Reference](environment.md). However you can simply get a lot of these values from the settings we use to run Control Panel on the dev cluster. This will connect your locally running Control Panel to AP's dev Auth0 OIDC API, dev Kubernetes cluster, etc. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml (in the [config repo](https://github.com/ministryofjustice/analytics-platform-config) and if you've not done so already, you'll need to [decrypt the files in that repo](https://github.com/ministryofjustice/analytics-platform-ops/tree/master/git-crypt#decrypting-the-secrets)) and just change the format of each line to `KEY=value`. These are the keys you need to copy to get your control panel started:
 
-```sh
+```shell
 # To log in with OIDC
 OIDC_*
 # To interact with AWS account IAM config
@@ -30,7 +30,7 @@ AWS_COMPUTE_ACCOUNT_ID
 
 Unless you're testing the Slack feature, just disable it by adding this line:
 
-```sh
+```shell
 SLACK_API_TOKEN=disabled
 ```
 
@@ -42,7 +42,7 @@ Control Panel needs AWS credentials to change S3 bucket IAM permissions, accordi
 
 You can test what AWS Account is currently configured on your command-line, like this:
 
-```sh
+```shell
 $ pip install boto3
 $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
 arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
@@ -64,7 +64,7 @@ As an AP developer, if you don't have a Landing AWS Account user account yet, fo
 
 Note: You'll have to remember to enable your 'data' AWS profile before running Control Panel, as you would to use the AWS cli:
 
-```sh
+```shell
 AWS_PROFILE=data
 ```
 
@@ -78,33 +78,37 @@ You need to have a Kubernetes key at ~/.kube/controlpanel. The dev cluster is fi
 
 To do this:
 
-1. Browse to: https://kuberos.services.dev.mojanalytics.xyz/
+1. Browse to: <https://kuberos.services.dev.mojanalytics.xyz/>
 2. Login with your GitHub creds and Auth0 MFA code for dev
 3. Look for the second line, where it says "Save **this file** as ~/.kube/config". Download the file linked at "this file"
 4. Move the file to `~/.kube/controlpanel` e.g. `mv ~/Downloads/kubecfg.yaml ~/.kube/controlpanel`
 
 ## Run
 
-```sh
+```shell
 docker-compose up
 ```
 
-If it is started up ok you'll see cpanel say this:
+If it is started up ok you'll see frontend say this:
+
+```shell
+frontend_1     | Django version 3.0.5, using settings 'controlpanel.settings'
+frontend_1     | Starting ASGI/Channels version 2.4.0 development server at http://0.0.0.0:8000/
+frontend_1     | Quit the server with CONTROL-C.
 ```
-cpanel_1     | Django version 3.0.5, using settings 'controlpanel.settings'
-cpanel_1     | Starting ASGI/Channels version 2.4.0 development server at http://0.0.0.0:8000/
-cpanel_1     | Quit the server with CONTROL-C.
-```
+
 and the database migrations finish with code 0:
-```
+
+```shell
 analytics-platform-control-panel_migration_1 exited with code 0
 ```
 
-You can then view the Control Panel in your browser at http://localhost:8000/
+You can then view the Control Panel in your browser at <http://localhost:8000/>
 
 To create a superuser able to administer the Control Panel, you need to run the
 following command in a separate terminal window:
-```sh
+
+```shell
 docker-compose exec app python3 manage.py createsuperuser
 ```
 
@@ -130,7 +134,7 @@ You can break the loop by going back to: `http://localhost:8000`
 
 You probably put the wrong URL into your browser to start off with. Make sure it is the one in these docs. Use `localhost` rather than `0.0.0.0`, for example.
 
-You can also check that your callback URL is configured in the Auth0 dashboard. If you're using the 'dev' environment OIDC then go to Auth0 'dev-analytics-moj' tenant: https://manage.auth0.com/dashboard/eu/dev-analytics-moj/applications. Find the Application with Client ID matching the `OIDC_CLIENT_ID` in your .env. In its config check the 'Allowed Callback URLs'.
+You can also check that your callback URL is configured in the Auth0 dashboard. If you're using the 'dev' environment OIDC then go to Auth0 'dev-analytics-moj' tenant: <https://manage.auth0.com/dashboard/eu/dev-analytics-moj/applications>. Find the Application with Client ID matching the `OIDC_CLIENT_ID` in your .env. In its config check the 'Allowed Callback URLs'.
 
 #### NoCredentialsError at /oidc/callback/
 
@@ -149,7 +153,8 @@ It can't find your k8s config file - see kubernetes config above.
 ## Running tests
 
 To run the test suite inside a docker container, use the following command:
-```sh
+
+```shell
 make docker-test
 ```
 

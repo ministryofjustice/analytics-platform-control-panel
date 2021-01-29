@@ -120,7 +120,7 @@ module.exports = {
 
   // A list of paths to directories that Jest should use to search for files in
   roots: [
-    "<rootDir>/controlpanel/frontend/static"
+    "/src"
   ],
 
   // Allows you to use a custom runner instead of Jest's default test runner
@@ -131,7 +131,7 @@ module.exports = {
 
   // A list of paths to modules that run some code to configure or set up the testing framework before each test
   setupFilesAfterEnv: [
-    "<rootDir>/controlpanel/frontend/static/jest.setup.js"
+    "/src/jest.setup.js"
   ],
 
   // A list of paths to snapshot serializer modules Jest should use for snapshot testing
