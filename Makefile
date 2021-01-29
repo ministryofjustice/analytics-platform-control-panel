@@ -93,16 +93,11 @@ js-utils:
 	@docker build controlpanel-js-utils/ -t controlpanel-js-utils
 
 test-js: js-utils
-	@echo "Running Javascript Tests"
+	@echo
+	@echo "> Running Javascript Tests (In Docker)..."
 	@docker run -v ${PWD}:/root/controlpanel/ -w /root/controlpanel -it controlpanel-js-utils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm run test -- --coverage; rm /root/controlpanel/node_modules"
 
-## test: Run tests
-test: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.test
-test:
-	@echo
-	@echo "> Running tests..."
-	${BIN}/pytest --color=yes && \
-	docker run -v ${PWD}:/root/controlpanel/ -w /root/controlpanel -it npm run test -- --coverage cputils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm test -- --coverage; rm /root/controlpanel/node_modules"
+test: test-js test-python
 
 enter:
 	@docker-compose run --rm --entrypoint sh --rm cpanel
@@ -123,9 +118,9 @@ docker-run: redis
 		${PROJECT}
 
 ## docker-test: Run tests in Docker container
-test: up
+test-python: up
 	@echo
-	@echo "> Running tests in Docker..."
+	@echo "> Running Python Tests (In Docker)..."
 	@docker-compose run --rm \
 		-e DJANGO_SETTINGS_MODULE=${MODULE}.settings.test \
 		-e KUBECONFIG=tests/kubeconfig \
