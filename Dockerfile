@@ -1,3 +1,13 @@
+FROM quay.io/mojanalytics/node:8-alpine AS jsdep
+COPY package.json package-lock.json ./
+COPY controlpanel/frontend/static src
+
+RUN npm install
+RUN mkdir -p dist &&\
+  ./node_modules/.bin/babel src/module-loader.js src/components src/javascripts -o dist/app.js -s
+RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --output-style compact src/app.scss
+RUN npm test
+
 FROM quay.io/mojanalytics/alpine:3.10 AS base
 
 ARG HELM_VERSION=2.13.1
@@ -45,26 +55,6 @@ USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
-
-# fetch javascript dependencies in separate stage
-FROM quay.io/mojanalytics/node:8-alpine AS jsdep
-COPY package.json package-lock.json ./
-COPY controlpanel/frontend/static src
-RUN npm install && \
-  mkdir -p dist && \
-  ./node_modules/.bin/babel \
-  src/module-loader.js \
-  src/components \
-  src/javascripts \
-  -o dist/app.js -s && \
-  ./node_modules/.bin/node-sass \
-  --include-path ./node_modules/ \
-  -o dist/ \
-  --output-style compact \
-  src/app.scss
-
-FROM base
-USER controlpanel
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.css dist/app.js static/

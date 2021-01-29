@@ -26,7 +26,6 @@
   "scripts": {
     "css": "node-sass --include-path node_modules/ -o static/ --output-style compact controlpanel/frontend/static/app.scss",
     "watch:css": "npm run css && npm run css -- --source-map true --source-map-embed true --watch",
-    "babel": "babel controlpanel/frontend/static/module-loader.js controlpanel/frontend/static/components controlpanel/frontend/static/javascripts -o static/app.js -s",
     "watch:babel": "npm run babel && npm run babel -- -w",
     "watch": "npm-run-all --parallel watch:*",
     "test": "jest"
