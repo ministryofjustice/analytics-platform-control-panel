@@ -156,3 +156,21 @@ help: Makefile
 	@echo
 	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'
 	@echo
+
+
+
+
+# THis is terrible... but it's a note.__pycache__
+
+image:
+	# docker stuff
+	# Build static CSS and JS stuff.
+
+js-test: image
+    # run js in the docker image
+
+py-test: image
+	# run python tests in docker image
+
+test: js-test py-test
+	# profit...! :-)

@@ -76,3 +76,8 @@ services:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+
+  # test: control-panel-utils
+  # build:
+  #   context: .
+
