@@ -45,7 +45,7 @@ services:
       DB_PORT: 5432
       PYTHONUNBUFFERED: "1"
       # From .envrc
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      DJANGO_SETTINGS_MODULE: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
       IAM_ARN_BASE: ${IAM_ARN_BASE}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
@@ -114,7 +114,7 @@ services:
       REDIS_PASSWORD: "controlpanel"
       AWS_REGION: ${AWS_REGION:-eu-west-1}
       # From .envrc
-      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      DJANGO_SETTINGS_MODULE: "controlpanel.settings.test"
       IAM_ARN_BASE: ${IAM_ARN_BASE}
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}

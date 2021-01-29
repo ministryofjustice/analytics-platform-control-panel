@@ -39,7 +39,6 @@ test-python: up DJANGO_SETTINGS_MODULE=${PROJECT}.settings.test
 
 test: test-python
 
-up: export DJANGO_SETTINGS_MODULE=${PROJECT}.settings.development
 up:
 	# @docker-compose up -d db
 	# @docker-compose run --rm frontend sh -c "until pg_isready -h db; do sleep 2;done"
