@@ -1,12 +1,13 @@
 FROM quay.io/mojanalytics/node:8-alpine AS jsdep
 COPY package.json package-lock.json ./
-COPY controlpanel/frontend/static src
+COPY jest.config.js controlpanel/frontend/static /src/
 
 RUN npm install
 RUN mkdir -p dist &&\
   ./node_modules/.bin/babel src/module-loader.js src/components src/javascripts -o dist/app.js -s
 RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --output-style compact src/app.scss
-RUN npm test
+WORKDIR /src
+RUN /node_modules/.bin/jest
 
 FROM quay.io/mojanalytics/alpine:3.10 AS base
 
