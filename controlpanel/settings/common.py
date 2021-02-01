@@ -456,7 +456,7 @@ NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
 # -- Redis
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
-REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_PORT = "6379"
 REDIS_SCHEME = os.environ.get("REDIS_SCHEME", "redis")
 if REDIS_SCHEME not in ["redis", "rediss"]:
     raise ValueError(f"Invalid value for 'REDIS_SCHEME' environment variable. Must be 'redis' or 'rediss' (to use SSL/TLS). It was '{REDIS_SCHEME}' which is invalid.")
