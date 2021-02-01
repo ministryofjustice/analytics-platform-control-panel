@@ -17,20 +17,14 @@ collectstatic: dependencies
 	@${BIN}/python3 manage.py collectstatic --noinput
 
 ## run: Run webapp
-run: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.development
+run: export DJANGO_SETTINGS_MODULE=${REPOSITORY}.settings.development
 run: collectstatic
 	@echo
 	@echo "> Running webapp..."
 	@${BIN}/python3 manage.py runserver
 
-run-worker: export DJANGO_SETTINGS_MODULE=${MODULE}.settings.development
+run-worker: export DJANGO_SETTINGS_REPOSITORY=${REPOSITORY}.settings.development
 run-worker:
 	@echo
 	@echo "> Running background task worker..."
 	@${BIN}/python3 manage.py runworker background_tasks
-
-
-# test-js: js-utils
-# 	@echo
-# 	@echo "> Running Javascript Tests (In Docker)..."
-# 	@docker run -v ${PWD}:/root/controlpanel/ -w /root/controlpanel -it controlpanel-js-utils bash -c "/bin/ln -s /root/node_modules/ /root/controlpanel/node_modules && npm run test -- --coverage; rm /root/controlpanel/node_modules"
