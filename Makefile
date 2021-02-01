@@ -1,7 +1,3 @@
-HOST=0.0.0.0
-# PORT=8000
-PROJECT=controlpanel
-MODULE=controlpanel
 REPOSITORY?=controlpanel
 VIRTUAL_ENV ?= venv
 BIN=${VIRTUAL_ENV}/bin
@@ -13,7 +9,7 @@ NETWORK?=default
 include Makefile.local
 export
 
-.PHONY: clean clean-bytecode clean-static collectstatic compilescss dependencies build docker-test help node_modules run test transpile
+.PHONY: clean clean-bytecode collectstatic dependencies build help test test-python
 
 clean-bytecode:
 	@echo
@@ -26,12 +22,9 @@ clean: clean-bytecode
 build:
 	@docker-compose build frontend
 
-js-utils:
-	@echo "Building Javascript Test Container (if needed)"
-	@docker build controlpanel-js-utils/ -t controlpanel-js-utils
-
 ## docker-test: Run tests in Docker container
-test-python: up DJANGO_SETTINGS_MODULE=${PROJECT}.settings.test
+test-python: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
+test-python:
 	@echo
 	@echo "> Running Python Tests (In Docker)..."
 	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig \
@@ -55,7 +48,7 @@ push:
 
 help: Makefile
 	@echo
-	@echo " Commands in "$(PROJECT)":"
+	@echo " Commands in "$(REPOSITORY)":"
 	@echo
 	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'
 	@echo
