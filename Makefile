@@ -5,18 +5,14 @@ IMAGE_TAG ?= local
 DOCKER_BUILDKIT?=1
 REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
 NETWORK?=default
+MAKEFLAGS += -j2
 
-include Makefile.local
+include Makefile.local.mk
 export
 
-.PHONY: clean clean-bytecode collectstatic dependencies build help test test-python
+.PHONY: clean build help test test-python dependencies collectstatic node_modules compilescss transpile clean-bytecode dev-up
 
-clean-bytecode:
-	@echo
-	@echo "> Removing compiled bytecode..."
-	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
-
-clean: clean-bytecode
+clean:
 	docker-compose down --volumes --remove-orphans
 
 build:
@@ -37,7 +33,8 @@ up:
 	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
 	@docker-compose up migration
 	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
-	@docker-compose up worker
+	@docker-compose up -d frontend
+	@docker-compose logs -f
 
 enter:
 	docker-compose run --rm --no-deps --entrypoint sh worker
