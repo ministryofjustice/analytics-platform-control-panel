@@ -37,7 +37,8 @@ up:
 	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
 	@docker-compose up migration
 	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
-	@docker-compose up worker
+	@docker-compose up -d frontend
+	@docker-compose logs -f
 
 enter:
 	docker-compose run --rm --no-deps --entrypoint sh worker
