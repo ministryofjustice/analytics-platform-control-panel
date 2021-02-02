@@ -43,3 +43,6 @@ clean-bytecode:
 
 dev-up: up
 	docker-compose --force-recreate -f docker-compose.yaml -f docker-compose.dev.yaml up -d frontend
+
+dev-shell:
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh
