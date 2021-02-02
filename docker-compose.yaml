@@ -50,7 +50,7 @@ services:
       DB_USER: controlpanel
       DB_PASSWORD: password
       ENV: "dev"
-      SECRET_KEY: "1234567890"
+      SECRET_KEY: "${SECRET_KEY:-1234567890}"
       OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
       SLACK_API_TOKEN: "dummy"
       defaultRegion: eu-west-1

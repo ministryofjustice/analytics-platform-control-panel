@@ -36,8 +36,6 @@ up:
 	@docker-compose up -d frontend
 	@docker-compose logs -f
 
-enter:
-	docker-compose run --rm --no-deps --entrypoint sh worker
 logs:
 	@docker-compose logs -f
 push:
