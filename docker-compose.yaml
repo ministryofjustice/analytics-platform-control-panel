@@ -72,7 +72,7 @@ services:
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
-      ALLOWED_HOSTS: "0.0.0.0"
+      ALLOWED_HOSTS: "*"
       DB_HOST: "db"
       DB_PORT: 5432
       DEBUG: "True"
