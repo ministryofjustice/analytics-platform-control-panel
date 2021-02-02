@@ -45,7 +45,7 @@ services:
       PYTHONUNBUFFERED: "1"
       REDIS_HOST: "redis"
       REDIS_PASSWORD: "controlpanel"
-      DJANGO_SETTINGS_MODULE: controlpanel.settings.test
+      DJANGO_SETTINGS_MODULE: controlpanel.settings.dev
       DB_NAME: controlpanel
       DB_USER: controlpanel
       DB_PASSWORD: password
@@ -78,7 +78,7 @@ services:
       REDIS_HOST: "redis"
       REDIS_PASSWORD: "controlpanel"
       AWS_REGION: ${AWS_REGION:-eu-west-1}
-      DJANGO_SETTINGS_MODULE: "controlpanel.settings.test"
+      DJANGO_SETTINGS_MODULE: "controlpanel.settings.dev"
       DB_NAME: controlpanel
       DB_USER: controlpanel
       DB_PASSWORD: password
