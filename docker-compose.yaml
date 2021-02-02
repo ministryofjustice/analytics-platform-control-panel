@@ -40,7 +40,6 @@ services:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
     environment:
-      ALLOWED_HOSTS: "*"
       DB_HOST: "db"
       DB_PORT: 5432
       PYTHONUNBUFFERED: "1"
@@ -73,6 +72,7 @@ services:
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
+      ALLOWED_HOSTS: "*"
       DB_HOST: "db"
       DB_PORT: 5432
       DEBUG: "True"
@@ -93,3 +93,6 @@ services:
       OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
       OIDC_OP_TOKEN_ENDPOINT: ${OIDC_OP_TOKEN_ENDPOINT}
       OIDC_OP_USER_ENDPOINT: ${OIDC_OP_USER_ENDPOINT}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      OIDC_RP_SIGN_ALGO: "RS256"
