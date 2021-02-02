@@ -40,7 +40,6 @@ services:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
     environment:
-      ALLOWED_HOSTS: "*"
       DB_HOST: "db"
       DB_PORT: 5432
       PYTHONUNBUFFERED: "1"
@@ -73,6 +72,7 @@ services:
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
+      ALLOWED_HOSTS: "0.0.0.0"
       DB_HOST: "db"
       DB_PORT: 5432
       DEBUG: "True"
