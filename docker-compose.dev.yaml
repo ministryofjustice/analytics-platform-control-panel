@@ -5,6 +5,8 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     environment:
+      OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
+      OIDC_DOMAIN: ${OIDC_DOMAIN}
       OIDC_OP_AUTHORIZATION_ENDPOINT: ${OIDC_OP_AUTHORIZATION_ENDPOINT}
       OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
       OIDC_OP_TOKEN_ENDPOINT: ${OIDC_OP_TOKEN_ENDPOINT}
@@ -41,6 +43,8 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     environment:
+      OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
+      OIDC_DOMAIN: ${OIDC_DOMAIN}
       OIDC_OP_AUTHORIZATION_ENDPOINT: ${OIDC_OP_AUTHORIZATION_ENDPOINT}
       OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
       OIDC_OP_TOKEN_ENDPOINT: ${OIDC_OP_TOKEN_ENDPOINT}
@@ -78,6 +82,8 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     environment:
+      OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
+      OIDC_DOMAIN: ${OIDC_DOMAIN}
       OIDC_OP_AUTHORIZATION_ENDPOINT: ${OIDC_OP_AUTHORIZATION_ENDPOINT}
       OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
       OIDC_OP_TOKEN_ENDPOINT: ${OIDC_OP_TOKEN_ENDPOINT}
