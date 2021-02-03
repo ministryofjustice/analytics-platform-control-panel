@@ -28,11 +28,13 @@ test-python:
 
 test: test-python
 
-up:
+prepare-up:
 	@docker-compose up -d db
 	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
 	@docker-compose up migration
 	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
+
+up: prepare-up
 	@docker-compose up -d frontend
 	@docker-compose logs -f
 

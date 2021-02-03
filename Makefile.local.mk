@@ -41,5 +41,9 @@ clean-bytecode:
 	@echo "> Removing compiled bytecode..."
 	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
 
-dev-up: up
-	docker-compose --force-recreate -f docker-compose.yaml -f docker-compose.dev.yaml up -d frontend
+dev-up: prepare-up
+	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
+	@docker-compose logs -f  # This needs replaceing with stdin/stdout to my terminal :-)
+
+dev-shell:
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh
