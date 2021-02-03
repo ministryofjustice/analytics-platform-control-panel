@@ -45,9 +45,9 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chmod -R g+rwX ${HELM_HOME}
 
 # install python dependencies (and then remove build dependencies)
-COPY requirements.lock manage.py ./
+COPY requirements.txt manage.py ./
 RUN pip3 install -U pip && \
-  pip3 install -r requirements.lock && \
+  pip3 install -r requirements.txt && \
   apk del build-base
 
 RUN pip3 install django-debug-toolbar

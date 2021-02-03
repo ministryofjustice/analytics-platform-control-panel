@@ -22,7 +22,6 @@ doc
 docker-compose.yaml
 govuk-frontend
 node_modules
-requirements.txt
 run
 tags
 venv
