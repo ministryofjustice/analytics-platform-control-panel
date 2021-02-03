@@ -1,4 +1,3 @@
-
 ${BIN}:
 	@if [ -z "$$NO_VIRTUAL_ENV" -a ! -d "${VIRTUAL_ENV}" ]; then echo "\n> Initializing virtualenv..."; python3 -m venv ${VIRTUAL_ENV}; fi
 
@@ -43,7 +42,9 @@ clean-bytecode:
 
 dev-up: prepare-up
 	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
-	@docker-compose logs -f  # This needs replaceing with stdin/stdout to my terminal :-)
+
+dev-io: clean dev-up
+	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
 dev-shell:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh
