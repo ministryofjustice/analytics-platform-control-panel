@@ -3,10 +3,14 @@ version: "3"
 services:
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    stdin_open: true
+    tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    stdin_open: true
+    tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
