@@ -43,7 +43,13 @@ clean-bytecode:
 dev-up: prepare-up
 	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
+dev-nod: prepare-up
+	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
+
 dev-io: clean dev-up
+	docker attach $(shell sh -c "docker-compose ps -q frontend")
+
+dev-ior: 
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
 dev-shell:
