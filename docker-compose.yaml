@@ -29,6 +29,7 @@ services:
       DEBUG: "True"
       PYTHONUNBUFFERED: "1"
       SLACK_API_TOKEN: "dummy"
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
     command: sh -c "until pg_isready -h db; do sleep 2; done; ./manage.py migrate"
 
   worker:
@@ -45,7 +46,7 @@ services:
       DB_PASSWORD: password
       DB_PORT: 5432
       DB_USER: controlpanel
-      DJANGO_SETTINGS_MODULE: controlpanel.settings.test
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       ENV: "dev"
       OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
       PYTHONUNBUFFERED: "1"
@@ -89,7 +90,7 @@ services:
       DB_PORT: 5432
       DB_USER: controlpanel
       DEBUG: "True"
-      DJANGO_SETTINGS_MODULE: "controlpanel.settings.test"
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
