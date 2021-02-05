@@ -65,7 +65,7 @@ services:
     network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
     depends_on: [worker, db]
-    links: [worker, db]
+    links: [worker, db, redis]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
