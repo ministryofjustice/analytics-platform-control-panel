@@ -41,10 +41,10 @@ clean-bytecode:
 	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
 
 dev-up: prepare-up
-	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
+	aws-vault exec data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
 dev-nod: prepare-up
-	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
+	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
 
 dev-io: clean dev-up
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
