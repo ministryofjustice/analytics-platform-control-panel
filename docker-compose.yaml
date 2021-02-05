@@ -67,7 +67,7 @@ services:
     depends_on: [worker, db]
     links: [worker, db]
     volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
+      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
