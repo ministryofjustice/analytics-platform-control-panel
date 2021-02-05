@@ -54,3 +54,6 @@ dev-ior:
 
 dev-shell:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh
+
+dev-exec:
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh
