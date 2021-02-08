@@ -26,7 +26,7 @@ WORKDIR /home/controlpanel
 
 # install build dependencies
 RUN apk add --no-cache \
-  build-base=0.5-r1 \
+  build-base \
   ca-certificates \
   libffi-dev=3.2.1-r6 \
   'python3-dev<3.8' \
