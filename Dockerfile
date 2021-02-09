@@ -24,19 +24,6 @@ RUN addgroup -g 1000 -S controlpanel && \
 
 WORKDIR /home/controlpanel
 
-# install build dependencies
-RUN apk add --no-cache \
-  gcc \
-  cargo \
-  musl-dev \
-  ca-certificates \
-  libffi-dev \
-  python3-dev \
-  libressl-dev \
-  libstdc++ \
-  postgresql-dev \
-  postgresql-client
-
 # download and install helm
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
 RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
@@ -46,21 +33,37 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-# install python dependencies (and then remove build dependencies)
 COPY requirements.txt manage.py ./
-RUN pip3 install -U pip && \
-  pip3 install -r requirements.txt && \
-  apk del \
-    gcc \
-    cargo \
-    musl-dev \
-    ca-certificates \
-    libffi-dev \
-    'python3-dev<3.8' \
-    libressl-dev \
-    libstdc++=8.3.0-r0 \
-    postgresql-dev
 
+RUN apk add --no-cache --virtual \
+            .build-deps \
+            alpine-sdk \
+            gcc \
+            cargo \
+            musl-dev \
+            ca-certificates \
+            libffi-dev \
+            python3-dev \
+            py3-pip \
+            libressl-dev \
+            postgresql-dev \
+            libstdc++ \
+            postgresql-client \
+  && \
+  pip3 install -U pip \
+  && pip3 install -r requirements.txt \
+  && apk del --virtual \
+            .build-deps \
+            alpine-sdk \
+            gcc \
+            cargo \
+            musl-dev \
+            ca-certificates \
+            libffi-dev \
+            python3-dev \
+            py3-pip \
+            libressl-dev \
+            postgresql-dev
 
 USER controlpanel
 COPY controlpanel controlpanel
