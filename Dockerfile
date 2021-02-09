@@ -36,6 +36,7 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
 COPY requirements.txt manage.py ./
 
 RUN apk add --no-cache --virtual \
+            python3 \
             .build-deps \
             alpine-sdk \
             gcc \
