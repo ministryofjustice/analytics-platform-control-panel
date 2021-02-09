@@ -27,8 +27,6 @@
   <!--[if lt IE 9]>
     <script src="{{ static('html5-shiv/html5shiv.js') }}"></script>
   <![endif]-->
-
-  <meta name="whats-new-hash" content="{{ whats_new_hash | default("") }}">
 {% endblock %}
 
 {% block cookie_message %}
@@ -162,10 +160,6 @@
           {
             'href': url('accessibility'),
             'text': "Accessibility statement",
-          },
-          {
-            'href': url('whats-new'),
-            'text': "What's new?",
           },
         ],
       },
