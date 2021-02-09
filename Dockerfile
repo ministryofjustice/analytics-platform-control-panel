@@ -26,7 +26,7 @@ WORKDIR /home/controlpanel
 
 # install build dependencies
 RUN apk add --no-cache \
-  gcc
+  gcc \
   cargo \
   musl-dev
   ca-certificates \
