@@ -31,7 +31,7 @@ RUN apk add --no-cache \
   musl-dev \
   ca-certificates \
   libffi-dev \
-  'python3-dev<3.8' \
+  python3-dev \
   libressl-dev \
   libstdc++ \
   postgresql-dev \
