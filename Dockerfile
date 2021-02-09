@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --outp
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM quay.io/mojanalytics/alpine:3.10 AS base
+FROM alpine:3.13 AS base
 
 ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -24,14 +24,17 @@ RUN addgroup -g 1000 -S controlpanel && \
 
 WORKDIR /home/controlpanel
 
+apk add gcc
+
 # install build dependencies
 RUN apk add --no-cache \
-  build-base \
+  gcc
   cargo \
+  musl-dev
   ca-certificates \
-  libffi-dev=3.2.1-r6 \
+  libffi-dev \
   'python3-dev<3.8' \
-  libressl-dev=2.7.5-r0 \
+  libressl-dev \
   libstdc++=8.3.0-r0 \
   postgresql-dev \
   postgresql-client
@@ -49,9 +52,17 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
 COPY requirements.txt manage.py ./
 RUN pip3 install -U pip && \
   pip3 install -r requirements.txt && \
-  apk del build-base cargo
+  apk del \
+    gcc \
+    cargo \
+    musl-dev
+    ca-certificates \
+    libffi-dev \
+    'python3-dev<3.8' \
+    libressl-dev \
+    libstdc++=8.3.0-r0 \
+    postgresql-dev
 
-RUN pip3 install django-debug-toolbar
 
 USER controlpanel
 COPY controlpanel controlpanel
