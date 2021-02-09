@@ -28,7 +28,7 @@ WORKDIR /home/controlpanel
 RUN apk add --no-cache \
   gcc \
   cargo \
-  musl-dev
+  musl-dev \
   ca-certificates \
   libffi-dev \
   'python3-dev<3.8' \
@@ -53,7 +53,7 @@ RUN pip3 install -U pip && \
   apk del \
     gcc \
     cargo \
-    musl-dev
+    musl-dev \
     ca-certificates \
     libffi-dev \
     'python3-dev<3.8' \
