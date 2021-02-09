@@ -53,7 +53,7 @@ RUN apk add --no-cache --virtual \
   && \
   pip3 install -U pip \
   && pip3 install -r requirements.txt \
-  && apk del --virtual \
+  && apk del \
             .build-deps \
             alpine-sdk \
             gcc \
