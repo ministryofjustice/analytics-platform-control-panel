@@ -1,5 +1,3 @@
-{% from "whats-new/macro.html" import whats_new_notification %}
-
 {% macro mojHeader(params) %}
 <header class="moj-header {{- ' ' + params.classes if params.classes else '' }}" role="banner" {%- for attribute, value in params.attributes -%} {{ attribute }}="{{ value }}"{% endfor %}>
 

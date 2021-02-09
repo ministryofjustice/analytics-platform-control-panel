@@ -415,14 +415,6 @@ STATICFILES_FINDERS = [
 ]
 
 
-# -- What's new
-
-WHATS_NEW_URL = (
-    "https://raw.githubusercontent.com/moj-analytical-services/"
-    "platform_user_guidance/master/changelog/whats_new.md"
-)
-
-
 # -- Tool deployments
 
 TOOLS = {
