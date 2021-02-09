@@ -51,18 +51,7 @@ RUN apk add --no-cache \
             postgresql-client \
   && \
   pip3 install -U pip \
-  && pip3 install -r requirements.txt \
-  && apk del \
-            alpine-sdk \
-            gcc \
-            cargo \
-            musl-dev \
-            ca-certificates \
-            libffi-dev \
-            python3-dev \
-            py3-pip \
-            libressl-dev \
-            postgresql-dev
+  && pip3 install -r requirements.txt
 
 USER controlpanel
 COPY controlpanel controlpanel
