@@ -33,7 +33,7 @@ RUN apk add --no-cache \
   libffi-dev \
   'python3-dev<3.8' \
   libressl-dev \
-  libstdc++=8.3.0-r0 \
+  libstdc++ \
   postgresql-dev \
   postgresql-client
 
