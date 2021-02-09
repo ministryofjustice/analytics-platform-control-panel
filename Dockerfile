@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --outp
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM quay.io/mojanalytics/alpine:3.10 AS base
+FROM alpine:3.13 AS base
 
 ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -24,17 +24,6 @@ RUN addgroup -g 1000 -S controlpanel && \
 
 WORKDIR /home/controlpanel
 
-# install build dependencies
-RUN apk add --no-cache \
-  build-base \
-  ca-certificates \
-  libffi-dev=3.2.1-r6 \
-  'python3-dev<3.8' \
-  libressl-dev=2.7.5-r0 \
-  libstdc++=8.3.0-r0 \
-  postgresql-dev \
-  postgresql-client
-
 # download and install helm
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
 RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
@@ -44,13 +33,36 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-# install python dependencies (and then remove build dependencies)
 COPY requirements.txt manage.py ./
-RUN pip3 install -U pip && \
-  pip3 install -r requirements.txt && \
-  apk del build-base
 
-RUN pip3 install django-debug-toolbar
+RUN apk add --no-cache \
+            python3 \
+            alpine-sdk \
+            gcc \
+            cargo \
+            musl-dev \
+            ca-certificates \
+            libffi-dev \
+            python3-dev \
+            py3-pip \
+            libressl-dev \
+            postgresql-dev \
+            libstdc++ \
+            postgresql-client \
+  && \
+  pip3 install -U pip \
+  && pip3 install -r requirements.txt \
+  && apk del \
+            alpine-sdk \
+            gcc \
+            cargo \
+            musl-dev \
+            ca-certificates \
+            libffi-dev \
+            python3-dev \
+            py3-pip \
+            libressl-dev \
+            postgresql-dev
 
 USER controlpanel
 COPY controlpanel controlpanel

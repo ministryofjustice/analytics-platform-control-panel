@@ -4,6 +4,7 @@ name: Run tests and push Docker image on success
   push:
     branches: [main]
   pull_request:
+  release:
 
 jobs:
   test-and-push:
