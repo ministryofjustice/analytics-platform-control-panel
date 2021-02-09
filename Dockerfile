@@ -27,6 +27,7 @@ WORKDIR /home/controlpanel
 # install build dependencies
 RUN apk add --no-cache \
   build-base \
+  cargo \
   ca-certificates \
   libffi-dev=3.2.1-r6 \
   'python3-dev<3.8' \
@@ -48,7 +49,7 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
 COPY requirements.txt manage.py ./
 RUN pip3 install -U pip && \
   pip3 install -r requirements.txt && \
-  apk del build-base
+  apk del build-base cargo
 
 RUN pip3 install django-debug-toolbar
 
