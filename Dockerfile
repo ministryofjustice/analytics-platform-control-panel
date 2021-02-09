@@ -24,8 +24,6 @@ RUN addgroup -g 1000 -S controlpanel && \
 
 WORKDIR /home/controlpanel
 
-apk add gcc
-
 # install build dependencies
 RUN apk add --no-cache \
   gcc
