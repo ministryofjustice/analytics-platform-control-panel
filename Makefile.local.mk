@@ -40,6 +40,9 @@ clean-bytecode:
 	@echo "> Removing compiled bytecode..."
 	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
 
+dev-dependencies:
+	docker-compose build dev-packages
+
 dev-up: prepare-up
 	aws-vault exec data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
@@ -49,7 +52,7 @@ dev-nod: prepare-up
 dev-io: clean dev-up
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
-dev-ior: 
+dev-ior:
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
 dev-shell:

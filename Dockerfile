@@ -33,8 +33,6 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-COPY requirements.txt manage.py ./
-
 RUN apk add --no-cache \
             python3 \
             alpine-sdk \
@@ -49,9 +47,12 @@ RUN apk add --no-cache \
             postgresql-dev \
             libstdc++ \
             postgresql-client \
-  && \
-  pip3 install -U pip \
-  && pip3 install -r requirements.txt
+  && pip3 install -U pip
+
+COPY requirements.txt requirements.dev.txt manage.py ./
+RUN pip3 install -r requirements.txt
+RUN python3 -m venv --system-site-pacakges dev-packages \
+    && dev-packages/bin/pip3 install -r requirements.dev.txt
 
 USER controlpanel
 COPY controlpanel controlpanel
