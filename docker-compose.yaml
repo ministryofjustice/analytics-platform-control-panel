@@ -69,7 +69,7 @@ services:
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
-    command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
       AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
       AIRFLOW_AUTH_CLIENT_SECRET: ${AIRFLOW_AUTH_CLIENT_SECRET}
