@@ -40,10 +40,6 @@ clean-bytecode:
 	@echo "> Removing compiled bytecode..."
 	@find controlpanel -name '__pycache__' -d -prune -exec rm -r {} +
 
-dev-dependencies:
-	docker-compose build dev-packages
-
-
 prepare-dev-up:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
 
