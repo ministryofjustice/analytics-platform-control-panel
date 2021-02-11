@@ -49,5 +49,5 @@ help: Makefile
 	@echo
 	@echo " Commands in "$(REPOSITORY)":"
 	@echo
-	@sed -n 's/^##//p' $< | column -t -s ':' | sed -e 's/^/ /'
+	@sed -n 's/^##//p' $< Makefile.local.mk | column -t -s ':' | sed -e 's/^/ /'
 	@echo
