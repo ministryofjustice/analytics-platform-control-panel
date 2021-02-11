@@ -50,8 +50,10 @@ RUN apk add --no-cache \
   && pip3 install -U pip
 
 COPY requirements.txt requirements.dev.txt manage.py ./
+RUN pip3 install -U --no-cache-dir pip
 RUN pip3 install -r requirements.txt
-RUN python3 -m venv --system-site-pacakges dev-packages \
+RUN python3 -m venv --system-site-packages dev-packages \
+    && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
 
 USER controlpanel
