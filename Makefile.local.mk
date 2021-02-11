@@ -47,20 +47,23 @@ dev-dependencies:
 prepare-dev-up:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
 
-dev-up: prepare-dev-up
+dev-daemon: prepare-dev-up # Startup with docker process in background (to stop afterwards use make clean)
 	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
-dev-nod: prepare-dev-up
+dev-fg: prepare-dev-up # Startup with docker process in foreground
 	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
 
-dev-io: clean dev-up
+dev-debug: clean dev-daemon # Startup clean docker process in background, and docker attach to foreground for debugging
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
-dev-ior:
+dev-attach: # Attach to existing running background docker process for purposes of debugging
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
-dev-shell:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh
+dev-py: # Start django shell (in the dev-packages context) in new container
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python3 manage.py shell"
 
-dev-exec:
+dev-run: # Start shell in new copy of container
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend sh
+
+dev-exec: # Exec into shell of existing container
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh
