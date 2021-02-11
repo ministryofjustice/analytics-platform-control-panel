@@ -43,10 +43,14 @@ clean-bytecode:
 dev-dependencies:
 	docker-compose build dev-packages
 
-dev-up: prepare-up
-	aws-vault exec data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
-dev-nod: prepare-up
+prepare-dev-up:
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
+
+dev-up: prepare-dev-up
+	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
+
+dev-nod: prepare-dev-up
 	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
 
 dev-io: clean dev-up
