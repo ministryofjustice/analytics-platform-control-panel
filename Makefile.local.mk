@@ -1,6 +1,3 @@
-${BIN}:
-	@if [ -z "$$NO_VIRTUAL_ENV" -a ! -d "${VIRTUAL_ENV}" ]; then echo "\n> Initializing virtualenv..."; python3 -m venv ${VIRTUAL_ENV}; fi
-
 ## dependencies: Install dependencies
 dependencies: ${BIN} requirements.txt
 	@echo
