@@ -1,10 +1,4 @@
-## dependencies: Install dependencies
-dependencies: ${BIN} requirements.txt
-	@echo
-	@echo "> Fetching dependencies..."
-	@${BIN}/pip3 install -r requirements.txt
-	@${BIN}/pip3 freeze > requirements.lock
-	@if [ ! "${DEV}" = "false" ]; then ${BIN}/pip3 install -r requirements.dev.txt; fi
+all: help
 
 ## collectstatic: Collect assets into static folder
 collectstatic: dependencies node_modules compilescss transpile
