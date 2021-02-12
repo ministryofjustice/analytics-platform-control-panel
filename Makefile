@@ -10,7 +10,7 @@ MAKEFLAGS += -j2
 include Makefile.local.mk
 export
 
-.PHONY: clean build help test test-python dependencies collectstatic node_modules compilescss transpile clean-bytecode dev-up
+.PHONY: clean build help test test-python dev-up
 
 clean:
 	docker-compose down --volumes --remove-orphans
@@ -18,7 +18,6 @@ clean:
 build:
 	@docker-compose build frontend
 
-## docker-test: Run tests in Docker container
 test-python: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-python:
 	@echo
@@ -26,6 +25,7 @@ test-python:
 	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig \
 		frontend sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
 
+## test: Run tests in Docker container
 test: test-python
 
 prepare-up:
