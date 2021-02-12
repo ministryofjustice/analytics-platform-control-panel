@@ -6,11 +6,11 @@ dev-prepare-up:
 
 ## dev-daemon: Startup with docker process in background (to stop afterwards use make clean)
 dev-daemon: dev-prepare-up
-	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
+	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
 ## dev-fg: Startup with docker process in foreground
 dev-fg: dev-prepare-up
-	aws-vault exec restricted-data -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
+	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
 
 ## dev-debug: Startup clean docker process in background, and docker attach to foreground for debugging
 dev-debug: clean dev-daemon
