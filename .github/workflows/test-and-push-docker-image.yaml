@@ -100,6 +100,5 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
           docker login -u ${QUAY_USERNAME} -p ${QUAY_PASSWORD} quay.io
-          docker images | grep panel
-          # docker tag "${REGISTRY}/control-panel:${IMAGE_TAG}" "quay.io/mojanalytics/control-panel:${IMAGE_TAG}"
-          # docker push "quay.io/mojanalytics/control-panel:${IMAGE_TAG}"
+          docker tag "${REGISTRY}/controlpanel:${IMAGE_TAG}" "quay.io/mojanalytics/control-panel:${IMAGE_TAG}"
+          docker push "quay.io/mojanalytics/control-panel:${IMAGE_TAG}"
