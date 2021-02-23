@@ -1,21 +1,20 @@
 import logging
 
 from asgiref.sync import async_to_sync
+from controlpanel.api import cluster
+from controlpanel.api.models import Tool, ToolDeployment
+from controlpanel.frontend.consumers import start_background_task
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
 from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
-from django.db.models import Q
-from controlpanel.api import cluster
-from controlpanel.api.models import (
-    Tool,
-    ToolDeployment,
-)
-from controlpanel.frontend.consumers import start_background_task
-
 
 log = logging.getLogger(__name__)
 
@@ -133,6 +132,13 @@ class DeployTool(LoginRequiredMixin, RedirectView):
 class RestartTool(LoginRequiredMixin, RedirectView):
     http_method_names = ["post"]
     url = reverse_lazy("list-tools")
+
+    def dispatch(self, *args, **kwargs):
+        current_seconds = timezone.now().timestamp()
+        token_expiry_seconds = self.request.session.get('oidc_id_token_expiration', 0)
+        if current_seconds > token_expiry_seconds:
+            return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL_FAILURE)
+        return super().dispatch(*args, **kwargs)
 
     def get_redirect_url(self, *args, **kwargs):
         name = self.kwargs["name"]
