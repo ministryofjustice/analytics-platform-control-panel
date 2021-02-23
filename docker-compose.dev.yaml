@@ -1,0 +1,19 @@
+version: "3"
+
+services:
+  frontend:
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    stdin_open: true
+    tty: true
+    command: ["dev-packages/bin/python3", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes: [./controlpanel:/home/controlpanel/controlpanel]
+  migration:
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    volumes: [./controlpanel:/home/controlpanel/controlpanel]
+    command: sh -c "until pg_isready -h db; do sleep 2; done; dev-packages/bin/python3 manage.py migrate"
+  worker:
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    stdin_open: true
+    tty: true
+    volumes: [./controlpanel:/home/controlpanel/controlpanel]
+    command: ["dev-packages/bin/python3", "manage.py", "runworker", "background_tasks"]

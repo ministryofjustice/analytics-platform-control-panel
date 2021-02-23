@@ -67,7 +67,6 @@ from controlpanel.frontend.views.release import (
     ReleaseCreate,
 )
 from controlpanel.frontend.views.reset import ResetHome
-from controlpanel.frontend.views.whats_new import WhatsNew
 from controlpanel.frontend.views.accessibility import Accessibility 
 from controlpanel.frontend.views.login_fail import LoginFail
 from controlpanel.frontend.views.help import Help

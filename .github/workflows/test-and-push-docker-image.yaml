@@ -4,31 +4,13 @@ name: Run tests and push Docker image on success
   push:
     branches: [main]
   pull_request:
+  release:
 
 jobs:
-  test-js:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [8.x, 10.x, 12.x]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
-        with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install JavaScript dependencies
-        run: npm install
-
-      - name: Run JavaScript tests
-        run: npm run test -- --coverage --collectCoverage=true
-
-  test-and-push-docker:
+  test-and-push:
     runs-on: [self-hosted, ecr]
-    needs: [test-js]
+    env:
+      LOGS_BUCKET_NAME: moj-analytics-s3-logs
     steps:
       - name: Checkout
         uses: actions/checkout@v2

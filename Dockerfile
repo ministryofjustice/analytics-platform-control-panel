@@ -1,4 +1,15 @@
-FROM quay.io/mojanalytics/alpine:3.10 AS base
+FROM quay.io/mojanalytics/node:8-alpine AS jsdep
+COPY package.json package-lock.json ./
+COPY jest.config.js controlpanel/frontend/static /src/
+
+RUN npm install
+RUN mkdir -p dist &&\
+  ./node_modules/.bin/babel src/module-loader.js src/components src/javascripts -o dist/app.js -s
+RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --output-style compact src/app.scss
+WORKDIR /src
+RUN /node_modules/.bin/jest
+
+FROM alpine:3.13 AS base
 
 ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -13,17 +24,6 @@ RUN addgroup -g 1000 -S controlpanel && \
 
 WORKDIR /home/controlpanel
 
-# install build dependencies
-RUN apk add --no-cache \
-  build-base=0.5-r1 \
-  ca-certificates \
-  libffi-dev=3.2.1-r6 \
-  'python3-dev<3.8' \
-  libressl-dev=2.7.5-r0 \
-  libstdc++=8.3.0-r0 \
-  postgresql-dev \
-  postgresql-client
-
 # download and install helm
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
 RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
@@ -33,38 +33,33 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-# install python dependencies (and then remove build dependencies)
-COPY requirements.lock manage.py ./
-RUN pip3 install -U pip && \
-  pip3 install -r requirements.lock && \
-  apk del build-base
+RUN apk add --no-cache \
+            python3 \
+            alpine-sdk \
+            gcc \
+            cargo \
+            musl-dev \
+            ca-certificates \
+            libffi-dev \
+            python3-dev \
+            py3-pip \
+            libressl-dev \
+            postgresql-dev \
+            libstdc++ \
+            postgresql-client \
+  && pip3 install -U pip
 
-RUN pip3 install django-debug-toolbar
+COPY requirements.txt requirements.dev.txt manage.py ./
+RUN pip3 install -U --no-cache-dir pip
+RUN pip3 install -r requirements.txt
+RUN python3 -m venv --system-site-packages dev-packages \
+    && dev-packages/bin/pip3 install -U --no-cache-dir pip \
+    && dev-packages/bin/pip3 install -r requirements.dev.txt
 
 USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
-
-# fetch javascript dependencies in separate stage
-FROM quay.io/mojanalytics/node:8-alpine AS jsdep
-COPY package.json package-lock.json ./
-COPY controlpanel/frontend/static src
-RUN npm install && \
-  mkdir -p dist && \
-  ./node_modules/.bin/babel \
-  src/module-loader.js \
-  src/components \
-  src/javascripts \
-  -o dist/app.js -s && \
-  ./node_modules/.bin/node-sass \
-  --include-path ./node_modules/ \
-  -o dist/ \
-  --output-style compact \
-  src/app.scss
-
-FROM base
-USER controlpanel
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.css dist/app.js static/

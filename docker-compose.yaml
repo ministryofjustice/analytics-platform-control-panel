@@ -5,8 +5,8 @@ services:
     network_mode: ${NETWORK:-default}
     environment:
       POSTGRES_DB: "controlpanel"
-      POSTGRES_USER: "controlpanel"
       POSTGRES_PASSWORD: "password"
+      POSTGRES_USER: "controlpanel"
 
   redis:
     image: "redis"
@@ -23,35 +23,41 @@ services:
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
-      DB_USER: "controlpanel"
       DB_PASSWORD: "password"
       DB_PORT: 5432
+      DB_USER: "controlpanel"
       DEBUG: "True"
       PYTHONUNBUFFERED: "1"
       SLACK_API_TOKEN: "dummy"
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
     command: sh -c "until pg_isready -h db; do sleep 2; done; ./manage.py migrate"
 
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     network_mode: ${NETWORK:-default}
-    depends_on: [redis,db]
-    links: [redis,db]
-    environment:
-      ALLOWED_HOSTS: "*"
-      DB_HOST: "db"
-      DB_NAME: "controlpanel"
-      DB_USER: "controlpanel"
-      DB_PORT: 5432
-      DEBUG: "True"
-      PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "redis"
-      REDIS_PASSWORD: "controlpanel"
-      SLACK_API_TOKEN: "dummy"
+    depends_on: [redis, db]
+    links: [redis, db]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
+    environment:
+      DB_HOST: "db"
+      DB_NAME: controlpanel
+      DB_PASSWORD: password
+      DB_PORT: 5432
+      DB_USER: controlpanel
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      ENV: "dev"
+      OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
+      PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "redis"
+      REDIS_PASSWORD: "controlpanel"
+      SECRET_KEY: "1234567890"
+      SLACK_API_TOKEN: "dummy"
+      defaultRegion: eu-west-1
+      iamRole: ${iamRole:-dev_control_panel_api}
 
-  cpanel:
+  frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
@@ -59,20 +65,60 @@ services:
     network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
     depends_on: [worker, db]
-    links: [worker, db]
+    links: [worker, db, redis]
+    volumes:
+      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
+      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
+    # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
-      ALLOWED_HOSTS: "*"
+      AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
+      AIRFLOW_AUTH_CLIENT_SECRET: ${AIRFLOW_AUTH_CLIENT_SECRET}
+      AIRFLOW_FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW_SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}
+      AWS_COMPUTE_ACCOUNT_ID: ${AWS_COMPUTE_ACCOUNT_ID}
+      AWS_DATA_ACCOUNT_ID: ${AWS_DATA_ACCOUNT_ID}
+      AWS_DEFAULT_REGION:
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       DB_HOST: "db"
-      DB_NAME: "controlpanel"
-      DB_USER: "controlpanel"
-      DB_PASSWORD: "password"
+      DB_NAME: controlpanel
+      DB_PASSWORD: password
       DB_PORT: 5432
+      DB_USER: controlpanel
       DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
+      ENV: "dev"
+      IAM_ARN_BASE: ${IAM_ARN_BASE}
+      JUPYTER_LAB_AUTH_CLIENT_ID: ${JUPYTER_LAB_AUTH_CLIENT_ID}
+      JUPYTER_LAB_AUTH_CLIENT_SECRET: ${JUPYTER_LAB_AUTH_CLIENT_SECRET}
+      K8S_WORKER_ROLE_NAME: ${K8S_WORKER_ROLE_NAME}
+      LOGS_BUCKET_NAME: ${LOGS_BUCKET_NAME}
+      NFS_HOSTNAME: ${NFS_HOSTNAME}
+      OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
+      OIDC_OP_AUTHORIZATION_ENDPOINT: ${OIDC_OP_AUTHORIZATION_ENDPOINT}
+      OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
+      OIDC_OP_TOKEN_ENDPOINT: ${OIDC_OP_TOKEN_ENDPOINT}
+      OIDC_OP_USER_ENDPOINT: ${OIDC_OP_USER_ENDPOINT}
+      OIDC_RP_SIGN_ALGO: "RS256"
       PYTHONUNBUFFERED: "1"
       REDIS_HOST: "redis"
       REDIS_PASSWORD: "controlpanel"
+      RSTUDIO_AUTH_CLIENT_ID: ${RSTUDIO_AUTH_CLIENT_ID}
+      RSTUDIO_AUTH_CLIENT_SECRET: ${RSTUDIO_AUTH_CLIENT_SECRET}
+      SAML_PROVIDER: ${SAML_PROVIDER}
+      SECRET_KEY: "1234567890"
       SLACK_API_TOKEN: "dummy"
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
-      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
-    command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+      SLACK_CHANNEL: ${SLACK_CHANNEL}
+      TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
+      defaultRegion: eu-west-1
+      iamRole: ${iamRole:-dev_control_panel_api}
