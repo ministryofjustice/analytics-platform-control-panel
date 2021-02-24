@@ -67,7 +67,7 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         current_seconds = timezone.now().timestamp()
-        token_expiry_seconds = self.request.session.get('oidc_id_token_expiration', 0)
+        token_expiry_seconds = self.request.session.get('oidc_id_token_expiration')
         if token_expiry_seconds and \
                 current_seconds > token_expiry_seconds:
             return self.handle_no_permission()
