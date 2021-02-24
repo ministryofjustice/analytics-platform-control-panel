@@ -133,13 +133,6 @@ class RestartTool(OIDCLoginRequiredMixin, RedirectView):
     http_method_names = ["post"]
     url = reverse_lazy("list-tools")
 
-    def dispatch(self, *args, **kwargs):
-        current_seconds = timezone.now().timestamp()
-        token_expiry_seconds = self.request.session.get('oidc_id_token_expiration', 0)
-        if current_seconds > token_expiry_seconds:
-            return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL_FAILURE)
-        return super().dispatch(*args, **kwargs)
-
     def get_redirect_url(self, *args, **kwargs):
         name = self.kwargs["name"]
 
