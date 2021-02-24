@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --outp
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM alpine:3.13 AS base
+FROM quay.io/mojanalytics/alpine:3.13 AS base
 
 ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
