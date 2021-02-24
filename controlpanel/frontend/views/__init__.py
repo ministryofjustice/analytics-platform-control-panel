@@ -1,4 +1,3 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import TemplateView
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -70,9 +69,10 @@ from controlpanel.frontend.views.reset import ResetHome
 from controlpanel.frontend.views.accessibility import Accessibility 
 from controlpanel.frontend.views.login_fail import LoginFail
 from controlpanel.frontend.views.help import Help
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class IndexView(LoginRequiredMixin, TemplateView):
+class IndexView(OIDCLoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
     def get(self, request):

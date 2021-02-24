@@ -2,7 +2,6 @@ import re
 import logging
 
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -35,12 +34,12 @@ from controlpanel.frontend.forms import (
     CreateAppForm,
     GrantAppAccessForm,
 )
-
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = logging.getLogger(__name__)
 
 
-class AppList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class AppList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'apps'
     model = App
     permission_required = 'api.list_app'
@@ -63,7 +62,7 @@ class AdminAppList(AppList):
         return App.objects.all().prefetch_related('userapps')
 
 
-class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = 'app'
     model = App
     permission_required = 'api.retrieve_app'
@@ -102,7 +101,7 @@ class AppDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class CreateApp(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = CreateAppForm
     model = App
     permission_required = 'api.create_app'
@@ -162,7 +161,7 @@ class CreateApp(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
 
 class GrantAppAccess(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     CreateView,
 ):
@@ -206,7 +205,7 @@ class GrantAppAccess(
         raise Exception(form.errors)
 
 
-class RevokeAppAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = AppS3Bucket
     permission_required = 'api.remove_app_bucket'
 
@@ -215,7 +214,7 @@ class RevokeAppAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
 
-class UpdateAppAccess(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class UpdateAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = AppS3Bucket
     permission_required = 'api.update_apps3bucket'
     fields = ['access_level']
@@ -227,7 +226,7 @@ class UpdateAppAccess(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
 
-class DeleteApp(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class DeleteApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = App
     permission_required = 'api.destroy_app'
     success_url = reverse_lazy("list-apps")
@@ -239,7 +238,7 @@ class DeleteApp(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
 
 class UpdateApp(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     SingleObjectMixin,
     RedirectView,
@@ -255,7 +254,7 @@ class UpdateApp(
         return super().post(request, *args, **kwargs)
 
 
-class AddCustomers(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     form_class = AddAppCustomersForm
     model = App
     permission_required = 'api.add_app_customer'

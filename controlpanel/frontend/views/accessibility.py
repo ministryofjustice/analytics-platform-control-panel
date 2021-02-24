@@ -1,7 +1,8 @@
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.base import TemplateView
 
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
-class Accessibility(LoginRequiredMixin, TemplateView):
+
+class Accessibility(OIDCLoginRequiredMixin, TemplateView):
     template_name = "a11y.html"
