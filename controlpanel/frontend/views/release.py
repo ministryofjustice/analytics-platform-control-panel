@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.edit import DeleteView, UpdateView, CreateView
@@ -9,9 +8,10 @@ from django.http.response import HttpResponseRedirect
 
 from controlpanel.api.models import Tool
 from controlpanel.frontend.forms import ToolReleaseForm
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class ReleaseList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     """
     Used to display a list of releases of the tools available in the control
     panel application.
@@ -24,7 +24,7 @@ class ReleaseList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     ordering = ["name", "version"]
 
 
-class ReleaseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class ReleaseDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     """
     Deletes a release for a tool from the control panel application.
     """
@@ -36,7 +36,7 @@ class ReleaseDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         return reverse_lazy("list-tool-releases")
 
 
-class ReleaseDetail(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     """
     Displays and allows editing of a specific release.
     """
@@ -68,7 +68,7 @@ class ReleaseDetail(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return HttpResponseRedirect(reverse_lazy("list-tool-releases"))
 
 
-class ReleaseCreate(LoginRequiredMixin,PermissionRequiredMixin,CreateView):
+class ReleaseCreate(OIDCLoginRequiredMixin,PermissionRequiredMixin,CreateView):
     """
     Create a new release of a tool on the analytic platform.
     """

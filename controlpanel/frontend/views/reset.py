@@ -1,13 +1,13 @@
 from django.conf import settings
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from controlpanel.frontend.forms import ResetHomeDirectoryForm
 from controlpanel.frontend.consumers import start_background_task
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class ResetHome(LoginRequiredMixin, FormView):
+class ResetHome(OIDCLoginRequiredMixin, FormView):
     """
     A view to help automate the resetting of the user's home directory. To be
     used when, for example, their conda or r-studio deployment gets into a bad

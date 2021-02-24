@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.urls import reverse_lazy
 from django.views import View
@@ -13,9 +12,10 @@ from controlpanel.api.models import Parameter
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 from controlpanel.api.permissions import is_superuser
 from controlpanel.frontend.forms import CreateParameterForm
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class ParameterList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ParameterList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'parameters'
     model = Parameter
     permission_required = 'api.list_parameter'
@@ -32,7 +32,7 @@ class AdminParameterList(ParameterList):
         return Parameter.objects.all()
 
 
-class ParameterCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class ParameterCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = CreateParameterForm
     model = Parameter
     permission_required = 'api.create_parameter'
@@ -70,7 +70,7 @@ class ParameterCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
 
 
-class ParameterDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class ParameterDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Parameter
     permission_required = 'api.destroy_parameter'
 
@@ -85,7 +85,7 @@ class ParameterDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         return queryset.filter(created_by=self.request.user)
 
 
-class ParameterFormRoleList(LoginRequiredMixin, View):
+class ParameterFormRoleList(OIDCLoginRequiredMixin, View):
 
     def get(self, *args, **kwargs):
         roles = cluster.list_role_names()

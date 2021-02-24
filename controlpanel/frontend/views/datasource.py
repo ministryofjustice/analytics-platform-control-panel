@@ -1,7 +1,6 @@
 from itertools import chain
 
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -30,7 +29,7 @@ from controlpanel.frontend.forms import (
     CreateDatasourceForm,
     GrantAccessForm,
 )
-
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 DATASOURCE_TYPES = [
     'warehouse',
@@ -59,7 +58,7 @@ class DatasourceMixin(ContextMixin):
 
 
 class BucketList(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     DatasourceMixin,
     ListView,
@@ -107,7 +106,7 @@ class WebappBucketList(BucketList):
 
 
 class BucketDetail(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     DatasourceMixin,
     DetailView,
@@ -140,7 +139,7 @@ class BucketDetail(
 
 
 class CreateDatasource(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     DatasourceMixin,
     CreateView,
@@ -177,7 +176,7 @@ class CreateDatasource(
 
 
 class DeleteDatasource(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     DeleteView,
 ):
@@ -230,7 +229,7 @@ class UpdateAccessLevelMixin:
 
 class UpdateAccessLevel(
     UpdateAccessLevelMixin,
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     UpdateView,
 ):
@@ -255,7 +254,7 @@ class UpdateAccessLevel(
 
 class UpdateIAMManagedPolicyAccessLevel(
     UpdateAccessLevelMixin,
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     UpdateView,
 ):
@@ -278,7 +277,7 @@ class UpdateIAMManagedPolicyAccessLevel(
         return context_data
 
 
-class RevokeAccess(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class RevokeAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = UserS3Bucket
     permission_required = 'api.destroy_users3bucket'
 
@@ -323,7 +322,7 @@ class GrantAccessMixin:
 
 class GrantAccess(
     GrantAccessMixin,
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     CreateView,
 ):
@@ -365,7 +364,7 @@ class GrantAccess(
 
 class GrantPolicyAccess(
     GrantAccessMixin,
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     CreateView,
 ):
