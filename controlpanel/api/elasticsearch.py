@@ -53,7 +53,7 @@ def app_logs(app, num_hours=None):
     s = s.filter(
         Q('exists', field='message')
         & Q('term', **{
-            "app_name.keyword": f'{app.release_name}-webapp',
+            "kubernetes.labels.app.keyword": f'{app.release_name}-webapp',
         })
     )
 

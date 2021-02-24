@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse, HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -13,9 +12,10 @@ from controlpanel.api import cluster
 from controlpanel.api.models import IAMManagedPolicy, User
 from controlpanel.api.permissions import is_superuser
 from controlpanel.frontend.forms import CreateIAMManagedPolicyForm, AddUserToIAMManagedPolicyForm
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class IAMManagedPolicyList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class IAMManagedPolicyList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'policies'
     model = IAMManagedPolicy
     permission_required = 'api.list_policy'
@@ -32,7 +32,7 @@ class AdminIAMManagedPolicyList(IAMManagedPolicyList):
         return IAMManagedPolicy.objects.all()
 
 
-class IAMManagedPolicyCreate(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class IAMManagedPolicyCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = CreateIAMManagedPolicyForm
     model = IAMManagedPolicy
     permission_required = 'api.create_policy'
@@ -58,7 +58,7 @@ class IAMManagedPolicyCreate(LoginRequiredMixin, PermissionRequiredMixin, Create
 
 
 
-class IAMManagedPolicyDetail(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class IAMManagedPolicyDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     form_class = AddUserToIAMManagedPolicyForm
     model = IAMManagedPolicy
     permission_required = 'api.create_policy'
@@ -96,7 +96,7 @@ class IAMManagedPolicyDetail(LoginRequiredMixin, PermissionRequiredMixin, Update
         return FormMixin.form_valid(self, form)
 
 
-class IAMManagedPolicyDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class IAMManagedPolicyDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = IAMManagedPolicy
     permission_required = 'api.destroy_policy'
 
@@ -111,7 +111,7 @@ class IAMManagedPolicyDelete(LoginRequiredMixin, PermissionRequiredMixin, Delete
         return queryset.filter(created_by=self.request.user)
 
 
-class IAMManagedPolicyFormRoleList(LoginRequiredMixin, View):
+class IAMManagedPolicyFormRoleList(OIDCLoginRequiredMixin, View):
 
     def get(self, *args, **kwargs):
         roles = cluster.list_role_names()
@@ -123,7 +123,7 @@ class IAMManagedPolicyFormRoleList(LoginRequiredMixin, View):
         return JsonResponse(data, safe=False)
 
 
-class IAMManagedPolicyRemoveUser(LoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, View):
+class IAMManagedPolicyRemoveUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, View):
     model = IAMManagedPolicy
     permission_required = 'api.update_policy'
 

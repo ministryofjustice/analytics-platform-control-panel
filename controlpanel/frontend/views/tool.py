@@ -1,26 +1,25 @@
 import logging
 
 from asgiref.sync import async_to_sync
+from controlpanel.api import cluster
+from controlpanel.api.models import Tool, ToolDeployment
+from controlpanel.frontend.consumers import start_background_task
+from controlpanel.oidc import OIDCLoginRequiredMixin
+from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
 from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
-from django.db.models import Q
-from controlpanel.api import cluster
-from controlpanel.api.models import (
-    Tool,
-    ToolDeployment,
-)
-from controlpanel.frontend.consumers import start_background_task
-
 
 log = logging.getLogger(__name__)
 
 
-class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "tools"
     model = Tool
     permission_required = "api.list_tool"
@@ -107,7 +106,7 @@ class ToolList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class DeployTool(LoginRequiredMixin, RedirectView):
+class DeployTool(OIDCLoginRequiredMixin, RedirectView):
     http_method_names = ["post"]
     url = reverse_lazy("list-tools")
 
@@ -130,7 +129,7 @@ class DeployTool(LoginRequiredMixin, RedirectView):
         return super().get_redirect_url(*args, **kwargs)
 
 
-class RestartTool(LoginRequiredMixin, RedirectView):
+class RestartTool(OIDCLoginRequiredMixin, RedirectView):
     http_method_names = ["post"]
     url = reverse_lazy("list-tools")
 

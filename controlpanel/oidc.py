@@ -1,15 +1,16 @@
 import logging
 from urllib.parse import urlencode
 
+from django.utils import timezone
+
+from controlpanel.api.models import User
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import SuspiciousOperation
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
-
-from controlpanel.api.models import User
-
 
 log = logging.getLogger(__name__)
 
@@ -58,3 +59,16 @@ def logout(request):
         "client_id": settings.OIDC_RP_CLIENT_ID,
     })
     return f"{settings.AUTH0['logout_url']}?{params}"
+
+
+class OIDCLoginRequiredMixin(LoginRequiredMixin):
+    """Verify that the current user is (still) authenticated."""
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        current_seconds = timezone.now().timestamp()
+        token_expiry_seconds = self.request.session.get('oidc_id_token_expiration')
+        if token_expiry_seconds and \
+                current_seconds > token_expiry_seconds:
+            return self.handle_no_permission()
+        return super().dispatch(request, *args, **kwargs)

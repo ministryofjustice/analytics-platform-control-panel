@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% set page_title = "Help" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+
+
+
+
+    <h1 class="govuk-heading-xl">Help</h1>
+
+    <p class="govuk-body">Common queries, support tasks and problems are
+    explained in the following videos.</p>
+
+    <p class="govuk-body">Should you still require help, please visit our
+    <a target="_blank" href="https://user-guidance.services.alpha.mojanalytics.xyz/#content">help and support documentation</a>.
+    If you encounter a technical issue with our infrastructure, please visit our
+    <a target="_blank" href="https://asdslack.slack.com/messages/C4PF7QAJZ#">support channel on Slack</a>.
+    Please remember to tell us your GitHub username and the name of any
+    affected S3 buckets or applications on the Analytical Platform that are
+    affected by the problem.</p>
+
+    <h2 class="govuk-heading-m">What is the Analytical Platform?</h2>
+
+    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/5467Hl3X9EI" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+    <p>Related links:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>The
+            <a target="_blank"
+               href="https://user-guidance.services.alpha.mojanalytics.xyz/get-started.html#get-started">getting started guide</a>
+            for new joiners.</li>
+        <li>Our
+            <a target="_blank"
+               href="https://user-guidance.services.alpha.mojanalytics.xyz/#content">help and support documentation</a>
+            for users of the platform.</li>
+        <li>A
+            <a target="_blank"
+               href="https://controlpanel.services.alpha.mojanalytics.xyz/">link to the platform</a> itself.</li>
+    </ul>
+
+    <h2 class="govuk-heading-m">Home Directory Reset</h2>
+
+    <p class="govuk-body">You need to reset your home directory if any of the
+    following applies:</p>
+
+    <ul class="govuk-list govuk-list--bullet">
+        <li>Your RStudio won't start.</li>
+        <li>Your Conda environment is a mess.</li>
+        <li>You need to start RStudio development from a clean state.</li>
+    </ul>
+
+    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/ziu8dWRRcVM" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+    <ol class="govuk-list govuk-list--number">
+        <li>From the <a href="{{ url("list-tools")}}">Analytic tools</a> page,
+        follow the link to <a href="{{ url('home-reset') }}">reset your home page</a>.</li>
+        <li>Read the information about what a home reset entails.</li>
+        <li>Enable the confirmation check-box and click the red "Reset" button.</li>
+        <li>You'll be returned to the Analytic tools page, but will see a
+        confirmation that the reset is underway.</li>
+        <li>Depending on the size of your home directory, this process can
+        take between seconds to a couple of minutes. Go make a coffee!</li>
+        <li>Finally, on the <a href="{{ url("list-tools")}}">Analytic tools</a>
+        page, click the "Restart" button for RStudio.</li>
+        <li>Give RStudio a few minutes to start up.</li>
+    </ol>
+
+
+
+      </div>
+    </div>
+{% endblock %}

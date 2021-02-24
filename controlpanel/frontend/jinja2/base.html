@@ -119,6 +119,11 @@
         "active": page_name == "groups",
         "admin": request.user.is_superuser,
       },
+      {
+        "text": "Help",
+        "href": url("help"),
+        "active": page_name == "help",
+      },
     ],
   }) }}
   {% endif %}

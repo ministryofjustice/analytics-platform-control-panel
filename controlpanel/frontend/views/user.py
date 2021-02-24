@@ -1,7 +1,6 @@
 import dateutil.parser
 from datetime import datetime, timedelta
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
@@ -11,6 +10,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 from controlpanel.api import auth0
 from controlpanel.api.models import User
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
 def ninety_days_ago():
@@ -22,7 +22,7 @@ def ninety_days_ago():
     return datetime.now().date() - timedelta(days=90)
 
 
-class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class UserList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = 'users'
     model = User
     permission_required = 'api.list_user'
@@ -49,7 +49,7 @@ class UserList(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class UserDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class UserDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = User
     permission_required = 'api.destroy_user'
 
@@ -58,7 +58,7 @@ class UserDelete(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
         return reverse_lazy("list-users")
 
 
-class UserDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class UserDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = 'user'
     model = User
     permission_required = 'api.retrieve_user'
@@ -77,7 +77,7 @@ class UserDetail(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class SetSuperadmin(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     fields = ['is_superuser']
     http_method_names = ['post']
     model = User
@@ -89,7 +89,7 @@ class SetSuperadmin(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
 
 class ResetMFA(
-    LoginRequiredMixin,
+    OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     SingleObjectMixin,
     RedirectView,
