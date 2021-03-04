@@ -5,3 +5,4 @@ pylint==2.4.4
 pylint-django==2.0.15
 ipython>=7.20.0,<7.21.0
 ipdb>=0.13.4,<0.14.0
+pygraphviz

@@ -47,6 +47,9 @@ RUN apk add --no-cache \
             postgresql-dev \
             libstdc++ \
             postgresql-client \
+            graphviz \
+            graphviz-dev \
+            ttf-freefont \
   && pip3 install -U pip
 
 COPY requirements.txt requirements.dev.txt manage.py ./
