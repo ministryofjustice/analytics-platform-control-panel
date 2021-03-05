@@ -1,10 +1,11 @@
 import logging
+
 from dateutil.parser import parse
-from django.conf import settings
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Q, Search
 from elasticsearch_dsl.query import Range
 
+from django.conf import settings
 
 log = logging.getLogger(__name__)
 
@@ -41,39 +42,28 @@ def app_logs(app, num_hours=None):
         num_hours = 1
 
     conn = Elasticsearch(hosts=settings.ELASTICSEARCH['hosts'])
-    # Create Search object. Timeout after 1 second. Will retry several times.
-    s = Search(
+    # Create Search object. Timeout after 10 seconds, can be retried.
+    search_obj = Search(
         using=conn,
         index=settings.ELASTICSEARCH['indices']['app-logs']
-    ).params(request_timeout=1)
+    ).sort('time_nano').source(['@timestamp', 'message'])
 
-    # limit fields returned
-    s = s.source(['@timestamp', 'message'])
-
-    s = s.filter(
-        Q('exists', field='message')
-        & Q('term', **{
-            "kubernetes.labels.app.keyword": f'{app.release_name}-webapp',
-        })
-    )
-
-    s = s.filter(Range(**{
-        '@timestamp': {
-            'lte': 'now',
-            'gte': f'now-{num_hours}h',
+    exist_filter = Q('exists', field='message')
+    app_filter = Q('term', **{"kubernetes.labels.app.keyword": f"{app.release_name}-webapp"})
+    time_filter = Range(**{'@timestamp': {
+        'lte': 'now',
+        'gte': f'now-{num_hours}h',
         },
-    }))
+    })
 
-    s = s.sort('time_nano')
-
-    s = s.params(preserve_order=True)
-
+    query_obj = search_obj.filter(exist_filter & app_filter & time_filter)
 
     try:
-        logs = list(s.scan())
-        log.info("Got {} log entries.".format(len(logs)))
-        for entry in logs:
+        logs = []
+        log.info(f"Got {query_obj.count()} log entries.")
+        for entry in query_obj.scan():
             entry['timestamp'] = parse(entry['@timestamp'])
+            logs.append(entry)
     except Exception as ex:
         log.error(ex)
         logs = []
