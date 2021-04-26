@@ -8,7 +8,7 @@ name: Run tests and push Docker image on success
 
 jobs:
   test-and-push:
-    runs-on: [self-hosted, ecr]
+    runs-on: [self-hosted, management-ecr]
     env:
       LOGS_BUCKET_NAME: moj-analytics-s3-logs
     steps:
@@ -30,11 +30,15 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-1
+          role-to-assume: arn:aws:iam::593291632749:role/github-actions-management-ecr
+          role-duration-seconds: 1200
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-
+        with:
+          registries: 593291632749
+          
       - name: Prep Tags
         id: prep
         run: |
