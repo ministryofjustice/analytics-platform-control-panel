@@ -8,7 +8,7 @@ name: Run tests and push Docker image on success
 
 jobs:
   test-and-push:
-    runs-on: [self-hosted, ecr]
+    runs-on: [self-hosted, management-ecr]
     env:
       LOGS_BUCKET_NAME: moj-analytics-s3-logs
     steps:
