@@ -26,7 +26,7 @@ def test_app_delete(aws, app, authz, helm):
 
     aws.delete_role.assert_called_with(app.iam_role_name)
     authz.delete_group.assert_called_with(group_name=app.slug)
-    helm.delete.assert_called_with(True, app.release_name)
+    helm.delete.assert_called_with(app.release_name)
 
 
 mock_ingress = MagicMock(name="Ingress")
