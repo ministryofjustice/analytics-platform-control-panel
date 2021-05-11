@@ -1,4 +1,4 @@
-from unittest.mock import call
+from unittest.mock import call, patch
 
 import pytest
 
@@ -25,6 +25,16 @@ def test_create(aws, helm, settings, users):
             f"Fullname={user.get_full_name()},"
             f"Env={settings.ENV},"
             f"OidcDomain={settings.OIDC_DOMAIN}"
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f"--set=Username={user.slug}"
+        ),
+        call(
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f'--namespace=user-{user.slug}',
+            f"--set=Username={user.slug},",
+            f"Efsvolume={settings.EFS_VOLUME}"
         ),
         call(
             f'config-user-{user.slug}',
@@ -53,12 +63,68 @@ def test_reset_home(helm, users):
 
 def test_delete(aws, helm, users):
     user = users['normal_user']
+    helm.list_releases.return_value = ["chart-release", ]
     cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    expected_calls = [
-        call(helm.list_releases.return_value),
-        call(f"init-user-{user.slug}"),
-    ]
-    helm.delete.assert_has_calls(expected_calls)
+    helm.delete.assert_called_once_with(
+        "chart-release",
+        f"init-user-{user.slug}",
+        f"bootstrap-user-{user.slug}",
+        f"provision-user-{user.slug}"
+    )
 
+
+def test_delete_with_no_releases(aws, helm, users):
+    """
+    If there are no releases associated with the user, don't try to delete with
+    an empty list of releases.
+    """
+    user = users['normal_user']
+    helm.list_releases.return_value = []
+    cluster.User(user).delete()
+
+    aws.delete_role.assert_called_with(user.iam_role_name)
+    helm.delete.assert_called_once_with(
+        f"init-user-{user.slug}",
+        f"bootstrap-user-{user.slug}",
+        f"provision-user-{user.slug}"
+    )
+
+
+def test_delete_eks(aws, helm, users):
+    """
+    Delete with Helm 3.
+    """
+    user = users['normal_user']
+    helm.list_releases.return_value = ["chart-release", ]
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        cluster.User(user).delete()
+
+    aws.delete_role.assert_called_with(user.iam_role_name)
+    helm.delete_eks.assert_called_once_with(
+        user.k8s_namespace,
+        "chart-release",
+        f"init-user-{user.slug}",
+        f"bootstrap-user-{user.slug}",
+        f"provision-user-{user.slug}"
+    )
+
+
+def test_delete_eks_with_no_releases(aws, helm, users):
+    """
+    If there are no releases associated with the user, don't try to delete with
+    an empty list of releases. Helm 3 version.
+    """
+    user = users['normal_user']
+    helm.list_releases.return_value = []
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        cluster.User(user).delete()
+
+    aws.delete_role.assert_called_with(user.iam_role_name)
+    helm.delete_eks.assert_called_once_with(
+        user.k8s_namespace,
+        f"init-user-{user.slug}",
+        f"bootstrap-user-{user.slug}",
+        f"provision-user-{user.slug}"
+    )

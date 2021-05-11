@@ -1,15 +1,45 @@
-from datetime import datetime, timedelta
 import logging
 import os
 import re
 import subprocess
-
+import yaml
+import time
+from datetime import datetime, timedelta
 from django.conf import settings
 from rest_framework.exceptions import APIException
-import yaml
 
 
 log = logging.getLogger(__name__)
+
+
+# Cache helm repository metadata for 5 minutes (expressed as seconds).
+CACHE_FOR_MINUTES = 5 * 60
+
+
+# TODO: Work out the story for HELM_HOME
+HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
+
+
+def get_repo_path():
+    """
+    Get the path for the repository cache. Will return the correct location
+    depending on the settings.EKS flag (if true, uses Helm 3's default
+    location, otherwise uses Helm 2's).
+    """
+    if settings.EKS:
+        return os.path.join(
+            HELM_HOME,
+            "cache",
+            "repository",
+            f"{settings.HELM_REPO}-index.yaml",
+        )
+    else:
+        return os.path.join(
+            HELM_HOME,
+            "repository",
+            "cache",
+            f"{settings.HELM_REPO}-index.yaml",
+        )
 
 
 class HelmError(APIException):
@@ -18,254 +48,235 @@ class HelmError(APIException):
     default_detail = "Error executing Helm command"
 
 
-class Helm(object):
-    @classmethod
-    def execute(cls, *args, check=True, **kwargs):
-        should_wait = False
-        if "timeout" in kwargs:
-            should_wait = True
-            timeout = kwargs.pop("timeout")
+class HelmChart:
+    """
+    Instances represent a Helm chart.
+    """
 
-        try:
-            log.debug(" ".join(["helm", *args]))
-            env = os.environ.copy()
-            # helm checks for existence of DEBUG env var
-            if "DEBUG" in env:
-                del env["DEBUG"]
-            proc = subprocess.Popen(
-                ["helm", *args],
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                encoding="utf8",
-                env=env,
-                **kwargs,
-            )
-
-        except ValueError as invalid_args_err:
-            log.error(invalid_args_err)
-            raise HelmError(invalid_args_err)
-
-        except subprocess.CalledProcessError as execution_err:
-            error_output = execution_err.stderr.read()
-            log.error(error_output)
-            raise HelmError(error_output)
-
-        except OSError as file_not_found:
-            log.error(str(file_not_found))
-            raise HelmError(file_not_found)
-
-        if should_wait:
-            try:
-                proc.wait(timeout)
-            except subprocess.TimeoutExpired as timed_out:
-                log.warning(timed_out)
-                raise HelmError(timed_out)
-
-        if check and proc.returncode:
-            error_output = proc.stderr.read()
-            log.warning(error_output)
-            raise HelmError(error_output)
-
-        return proc
-
-    def upgrade_release(self, release, chart, *args):
-        HelmRepository.update()
-
-        return self.__class__.execute(
-            "upgrade",
-            "--install",
-            "--wait",
-            "--force",
-            release,
-            chart,
-            *args,
-        )
-
-    def delete(self, purge=True, *args):
-        default_args = []
-        if purge:
-            default_args.append("--purge")
-        self.__class__.execute("delete", *default_args, *args)
-
-    def list_releases(self, *args):
-        # TODO - use --max and --offset to paginate through releases
-        proc = self.__class__.execute("list", "-q", "--max=1024", *args, timeout=None)
-        return proc.stdout.read().split()
-
-
-def parse_upgrade_output(output):
-    section = None
-    columns = None
-    last_deployed = None
-    namespace = ""
-    resource_type = None
-    resources = {}
-    notes = []
-
-    for line in output.split("\n"):
-
-        if line.startswith("LAST DEPLOYED:"):
-            last_deployed = datetime.strptime(
-                line.split(":", 1)[1], " %a %b %d %H:%M:%S %Y",
-            )
-            continue
-
-        if line.startswith("NAMESPACE:"):
-            namespace = line.split(":", 1)[1].strip()
-            continue
-
-        if line.startswith("==> ") and section == "RESOURCES":
-            resource_type = line.split(" ", 1)[1].strip()
-            continue
-
-        if line.startswith("RESOURCES:"):
-            section = "RESOURCES"
-            continue
-
-        if line.startswith("NAME") and resource_type:
-            columns = line.lower()
-            columns = re.split(r"\s+", columns)
-            continue
-
-        if section == "NOTES":
-            notes.append(line)
-            continue
-
-        if line.startswith("NOTES:"):
-            section = "NOTES"
-            continue
-
-        if section and line.strip():
-            row = re.split(r"\s+", line)
-            row = dict(zip(columns, row))
-            resources[resource_type] = [
-                *resources.get(resource_type, []),
-                *[row],
-            ]
-
-    return {
-        "last_deployed": last_deployed,
-        "namespace": namespace,
-        "resources": resources,
-        "notes": "\n".join(notes),
-    }
-
-
-class Chart(object):
     def __init__(self, name, description, version, app_version):
         self.name = name
-        self.description = description
-        self.version = version
-        self.app_version = app_version
+        self.description = description  # Human readable description.
+        self.version = version  # Helm chart version.
+        self.app_version = app_version  # App version used in the chart.
 
 
-class HelmRepository(object):
+def _execute(*args, **kwargs):
+    """
+    Execute a helm command with the referenced arguments and keyword arguments.
 
-    CACHE_FOR_MINUTES = 30
+    This function will log as much of the context as possible, and try to be
+    as noisey in the logs when things go wrong.
 
-    HELM_HOME = Helm.execute("home").stdout.read().strip()
-    REPO_PATH = os.path.join(
-        HELM_HOME, "repository", "cache", f"{settings.HELM_REPO}-index.yaml",
+    Returns an object representing the OS level process that's actually running
+    the helm command. The caller is responsible for logging stdout in the case
+    of a success or failure.
+    """
+    log.info(" ".join(["helm", *args]))
+    log.info("Helm process args: " + str(kwargs))
+    # Flag to indicate if the helm process will be blocking.
+    wait = False
+    # The timeout value will be passed into the process's wait method. See the
+    # Python docs for the blocking behaviour this causes.
+    if "timeout" in kwargs:
+        wait = True
+        timeout = kwargs.pop("timeout")
+        log.info(
+            "Blocking helm command. Timout after {} seconds.".format(timeout)
+        )
+    # Apparently, helm checks for existence of DEBUG env var, so delete it.
+    env = os.environ.copy()
+    if "DEBUG" in env:
+        del env["DEBUG"]
+    # Run the helm command in a sub-process.
+    try:
+        proc = subprocess.Popen(
+            ["helm", *args],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            encoding="utf8",
+            env=env,
+            **kwargs,
+        )
+    except subprocess.CalledProcessError as proc_ex:
+        # Subprocess specific exception handling should capture stderr too.
+        log.error(proc_ex)
+        log.error(proc_ex.stderr.read())
+        raise HelmError(proc_ex)
+    except Exception as ex:
+        # Catch all other exceptions, log them and re-raise as HelmError
+        # exceptions.
+        log.error(ex)
+        raise HelmError(ex)
+    if wait:
+        # Wait for blocking helm commands.
+        try:
+            proc.wait(timeout)
+        except subprocess.TimeoutExpired as ex:
+            # Raise if timed out.
+            log.warning(ex)
+            raise HelmError(ex)
+    if proc.returncode:
+        # The helm command returned a non-0 return code. Log all the things!
+        stdout = proc.stdout.read()
+        stderr = proc.stderr.read()
+        log.warning(stderr)
+        log.warning(stdout)
+        raise HelmError(stderr)
+    return proc
+
+
+def update_helm_repository():
+    """
+    Updates the helm repository and returns a dictionary representation of
+    all the available charts. Raises a HelmError if there's a problem reading
+    the helm repository cache.
+    """
+    repo_path = get_repo_path()
+    # If there's no helm repository cache, call helm repo update to fill it.
+    if not os.path.exists(repo_path):
+        _execute("repo", "update", timeout=None)  # timeout = infinity.
+    # Execute the helm repo update command if the helm repository cache is
+    # stale (older than CACHE_FOR_MINUTES value).
+    if os.path.getmtime(repo_path) + CACHE_FOR_MINUTES < time.time():
+        _execute("repo", "update", timeout=None)  # timeout = infinity.
+    try:
+        with open(repo_path) as f:
+            return yaml.load(f, Loader=yaml.FullLoader)
+    except Exception as ex:
+        error = HelmError(ex)
+        error.detail = (
+            f"Error while opening/parsing helm repository cache: '{repo_path}'"
+        )
+        raise HelmError(error)
+
+
+def upgrade_release(release, chart, *args):
+    """
+    Upgrade to a new release version (for an app - e.g. RStudio).
+
+    Returns the process for further processing by the caller.
+    """
+    update_helm_repository()
+    return _execute(
+        "upgrade",
+        "--install",
+        "--wait",
+        "--force",
+        release,
+        chart,
+        *args,
     )
 
-    _updated_at = None
-    _repository = {}
 
-    @classmethod
-    def update(cls, force=True):
-        if force or cls._outdated():
-            Helm.execute("repo", "update", timeout=None)
-            cls._load()
-            cls._updated_at = datetime.utcnow()
+def delete_eks(namespace, *args):
+    """
+    Delete helm charts identified by the content of the args list in the
+    referenced namespace. Helm 3 version.
 
-    @classmethod
-    def _load(cls):
-        # Read and parse helm repository YAML file
-        try:
-            with open(cls.REPO_PATH) as f:
-                cls._repository = yaml.load(f, Loader=yaml.FullLoader)
-        except Exception as err:
-            wrapped_err = HelmError(err)
-            wrapped_err.detail = (
-                f"Error while opening/parsing helm repository cache: '{cls.REPO_PATH}'"
-            )
-            raise HelmError(wrapped_err)
+    Logs the stdout result of the command.
+    """
+    if not namespace:
+        raise ValueError(
+            "Cannot proceed: a namespace needed for removal of release."
+        )
+    proc = _execute(
+        "uninstall",
+        *args,
+        "--namespace",
+        namespace
+    )
+    stdout = proc.stdout.read()
+    log.info(stdout)
 
-    @classmethod
-    def get_chart_info(cls, name):
-        """
-        Get information about the given chart
 
-        Returns a dictionary with the chart versions as keys and the chart
-        as value (`Chart` instance)
+def delete(*args):
+    """
+    Delete helm charts identified by the content of the args list. Helm 2
+    version.
 
-        Returns an empty dictionary when the chart is not in the helm
-        repository index.
+    Logs the stdout result of the command.
+    """
+    proc = _execute(
+        "delete",
+        "--purge",
+        *args
+    )
+    stdout = proc.stdout.read()
+    log.info(stdout)
 
-        ```
-        rstudio_info = HelmRepository.get_chart_info("rstudio")
-        # rstudio_info = {
-        #   "2.2.5": <Chart name="rstudio" version="2.2.5" app_version=""RStudio: 1.2.13...">,
-        #   "2.2.4": <Chart ...>,
-        # }
-        ```
-        """
 
-        cls.update(force=False)
+def get_chart_info(chart_name):
+    """
+    Get information about the given chart.
 
-        try:
-            versions = cls._repository["entries"][name]
-        except KeyError:
-            # No such a chart with this name, returning {}
-            return {}
+    Returns a dictionary with the chart versions as keys and instances of the
+    HelmChart class as associated values.
 
-        # Convert to dictionary
-        chart_info = {}
-        for version_info in versions:
-            chart = Chart(
-                version_info["name"],
-                version_info["description"],
-                version_info["version"],
-                # appVersion is relatively new and some old helm chart don't
-                # have it
-                version_info.get("appVersion", None),
-            )
-            chart_info[chart.version] = chart
-        return chart_info
+    Returns an empty dictionary when the chart is not in the helm repository
+    index.
+    """
+    chart_info = {}  # The end result.
+    # Update and grab repository metadata.
+    repository = update_helm_repository()
+    entries = repository.get("entries")
+    if entries:
+        versions = entries.get(chart_name)
+        if versions:
+            # There are versions for the referenced chart. Add them to the
+            # result as HelmChart instances.
+            for version in versions:
+                chart = HelmChart(
+                    version["name"],
+                    version["description"],
+                    version["version"],
+                    # appVersion is relatively new so some old charts don't
+                    # have it.
+                    version.get("appVersion"),
+                )
+                chart_info[chart.version] = chart
+    return chart_info
 
-    @classmethod
-    def get_chart_app_version(cls, name, version):
-        """
-        Returns the "appVersion" metadata for the given
-        chart name/version.
 
-        It returns None if the chart or the chart version
-        are not found or if that version of a chart doesn't
-        have the "appVersion" field (e.g. the chart
-        preceed the introduction of this field)
-        """
+def get_chart_app_version(chart_name, chart_version):
+    """
+    Returns the "appVersion" metadata for the helm chart with the referenced
+    name and version.
 
-        chart_info = cls.get_chart_info(name)
-        version_info = chart_info.get(version, None)
-        if version_info:
-            return version_info.app_version
+    Returns None if there's no match or if the match is missing the
+    "appVersion" metadata.
+    """
 
+    chart = get_chart_info(chart_name)
+    chart_at_version = chart.get(chart_version)
+    if chart_at_version:
+        return chart_at_version.app_version
+    else:
         return None
 
-    @classmethod
-    def _outdated(cls):
-        # helm update never called?
-        if not cls._updated_at:
-            return True
 
-        # helm update called more than `CACHE_FOR_MINUTES` ago
-        now = datetime.utcnow()
-        elapsed = now - cls._updated_at
-        if elapsed > timedelta(minutes=cls.CACHE_FOR_MINUTES):
-            return True
-
-        # helm update called recently
-        return False
-
-
-helm = Helm()
+def list_releases(release=None, namespace=None):
+    """
+    List the releases associated with the referenced release and namespace, if
+    they exist. Logs the stdout result of the command. Returns a list of the
+    results.
+    """
+    # TODO - use --max and --offset to paginate through releases
+    args = []
+    if release:
+        args.extend(
+            [
+                "--filter",
+                release,
+            ]
+        )
+    if namespace:
+        args.extend(
+            [
+                "--namespace",
+                namespace,
+            ]
+        )
+    proc = _execute("list", "-aq", *args)
+    result = proc.stdout.read()
+    log.info(result)
+    return result.split()

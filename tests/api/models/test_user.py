@@ -17,14 +17,16 @@ def test_helm_create_user(helm):
 
     expected_calls = [
         call(
-            f'init-user-{user.slug}',
-            'mojanalytics/init-user',
-            f"--set=NFSHostname={settings.NFS_HOSTNAME},"
-            f"Username={user.slug},"
-            f"Email={user.email},"
-            f"Fullname={user.get_full_name()},"
-            f"Env={settings.ENV},"
-            f"OidcDomain={settings.OIDC_DOMAIN}"
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f"--set=Username={user.slug}"
+        ),
+        call(
+            f'provision-user-{user.slug}',
+            'mojanalytics/provision-user',
+            f'--namespace=user-{user.slug}',
+            f"--set=Username={user.slug},",
+            f"Efsvolume={settings.EFS_VOLUME}"
         ),
         call(
             f'config-user-{user.slug}',
@@ -41,7 +43,7 @@ def test_helm_delete_user(helm):
 
     user.delete()
 
-    helm.list_releases.assert_called_with(f"--namespace=user-{user.slug}")
+    helm.list_releases.assert_called_with(namespace=user.k8s_namespace)
     expected_calls = [
         call(helm.list_releases.return_value),
         call(f"init-user-{user.slug}"),
