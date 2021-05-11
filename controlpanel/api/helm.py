@@ -160,7 +160,8 @@ class HelmRepository(object):
 
     CACHE_FOR_MINUTES = 30
 
-    HELM_HOME = Helm.execute("home").stdout.read().strip()
+    # TODO: Work out the story for HELM_HOME
+    HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
     REPO_PATH = os.path.join(
         HELM_HOME, "repository", "cache", f"{settings.HELM_REPO}-index.yaml",
     )
