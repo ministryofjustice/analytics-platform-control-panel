@@ -27,7 +27,7 @@ class Helm(object):
             timeout = kwargs.pop("timeout")
 
         try:
-            log.debug(" ".join(["helm", *args]))
+            log.info(" ".join(["helm", *args]))
             env = os.environ.copy()
             # helm checks for existence of DEBUG env var
             if "DEBUG" in env:
@@ -81,11 +81,8 @@ class Helm(object):
             *args,
         )
 
-    def delete(self, purge=True, *args):
-        default_args = []
-        if purge:
-            default_args.append("--purge")
-        self.__class__.execute("delete", *default_args, *args)
+    def delete(self, *args):
+        self.__class__.execute("delete", *args)
 
     def list_releases(self, *args):
         # TODO - use --max and --offset to paginate through releases

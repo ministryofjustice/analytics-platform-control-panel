@@ -130,7 +130,7 @@ class App:
     def delete(self):
         aws.delete_role(self.iam_role_name)
         auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
-        helm.delete(True, self.app.release_name)
+        helm.delete(self.app.release_name)
 
     @property
     def url(self):
@@ -279,7 +279,7 @@ class ToolDeployment:
 
         old_release_name = f"{self.user.slug}-{self.chart_name}"
         if old_release_name in helm.list_releases(old_release_name):
-            helm.delete(True, old_release_name)
+            helm.delete(old_release_name)
 
     def _set_values(self, **kwargs):
         """
