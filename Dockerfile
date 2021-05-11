@@ -16,7 +16,10 @@ ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://get.helm.sh
 
 ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
-  XDG_CONFIG_HOME=/tmp/helm
+  HELM_HOME=/tmp/helm \
+  HELM_CONFIG_HOME=/tmp/helm/repository \
+  HELM_CACHE_HOME=/tmp/helm/cache \
+  HELM_DATA_HOME=/tmp/helm/data
 
 # create a user to run as
 RUN addgroup -g 1000 -S controlpanel && \
