@@ -163,7 +163,7 @@ class HelmRepository(object):
     # TODO: Work out the story for HELM_HOME
     HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
     REPO_PATH = os.path.join(
-        HELM_HOME, "repository", "cache", f"{settings.HELM_REPO}-index.yaml",
+        HELM_HOME, "cache", "repository", f"{settings.HELM_REPO}-index.yaml",
     )
 
     _updated_at = None
