@@ -84,9 +84,14 @@ class Helm(object):
     def delete(self, *args):
         self.__class__.execute("delete", *args)
 
-    def list_releases(self, *args):
+    def list_releases(self, release=None, namespace=None):
         # TODO - use --max and --offset to paginate through releases
-        proc = self.__class__.execute("list", "-q", "--max=1024", *args, timeout=None)
+        args = []
+        if release:
+            args.extend(["--filter", release])
+        if namespace:
+            args.extend(["--namespace", namespace])
+        proc = self.__class__.execute("list", "-aq", *args, timeout=None)
         return proc.stdout.read().split()
 
 
