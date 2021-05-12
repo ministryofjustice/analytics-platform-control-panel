@@ -85,7 +85,10 @@ class User:
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
-        helm.delete(helm.list_releases(f"--namespace={self.k8s_namespace}"))
+        # TODO: Check this... currently doesn't work.
+        helm.delete(helm.list_releases(
+            namespace=self.k8s_namespace)
+        )
         helm.delete(f"init-user-{self.user.slug}")
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
@@ -253,25 +256,6 @@ class ToolDeployment:
     def release_name(self):
         return f"{self.chart_name}-{self.user.slug}"
 
-    def _delete_legacy_release(self):
-        """
-        At some point the naming scheme for RStudio
-        changed. This cause upgrade problems when
-        an old release with the old release name is
-        present.
-
-        We're going to temporarily check/uninstall
-        releases with the old name before installing
-        the new release with the correct name.
-
-        We can remove this once every user is on new naming
-        scheme for RStudio.
-        """
-
-        old_release_name = f"{self.user.slug}-{self.chart_name}"
-        if old_release_name in helm.list_releases(old_release_name):
-            helm.delete(old_release_name)
-
     def _set_values(self, **kwargs):
         """
         Return the list of `--set KEY=VALUE` helm upgrade arguments
@@ -300,7 +284,6 @@ class ToolDeployment:
         return set_values
 
     def install(self, **kwargs):
-        self._delete_legacy_release()
 
         try:
             set_values = self._set_values(**kwargs)

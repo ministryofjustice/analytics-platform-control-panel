@@ -41,7 +41,7 @@ def test_helm_delete_user(helm):
 
     user.delete()
 
-    helm.list_releases.assert_called_with(f"--namespace=user-{user.slug}")
+    helm.list_releases.assert_called_with(namespace=user.k8s_namespace)
     expected_calls = [
         call(helm.list_releases.return_value),
         call(f"init-user-{user.slug}"),
