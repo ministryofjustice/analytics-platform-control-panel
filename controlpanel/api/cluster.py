@@ -89,10 +89,9 @@ class User:
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
-        # TODO: Check this... currently doesn't work.
-        helm.delete(helm.list_releases(
-            namespace=self.k8s_namespace)
-        )
+        releases = helm.list_releases(namespace=self.k8s_namespace)
+        if releases:
+            helm.delete(releases)
         helm.delete(f"init-user-{self.user.slug}")
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
