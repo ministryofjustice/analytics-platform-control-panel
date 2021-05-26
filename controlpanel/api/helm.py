@@ -25,9 +25,16 @@ class Helm(object):
         if "timeout" in kwargs:
             should_wait = True
             timeout = kwargs.pop("timeout")
-
         try:
             log.info(" ".join(["helm", *args]))
+            if should_wait:
+                log.info(
+                    "Blocking helm command. Timeout after {} seconds.".format(
+                        timeout
+                    )
+                )
+            else:
+                log.info("Non-blocking helm command.")
             env = os.environ.copy()
             # helm checks for existence of DEBUG env var
             if "DEBUG" in env:
@@ -53,6 +60,11 @@ class Helm(object):
         except OSError as file_not_found:
             log.error(str(file_not_found))
             raise HelmError(file_not_found)
+
+        except Exception as ex:
+            # Catch all for logging the unexpected.
+            log.error(ex)
+            raise HelmError(ex)
 
         if should_wait:
             try:
