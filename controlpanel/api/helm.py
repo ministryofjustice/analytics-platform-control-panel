@@ -1,15 +1,19 @@
-from datetime import datetime, timedelta
 import logging
 import os
 import re
 import subprocess
-
+import yaml
+import time
+from datetime import datetime, timedelta
 from django.conf import settings
 from rest_framework.exceptions import APIException
-import yaml
 
 
 log = logging.getLogger(__name__)
+
+
+# Cache helm repository metadata for 5 minutes (expressed as seconds).
+CACHE_FOR_MINUTES = 5 * 60
 
 
 # TODO: Work out the story for HELM_HOME
@@ -53,10 +57,11 @@ def _execute(*args, **kwargs):
     """
     log.info(" ".join(["helm", *args]))
     log.info("Helm process args: " + str(kwargs))
-    wait = False  # Flag to indicate if the helm process will be blocking.
-    # The timeout value should be an integer representing number of seconds to
-    # wait for the command to complete.
-    if kwargs.get("timeout"):
+    # Flag to indicate if the helm process will be blocking.
+    wait = False
+    # The timeout value will be passed into the process's wait method. See the
+    # Python docs for the blocking behaviour this causes.
+    if "timeout" in kwargs:
         wait = True
         timeout = kwargs.pop("timeout")
         log.info(
@@ -111,7 +116,13 @@ def update_helm_repository():
     all the available charts. Raises a HelmError if there's a problem reading
     the helm repository cache.
     """
-    _execute("repo", "update")
+    # If there's no helm repository cache, call helm repo update to fill it.
+    if not os.path.exists(REPO_PATH):
+        _execute("repo", "update", timeout=None)  # timeout = infinity.
+    # Execute the helm repo update command if the helm repository cache is
+    # stale (older than CACHE_FOR_MINUTES value).
+    if os.path.getmtime(REPO_PATH) + CACHE_FOR_MINUTES < time.time():
+        _execute("repo", "update", timeout=None)  # timeout = infinity.
     try:
         with open(REPO_PATH) as f:
             return yaml.load(f, Loader=yaml.FullLoader)
@@ -219,8 +230,13 @@ def list_releases(release=None, namespace=None):
             ]
         )
     if namespace:
-        args.extend(["--namespace", namespace])
+        args.extend(
+            [
+                "--namespace",
+                namespace,
+            ]
+        )
     proc = _execute("list", "-aq", *args)
     result = proc.stdout.read()
-    log.info(stdout)
-    return stdout.split()
+    log.info(result)
+    return result.split()
