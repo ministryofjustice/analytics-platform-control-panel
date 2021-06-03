@@ -71,6 +71,17 @@ class User:
         self._init_user()
 
         helm.upgrade_release(
+            f"provision-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/provision-user",  # chart
+            f"--namespace={self.k8s_namespace}",
+            f"--set="
+            + (
+                f"Username={self.user.slug}"
+                f"Efsvolume={settings.EFS_VOLUME},"
+            ),
+        )
+
+        helm.upgrade_release(
             f"config-user-{self.user.slug}",  # release
             f"{settings.HELM_REPO}/config-user",  # chart
             f"--namespace={self.k8s_namespace}",

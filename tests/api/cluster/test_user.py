@@ -25,6 +25,16 @@ def test_create(aws, helm, settings, users):
             f"Fullname={user.get_full_name()},"
             f"Env={settings.ENV},"
             f"OidcDomain={settings.OIDC_DOMAIN}"
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f"--set=Username={user.slug}"
+        ),
+        call(
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f'--namespace=user-{user.slug}',
+            f"--set=Username={user.slug},",
+            f"Efsvolume={settings.EFS_VOLUME}"
         ),
         call(
             f'config-user-{user.slug}',
