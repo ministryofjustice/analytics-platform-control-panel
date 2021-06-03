@@ -54,18 +54,25 @@ class User:
         aws.create_user_role(self.user)
 
         helm.upgrade_release(
-            f"init-user-{self.user.slug}",  # release
-            f"{settings.HELM_REPO}/init-user",  # chart
+            f"bootstrap-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/bootstrap-user",  # chart
             f"--set="
             + (
-                f"Env={settings.ENV},"
-                f"NFSHostname={settings.NFS_HOSTNAME},"
-                f"OidcDomain={settings.OIDC_DOMAIN},"
-                f"Email={self.user.email},"
-                f"Fullname={self.user.name},"
                 f"Username={self.user.slug}"
             ),
         )
+
+        helm.upgrade_release(
+            f"provision-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/provision-user",  # chart
+            f"--namespace={self.k8s_namespace}",
+            f"--set="
+            + (
+                f"Username={self.user.slug}"
+                f"Efsvolume={settings.EFS_VOLUME},"
+            ),
+        )
+
         helm.upgrade_release(
             f"config-user-{self.user.slug}",  # release
             f"{settings.HELM_REPO}/config-user",  # chart

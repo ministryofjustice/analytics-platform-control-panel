@@ -16,14 +16,16 @@ def test_create(aws, helm, settings, users):
     aws.create_user_role.assert_called_with(user)
     expected_calls = [
         call(
-            f'init-user-{user.slug}',
-            'mojanalytics/init-user',
-            f"--set=NFSHostname={settings.NFS_HOSTNAME},"
-            f"Username={user.slug},"
-            f"Email={user.email},"
-            f"Fullname={user.get_full_name()},"
-            f"Env={settings.ENV},"
-            f"OidcDomain={settings.OIDC_DOMAIN}"
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f"--set=Username={user.slug}"
+        ),
+        call(
+            f'bootstrap-user-{user.slug}',
+            'mojanalytics/bootstrap-user',
+            f'--namespace=user-{user.slug}',
+            f"--set=Username={user.slug},",
+            f"Efsvolume={settings.EFS_VOLUME}"
         ),
         call(
             f'config-user-{user.slug}',

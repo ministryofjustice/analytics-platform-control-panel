@@ -441,8 +441,8 @@ HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 
-# hostname of NFS server for user homes
-NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
+# volume name for the EFS directory for user homes
+EFS_VOLUME = os.environ.get("EFS_VOLUME")
 
 
 # -- Redis
