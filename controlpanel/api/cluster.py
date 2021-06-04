@@ -68,7 +68,7 @@ class User:
             f"--namespace={self.k8s_namespace}",
             f"--set="
             + (
-                f"Username={self.user.slug}"
+                f"Username={self.user.slug},"
                 f"Efsvolume={settings.EFS_VOLUME},"
             ),
         )
