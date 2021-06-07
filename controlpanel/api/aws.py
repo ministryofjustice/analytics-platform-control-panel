@@ -30,7 +30,7 @@ def iam_arn(resource, account=settings.AWS_DATA_ACCOUNT_ID):
 
 def iam_assume_role_principal():
     '''
-    returns the princical required to assume the IAM role
+    returns the principal required to assume the IAM role
 
     - ARN of the assuming role when both roles are in same account
     - AWS account ID where the assuming IAM role is if in a different account
@@ -88,6 +88,18 @@ SAML_STATEMENT = {
             "SAML:aud": "https://signin.aws.amazon.com/saml",
         },
     },
+}
+
+EKS_STATEMENT = {
+    "Effect": "Allow",
+    "Principal": {
+        "Federated": iam_arn(f"oidc-provider/{settings.OIDC_EKS_PROVIDER}"),
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+        "StringLike": {
+        }
+    } 
 }
 
 READ_INLINE_POLICIES = f'{settings.ENV}-read-user-roles-inline-policies'
@@ -175,6 +187,12 @@ def create_user_role(user):
         f'{settings.OIDC_DOMAIN}/:sub': user.auth0_id,
     }}
     policy['Statement'].append(oidc_statement)
+    eks_statement = deepcopy(EKS_STATEMENT)
+    match = f"system:serviceaccount:user-{user.username}:{user.username}-*"
+    eks_statement["Condition"]["StringLike"] = {
+        f"{settings.OIDC_EKS_PROVIDER}:sub": match
+    }
+    policy["Statement"].append(eks_statement)
 
     iam = boto3.resource('iam')
     try:
