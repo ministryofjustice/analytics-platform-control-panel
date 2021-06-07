@@ -550,6 +550,10 @@ BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 # SAML federation
 SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
 
+# The EKS OIDC provider, referenced in user policies to allow service accounts
+# to grant AWS permissions.
+OIDC_EKS_PROVIDER = os.environ.get("OIDC_EKS_PROVIDER")
+
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 
