@@ -7,7 +7,7 @@ from github import Github, GithubException
 
 from controlpanel.api import auth0, aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
-from controlpanel.api.helm import HelmError, helm
+from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 
@@ -31,6 +31,7 @@ class HomeDirectoryResetError(Exception):
     """
     Raised if a home directory cannot be reset.
     """
+
     pass
 
 
@@ -53,21 +54,28 @@ class User:
         aws.create_user_role(self.user)
 
         helm.upgrade_release(
-            f"init-user-{self.user.slug}",
-            f"{settings.HELM_REPO}/init-user",
+            f"bootstrap-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/bootstrap-user",  # chart
             f"--set="
             + (
-                f"Env={settings.ENV},"
-                f"NFSHostname={settings.NFS_HOSTNAME},"
-                f"OidcDomain={settings.OIDC_DOMAIN},"
-                f"Email={self.user.email},"
-                f"Fullname={self.user.name},"
                 f"Username={self.user.slug}"
             ),
         )
+
         helm.upgrade_release(
-            f"config-user-{self.user.slug}",
-            f"{settings.HELM_REPO}/config-user",
+            f"provision-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/provision-user",  # chart
+            f"--namespace={self.k8s_namespace}",
+            f"--set="
+            + (
+                f"Username={self.user.slug},"
+                f"Efsvolume={settings.EFS_VOLUME},"
+            ),
+        )
+
+        helm.upgrade_release(
+            f"config-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/config-user",  # chart
             f"--namespace={self.k8s_namespace}",
             f"--set=Username={self.user.slug}",
         )
@@ -77,8 +85,8 @@ class User:
         Reset the user's home directory.
         """
         helm.upgrade_release(
-            f"reset-user-home-{self.user.slug}",
-            f"{settings.HELM_REPO}/reset-user-home",
+            f"reset-user-home-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/reset-user-home",  # chart
             f"--namespace=user-{self.user.slug}",
             f"--set=Username={self.user.slug}",
         )
@@ -91,7 +99,9 @@ class User:
         helm.delete(f"init-user-{self.user.slug}")
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
-        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
+        aws.grant_bucket_access(
+            self.iam_role_name, bucket_arn, access_level, path_arns
+        )
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
@@ -115,7 +125,9 @@ class App:
         aws.create_app_role(self.app)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
+        aws.grant_bucket_access(
+            self.iam_role_name, bucket_arn, access_level, path_arns
+        )
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
@@ -131,7 +143,8 @@ class App:
 
         repo_name = github_repository_name(self.app.repo_url)
         ingresses = k8s.ExtensionsV1beta1Api.list_namespaced_ingress(
-            self.APPS_NS, label_selector=f"repo={repo_name}",
+            self.APPS_NS,
+            label_selector=f"repo={repo_name}",
         ).items
 
         if len(ingresses) != 1:
@@ -151,7 +164,9 @@ class S3Bucket:
         return s3_arn(self.bucket.name)
 
     def create(self):
-        return aws.create_bucket(self.bucket.name, self.bucket.is_data_warehouse)
+        return aws.create_bucket(
+            self.bucket.name, self.bucket.is_data_warehouse
+        )
 
     def mark_for_archival(self):
         aws.tag_bucket(self.bucket.name, {"to-archive": "true"})
@@ -179,19 +194,23 @@ class RoleGroup:
 
     def create(self):
         aws.create_group(
-            self.policy.name, self.policy.path,
+            self.policy.name,
+            self.policy.path,
         )
 
     def update_members(self):
         aws.update_group_members(
-            self.arn, {user.iam_role_name for user in self.policy.users.all()},
+            self.arn,
+            {user.iam_role_name for user in self.policy.users.all()},
         )
 
     def delete(self):
         aws.delete_group(self.arn)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_group_bucket_access(self.arn, bucket_arn, access_level, path_arns)
+        aws.grant_group_bucket_access(
+            self.arn, bucket_arn, access_level, path_arns
+        )
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_group_bucket_access(self.arn, bucket_arn)
@@ -217,7 +236,9 @@ def get_repositories(user):
             org = github.get_organization(name)
             repos.extend(org.get_repos())
         except GithubException as err:
-            log.warning(f"Failed getting {name} Github org repos for {user}: {err}")
+            log.warning(
+                f"Failed getting {name} Github org repos for {user}: {err}"
+            )
             raise err
     return repos
 
@@ -227,7 +248,9 @@ def get_repository(user, repo_name):
     try:
         return github.get_repo(repo_name)
     except GithubException.UnknownObjectException:
-        log.warning(f"Failed getting {repo_name} Github repo for {user}: {err}")
+        log.warning(
+            f"Failed getting {repo_name} Github repo for {user}: {err}"
+        )
         return None
 
 
@@ -241,7 +264,7 @@ class ToolDeployment:
         self.tool = tool
 
     def __repr__(self):
-        return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
+        return f"<ToolDeployment: {self.tool} {self.user}>"
 
     @property
     def chart_name(self):
@@ -263,7 +286,8 @@ class ToolDeployment:
         """
         values = {
             "username": self.user.username.lower(),
-            "Username": self.user.username.lower(),  # XXX backwards compatibility
+            # XXX backwards compatibility
+            "Username": self.user.username.lower(),
             "aws.iamRole": self.user.iam_role_name,
             "toolsDomain": settings.TOOLS_DOMAIN,
         }
@@ -288,8 +312,9 @@ class ToolDeployment:
             set_values = self._set_values(**kwargs)
 
             return helm.upgrade_release(
-                self.release_name,
-                f"{settings.HELM_REPO}/{self.chart_name}",  # XXX assumes repo name
+                self.release_name,  # release
+                # XXX assumes repo name
+                f"{settings.HELM_REPO}/{self.chart_name}",  # chart
                 f"--version",
                 self.tool.version,
                 f"--namespace",
@@ -297,23 +322,27 @@ class ToolDeployment:
                 *set_values,
             )
 
-        except HelmError as error:
+        except helm.HelmError as error:
             raise ToolDeploymentError(error)
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
         helm.delete(
-            deployment.metadata.name, f"--namespace={self.k8s_namespace}",
+            deployment.metadata.name,
+            f"--namespace={self.k8s_namespace}",
         )
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
         return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
-            self.k8s_namespace, label_selector=(f"app={self.chart_name}"),
+            self.k8s_namespace,
+            label_selector=(f"app={self.chart_name}"),
         )
 
     @classmethod
-    def get_deployments(cls, user, id_token, search_name=None, search_version=None):
+    def get_deployments(
+        cls, user, id_token, search_name=None, search_version=None
+    ):
         deployments = []
         k8s = KubernetesClient(id_token=id_token)
         results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
@@ -339,7 +368,7 @@ class ToolDeployment:
             raise ObjectDoesNotExist(self)
 
         if len(deployments) > 1:
-            log.warning(f"Multiple matches for {self!r} found")
+            log.warning(f"Multiple matches for {self} found")
             raise MultipleObjectsReturned(self)
 
         return deployments[0]
@@ -354,7 +383,9 @@ class ToolDeployment:
 
         try:
             deployment = self.get_deployment(id_token)
-            _, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            _, chart_version = deployment.metadata.labels["chart"].rsplit(
+                "-", 1
+            )
             return chart_version
         except ObjectDoesNotExist:
             return None
@@ -364,15 +395,16 @@ class ToolDeployment:
             deployment = self.get_deployment(id_token)
 
         except ObjectDoesNotExist:
-            log.warning(f"{self!r} not found")
+            log.warning(f"{self} not found")
             return TOOL_NOT_DEPLOYED
 
         except MultipleObjectsReturned:
-            log.warning(f"Multiple objects returned for {self!r}")
+            log.warning(f"Multiple objects returned for {self}")
             return TOOL_STATUS_UNKNOWN
 
         conditions = {
-            condition.type: condition for condition in deployment.status.conditions
+            condition.type: condition
+            for condition in deployment.status.conditions
         }
 
         if "Available" in conditions:
@@ -388,5 +420,7 @@ class ToolDeployment:
             elif progressing_status == "False":
                 return TOOL_DEPLOY_FAILED
 
-        log.warning(f"Unknown status for {self!r}: {deployment.status.conditions}")
+        log.warning(
+            f"Unknown status for {self}: {deployment.status.conditions}"
+        )
         return TOOL_STATUS_UNKNOWN

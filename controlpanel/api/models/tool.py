@@ -9,7 +9,7 @@ from django.db.models import Q
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster
-from controlpanel.api.helm import HelmRepository
+from controlpanel.api import helm
 
 
 log = logging.getLogger(__name__)
@@ -21,7 +21,6 @@ class Tool(TimeStampedModel):
     of Tool is an item in the Software Catalogue - not a user's deployed
     instance of a tool.
     """
-
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
     name = models.CharField(max_length=100, blank=False)
@@ -40,7 +39,9 @@ class Tool(TimeStampedModel):
         return f"<Tool: {self.chart_name} {self.version}>"
 
     def url(self, user):
-        return f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
+        return (
+            f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
+        )
 
     @property
     def app_version(self):
@@ -48,7 +49,10 @@ class Tool(TimeStampedModel):
         Returns the "appVersion" for this tool.
 
         This is metadata in the helm chart which we use to maintain details
-        of the actual tool version (e.g. "RStudio: 1.2.1335+conda, R: 3.5.1, ...")
+        of the actual tool version, e.g.:
+
+        "RStudio: 1.2.1335+conda, R: 3.5.1, ..."
+
         as opposed to the chart version.
 
         Returns None if this information is not available for this tool and
@@ -56,8 +60,7 @@ class Tool(TimeStampedModel):
         was introduced) or because the chart doesn't exist in the helm
         reporitory.
         """
-
-        return HelmRepository.get_chart_app_version(self.chart_name, self.version)
+        return helm.get_chart_app_version(self.chart_name, self.version)
 
 
 class ToolDeploymentManager:
@@ -96,7 +99,6 @@ class ToolDeployment:
 
         Returns None if the chart is not installed for the user
         """
-
         td = cluster.ToolDeployment(self.user, self.tool)
         return td.get_installed_chart_version(id_token)
 
@@ -120,32 +122,32 @@ class ToolDeployment:
         as this information is simply not available
         in the helm repository index.
         """
-
         chart_version = self.get_installed_chart_version(id_token)
         if chart_version:
-            return HelmRepository.get_chart_app_version(
+            return helm.get_chart_app_version(
                 self.tool.chart_name, chart_version
             )
-
         return None
 
     def delete(self, id_token):
         """
         Remove the release from the cluster
         """
-
         cluster.ToolDeployment(self.user, self.tool).uninstall(id_token)
 
     @property
     def host(self):
-        return f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
+        return (
+            f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
+        )
 
     def save(self, *args, **kwargs):
         """
         Deploy the tool to the cluster (asynchronous)
         """
-
-        self._subprocess = cluster.ToolDeployment(self.user, self.tool).install()
+        self._subprocess = cluster.ToolDeployment(
+            self.user, self.tool
+        ).install()
 
     def get_status(self, id_token):
         """
@@ -154,24 +156,28 @@ class ToolDeployment:
         """
         if self._subprocess:
             # poll subprocess and maybe parse any output to get status
+            log.info("Polling helm subprocess")
             status = self._poll()
             if status:
+                log.info(status)
                 return status
-
-        return cluster.ToolDeployment(self.user, self.tool).get_status(id_token)
+        return cluster.ToolDeployment(self.user, self.tool).get_status(
+            id_token
+        )
 
     def _poll(self):
         """
         Poll the deployment subprocess for status
         """
-
         if self._subprocess.poll() is None:
             return cluster.TOOL_DEPLOYING
-
         if self._subprocess.returncode:
+            log.error(self._subprocess.stdout.read().strip())
             log.error(self._subprocess.stderr.read().strip())
             return cluster.TOOL_DEPLOY_FAILED
-
+        # The process must have finished with a success. Log the output for
+        # the sake of visibility.
+        log.info(self._subprocess.stdout.read().strip())
         self._subprocess = None
 
     @property
@@ -182,7 +188,6 @@ class ToolDeployment:
         """
         Restart the tool deployment
         """
-
         cluster.ToolDeployment(self.user, self.tool).restart(id_token)
 
 
@@ -213,19 +218,19 @@ class HomeDirectory:
             status = self._poll()
             if status:
                 return status
-
         return cluster.HOME_RESET
 
     def _poll(self):
         """
         Poll the deployment subprocess for status
         """
-
         if self._subprocess.poll() is None:
             return cluster.HOME_RESETTING
-
         if self._subprocess.returncode:
+            log.error(self._subprocess.stdout.read().strip())
             log.error(self._subprocess.stderr.read().strip())
             return cluster.HOME_RESET_FAILED
-
+        # The process must have finished with a success. Log the output for
+        # the sake of visibility.
+        log.info(self._subprocess.stdout.read().strip())
         self._subprocess = None
