@@ -73,6 +73,7 @@ class CreateAppForm(forms.Form):
                 try:
                     S3Bucket.objects.get(name=new_datasource)
                     self.add_error(
+                        "new_datasource_name",
                         f"Datasource named {new_datasource} already exists"
                     )
                 except S3Bucket.DoesNotExist:
