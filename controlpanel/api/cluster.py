@@ -94,9 +94,8 @@ class User:
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        if releases:
-            helm.delete(releases)
-        helm.delete(f"init-user-{self.user.slug}")
+        releases.append(f"init-user-{self.user.slug}")
+        helm.delete(self.k8s_namespace, *releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -135,7 +134,7 @@ class App:
     def delete(self):
         aws.delete_role(self.iam_role_name)
         auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
-        helm.delete(self.app.release_name)
+        helm.delete(self.APPS_NS, self.app.release_name)
 
     @property
     def url(self):
@@ -328,8 +327,8 @@ class ToolDeployment:
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
         helm.delete(
+            self.k8s_namespace,
             deployment.metadata.name,
-            f"--namespace={self.k8s_namespace}",
         )
 
     def restart(self, id_token):

@@ -54,14 +54,15 @@ def test_reset_home(helm, users):
 
 def test_delete(aws, helm, users):
     user = users['normal_user']
+    helm.list_releases.return_value = ["chart-release", ]
     cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    expected_calls = [
-        call(helm.list_releases.return_value),
-        call(f"init-user-{user.slug}"),
-    ]
-    helm.delete.assert_has_calls(expected_calls)
+    helm.delete.assert_called_once_with(
+        user.k8s_namespace,
+        "chart-release",
+        f"init-user-{user.slug}"
+    )
 
 
 def test_delete_with_no_releases(aws, helm, users):
@@ -74,4 +75,7 @@ def test_delete_with_no_releases(aws, helm, users):
     cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete.assert_called_once_with(f"init-user-{user.slug}")
+    helm.delete.assert_called_once_with(
+        user.k8s_namespace,
+        f"init-user-{user.slug}"
+    )

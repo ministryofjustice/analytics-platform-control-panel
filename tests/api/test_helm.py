@@ -239,8 +239,15 @@ def test_delete():
     The delete function results in the expected helm command to be executed.
     """
     with patch("controlpanel.api.helm._execute") as mock_execute:
-        helm.delete("foo", "bar", "baz")
-        mock_execute.assert_called_once_with("delete", "foo", "bar", "baz")
+        helm.delete("my_namespace", "foo", "bar", "baz")
+        mock_execute.assert_called_once_with(
+            "uninstall",
+            "foo",
+            "bar",
+            "baz",
+            "--namespace",
+            "my_namespace"
+        )
 
 
 def test_list_releases_with_release():
