@@ -69,7 +69,6 @@ def _execute(*args, **kwargs):
         )
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
-    log.info("OS environment: " + str(env))
     if "DEBUG" in env:
         del env["DEBUG"]
     # Run the helm command in a sub-process.
