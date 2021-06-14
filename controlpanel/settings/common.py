@@ -444,6 +444,8 @@ TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 # hostname of NFS server for user homes
 NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
 
+# hostname of the EFS server for user homes
+EFS_HOSTNAME = os.environ.get("EFS_HOSTNAME")
 
 # -- Redis
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
