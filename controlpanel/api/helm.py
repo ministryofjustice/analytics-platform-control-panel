@@ -151,14 +151,22 @@ def upgrade_release(release, chart, *args):
     )
 
 
-def delete(*args):
+def delete(namespace, *args):
     """
-    Delete a helm chart identified by the content of the args list. Logs the
-    stdout result of the command.
+    Delete helm charts identified by the content of the args list in the
+    referenced namespace.
+
+    Logs the stdout result of the command.
     """
+    if not namespace:
+        raise ValueError(
+            "Cannot proceed: a namespace needed for removal of release."
+        )
     proc = _execute(
-        "delete",
+        "uninstall",
         *args,
+        "--namespace",
+        namespace
     )
     stdout = proc.stdout.read()
     log.info(stdout)
