@@ -19,6 +19,7 @@ def test_create(aws, helm, settings, users):
             f'init-user-{user.slug}',
             'mojanalytics/init-user',
             f"--set=NFSHostname={settings.NFS_HOSTNAME},"
+            f"--set=EFSHostname={settings.EFS_HOSTNAME},"
             f"Username={user.slug},"
             f"Email={user.email},"
             f"Fullname={user.get_full_name()},"

@@ -59,6 +59,7 @@ class User:
             + (
                 f"Env={settings.ENV},"
                 f"NFSHostname={settings.NFS_HOSTNAME},"
+                f"EFSHostname={settings.EFS_HOSTNAME},"
                 f"OidcDomain={settings.OIDC_DOMAIN},"
                 f"Email={self.user.email},"
                 f"Fullname={self.user.name},"
