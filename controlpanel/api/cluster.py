@@ -99,6 +99,11 @@ class User:
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
+    def on_authenticate(self):
+        if not helm.list_releases(f"init-user-{self.user.slug}"):
+            log.warning(f"Re-running init user chart for {self.user.slug}")
+            self._init_user()
+
 
 class App:
     """
