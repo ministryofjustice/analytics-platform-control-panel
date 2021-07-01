@@ -49,9 +49,7 @@ class User:
     def iam_role_name(self):
         return f"{settings.ENV}_user_{self.user.username.lower()}"
 
-    def create(self):
-        aws.create_user_role(self.user)
-
+    def _init_user(self):
         helm.upgrade_release(
             f"init-user-{self.user.slug}",
             f"{settings.HELM_REPO}/init-user",
@@ -66,6 +64,12 @@ class User:
                 f"Username={self.user.slug}"
             ),
         )
+
+    def create(self):
+        aws.create_user_role(self.user)
+
+        self._init_user()
+
         helm.upgrade_release(
             f"config-user-{self.user.slug}",
             f"{settings.HELM_REPO}/config-user",
