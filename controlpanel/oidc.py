@@ -42,6 +42,17 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
     def verify_claims(self, claims):
         return True
 
+    def authenticate(self, request, **kwargs):
+        """
+        To avoid cloning and re-implementing the OIDC Backend authenticate method,
+        This checks the output of that method, and calls the authentication_event hook
+        if a user has been sucessfully implemented.
+        """
+        authenticated_user = super().authenticate(request, **kwargs)
+        if authenticated_user:
+            authenticated_user.authentication_event()
+        return authenticated_user
+
 
 class StateMismatchHandler(OIDCAuthenticationCallbackView):
 

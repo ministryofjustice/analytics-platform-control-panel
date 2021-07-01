@@ -100,3 +100,6 @@ class User(AbstractUser):
     def delete(self, *args, **kwargs):
         cluster.User(self).delete()
         return super().delete(*args, **kwargs)
+
+    def authentication_event(self):
+        cluster.User(self).on_authenticate()
