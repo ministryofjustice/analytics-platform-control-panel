@@ -12,6 +12,7 @@
 | `DB_PORT` | Postgres port | `5432` |
 | `DB_USER` | Postgres username | |
 | `DEBUG` | Run in debug mode, displaying stacktraces on errors, etc | `False` |
+| `EFS_HOSTNAME` | Hostname of EFS server for user homes | |
 | `ELASTICSEARCH_HOST` | | |
 | `ELASTICSEARCH_INDEX_S3LOGS` | | `s3logs-*` |
 | `ELASTICSEARCH_PASSWORD` | | |
@@ -20,7 +21,10 @@
 | `ENABLE_*` | See [Feature flags](feature-flags.md) | |
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
 | `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
+| `GOOGLE_ANALYTICS_ID` | Key for Google Analytics account | |
+| `HELM_REPOS` | Helm repository where the tool charts are hosted | `mojanalytics` |
 | `K8S_WORKER_ROLE_NAME` | the name of the IAM role assigned to Kubernetes nodes, e.g. `nodes.dev.mojanalytics.xyz`. Combined with the ARN base to generate a full ARN like `arn:aws:iam::123456789012:role/nodes.dev.mojanalytics.xyz` | |
+| `KIBANA_BASE_URL` | Kibana endpoint for Elastic logs | `https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana` |
 | `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
 | `LOGS_BUCKET_NAME` | Name of S3 bucket where logs are stored | `moj-analytics-s3-logs` |
 | `NFS_HOSTNAME` | Hostname of NFS server for user homes | |
@@ -39,7 +43,9 @@
 | `SECRET_KEY` | Secret key used to encrypt cookies, etc | |
 | `SENTRY_DSN` | Sentry credentials | |
 | `SLACK_API_TOKEN` | Slack token ([more information](https://slack.dev/python-slackclient/auth.html) | Mandatory, but doesn't need to be valid unless you're working with Slack |
+| `SLACK_CHANNEL` | The channel to where Slack messages are to be posted | `#analytical-platform` |
 | `TOOLS_DOMAIN` | Domain where tools are deployed | |
+| `USER_GUIDANCE_BASE_URL` | Domain where user guidance is found | |
 | `*_AUTH_CLIENT_DOMAIN` | OIDC domain for tool instances | [`OIDC_DOMAIN`]() |
 | `*_AUTH_CLIENT_ID` | OIDC client ID for tool instances | |
 | `*_AUTH_CLIENT_SECRET` | OIDC client secret for tool instances | |
