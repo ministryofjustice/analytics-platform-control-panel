@@ -11,7 +11,6 @@ from controlpanel.api.helm import HelmError, helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 
-
 log = logging.getLogger(__name__)
 
 
@@ -304,9 +303,11 @@ class ToolDeployment:
         values.update(kwargs)
         set_values = []
         for key, val in values.items():
-            escaped_val = val.replace(",", "\,")
-            set_values.extend(["--set", f"{key}={escaped_val}"])
-
+            if val: # Helpful for debugging configs: ignore parameters with missing values and log that the value is missing.
+                escaped_val = val.replace(",", "\,")
+                set_values.extend(["--set", f"{key}={escaped_val}"])
+            else:
+                log.warning(f"Missing value for helm chart param release - {self.release_name} version - {self.tool.version} namespace - {self.k8s_namespace}, key name - {key}")
         return set_values
 
     def install(self, **kwargs):
