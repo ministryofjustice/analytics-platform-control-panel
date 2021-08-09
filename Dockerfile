@@ -13,7 +13,7 @@ FROM quay.io/mojanalytics/alpine:3.13 AS base
 
 ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
-ARG HELM_BASEURL=https://storage.googleapis.com/kubernetes-helm
+ARG HELM_BASEURL=https://get.helm.sh
 
 ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   HELM_HOME=/tmp/helm
