@@ -16,7 +16,6 @@ services:
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     depends_on: [db]
-    links: [db]
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
@@ -32,7 +31,6 @@ services:
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     depends_on: [redis, db]
-    links: [redis, db]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
@@ -58,8 +56,7 @@ services:
     build:
       context: .
     ports: ["8000:8000"]
-    depends_on: [worker, db]
-    links: [worker, db, redis]
+    depends_on: [worker, db, redis]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
