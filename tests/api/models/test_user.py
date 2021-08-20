@@ -98,3 +98,16 @@ def test_slack_notification_on_grant_superuser_access(slack, users):
         by_username=None,
     )
 
+
+def test_bulk_migration_update(users):
+    """
+    Given a list of users, check the bulk_migration_update results in the
+    expected new migration state.
+    """
+    user = User.objects.get(username="bob")
+    old_state = user.migration_state
+    usernames = [user.username, ]
+    new_state = User.PENDING
+    User.bulk_migration_update(usernames, new_state)
+    user = User.objects.get(username="bob")
+    assert user.migration_state == new_state

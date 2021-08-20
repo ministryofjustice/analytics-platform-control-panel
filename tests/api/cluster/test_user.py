@@ -1,8 +1,9 @@
-from unittest.mock import call, patch
+from unittest.mock import call, patch, MagicMock
 
 import pytest
 
 from controlpanel.api import cluster
+from controlpanel.api.models.user import User
 
 
 def test_iam_role_name(users):
@@ -128,3 +129,50 @@ def test_delete_eks_with_no_releases(aws, helm, users):
         f"bootstrap-user-{user.slug}",
         f"provision-user-{user.slug}"
     )
+
+
+def test_on_authenticate(helm, users):
+    """
+    If not on EKS, check if the user has an init-user chart, if not, run it.
+    """
+    user_model = users["normal_user"]
+    helm.list_releases.return_value = []
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    user._init_user.assert_called_once_with()
+
+
+def test_on_authenticate_eks_completely_new_user(helm, users):
+    """
+    On EKS, if a completely (non-migrating) user is encountered, the expected
+    user initialisation takes place.
+    """
+    user_model = users['normal_user']
+    helm.list_releases.return_value = []
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        user = cluster.User(user_model)
+        user._init_user = MagicMock()
+        user.on_authenticate()
+        user._init_user.assert_called_once_with()
+    updated_user_model = User.objects.get(username="bob")
+    assert updated_user_model.migration_state == User.COMPLETE
+
+
+def test_on_authenticate_eks_migrating_existing_user(helm, users):
+    """
+    On EKS, if a migrating user is encountered, the expected user
+    initialisation takes place.
+    """
+    user_model = users['normal_user']
+    user_model.migration_state = User.PENDING  # the user is ready to migrate.
+    init_helm_chart = f"init-user-{user_model.slug}"
+    helm.list_releases.return_value = [init_helm_chart, ]
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        user = cluster.User(user_model)
+        user._init_user = MagicMock()
+        user.on_authenticate()
+        user._init_user.assert_called_once_with()
+        helm.delete.assert_called_once_with(user.k8s_namespace, init_helm_chart)
+    updated_user_model = User.objects.get(username="bob")
+    assert updated_user_model.migration_state == User.COMPLETE
