@@ -129,9 +129,32 @@ class User:
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def on_authenticate(self):
-        if not helm.list_releases(f"init-user-{self.user.slug}"):
-            log.warning(f"Re-running init user chart for {self.user.slug}")
-            self._init_user()
+        init_chart_name = f"init-user-{self.user.slug}"
+        bootstrap_chart_name = f"bootstrap-user-{self.user.slug}"
+        provision_chart_name = f"provision-user-{self.user.slug}"
+        releases = set(helm.list_releases(namespace=self.k8s_namespace))
+        is_migrated = {bootstrap_chart_name, provision_chart_name, } <= releases
+        if settings.EKS:
+            # On the new cluster, check if the bootstrap/provision helm
+            # charts exist. If not, this is the user's first login to the new
+            # platform. Run these helm charts to migrate the user to the new
+            # platform. Ensure this is all stored in the database in case they
+            # try to log into the control panel on the old infrastructure.
+            if not is_migrated:
+                # Indicate the migration process is started for this user.
+                self.user.migration_state = self.user.MIGRATING
+                self.user.save()
+                # Remove old infra's user init chart. TODO: Confirm this step.
+                helm.delete(self.k8s_namespace, init_chart_name)
+                # Run the new charts to configure the user for EKS infra.
+                self._init_user()
+                # Update the user's state in the database.
+                self.user.migration_state = self.user.COMPLETE
+                self.user.save()
+        else:
+            if init_chart_name not in releases:
+                log.warning(f"Re-running init user chart for {self.user.slug}")
+                self._init_user()
 
 
 class App:
