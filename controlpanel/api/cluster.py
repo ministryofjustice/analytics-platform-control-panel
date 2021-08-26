@@ -50,36 +50,45 @@ class User:
         return f"{settings.ENV}_user_{self.user.username.lower()}"
 
     def _init_user(self):
-        helm.upgrade_release(
-            f"init-user-{self.user.slug}",  # release
-            f"{settings.HELM_REPO}/init-user",  # chart
-            f"--set="
-            + (
-                f"Env={settings.ENV},"
-                f"NFSHostname={settings.NFS_HOSTNAME},"
-                f"EFSHostname={settings.EFS_HOSTNAME},"
-                f"OidcDomain={settings.OIDC_DOMAIN},"
-                f"Email={self.user.email},"
-                f"Fullname={self.user.name},"
-                f"Username={self.user.slug}"
-            ),
-        )
+        if settings.EKS:
+            helm.upgrade_release(
+                f"bootstrap-user-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/bootstrap-user",  # chart
+                f"--set="
+                + (
+                    f"Username={self.user.slug}"
+                ),
+            )
+            helm.upgrade_release(
+                f"provision-user-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/provision-user",  # chart
+                f"--namespace={self.k8s_namespace}",
+                f"--set="
+                + (
+                    f"Username={self.user.slug},"
+                    f"Efsvolume={settings.EFS_VOLUME},"
+                ),
+            )
+        else:
+            helm.upgrade_release(
+                f"init-user-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/init-user",  # chart
+                f"--set="
+                + (
+                    f"Env={settings.ENV},"
+                    f"NFSHostname={settings.NFS_HOSTNAME},"
+                    f"EFSHostname={settings.EFS_HOSTNAME},"
+                    f"OidcDomain={settings.OIDC_DOMAIN},"
+                    f"Email={self.user.email},"
+                    f"Fullname={self.user.name},"
+                    f"Username={self.user.slug}"
+                ),
+            )
 
     def create(self):
         aws.create_user_role(self.user)
 
         self._init_user()
-
-        helm.upgrade_release(
-            f"provision-user-{self.user.slug}",  # release
-            f"{settings.HELM_REPO}/provision-user",  # chart
-            f"--namespace={self.k8s_namespace}",
-            f"--set="
-            + (
-                f"Username={self.user.slug},"
-                f"Efsvolume={settings.EFS_VOLUME},"
-            ),
-        )
 
         helm.upgrade_release(
             f"config-user-{self.user.slug}",  # release
@@ -102,8 +111,14 @@ class User:
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
         releases = helm.list_releases(namespace=self.k8s_namespace)
+        # Delete all the user initialisation charts.
         releases.append(f"init-user-{self.user.slug}")
-        helm.delete(self.k8s_namespace, *releases)
+        releases.append(f"bootstrap-user-{self.user.slug}")
+        releases.append(f"provision-user-{self.user.slug}")
+        if settings.EKS:
+            helm.delete_eks(self.k8s_namespace, *releases)
+        else:
+            helm.delete(*releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -147,7 +162,10 @@ class App:
     def delete(self):
         aws.delete_role(self.iam_role_name)
         auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
-        helm.delete(self.APPS_NS, self.app.release_name)
+        if settings.EKS:
+            helm.delete_eks(self.APPS_NS, self.app.release_name)
+        else:
+            helm.delete(self.app.release_name)
 
     @property
     def url(self):
@@ -290,6 +308,28 @@ class ToolDeployment:
     def release_name(self):
         return f"{self.chart_name}-{self.user.slug}"
 
+    def _delete_legacy_release(self):
+        """
+        At some point the naming scheme for RStudio
+        changed. This cause upgrade problems when
+        an old release with the old release name is
+        present.
+
+        We're going to temporarily check/uninstall
+        releases with the old name before installing
+        the new release with the correct name.
+
+        We can remove this once every user is on new naming
+        scheme for RStudio.
+        """
+
+        old_release_name = f"{self.user.slug}-{self.chart_name}"
+        if old_release_name in helm.list_releases(old_release_name):
+            if settings.EKS:
+                helm.delete_eks(self.k8s_namespace, self.app.release_name)
+            else:
+                helm.delete(old_release_name)
+
     def _set_values(self, **kwargs):
         """
         Return the list of `--set KEY=VALUE` helm upgrade arguments
@@ -321,6 +361,7 @@ class ToolDeployment:
         return set_values
 
     def install(self, **kwargs):
+        self._delete_legacy_release()
 
         try:
             set_values = self._set_values(**kwargs)
@@ -341,10 +382,13 @@ class ToolDeployment:
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        helm.delete(
-            self.k8s_namespace,
-            deployment.metadata.name,
-        )
+        if settings.EKS:
+            helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
+        else:
+            helm.delete(
+                deployment.metadata.name,
+                f"--namespace={self.k8s_namespace}"
+            )
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

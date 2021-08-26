@@ -163,6 +163,27 @@ def test_create_user_role(iam, managed_policy, users):
     role = iam.Role(user.iam_role_name)
     pd = role.assume_role_policy_document
 
+    assert len(pd['Statement']) == 4
+    assert ec2_assume_role(pd['Statement'][0])
+    assert k8s_assume_role(pd['Statement'][1])
+    assert saml_assume_role(pd['Statement'][2])
+    assert oidc_assume_role(pd['Statement'][3], user)
+
+    attached_policies = list(role.attached_policies.all())
+    assert len(attached_policies) == 1
+    assert attached_policies[0].arn == managed_policy['Arn']
+
+
+def test_create_user_role_EKS(iam, managed_policy, users):
+    """
+    Ensure EKS settngs are in the policy document when running on that
+    infrastructure.
+    """
+    user = users['normal_user']
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        aws.create_user_role(user)
+        role = iam.Role(user.iam_role_name)
+        pd = role.assume_role_policy_document
     assert len(pd['Statement']) == 5
     assert ec2_assume_role(pd['Statement'][0])
     assert k8s_assume_role(pd['Statement'][1])

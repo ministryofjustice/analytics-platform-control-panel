@@ -16,6 +16,8 @@ ENABLED = {
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
 
+# Flag to indicate if running on an EKS cluster.
+EKS = bool(os.environ.get("EKS", False))
 
 # -- Paths
 
@@ -440,6 +442,9 @@ HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
 
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
+
+# hostname of NFS server for user homes
+NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
 
 # volume name for the EFS directory for user homes
 EFS_VOLUME = os.environ.get("EFS_VOLUME")

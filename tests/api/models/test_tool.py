@@ -31,6 +31,9 @@ def test_deploy_for_generic(helm, token_hex, tool, users):
     tool_deployment = ToolDeployment(tool, user)
     tool_deployment.save()
 
+    # uninstall tool with old naming scheme
+    helm.delete.assert_called_with(old_release_name)
+
     # install new release
     helm.upgrade_release.assert_called_with(
         f"{tool.chart_name}-{user.slug}",

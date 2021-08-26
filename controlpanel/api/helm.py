@@ -18,12 +18,28 @@ CACHE_FOR_MINUTES = 5 * 60
 
 # TODO: Work out the story for HELM_HOME
 HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
-REPO_PATH = os.path.join(
-    HELM_HOME,
-    "cache",
-    "repository",
-    f"{settings.HELM_REPO}-index.yaml",
-)
+
+
+def get_repo_path():
+    """
+    Get the path for the repository cache. Will return the correct location
+    depending on the settings.EKS flag (if true, uses Helm 3's default
+    location, otherwise uses Helm 2's).
+    """
+    if settings.EKS:
+        return os.path.join(
+            HELM_HOME,
+            "cache",
+            "repository",
+            f"{settings.HELM_REPO}-index.yaml",
+        )
+    else:
+        return os.path.join(
+            HELM_HOME,
+            "repository",
+            "cache",
+            f"{settings.HELM_REPO}-index.yaml",
+        )
 
 
 class HelmError(APIException):
@@ -115,20 +131,21 @@ def update_helm_repository():
     all the available charts. Raises a HelmError if there's a problem reading
     the helm repository cache.
     """
+    repo_path = get_repo_path()
     # If there's no helm repository cache, call helm repo update to fill it.
-    if not os.path.exists(REPO_PATH):
+    if not os.path.exists(repo_path):
         _execute("repo", "update", timeout=None)  # timeout = infinity.
     # Execute the helm repo update command if the helm repository cache is
     # stale (older than CACHE_FOR_MINUTES value).
-    if os.path.getmtime(REPO_PATH) + CACHE_FOR_MINUTES < time.time():
+    if os.path.getmtime(repo_path) + CACHE_FOR_MINUTES < time.time():
         _execute("repo", "update", timeout=None)  # timeout = infinity.
     try:
-        with open(REPO_PATH) as f:
+        with open(repo_path) as f:
             return yaml.load(f, Loader=yaml.FullLoader)
     except Exception as ex:
         error = HelmError(ex)
         error.detail = (
-            f"Error while opening/parsing helm repository cache: '{REPO_PATH}'"
+            f"Error while opening/parsing helm repository cache: '{repo_path}'"
         )
         raise HelmError(error)
 
@@ -151,10 +168,10 @@ def upgrade_release(release, chart, *args):
     )
 
 
-def delete(namespace, *args):
+def delete_eks(namespace, *args):
     """
     Delete helm charts identified by the content of the args list in the
-    referenced namespace.
+    referenced namespace. Helm 3 version.
 
     Logs the stdout result of the command.
     """
@@ -167,6 +184,22 @@ def delete(namespace, *args):
         *args,
         "--namespace",
         namespace
+    )
+    stdout = proc.stdout.read()
+    log.info(stdout)
+
+
+def delete(*args):
+    """
+    Delete helm charts identified by the content of the args list. Helm 2
+    version.
+
+    Logs the stdout result of the command.
+    """
+    proc = _execute(
+        "delete",
+        "--purge",
+        *args
     )
     stdout = proc.stdout.read()
     log.info(stdout)

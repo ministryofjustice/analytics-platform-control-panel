@@ -195,7 +195,8 @@ def create_user_role(user):
     eks_statement["Condition"]["StringLike"] = {
         f"{settings.OIDC_EKS_PROVIDER}:sub": match
     }
-    policy["Statement"].append(eks_statement)
+    if settings.EKS:
+        policy["Statement"].append(eks_statement)
 
     iam = boto3.resource("iam")
     try:

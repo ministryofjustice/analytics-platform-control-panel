@@ -1,9 +1,11 @@
+import os
 import time
 import pytest
 import subprocess
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 from controlpanel.api import helm
+from django.conf import settings
 
 
 # ------ Original unit tests
@@ -103,6 +105,27 @@ def test_helm_upgrade_release():
 
 
 # ------ New (comprehensive) unit tests.
+
+
+def test_get_repo_path():
+    """
+    The repo path is different depend on if we're running on EKS or the old
+    infrastructure. This test ensures that the right repo path is used
+    depending on the state of the settings.EKS flag.
+    """
+    assert helm.get_repo_path() == os.path.join(
+        helm.HELM_HOME,
+        "repository",
+        "cache",
+        f"{settings.HELM_REPO}-index.yaml",
+    )
+    with patch("controlpanel.api.helm.settings.EKS", True):
+        assert helm.get_repo_path() == os.path.join(
+            helm.HELM_HOME,
+            "cache",
+            "repository",
+            f"{settings.HELM_REPO}-index.yaml",
+        )
 
 
 def test_execute_ignores_debug():
@@ -236,10 +259,26 @@ def test_update_helm_repository_valid_cache(helm_repository_index):
 
 def test_delete():
     """
-    The delete function results in the expected helm command to be executed.
+    The delete function (helm 2) results in the expected helm command to be
+    executed.
     """
     with patch("controlpanel.api.helm._execute") as mock_execute:
-        helm.delete("my_namespace", "foo", "bar", "baz")
+        helm.delete("foo", "bar", "baz")
+        mock_execute.assert_called_once_with(
+            "delete",
+            "--purge",
+            "foo",
+            "bar",
+            "baz",
+        )
+
+def test_delete_eks():
+    """
+    The delete_eks function (helm 3)results in the expected helm command to be
+    executed.
+    """
+    with patch("controlpanel.api.helm._execute") as mock_execute:
+        helm.delete_eks("my_namespace", "foo", "bar", "baz")
         mock_execute.assert_called_once_with(
             "uninstall",
             "foo",
