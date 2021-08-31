@@ -218,6 +218,9 @@ def get_chart_info(chart_name):
     chart_info = {}  # The end result.
     # Update and grab repository metadata.
     repository = update_helm_repository()
+    if not repository:
+        # Metadata not available, so bail with empty dictionary.
+        return chart_info
     entries = repository.get("entries")
     if entries:
         versions = entries.get(chart_name)

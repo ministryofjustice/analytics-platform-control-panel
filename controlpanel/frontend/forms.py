@@ -308,4 +308,4 @@ class ToolReleaseForm(forms.ModelForm):
 
     class Meta:
         model = Tool
-        fields = ["name", "chart_name", "version", "is_restricted", ]
+        fields = ["name", "chart_name", "version", "values", "is_restricted", "target_infrastructure"]

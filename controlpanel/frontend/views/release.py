@@ -52,6 +52,10 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         for user in self.object.target_users.all():
             target_users.append(user.username)
         context['target_users'] = ", ".join(target_users)
+        context['infra_choices'] = [
+            {"text": c[1], "value": c[0], "checked": self.object.target_infrastructure == c[0]}
+            for c in ToolReleaseForm.base_fields["target_infrastructure"].choices
+        ]
         return context
 
     def form_valid(self, form):
