@@ -2,7 +2,7 @@ import logging
 import secrets
 
 from django.conf import settings
-from django.contrib.postgres.fields import JSONField
+from django.db.models import JSONField
 import django.core.exceptions
 from django.db import models
 from django.db.models import Q
@@ -21,6 +21,16 @@ class Tool(TimeStampedModel):
     of Tool is an item in the Software Catalogue - not a user's deployed
     instance of a tool.
     """
+
+    # States that indicate which infrastructure a tool is to target.
+    OLD = "o"  # Old pre-EKS infrastructure.
+    EKS = "e"  # EKS infrastructure.
+
+    INFRASTRUCTURE_STATES = (
+        (OLD, "Old pre-EKS infrastructure."),
+        (EKS, "Amazon EKS infrastructure."),
+    )
+
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
     name = models.CharField(max_length=100, blank=False)
@@ -30,6 +40,13 @@ class Tool(TimeStampedModel):
     is_restricted = models.BooleanField(default=False)
     # The users for whom this release is visible
     target_users = models.ManyToManyField("User")
+    # The infrastructure this tool targets.
+    target_infrastructure = models.CharField(
+        help_text="The infrastructure this tool targets.",
+        max_length=1,
+        choices=INFRASTRUCTURE_STATES,
+        default=OLD
+    )
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"

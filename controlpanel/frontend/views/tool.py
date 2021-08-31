@@ -29,13 +29,21 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         """
         Return a queryset for Tool objects where:
 
+        * The tool is to be run on this version of the infrastructure.
+
+        AND EITHER:
+
         * The tool is not in beta,
 
         OR
 
         * The current user is in the beta tester group for the tool.
         """
-        return Tool.objects.filter(
+        if settings.EKS:
+            qs = Tool.objects.filter(target_infrastructure=Tool.EKS)
+        else:
+            qs = Tool.objects.filter(target_infrastructure=Tool.OLD)
+        return qs.filter(
             Q(is_restricted=False) |
             Q(target_users=self.request.user.id)
         )
