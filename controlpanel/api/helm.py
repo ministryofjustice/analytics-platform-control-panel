@@ -33,13 +33,12 @@ def get_repo_path():
             "repository",
             f"{settings.HELM_REPO}-index.yaml",
         )
-    else:
-        return os.path.join(
-            HELM_HOME,
-            "repository",
-            "cache",
-            f"{settings.HELM_REPO}-index.yaml",
-        )
+    return os.path.join(
+        HELM_HOME,
+        "repository",
+        "cache",
+        f"{settings.HELM_REPO}-index.yaml",
+    )
 
 
 class HelmError(APIException):
