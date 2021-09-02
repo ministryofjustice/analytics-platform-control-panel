@@ -5,6 +5,8 @@
 {% from "fieldset/macro.html" import govukFieldset %}
 {% from "includes/yesno.html" import yes_no %}
 {% from "includes/list-field.html" import list_field_textarea %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+
 
 {% extends "base.html" %}
 
@@ -16,8 +18,8 @@ Create a new release of a tool in the analytical platform.
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if form.error %}
-    <div class="error">{{ form.error }}</div>
+  {% if form.errors %}
+      {{ govukErrorMessage({"text": form.errors}) }}
   {% endif %}
 
   <form action="{{ url('manage-tool-release', kwargs={ "pk": release.pk}) }}" method="post">
