@@ -129,6 +129,20 @@
   {% endif %}
 
   {{ alerts() }}
+  {% if request.user.is_authenticated and request.user.migration_state == request.user.PENDING %}
+  <br/>
+  <div class="govuk-width-container">
+    <div class="govuk-warning-text">
+      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+      <strong class="govuk-warning-text__text">
+        <span class="govuk-warning-text__assistive">Warning</span>
+        Migrate to our new infrastructure. This cannot be reversed.
+        <a href="https://controlpanel.services.dev.analytical-platform.service.justice.gov.uk/">Click here to begin</a>.
+      </strong>
+    </div>
+    <hr class="govuk-section-break govuk-section-break--visible">
+  </div>
+  {% endif %}
 {% endblock %}
 
 {% block footer %}

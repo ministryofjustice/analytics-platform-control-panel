@@ -89,7 +89,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "controlpanel.middleware.DisableClientSideCachingMiddleware",
     "controlpanel.middleware.LegacyAPIRedirectMiddleware",
-    "controlpanel.middleware.MigrateAlertMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
