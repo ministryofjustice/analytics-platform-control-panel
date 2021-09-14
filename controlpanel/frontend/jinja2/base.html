@@ -129,7 +129,7 @@
   {% endif %}
 
   {{ alerts() }}
-  {% if request.user.is_authenticated and request.user.migration_state == request.user.PENDING %}
+  {% if not hide_nav and request.user.is_authenticated and request.user.migration_state == request.user.PENDING %}
   <br/>
   <div class="govuk-width-container">
     <div class="govuk-warning-text">
