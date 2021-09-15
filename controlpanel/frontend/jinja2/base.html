@@ -120,6 +120,11 @@
         "admin": request.user.is_superuser,
       },
       {
+        "text": "Training",
+        "href": url("training"),
+        "active": page_name == "training",
+      },
+      {
         "text": "Help",
         "href": url("help"),
         "active": page_name == "help",
