@@ -67,6 +67,9 @@ class User:
                 + (
                     f"Username={self.user.slug},"
                     f"Efsvolume={settings.EFS_VOLUME},"
+                    f"OidcDomain={settings.OIDC_DOMAIN},"
+                    f"Email={self.user.email},"
+                    f"Fullname={self.user.name},"
                 ),
             )
         else:
