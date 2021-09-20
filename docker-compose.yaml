@@ -124,3 +124,74 @@ services:
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
       defaultRegion: eu-west-1
       iamRole: ${iamRole:-dev_control_panel_api}
+
+  frontend_eks:
+    # Apologies to future devops. Naming is hard.
+    image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
+    network_mode: ${NETWORK:-default}
+    ports: ["8000:8000"]
+    depends_on: [worker, db]
+    links: [worker, db, redis]
+    volumes:
+      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
+      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
+    # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+    environment:
+      AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
+      AIRFLOW_AUTH_CLIENT_SECRET: ${AIRFLOW_AUTH_CLIENT_SECRET}
+      AIRFLOW_FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW_SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}
+      AWS_COMPUTE_ACCOUNT_ID: ${AWS_COMPUTE_ACCOUNT_ID}
+      AWS_DATA_ACCOUNT_ID: ${AWS_DATA_ACCOUNT_ID}
+      AWS_DEFAULT_REGION:
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      DB_HOST: "db"
+      DB_NAME: controlpanel
+      DB_PASSWORD: password
+      DB_PORT: 5432
+      DB_USER: controlpanel
+      DEBUG: "True"
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EKS: "True"
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+      ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
+      ENV: "dev"
+      IAM_ARN_BASE: ${IAM_ARN_BASE}
+      JUPYTER_LAB_AUTH_CLIENT_ID: ${JUPYTER_LAB_AUTH_CLIENT_ID}
+      JUPYTER_LAB_AUTH_CLIENT_SECRET: ${JUPYTER_LAB_AUTH_CLIENT_SECRET}
+      K8S_WORKER_ROLE_NAME: ${K8S_WORKER_ROLE_NAME}
+      LOGS_BUCKET_NAME: ${LOGS_BUCKET_NAME}
+      NFS_HOSTNAME: ${NFS_HOSTNAME}
+      EFS_HOSTNAME: ${EFS_HOSTNAME}
+      OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
+      OIDC_OP_AUTHORIZATION_ENDPOINT: ${OIDC_OP_AUTHORIZATION_ENDPOINT}
+      OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
+      OIDC_OP_TOKEN_ENDPOINT: ${OIDC_OP_TOKEN_ENDPOINT}
+      OIDC_OP_USER_ENDPOINT: ${OIDC_OP_USER_ENDPOINT}
+      OIDC_RP_SIGN_ALGO: "RS256"
+      PYTHONUNBUFFERED: "1"
+      REDIS_HOST: "redis"
+      REDIS_PASSWORD: "controlpanel"
+      RSTUDIO_AUTH_CLIENT_ID: ${RSTUDIO_AUTH_CLIENT_ID}
+      RSTUDIO_AUTH_CLIENT_SECRET: ${RSTUDIO_AUTH_CLIENT_SECRET}
+      SAML_PROVIDER: ${SAML_PROVIDER}
+      OIDC_EKS_PROVIDER: ${OIDC_EKS_PROVIDER}
+      SECRET_KEY: "1234567890"
+      SLACK_API_TOKEN: "dummy"
+      SLACK_CHANNEL: ${SLACK_CHANNEL}
+      TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
+      defaultRegion: eu-west-1
+      iamRole: ${iamRole:-dev_control_panel_api}
