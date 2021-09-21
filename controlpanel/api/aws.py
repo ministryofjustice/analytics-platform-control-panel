@@ -198,21 +198,28 @@ def create_user_role(user):
     if settings.EKS:
         policy["Statement"].append(eks_statement)
 
-    iam = boto3.resource("iam")
     try:
+        iam = boto3.resource("iam")
         iam.create_role(
             RoleName=user.iam_role_name,
             AssumeRolePolicyDocument=json.dumps(policy),
+        )
+        role = iam.Role(user.iam_role_name)
+        role.attach_policy(
+            PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
         )
     except iam.meta.client.exceptions.EntityAlreadyExistsException:
         log.warning(
             f"Skipping creating Role {user.iam_role_name}: Already exists"
         )
-
-    role = iam.Role(user.iam_role_name)
-    role.attach_policy(
-        PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
-    )
+        iam = boto3.client("iam")
+        role = iam.get_role(RoleName=user.iam_role_name)
+        policy = role["Role"]["AssumeRolePolicyDocument"]
+        policy["Statement"].append(eks_statement)
+        client.update_assume_role_policy(
+            RoleName=user.iam_role_name,
+            PolicyDocument=json.dumps(policy)
+        )
 
 
 def delete_role(name):
