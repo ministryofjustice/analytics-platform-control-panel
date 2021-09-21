@@ -220,7 +220,7 @@ def create_user_role(user):
         role = iam.get_role(RoleName=user.iam_role_name)
         policy = role["Role"]["AssumeRolePolicyDocument"]
         policy["Statement"].append(eks_statement)
-        response = client.update_assume_role_policy(
+        response = iam.update_assume_role_policy(
             RoleName=user.iam_role_name,
             PolicyDocument=json.dumps(policy)
         )
