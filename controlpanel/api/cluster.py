@@ -149,6 +149,8 @@ class User:
                 self.user.save()
                 # Remove old infra's user init chart. TODO: Confirm this step.
                 helm.delete(self.k8s_namespace, init_chart_name)
+                # Create or update the AWS roles for the new/migrating user.
+                aws.create_user_role(self.user)
                 # Run the new charts to configure the user for EKS infra.
                 self._init_user()
                 # Update the user's state in the database.
