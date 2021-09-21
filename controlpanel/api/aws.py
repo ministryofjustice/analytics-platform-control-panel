@@ -212,14 +212,19 @@ def create_user_role(user):
         log.warning(
             f"Skipping creating Role {user.iam_role_name}: Already exists"
         )
+        log.warning(
+            "Attempting to update policy."
+        )
+        log.warning(policy)
         iam = boto3.client("iam")
         role = iam.get_role(RoleName=user.iam_role_name)
         policy = role["Role"]["AssumeRolePolicyDocument"]
         policy["Statement"].append(eks_statement)
-        client.update_assume_role_policy(
+        response = client.update_assume_role_policy(
             RoleName=user.iam_role_name,
             PolicyDocument=json.dumps(policy)
         )
+        log.warning(response)
 
 
 def delete_role(name):
