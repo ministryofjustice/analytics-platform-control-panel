@@ -212,18 +212,31 @@ def create_user_role(user):
         log.warning(
             f"Skipping creating Role {user.iam_role_name}: Already exists"
         )
-        log.warning(
-            "Attempting to update policy."
-        )
-        log.warning(policy)
-        iam = boto3.client("iam")
-        role = iam.get_role(RoleName=user.iam_role_name)
-        policy = role["Role"]["AssumeRolePolicyDocument"]
-        policy["Statement"].append(eks_statement)
-        response = iam.update_assume_role_policy(
-            RoleName=user.iam_role_name,
-            PolicyDocument=json.dumps(policy)
-        )
+
+
+def migrate_user_role(user):
+    """
+    Migrate the user role for the EKS platform. This function is only called
+    if the user already exists from the old platform infrastructure.
+    """
+    eks_statement = deepcopy(EKS_STATEMENT)
+    match = f"system:serviceaccount:user-{user.username}:{user.username}-*"
+    eks_statement["Condition"]["StringLike"] = {
+        f"{settings.OIDC_EKS_PROVIDER}:sub": match
+    }
+    log.warning(
+        "Attempting to update policy as part of user migration for "
+        f"{user.username}."
+    )
+    iam = boto3.client("iam")
+    role = iam.get_role(RoleName=user.iam_role_name)
+    policy = role["Role"]["AssumeRolePolicyDocument"]
+    policy["Statement"].append(eks_statement)
+    response = iam.update_assume_role_policy(
+        RoleName=user.iam_role_name,
+        PolicyDocument=json.dumps(policy)
+    )
+    if response:  # The response will be None if OK.
         log.warning(response)
 
 

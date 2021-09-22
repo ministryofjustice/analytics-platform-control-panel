@@ -196,6 +196,32 @@ def test_create_user_role_EKS(iam, managed_policy, users):
     assert attached_policies[0].arn == managed_policy['Arn']
 
 
+def test_migrate_user_role(iam, managed_policy, users):
+    """
+    Ensure a user who was on the old infrastructure has their IAM role policy
+    updated as expected.
+    """
+    user = users['normal_user']
+    mock_boto = MagicMock()
+    mock_iam = MagicMock()
+    mock_boto.client.return_value = mock_iam
+    policy = {
+        "Role": {
+            "AssumeRolePolicyDocument": {
+                "Statement": [],
+            }
+        }
+    }
+    mock_iam.get_role.return_value = policy
+    with patch("controlpanel.api.aws.boto3", mock_boto):
+        aws.migrate_user_role(user)
+    assert eks_assume_role(policy["Role"]["AssumeRolePolicyDocument"]["Statement"][0], user)
+    mock_iam.update_assume_role_policy.assert_called_once_with(
+        RoleName=user.iam_role_name,
+        PolicyDocument=json.dumps(policy["Role"]["AssumeRolePolicyDocument"])
+    )
+
+
 @pytest.mark.parametrize(
     "aws_compute_account_id,aws_data_account_id,expected_principal",
     [

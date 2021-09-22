@@ -132,6 +132,13 @@ class User:
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def on_authenticate(self):
+        """
+        Run on each authenticated login on the control panel. Checks if the
+        expected helm charts exist for the user. If not, will set things up
+        properly. This function also checks if the user is ready to migrate
+        and is logged into the new EKS infrastructure. If so, runs all the
+        charts and AWS updates to cause the migration to be fulfilled.
+        """
         init_chart_name = f"init-user-{self.user.slug}"
         bootstrap_chart_name = f"bootstrap-user-{self.user.slug}"
         provision_chart_name = f"provision-user-{self.user.slug}"
@@ -149,8 +156,8 @@ class User:
                 self.user.save()
                 # Remove old infra's user init chart. TODO: Confirm this step.
                 helm.delete(self.k8s_namespace, init_chart_name)
-                # Create or update the AWS roles for the new/migrating user.
-                aws.create_user_role(self.user)
+                # Migrate the AWS roles for the user.
+                aws.migrate_user_role(self.user)
                 # Run the new charts to configure the user for EKS infra.
                 self._init_user()
                 # Update the user's state in the database.
