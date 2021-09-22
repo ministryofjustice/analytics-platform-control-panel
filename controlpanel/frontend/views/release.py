@@ -82,6 +82,14 @@ class ReleaseCreate(OIDCLoginRequiredMixin,PermissionRequiredMixin,CreateView):
     permission_required = "api.create_tool_release"
     template_name = "release-create.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['infra_choices'] = [
+            {"text": c[1], "value": c[0], "checked": ""}
+            for c in ToolReleaseForm.base_fields["target_infrastructure"].choices
+        ]
+        return context
+
     def form_valid(self, form):
         """
         Ensure the object is created as expected (with the beta-users).

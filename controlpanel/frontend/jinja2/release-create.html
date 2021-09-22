@@ -3,6 +3,7 @@
 {% from "checkboxes/macro.html" import govukCheckboxes %}
 {% from "fieldset/macro.html" import govukFieldset %}
 {% from "includes/list-field.html" import list_field_textarea %}
+{% from "error-message/macro.html" import govukErrorMessage %}
 
 {% extends "base.html" %}
 
@@ -14,8 +15,8 @@
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if form.error %}
-    <div class="error">{{ form.error }}</div>
+  {% if form.errors %}
+      {{ govukErrorMessage({"text": form.errors}) }}
   {% endif %}
 
   <form action="{{ url('create-tool-release') }}" method="post">
