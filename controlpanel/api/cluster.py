@@ -7,7 +7,7 @@ from github import Github, GithubException
 
 from controlpanel.api import auth0, aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
-from controlpanel.api.helm import HelmError, helm
+from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 
@@ -30,6 +30,7 @@ class HomeDirectoryResetError(Exception):
     """
     Raised if a home directory cannot be reset.
     """
+
     pass
 
 
@@ -49,20 +50,43 @@ class User:
         return f"{settings.ENV}_user_{self.user.username.lower()}"
 
     def _init_user(self):
-        helm.upgrade_release(
-            f"init-user-{self.user.slug}",
-            f"{settings.HELM_REPO}/init-user",
-            f"--set="
-            + (
-                f"Env={settings.ENV},"
-                f"NFSHostname={settings.NFS_HOSTNAME},"
-                f"EFSHostname={settings.EFS_HOSTNAME},"
-                f"OidcDomain={settings.OIDC_DOMAIN},"
-                f"Email={self.user.email},"
-                f"Fullname={self.user.name},"
-                f"Username={self.user.slug}"
-            ),
-        )
+        if settings.EKS:
+            helm.upgrade_release(
+                f"bootstrap-user-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/bootstrap-user",  # chart
+                f"--set="
+                + (
+                    f"Username={self.user.slug}"
+                ),
+            )
+            helm.upgrade_release(
+                f"provision-user-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/provision-user",  # chart
+                f"--namespace={self.k8s_namespace}",
+                f"--set="
+                + (
+                    f"Username={self.user.slug},"
+                    f"Efsvolume={settings.EFS_VOLUME},"
+                    f"OidcDomain={settings.OIDC_DOMAIN},"
+                    f"Email={self.user.email},"
+                    f"Fullname={self.user.name},"
+                ),
+            )
+        else:
+            helm.upgrade_release(
+                f"init-user-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/init-user",  # chart
+                f"--set="
+                + (
+                    f"Env={settings.ENV},"
+                    f"NFSHostname={settings.NFS_HOSTNAME},"
+                    f"EFSHostname={settings.EFS_HOSTNAME},"
+                    f"OidcDomain={settings.OIDC_DOMAIN},"
+                    f"Email={self.user.email},"
+                    f"Fullname={self.user.name},"
+                    f"Username={self.user.slug}"
+                ),
+            )
 
     def create(self):
         aws.create_user_role(self.user)
@@ -70,8 +94,8 @@ class User:
         self._init_user()
 
         helm.upgrade_release(
-            f"config-user-{self.user.slug}",
-            f"{settings.HELM_REPO}/config-user",
+            f"config-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/config-user",  # chart
             f"--namespace={self.k8s_namespace}",
             f"--set=Username={self.user.slug}",
         )
@@ -81,27 +105,84 @@ class User:
         Reset the user's home directory.
         """
         helm.upgrade_release(
-            f"reset-user-home-{self.user.slug}",
-            f"{settings.HELM_REPO}/reset-user-home",
+            f"reset-user-home-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/reset-user-home",  # chart
             f"--namespace=user-{self.user.slug}",
             f"--set=Username={self.user.slug}",
         )
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
-        helm.delete(helm.list_releases(f"--namespace={self.k8s_namespace}"))
-        helm.delete(f"init-user-{self.user.slug}")
+        releases = helm.list_releases(namespace=self.k8s_namespace)
+        # Delete all the user initialisation charts.
+        releases.append(f"init-user-{self.user.slug}")
+        releases.append(f"bootstrap-user-{self.user.slug}")
+        releases.append(f"provision-user-{self.user.slug}")
+        if settings.EKS:
+            helm.delete_eks(self.k8s_namespace, *releases)
+        else:
+            helm.delete(*releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
-        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
+        aws.grant_bucket_access(
+            self.iam_role_name, bucket_arn, access_level, path_arns
+        )
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def on_authenticate(self):
-        if not helm.list_releases(f"init-user-{self.user.slug}"):
-            log.warning(f"Re-running init user chart for {self.user.slug}")
-            self._init_user()
+        """
+        Run on each authenticated login on the control panel. Checks if the
+        expected helm charts exist for the user. If not, will set things up
+        properly. This function also checks if the user is ready to migrate
+        and is logged into the new EKS infrastructure. If so, runs all the
+        charts and AWS updates to cause the migration to be fulfilled.
+        """
+        init_chart_name = f"init-user-{self.user.slug}"
+        bootstrap_chart_name = f"bootstrap-user-{self.user.slug}"
+        provision_chart_name = f"provision-user-{self.user.slug}"
+        releases = set(helm.list_releases(namespace=self.k8s_namespace))
+        if settings.EKS:
+            # On the new cluster, check if the bootstrap/provision helm
+            # charts exist. If not, this is the user's first login to the new
+            # platform. Run these helm charts to migrate the user to the new
+            # platform. Ensure this is all stored in the database in case they
+            # try to log into the control panel on the old infrastructure.
+            has_charts = (
+                bootstrap_chart_name in releases
+                and
+                provision_chart_name in releases
+            )
+            is_migrated = (
+                # This is an old user who has migrated.
+                self.user.migration_state == self.user.COMPLETE
+                or
+                # This is a new user who has never used the old infra.
+                self.user.migration_state == self.user.VOID
+            )
+            if not is_migrated:  # user requires one-off migration process.
+                # Indicate the migration process is started for this user.
+                self.user.migration_state = self.user.MIGRATING
+                self.user.save()
+                # Remove old infra's user init chart.
+                helm.delete(self.k8s_namespace, init_chart_name)
+                # Migrate the AWS roles for the user.
+                aws.migrate_user_role(self.user)
+                # Run the new charts to configure the user for EKS infra.
+                self._init_user()
+                # Update the user's state in the database.
+                self.user.migration_state = self.user.COMPLETE
+                self.user.save()
+            elif not has_charts:  # user has charts deleted.
+                # So recreate the user's charts.
+                self._init_user()
+        else:
+            # On the old infrastructure...
+            if init_chart_name not in releases:
+                # The user has their charts deleted, so recreate.
+                log.warning(f"Re-running init user chart for {self.user.slug}")
+                self._init_user()
 
 
 class App:
@@ -122,7 +203,9 @@ class App:
         aws.create_app_role(self.app)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
+        aws.grant_bucket_access(
+            self.iam_role_name, bucket_arn, access_level, path_arns
+        )
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
@@ -130,7 +213,10 @@ class App:
     def delete(self):
         aws.delete_role(self.iam_role_name)
         auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
-        helm.delete(True, self.app.release_name)
+        if settings.EKS:
+            helm.delete_eks(self.APPS_NS, self.app.release_name)
+        else:
+            helm.delete(self.app.release_name)
 
     @property
     def url(self):
@@ -138,7 +224,8 @@ class App:
 
         repo_name = github_repository_name(self.app.repo_url)
         ingresses = k8s.ExtensionsV1beta1Api.list_namespaced_ingress(
-            self.APPS_NS, label_selector=f"repo={repo_name}",
+            self.APPS_NS,
+            label_selector=f"repo={repo_name}",
         ).items
 
         if len(ingresses) != 1:
@@ -158,7 +245,9 @@ class S3Bucket:
         return s3_arn(self.bucket.name)
 
     def create(self):
-        return aws.create_bucket(self.bucket.name, self.bucket.is_data_warehouse)
+        return aws.create_bucket(
+            self.bucket.name, self.bucket.is_data_warehouse
+        )
 
     def mark_for_archival(self):
         aws.tag_bucket(self.bucket.name, {"to-archive": "true"})
@@ -186,19 +275,23 @@ class RoleGroup:
 
     def create(self):
         aws.create_group(
-            self.policy.name, self.policy.path,
+            self.policy.name,
+            self.policy.path,
         )
 
     def update_members(self):
         aws.update_group_members(
-            self.arn, {user.iam_role_name for user in self.policy.users.all()},
+            self.arn,
+            {user.iam_role_name for user in self.policy.users.all()},
         )
 
     def delete(self):
         aws.delete_group(self.arn)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_group_bucket_access(self.arn, bucket_arn, access_level, path_arns)
+        aws.grant_group_bucket_access(
+            self.arn, bucket_arn, access_level, path_arns
+        )
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_group_bucket_access(self.arn, bucket_arn)
@@ -224,7 +317,9 @@ def get_repositories(user):
             org = github.get_organization(name)
             repos.extend(org.get_repos())
         except GithubException as err:
-            log.warning(f"Failed getting {name} Github org repos for {user}: {err}")
+            log.warning(
+                f"Failed getting {name} Github org repos for {user}: {err}"
+            )
             raise err
     return repos
 
@@ -234,7 +329,9 @@ def get_repository(user, repo_name):
     try:
         return github.get_repo(repo_name)
     except GithubException.UnknownObjectException:
-        log.warning(f"Failed getting {repo_name} Github repo for {user}: {err}")
+        log.warning(
+            f"Failed getting {repo_name} Github repo for {user}: {err}"
+        )
         return None
 
 
@@ -248,7 +345,7 @@ class ToolDeployment:
         self.tool = tool
 
     def __repr__(self):
-        return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
+        return f"<ToolDeployment: {self.tool} {self.user}>"
 
     @property
     def chart_name(self):
@@ -279,7 +376,10 @@ class ToolDeployment:
 
         old_release_name = f"{self.user.slug}-{self.chart_name}"
         if old_release_name in helm.list_releases(old_release_name):
-            helm.delete(True, old_release_name)
+            if settings.EKS:
+                helm.delete_eks(self.k8s_namespace, self.app.release_name)
+            else:
+                helm.delete(old_release_name)
 
     def _set_values(self, **kwargs):
         """
@@ -289,7 +389,8 @@ class ToolDeployment:
         """
         values = {
             "username": self.user.username.lower(),
-            "Username": self.user.username.lower(),  # XXX backwards compatibility
+            # XXX backwards compatibility
+            "Username": self.user.username.lower(),
             "aws.iamRole": self.user.iam_role_name,
             "toolsDomain": settings.TOOLS_DOMAIN,
         }
@@ -317,8 +418,9 @@ class ToolDeployment:
             set_values = self._set_values(**kwargs)
 
             return helm.upgrade_release(
-                self.release_name,
-                f"{settings.HELM_REPO}/{self.chart_name}",  # XXX assumes repo name
+                self.release_name,  # release
+                # XXX assumes repo name
+                f"{settings.HELM_REPO}/{self.chart_name}",  # chart
                 f"--version",
                 self.tool.version,
                 f"--namespace",
@@ -326,23 +428,30 @@ class ToolDeployment:
                 *set_values,
             )
 
-        except HelmError as error:
+        except helm.HelmError as error:
             raise ToolDeploymentError(error)
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        helm.delete(
-            deployment.metadata.name, f"--namespace={self.k8s_namespace}",
-        )
+        if settings.EKS:
+            helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
+        else:
+            helm.delete(
+                deployment.metadata.name,
+                f"--namespace={self.k8s_namespace}"
+            )
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
         return k8s.AppsV1Api.delete_collection_namespaced_replica_set(
-            self.k8s_namespace, label_selector=(f"app={self.chart_name}"),
+            self.k8s_namespace,
+            label_selector=(f"app={self.chart_name}"),
         )
 
     @classmethod
-    def get_deployments(cls, user, id_token, search_name=None, search_version=None):
+    def get_deployments(
+        cls, user, id_token, search_name=None, search_version=None
+    ):
         deployments = []
         k8s = KubernetesClient(id_token=id_token)
         results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
@@ -368,7 +477,7 @@ class ToolDeployment:
             raise ObjectDoesNotExist(self)
 
         if len(deployments) > 1:
-            log.warning(f"Multiple matches for {self!r} found")
+            log.warning(f"Multiple matches for {self} found")
             raise MultipleObjectsReturned(self)
 
         return deployments[0]
@@ -383,7 +492,9 @@ class ToolDeployment:
 
         try:
             deployment = self.get_deployment(id_token)
-            _, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            _, chart_version = deployment.metadata.labels["chart"].rsplit(
+                "-", 1
+            )
             return chart_version
         except ObjectDoesNotExist:
             return None
@@ -393,15 +504,16 @@ class ToolDeployment:
             deployment = self.get_deployment(id_token)
 
         except ObjectDoesNotExist:
-            log.warning(f"{self!r} not found")
+            log.warning(f"{self} not found")
             return TOOL_NOT_DEPLOYED
 
         except MultipleObjectsReturned:
-            log.warning(f"Multiple objects returned for {self!r}")
+            log.warning(f"Multiple objects returned for {self}")
             return TOOL_STATUS_UNKNOWN
 
         conditions = {
-            condition.type: condition for condition in deployment.status.conditions
+            condition.type: condition
+            for condition in deployment.status.conditions
         }
 
         if "Available" in conditions:
@@ -417,5 +529,7 @@ class ToolDeployment:
             elif progressing_status == "False":
                 return TOOL_DEPLOY_FAILED
 
-        log.warning(f"Unknown status for {self!r}: {deployment.status.conditions}")
+        log.warning(
+            f"Unknown status for {self}: {deployment.status.conditions}"
+        )
         return TOOL_STATUS_UNKNOWN

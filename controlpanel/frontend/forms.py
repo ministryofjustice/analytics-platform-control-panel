@@ -73,6 +73,7 @@ class CreateAppForm(forms.Form):
                 try:
                     S3Bucket.objects.get(name=new_datasource)
                     self.add_error(
+                        "new_datasource_name",
                         f"Datasource named {new_datasource} already exists"
                     )
                 except S3Bucket.DoesNotExist:
@@ -307,4 +308,4 @@ class ToolReleaseForm(forms.ModelForm):
 
     class Meta:
         model = Tool
-        fields = ["name", "chart_name", "version", "is_restricted", ]
+        fields = ["name", "chart_name", "version", "values", "is_restricted", "target_infrastructure"]

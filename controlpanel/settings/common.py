@@ -16,6 +16,8 @@ ENABLED = {
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
 
+# Flag to indicate if running on an EKS cluster.
+EKS = bool(os.environ.get("EKS", False))
 
 # -- Paths
 
@@ -444,6 +446,9 @@ TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 # hostname of NFS server for user homes
 NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
 
+# volume name for the EFS directory for user homes
+EFS_VOLUME = os.environ.get("EFS_VOLUME")
+
 # hostname of the EFS server for user homes
 EFS_HOSTNAME = os.environ.get("EFS_HOSTNAME")
 
@@ -551,6 +556,10 @@ BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 # Auth0 integrated SAML provider, referenced in user policies to allow login via
 # SAML federation
 SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
+
+# The EKS OIDC provider, referenced in user policies to allow service accounts
+# to grant AWS permissions.
+OIDC_EKS_PROVIDER = os.environ.get("OIDC_EKS_PROVIDER")
 
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')

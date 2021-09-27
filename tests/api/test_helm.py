@@ -1,55 +1,40 @@
-from datetime import datetime, timedelta
+import os
+import time
 import pytest
+import subprocess
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
-
-from controlpanel.api.helm import (
-    Chart,
-    helm,
-    HelmRepository,
-)
+from controlpanel.api import helm
+from django.conf import settings
 
 
-def setup_function(fn):
-    print("Resetting HelmRepository._updated_at ...")
-    HelmRepository._updated_at = None
+# ------ Original unit tests
 
 
 def test_chart_app_version():
     app_version = "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
-    chart = Chart(
-        "rstudio", "RStudio with Auth0 authentication proxy", "2.2.5", app_version,
+    chart = helm.HelmChart(
+        "rstudio",
+        "RStudio with Auth0 authentication proxy",
+        "2.2.5",
+        app_version,
     )
 
     assert chart.app_version == app_version
 
 
-def test_helm_repository_update_when_recently_updated(helm_repository_index):
-    HelmRepository._updated_at = datetime.utcnow()
-
-    with patch("controlpanel.api.helm.Helm") as helm:
-        HelmRepository.update(force=False)
-        helm.execute.assert_not_called()
-
-
-def test_helm_repository_update_when_cache_old(helm_repository_index):
-    yesterday = datetime.utcnow() - timedelta(days=1)
-    HelmRepository._updated_at = yesterday
-
-    with patch("controlpanel.api.helm.Helm") as helm:
-        HelmRepository.update(force=False)
-        helm.execute.assert_called_once()
-
-
-def test_helm_repository_chart_info_when_chart_not_found(helm_repository_index):
-    with patch("controlpanel.api.helm.open", helm_repository_index):
-        info = HelmRepository.get_chart_info("notfound")
+def test_helm_repository_chart_info_when_chart_not_found(
+    helm_repository_index,
+):
+    with patch("builtins.open", helm_repository_index):
+        info = helm.get_chart_info("notfound")
         assert info == {}
 
 
 def test_helm_repository_chart_info_when_chart_found(helm_repository_index):
-    with patch("controlpanel.api.helm.open", helm_repository_index):
+    with patch("builtins.open", helm_repository_index):
         # See tests/api/fixtures/helm_mojanalytics_index.py
-        rstudio_info = HelmRepository.get_chart_info("rstudio")
+        rstudio_info = helm.get_chart_info("rstudio")
 
         rstudio_2_2_5_app_version = (
             "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
@@ -89,22 +74,256 @@ def test_helm_repository_get_chart_app_version(
     helm_repository_index, chart_name, version, expected_app_version
 ):
     # See tests/api/fixtures/helm_mojanalytics_index.py
-    with patch("controlpanel.api.helm.open", helm_repository_index):
-        app_version = HelmRepository.get_chart_app_version(chart_name, version)
+    with patch("builtins.open", helm_repository_index):
+        app_version = helm.get_chart_app_version(chart_name, version)
         assert app_version == expected_app_version
 
 
 def test_helm_upgrade_release():
-    helm.__class__.execute = MagicMock()
+    mock_execute = MagicMock()
+    mock_update = MagicMock()
+    with patch("controlpanel.api.helm._execute", mock_execute), patch(
+        "controlpanel.api.helm.update_helm_repository", mock_update
+    ):
+        upgrade_args = (
+            "release-name",
+            "helm-chart-name",
+            "--namespace=user-alice",
+            "--set=username=alice",
+        )
+        helm.upgrade_release(*upgrade_args)
 
-    upgrade_args = (
-        "release-name",
-        "helm-chart-name",
-        "--namespace=user-alice",
-        "--set=username=alice",
-    )
-    helm.upgrade_release(*upgrade_args)
+        mock_update.assert_called_once_with()
 
-    helm.__class__.execute.assert_called_with(
-        "upgrade", "--install", "--wait", "--force", *upgrade_args,
+        mock_execute.assert_called_with(
+            "upgrade",
+            "--install",
+            "--wait",
+            "--force",
+            *upgrade_args,
+        )
+
+
+# ------ New (comprehensive) unit tests.
+
+
+def test_get_repo_path():
+    """
+    The repo path is different depend on if we're running on EKS or the old
+    infrastructure. This test ensures that the right repo path is used
+    depending on the state of the settings.EKS flag.
+    """
+    assert helm.get_repo_path() == os.path.join(
+        helm.HELM_HOME,
+        "repository",
+        "cache",
+        f"{settings.HELM_REPO}-index.yaml",
     )
+    with patch("controlpanel.api.helm.settings.EKS", True):
+        assert helm.get_repo_path() == os.path.join(
+            helm.HELM_HOME,
+            "cache",
+            "repository",
+            f"{settings.HELM_REPO}-index.yaml",
+        )
+
+
+def test_execute_ignores_debug():
+    """
+    If the DEBUG flag is set in the environment, ensure this is removed before
+    calling the helm command via Popen (apparently, helm checks for the
+    existence of DEBUG env var, and we don't want this to happen).
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 0
+    mock_Popen = MagicMock(return_value=mock_proc)
+    mock_environ = MagicMock()
+    mock_environ.copy.return_value = {"DEBUG": "1"}
+    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen), patch(
+        "controlpanel.api.helm.os.environ", mock_environ
+    ):
+        helm._execute("delete", "foo")
+    mock_Popen.assert_called_once_with(
+        ["helm", "delete", "foo"],
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        encoding="utf8",
+        env={},  # Missing the DEBUG flag.
+    )
+
+
+def test_execute_with_timeout():
+    """
+    Ensure the subprocess is waited on (blocks) for timeout seconds.
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 0
+    mock_Popen = MagicMock(return_value=mock_proc)
+    timeout = 1
+    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+        result = helm._execute("delete", "foo", timeout=timeout)
+    assert result == mock_proc
+    mock_proc.wait.assert_called_once_with(timeout)
+
+
+def test_execute_with_failing_process():
+    """
+    Ensure a HelmError is raised if the subprocess was unable to run.
+    """
+    mock_stderr = MagicMock()
+    mock_stderr.read.return_value = "boom"
+    mock_Popen = MagicMock(
+        side_effect=subprocess.CalledProcessError(
+            1, "boom", stderr=mock_stderr
+        )
+    )
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            result = helm._execute("delete", "foo")
+
+
+def test_execute_with_unforeseen_exception():
+    """
+    Ensure a HelmError is raised if any other sort of exception is encountered.
+    """
+    mock_Popen = MagicMock(side_effect=ValueError("Boom"))
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            result = helm._execute("delete", "foo")
+
+
+def test_execute_with_failing_helm_command():
+    """
+    Ensure a HelmError is raised if the helm command returns a non-0 code.
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1  # Boom ;-)
+    mock_Popen = MagicMock(return_value=mock_proc)
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            result = helm._execute("delete", "foo")
+
+
+def test_update_helm_repository_non_existent_cache(helm_repository_index):
+    """
+    If this is a fresh instance and there's no existing helm repository cache,
+    ensure the function updates the helm repository, then returns the YAML
+    parsed helm repository cache.
+    """
+    with patch("builtins.open", helm_repository_index), patch(
+        "controlpanel.api.helm._execute"
+    ) as mock_execute, patch(
+        "controlpanel.api.helm.os.path.getmtime", return_value=time.time()
+    ), patch(
+        "controlpanel.api.helm.os.path.exists", return_value=False
+    ):
+        result = helm.update_helm_repository()
+        mock_execute.assert_called_once_with("repo", "update", timeout=None)
+        assert result["entries"]  # There's a dictionary with chart entries.
+
+
+def test_update_helm_repository_out_of_date_cache(helm_repository_index):
+    """
+    Ensure the function updates the helm repository, then returns the YAML
+    parsed helm repository cache.
+    """
+    with patch("builtins.open", helm_repository_index), patch(
+        "controlpanel.api.helm._execute"
+    ) as mock_execute, patch(
+        "controlpanel.api.helm.os.path.getmtime", return_value=12345.678
+    ), patch(
+        "controlpanel.api.helm.os.path.exists", return_value=True
+    ):
+        result = helm.update_helm_repository()
+        mock_execute.assert_called_once_with("repo", "update", timeout=None)
+        assert result["entries"]  # There's a dictionary with chart entries.
+
+
+def test_update_helm_repository_valid_cache(helm_repository_index):
+    """
+    Ensure the function does NOT update the helm repository, because the helm
+    cache is still within the valid age, then returns the YAML
+    parsed helm repository cache.
+    """
+    with patch("builtins.open", helm_repository_index), patch(
+        "controlpanel.api.helm._execute"
+    ) as mock_execute, patch(
+        "controlpanel.api.helm.os.path.getmtime", return_value=time.time() - 1
+    ), patch(
+        "controlpanel.api.helm.os.path.exists", return_value=True
+    ):
+        result = helm.update_helm_repository()
+        assert mock_execute.call_count == 0
+        assert result["entries"]  # There's a dictionary with chart entries.
+
+
+def test_delete():
+    """
+    The delete function (helm 2) results in the expected helm command to be
+    executed.
+    """
+    with patch("controlpanel.api.helm._execute") as mock_execute:
+        helm.delete("foo", "bar", "baz")
+        mock_execute.assert_called_once_with(
+            "delete",
+            "--purge",
+            "foo",
+            "bar",
+            "baz",
+        )
+
+def test_delete_eks():
+    """
+    The delete_eks function (helm 3)results in the expected helm command to be
+    executed.
+    """
+    with patch("controlpanel.api.helm._execute") as mock_execute:
+        helm.delete_eks("my_namespace", "foo", "bar", "baz")
+        mock_execute.assert_called_once_with(
+            "uninstall",
+            "foo",
+            "bar",
+            "baz",
+            "--namespace",
+            "my_namespace"
+        )
+
+
+def test_list_releases_with_release():
+    """
+    Given a certain release, returns a list of the results.
+    """
+    mock_proc = MagicMock()
+    mock_proc.stdout.read.return_value = "foo bar baz qux"
+    mock_execute = MagicMock(return_value=mock_proc)
+    with patch("controlpanel.api.helm._execute", mock_execute):
+        result = helm.list_releases(release="rstudio")
+        assert result == [
+            "foo",
+            "bar",
+            "baz",
+            "qux",
+        ]
+        mock_execute.assert_called_once_with(
+            "list", "-aq", "--filter", "rstudio"
+        )
+
+
+def test_list_releases_with_namespace():
+    """
+    Given a certain namespace, returns a list of the results.
+    """
+    mock_proc = MagicMock()
+    mock_proc.stdout.read.return_value = "foo bar baz qux"
+    mock_execute = MagicMock(return_value=mock_proc)
+    with patch("controlpanel.api.helm._execute", mock_execute):
+        result = helm.list_releases(namespace="some-ns")
+        assert result == [
+            "foo",
+            "bar",
+            "baz",
+            "qux",
+        ]
+        mock_execute.assert_called_once_with(
+            "list", "-aq", "--namespace", "some-ns"
+        )

@@ -1,6 +1,9 @@
 {% from "input/macro.html" import govukInput %}
+{% from "radios/macro.html" import govukRadios %}
 {% from "checkboxes/macro.html" import govukCheckboxes %}
 {% from "fieldset/macro.html" import govukFieldset %}
+{% from "includes/list-field.html" import list_field_textarea %}
+{% from "error-message/macro.html" import govukErrorMessage %}
 
 {% extends "base.html" %}
 
@@ -12,8 +15,8 @@
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if form.error %}
-    <div class="error">{{ form.error }}</div>
+  {% if form.errors %}
+      {{ govukErrorMessage({"text": form.errors}) }}
   {% endif %}
 
   <form action="{{ url('create-tool-release') }}" method="post">
@@ -69,6 +72,7 @@
       "value": form.version.value(),
       "errorMessage": { "html": form.version.errors|join(". ") } if form.version.errors else {}
     }) }}
+    {{ list_field_textarea("values", "Helm Argument Values", "A JSON representation of values to pass in as arguments to helm.", form.values.value() or "", form.values.errors) }}
     {{ govukCheckboxes({
       "fieldset": {
         "legend": {
@@ -102,6 +106,21 @@
       "name": "target_users_list",
       "value": release.target_users if release else "",
       "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
+    }) }}
+    {{ govukRadios({
+      "fieldset": {
+        "legend": {
+          "text": "Target Infrastructure",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'The infrastructure on which this tool is to run'
+      },
+      "name": "target_infrastructure",
+      "items": infra_choices,
+      "errorMessage": { "html": form.is_restricted.errors|join(". ") } if form.is_restricted.errors else {}
     }) }}
     <button class="govuk-button">Create tool release</button>
   </form>
