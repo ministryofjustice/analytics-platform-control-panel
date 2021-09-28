@@ -298,9 +298,14 @@ class ToolReleaseForm(forms.ModelForm):
 
         Hence the path of least resistance with this custom form validation.
         """
-        valid_charts = ["airflow-sqlite", "jupyter-lab", "rstudio", ]
+        valid_charts = ["airflow-sqlite", "jupyter-", "rstudio", ]
         value = self.cleaned_data['chart_name']
-        if value not in valid_charts:
+        is_valid = False
+        for chart_name in valid_charts:
+            if chart_name in value:
+                is_valid = True
+                break
+        if not is_valid:
             raise ValidationError(
                 f"'{value}' is not a valid helm chart name. ",
             )
