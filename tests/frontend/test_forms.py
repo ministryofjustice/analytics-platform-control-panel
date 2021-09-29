@@ -4,6 +4,63 @@ from controlpanel.frontend import forms
 from controlpanel.api.models import S3Bucket
 
 
+def test_tool_release_form_check_release_name():
+    """
+    Ensure valid chart names work, while invalid ones cause a helpful
+    exception.
+    """
+    data = {
+        "name": "Test Release",
+        "chart_name": "jupyter-lab",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "jupyter-lab-all-spark",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "rstudio",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "airflow-sqlite",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "invalid-chartname",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid() is False
+
+
 def test_tool_release_form_get_target_users():
     """
     Given a string list of comma separated usernames, the expected query to
