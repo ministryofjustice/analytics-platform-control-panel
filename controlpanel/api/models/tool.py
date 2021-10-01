@@ -58,9 +58,10 @@ class Tool(TimeStampedModel):
         return f"<Tool: {self.chart_name} {self.version}>"
 
     def url(self, user):
-        return (
-            f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
-        )
+        if self.url_override:
+            return f"https://{user.slug}-{self.url_override}.{settings.TOOLS_DOMAIN}/"
+        else:
+            return f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
 
     @property
     def app_version(self):
