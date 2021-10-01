@@ -47,6 +47,8 @@ class Tool(TimeStampedModel):
         choices=INFRASTRUCTURE_STATES,
         default=OLD
     )
+    # Override the parameter that the tool will be available at
+    url_override = models.SlugField(max_length=100, blank=True, null=True)
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
