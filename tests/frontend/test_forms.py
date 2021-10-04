@@ -61,6 +61,46 @@ def test_tool_release_form_check_release_name():
     assert f.is_valid() is False
 
 
+def test_tool_release_form_check_tool_domain():
+    """
+    Ensure ONLY valid chart names work, while invalid ones cause a helpful
+    exception.
+    """
+    data = {
+        "name": "Test Release",
+        "chart_name": "jupyter-lab",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+        "tool_domain": "jupyter-lab",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "jupyter-lab-all-spark",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+        "tool_domain": "jupyter-lab",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "jupyter-lab-all-spark",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "target_infrastructure": "o",
+        "tool_domain": "invalid-tool-domain",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid() is False
+
+
 def test_tool_release_form_get_target_users():
     """
     Given a string list of comma separated usernames, the expected query to

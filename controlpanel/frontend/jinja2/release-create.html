@@ -45,7 +45,7 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'Helm chart name. Use only one of: airflow-sqlite, jupyter-lab or rstudio'
+        "text": 'Helm chart name. Use only variations of: airflow-sqlite, jupyter-* or rstudio'
       },
       "name": "chart_name",
       "attributes": {
@@ -71,6 +71,23 @@
       },
       "value": form.version.value(),
       "errorMessage": { "html": form.version.errors|join(". ") } if form.version.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Custom domain name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'If the chart name is non-standard, use this value in the domain name for the tool. Use only one of: airflow-sqlite, jupyter-lab or rstudio.'
+      },
+      "name": "tool_domain",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.chart_name.value(),
+      "errorMessage": { "html": form.chart_name.errors|join(". ") } if form.chart_name.errors else {}
     }) }}
     {{ list_field_textarea("values", "Helm Argument Values", "A JSON representation of values to pass in as arguments to helm.", form.values.value() or "", form.values.errors) }}
     {{ govukCheckboxes({

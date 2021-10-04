@@ -47,6 +47,18 @@ class Tool(TimeStampedModel):
         choices=INFRASTRUCTURE_STATES,
         default=OLD
     )
+    # If set, the bespoke name for the tool to be used in the domain name
+    # (rather than the default chart name).
+    tool_domain = models.SlugField(
+        help_text=(
+            "Name to use in the tool's domain instead of chart name. E.g. "
+            "use the standard \"jupyter-lab\" instead of a custom chart name."
+        ),
+        max_length=100,
+        blank=True,
+        null=True,
+        default=None,
+    )
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
@@ -56,8 +68,9 @@ class Tool(TimeStampedModel):
         return f"<Tool: {self.chart_name} {self.version}>"
 
     def url(self, user):
+        tool = self.tool_domain or self.chart_name
         return (
-            f"https://{user.slug}-{self.chart_name}.{settings.TOOLS_DOMAIN}/"
+            f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
         )
 
     @property
