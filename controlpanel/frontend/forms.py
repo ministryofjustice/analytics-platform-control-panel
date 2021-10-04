@@ -311,6 +311,27 @@ class ToolReleaseForm(forms.ModelForm):
             )
         return value
 
+    def clean_tool_domain(self):
+        """
+        Ensures that if the bespoke tool_domain value is specified it is ONLY
+        one of the acceptable names.
+        """
+        valid_names = ["airflow-sqlite", "jupyter-lab", "rstudio", ]
+        value = self.cleaned_data.get("tool_domain")
+        if value and value not in valid_names:
+            raise ValidationError(
+                f"'{value}' is not a valid tool domain value. ",
+            )
+        return value
+
     class Meta:
         model = Tool
-        fields = ["name", "chart_name", "version", "values", "is_restricted", "target_infrastructure"]
+        fields = [
+            "name",
+            "chart_name",
+            "version",
+            "values",
+            "is_restricted",
+            "target_infrastructure",
+            "tool_domain",
+        ]
