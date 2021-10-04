@@ -86,7 +86,7 @@
         "pattern": "[a-z0-9.-]{1,60}",
         "maxlength": "60",
       },
-      "value": form.chart_name.value(),
+      "value": form.tool_domain.value(),
       "errorMessage": { "html": form.chart_name.errors|join(". ") } if form.chart_name.errors else {}
     }) }}
     {{ list_field_textarea("values", "Helm Argument Values", "A JSON representation of values to pass in as arguments to helm.", form.values.value() or "", form.values.errors) }}
