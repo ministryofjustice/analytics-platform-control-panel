@@ -89,13 +89,30 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         for deployment in deployments:
             chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
             deployed_chart_names.append(chart_name)
-
+        # Defines how a matching chart name is put into a named tool bucket.
+        # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
+        # chart name match: tool bucket
+        tool_chart_lookup = {
+            "airflow": "airflow-sqlite",
+            "jupyter": "jupyter-lab",
+            "rstudio": "rstudio",
+        }
         # Arrange tools information
         context["tools_info"] = {}
         for tool in context["tools"]:
             chart_name = tool.chart_name
-            if chart_name not in context["tools_info"]:
-                context["tools_info"][chart_name] = {
+            # Work out which bucket the chart should be in (it'll be one of
+            # those defined in 
+            tool_bucket = ""
+            for key, bucket_name in tool_chart_lookup.items():
+                if key in chart_name:
+                    tool_bucket = bucket_name
+                    break
+            if not tool_bucket:
+                # No matching tool bucket for the given chart. So ignore.
+                break
+            if tool_bucket not in context["tools_info"]:
+                context["tools_info"][tool_bucket] = {
                     "name": tool.name,
                     "url": tool.url(user),
                     "deployment": None,
@@ -103,13 +120,17 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 }
 
             if chart_name in deployed_chart_names:
-                context["tools_info"][chart_name]["deployment"] = ToolDeployment(
+                context["tools_info"][tool_bucket]["deployment"] = ToolDeployment(
                     tool, user
                 )
-
-            context["tools_info"][chart_name]["versions"][
+            # Each version now needs to display the chart_name and the
+            # "app_version" metadata from helm. TODO: Stop using helm.
+            context["tools_info"][tool_bucket]["versions"][
                 tool.version
-            ] = tool.app_version
+            ] = {
+                "chart_name": chart_name,
+                "description": tool.app_version
+            }
 
         return context
 

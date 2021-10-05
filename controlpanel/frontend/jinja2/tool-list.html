@@ -42,7 +42,7 @@
             {% for chart_version, app_version in tool_info["versions"].items(): %}
               {% if chart_version != installed_chart_version: %}
                 <option value="{{ chart_version }}">
-                  [Build {{ chart_version }}]  {{ app_version or "Unknown" }}
+                  [{{ app_version.chart_name }} {{ chart_version }}]  {{ app_version.description or "Unknown" }}
                 </option>
               {% endif %}
             {% endfor %}
