@@ -67,8 +67,14 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                    "url: "https://john-rstudio.tools.example.com",
                    "deployment": ToolDeployment(RStudio, John),
                    "versions": {
-                       "2.2.5": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
-                       "1.0.0": None,
+                       "2.2.5": {
+                           "chart_name": "rstudio",
+                           "description": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
+                       },
+                       "1.0.0": {
+                           "chart_name": "rstudio",
+                           "description": None,
+                       }
                     }
                },
                # ...
@@ -140,21 +146,36 @@ class DeployTool(OIDCLoginRequiredMixin, RedirectView):
     url = reverse_lazy("list-tools")
 
     def get_redirect_url(self, *args, **kwargs):
-        name = kwargs["name"]
+        """
+        This is the most backwards thing you'll see for a while. The helm
+        task to deploy the tool apparently must happen when the view class
+        attempts to redirect to the target url. I'm sure there's a good
+        reason why.
+        """
+        # The selected option from the "version" select control contains the
+        # data we need.
+        chart_info = self.request.POST["version"]
+        # The tool name and version are stored in the selected option's value
+        # attribute and then split on "__" to extract them. Why? Because we
+        # need both pieces of information to kick off the background helm
+        # deploy.
+        tool_name, version = chart_info.split("__")
 
+        # Kick off the helm chart as a background task.
         start_background_task(
             "tool.deploy",
             {
-                "tool_name": name,
-                "version": self.request.POST["version"],
+                "tool_name": tool_name,
+                "version": version,
                 "user_id": self.request.user.id,
                 "id_token": self.request.user.get_id_token(),
             },
         )
-
+        # Tell the user stuff's happening.
         messages.success(
-            self.request, f"Deploying {name}... this may take several minutes",
+            self.request, f"Deploying {tool_name}... this may take several minutes",
         )
+        # Continue the redirect to the target URL (list-tools).
         return super().get_redirect_url(*args, **kwargs)
 
 
@@ -163,6 +184,14 @@ class RestartTool(OIDCLoginRequiredMixin, RedirectView):
     url = reverse_lazy("list-tools")
 
     def get_redirect_url(self, *args, **kwargs):
+        """
+        So backwards, it's forwards.
+
+        The "name" of the chart to restart is set in the template for
+        list-tools, if there's a live deployment.
+
+        That's numberwang.
+        """
         name = self.kwargs["name"]
 
         start_background_task(

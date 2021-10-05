@@ -41,7 +41,7 @@
             {% endif %}
             {% for chart_version, app_version in tool_info["versions"].items(): %}
               {% if chart_version != installed_chart_version: %}
-                <option value="{{ chart_version }}">
+                <option value="{{ app_version.chart_name }}__{{ chart_version }}">
                   [{{ app_version.chart_name }} {{ chart_version }}]  {{ app_version.description or "Unknown" }}
                 </option>
               {% endif %}
@@ -81,7 +81,7 @@
       Open
   </button>
 
-  <form action="{{ url('restart-tool', kwargs={'name': chart_name}) }}"
+  <form action="{{ url('restart-tool', kwargs={'name': deployment.tool.chart_name}) }}"
     data-action-name="restart"
     method="post"
     style="display: inline;">
