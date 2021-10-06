@@ -33,8 +33,8 @@
             {% set installed_chart_version = None %}
             {% if deployment %}
               {% set installed_chart_version = deployment.get_installed_chart_version(id_token) %}
-              <option class="installed" value="{{ installed_chart_version }}">
-              [Build {{ installed_chart_version }}]  {{ deployment.get_installed_app_version(id_token) or "Unknown" }} (installed)
+              <option class="installed" value="{{ deployment.tool.chart_name }}__{{ installed_chart_version }}">
+              [{{ deployment.tool.chart_name }} {{ installed_chart_version }}]  {{ deployment.get_installed_app_version(id_token) or "Unknown" }} (installed)
               </option>
             {% else %}
               <option class="not-installed">Not deployed - select a tool from this list and click "Deploy" to start</option>
