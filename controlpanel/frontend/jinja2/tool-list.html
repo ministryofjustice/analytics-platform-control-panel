@@ -81,7 +81,10 @@
       Open
   </button>
 
-  <form action="{{ url('restart-tool', kwargs={'name': deployment.tool.chart_name}) }}"
+  <form
+    {% if deployment %}
+    action="{{ url('restart-tool', kwargs={'name': deployment.tool.chart_name}) }}"
+    {% endif %}
     data-action-name="restart"
     method="post"
     style="display: inline;">
