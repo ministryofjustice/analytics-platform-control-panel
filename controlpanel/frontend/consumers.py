@@ -116,7 +116,8 @@ class BackgroundTaskConsumer(SyncConsumer):
 
         tool, user = self.get_tool_and_user(message)
         id_token = message["id_token"]
-        tool_deployment = ToolDeployment(tool, user)
+        old_chart_name = message.get("old_chart_name", None)
+        tool_deployment = ToolDeployment(tool, user, old_chart_name)
 
         update_tool_status(tool_deployment, id_token, TOOL_DEPLOYING)
         try:

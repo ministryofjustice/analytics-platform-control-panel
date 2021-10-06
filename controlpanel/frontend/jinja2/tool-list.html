@@ -23,6 +23,12 @@
         id="form-{{ chart_name }}"
         method="post">
         {{ csrf_input }}
+        {% if deployment %}
+        <input
+            type="hidden"
+            value="{{ deployment.tool.chart_name }}"
+            name="deployed_chart_name" />
+        {% endif%}
       <div class="govuk-form-group">
           <label class="govuk-label" for="version">
             Version

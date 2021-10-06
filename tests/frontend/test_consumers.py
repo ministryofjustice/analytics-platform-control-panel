@@ -74,7 +74,39 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
         )
 
         # 1. Instanciate `ToolDeployment` correctly
-        ToolDeployment.assert_called_with(tool, user)
+        ToolDeployment.assert_called_with(tool, user, None)
+        # 2. Send status update
+        update_tool_status.assert_called_with(
+            tool_deployment, id_token, TOOL_DEPLOYING,
+        )
+        # 3. Call save() on ToolDeployment (trigger deployment)
+        tool_deployment.save.assert_called()
+        # 4. Wait for deployment to complete
+        wait_for_deployment.assert_called_with(tool_deployment, id_token)
+
+
+def test_tool_deploy_with_old_chart_name(users, tools, update_tool_status, wait_for_deployment):
+    user = User.objects.first()
+    tool = Tool.objects.first()
+    id_token = "secret user id_token"
+    old_chart_name = "old-chart"
+
+    with patch("controlpanel.frontend.consumers.ToolDeployment") as ToolDeployment:
+        tool_deployment = Mock()
+        ToolDeployment.return_value = tool_deployment
+
+        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer.tool_deploy(
+            message={
+                "user_id": user.auth0_id,
+                "tool_name": tool.chart_name,
+                "id_token": id_token,
+                "old_chart_name": old_chart_name
+            }
+        )
+
+        # 1. Instanciate `ToolDeployment` correctly
+        ToolDeployment.assert_called_with(tool, user, old_chart_name)
         # 2. Send status update
         update_tool_status.assert_called_with(
             tool_deployment, id_token, TOOL_DEPLOYING,
