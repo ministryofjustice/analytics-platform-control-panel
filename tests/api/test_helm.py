@@ -285,7 +285,11 @@ def test_delete_eks():
             "bar",
             "baz",
             "--namespace",
-            "my_namespace"
+            "my_namespace",
+            "--timeout",
+            f"{settings.HELM_DELETE_TIMEOUT}s",
+            "--wait",
+            timeout=settings.HELM_DELETE_TIMEOUT,
         )
 
 

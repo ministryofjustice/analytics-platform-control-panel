@@ -440,6 +440,9 @@ TOOLS = {
 # Helm repo where tool charts are hosted
 HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
 
+# The number of seconds helm should wait for helm delete to complete.
+HELM_DELETE_TIMEOUT = int(os.environ.get("HELM_DELETE_TIMEOUT", 10))
+
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 
