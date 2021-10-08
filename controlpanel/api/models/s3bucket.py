@@ -17,7 +17,10 @@ def s3bucket_console_url(name):
     args = urlencode({
         "destination": f"/s3/buckets/{name}/?region={region}&tab=overview",
     })
-    return f"https://aws.services.{env}.mojanalytics.xyz/?{args}"
+    address = "mojanalytics.xyz"
+    if env == "dev":
+        address =  "analytical-platform.service.justice.gov.uk"
+    return f"https://aws.services.{env}.{address}/?{args}"
 
 
 class S3BucketQuerySet(models.QuerySet):
