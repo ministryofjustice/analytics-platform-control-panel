@@ -18,8 +18,9 @@ def s3bucket_console_url(name):
         "destination": f"/s3/buckets/{name}/?region={region}&tab=overview",
     })
     address = "mojanalytics.xyz"
-    if env == "dev":
-        address =  "analytical-platform.service.justice.gov.uk"
+    if settings.EKS:
+        if env == "dev":
+            address =  "analytical-platform.service.justice.gov.uk"
     return f"https://aws.services.{env}.{address}/?{args}"
 
 
