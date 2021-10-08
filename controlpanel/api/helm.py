@@ -187,9 +187,6 @@ def delete_eks(namespace, *args):
         *args,
         "--namespace",
         namespace,
-        "--timeout",
-        f"{settings.HELM_DELETE_TIMEOUT}s",
-        "--wait",
         timeout=settings.HELM_DELETE_TIMEOUT,
     )
     stdout = proc.stdout.read()
