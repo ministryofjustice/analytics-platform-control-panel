@@ -102,6 +102,8 @@ EKS_STATEMENT = {
 }
 
 READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
+AIRFLOW_DEV_UI_ACCESS_POLICY = "airflow-dev-ui-access"
+AIRFLOW_PROD_UI_ACCESS_POLICY = "airflow-prod-ui-access"
 
 BASE_S3_ACCESS_POLICY = {
     "Version": "2012-10-17",
@@ -207,6 +209,12 @@ def create_user_role(user):
         role = iam.Role(user.iam_role_name)
         role.attach_policy(
             PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
+        )
+        role.attach_policy(
+            PolicyArn=iam_arn(f"policy/{AIRFLOW_DEV_UI_ACCESS_POLICY}"),
+        )
+        role.attach_policy(
+            PolicyArn=iam_arn(f"policy/{AIRFLOW_PROD_UI_ACCESS_POLICY}"),
         )
     except iam.meta.client.exceptions.EntityAlreadyExistsException:
         log.warning(
