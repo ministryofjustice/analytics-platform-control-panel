@@ -115,10 +115,11 @@ class ToolDeployment:
 
     objects = ToolDeploymentManager()
 
-    def __init__(self, tool, user):
+    def __init__(self, tool, user, old_chart_name=None):
         self._subprocess = None
         self.tool = tool
         self.user = user
+        self.old_chart_name = old_chart_name
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
@@ -176,7 +177,7 @@ class ToolDeployment:
         Deploy the tool to the cluster (asynchronous)
         """
         self._subprocess = cluster.ToolDeployment(
-            self.user, self.tool
+            self.user, self.tool, self.old_chart_name
         ).install()
 
     def get_status(self, id_token):

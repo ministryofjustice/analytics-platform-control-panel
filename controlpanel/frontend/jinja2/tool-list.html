@@ -23,6 +23,12 @@
         id="form-{{ chart_name }}"
         method="post">
         {{ csrf_input }}
+        {% if deployment %}
+        <input
+            type="hidden"
+            value="{{ deployment.tool.chart_name }}"
+            name="deployed_chart_name" />
+        {% endif%}
       <div class="govuk-form-group">
           <label class="govuk-label" for="version">
             Version
@@ -33,16 +39,16 @@
             {% set installed_chart_version = None %}
             {% if deployment %}
               {% set installed_chart_version = deployment.get_installed_chart_version(id_token) %}
-              <option class="installed" value="{{ installed_chart_version }}">
-              [Build {{ installed_chart_version }}]  {{ deployment.get_installed_app_version(id_token) or "Unknown" }} (installed)
+              <option class="installed" value="{{ deployment.tool.chart_name }}__{{ installed_chart_version }}">
+              [{{ deployment.tool.chart_name }} {{ installed_chart_version }}]  {{ deployment.get_installed_app_version(id_token) or "Unknown" }} (installed)
               </option>
             {% else %}
               <option class="not-installed">Not deployed - select a tool from this list and click "Deploy" to start</option>
             {% endif %}
             {% for chart_version, app_version in tool_info["versions"].items(): %}
               {% if chart_version != installed_chart_version: %}
-                <option value="{{ chart_version }}">
-                  [Build {{ chart_version }}]  {{ app_version or "Unknown" }}
+                <option value="{{ app_version.chart_name }}__{{ chart_version }}">
+                  [{{ app_version.chart_name }} {{ chart_version }}]  {{ app_version.description or "Unknown" }}
                 </option>
               {% endif %}
             {% endfor %}
@@ -81,7 +87,10 @@
       Open
   </button>
 
-  <form action="{{ url('restart-tool', kwargs={'name': chart_name}) }}"
+  <form
+    {% if deployment %}
+    action="{{ url('restart-tool', kwargs={'name': deployment.tool.chart_name}) }}"
+    {% endif %}
     data-action-name="restart"
     method="post"
     style="display: inline;">
@@ -89,7 +98,7 @@
     <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
       data-action-name="restart"
       {% if not deployment %} disabled {% endif %}>
-        Restart
+      Restart
     </button>
   </form>
   </div>

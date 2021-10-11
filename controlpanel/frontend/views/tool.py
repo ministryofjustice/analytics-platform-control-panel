@@ -67,8 +67,14 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                    "url: "https://john-rstudio.tools.example.com",
                    "deployment": ToolDeployment(RStudio, John),
                    "versions": {
-                       "2.2.5": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
-                       "1.0.0": None,
+                       "2.2.5": {
+                           "chart_name": "rstudio",
+                           "description": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
+                       },
+                       "1.0.0": {
+                           "chart_name": "rstudio",
+                           "description": None,
+                       }
                     }
                },
                # ...
@@ -89,13 +95,30 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         for deployment in deployments:
             chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
             deployed_chart_names.append(chart_name)
-
+        # Defines how a matching chart name is put into a named tool bucket.
+        # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
+        # chart name match: tool bucket
+        tool_chart_lookup = {
+            "airflow": "airflow-sqlite",
+            "jupyter": "jupyter-lab",
+            "rstudio": "rstudio",
+        }
         # Arrange tools information
         context["tools_info"] = {}
         for tool in context["tools"]:
             chart_name = tool.chart_name
-            if chart_name not in context["tools_info"]:
-                context["tools_info"][chart_name] = {
+            # Work out which bucket the chart should be in (it'll be one of
+            # those defined in 
+            tool_bucket = ""
+            for key, bucket_name in tool_chart_lookup.items():
+                if key in chart_name:
+                    tool_bucket = bucket_name
+                    break
+            if not tool_bucket:
+                # No matching tool bucket for the given chart. So ignore.
+                break
+            if tool_bucket not in context["tools_info"]:
+                context["tools_info"][tool_bucket] = {
                     "name": tool.name,
                     "url": tool.url(user),
                     "deployment": None,
@@ -103,13 +126,17 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 }
 
             if chart_name in deployed_chart_names:
-                context["tools_info"][chart_name]["deployment"] = ToolDeployment(
+                context["tools_info"][tool_bucket]["deployment"] = ToolDeployment(
                     tool, user
                 )
-
-            context["tools_info"][chart_name]["versions"][
+            # Each version now needs to display the chart_name and the
+            # "app_version" metadata from helm. TODO: Stop using helm.
+            context["tools_info"][tool_bucket]["versions"][
                 tool.version
-            ] = tool.app_version
+            ] = {
+                "chart_name": chart_name,
+                "description": tool.app_version
+            }
 
         return context
 
@@ -119,21 +146,42 @@ class DeployTool(OIDCLoginRequiredMixin, RedirectView):
     url = reverse_lazy("list-tools")
 
     def get_redirect_url(self, *args, **kwargs):
-        name = kwargs["name"]
+        """
+        This is the most backwards thing you'll see for a while. The helm
+        task to deploy the tool apparently must happen when the view class
+        attempts to redirect to the target url. I'm sure there's a good
+        reason why.
+        """
+        # If there's already a tool deployed, we need to get this from a
+        # hidden field posted back in the form. This is used by helm to delete
+        # the currently installed chart for the tool before installing the 
+        # new chart.
+        old_chart_name = self.request.POST.get("deployed_chart_name", None)
+        # The selected option from the "version" select control contains the
+        # data we need.
+        chart_info = self.request.POST["version"]
+        # The tool name and version are stored in the selected option's value
+        # attribute and then split on "__" to extract them. Why? Because we
+        # need both pieces of information to kick off the background helm
+        # deploy.
+        tool_name, version = chart_info.split("__")
 
+        # Kick off the helm chart as a background task.
         start_background_task(
             "tool.deploy",
             {
-                "tool_name": name,
-                "version": self.request.POST["version"],
+                "tool_name": tool_name,
+                "version": version,
                 "user_id": self.request.user.id,
                 "id_token": self.request.user.get_id_token(),
+                "old_chart_name": old_chart_name,
             },
         )
-
+        # Tell the user stuff's happening.
         messages.success(
-            self.request, f"Deploying {name}... this may take several minutes",
+            self.request, f"Deploying {tool_name}... this may take several minutes",
         )
+        # Continue the redirect to the target URL (list-tools).
         return super().get_redirect_url(*args, **kwargs)
 
 
@@ -142,6 +190,14 @@ class RestartTool(OIDCLoginRequiredMixin, RedirectView):
     url = reverse_lazy("list-tools")
 
     def get_redirect_url(self, *args, **kwargs):
+        """
+        So backwards, it's forwards.
+
+        The "name" of the chart to restart is set in the template for
+        list-tools, if there's a live deployment.
+
+        That's numberwang.
+        """
         name = self.kwargs["name"]
 
         start_background_task(

@@ -80,7 +80,7 @@ def _execute(*args, **kwargs):
         wait = True
         timeout = kwargs.pop("timeout")
         log.info(
-            "Blocking helm command. Timout after {} seconds.".format(timeout)
+            "Blocking helm command. Timeout after {} seconds.".format(timeout)
         )
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
@@ -172,6 +172,10 @@ def delete_eks(namespace, *args):
     Delete helm charts identified by the content of the args list in the
     referenced namespace. Helm 3 version.
 
+    This command blocks, so the old charts are deleted BEFORE the new charts
+    are installed. Will block for a maximum of settings.HELM_DELETE_TIMEOUT
+    seconds.
+
     Logs the stdout result of the command.
     """
     if not namespace:
@@ -182,7 +186,8 @@ def delete_eks(namespace, *args):
         "uninstall",
         *args,
         "--namespace",
-        namespace
+        namespace,
+        timeout=settings.HELM_DELETE_TIMEOUT,
     )
     stdout = proc.stdout.read()
     log.info(stdout)

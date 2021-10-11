@@ -340,9 +340,10 @@ class ToolDeploymentError(Exception):
 
 
 class ToolDeployment:
-    def __init__(self, user, tool):
+    def __init__(self, user, tool, old_chart_name=None):
         self.user = user
         self.tool = tool
+        self.old_chart_name = old_chart_name
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool} {self.user}>"
@@ -373,12 +374,20 @@ class ToolDeployment:
         We can remove this once every user is on new naming
         scheme for RStudio.
         """
-
-        old_release_name = f"{self.user.slug}-{self.chart_name}"
-        if old_release_name in helm.list_releases(old_release_name):
-            if settings.EKS:
-                helm.delete_eks(self.k8s_namespace, self.app.release_name)
-            else:
+        if settings.EKS:
+            old_release_name = f"{self.chart_name}-{self.user.slug}"
+            if self.old_chart_name:
+                # If an old_chart_name has been passed into the deployment, it
+                # means the currently deployed instance of the tool is from a
+                # different chart to the one for this tool. Therefore, it's
+                # the old_chart_name that we should use for the old release
+                # that needs deleting.
+                old_release_name = f"{self.old_chart_name}-{self.user.slug}"
+            if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
+                helm.delete_eks(self.k8s_namespace, old_release_name)
+        else:
+            old_release_name = f"{self.user.slug}-{self.chart_name}"
+            if old_release_name in helm.list_releases(old_release_name):
                 helm.delete(old_release_name)
 
     def _set_values(self, **kwargs):
