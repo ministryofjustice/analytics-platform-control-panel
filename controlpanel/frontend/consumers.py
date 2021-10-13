@@ -157,6 +157,14 @@ class BackgroundTaskConsumer(SyncConsumer):
         tool_args = {"chart_name": message["tool_name"]}
         if "version" in message:
             tool_args["version"] = message["version"]
+        # There may be two charts with the same name and version, but
+        # targetting different instances of our infrastructure. Ensure the
+        # filter args flag which infrastructure we're running on, to make sure
+        # the correct tool is the *first* one returned.
+        if settings.EKS:
+            tool_args["target_infrastructure"] = Tool.EKS
+        else:
+            tool_args["target_infrastructure"] = Tool.OLD
 
         # On restart we don't specify the version as it doesn't make
         # sense to do so. As we're now allowing more than one
