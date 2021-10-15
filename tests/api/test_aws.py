@@ -44,7 +44,7 @@ def ssm(aws_creds):
 
 @pytest.fixture(autouse=True)
 def managed_policy(iam):
-    result = iam.meta.client.create_policy(
+    iam.meta.client.create_policy(
         PolicyName='test-read-user-roles-inline-policies',
         PolicyDocument=json.dumps({
             'Version': '2012-10-17',
@@ -56,7 +56,30 @@ def managed_policy(iam):
             },
         ]}),
     )
-    return result['Policy']
+    iam.meta.client.create_policy(
+        PolicyName='airflow-dev-ui-access',
+        PolicyDocument=json.dumps({
+            'Version': '2012-10-17',
+            'Statement': [{
+                'Sid': '',
+                'Effect': 'Allow',
+                'Action': ['airflow:CreateWebLoginToken'],
+                'Resource': ['arn:aws:airflow:eu-west-1:{settings.AWS_DATA_ACCOUNT_ID}:role/dev/User'],
+            },
+        ]}),
+    )
+    iam.meta.client.create_policy(
+        PolicyName='airflow-prod-ui-access',
+        PolicyDocument=json.dumps({
+            'Version': '2012-10-17',
+            'Statement': [{
+                'Sid': '',
+                'Effect': 'Allow',
+                'Action': ['airflow:CreateWebLoginToken'],
+                'Resource': ['arn:aws:airflow:eu-west-1{settings.AWS_DATA_ACCOUNT_ID}:role/prod/User'],
+            },
+        ]}),
+    )
 
 
 def stmt_match(stmt, Action='sts:AssumeRole', Condition=None, Effect='Allow', Principal={}):
@@ -170,7 +193,7 @@ def test_create_user_role(iam, managed_policy, users):
     assert oidc_assume_role(pd['Statement'][3], user)
 
     attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 1
+    assert len(attached_policies) == 3
     assert attached_policies[0].arn == managed_policy['Arn']
 
 
@@ -192,7 +215,7 @@ def test_create_user_role_EKS(iam, managed_policy, users):
     assert eks_assume_role(pd["Statement"][4], user)
 
     attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 1
+    assert len(attached_policies) == 3
     assert attached_policies[0].arn == managed_policy['Arn']
 
 
@@ -590,7 +613,7 @@ def test_delete_group(iam, group, user_roles):
     role = iam.Role('test_user_alice')
     aws.update_group_members(group.arn, set([role.name]))
 
-    assert len(list(role.attached_policies.all())) == 2
+    assert len(list(role.attached_policies.all())) == 4
 
     try:
         aws.delete_group(group.arn)
