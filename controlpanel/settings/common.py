@@ -158,8 +158,8 @@ LOGOUT_REDIRECT_URL = "/"
 # URL where requests are redirected after a failed login
 LOGIN_REDIRECT_URL_FAILURE = "/login-fail/"
 
-# Length of time it takes for an OIDC ID token to expire (default 15m)
-OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 15 * 60
+# Length of time it takes for an OIDC ID token to expire (default 1 hour)
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
 
 # Gracefully handle state mismatch
 OIDC_CALLBACK_CLASS = 'controlpanel.oidc.StateMismatchHandler'
