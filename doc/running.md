@@ -310,15 +310,17 @@ labelled `user_id` (not working for me yet).
 ### Run the app
 
 In order to run the app you'll need various permissions set up for you in the
-wider infrastructure of the project.
+wider infrastructure of the project. This is usually achieved via the
+`aws-vault` command (please
+[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)). 
 
 You can run the app with the Django development server with
 ```sh
-python3 manage.py runserver
+aws-vault exec restricted-data python3 manage.py runserver
 ```
 Or with Gunicorn WSGI server:
 ```sh
-gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
+aws-vault exec restricted-data gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
 Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
 runing control panel.
