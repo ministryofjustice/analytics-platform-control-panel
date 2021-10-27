@@ -52,6 +52,10 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         for user in self.object.target_users.all():
             target_users.append(user.username)
         context['target_users'] = ", ".join(target_users)
+        context['infra_choices'] = [
+            {"text": c[1], "value": c[0], "checked": self.object.target_infrastructure == c[0]}
+            for c in ToolReleaseForm.base_fields["target_infrastructure"].choices
+        ]
         return context
 
     def form_valid(self, form):
@@ -78,6 +82,14 @@ class ReleaseCreate(OIDCLoginRequiredMixin,PermissionRequiredMixin,CreateView):
     permission_required = "api.create_tool_release"
     template_name = "release-create.html"
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['infra_choices'] = [
+            {"text": c[1], "value": c[0], "checked": ""}
+            for c in ToolReleaseForm.base_fields["target_infrastructure"].choices
+        ]
+        return context
+
     def form_valid(self, form):
         """
         Ensure the object is created as expected (with the beta-users).
@@ -86,19 +98,5 @@ class ReleaseCreate(OIDCLoginRequiredMixin,PermissionRequiredMixin,CreateView):
         target_list = form.get_target_users()
         if target_list:
             self.object.target_users.set(target_list)
-        # Populate the JSON values needed as arguments for the referenced helm
-        # chart to run.
-        # These are taken from the most recent valid version of the helm chart
-        # (these settings should remain the same across chart versions).
-        old_release = (
-            # This query is lazy, and starts by matching tools by chart_name...
-            Tool.objects.filter(chart_name=self.object.chart_name)
-            .exclude(values={})  # ...throw away those with empty values, and,
-            .order_by("-created")  # order by latest first, but...
-            .first()  # ...get only the first result.
-        )
-        # Update the values of the new release with those from the old release.
-        self.object.values = old_release.values
-        self.object.save()
         messages.success(self.request, "Successfully created new release")
         return HttpResponseRedirect(reverse_lazy("list-tool-releases"))

@@ -1,8 +1,12 @@
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "input/macro.html" import govukInput %}
+{% from "radios/macro.html" import govukRadios %}
 {% from "checkboxes/macro.html" import govukCheckboxes %}
 {% from "fieldset/macro.html" import govukFieldset %}
 {% from "includes/yesno.html" import yes_no %}
+{% from "includes/list-field.html" import list_field_textarea %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+
 
 {% extends "base.html" %}
 
@@ -14,8 +18,8 @@ Create a new release of a tool in the analytical platform.
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if form.error %}
-    <div class="error">{{ form.error }}</div>
+  {% if form.errors %}
+      {{ govukErrorMessage({"text": form.errors}) }}
   {% endif %}
 
   <form action="{{ url('manage-tool-release', kwargs={ "pk": release.pk}) }}" method="post">
@@ -44,7 +48,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'Helm chart name. Use only one of: airflow-sqlite, jupyter-lab or rstudio'
+        "text": 'Helm chart name. Use only variations of: airflow-sqlite, jupyter-* or rstudio'
       },
       "name": "chart_name",
       "attributes": {
@@ -71,6 +75,24 @@ Create a new release of a tool in the analytical platform.
       "value": form.version.value(),
       "errorMessage": { "html": form.version.errors|join(". ") } if form.version.errors else {}
     }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Custom Domain Name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'If the chart name is non-standard, use this value in the domain name for the tool. Use only one of: airflow-sqlite, jupyter-lab or rstudio.'
+      },
+      "name": "tool_domain",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.tool_domain.value(),
+      "errorMessage": { "html": form.tool_domain.errors|join(". ") } if form.tool_domain.errors else {}
+    }) }}
+    {{ list_field_textarea("values", "Helm Argument Values", "A JSON representation of values to pass in as arguments to helm.", form.values.value() or "", form.values.errors) }}
     {{ govukCheckboxes({
       "fieldset": {
         "legend": {
@@ -104,6 +126,21 @@ Create a new release of a tool in the analytical platform.
       "name": "target_users_list",
       "value": target_users if target_users else "",
       "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
+    }) }}
+    {{ govukRadios({
+      "fieldset": {
+        "legend": {
+          "text": "Target Infrastructure",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'The infrastructure on which this tool is to run'
+      },
+      "name": "target_infrastructure",
+      "items": infra_choices,
+      "errorMessage": { "html": form.is_restricted.errors|join(". ") } if form.is_restricted.errors else {}
     }) }}
     <button class="govuk-button">Update tool release</button>
   </form>

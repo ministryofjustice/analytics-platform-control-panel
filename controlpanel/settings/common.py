@@ -16,6 +16,8 @@ ENABLED = {
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
 
+# Flag to indicate if running on an EKS cluster.
+EKS = bool(os.environ.get("EKS", False))
 
 # -- Paths
 
@@ -156,8 +158,8 @@ LOGOUT_REDIRECT_URL = "/"
 # URL where requests are redirected after a failed login
 LOGIN_REDIRECT_URL_FAILURE = "/login-fail/"
 
-# Length of time it takes for an OIDC ID token to expire (default 15m)
-OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 15 * 60
+# Length of time it takes for an OIDC ID token to expire (default 1 hour)
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
 
 # Gracefully handle state mismatch
 OIDC_CALLBACK_CLASS = 'controlpanel.oidc.StateMismatchHandler'
@@ -438,11 +440,17 @@ TOOLS = {
 # Helm repo where tool charts are hosted
 HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
 
+# The number of seconds helm should wait for helm delete to complete.
+HELM_DELETE_TIMEOUT = int(os.environ.get("HELM_DELETE_TIMEOUT", 10))
+
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
 
 # hostname of NFS server for user homes
 NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
+
+# volume name for the EFS directory for user homes
+EFS_VOLUME = os.environ.get("EFS_VOLUME")
 
 # hostname of the EFS server for user homes
 EFS_HOSTNAME = os.environ.get("EFS_HOSTNAME")
@@ -551,6 +559,10 @@ BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 # Auth0 integrated SAML provider, referenced in user policies to allow login via
 # SAML federation
 SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
+
+# The EKS OIDC provider, referenced in user policies to allow service accounts
+# to grant AWS permissions.
+OIDC_EKS_PROVIDER = os.environ.get("OIDC_EKS_PROVIDER")
 
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')

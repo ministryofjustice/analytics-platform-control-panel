@@ -8,9 +8,31 @@ from controlpanel.utils import sanitize_dns_label
 
 
 class User(AbstractUser):
+
+    # States in which a user can be in while migrating to the new platform.
+    VOID = "v"  # Default value. Not involved in the migration process.
+    PENDING = "p"  # User is ready to migrate to the new platform.
+    MIGRATING = "m"  # The user has started migration process.
+    COMPLETE = "c"  # The migration process has completed for the user.
+    REVERTED = "r"  # The user has been reverted to the old platform.
+
+    MIGRATION_STATES = [
+        (VOID, "Void - not involved in migration."),
+        (PENDING, "Pending - the user is able to migrate."),
+        (MIGRATING, "Migrating - migration has started."),
+        (COMPLETE, "Complete - migration has completed."),
+        (REVERTED, "Reverted - user back on the old platform."),
+    ]
+
     auth0_id = models.CharField(max_length=128, primary_key=True)
     name = models.CharField(max_length=256, blank=True)
     email_verified = models.BooleanField(default=False)
+    migration_state = models.CharField(
+        help_text="The state of the user's migration to new infrastructure.",
+        max_length=1,
+        choices=MIGRATION_STATES,
+        default=VOID
+    )
 
     REQUIRED_FIELDS = ['email', 'auth0_id']
 
@@ -103,3 +125,15 @@ class User(AbstractUser):
 
     def authentication_event(self):
         cluster.User(self).on_authenticate()
+
+    @classmethod
+    def bulk_migration_update(cls, usernames, new_state):
+        """
+        Given a list of usernames, will bulk update matching users to the new 
+        migration state.
+        """
+        if usernames:
+            users = cls.objects.filter(username__in=usernames)
+            for user in users:
+                user.migration_state = new_state
+            cls.objects.bulk_update(users, ["migration_state", ])

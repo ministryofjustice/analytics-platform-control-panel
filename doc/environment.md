@@ -13,6 +13,8 @@
 | `DB_USER` | Postgres username | |
 | `DEBUG` | Run in debug mode, displaying stacktraces on errors, etc | `False` |
 | `EFS_HOSTNAME` | Hostname of EFS server for user homes | |
+| `EFS_VOLUME` | volume name for the EFS directory for user homes | |
+| `EKS` | Flag to indicate the application is running on EKS infrastructure | |
 | `ELASTICSEARCH_HOST` | | |
 | `ELASTICSEARCH_INDEX_S3LOGS` | | `s3logs-*` |
 | `ELASTICSEARCH_PASSWORD` | | |
@@ -32,6 +34,7 @@
 | `OIDC_CLIENT_ID` | Client ID from Auth0 | |
 | `OIDC_CLIENT_SECRET` | Client secret from Auth0 | |
 | `OIDC_DOMAIN` | Domain of Auth0 tenant | |
+| `OIDC_EKS_PROVIDER` | Equivalent of SAML_PROVIDER but for the app running on EKS infrastructure | |
 | `OIDC_OP_AUTHORIZATION_ENDPOINT` | URL of OIDC Provider authorization endpoint | |
 | `OIDC_OP_JWKS_ENDPOINT` | URL of OIDC Provider JWKS endpoint | |
 | `OIDC_OP_TOKEN_ENDPOINT` | URL of OIDC Provider token endpoint | |

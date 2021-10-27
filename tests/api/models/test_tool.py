@@ -32,7 +32,7 @@ def test_deploy_for_generic(helm, token_hex, tool, users):
     tool_deployment.save()
 
     # uninstall tool with old naming scheme
-    helm.delete.assert_called_with(True, old_release_name)
+    helm.delete.assert_called_with(old_release_name)
 
     # install new release
     helm.upgrade_release.assert_called_with(

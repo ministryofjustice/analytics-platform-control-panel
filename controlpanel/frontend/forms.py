@@ -73,6 +73,7 @@ class CreateAppForm(forms.Form):
                 try:
                     S3Bucket.objects.get(name=new_datasource)
                     self.add_error(
+                        "new_datasource_name",
                         f"Datasource named {new_datasource} already exists"
                     )
                 except S3Bucket.DoesNotExist:
@@ -297,14 +298,40 @@ class ToolReleaseForm(forms.ModelForm):
 
         Hence the path of least resistance with this custom form validation.
         """
-        valid_charts = ["airflow-sqlite", "jupyter-lab", "rstudio", ]
+        valid_charts = ["airflow-sqlite", "jupyter-", "rstudio", ]
         value = self.cleaned_data['chart_name']
-        if value not in valid_charts:
+        is_valid = False
+        for chart_name in valid_charts:
+            if chart_name in value:
+                is_valid = True
+                break
+        if not is_valid:
             raise ValidationError(
                 f"'{value}' is not a valid helm chart name. ",
             )
         return value
 
+    def clean_tool_domain(self):
+        """
+        Ensures that if the bespoke tool_domain value is specified it is ONLY
+        one of the acceptable names.
+        """
+        valid_names = ["airflow-sqlite", "jupyter-lab", "rstudio", ]
+        value = self.cleaned_data.get("tool_domain")
+        if value and value not in valid_names:
+            raise ValidationError(
+                f"'{value}' is not a valid tool domain value. ",
+            )
+        return value
+
     class Meta:
         model = Tool
-        fields = ["name", "chart_name", "version", "is_restricted", ]
+        fields = [
+            "name",
+            "chart_name",
+            "version",
+            "values",
+            "is_restricted",
+            "target_infrastructure",
+            "tool_domain",
+        ]

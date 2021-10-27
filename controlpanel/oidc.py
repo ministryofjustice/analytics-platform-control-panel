@@ -44,12 +44,27 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
 
     def authenticate(self, request, **kwargs):
         """
-        To avoid cloning and re-implementing the OIDC Backend authenticate method,
-        This checks the output of that method, and calls the authentication_event hook
-        if a user has been sucessfully implemented.
+        To avoid cloning and re-implementing the OIDC Backend authenticate
+        method, this checks the output of that method, and calls the
+        authentication_event hook if a user has been sucessfully implemented.
         """
         authenticated_user = super().authenticate(request, **kwargs)
         if authenticated_user:
+            # User states that are allowed on non-EKS infra platforms. See the
+            # api.models.user.User model for details of what these mean.
+            valid_old_infra_states = [
+                authenticated_user.VOID,
+                authenticated_user.PENDING,
+                authenticated_user.REVERTED,
+            ]
+            if not settings.EKS:
+                # Running on the old (non-EKS) infra.
+                if authenticated_user.migration_state not in valid_old_infra_states:
+                    # If the user has migrated, don't allow them to log in.
+                    return None
+            # Calling the authentication event will ensure the user is
+            # correctly set up for the current infrastructure (including the
+            # process of migrating the user from the old infra -> EKS).
             authenticated_user.authentication_event()
         return authenticated_user
 
