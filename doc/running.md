@@ -17,10 +17,16 @@ versions of the services.
 
 ## Required Dependencies
 
-You must have [Redis](https://redis.io/),
-[PostgreSQL](https://www.postgresql.org/), [npm](https://www.npmjs.com/) and
-possibly [direnv](https://direnv.net/), [docker](https://www.docker.com/) and
-[virtualbox](https://www.virtualbox.org/).
+You must have:
+
+* [Redis](https://redis.io/)
+* [PostgreSQL](https://www.postgresql.org/)
+* [npm](https://www.npmjs.com/)
+* [direnv](https://direnv.net/)
+* [docker](https://www.docker.com/)
+* [virtualbox](https://www.virtualbox.org/)
+* [graphviz](https://graphviz.org/download/)
+
 These should be installed using your own OS's package manager (`brew`, `apt`
 etc...).
 
