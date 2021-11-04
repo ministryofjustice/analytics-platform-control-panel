@@ -388,6 +388,10 @@ if REDIS_SCHEME not in ["redis", "rediss"]:
 
 REDIS_URI = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/1"
 
+# -- Prometheus
+
+PROMETHEUS_EXPORT_MIGRATIONS = False
+
 # -- Async
 
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
