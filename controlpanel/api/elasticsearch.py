@@ -1,4 +1,4 @@
-import logging
+import structlog
 
 from dateutil.parser import parse
 from elasticsearch import Elasticsearch
@@ -7,7 +7,7 @@ from elasticsearch_dsl.query import Range
 
 from django.conf import settings
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 def bucket_hits_aggregation(bucket_name, num_days=None):

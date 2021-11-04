@@ -1,13 +1,13 @@
 from copy import deepcopy
 import json
-import logging
+import structlog
 
 import boto3
 import botocore
 from django.conf import settings
 
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 def arn(service, resource, region="", account=""):

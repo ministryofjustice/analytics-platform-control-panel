@@ -1,4 +1,4 @@
-import logging
+import structlog
 import re
 
 from django.conf import settings
@@ -6,7 +6,7 @@ from django.conf import settings
 
 API_PATH = re.compile(r'^/(?P<resource>[^/]+)')
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class LegacyAPIRedirectMiddleware:

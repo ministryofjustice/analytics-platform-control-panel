@@ -1,4 +1,4 @@
-import logging
+import structlog
 
 from django.conf import settings
 from jose import jwt
@@ -8,7 +8,7 @@ from requests.exceptions import RequestException
 from rest_framework import HTTP_HEADER_ENCODING
 
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class JWTDecodeError(Exception):

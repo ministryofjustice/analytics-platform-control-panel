@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime
 import json
-import logging
+import structlog
 from pathlib import Path
 from time import sleep
 import uuid
@@ -30,7 +30,7 @@ WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
 
 channel_layer = get_channel_layer()
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class SSEConsumer(PatchedAsyncHttpConsumer):

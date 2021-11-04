@@ -1,4 +1,4 @@
-import logging
+import structlog
 import secrets
 
 from django.conf import settings
@@ -12,7 +12,7 @@ from controlpanel.api import cluster
 from controlpanel.api import helm
 
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class Tool(TimeStampedModel):
