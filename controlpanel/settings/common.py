@@ -86,9 +86,11 @@ INSTALLED_APPS = [
     "health_check.db",
     "health_check.cache",
     "health_check.storage",
+    "django_prometheus",
 ]
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "controlpanel.middleware.DisableClientSideCachingMiddleware",
     "controlpanel.middleware.LegacyAPIRedirectMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -103,7 +105,8 @@ MIDDLEWARE = [
     # Check user's OIDC token is still valid
     "mozilla_django_oidc.middleware.SessionRefresh",
     # Structured logging
-    'django_structlog.middlewares.RequestMiddleware',
+    "django_structlog.middlewares.RequestMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 TEMPLATES = [
