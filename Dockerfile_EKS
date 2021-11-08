@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --outp
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM quay.io/mojanalytics/alpine:3.13 AS base
+FROM python:3.9 AS base
 
 ARG HELM_VERSION=3.5.4
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -23,8 +23,8 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   EKS=True
 
 # create a user to run as
-RUN addgroup -g 1000 -S controlpanel && \
-  adduser -u 1000 -S controlpanel -G controlpanel
+RUN addgroup -gid 1000 controlpanel && \
+  adduser -uid 1000 --gid 1000 controlpanel
 
 WORKDIR /home/controlpanel
 
@@ -36,31 +36,16 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-RUN apk add --no-cache \
-            python3 \
-            alpine-sdk \
-            gcc \
-            cargo \
-            musl-dev \
-            ca-certificates \
-            libffi-dev \
-            python3-dev \
-            py3-pip \
-            libressl-dev \
-            postgresql-dev \
-            libstdc++ \
-            postgresql-client \
-            graphviz \
-            graphviz-dev \
-            ttf-freefont \
-  && pip3 install -U pip
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install -U pip
 
 COPY requirements.txt requirements.dev.txt manage.py ./
-RUN pip3 install -U --no-cache-dir pip
-RUN pip3 install -r requirements.txt
-RUN python3 -m venv --system-site-packages dev-packages \
-    && dev-packages/bin/pip3 install -U --no-cache-dir pip \
-    && dev-packages/bin/pip3 install -r requirements.dev.txt
+RUN pip install -U --no-cache-dir pip
+RUN pip install -r requirements.txt
 
 USER controlpanel
 COPY controlpanel controlpanel
