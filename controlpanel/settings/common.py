@@ -541,7 +541,7 @@ LOGGING = {
         },
     },
     "loggers": {
-        "django_structlog": {
+        "django": {
             "handlers": ["console", ],
             "level": "INFO",
         },
