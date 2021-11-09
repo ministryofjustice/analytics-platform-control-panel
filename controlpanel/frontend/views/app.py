@@ -1,5 +1,5 @@
 import re
-import logging
+import structlog
 
 from django.conf import settings
 from django.contrib import messages
@@ -36,7 +36,7 @@ from controlpanel.frontend.forms import (
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class AppList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):

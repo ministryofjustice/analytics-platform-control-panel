@@ -1,4 +1,4 @@
-import logging
+import structlog
 
 from asgiref.sync import async_to_sync
 from controlpanel.api import cluster
@@ -16,7 +16,7 @@ from django.views.generic.list import ListView
 from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):

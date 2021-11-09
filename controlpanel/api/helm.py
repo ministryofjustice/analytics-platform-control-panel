@@ -1,4 +1,4 @@
-import logging
+import structlog
 import os
 import re
 import subprocess
@@ -9,7 +9,7 @@ from django.conf import settings
 from rest_framework.exceptions import APIException
 
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 # Cache helm repository metadata for 5 minutes (expressed as seconds).

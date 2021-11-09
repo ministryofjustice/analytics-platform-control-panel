@@ -5,6 +5,8 @@ from os.path import abspath, dirname, join
 from controlpanel.frontend.jinja2 import environment
 from controlpanel.utils import is_truthy
 
+import structlog
+
 # -- Feature flags
 
 ENABLED = {
@@ -100,6 +102,8 @@ MIDDLEWARE = [
     "crequest.middleware.CrequestMiddleware",
     # Check user's OIDC token is still valid
     "mozilla_django_oidc.middleware.SessionRefresh",
+    # Structured logging
+    'django_structlog.middlewares.RequestMiddleware',
 ]
 
 TEMPLATES = [
@@ -303,90 +307,6 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["controlpanel.api.permissions.IsSuperuser"],
     "DEFAULT_PAGINATION_CLASS": "controlpanel.api.pagination.CustomPageNumberPagination",
     "PAGE_SIZE": 100,
-}
-
-
-# -- Logging
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {"format": "%(asctime)s %(name)s %(levelname)s %(message)s"}
-    },
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "default",
-        }
-    },
-    "loggers": {
-        "": {
-            "handlers": ["console"],
-            "level": os.environ.get("LOG_LEVEL", "DEBUG"),
-        },
-        "aioredis": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "asyncio": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "boto3": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "botocore": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "daphne": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "django": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "elasticsearch": {
-            "handlers": ['console'],
-            "level": "WARNING",
-        },
-        "github": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "gunicorn": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "kubernetes": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "mozilla_django_oidc": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "requests_oauthlib": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "rules": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "urllib3": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-        "uvicorn": {
-            "handlers": ["console"],
-            "level": "WARNING",
-        },
-    },
 }
 
 
@@ -594,3 +514,59 @@ SLACK = {
     "api_token": os.environ.get('SLACK_API_TOKEN'),
     "channel": os.environ.get('SLACK_CHANNEL', "#analytical-platform"),
 }
+
+
+# -- Structured logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json_formatter": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
+        "plain_console": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+        "key_value": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.KeyValueRenderer(key_order=['timestamp', 'level', 'event', 'logger']),
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json_formatter",
+        },
+    },
+    "loggers": {
+        "django_structlog": {
+            "handlers": ["console", ],
+            "level": "INFO",
+        },
+        # Make sure to replace the following logger's name for yours
+        "control_panel": {
+            "handlers": ["console", ],
+            "level": "INFO",
+        },
+    }
+}
+
+structlog.configure(
+    processors=[
+        structlog.stdlib.filter_by_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    context_class=structlog.threadlocal.wrap_dict(dict),
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)

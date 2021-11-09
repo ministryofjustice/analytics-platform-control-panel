@@ -1,4 +1,4 @@
-import logging
+import structlog
 from urllib.parse import urlencode
 
 from django.utils import timezone
@@ -12,7 +12,7 @@ from django.urls import reverse
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):

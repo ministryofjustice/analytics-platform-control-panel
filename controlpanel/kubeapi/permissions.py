@@ -1,4 +1,4 @@
-import logging
+import structlog
 
 from rest_framework.permissions import BasePermission
 
@@ -11,7 +11,7 @@ ALLOWED_APIS = [
 ]
 
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 class K8sPermissions(BasePermission):

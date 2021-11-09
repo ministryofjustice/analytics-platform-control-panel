@@ -1,4 +1,4 @@
-import logging
+import structlog
 import secrets
 
 from django.conf import settings
@@ -11,7 +11,7 @@ from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 
-log = logging.getLogger(__name__)
+log = structlog.getLogger(__name__)
 
 
 TOOL_DEPLOYING = "Deploying"
