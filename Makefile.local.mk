@@ -22,7 +22,7 @@ dev-attach:
 
 ## dev-py: Start django shell (in the dev-packages context) in new container
 dev-py:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python3 manage.py shell"
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "python manage.py shell"
 
 ## dev-run: Start shell in new copy of container
 dev-run:
