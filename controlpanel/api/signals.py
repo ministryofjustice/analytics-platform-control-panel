@@ -1,4 +1,4 @@
-from controlpanel.api.counters import login_events
+from controlpanel.api.metrics import login_events
 from django.dispatch import receiver
 
 from django_structlog.signals import bind_extra_request_metadata
