@@ -8,7 +8,8 @@ AWS_DATA_ACCOUNT_ID = "123456789012"  # XXX DO NOT CHANGE - it will break moto t
 K8S_WORKER_ROLE_NAME = "nodes.example.com"
 SAML_PROVIDER = "test-saml"
 
-LOGGING["loggers"]["django"]["level"] = "WARNING"
+LOGGING["loggers"]["django_structlog"]["level"] = "WARNING"
+LOGGING["loggers"]["control_panel"]["level"] = "WARNING"
 
 AUTHENTICATION_BACKENDS = [
     'rules.permissions.ObjectPermissionBackend',

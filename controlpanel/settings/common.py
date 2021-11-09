@@ -519,7 +519,7 @@ SLACK = {
 # -- Structured logging
 LOGGING = {
     "version": 1,
-    "disable_existing_loggers": True,
+    "disable_existing_loggers": False,
     "formatters": {
         "json_formatter": {
             "()": structlog.stdlib.ProcessorFormatter,
@@ -541,13 +541,13 @@ LOGGING = {
         },
     },
     "loggers": {
-        "django": {
+        "django_structlog": {
             "handlers": ["console", ],
             "level": "INFO",
         },
         # Make sure to replace the following logger's name for yours
         "control_panel": {
-            "handlers": ["console",],
+            "handlers": ["console", ],
             "level": "INFO",
         },
     }
