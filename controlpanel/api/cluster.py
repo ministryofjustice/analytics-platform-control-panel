@@ -104,12 +104,23 @@ class User:
         """
         Reset the user's home directory.
         """
-        helm.upgrade_release(
-            f"reset-user-home-{self.user.slug}",  # release
-            f"{settings.HELM_REPO}/reset-user-home",  # chart
-            f"--namespace=user-{self.user.slug}",
-            f"--set=Username={self.user.slug}",
-        )
+        if settings.EKS:
+            # On the new EKS infrastructure, the user's home directory[s] is
+            # organised differently and on EFS. This is why we use a separate
+            # helm chart.
+            helm.upgrade_release(
+                f"reset-user-efs-home-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/reset-user-efs-home",  # chart
+                f"--namespace=user-{self.user.slug}",
+                f"--set=Username={self.user.slug}",
+            )
+        else:
+            helm.upgrade_release(
+                f"reset-user-home-{self.user.slug}",  # release
+                f"{settings.HELM_REPO}/reset-user-home",  # chart
+                f"--namespace=user-{self.user.slug}",
+                f"--set=Username={self.user.slug}",
+            )
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
