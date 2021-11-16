@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+{% load rules %}
+
+{% block content %}
+<h1>{{ user.get_full_name }}</h1>
+
+{% if unused %}
+<div class="warning-text">
+  <p>
+  <span>
+    <img alt="Attention!" src="{% static 'img/attention.svg' %}" width="32" height="32" class="attention"/>
+  </span>
+  <strong>This account could be unused. The user of this account has not
+  logged in for over 90 days.</strong>
+  <p>If appropriate, please <a href="https://github.com/orgs/moj-analytical-services/people/{{ user.username }}" target="_blank">visit the GitHub page for their membership of the
+  Ministry of Justice organisation</a> to free up space.</p>
+</div>
+{% endif %}
+
+{% has_perm 'api.add_superuser' request.user as add_superuser %}
+{% if add_superuser %}
+<h4>Super Admin</h4>
+<form action="{% url 'set-superadmin' user.auth0_id %}" method="post">
+  {{ csrf_input }}
+  <p>User is a super admin, allowing all privileges on the Control panel.</p>
+  <p>
+  <input
+    type="checkbox"
+    name="is_superuser"
+    {% if user.is_superuser %}checked="checked"{% endif %}
+    id="is_superuser"/>
+  <label for="is_superuser">Super Admin</label>
+  </p>
+  <p><button>Save changes</button></p>
+</form>
+{% endif %}
+
+{% has_perm 'api.reset_mfa' request.user as reset_mfa %}
+{% if reset_mfa %}
+<h4>Reset MFA</h4>
+<form action="{% url 'reset-mfa' user.auth0_id %}" method="post">
+  {{ csrf_input }}
+  <p>Reset the user's multi-factor authentication settings, forcing them to
+  reconfigure.</p>
+  <p><button>Reset MFA</button></p>
+</form>
+{% endif %}
+
+<h4>User's apps</h4>
+
+<table>
+  <caption>A list of the user's apps on the platform (click the app's name for details).</caption>
+  <thead>
+    <tr>
+      <th>App name</th>
+      <th>
+        <dfn title="Admins of an app are able to connect and disconnect the app to and from webapp data sources, remove the app from Control Panel, and may also confer these rights on other Control Panel users.">
+        Admin access
+      </dfn></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for app in user.userapps.all %}
+    <tr>
+      <td><a href="{% url 'manage-app' app.id %}">{{ app.name }}</a></td>
+      <td>{% if user in app.admins %}Yes{% else %}No{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2">
+        {{ user.userapps|length }} {% if user.userapps.all %}app{{ user.userapps|pluralize:"s" }}{% else %}apps{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+<h4>User's webapp data sources</h4>
+
+<table>
+  <caption>A list of the user's data sources on the platform (click the source's name for details).</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>User access level</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for source in user.data_sources %}
+    <tr>
+      <td><a href="{% url 'manage-datasource' source.id %}">{{ datasource.name }}</a></td>
+      <td>{% if source.is_admin %}Admin{% else %}{{ source.access_level }}{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="2">
+        {{ user.data_sources|length }} {% if user.data_source%}webapp data source{{ user.datasource|pluralize:"s" }}{% else %}webapp data sources{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+
+{% has_perm 'api.destroy_user' request.user user as destroy_user %}
+{% if destroy_user %}
+<form action="{% url 'delete-user' user.auth0_id %}" method="post">
+  {{ csrf_input }}
+  <p><button class="warning-button"
+    data-confirm-message="Are you sure you want to delete this user?">
+    Delete user
+  </button></p>
+</form>
+{% endif %}
+
+{% endblock %}
+

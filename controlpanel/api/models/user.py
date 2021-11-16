@@ -89,6 +89,10 @@ class User(AbstractUser):
     def slug(self):
         return sanitize_dns_label(self.username)
 
+    @property
+    def data_sources(self):
+        return self.users3buckets.filter(s3bucket__is_data_warehouse=False)
+
     def is_app_admin(self, app_id):
         return self.userapps.filter(
             app_id=app_id,

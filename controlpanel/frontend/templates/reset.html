@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+  {% if form.errors %}
+  <div class="error-summary" aria-labelledby="error-summary-title" role="alert">
+    <h2 id="error-summary-title">There is a problem on this page</h2>
+    <ul>
+      <li>
+        <a href="#confirm-error">Confirm you want to reset your home directory</a>
+      </li>
+    </ul>
+  </div>
+{% endif %}
+<h1>Home Directory Reset</h1>
+
+<p>Even the best curated home directories can get into a bad
+state (for example, a broken conda environment or Jupyter and RStudio won't
+start).</p>
+
+<p>Reset your home directory to recreate your conda environment and shell
+settings to a clean state. This feature automates the
+<a href="https://github.com/ministryofjustice/analytics-platform/wiki/Reset-your-R-Studio-environment">process described here</a>.</p>
+
+<div class="warning-text">
+  <p>
+  <span>
+    <img alt="Attention!" src="{% static 'img/attention.svg' %}" width="32" height="32" class="attention"/>
+  </span>
+  <strong>Please ensure you've copied any important files from your home
+  directory. Important files should be stored in S3 or GitHub.</strong>
+  </p>
+</div>
+
+<p>This process should only take a few seconds to complete.</p>
+
+<form method="post" action="{% url 'home-reset' %}">
+  {{ csrf_input }}
+  {% if form.errors %}
+            <span id="confirm-error" class="govuk-error-message">
+              <span class="govuk-visually-hidden">Error:</span> 
+              Confirm you want to reset your home directory
+            </span>
+  {% endif %}
+  <p>
+  {{ form.confirm }}
+  <label for="{{ form.confirm.id_for_label }}">{{ form.confirm.help_text }}</label>
+  </p>
+  <p>
+  <input type="submit" value="Reset" class="warning-button"/>
+  </p>
+</form>
+{% endblock %}
+

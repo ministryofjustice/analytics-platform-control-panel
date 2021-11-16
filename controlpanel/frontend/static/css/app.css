@@ -39,3 +39,27 @@ this art.
     margin-right: 8px;
 }
 
+/* Button type names. */
+.warning-button {
+    background-color: var(--color-tertiary) !important;
+}
+
+.warning-button:hover {
+    background-color: var(--color-tertiary-hover) !important;
+}
+
+.confirm-button {
+    background-color: var(--color-secondary) !important;
+}
+
+.confirm-button:hover {
+    background-color: var(--color-secondary-hover) !important;
+}
+
+.standard-button {
+    background-color: var(--color-primary) !important;
+}
+
+.standard-button:hover {
+    background-color: var(--color-primary-hover) !important;
+}

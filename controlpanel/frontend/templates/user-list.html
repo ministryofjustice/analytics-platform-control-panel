@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Users</h1>
+
+<table>
+  <caption>A list of users of the Analytical Platform (click user's name for details).</caption>
+  <thead>
+    <tr>
+      <th>User</th>
+      <th>Email</th>
+      <th>Last login</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for user in users %}
+    <tr>
+      <td><a href="{% url 'manage-user' user.auth0_id %}">{{ user.get_full_name }}</a></td>
+      <td>{{ user.email }}</td>
+      <td>{% if user.last_login %}
+      {{ user.last_login|timesince }} ago.
+      {% else %}
+      Never logged in.
+      {% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3">
+        {{ users|length }} user{{ users|pluralize:"s" }}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endblock %}
