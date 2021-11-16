@@ -2,7 +2,6 @@ import os
 import sys
 from os.path import abspath, dirname, join
 
-from controlpanel.frontend.jinja2 import environment
 from controlpanel.utils import is_truthy
 
 import structlog
@@ -108,19 +107,10 @@ MIDDLEWARE = [
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.jinja2.Jinja2",
-        "DIRS": [
-            # find local component templates
-            join(DJANGO_ROOT, "frontend", "static", "components"),
-        ],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "environment": f"{PROJECT_NAME}.frontend.jinja2.environment",
-        },
-    },
-    {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            join(DJANGO_ROOT, "frontend", "templates"),
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

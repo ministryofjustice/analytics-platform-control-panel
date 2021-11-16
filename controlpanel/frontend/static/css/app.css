@@ -1,0 +1,41 @@
+/*
+App specific CSS.
+
+We use plain old fashioned (modern) CSS. See gd.css for a classic example of
+this art.
+*/
+
+#footer-crest {
+    /* Image positioning for the crest in the footer */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Responsive embedding of video iframes */
+.responsive-video {
+    position: relative;
+    padding-bottom: 56.10%;
+    height: 0;
+    overflow: hidden;
+    border: 2px solid var(--color-body);
+    margin: 0;
+}
+
+.responsive-video iframe,
+.responsive-video object,
+.responsive-video embed {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+/* Attention exclamation mark. */
+.attention {
+    vertical-align: middle;
+    display: inline;
+    margin-right: 8px;
+}
+
