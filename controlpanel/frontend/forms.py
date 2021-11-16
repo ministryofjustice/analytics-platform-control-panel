@@ -262,10 +262,10 @@ class AddAppCustomersForm(forms.Form):
 
 
 class ResetHomeDirectoryForm(forms.Form):
-    confirm = forms.BooleanField(
+    confirmation = forms.BooleanField(
         required=True,
         help_text="I confirm that I want to reset my home directory.",
-        widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"})
+        widget=forms.CheckboxInput()
     )
 
 

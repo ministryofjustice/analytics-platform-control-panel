@@ -22,7 +22,7 @@
 {% if add_superuser %}
 <h4>Super Admin</h4>
 <form action="{% url 'set-superadmin' user.auth0_id %}" method="post">
-  {{ csrf_input }}
+  {% csrf_token %}
   <p>User is a super admin, allowing all privileges on the Control panel.</p>
   <p>
   <input
@@ -40,7 +40,7 @@
 {% if reset_mfa %}
 <h4>Reset MFA</h4>
 <form action="{% url 'reset-mfa' user.auth0_id %}" method="post">
-  {{ csrf_input }}
+  {% csrf_token %}
   <p>Reset the user's multi-factor authentication settings, forcing them to
   reconfigure.</p>
   <p><button>Reset MFA</button></p>
@@ -111,9 +111,8 @@
     onsubmit="return confirm('Please confirm you wish to delete this user.\n\nThis step cannot be undone.');"
     method="post"
     >
-  {{ csrf_input }}
-  <p><button class="warning-button"
-    data-confirm-message="Are you sure you want to delete this user?">
+  {% csrf_token %}
+  <p><button class="warning-button">
     Delete user
   </button></p>
 </form>
