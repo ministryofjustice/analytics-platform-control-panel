@@ -106,7 +106,11 @@
 
 {% has_perm 'api.destroy_user' request.user user as destroy_user %}
 {% if destroy_user %}
-<form action="{% url 'delete-user' user.auth0_id %}" method="post">
+<form
+    action="{% url 'delete-user' user.auth0_id %}"
+    onsubmit="return confirm('Please confirm you wish to delete this user.\n\nThis step cannot be undone.');"
+    method="post"
+    >
   {{ csrf_input }}
   <p><button class="warning-button"
     data-confirm-message="Are you sure you want to delete this user?">

@@ -34,7 +34,11 @@ settings to a clean state. This feature automates the
 
 <p>This process should only take a few seconds to complete.</p>
 
-<form method="post" action="{% url 'home-reset' %}">
+<form
+    method="post"
+    onsubmit="return confirm('Please confirm you wish to reset your home directory.\n\nThis step cannot be undone.');"
+    action="{% url 'home-reset' %}"
+    >
   {{ csrf_input }}
   {% if form.errors %}
             <span id="confirm-error" class="govuk-error-message">
