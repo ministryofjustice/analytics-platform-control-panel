@@ -4,7 +4,6 @@ BIN=${VIRTUAL_ENV}/bin
 IMAGE_TAG ?= local
 DOCKER_BUILDKIT?=1
 REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
-NETWORK?=default
 MAKEFLAGS += -j2
 
 include Makefile.local.mk

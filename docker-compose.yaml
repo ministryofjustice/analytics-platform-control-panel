@@ -2,7 +2,6 @@ version: "3"
 services:
   db:
     image: "postgres:9.6"
-    network_mode: ${NETWORK:-default}
     environment:
       POSTGRES_DB: "controlpanel"
       POSTGRES_PASSWORD: "password"
@@ -10,16 +9,13 @@ services:
 
   redis:
     image: "redis"
-    network_mode: ${NETWORK:-default}
     environment:
       REDIS_PASSWORD: "controlpanel"
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
-    network_mode: ${NETWORK:-default}
     depends_on: [db]
-    links: [db]
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
@@ -34,9 +30,7 @@ services:
 
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
-    network_mode: ${NETWORK:-default}
     depends_on: [redis, db]
-    links: [redis, db]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
@@ -61,11 +55,8 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
-      network: ${NETWORK:-default}
-    network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
-    depends_on: [worker, db]
-    links: [worker, db, redis]
+    depends_on: [worker, db, redis]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
