@@ -208,6 +208,13 @@ def create_user_role(user):
         role.attach_policy(
             PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
         )
+        # Managed Airflow policies.
+        airflow_policy_name = "airflow-dev-ui-access"
+        if settings.ENV == "alpha":
+            airlow_policy_name = "airflow-prod-ui-access"
+        role.attach_policy(
+            PolicyArn=iam_arn(f"policy/{airflow_policy_name}"),
+        )
     except iam.meta.client.exceptions.EntityAlreadyExistsException:
         log.warning(
             f"Skipping creating Role {user.iam_role_name}: Already exists"
