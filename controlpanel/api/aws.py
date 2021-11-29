@@ -208,7 +208,7 @@ def create_user_role(user):
         role.attach_policy(
             PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
         )
-        # Managed Airflow policies.
+        # Managed Airflow policies. See ticket ANPL-711 for context.
         airflow_policy_name = "airflow-dev-ui-access"
         if settings.ENV == "alpha":
             airlow_policy_name = "airflow-prod-ui-access"
