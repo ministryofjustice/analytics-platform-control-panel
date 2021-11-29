@@ -86,9 +86,11 @@ INSTALLED_APPS = [
     "health_check.db",
     "health_check.cache",
     "health_check.storage",
+    "django_prometheus",
 ]
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "controlpanel.middleware.DisableClientSideCachingMiddleware",
     "controlpanel.middleware.LegacyAPIRedirectMiddleware",
     "django.middleware.security.SecurityMiddleware",
@@ -103,7 +105,8 @@ MIDDLEWARE = [
     # Check user's OIDC token is still valid
     "mozilla_django_oidc.middleware.SessionRefresh",
     # Structured logging
-    'django_structlog.middlewares.RequestMiddleware',
+    "django_structlog.middlewares.RequestMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 TEMPLATES = [
@@ -261,7 +264,7 @@ DEBUG = is_truthy(os.environ.get("DEBUG", False))
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": os.environ.get("DB_NAME", PROJECT_NAME),
         "USER": os.environ.get("DB_USER", ""),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
@@ -384,6 +387,10 @@ if REDIS_SCHEME not in ["redis", "rediss"]:
     raise ValueError(f"Invalid value for 'REDIS_SCHEME' environment variable. Must be 'redis' or 'rediss' (to use SSL/TLS). It was '{REDIS_SCHEME}' which is invalid.")
 
 REDIS_URI = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/1"
+
+# -- Prometheus
+
+PROMETHEUS_EXPORT_MIGRATIONS = False
 
 # -- Async
 

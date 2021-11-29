@@ -10,6 +10,7 @@ django-dotenv==1.4.2
 django-extensions==3.0.8
 django-filter==2.3.0
 django-health-check==3.12.1
+django-prometheus==2.1.0
 django-redis==4.12.1
 djangorestframework==3.12.4
 django-structlog==2.1.3

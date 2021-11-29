@@ -4,7 +4,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from controlpanel.api import auth0, cluster, slack
+from controlpanel.api.signals import prometheus_login_event
 from controlpanel.utils import sanitize_dns_label
+from django.contrib.auth.signals import user_logged_in
 
 
 class User(AbstractUser):
@@ -137,3 +139,6 @@ class User(AbstractUser):
             for user in users:
                 user.migration_state = new_state
             cls.objects.bulk_update(users, ["migration_state", ])
+
+
+user_logged_in.connect(prometheus_login_event)
