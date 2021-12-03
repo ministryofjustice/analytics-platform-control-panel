@@ -25,4 +25,9 @@ Versioned Github releases will trigger [another pipeline](https://concourse.serv
 
 ## Documentation
 
-See [docs](doc/).
+* [Running control panel locally](./doc/running.md)
+* [Running control panel with docker](./doc/docker.md)
+* [Control Panel environment variables](./doc/environment.md)
+* [The control panel frontend](./doc/frontend.md)
+* [The control panel data model](./doc/data_structure.md)
+* [Some semi-common errors](./doc/errors.md)
