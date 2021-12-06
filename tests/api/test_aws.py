@@ -60,10 +60,26 @@ def managed_policy(iam):
 
 
 @pytest.fixture(autouse=True)
-def airflow_policy(iam):
+def airflow_dev_policy(iam):
     policy_name = "airflow-dev-ui-access"
-    if settings.ENV == "alpha":
-        policy_name = "airflow-prod-ui-access"
+    result = iam.meta.client.create_policy(
+        PolicyName=policy_name,
+        PolicyDocument=json.dumps({
+            'Version': '2012-10-17',
+            'Statement': [{
+                'Sid': 'ManagedAirflowCreateWebLoginToken',
+                'Effect': 'Allow',
+                'Action': ['iam:CreateWebLoginToken'],
+                'Resource': ['arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/{settings.ENV}_user_*'],
+            },
+        ]}),
+    )
+    return result['Policy']
+
+
+@pytest.fixture(autouse=True)
+def airflow_prod_policy(iam):
+    policy_name = "airflow-prod-ui-access"
     result = iam.meta.client.create_policy(
         PolicyName=policy_name,
         PolicyDocument=json.dumps({
@@ -175,7 +191,7 @@ def test_create_app_role(iam, app):
     assert k8s_assume_role(pd['Statement'][1])
 
 
-def test_create_user_role(iam, managed_policy, airflow_policy, users):
+def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, users):
     user = users['normal_user']
     aws.create_user_role(user)
 
@@ -189,13 +205,14 @@ def test_create_user_role(iam, managed_policy, airflow_policy, users):
     assert oidc_assume_role(pd['Statement'][3], user)
 
     attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 2
+    assert len(attached_policies) == 3
     arns = [policy.arn for policy in attached_policies]
     assert managed_policy["Arn"] in arns
-    assert airflow_policy["Arn"] in arns
+    assert airflow_dev_policy["Arn"] in arns
+    assert airflow_prod_policy["Arn"] in arns
 
 
-def test_create_user_role_EKS(iam, managed_policy, airflow_policy, users):
+def test_create_user_role_EKS(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, users):
     """
     Ensure EKS settngs are in the policy document when running on that
     infrastructure.
@@ -213,10 +230,11 @@ def test_create_user_role_EKS(iam, managed_policy, airflow_policy, users):
     assert eks_assume_role(pd["Statement"][4], user)
 
     attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 2
+    assert len(attached_policies) == 3
     arns = [policy.arn for policy in attached_policies]
     assert managed_policy["Arn"] in arns
-    assert airflow_policy["Arn"] in arns
+    assert airflow_dev_policy["Arn"] in arns
+    assert airflow_prod_policy["Arn"] in arns
 
 
 def test_migrate_user_role(iam, managed_policy, users):
@@ -613,7 +631,7 @@ def test_delete_group(iam, group, user_roles):
     role = iam.Role('test_user_alice')
     aws.update_group_members(group.arn, set([role.name]))
 
-    assert len(list(role.attached_policies.all())) == 3
+    assert len(list(role.attached_policies.all())) == 4
 
     try:
         aws.delete_group(group.arn)
@@ -626,7 +644,7 @@ def test_delete_group(iam, group, user_roles):
     # with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
     #     iam.Policy(group_arn).load()
 
-    assert len(list(role.attached_policies.all())) == 2
+    assert len(list(role.attached_policies.all())) == 3
 
 
 @pytest.mark.parametrize(

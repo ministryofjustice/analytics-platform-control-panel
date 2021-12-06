@@ -209,11 +209,12 @@ def create_user_role(user):
             PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
         )
         # Managed Airflow policies. See ticket ANPL-711 for context.
-        airflow_policy_name = "airflow-dev-ui-access"
-        if settings.ENV == "alpha":
-            airlow_policy_name = "airflow-prod-ui-access"
+        # Users need both dev and prod policies attached to their role.
         role.attach_policy(
-            PolicyArn=iam_arn(f"policy/{airflow_policy_name}"),
+            PolicyArn=iam_arn(f"policy/airflow-dev-ui-access"),
+        )
+        role.attach_policy(
+            PolicyArn=iam_arn(f"policy/airflow-prod-ui-access"),
         )
     except iam.meta.client.exceptions.EntityAlreadyExistsException:
         log.warning(
