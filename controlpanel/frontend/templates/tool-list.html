@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Your tools</h1>
+
+<p>The status of your tools will update automatically.</p>
+
+<p>If your tools get into a broken state, try
+<a href="{% url 'home-reset' %}">resetting your home directory</a>.</p>
+
+{% for chart_name, tool_info in tools_info.items %}
+{% with deployment=tool_info.deployment %}
+<hr/>
+
+<h3>{{ tool_info.name }}</h3>
+
+<div class="tool sse-listener" data-tool-name="{{ chart_name }}">
+  <form action="{% url 'deploy-tool' chart_name %}"
+        data-action-name="deploy"
+        class="tool-action"
+        id="form-{{ chart_name }}"
+        method="post">
+        {{ csrf_input }}
+    {% if deployment %}
+    <input type="hidden"
+           value="{{ deployment.tool.chart_name }}"
+           name="deployed_chart_name" />
+    {% endif%}
+    {% for chart_version, app_version in tool_info.versions.items %}
+    <p>
+      <input type="radio"
+        value="{{ app_version.chart_name }}__{{ chart_version }}"
+        {% if forloop.first %}checked="checked"{% endif %}
+        name="version">
+      <label for="radio_{{ chart_name }}_{{ chart_version }}">
+      {{ app_version.chart_name }} {{ chart_version }} - {% if app_version.description %}{{ app_version.description}}{% else %}Unknown{% endif %}
+      {% if forloop.first %}
+      (<a href="{{ tool_info.url }}" rel="noopener" target="_blank">Open</a>)
+      {% endif %}
+      </label>
+    </p>
+    {% endfor %}
+    <p><button type="submit">Update</button> <input type="reset" value="Restart"/></p>
+  </form>
+</div>
+
+{% endwith %}
+{% endfor %}
+{% endblock %}
