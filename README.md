@@ -24,7 +24,7 @@ machine](doc/running.md).
 
 Commits to the protected `main` branch will trigger a [Concourse CI pipeline](https://concourse.services.dev.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) which will deploy the changes to our `dev` environment.
 
-To deploy work branches for testing purposes on the old `dev` environment see [the instructions here](https://silver-dollop-30c6a355.pages.github.io/documentation/50-systems/control-panel/Deploy-Development-Instance-of-Control-Panel.html#deploy-development-instance-of-control-panel).
+To deploy work branches for testing purposes on the old `dev` environment see [the instructions here](https://ministryofjustice.github.io/ap-tech-docs/documentation/50-systems/control-panel/Deploy-Development-Instance-of-Control-Panel.html).
 
 Versioned Github releases will trigger [another pipeline](https://concourse.services.alpha.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) and deploy to our `alpha` environment.
 
