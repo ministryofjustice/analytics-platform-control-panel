@@ -36,8 +36,8 @@ via GitHub actions rather than Concourse.
 
 The modus operandi is simple:
 
-* In our [flux repository](https://github.com/moj-analytical-services/analytical-platform-flux), you'll find two subdirectories: `development` and `production`. Each one refers to the configuration of the named EKS instance.
-* In each of these directories are further sub-directories for the various aspects of our infrsatrusture. Obviously, the subdirectory we're interested in is called `cpanel`.
+* In our [flux repository](https://github.com/moj-analytical-services/analytical-platform-flux), you'll find two subdirectories: `development` and `production`. Each one refers to the configuration of the named EKS instance. Inside each of these is a further `apps` directory.
+* In these directories are further sub-directories for the various aspects of our infrastructure. Obviously, the subdirectory we're interested in is called `apps/cpanel`.
 * Inside the `cpanel` directory is a file called `cpanel.yaml`. This is the file that needs changing.
 * Find the build tag for the docker image of the version of the control panel that you want to deploy, on our Amazon ECR service (where builds are automatically pushed from GitHub).
 * Update the `spec.values.image.tag` value with the build tag of the required image, save, create a new branch, push the branch to GitHub and then generate a new PR.
