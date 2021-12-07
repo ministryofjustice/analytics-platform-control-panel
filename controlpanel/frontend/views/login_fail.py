@@ -10,7 +10,7 @@ class LoginFail(TemplateView):
         context = super().get_context_data(**kwargs)
         context["environment"] = settings.ENV 
         context["EKS"] = settings.EKS
-        if self.request.user and hasattr(self.request.user, "migration_state"):
+        if self.request.user.is_authenticated and hasattr(self.request.user, "migration_state"):
             is_migrated = self.request.user.migration_state == User.COMPLETE
         else:
             is_migrated = False
