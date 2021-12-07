@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}MoJ Analytical Platform{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/gd.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <meta name="theme-color" content="#0b0c0c">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="og:title" content="Analytical Platform">
+  <meta name="description" content="A data analytics platform.">
+  <meta name="og:description" content="A data analytics platform.">
+  <meta http-equiv="Permissions-Policy" content="interest-cohort=()"/>
+  {% block js %}{% endblock %}
+</head>
+
+<body>
+  <a href="#main-content" class="hide">Skip to main content</a>
+  <a name="top"></a>
+  {% include "header.html" %}
+  <main id="main-content">
+    {% if messages %}
+    <p>
+      <img alt="Attention!" src="{% static 'img/attention.svg' %}" width="32" height="32" class="attention"/>
+      <strong>Attention:</strong>
+    </p>
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  {% include "footer.html" %}
+</body>
+
+</html>

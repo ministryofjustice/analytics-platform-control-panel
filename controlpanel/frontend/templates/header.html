@@ -1,0 +1,33 @@
+{% load static i18n %}
+  <header>
+    <nav role="navigation">
+      <a href="/"><img alt="Analytical Platform Logo" src="{% static 'img/logo.svg' %}" width="280"></a>
+      <ul>
+      {% if user.is_authenticated %}
+        <li>
+          <a href="/">{{ user.name }}</a>
+        </li>
+        <li>
+          <a href="{% url 'oidc_logout' %}">Sign out</a>
+        </li>
+      {% endif %}
+      </ul>
+    </nav>
+  </header>
+  <nav>
+    <!-- Breadcrumbs? -->
+    {% if user.is_authenticated %}
+    <p>
+    {% if user.is_superuser %}
+    <a href="/">Admin 🔧</a> |
+    <a href="{% url 'list-policies' %}">Groups 🔧</a> |
+    {% endif %}
+    <a href="{% url 'list-tools' %}">Tools</a> |
+    <a href="{% url 'list-warehouse-datasources' %}">Warehouse Data</a> |
+    <a href="{% url 'list-webapp-datasources' %}">Webapp data</a> |
+    <a href="{% url 'list-apps' %}">Webapps</a> |
+    <a href="{% url 'list-parameters' %}">Parameters</a> |
+    <a href="{% url 'help' %}">Help</a>
+    </p>
+    {% endif %}
+  </nav>
