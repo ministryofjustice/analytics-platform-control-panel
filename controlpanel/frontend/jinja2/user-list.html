@@ -7,12 +7,22 @@
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+<p>Migration state:</p>
+<ul class="govuk-list govuk-list--bullet">
+    <li><strong>Void</strong> - not involved in migration.</li>
+    <li><strong>Pending</strong> - the user is able to migrate.</li>
+    <li><strong>Migrating</strong> - migration has started.</li>
+    <li><strong>Complete</strong> - migration has completed.</li>
+    <li><strong>Reverted</strong> - user back on the old platform.</li>
+</ul>
+
 <table class="govuk-table">
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header"><a href="?o=username">User</a></th>
       <th class="govuk-table__header"><a href="?o=email">Email</a></th>
       <th class="govuk-table__header"><a href="?o=last_login">Last login</a></th>
+      <th class="govuk-table__header"><a href="?o=migration_state">Migration</a></th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -41,6 +51,7 @@
               (<strong><a href="https://github.com/orgs/moj-analytical-services/people/{{ user.username }}" target="_blank">unused?</a></strong>)
           {%- endif -%}
       </td>
+      <td class="govuk-table__cell">{{ user.get_migration_state_display() }}</td>
       <td class="govuk-table__cell">
         <a href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}"
            class="govuk-button govuk-button--secondary">
