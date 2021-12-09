@@ -19,11 +19,11 @@ class User(AbstractUser):
     REVERTED = "r"  # The user has been reverted to the old platform.
 
     MIGRATION_STATES = [
-        (VOID, "Void - not involved in migration."),
-        (PENDING, "Pending - the user is able to migrate."),
-        (MIGRATING, "Migrating - migration has started."),
-        (COMPLETE, "Complete - migration has completed."),
-        (REVERTED, "Reverted - user back on the old platform."),
+        (VOID, "Void"),
+        (PENDING, "Pending"),
+        (MIGRATING, "Migrating"),
+        (COMPLETE, "Complete"),
+        (REVERTED, "Reverted"),
     ]
 
     auth0_id = models.CharField(max_length=128, primary_key=True)
