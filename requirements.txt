@@ -2,7 +2,7 @@ asgiref==3.2.10
 auth0-python==3.13.0
 boto3==1.20.13
 channels==2.4.0
-channels-redis==3.0.1
+channels-redis==3.3.1
 Django>=3.1.1
 django-crequest==2018.5.11
 django-dotenv==1.4.2
