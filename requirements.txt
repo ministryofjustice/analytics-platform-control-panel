@@ -20,7 +20,7 @@ Jinja2>=2.11.2,<3.0
 kubernetes==11.0.0
 model-mommy==2.0.0
 moto==1.3.14
-mozilla-django-oidc==1.2.4
+mozilla-django-oidc==2.0.0
 psycopg2-binary==2.8.5
 PyGithub==1.53
 pytest==6.0.1
