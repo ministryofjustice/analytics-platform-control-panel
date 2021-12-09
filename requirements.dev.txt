@@ -2,7 +2,7 @@ django-debug-toolbar==2.2
 django-debug-toolbar-requests==1.0.5
 django-elasticsearch-debug-toolbar==2.0.0
 pylint==2.4.4
-pylint-django==2.0.15
+pylint-django==2.4.4
 ipython>=7.20.0,<7.21.0
 ipdb>=0.13.4,<0.14.0
 pygraphviz
