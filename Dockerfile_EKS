@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --outp
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM python:3.9 AS base
+FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
 
 ARG HELM_VERSION=3.5.4
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -26,6 +26,12 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
 RUN addgroup -gid 1000 controlpanel && \
   adduser -uid 1000 --gid 1000 controlpanel
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        postgresql-client \
+        wget \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /home/controlpanel
 
 # download and install helm
@@ -36,10 +42,7 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+
 
 RUN pip install -U pip
 
