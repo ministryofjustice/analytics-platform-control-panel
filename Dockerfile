@@ -22,6 +22,12 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
 RUN addgroup -gid 1000 controlpanel && \
   adduser -uid 1000 --gid 1000 controlpanel
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        postgresql-client \
+        wget \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /home/controlpanel
 
 # download and install helm
@@ -33,10 +39,7 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+
 
 RUN pip install -U pip
 
