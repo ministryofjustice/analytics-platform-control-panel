@@ -130,7 +130,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         status = wait_for_deployment(tool_deployment, id_token)
 
         if status == TOOL_DEPLOY_FAILED:
-            log.error(f"Failed deploying {tool.name} for {user}")
+            log.warning(f"Failed deploying {tool.name} for {user}")
         else:
             log.debug(f"Deployed {tool.name} for {user}")
 
@@ -149,7 +149,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         status = wait_for_deployment(tool_deployment, id_token)
 
         if status == TOOL_DEPLOY_FAILED:
-            log.error(f"Failed restarting {tool.name} for {user}")
+            log.warning(f"Failed restarting {tool.name} for {user}")
         else:
             log.debug(f"Restarted {tool.name} for {user}")
 
@@ -185,13 +185,13 @@ class BackgroundTaskConsumer(SyncConsumer):
         user = User.objects.get(auth0_id=message["user_id"])
         home_directory = HomeDirectory(user)
         update_home_status(home_directory, HOME_RESETTING)
-        
+
         home_directory.reset()
 
         status = wait_for_home_reset(home_directory)
 
         if status == HOME_RESET_FAILED:
-            log.error(f"Failed to reset home directory for user {user}")
+            log.warning(f"Failed to reset home directory for user {user}")
         else:
             log.debug(f"Reset home directory for user {user}")
 
