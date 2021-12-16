@@ -12,6 +12,7 @@ make_migration_pending.short_description = "Mark selected users as pending migra
 class UserAdmin(admin.ModelAdmin):
     list_display = ("username", "auth0_id", "email", "is_superuser", "migration_state")
     actions = [make_migration_pending]
+    exclude = ("password",)
 
 
 admin.site.register(User, UserAdmin)
