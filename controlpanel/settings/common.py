@@ -49,6 +49,8 @@ STATICFILES_DIRS = [
 INSTALLED_APPS = [
     # Django channels for asynchronous support
     "channels",
+    # Django Admin
+    "django.contrib.admin",
     # Django auth system
     "django.contrib.auth",
     # OIDC client
