@@ -10,7 +10,7 @@ services:
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
-    command: sh -c "until pg_isready -h db; do sleep 2; done; python manage.py migrate"
+    command: "python manage.py migrate"
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     stdin_open: true

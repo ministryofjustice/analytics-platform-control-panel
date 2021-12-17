@@ -6,7 +6,11 @@ services:
       POSTGRES_DB: "controlpanel"
       POSTGRES_PASSWORD: "password"
       POSTGRES_USER: "controlpanel"
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   redis:
     image: "redis"
     environment:
@@ -15,7 +19,9 @@ services:
 
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
-    depends_on: [db]
+    depends_on: 
+      db:
+        condition: service_healthy
     environment:
       DB_HOST: "db"
       DB_NAME: "controlpanel"
@@ -26,11 +32,15 @@ services:
       PYTHONUNBUFFERED: "1"
       SLACK_API_TOKEN: "dummy"
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
-    command: sh -c "until pg_isready -h db; do sleep 2; done; ./manage.py migrate"
+    command: sh -c "./manage.py migrate"
 
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
-    depends_on: [redis, db]
+    depends_on:
+      redis:
+        condition: service_started
+      db:
+        condition: service_healthy
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
@@ -56,7 +66,13 @@ services:
     build:
       context: .
     ports: ["8000:8000"]
-    depends_on: [worker, db, redis]
+    depends_on:
+      worker:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
@@ -125,7 +141,13 @@ services:
       dockerfile: Dockerfile_EKS
     network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
-    depends_on: [worker, db]
+    depends_on:
+      worker:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     links: [worker, db, redis]
     volumes:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config

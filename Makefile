@@ -25,16 +25,16 @@ test-python:
 	@echo
 	@echo "> Running Python Tests (In Docker)..."
 	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig \
-		frontend sh -c "until pg_isready -h db; do sleep 2; done; pytest tests --color=yes"
+		frontend sh -c "pytest tests --color=yes"
 
 ## test: Run tests in Docker container
 test: test-python
 
 prepare-up:
 	@docker-compose up -d db
-	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose run --rm --no-deps frontend sh -c "do sleep 2;done"
 	@docker-compose up migration
-	@docker-compose run --rm --no-deps frontend sh -c "until pg_isready -h db; do sleep 2;done"
+	@docker-compose run --rm --no-deps frontend sh -c "do sleep 2;done"
 
 up: prepare-up
 	@docker-compose up -d frontend
