@@ -17,14 +17,14 @@ def s3bucket_console_url(name):
     args = urlencode({
         "destination": f"/s3/buckets/{name}/?region={region}&tab=overview",
     })
+    address = f"https://aws.services.{env}.mojanalytics.xyz"
     if settings.EKS:
         if env == "dev":
-            address = "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
+            address = f"https://aws.services.{env}.analytical-platform.service.justice.gov.uk"
         else:
             address = "https://aws.services.analytical-platform.service.justice.gov.uk"
-        return f"{address}/?{args}"
-    else:
-        return f"https://aws.services.{env}.mojanalytics.xyz/?{args}"    
+    return f"{address}/?{args}"
+    
 
 
 class S3BucketQuerySet(models.QuerySet):
