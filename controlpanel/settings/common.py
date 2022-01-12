@@ -335,11 +335,10 @@ if os.environ.get("SENTRY_DSN"):
         send_default_pii=True,
     )
     set_tag("Kubernetes Env", KUBERNETES_ENV)
-    if "shell" in sys.argv or "shell_plus" in sys.argv:
-        sentry_sdk.init(
-            # discard all events
-            before_send=lambda event, hint: None,
-        )
+    if "runworker" in sys.argv:
+        set_tag("RunningIn", "Worker")
+    elif "shell" in sys.argv:
+        set_tag("RunningIn", "Shell")
 
 
 # -- Static files
