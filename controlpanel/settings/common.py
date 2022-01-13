@@ -316,17 +316,25 @@ REST_FRAMEWORK = {
 # -- Sentry error tracking
 
 if os.environ.get("SENTRY_DSN"):
+    SENTRY_ENVIRONMENT = ENV
+    if EKS:
+        KUBERNETES_ENV = "EKS"
+        if ENV == "alpha":
+            SENTRY_ENVIRONMENT = "prod"
+    else:
+        KUBERNETES_ENV = "NotKS"
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
-
+    from sentry_sdk import set_tag
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"],
-        environment=os.environ.get("ENV", "dev"),
+        environment=SENTRY_ENVIRONMENT,
         integrations=[DjangoIntegration(), RedisIntegration()],
         traces_sample_rate=0.0,
         send_default_pii=True,
     )
+    set_tag("Kubernetes Env", KUBERNETES_ENV)
     if "shell" in sys.argv or "shell_plus" in sys.argv:
         sentry_sdk.init(
             # discard all events
