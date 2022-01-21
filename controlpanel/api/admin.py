@@ -1,5 +1,5 @@
-from django.contrib import admin
 from controlpanel.api.models.user import User
+from django.contrib import admin
 
 
 def make_migration_pending(modeladmin, request, queryset):
