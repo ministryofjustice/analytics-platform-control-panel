@@ -86,6 +86,11 @@
         "admin": request.user.is_superuser,
       },
       {
+        "hide": not request.user.is_staff,
+        "text": "Admin",
+        "href": url("admin:index"),
+      },
+      {
         "text": "Analytical tools",
         "href": url("list-tools"),
         "active": page_name == "tools",
