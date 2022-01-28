@@ -186,22 +186,13 @@ class AuthorizationAPI(APIClient):
             raise Auth0Error("Group for the app not found, was the app released?")
 
         mgmt = ManagementAPI()
-        users = self.get_users()
-        user_lookup = {user["email"]: user for user in users if "email" in user}
-
-        def has_options(user):
-            for identity in user["identities"]:
-                if all(item in identity.items() for item in user_options.items()):
-                    return True
-
+        
         users_to_add = OrderedDict()
 
         for email in emails:
-            user = user_lookup.get(email)
-
-            if user and has_options(user):
-                users_to_add[email] = user
-
+            lookup_response = mgmt.get_users_email_search(email=email)
+            if lookup_response:
+                users_to_add[email] = lookup_response[0]
             else:
                 users_to_add[email] = mgmt.create_user(
                     email=email, email_verified=True, **user_options
