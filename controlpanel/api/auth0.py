@@ -193,7 +193,7 @@ class AuthorizationAPI(APIClient):
         users_to_add = OrderedDict()
 
         for email in emails:
-            lookup_response = mgmt.get_users_email_search(email=email)
+            lookup_response = mgmt.get_users_email_search(email=email, connection="email")
             if lookup_response:
                 users_to_add[email] = lookup_response[0]
             else:
@@ -272,12 +272,24 @@ class ManagementAPI(APIClient):
 
         return response
 
-    def get_users_email_search(self, email):
+    def get_users_email_search(self, email, connection=None):
         query_string = f"email:\"{email}\""
+
+        if connection:
+            params = {
+                "q": f"{query_string} AND identities.connection:\"{connection}\"",
+                "search_engine":"v2",
+            }
+        else:
+            params={
+                "q":query_string,
+                "search_engine":"v2",
+            }
+
         response = self.request(
             "GET",
             "users",
-            params={"q":query_string}
+            params=params,
         )
 
         if "error" in response:
