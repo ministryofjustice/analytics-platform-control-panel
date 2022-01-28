@@ -46,7 +46,7 @@ class APIClient:
 
         return self._access_token
 
-    def request(self, method, endpoint, **kwargs):
+    def request(self, method, endpoint, raw=False, **kwargs):
         base_url = self.base_url
         if not base_url.endswith('/'):
             base_url = base_url + '/'
@@ -60,12 +60,15 @@ class APIClient:
             },
             **kwargs,
         )
-        response.raise_for_status()
+        if not raw:
+            response.raise_for_status()
 
-        if response.text:
-            return response.json()
+            if response.text:
+                return response.json()
 
-        return {}
+            return {}
+        else:
+            return response
 
     def get_all(self, endpoint, key=None, **kwargs):
         items = []
