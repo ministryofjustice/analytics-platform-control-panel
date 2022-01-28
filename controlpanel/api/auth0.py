@@ -1,8 +1,9 @@
 from collections import OrderedDict
+from urllib import parse
 
+import requests
 from auth0.v3 import authentication, exceptions
 from django.conf import settings
-import requests
 from rest_framework.exceptions import APIException
 
 
@@ -274,5 +275,18 @@ class ManagementAPI(APIClient):
 
         if "error" in response:
             raise Auth0Error("reset_mfa", response)
+
+        return response
+
+    def get_users_email_search(self, email):
+        query_string = f"email:\"{email}\""
+        response = self.request(
+            "GET",
+            "users",
+            params={"q":query_string}
+        )
+
+        if "error" in response:
+            raise Auth0Error("get_users_email_search", response)
 
         return response
