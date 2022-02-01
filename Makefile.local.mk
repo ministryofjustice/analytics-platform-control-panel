@@ -31,3 +31,10 @@ dev-run:
 ## dev-exec: Exec into shell of existing container
 dev-exec:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh
+
+test-wip: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
+test-wip:
+	@echo
+	@echo "> Running Python Tests (In Docker)..."
+	@docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml run --rm -e KUBECONFIG=tests/kubeconfig \
+		frontend sh -c "pytest tests --color=yes -m indevelopment"
