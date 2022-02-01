@@ -9,6 +9,11 @@ from controlpanel.api import auth0
 def AuthorizationAPI():
     return auth0.AuthorizationAPI()
 
+@pytest.fixture
+def ManagementAPI():
+    return auth0.ManagementAPI()
+
+
 
 @pytest.yield_fixture
 def users_200(AuthorizationAPI):
@@ -92,4 +97,34 @@ def test_delete_group(AuthorizationAPI, get_group):
             call("DELETE", f"groups/{group_id}"),
             call("DELETE", f"roles/{role_id}"),
             call("DELETE", f"permissions/{permission_id}"),
+        ])
+
+def test_create_user(ManagementAPI):
+    with patch.object(ManagementAPI, "request") as request:
+        email = "foo@test.com"
+        nickname = "foo"
+        request.return_value = {
+            'email': 'foo@test.com',
+            'email_verified': True,
+            'identities': [
+                {
+                    'connection': 'email',
+                    'user_id': '61f9b45470ad3d31400c8cec',
+                    'provider': 'email',
+                    'isSocial': False
+                }
+            ],
+            'name': 'foot@test.com',
+            'nickname': 'foo',
+            'user_id': 'email|61f9b45470ad3d31400c8cec'
+        }
+
+        ManagementAPI.create_user(email=email, email_verified=True, connection="email")
+
+        request.assert_has_calls([
+            call(
+                "POST", 
+                "users",
+                json={"email": email, "email_verified": True, "connection": "email", "nickname": nickname}
+            )
         ])
