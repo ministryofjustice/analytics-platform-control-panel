@@ -128,3 +128,53 @@ def test_create_user(ManagementAPI):
                 json={"email": email, "email_verified": True, "connection": "email", "nickname": nickname}
             )
         ])
+
+
+@pytest.yield_fixture
+def get_users_email_search(ManagementAPI):
+    with patch.object(ManagementAPI, "get_users_email_search") as get_users_email_search:
+            get_users_email_search.return_value = []
+            yield get_users_email_search
+
+
+@pytest.yield_fixture
+def create_user(AuthorizationAPI):
+    with patch.object(AuthorizationAPI.mgmt, "create_user") as create_user:
+        create_user.return_value = {
+            'email': 'foo@test.com',
+            'email_verified': True,
+            'identities': [
+                {
+                    'connection': 'email',
+                    'user_id': 'new_id',
+                    'provider': 'email',
+                    'isSocial': False
+                }
+            ],
+            'name': 'foot@test.com',
+            'nickname': 'foo',
+            'user_id': 'email|new_id'
+        }
+        yield create_user
+
+
+def test_new_user_add_to_group(AuthorizationAPI, get_group, create_user):
+    with patch.object(AuthorizationAPI, "request") as request:
+        group_id = "foo-id"
+        group_name = "foo"
+        email = "new@test.com"
+        nickname = "new"
+        new_id = "new_id"
+
+        response = AuthorizationAPI.add_group_members(emails=[email], group_name="foo")
+        get_group.assert_has_calls([
+            call(group_name)
+        ])
+
+        create_user.assert_has_calls([
+            call(email=email, email_verified=True)
+        ])
+
+        request.assert_has_calls([
+            call('PATCH', f'groups/{group_id}/members', json=[f'email|{new_id}'])
+        ])
