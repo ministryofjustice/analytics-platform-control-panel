@@ -190,6 +190,7 @@ class ManagementAPI(APIClient):
 class AuthorizationAPI(APIClient):
     base_url = settings.AUTH0["authorization_extension_url"]
     audience = "urn:auth0-authz-api"
+    mgmt = ManagementAPI()
 
     def get_users(self):
         return self.get_all("users", page=0, per_page=100)
@@ -260,17 +261,15 @@ class AuthorizationAPI(APIClient):
         group_id = self.get_group_id(group_name)
         if not group_id:
             raise Auth0Error("Group for the app not found, was the app released?")
-
-        mgmt = ManagementAPI()
         
         users_to_add = OrderedDict()
 
         for email in emails:
-            lookup_response = mgmt.get_users_email_search(email=email, connection="email")
+            lookup_response = self.mgmt.get_users_email_search(email=email, connection="email")
             if lookup_response:
                 users_to_add[email] = lookup_response[0]
             else:
-                users_to_add[email] = mgmt.create_user(
+                users_to_add[email] = self.mgmt.create_user(
                     email=email, email_verified=True, **user_options
                 )
 
