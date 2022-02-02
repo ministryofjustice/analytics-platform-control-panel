@@ -114,6 +114,79 @@ class APIClient:
         return items
 
 
+class ManagementAPI(APIClient):
+    base_url = f"https://{settings.AUTH0['domain']}/api/v2/"
+    audience = base_url
+
+    def create_user(self, email, email_verified=False, **kwargs):
+        if "nickname" not in kwargs:
+            kwargs["nickname"], _, _ = email.partition('@')
+
+        response = self.request(
+            "POST",
+            "users",
+            json={"email": email, "email_verified": email_verified, **kwargs},
+        )
+
+        if "error" in response:
+            raise Auth0Error("create_user", response)
+
+        return response
+
+    def get_user(self, user_id):
+        response = self.request("GET", f"users/{user_id}")
+
+        if "error" in response:
+            raise Auth0Error("get_user", response)
+
+        return response
+
+    def list_users(self, **kwargs):
+        response = self.request("GET", "users", **kwargs)
+
+        if "error" in response:
+            raise Auth0Error("list_users", response)
+
+        return response
+
+    def reset_mfa(self, user_id):
+        provider = "google-authenticator"
+        response = self.request(
+            "DELETE",
+            f"users/{user_id}/multifactor/{provider}",
+        )
+
+        if "error" in response:
+            raise Auth0Error("reset_mfa", response)
+
+        return response
+
+    def get_users_email_search(self, email, connection=None):
+        query_string = f"email:\"{email}\""
+
+        if connection:
+            params = {
+                "q": f"{query_string} AND identities.connection:\"{connection}\"",
+                "search_engine":"v2",
+            }
+        else:
+            params={
+                "q":query_string,
+                "search_engine":"v2",
+            }
+
+        response = self.request(
+            "GET",
+            "users",
+            params=params,
+        )
+
+        if "error" in response:
+            raise Auth0Error("get_users_email_search", response)
+
+        return response
+
+
 class AuthorizationAPI(APIClient):
     base_url = settings.AUTH0["authorization_extension_url"]
     audience = "urn:auth0-authz-api"
@@ -223,76 +296,3 @@ class AuthorizationAPI(APIClient):
 
             if "error" in response:
                 raise Auth0Error("delete_group_members", response)
-
-
-class ManagementAPI(APIClient):
-    base_url = f"https://{settings.AUTH0['domain']}/api/v2/"
-    audience = base_url
-
-    def create_user(self, email, email_verified=False, **kwargs):
-        if "nickname" not in kwargs:
-            kwargs["nickname"], _, _ = email.partition('@')
-
-        response = self.request(
-            "POST",
-            "users",
-            json={"email": email, "email_verified": email_verified, **kwargs},
-        )
-
-        if "error" in response:
-            raise Auth0Error("create_user", response)
-
-        return response
-
-    def get_user(self, user_id):
-        response = self.request("GET", f"users/{user_id}")
-
-        if "error" in response:
-            raise Auth0Error("get_user", response)
-
-        return response
-
-    def list_users(self, **kwargs):
-        response = self.request("GET", "users", **kwargs)
-
-        if "error" in response:
-            raise Auth0Error("list_users", response)
-
-        return response
-
-    def reset_mfa(self, user_id):
-        provider = "google-authenticator"
-        response = self.request(
-            "DELETE",
-            f"users/{user_id}/multifactor/{provider}",
-        )
-
-        if "error" in response:
-            raise Auth0Error("reset_mfa", response)
-
-        return response
-
-    def get_users_email_search(self, email, connection=None):
-        query_string = f"email:\"{email}\""
-
-        if connection:
-            params = {
-                "q": f"{query_string} AND identities.connection:\"{connection}\"",
-                "search_engine":"v2",
-            }
-        else:
-            params={
-                "q":query_string,
-                "search_engine":"v2",
-            }
-
-        response = self.request(
-            "GET",
-            "users",
-            params=params,
-        )
-
-        if "error" in response:
-            raise Auth0Error("get_users_email_search", response)
-
-        return response
