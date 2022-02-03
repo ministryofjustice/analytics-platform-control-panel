@@ -51,6 +51,8 @@ USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
+COPY setup.cfg setup.cfg
+COPY pytest.ini pytest.ini
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.css dist/app.js static/

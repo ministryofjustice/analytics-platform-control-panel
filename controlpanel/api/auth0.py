@@ -1,8 +1,9 @@
 from collections import OrderedDict
+from urllib import parse
 
+import requests
 from auth0.v3 import authentication, exceptions
 from django.conf import settings
-import requests
 from rest_framework.exceptions import APIException
 
 
@@ -45,7 +46,7 @@ class APIClient:
 
         return self._access_token
 
-    def request(self, method, endpoint, **kwargs):
+    def request(self, method, endpoint, raw=False, **kwargs):
         base_url = self.base_url
         if not base_url.endswith('/'):
             base_url = base_url + '/'
@@ -59,12 +60,15 @@ class APIClient:
             },
             **kwargs,
         )
-        response.raise_for_status()
+        if not raw:
+            response.raise_for_status()
 
-        if response.text:
-            return response.json()
+            if response.text:
+                return response.json()
 
-        return {}
+            return {}
+        else:
+            return response
 
     def get_all(self, endpoint, key=None, **kwargs):
         items = []
@@ -110,9 +114,83 @@ class APIClient:
         return items
 
 
+class ManagementAPI(APIClient):
+    base_url = f"https://{settings.AUTH0['domain']}/api/v2/"
+    audience = base_url
+
+    def create_user(self, email, email_verified=False, **kwargs):
+        if "nickname" not in kwargs:
+            kwargs["nickname"], _, _ = email.partition('@')
+
+        response = self.request(
+            "POST",
+            "users",
+            json={"email": email, "email_verified": email_verified, **kwargs},
+        )
+
+        if "error" in response:
+            raise Auth0Error("create_user", response)
+
+        return response
+
+    def get_user(self, user_id):
+        response = self.request("GET", f"users/{user_id}")
+
+        if "error" in response:
+            raise Auth0Error("get_user", response)
+
+        return response
+
+    def list_users(self, **kwargs):
+        response = self.request("GET", "users", **kwargs)
+
+        if "error" in response:
+            raise Auth0Error("list_users", response)
+
+        return response
+
+    def reset_mfa(self, user_id):
+        provider = "google-authenticator"
+        response = self.request(
+            "DELETE",
+            f"users/{user_id}/multifactor/{provider}",
+        )
+
+        if "error" in response:
+            raise Auth0Error("reset_mfa", response)
+
+        return response
+
+    def get_users_email_search(self, email, connection=None):
+        query_string = f"email:\"{email}\""
+
+        if connection:
+            params = {
+                "q": f"{query_string} AND identities.connection:\"{connection}\"",
+                "search_engine":"v2",
+            }
+        else:
+            params={
+                "q":query_string,
+                "search_engine":"v2",
+            }
+
+        response = self.request(
+            "GET",
+            "users",
+            params=params,
+        )
+
+        if "error" in response:
+            raise Auth0Error("get_users_email_search", response)
+
+        return response
+
+
 class AuthorizationAPI(APIClient):
     base_url = settings.AUTH0["authorization_extension_url"]
     audience = "urn:auth0-authz-api"
+    mgmt = ManagementAPI()
 
     def get_users(self):
         return self.get_all("users", page=0, per_page=100)
@@ -183,26 +261,15 @@ class AuthorizationAPI(APIClient):
         group_id = self.get_group_id(group_name)
         if not group_id:
             raise Auth0Error("Group for the app not found, was the app released?")
-
-        mgmt = ManagementAPI()
-        users = self.get_users()
-        user_lookup = {user["email"]: user for user in users if "email" in user}
-
-        def has_options(user):
-            for identity in user["identities"]:
-                if all(item in identity.items() for item in user_options.items()):
-                    return True
-
+        
         users_to_add = OrderedDict()
 
         for email in emails:
-            user = user_lookup.get(email)
-
-            if user and has_options(user):
-                users_to_add[email] = user
-
+            lookup_response = self.mgmt.get_users_email_search(email=email, connection="email")
+            if lookup_response:
+                users_to_add[email] = lookup_response[0]
             else:
-                users_to_add[email] = mgmt.create_user(
+                users_to_add[email] = self.mgmt.create_user(
                     email=email, email_verified=True, **user_options
                 )
 
@@ -228,51 +295,3 @@ class AuthorizationAPI(APIClient):
 
             if "error" in response:
                 raise Auth0Error("delete_group_members", response)
-
-
-class ManagementAPI(APIClient):
-    base_url = f"https://{settings.AUTH0['domain']}/api/v2/"
-    audience = base_url
-
-    def create_user(self, email, email_verified=False, **kwargs):
-        if "nickname" not in kwargs:
-            kwargs["nickname"], _, _ = email.partition('@')
-
-        response = self.request(
-            "POST",
-            "users",
-            json={"email": email, "email_verified": email_verified, **kwargs},
-        )
-
-        if "error" in response:
-            raise Auth0Error("create_user", response)
-
-        return response
-
-    def get_user(self, user_id):
-        response = self.request("GET", f"users/{user_id}")
-
-        if "error" in response:
-            raise Auth0Error("get_user", response)
-
-        return response
-
-    def list_users(self, **kwargs):
-        response = self.request("GET", "users", **kwargs)
-
-        if "error" in response:
-            raise Auth0Error("list_users", response)
-
-        return response
-
-    def reset_mfa(self, user_id):
-        provider = "google-authenticator"
-        response = self.request(
-            "DELETE",
-            f"users/{user_id}/multifactor/{provider}",
-        )
-
-        if "error" in response:
-            raise Auth0Error("reset_mfa", response)
-
-        return response

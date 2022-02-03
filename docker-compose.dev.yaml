@@ -6,7 +6,10 @@ services:
     stdin_open: true
     tty: true
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-    volumes: [./controlpanel:/home/controlpanel/controlpanel]
+    volumes: [
+      ./controlpanel:/home/controlpanel/controlpanel,
+      ./tests:/home/controlpanel/tests
+    ]
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
