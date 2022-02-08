@@ -1,7 +1,7 @@
 version: "3"
 services:
   db:
-    image: "postgres:9.6"
+    image: "postgres:12.7"
     environment:
       POSTGRES_DB: "controlpanel"
       POSTGRES_PASSWORD: "password"
@@ -19,7 +19,7 @@ services:
 
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
-    depends_on: 
+    depends_on:
       db:
         condition: service_healthy
     environment:
