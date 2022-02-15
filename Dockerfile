@@ -26,6 +26,9 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         wget \
+        build-essential \
+        graphviz \
+        graphviz-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
@@ -47,12 +50,21 @@ COPY requirements.txt requirements.dev.txt manage.py ./
 RUN pip install -U --no-cache-dir pip
 RUN pip install -r requirements.txt
 
+# Re-enable dev packages
+RUN python3 -m venv --system-site-packages dev-packages \
+    && dev-packages/bin/pip3 install -U --no-cache-dir pip \
+    && dev-packages/bin/pip3 install -r requirements.dev.txt
+
+RUN apt-get remove build-essential -y
+
 USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
 COPY setup.cfg setup.cfg
 COPY pytest.ini pytest.ini
+
+
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.css dist/app.js static/
