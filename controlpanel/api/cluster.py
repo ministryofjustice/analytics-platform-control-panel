@@ -167,11 +167,9 @@ class User:
             # platform. Run these helm charts to migrate the user to the new
             # platform. Ensure this is all stored in the database in case they
             # try to log into the control panel on the old infrastructure.
-            has_charts = (
-                bootstrap_chart_name in releases
-                and
-                provision_chart_name in releases
-            )
+            bootstrapped = bootstrap_chart_name in releases
+            provisioned = provision_chart_name in releases
+            has_charts = bootstrapped and provisioned
             is_migrated = (
                 # This is an old user who has migrated.
                 self.user.migration_state == self.user.COMPLETE
