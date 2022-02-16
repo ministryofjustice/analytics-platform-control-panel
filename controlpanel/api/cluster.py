@@ -47,44 +47,53 @@ class User:
     def iam_role_name(self):
         return f"{settings.ENV}_user_{self.user.username.lower()}"
 
+    def _bootstrap_user(self):
+        helm.upgrade_release(
+            f"bootstrap-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/bootstrap-user",  # chart
+            f"--set="
+            + (
+                f"Username={self.user.slug}"
+            ),
+        )
+
+    def _provision_user(self):
+        helm.upgrade_release(
+            f"provision-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/provision-user",  # chart
+            f"--namespace={self.k8s_namespace}",
+            f"--set="
+            + (
+                f"Username={self.user.slug},"
+                f"Efsvolume={settings.EFS_VOLUME},"
+                f"OidcDomain={settings.OIDC_DOMAIN},"
+                f"Email={self.user.email},"
+                f"Fullname={self.user.name},"
+            ),
+        )
+
+    def _init_user_old_infra(self):
+        helm.upgrade_release(
+            f"init-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/init-user",  # chart
+            f"--set="
+            + (
+                f"Env={settings.ENV},"
+                f"NFSHostname={settings.NFS_HOSTNAME},"
+                f"EFSHostname={settings.EFS_HOSTNAME},"
+                f"OidcDomain={settings.OIDC_DOMAIN},"
+                f"Email={self.user.email},"
+                f"Fullname={self.user.name},"
+                f"Username={self.user.slug}"
+            ),
+        )
+
     def _init_user(self):
         if settings.EKS:
-            helm.upgrade_release(
-                f"bootstrap-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/bootstrap-user",  # chart
-                f"--set="
-                + (
-                    f"Username={self.user.slug}"
-                ),
-            )
-            helm.upgrade_release(
-                f"provision-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/provision-user",  # chart
-                f"--namespace={self.k8s_namespace}",
-                f"--set="
-                + (
-                    f"Username={self.user.slug},"
-                    f"Efsvolume={settings.EFS_VOLUME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                ),
-            )
+            self._bootstrap_user()
+            self._provision_user()
         else:
-            helm.upgrade_release(
-                f"init-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/init-user",  # chart
-                f"--set="
-                + (
-                    f"Env={settings.ENV},"
-                    f"NFSHostname={settings.NFS_HOSTNAME},"
-                    f"EFSHostname={settings.EFS_HOSTNAME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                    f"Username={self.user.slug}"
-                ),
-            )
+            self._init_user_old_infra()
 
     def create(self):
         aws.create_user_role(self.user)
