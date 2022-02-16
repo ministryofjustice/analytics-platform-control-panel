@@ -1,15 +1,13 @@
-import structlog
 import secrets
 
+import structlog
+from controlpanel.api import auth0, aws, helm
+from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
+from controlpanel.api.kubernetes import KubernetesClient
+from controlpanel.utils import github_repository_name
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
-
-from controlpanel.api import auth0, aws
-from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
-from controlpanel.api import helm
-from controlpanel.api.kubernetes import KubernetesClient
-from controlpanel.utils import github_repository_name
 
 log = structlog.getLogger(__name__)
 
