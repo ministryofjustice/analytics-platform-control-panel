@@ -26,11 +26,11 @@ dev-py:
 
 ## dev-run: Start shell in new copy of container
 dev-run:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend sh
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend bash
 
 ## dev-exec: Exec into shell of existing container
 dev-exec:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend bash
 
 test-wip: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-wip:
