@@ -160,8 +160,9 @@ class User:
             # platform. Run these helm charts to migrate the user to the new
             # platform. Ensure this is all stored in the database in case they
             # try to log into the control panel on the old infrastructure.
+            bootstrap_releases = set(helm.list_releases(namespace="cpanel", release=bootstrap_chart_name))
             has_charts = (
-                bootstrap_chart_name in releases
+                bootstrap_chart_name in bootstrap_releases
                 and
                 provision_chart_name in releases
             )
@@ -174,6 +175,8 @@ class User:
             )
             if not is_migrated:  # user requires one-off migration process.
                 # Indicate the migration process is started for this user.
+                log.info(f"Starting to migrate user {self.user.slug}")
+
                 self.user.migration_state = self.user.MIGRATING
                 self.user.save()
                 # Remove old infra's user init chart.
@@ -185,8 +188,11 @@ class User:
                 # Update the user's state in the database.
                 self.user.migration_state = self.user.COMPLETE
                 self.user.save()
+
+                log.info(f"Completed migration of user {self.user.slug}")
             elif not has_charts:  # user has charts deleted.
                 # So recreate the user's charts.
+                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
                 self._init_user()
         else:
             # On the old infrastructure...
