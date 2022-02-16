@@ -1,8 +1,8 @@
-django-debug-toolbar==2.2
-django-debug-toolbar-requests==1.0.5
-django-elasticsearch-debug-toolbar==2.0.0
-pylint==2.12.2
-pylint-django==2.4.4
+django-debug-toolbar>=2.2,<2.3
+django-debug-toolbar-requests>=1.0.5,<1.1
+django-elasticsearch-debug-toolbar>=2.0.0,<2.1
+pylint>=2.12.2,<2.13
+pylint-django>=2.4.4,<2.5
 ipython>=7.20.0,<7.21.0
 ipdb>=0.13.4,<0.14.0
-pygraphviz
+pygraphviz>=1.9,<1.10
