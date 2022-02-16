@@ -194,9 +194,11 @@ class User:
                 # Update the user's state in the database.
                 self.user.migration_state = self.user.COMPLETE
                 self.user.save()
-            elif not has_charts:  # user has charts deleted.
-                # So recreate the user's charts.
+            elif not has_charts or not bootstrapped:  # user missing all charts
+                # Or at least bootstrap chart, so needs both charts to be re-run.
                 self._init_user()
+            elif not provisioned:
+                self._provision_user()
         else:
             # On the old infrastructure...
             if init_chart_name not in releases:
