@@ -167,7 +167,8 @@ class User:
             # platform. Run these helm charts to migrate the user to the new
             # platform. Ensure this is all stored in the database in case they
             # try to log into the control panel on the old infrastructure.
-            bootstrapped = bootstrap_chart_name in releases
+            cpanel_releases = set(helm.list_releases(namespace="cpanel"))
+            bootstrapped = bootstrap_chart_name in cpanel_releases
             provisioned = provision_chart_name in releases
             has_charts = bootstrapped and provisioned
             is_migrated = (
