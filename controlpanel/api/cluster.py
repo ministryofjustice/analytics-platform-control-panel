@@ -177,6 +177,10 @@ class User:
                 # This is a new user who has never used the old infra.
                 self.user.migration_state == self.user.VOID
             )
+            if not is_migrated and has_charts: #This state SHOULD NOT happen but appears to be occuring
+                aws.migrate_user_role(self.user) #This appears deterministic and we don't have a test (yet)
+                self.user.migration_state = self.user.COMPLETE
+                self.user.save()
             if not is_migrated:  # user requires one-off migration process.
                 # Indicate the migration process is started for this user.
                 self.user.migration_state = self.user.MIGRATING
