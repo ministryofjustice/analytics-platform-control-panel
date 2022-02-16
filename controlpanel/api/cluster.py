@@ -160,8 +160,9 @@ class User:
             # platform. Run these helm charts to migrate the user to the new
             # platform. Ensure this is all stored in the database in case they
             # try to log into the control panel on the old infrastructure.
+            bootstrap_releases = set(helm.list_releases(namespace="cpanel", release=bootstrap_chart_name))
             has_charts = (
-                bootstrap_chart_name in releases
+                bootstrap_chart_name in bootstrap_releases
                 and
                 provision_chart_name in releases
             )
