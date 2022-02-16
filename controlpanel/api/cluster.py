@@ -179,6 +179,7 @@ class User:
                 self.user.migration_state == self.user.VOID
             )
             if not is_migrated and has_charts: #This state SHOULD NOT happen but appears to be occuring
+                log.warning(f"{self.user} was in state {self.user.get_migration_state_display()}, but has b/p charts")
                 aws.migrate_user_role(self.user) #This appears deterministic and we don't have a test (yet)
                 self.user.migration_state = self.user.COMPLETE
                 self.user.save()
@@ -197,8 +198,10 @@ class User:
                 self.user.save()
             elif not has_charts or not bootstrapped:  # user missing all charts
                 # Or at least bootstrap chart, so needs both charts to be re-run.
+                log.warning(f"{self.user} missing charts, so re-running")
                 self._init_user()
             elif not provisioned:
+                log.warning(f"{self.user} is missing the provision chart so re-running")
                 self._provision_user()
         else:
             # On the old infrastructure...
