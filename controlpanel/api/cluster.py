@@ -44,6 +44,7 @@ class User:
     def __init__(self, user):
         self.user = user
         self.k8s_namespace = f"user-{self.user.slug}"
+        self.eks_cpanel_namespace = "cpanel"
 
     @property
     def iam_role_name(self):
@@ -154,52 +155,58 @@ class User:
         bootstrap_chart_name = f"bootstrap-user-{self.user.slug}"
         provision_chart_name = f"provision-user-{self.user.slug}"
         releases = set(helm.list_releases(namespace=self.k8s_namespace))
-        if settings.EKS:
-            # On the new cluster, check if the bootstrap/provision helm
-            # charts exist. If not, this is the user's first login to the new
-            # platform. Run these helm charts to migrate the user to the new
-            # platform. Ensure this is all stored in the database in case they
-            # try to log into the control panel on the old infrastructure.
-            bootstrap_releases = set(helm.list_releases(namespace="cpanel", release=bootstrap_chart_name))
-            has_charts = (
-                bootstrap_chart_name in bootstrap_releases
-                and
-                provision_chart_name in releases
-            )
-            is_migrated = (
-                # This is an old user who has migrated.
-                self.user.migration_state == self.user.COMPLETE
-                or
-                # This is a new user who has never used the old infra.
-                self.user.migration_state == self.user.VOID
-            )
-            if not is_migrated:  # user requires one-off migration process.
-                # Indicate the migration process is started for this user.
-                log.info(f"Starting to migrate user {self.user.slug}")
 
-                self.user.migration_state = self.user.MIGRATING
-                self.user.save()
-                # Remove old infra's user init chart.
-                helm.delete(self.k8s_namespace, init_chart_name)
-                # Migrate the AWS roles for the user.
-                aws.migrate_user_role(self.user)
-                # Run the new charts to configure the user for EKS infra.
-                self._init_user()
-                # Update the user's state in the database.
-                self.user.migration_state = self.user.COMPLETE
-                self.user.save()
-
-                log.info(f"Completed migration of user {self.user.slug}")
-            elif not has_charts:  # user has charts deleted.
-                # So recreate the user's charts.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._init_user()
-        else:
+        if not settings.EKS:
             # On the old infrastructure...
             if init_chart_name not in releases:
                 # The user has their charts deleted, so recreate.
                 log.warning(f"Re-running init user chart for {self.user.slug}")
                 self._init_user()
+
+            return
+
+        # On the new cluster, check if the bootstrap/provision helm
+        # charts exist. If not, this is the user's first login to the new
+        # platform. Run these helm charts to migrate the user to the new
+        # platform. Ensure this is all stored in the database in case they
+        # try to log into the control panel on the old infrastructure.
+        bootstrap_releases = set(helm.list_releases(namespace=self.eks_cpanel_namespace, release=bootstrap_chart_name))
+        has_charts = (
+            bootstrap_chart_name in bootstrap_releases
+            and
+            provision_chart_name in releases
+        )
+
+        if self.user.migration_state == self.user.COMPLETE:
+            # If the authenticated user has already migrated to this EKS system,
+            # then we just want to check that they have previously run the required
+            # charts before returning
+            if not has_charts:
+                # User has migrated but for some reason has no charts so we should re-init them.
+                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+                self._init_user()
+
+            return
+
+        # User's migration state is not yet marked as complete, and so we
+        # need to migrate their AWS role before running the init-user
+        # helm charts before marked it as such
+        log.info(f"Starting to migrate user {self.user.slug} from {self.user.migration_state}")
+
+        self.user.migration_state = self.user.MIGRATING
+        self.user.save()
+
+        # Migrate the AWS roles for the user.
+        aws.migrate_user_role(self.user)
+
+        # Run the new charts to configure the user for EKS infra.
+        self._init_user()
+
+        # Update the user's state in the database.
+        self.user.migration_state = self.user.COMPLETE
+        self.user.save()
+
+        log.info(f"Completed migration of user {self.user.slug}")
 
 
 class App:
