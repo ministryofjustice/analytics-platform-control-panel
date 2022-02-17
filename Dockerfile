@@ -26,9 +26,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         wget \
-        build-essential \
-        graphviz \
-        graphviz-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
@@ -54,8 +51,6 @@ RUN pip install -r requirements.txt
 RUN python3 -m venv --system-site-packages dev-packages \
     && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
-
-RUN apt-get remove build-essential -y
 
 USER controlpanel
 COPY controlpanel controlpanel
