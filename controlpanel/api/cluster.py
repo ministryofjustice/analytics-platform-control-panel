@@ -44,6 +44,7 @@ class User:
     def __init__(self, user):
         self.user = user
         self.k8s_namespace = f"user-{self.user.slug}"
+        self.eks_cpanel_namespace = "cpanel"
 
     @property
     def iam_role_name(self):
@@ -169,7 +170,7 @@ class User:
         # platform. Run these helm charts to migrate the user to the new
         # platform. Ensure this is all stored in the database in case they
         # try to log into the control panel on the old infrastructure.
-        bootstrap_releases = set(helm.list_releases(namespace="cpanel", release=bootstrap_chart_name))
+        bootstrap_releases = set(helm.list_releases(namespace=self.eks_cpanel_namespace, release=bootstrap_chart_name))
         has_charts = (
             bootstrap_chart_name in bootstrap_releases
             and
