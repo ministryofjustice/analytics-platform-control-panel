@@ -143,7 +143,7 @@ def oidc_assume_role(stmt, user):
 
 
 def eks_assume_role(stmt, user):
-    match = f"system:serviceaccount:user-{user.username}:{user.username}-*"
+    match = f"system:serviceaccount:user-{user.slug}:{user.slug}-*"
     return stmt_match(
         stmt,
         Action="sts:AssumeRoleWithWebIdentity",
