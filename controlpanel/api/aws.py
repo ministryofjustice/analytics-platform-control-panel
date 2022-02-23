@@ -191,7 +191,7 @@ def create_user_role(user):
     }
     policy["Statement"].append(oidc_statement)
     eks_statement = deepcopy(EKS_STATEMENT)
-    match = f"system:serviceaccount:user-{user.username}:{user.username}-*"
+    match = f"system:serviceaccount:user-{user.slug}:{user.slug}-*"
     eks_statement["Condition"]["StringLike"] = {
         f"{settings.OIDC_EKS_PROVIDER}:sub": match
     }
@@ -228,13 +228,13 @@ def migrate_user_role(user):
     if the user already exists from the old platform infrastructure.
     """
     eks_statement = deepcopy(EKS_STATEMENT)
-    match = f"system:serviceaccount:user-{user.username}:{user.username}-*"
+    match = f"system:serviceaccount:user-{user.slug}:{user.slug}-*"
     eks_statement["Condition"]["StringLike"] = {
         f"{settings.OIDC_EKS_PROVIDER}:sub": match
     }
     log.warning(
         "Attempting to update policy as part of user migration for "
-        f"{user.username}."
+        f"{user.slug}."
     )
     iam = boto3.client("iam")
     role = iam.get_role(RoleName=user.iam_role_name)
