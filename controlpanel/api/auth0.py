@@ -162,7 +162,7 @@ class ManagementAPI(APIClient):
         return response
 
     def get_users_email_search(self, email, connection=None):
-        query_string = f"email:\"{email}\""
+        query_string = f"email:\"{email.lower()}\""
 
         if connection:
             params = {
@@ -261,7 +261,7 @@ class AuthorizationAPI(APIClient):
         group_id = self.get_group_id(group_name)
         if not group_id:
             raise Auth0Error("Group for the app not found, was the app released?")
-        
+
         users_to_add = OrderedDict()
 
         for email in emails:
