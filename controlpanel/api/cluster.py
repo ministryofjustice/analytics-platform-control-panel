@@ -237,10 +237,6 @@ class App:
     def delete(self):
         aws.delete_role(self.iam_role_name)
         auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
-        if settings.EKS:
-            helm.delete_eks(self.APPS_NS, self.app.release_name)
-        else:
-            helm.delete(self.app.release_name)
 
     @property
     def url(self):
