@@ -5,18 +5,16 @@ from django.core.exceptions import ValidationError
 from controlpanel.api.models import App
 
 class Command(BaseCommand):
-    help = """Delete an app.
-              Input: App slug"""
+    help = "Delete an app"
 
     def add_arguments(self, parser):
-        parser.add_argument("slug", type=str)
-        parser.add_argument("-y", "--yes", action="store_true")
+        parser.add_argument("slug", type=str, help="Slug of the app to delete")
+        parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation of app deletion")
 
     def handle(self, *args, **options):
-        print(options["slug"])
         try:
             validate_slug(options["slug"])
-        except ValidationError as e:
+        except ValidationError:
             raise CommandError("App name should be a valid slug")
 
         try:
