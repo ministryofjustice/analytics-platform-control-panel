@@ -10,6 +10,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("slug", type=str)
+        parser.add_argument("-y", "--yes", action="store_true")
 
     def handle(self, *args, **options):
         print(options["slug"])
@@ -23,8 +24,13 @@ class Command(BaseCommand):
         except App.DoesNotExist:
             raise CommandError("This app does not exist")
 
-        confirm = input(f"Are you sure you want to delete {app.name}? Y/n\n")
-        if confirm in ("Y", "yes"):
+        do_delete = options["yes"]
+        if not options["yes"]:
+            confirm = input(f"Are you sure you want to delete {app.name}? Y/n\n")
+            if confirm in ("Y", "yes"):
+                do_delete = True
+        
+        if do_delete: 
             self.stdout.write(f"Deleting {app.name}")
             app.delete()
         else:
