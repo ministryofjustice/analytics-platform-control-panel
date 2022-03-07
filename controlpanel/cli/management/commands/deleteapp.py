@@ -28,8 +28,7 @@ class Command(BaseCommand):
         do_delete = options["yes"]
         if not options["yes"]:
             confirm = input(f"Are you sure you want to delete {app.name}? Y/n\n")
-            if confirm in ("Y", "yes"):
-                do_delete = True
+            do_delete = confirm.lower() in ("y", "yes")
 
         if do_delete:
             self.stdout.write(f"Deleting {app.name}")
