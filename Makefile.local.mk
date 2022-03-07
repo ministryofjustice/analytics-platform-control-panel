@@ -1,3 +1,6 @@
+AWS_ACCOUNT?=admin-dev
+DEV_CLUSTER?=development-aWrhyc0m
+
 all: help
 
 ## docker-login: Authenticate docker with ECR
@@ -19,6 +22,17 @@ dev-daemon: dev-prepare-up
 ## dev-fg: Startup with docker process in foreground
 dev-fg: dev-prepare-up
 	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
+
+# dev-eks:       - exec
+#       - admin-dev
+#       - --
+#       - aws
+#       - --region
+#       - eu-west-1
+#       - eks
+#       - get-token
+#       - --cluster-name
+#       - development-aWrhyc0m
 
 ## dev-debug: Startup clean docker process in background, and docker attach to foreground for debugging
 dev-debug: clean dev-daemon
