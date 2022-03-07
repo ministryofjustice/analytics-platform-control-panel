@@ -4,12 +4,15 @@ from django.core.exceptions import ValidationError
 
 from controlpanel.api.models import App
 
+
 class Command(BaseCommand):
     help = "Delete an app"
 
     def add_arguments(self, parser):
         parser.add_argument("slug", type=str, help="Slug of the app to delete")
-        parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation of app deletion")
+        parser.add_argument(
+            "-y", "--yes", action="store_true", help="Skip confirmation of app deletion"
+        )
 
     def handle(self, *args, **options):
         try:
@@ -27,8 +30,8 @@ class Command(BaseCommand):
             confirm = input(f"Are you sure you want to delete {app.name}? Y/n\n")
             if confirm in ("Y", "yes"):
                 do_delete = True
-        
-        if do_delete: 
+
+        if do_delete:
             self.stdout.write(f"Deleting {app.name}")
             app.delete()
         else:
