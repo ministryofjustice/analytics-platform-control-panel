@@ -41,8 +41,8 @@ services:
         condition: service_started
       db:
         condition: service_healthy
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
+    # volumes:
+    #   - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
     environment:
       DB_HOST: "db"
@@ -73,9 +73,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
-      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
+    # volumes:
+    #   - ~/.kube/controlpanel:/home/controlpanel/.kube/config
+    #   - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
       AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
@@ -149,9 +149,9 @@ services:
       redis:
         condition: service_started
     links: [worker, db, redis]
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
-      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
+    # volumes:
+    #   - ~/.kube/controlpanel:/home/controlpanel/.kube/config
+    #   - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
       AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
