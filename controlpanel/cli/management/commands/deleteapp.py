@@ -5,7 +5,8 @@ from django.core.exceptions import ValidationError
 from controlpanel.api.models import App
 
 class Command(BaseCommand):
-    help = "Hello from new cli app"
+    help = """Delete an app.
+              Input: App slug"""
 
     def add_arguments(self, parser):
         parser.add_argument("slug", type=str)
