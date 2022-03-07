@@ -22,4 +22,9 @@ class Command(BaseCommand):
         except App.DoesNotExist:
             raise CommandError("This app does not exist")
 
-        app.delete()
+        confirm = input(f"Are you sure you want to delete {app.name}? Y/n\n")
+        if confirm in ("Y", "yes"):
+            self.stdout.write(f"Deleting {app.name}")
+            app.delete()
+        else:
+            self.stdout.write(f"App {app.name} will not be deleted")
