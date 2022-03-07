@@ -83,6 +83,8 @@ INSTALLED_APPS = [
     "controlpanel.kubeapi",
     # Analytics Platform Control Panel Frontend
     "controlpanel.frontend",
+    # Analytics Platform Control Panel CLI tools"
+    "controlpanel.cli",
     # Health check
     "health_check",
     "health_check.db",
