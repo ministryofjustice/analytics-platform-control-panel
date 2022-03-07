@@ -6,6 +6,7 @@ services:
       POSTGRES_DB: "controlpanel"
       POSTGRES_PASSWORD: "password"
       POSTGRES_USER: "controlpanel"
+      REGION: $REGION
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -18,7 +19,11 @@ services:
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     depends_on:
       db:
         condition: service_healthy
@@ -35,14 +40,18 @@ services:
     command: sh -c "./manage.py migrate"
 
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     depends_on:
       redis:
         condition: service_started
       db:
         condition: service_healthy
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
+    # volumes:
+    #   - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
     environment:
       DB_HOST: "db"
@@ -73,9 +82,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
-      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
+    # volumes:
+    #   - ~/.kube/controlpanel:/home/controlpanel/.kube/config
+    #   - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
       AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
@@ -149,9 +158,9 @@ services:
       redis:
         condition: service_started
     links: [worker, db, redis]
-    volumes:
-      - ~/.kube/controlpanel:/home/controlpanel/.kube/config
-      - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
+    # volumes:
+    #   - ~/.kube/controlpanel:/home/controlpanel/.kube/config
+    #   - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
       AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}

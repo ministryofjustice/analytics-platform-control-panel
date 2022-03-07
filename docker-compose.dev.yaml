@@ -3,19 +3,32 @@ version: "3"
 services:
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     stdin_open: true
     tty: true
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command: ["./startup_dev.sh"]
     volumes: [
       ./controlpanel:/home/controlpanel/controlpanel,
       ./tests:/home/controlpanel/tests
     ]
   migration:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: "python manage.py migrate"
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     stdin_open: true
     tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
