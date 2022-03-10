@@ -62,6 +62,9 @@ RUN apt-get update
 RUN apt-get install -y kubectl
 RUN apt-get install -y awscli
 
+# RUN apt-get install -y aws-iam-authenticator
+COPY scripts/startup_dev.sh ./startup_dev.sh
+RUN chmod +x ./startup_dev.sh
 
 # RUN apt-get install kubernetes -y
 
