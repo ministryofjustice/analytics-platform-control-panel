@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib import admin
+from controlpanel.api.views import health_check
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from django_prometheus import exports
@@ -12,7 +13,7 @@ urlpatterns = [
     path("oidc/", include("mozilla_django_oidc.urls")),
     # redirect old k8s api requests to new paths
     path("k8s/", include('controlpanel.kubeapi.urls')),
-    path("health/", include('health_check.urls')),
+    path("health/", health_check),
     path("metrics", exports.ExportToDjangoView, name="prometheus-django-metrics"),
 ]
 
