@@ -26,7 +26,14 @@ class S3Admin(admin.ModelAdmin):
 
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ("username", "auth0_id", "email", "is_superuser", "migration_state")
+    list_display = (
+        "username",
+        "auth0_id",
+        "email",
+        "is_superuser",
+        "migration_state",
+        "last_login",
+    )
     actions = [make_migration_pending]
     exclude = ("password",)
     list_filter = ("migration_state",)
