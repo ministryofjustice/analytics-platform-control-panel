@@ -5,7 +5,8 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     stdin_open: true
     tty: true
-    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    command: ["./startup_dev.sh"]
     volumes: [
       ./controlpanel:/home/controlpanel/controlpanel,
       ./tests:/home/controlpanel/tests

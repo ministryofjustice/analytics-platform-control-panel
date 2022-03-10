@@ -1,0 +1,4 @@
+#!/bin/bash
+cluster_id=$(aws --region eu-west-1 eks list-clusters --output text |  sed -n 1p| awk '{print $2}')
+aws --region eu-west-1 eks update-kubeconfig --name $cluster_id
+python manage.py runserver 0.0.0.0:8000

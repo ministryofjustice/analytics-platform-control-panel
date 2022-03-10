@@ -51,10 +51,14 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install -r requirements.txt
 RUN pip uninstall python-dotenv -y
 
+RUN apt-get install -y awscli
+
 # Re-enable dev packages
 RUN python3 -m venv --system-site-packages dev-packages \
     && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
+
+COPY scripts/startup_dev.sh
 
 USER controlpanel
 COPY controlpanel controlpanel
