@@ -84,10 +84,6 @@ INSTALLED_APPS = [
     # Analytics Platform Control Panel Frontend
     "controlpanel.frontend",
     # Health check
-    "health_check",
-    "health_check.db",
-    "health_check.cache",
-    "health_check.storage",
     "django_prometheus",
 ]
 
