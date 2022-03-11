@@ -64,6 +64,7 @@ RUN apt-get install -y awscli
 
 # RUN apt-get install -y aws-iam-authenticator
 COPY scripts/startup_dev.sh ./startup_dev.sh
+COPY scripts/replace_aws_iam_command.py ./replace_aws_iam_command.py
 RUN chmod +x ./startup_dev.sh
 
 # RUN apt-get install kubernetes -y
