@@ -3,6 +3,10 @@ version: "3"
 services:
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     stdin_open: true
     tty: true
     # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]

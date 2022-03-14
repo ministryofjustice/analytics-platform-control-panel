@@ -9,7 +9,8 @@ RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --outp
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
+# FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
+FROM python:3.9-slim-bullseye AS base
 
 ARG HELM_VERSION=3.5.4
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -30,6 +31,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         wget \
+        less \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
@@ -51,14 +53,26 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install -r requirements.txt
 RUN pip uninstall python-dotenv -y
 
-RUN apt-get install -y awscli
+# RUN apt-get install -y awscli
 
 # Re-enable dev packages
 RUN python3 -m venv --system-site-packages dev-packages \
     && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
 
-COPY scripts/startup_dev.sh
+RUN apt-get update
+RUN apt-get install -y curl ca-certificates apt-transport-https gnupg
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+RUN touch /etc/apt/sources.list.d/kubernetes.list 
+RUN echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
+RUN apt-get update
+RUN apt-get install -y kubectl
+RUN apt-get install -y awscli
+
+# RUN apt-get install -y aws-iam-authenticator
+COPY scripts/startup_dev.sh ./startup_dev.sh
+COPY scripts/replace_aws_iam_command.py ./replace_aws_iam_command.py
+RUN chmod +x ./startup_dev.sh
 
 USER controlpanel
 COPY controlpanel controlpanel
