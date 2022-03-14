@@ -17,7 +17,7 @@ clean:
 	docker-compose down --volumes --remove-orphans
 
 build:
-	@docker-compose build frontend
+	@docker-compose build frontend_eks
 
 eks:
 	@docker-compose build frontend_eks
