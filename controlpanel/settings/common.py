@@ -7,6 +7,7 @@ from controlpanel.utils import is_truthy
 
 import structlog
 
+
 # -- Feature flags
 
 ENABLED = {
