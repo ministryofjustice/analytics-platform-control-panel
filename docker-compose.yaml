@@ -19,7 +19,11 @@ services:
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     depends_on:
       db:
         condition: service_healthy
@@ -36,7 +40,11 @@ services:
     command: sh -c "./manage.py migrate"
 
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     depends_on:
       redis:
         condition: service_started

@@ -16,11 +16,19 @@ services:
       ./tests:/home/controlpanel/tests
     ]
   migration:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: "python manage.py migrate"
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      network: ${NETWORK:-default}
+      dockerfile: Dockerfile_EKS
     stdin_open: true
     tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
