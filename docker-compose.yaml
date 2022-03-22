@@ -1,6 +1,7 @@
 version: "3"
 services:
   db:
+    network_mode: host
     image: "postgres:13.3"
     environment:
       POSTGRES_DB: "controlpanel"
@@ -12,18 +13,20 @@ services:
       timeout: 5s
       retries: 5
   redis:
+    network_mode: host
     image: "redis"
     environment:
       REDIS_PASSWORD: "controlpanel"
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
+    network_mode: host
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DB_HOST: "db"
+      DB_HOST: "localhost"
       DB_NAME: "controlpanel"
       DB_PASSWORD: "password"
       DB_PORT: 5432
@@ -35,6 +38,7 @@ services:
     command: sh -c "./manage.py migrate"
 
   worker:
+    network_mode: host
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     depends_on:
       redis:
@@ -45,7 +49,7 @@ services:
       - ~/.kube/controlpanel:/home/controlpanel/.kube/config:ro
     command: ["python3", "manage.py", "runworker", "background_tasks"]
     environment:
-      DB_HOST: "db"
+      DB_HOST: "localhost"
       DB_NAME: controlpanel
       DB_PASSWORD: password
       DB_PORT: 5432
@@ -63,9 +67,14 @@ services:
 
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    network_mode: host
     build:
       context: .
-    ports: ["8000:8000"]
+    # ports: [
+    #   "8000:8000",
+    #   "63409:63409"
+    # ]
+    # links: [worker, db, redis]
     depends_on:
       worker:
         condition: service_started
@@ -91,7 +100,7 @@ services:
       AWS_REGION: ${AWS_REGION:-eu-west-1}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
-      DB_HOST: "db"
+      DB_HOST: "localhost"
       DB_NAME: controlpanel
       DB_PASSWORD: password
       DB_PORT: 5432
@@ -119,7 +128,7 @@ services:
       OIDC_OP_USER_ENDPOINT: ${OIDC_OP_USER_ENDPOINT}
       OIDC_RP_SIGN_ALGO: "RS256"
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "redis"
+      REDIS_HOST: "localhost"
       REDIS_PASSWORD: "controlpanel"
       RSTUDIO_AUTH_CLIENT_ID: ${RSTUDIO_AUTH_CLIENT_ID}
       RSTUDIO_AUTH_CLIENT_SECRET: ${RSTUDIO_AUTH_CLIENT_SECRET}
@@ -133,14 +142,13 @@ services:
       iamRole: ${iamRole:-dev_control_panel_api}
 
   frontend_eks:
+    network_mode: host
     # Apologies to future devops. Naming is hard.
     image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     build:
       context: .
-      network: ${NETWORK:-default}
       dockerfile: Dockerfile_EKS
-    network_mode: ${NETWORK:-default}
-    ports: ["8000:8000"]
+    # ports: ["8000:8000"]
     depends_on:
       worker:
         condition: service_started
@@ -167,7 +175,7 @@ services:
       AWS_REGION: ${AWS_REGION:-eu-west-1}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
-      DB_HOST: "db"
+      DB_HOST: "localhost"
       DB_NAME: controlpanel
       DB_PASSWORD: password
       DB_PORT: 5432
@@ -196,7 +204,7 @@ services:
       OIDC_OP_USER_ENDPOINT: ${OIDC_OP_USER_ENDPOINT}
       OIDC_RP_SIGN_ALGO: "RS256"
       PYTHONUNBUFFERED: "1"
-      REDIS_HOST: "redis"
+      REDIS_HOST: "localhost"
       REDIS_PASSWORD: "controlpanel"
       RSTUDIO_AUTH_CLIENT_ID: ${RSTUDIO_AUTH_CLIENT_ID}
       RSTUDIO_AUTH_CLIENT_SECRET: ${RSTUDIO_AUTH_CLIENT_SECRET}
@@ -208,3 +216,7 @@ services:
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
       defaultRegion: eu-west-1
       iamRole: ${iamRole:-dev_control_panel_api}
+
+# networks:
+#   sillygemma:
+#     driver: external
