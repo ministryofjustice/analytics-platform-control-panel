@@ -8,15 +8,23 @@ services:
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     volumes: [
       ./controlpanel:/home/controlpanel/controlpanel,
-      ./tests:/home/controlpanel/tests
+      ./tests:/home/controlpanel/tests,
+      # ~/.minikube:/home/controlpanel/.minikube
     ]
+    network_mode: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   migration:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: "python manage.py migrate"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     stdin_open: true
     tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: ["python", "manage.py", "runworker", "background_tasks"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

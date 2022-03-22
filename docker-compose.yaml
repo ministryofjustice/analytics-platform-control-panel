@@ -65,7 +65,7 @@ services:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
-    ports: ["8000:8000"]
+    # ports: ["8000:8000"]
     depends_on:
       worker:
         condition: service_started
