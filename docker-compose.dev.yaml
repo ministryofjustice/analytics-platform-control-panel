@@ -9,9 +9,7 @@ services:
     volumes: [
       ./controlpanel:/home/controlpanel/controlpanel,
       ./tests:/home/controlpanel/tests,
-      # ~/.minikube:/home/controlpanel/.minikube
     ]
-    network_mode: host
     extra_hosts:
       - "host.docker.internal:host-gateway"
   migration:
