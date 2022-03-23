@@ -3,8 +3,9 @@ import subprocess
 from os import environ
 from typing import List
 
+from kubernetes import client, config
+
 from controlpanel.api.models import User
-from controlpanel.api.kubernetes import KubernetesClient
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -53,7 +54,9 @@ def user_selected_tool(username: str, toolname: str) -> str:
 @api_view()
 @permission_classes([AllowAny])
 def is_kube_connected_view(request):
-    k8s = KubernetesClient(use_cpanel_creds=True)
-    default_deployments = k8s.AppsV1Api.list_namespaced_deployment("default")
+    config.load_kube_config()
+
+    v1 = client.CoreV1Api()
+    services = v1.list_namespaced_service("default")
     # breakpoint()
-    return Response(default_deployments.to_dict())
+    return Response(services.to_dict())
