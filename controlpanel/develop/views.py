@@ -4,6 +4,7 @@ from os import environ
 from typing import List
 
 from controlpanel.api.models import User
+from controlpanel.api.kubernetes import KubernetesClient
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -52,6 +53,7 @@ def user_selected_tool(username: str, toolname: str) -> str:
 @api_view()
 @permission_classes([AllowAny])
 def is_kube_connected_view(request):
-    command = f"kubectl get svc -o json"
-    out, err = run_command(command)
-    return Response(json.loads(out))
+    k8s = KubernetesClient(use_cpanel_creds=True)
+    default_deployments = k8s.AppsV1Api.list_namespaced_deployment("default")
+    # breakpoint()
+    return Response(default_deployments.to_dict())
