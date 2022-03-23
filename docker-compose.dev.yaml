@@ -1,6 +1,16 @@
 version: "3"
 
 services:
+  frontend_eks:
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    stdin_open: true
+    tty: true
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes: [
+      ./controlpanel:/home/controlpanel/controlpanel,
+      ./tests:/home/controlpanel/tests,
+    ]
+
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     stdin_open: true
