@@ -16,7 +16,7 @@ urlpatterns = [
     path("metrics", exports.ExportToDjangoView, name="prometheus-django-metrics"),
 ]
 
-if "controlpanel.develop" in settings.INSTALLED_APPS:
+if "controlpanel.develop" in settings.INSTALLED_APPS and settings.DEBUG:
     urlpatterns += [
         path("develop/", include('controlpanel.develop.urls')),
     ]

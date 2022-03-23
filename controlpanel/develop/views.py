@@ -8,11 +8,15 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 def run_command(command, *args):
         env = environ.copy()
+        bits = command.split()
+        command = bits[0]
+        args = bits[1:]
         output = subprocess.Popen(
             [command, *args],
             stderr=subprocess.PIPE,
@@ -46,10 +50,8 @@ def user_selected_tool(username: str, toolname: str) -> str:
 
 # @login_required()
 @api_view()
-def develop_index(request):
-    raw_cmd = f"kubectl get pods -A -o json"
-    raw_bits = raw_cmd.split()
-    command = raw_bits[0]
-    args = raw_bits[1:]
-    out, err = run_command(command, *args)
+@permission_classes([AllowAny])
+def is_kube_connected_view(request):
+    command = f"kubectl get svc -o json"
+    out, err = run_command(command)
     return Response(json.loads(out))
