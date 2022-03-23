@@ -1,5 +1,9 @@
 all: help
 
+## docker-login: Authenticate docker with ECR
+docker-login:
+	aws-vault exec admin-data -- aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin $(REGISTRY)
+
 ## dev-prepare-up: Run migration before doing up
 dev-prepare-up:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
