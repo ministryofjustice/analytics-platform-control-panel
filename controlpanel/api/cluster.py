@@ -60,19 +60,19 @@ class User:
                     f"Username={self.user.slug}"
                 ),
             )
-            helm.upgrade_release(
-                f"provision-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/provision-user",  # chart
-                f"--namespace={self.k8s_namespace}",
-                f"--set="
-                + (
-                    f"Username={self.user.slug},"
-                    f"Efsvolume={settings.EFS_VOLUME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                ),
-            )
+            # helm.upgrade_release(
+            #     f"provision-user-{self.user.slug}",  # release
+            #     f"{settings.HELM_REPO}/provision-user",  # chart
+            #     f"--namespace={self.k8s_namespace}",
+            #     f"--set="
+            #     + (
+            #         f"Username={self.user.slug},"
+            #         f"Efsvolume={settings.EFS_VOLUME},"
+            #         f"OidcDomain={settings.OIDC_DOMAIN},"
+            #         f"Email={self.user.email},"
+            #         f"Fullname={self.user.name},"
+            #     ),
+            # )
         else:
             helm.upgrade_release(
                 f"init-user-{self.user.slug}",  # release
@@ -485,6 +485,7 @@ class ToolDeployment:
         k8s = KubernetesClient(id_token=id_token)
         results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
         for deployment in results.items:
+            # breakpoint()
             app_name = deployment.metadata.labels["app"]
             _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
             if search_name and search_name not in app_name:
