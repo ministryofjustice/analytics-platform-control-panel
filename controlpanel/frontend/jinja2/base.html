@@ -125,6 +125,12 @@
         "admin": request.user.is_superuser,
       },
       {
+        "text": "Training",
+        "href": "https://moj-analytical-services.github.io/ap-tools-training/",
+        "active": page_name == "training",
+        "attributes": [["target", "_blank"]]
+      },
+      {
         "text": "Help",
         "href": url("help"),
         "active": page_name == "help",
