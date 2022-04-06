@@ -20,7 +20,7 @@ ENABLED = {
 ENV = os.environ.get("ENV", "dev")
 
 # Flag to indicate if running on an EKS cluster.
-EKS = bool(os.environ.get("EKS", False))
+EKS = True
 
 # -- Paths
 

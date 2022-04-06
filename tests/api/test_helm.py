@@ -115,17 +115,10 @@ def test_get_repo_path():
     """
     assert helm.get_repo_path() == os.path.join(
         helm.HELM_HOME,
-        "repository",
         "cache",
+        "repository",
         f"{settings.HELM_REPO}-index.yaml",
     )
-    with patch("controlpanel.api.helm.settings.EKS", True):
-        assert helm.get_repo_path() == os.path.join(
-            helm.HELM_HOME,
-            "cache",
-            "repository",
-            f"{settings.HELM_REPO}-index.yaml",
-        )
 
 
 def test_execute_ignores_debug():
