@@ -106,7 +106,7 @@ class User:
         releases.append(f"init-user-{self.user.slug}")
         releases.append(f"bootstrap-user-{self.user.slug}")
         releases.append(f"provision-user-{self.user.slug}")
-        helm.delete_eks(self.k8s_namespace, *releases)
+        helm.delete(self.k8s_namespace, *releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -367,7 +367,7 @@ class ToolDeployment:
             # that needs deleting.
             old_release_name = f"{self.old_chart_name}-{self.user.slug}"
         if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-            helm.delete_eks(self.k8s_namespace, old_release_name)
+            helm.delete(self.k8s_namespace, old_release_name)
 
     def _set_values(self, **kwargs):
         """
@@ -421,7 +421,7 @@ class ToolDeployment:
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
+        helm.delete(self.k8s_namespace, deployment.metadata.name)
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

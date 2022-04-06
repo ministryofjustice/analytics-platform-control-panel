@@ -191,7 +191,7 @@ def test_create_app_role(iam, app):
     assert k8s_assume_role(pd['Statement'][1])
 
 
-def test_create_user_role_EKS(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, users):
+def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, users):
     """
     Ensure EKS settngs are in the policy document when running on that
     infrastructure.

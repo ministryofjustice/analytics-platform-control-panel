@@ -62,7 +62,7 @@ def test_reset_home(helm, users):
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
-def test_delete_eks(aws, helm, users):
+def test_delete(aws, helm, users):
     """
     Delete with Helm 3.
     """
@@ -71,7 +71,7 @@ def test_delete_eks(aws, helm, users):
     cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete_eks.assert_called_once_with(
+    helm.delete.assert_called_once_with(
         user.k8s_namespace,
         "chart-release",
         f"init-user-{user.slug}",
@@ -80,7 +80,7 @@ def test_delete_eks(aws, helm, users):
     )
 
 
-def test_delete_eks_with_no_releases(aws, helm, users):
+def test_delete_with_no_releases(aws, helm, users):
     """
     If there are no releases associated with the user, don't try to delete with
     an empty list of releases. Helm 3 version.
@@ -90,7 +90,7 @@ def test_delete_eks_with_no_releases(aws, helm, users):
     cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete_eks.assert_called_once_with(
+    helm.delete.assert_called_once_with(
         user.k8s_namespace,
         f"init-user-{user.slug}",
         f"bootstrap-user-{user.slug}",
@@ -110,7 +110,7 @@ def test_on_authenticate(helm, users):
     user._init_user.assert_called_once_with()
 
 
-def test_on_authenticate_eks_completely_new_user(helm, users):
+def test_on_authenticate_completely_new_user(helm, users):
     """
     On EKS, if a completely (non-migrating) user is encountered, the expected
     user initialisation takes place.
@@ -126,7 +126,7 @@ def test_on_authenticate_eks_completely_new_user(helm, users):
     assert updated_user_model.migration_state == User.COMPLETE
 
 
-def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
+def test_on_authenticate_migrating_existing_user(aws, helm, users):
     """
     On EKS, if a migrating user is encountered, the expected user
     initialisation takes place.
@@ -145,7 +145,7 @@ def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
     assert updated_user_model.migration_state == User.COMPLETE
 
 
-def test_on_authenticate_eks_migrated_user(aws, helm, users):
+def test_on_authenticate_migrated_user(aws, helm, users):
     """
     On EKS, if a migrated user logs in, they are NOT re-migrated by accident.
     """
@@ -164,7 +164,7 @@ def test_on_authenticate_eks_migrated_user(aws, helm, users):
     assert helm.delete.call_count == 0
 
 
-def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
+def test_on_authenticate_migrated_user_missing_charts(aws, helm, users):
     """
     On EKS, if a migrated user logs in, and they are missing their charts,
     these are recreated.

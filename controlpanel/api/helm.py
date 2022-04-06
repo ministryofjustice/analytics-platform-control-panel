@@ -159,7 +159,7 @@ def upgrade_release(release, chart, *args):
     )
 
 
-def delete_eks(namespace, *args):
+def delete(namespace, *args):
     """
     Delete helm charts identified by the content of the args list in the
     referenced namespace. Helm 3 version.
@@ -180,22 +180,6 @@ def delete_eks(namespace, *args):
         "--namespace",
         namespace,
         timeout=settings.HELM_DELETE_TIMEOUT,
-    )
-    stdout = proc.stdout.read()
-    log.info(stdout)
-
-
-def delete(*args):
-    """
-    Delete helm charts identified by the content of the args list. Helm 2
-    version.
-
-    Logs the stdout result of the command.
-    """
-    proc = _execute(
-        "delete",
-        "--purge",
-        *args
     )
     stdout = proc.stdout.read()
     log.info(stdout)
