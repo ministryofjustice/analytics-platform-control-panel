@@ -51,43 +51,27 @@ class User:
         return f"{settings.ENV}_user_{self.user.username.lower()}"
 
     def _init_user(self):
-        if settings.EKS:
-            helm.upgrade_release(
-                f"bootstrap-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/bootstrap-user",  # chart
-                f"--set="
-                + (
-                    f"Username={self.user.slug}"
-                ),
-            )
-            helm.upgrade_release(
-                f"provision-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/provision-user",  # chart
-                f"--namespace={self.k8s_namespace}",
-                f"--set="
-                + (
-                    f"Username={self.user.slug},"
-                    f"Efsvolume={settings.EFS_VOLUME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                ),
-            )
-        else:
-            helm.upgrade_release(
-                f"init-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/init-user",  # chart
-                f"--set="
-                + (
-                    f"Env={settings.ENV},"
-                    f"NFSHostname={settings.NFS_HOSTNAME},"
-                    f"EFSHostname={settings.EFS_HOSTNAME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                    f"Username={self.user.slug}"
-                ),
-            )
+        helm.upgrade_release(
+            f"bootstrap-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/bootstrap-user",  # chart
+            f"--set="
+            + (
+                f"Username={self.user.slug}"
+            ),
+        )
+        helm.upgrade_release(
+            f"provision-user-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/provision-user",  # chart
+            f"--namespace={self.k8s_namespace}",
+            f"--set="
+            + (
+                f"Username={self.user.slug},"
+                f"Efsvolume={settings.EFS_VOLUME},"
+                f"OidcDomain={settings.OIDC_DOMAIN},"
+                f"Email={self.user.email},"
+                f"Fullname={self.user.name},"
+            ),
+        )
 
     def create(self):
         aws.create_user_role(self.user)
@@ -105,23 +89,15 @@ class User:
         """
         Reset the user's home directory.
         """
-        if settings.EKS:
-            # On the new EKS infrastructure, the user's home directory[s] is
-            # organised differently and on EFS. This is why we use a separate
-            # helm chart.
-            helm.upgrade_release(
-                f"reset-user-efs-home-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/reset-user-efs-home",  # chart
-                f"--namespace=user-{self.user.slug}",
-                f"--set=Username={self.user.slug}",
-            )
-        else:
-            helm.upgrade_release(
-                f"reset-user-home-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/reset-user-home",  # chart
-                f"--namespace=user-{self.user.slug}",
-                f"--set=Username={self.user.slug}",
-            )
+        # On the new EKS infrastructure, the user's home directory[s] is
+        # organised differently and on EFS. This is why we use a separate
+        # helm chart.
+        helm.upgrade_release(
+            f"reset-user-efs-home-{self.user.slug}",  # release
+            f"{settings.HELM_REPO}/reset-user-efs-home",  # chart
+            f"--namespace=user-{self.user.slug}",
+            f"--set=Username={self.user.slug}",
+        )
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
@@ -130,10 +106,7 @@ class User:
         releases.append(f"init-user-{self.user.slug}")
         releases.append(f"bootstrap-user-{self.user.slug}")
         releases.append(f"provision-user-{self.user.slug}")
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, *releases)
-        else:
-            helm.delete(*releases)
+        helm.delete_eks(self.k8s_namespace, *releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -155,15 +128,6 @@ class User:
         bootstrap_chart_name = f"bootstrap-user-{self.user.slug}"
         provision_chart_name = f"provision-user-{self.user.slug}"
         releases = set(helm.list_releases(namespace=self.k8s_namespace))
-
-        if not settings.EKS:
-            # On the old infrastructure...
-            if init_chart_name not in releases:
-                # The user has their charts deleted, so recreate.
-                log.warning(f"Re-running init user chart for {self.user.slug}")
-                self._init_user()
-
-            return
 
         # On the new cluster, check if the bootstrap/provision helm
         # charts exist. If not, this is the user's first login to the new
@@ -394,21 +358,16 @@ class ToolDeployment:
         We can remove this once every user is on new naming
         scheme for RStudio.
         """
-        if settings.EKS:
-            old_release_name = f"{self.chart_name}-{self.user.slug}"
-            if self.old_chart_name:
-                # If an old_chart_name has been passed into the deployment, it
-                # means the currently deployed instance of the tool is from a
-                # different chart to the one for this tool. Therefore, it's
-                # the old_chart_name that we should use for the old release
-                # that needs deleting.
-                old_release_name = f"{self.old_chart_name}-{self.user.slug}"
-            if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-                helm.delete_eks(self.k8s_namespace, old_release_name)
-        else:
-            old_release_name = f"{self.user.slug}-{self.chart_name}"
-            if old_release_name in helm.list_releases(old_release_name):
-                helm.delete(old_release_name)
+        old_release_name = f"{self.chart_name}-{self.user.slug}"
+        if self.old_chart_name:
+            # If an old_chart_name has been passed into the deployment, it
+            # means the currently deployed instance of the tool is from a
+            # different chart to the one for this tool. Therefore, it's
+            # the old_chart_name that we should use for the old release
+            # that needs deleting.
+            old_release_name = f"{self.old_chart_name}-{self.user.slug}"
+        if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
+            helm.delete_eks(self.k8s_namespace, old_release_name)
 
     def _set_values(self, **kwargs):
         """
@@ -462,13 +421,7 @@ class ToolDeployment:
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
-        else:
-            helm.delete(
-                deployment.metadata.name,
-                f"--namespace={self.k8s_namespace}"
-            )
+        helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

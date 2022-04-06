@@ -28,14 +28,6 @@ def test_app_delete(aws, app, authz, helm):
     authz.delete_group.assert_called_with(group_name=app.slug)
 
 
-def test_app_delete_eks(aws, app, authz, helm):
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        cluster.App(app).delete()
-
-    aws.delete_role.assert_called_with(app.iam_role_name)
-    authz.delete_group.assert_called_with(group_name=app.slug)
-
-
 mock_ingress = MagicMock(name="Ingress")
 mock_ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
 

@@ -39,10 +39,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         * The current user is in the beta tester group for the tool.
         """
-        if settings.EKS:
-            qs = Tool.objects.filter(target_infrastructure=Tool.EKS)
-        else:
-            qs = Tool.objects.filter(target_infrastructure=Tool.OLD)
+        qs = Tool.objects.filter(target_infrastructure=Tool.EKS)
         return qs.filter(
             Q(is_restricted=False) |
             Q(target_users=self.request.user.id)
@@ -108,7 +105,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         for tool in context["tools"]:
             chart_name = tool.chart_name
             # Work out which bucket the chart should be in (it'll be one of
-            # those defined in 
+            # those defined in
             tool_bucket = ""
             for key, bucket_name in tool_chart_lookup.items():
                 if key in chart_name:
@@ -154,7 +151,7 @@ class DeployTool(OIDCLoginRequiredMixin, RedirectView):
         """
         # If there's already a tool deployed, we need to get this from a
         # hidden field posted back in the form. This is used by helm to delete
-        # the currently installed chart for the tool before installing the 
+        # the currently installed chart for the tool before installing the
         # new chart.
         old_chart_name = self.request.POST.get("deployed_chart_name", None)
         # The selected option from the "version" select control contains the

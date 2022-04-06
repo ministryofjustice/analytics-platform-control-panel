@@ -77,18 +77,16 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             if not user.auth0_id:
                 log.warning("User without Auth0 ID, {}, is admin for app: {}.".format(user, app))
 
-        context['EKS'] = settings.EKS
-        if settings.EKS:
-            # TODO: Fix this.
-            # THIS IS A TEMPORARY STICKING PLASTER
-            # During migration to EKS, just use the hard coded domain with the
-            # app's SLUG as the bottom subdomain.
-            # The reason for this change is apps will be hosted on our
-            # old infrastructure while users migrate to EKS. Once we have our
-            # app hosting story figured out, we should do this properly.
-            context["app_url"] = f"https://{ app.slug }.apps.alpha.mojanalytics.xyz"
-        else:
-            context["app_url"] = cluster.App(app).url
+        context['EKS'] = True
+        # TODO: Fix this.
+        # THIS IS A TEMPORARY STICKING PLASTER
+        # During migration to EKS, just use the hard coded domain with the
+        # app's SLUG as the bottom subdomain.
+        # The reason for this change is apps will be hosted on our
+        # old infrastructure while users migrate to EKS. Once we have our
+        # app hosting story figured out, we should do this properly.
+        context["app_url"] = f"https://{ app.slug }.apps.alpha.mojanalytics.xyz"
+
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
         ).exclude(
@@ -331,4 +329,3 @@ class RevokeAdmin(UpdateApp):
         userapp = get_object_or_404(UserApp, app=app, user=user)
         userapp.delete()
         messages.success(self.request, f"Revoked admin access for {user.name}")
-

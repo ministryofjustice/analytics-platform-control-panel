@@ -8,8 +8,8 @@ class LoginFail(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["environment"] = settings.ENV 
-        context["EKS"] = settings.EKS
+        context["environment"] = settings.ENV
+        context["EKS"] = True
         if self.request.user.is_authenticated and hasattr(self.request.user, "migration_state"):
             is_migrated = self.request.user.migration_state == User.COMPLETE
         else:
@@ -17,5 +17,5 @@ class LoginFail(TemplateView):
         # This flag denotes the user has migrated but is trying to log into the
         # old infrastructure. Used in the template to point them in the right
         # direction. ;-)
-        context["in_wrong_place"] = is_migrated and not settings.EKS
+        context["in_wrong_place"] = False
         return context

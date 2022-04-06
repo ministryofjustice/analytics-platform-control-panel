@@ -62,45 +62,13 @@ def test_reset_home(helm, users):
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
-def test_delete(aws, helm, users):
-    user = users['normal_user']
-    helm.list_releases.return_value = ["chart-release", ]
-    cluster.User(user).delete()
-
-    aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete.assert_called_once_with(
-        "chart-release",
-        f"init-user-{user.slug}",
-        f"bootstrap-user-{user.slug}",
-        f"provision-user-{user.slug}"
-    )
-
-
-def test_delete_with_no_releases(aws, helm, users):
-    """
-    If there are no releases associated with the user, don't try to delete with
-    an empty list of releases.
-    """
-    user = users['normal_user']
-    helm.list_releases.return_value = []
-    cluster.User(user).delete()
-
-    aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete.assert_called_once_with(
-        f"init-user-{user.slug}",
-        f"bootstrap-user-{user.slug}",
-        f"provision-user-{user.slug}"
-    )
-
-
 def test_delete_eks(aws, helm, users):
     """
     Delete with Helm 3.
     """
     user = users['normal_user']
     helm.list_releases.return_value = ["chart-release", ]
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        cluster.User(user).delete()
+    cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
     helm.delete_eks.assert_called_once_with(
@@ -119,8 +87,7 @@ def test_delete_eks_with_no_releases(aws, helm, users):
     """
     user = users['normal_user']
     helm.list_releases.return_value = []
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        cluster.User(user).delete()
+    cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
     helm.delete_eks.assert_called_once_with(
@@ -150,12 +117,12 @@ def test_on_authenticate_eks_completely_new_user(helm, users):
     """
     user_model = users['normal_user']
     user_model.migration_state = User.VOID
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        user._init_user.assert_called_once_with()
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    user._init_user.assert_called_once_with()
     updated_user_model = User.objects.get(username="bob")
+
     assert updated_user_model.migration_state == User.COMPLETE
 
 
@@ -168,12 +135,11 @@ def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
     user_model.migration_state = User.PENDING  # the user is ready to migrate.
     init_helm_chart = f"init-user-{user_model.slug}"
 
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        user._init_user.assert_called_once_with()
-        aws.migrate_user_role.assert_called_once_with(user_model)
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    user._init_user.assert_called_once_with()
+    aws.migrate_user_role.assert_called_once_with(user_model)
 
     updated_user_model = User.objects.get(username="bob")
     assert updated_user_model.migration_state == User.COMPLETE
@@ -189,13 +155,13 @@ def test_on_authenticate_eks_migrated_user(aws, helm, users):
         f"bootstrap-user-{user_model.slug}",
         f"provision-user-{user_model.slug}",
     ]
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        assert user._init_user.call_count == 0
-        assert aws.migrate_user_role.call_count == 0
-        assert helm.delete.call_count == 0
+
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    assert user._init_user.call_count == 0
+    assert aws.migrate_user_role.call_count == 0
+    assert helm.delete.call_count == 0
 
 
 def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
@@ -206,12 +172,12 @@ def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
     user_model = users['normal_user']
     user_model.migration_state = User.COMPLETE # the user is migrated.
     helm.list_releases.return_value = []
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        # The charts are recreated.
-        assert user._init_user.call_count == 1
-        # But other "migration" related events don't happen.
-        assert aws.migrate_user_role.call_count == 0
-        assert helm.delete.call_count == 0
+
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    # The charts are recreated.
+    assert user._init_user.call_count == 1
+    # But other "migration" related events don't happen.
+    assert aws.migrate_user_role.call_count == 0
+    assert helm.delete.call_count == 0

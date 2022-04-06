@@ -109,23 +109,14 @@ def test_helm_upgrade_release():
 
 def test_get_repo_path():
     """
-    The repo path is different depend on if we're running on EKS or the old
-    infrastructure. This test ensures that the right repo path is used
-    depending on the state of the settings.EKS flag.
+    This test ensures that the right repo path is used.
     """
     assert helm.get_repo_path() == os.path.join(
         helm.HELM_HOME,
-        "repository",
         "cache",
+        "repository",
         f"{settings.HELM_REPO}-index.yaml",
     )
-    with patch("controlpanel.api.helm.settings.EKS", True):
-        assert helm.get_repo_path() == os.path.join(
-            helm.HELM_HOME,
-            "cache",
-            "repository",
-            f"{settings.HELM_REPO}-index.yaml",
-        )
 
 
 def test_execute_ignores_debug():

@@ -57,11 +57,7 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
                 authenticated_user.PENDING,
                 authenticated_user.REVERTED,
             ]
-            if not settings.EKS:
-                # Running on the old (non-EKS) infra.
-                if authenticated_user.migration_state not in valid_old_infra_states:
-                    # If the user has migrated, don't allow them to log in.
-                    return None
+
             # Calling the authentication event will ensure the user is
             # correctly set up for the current infrastructure (including the
             # process of migrating the user from the old infra -> EKS).

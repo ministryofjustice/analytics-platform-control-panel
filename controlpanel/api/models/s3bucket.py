@@ -11,18 +11,14 @@ from controlpanel.api.models.users3bucket import UserS3Bucket
 
 
 def s3bucket_console_url(name):
-    # TODO - remove hardcoded mojanalytics.xyz URL
     env = settings.ENV
     region = settings.BUCKET_REGION
     args = urlencode({
         "destination": f"/s3/buckets/{name}/?region={region}&tab=overview",
     })
-    address = f"https://aws.services.{env}.mojanalytics.xyz"
-    if settings.EKS:
-        if env == "dev":
-            address = f"https://aws.services.{env}.analytical-platform.service.justice.gov.uk"
-        else:
-            address = "https://aws.services.analytical-platform.service.justice.gov.uk"
+    address = f"https://aws.services.analytical-platform.service.justice.gov.uk"
+    if env == "dev":
+        address = f"https://aws.services.{env}.analytical-platform.service.justice.gov.uk"
     return f"{address}/?{args}"
 
 

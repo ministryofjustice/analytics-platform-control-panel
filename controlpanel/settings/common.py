@@ -19,8 +19,10 @@ ENABLED = {
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
 
-# Flag to indicate if running on an EKS cluster.
-EKS = bool(os.environ.get("EKS", False))
+# Flag to indicate if running on an EKS cluster. This was primarily used for the 2021/2022
+# migration from KOPS to EKS to ensure we could isolate behaviours that should have been
+# different because of the cluster setup.
+EKS = True
 
 # -- Paths
 
