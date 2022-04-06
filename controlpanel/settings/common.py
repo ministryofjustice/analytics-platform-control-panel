@@ -87,10 +87,6 @@ INSTALLED_APPS = [
     # Analytics Platform Control Panel CLI tools"
     "controlpanel.cli",
     # Health check
-    "health_check",
-    "health_check.db",
-    "health_check.cache",
-    "health_check.storage",
     "django_prometheus",
 ]
 

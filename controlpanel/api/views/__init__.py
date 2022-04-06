@@ -14,3 +14,6 @@ from controlpanel.api.views.models import (
 from controlpanel.api.views.tools import (
     ToolViewSet,
 )
+from controlpanel.api.views.health_check import (
+    health_check,
+)
