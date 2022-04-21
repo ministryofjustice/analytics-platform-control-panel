@@ -21,7 +21,7 @@ At this stage, we didn't intend to interact with the tool, so ingress wasn't nee
 
 ## Pre-getting started setup
 
-Currently this is based on also having ```tools-controller-poc``` setup
+Currently this is based on also having [`tools-controller-poc`](https://github.com/jasonBirchall/tools-controller-poc) setup
 
 ### Go versions warning
 You will currently need to use go 1.17
@@ -65,7 +65,7 @@ So to build and run
 make docker-login
 
 # Build the containers
-make build
+make eks
 
 # bring up in foreground
 aws-vault exec admin-dev -- make local-fg
@@ -102,7 +102,7 @@ In [2]: Tool.objects.update(target_infrastructure=Tool.EKS)
 
 ![Tools page](./doc/images/all-the-tools.png "The tools you were missing")
 
-Now reload the page you'll see some shiny tools
+Now reload the page you'll see some shiny tools (you might need to restart the server).
 
 _N.B. these are archaic versions of the tools and should in no way be expected to work, even if deployment was working_
 
