@@ -15,11 +15,11 @@ export
 clean:
 	docker-compose down --volumes --remove-orphans
 
-build:
-	@docker-compose build frontend
+# build:
+# 	@docker-compose build frontend
 
 eks:
-	@docker-compose build frontend_eks
+	@docker-compose build frontend
 
 test-python: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-python:
@@ -45,10 +45,10 @@ enter:
 	docker-compose run --rm --no-deps --entrypoint sh worker
 logs:
 	@docker-compose logs -f
-push:
-	docker-compose push frontend
+# push:
+# 	docker-compose push frontend
 push_eks:
-	docker-compose push frontend_eks
+	docker-compose push frontend
 
 help: Makefile
 	@echo
