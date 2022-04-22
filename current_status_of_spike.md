@@ -1,6 +1,6 @@
 # ANPL-857 removal of dependency on external cluster
 
-The aim was to use a local kind cluster, instead of using dev-kops (or now dev-eks).
+The aim was to use a local [kind](https://kind.sigs.k8s.io/) cluster, instead of using dev-kops (or now dev-eks).
 
 ## What we wanted to achieve
 
