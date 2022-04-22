@@ -3,6 +3,14 @@ import subprocess
 from os import environ
 from typing import List
 
+from kubernetes import client, config
+
+from controlpanel.api.kubernetes import get_config
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
 from controlpanel.api.models import User
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -66,3 +74,15 @@ def develop_index(request):
             "installed_tools": installed_tools(request.user),
         },
     )
+
+
+@api_view()
+@permission_classes([AllowAny])
+def is_kube_connected_view(request):
+    get_config()
+    # config.load_kube_config()
+
+    v1 = client.CoreV1Api()
+    services = v1.list_namespaced_service("default")
+    breakpoint()
+    return Response(services.to_dict()) 
