@@ -37,6 +37,7 @@ services:
       PYTHONUNBUFFERED: "1"
       SLACK_API_TOKEN: "dummy"
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EKS: "True"
     command: sh -c "./manage.py migrate"
 
   worker:
@@ -60,6 +61,7 @@ services:
       DB_PORT: 5432
       DB_USER: controlpanel
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EKS: "True"
       ENV: "dev"
       OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
       PYTHONUNBUFFERED: "1"
@@ -107,6 +109,7 @@ services:
       DB_USER: controlpanel
       DEBUG: "True"
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EKS: "True"
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
