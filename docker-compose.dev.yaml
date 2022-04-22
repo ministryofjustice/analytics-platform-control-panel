@@ -7,6 +7,8 @@ services:
       context: .
       network: ${NETWORK:-default}
       dockerfile: Dockerfile_EKS
+    environment:
+      EKS_CLUSTER: ${DEV_CLUSTER}
     stdin_open: true
     tty: true
     # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -16,7 +18,7 @@ services:
       ./tests:/home/controlpanel/tests
     ]
   migration:
-    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
       network: ${NETWORK:-default}
@@ -24,7 +26,7 @@ services:
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: "python manage.py migrate"
   worker:
-    # image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
       network: ${NETWORK:-default}
