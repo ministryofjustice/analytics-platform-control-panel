@@ -5,7 +5,7 @@ all: help
 
 ## docker-login: Authenticate docker with ECR
 docker-login:
-	aws-vault exec admin-data -- aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin $(REGISTRY)
+	aws-vault exec $(AWS_ACCOUNT) -- aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin $(REGISTRY)
 
 ## build-local: Authenticate and build
 build-local:docker-login build
@@ -21,7 +21,7 @@ dev-daemon: dev-prepare-up
 
 ## dev-fg: Startup with docker process in foreground
 dev-fg: dev-prepare-up
-	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
+	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
 
 # dev-eks:       - exec
 #       - admin-dev
@@ -44,11 +44,11 @@ dev-attach:
 
 ## dev-py: Start django shell (in the dev-packages context) in new container
 dev-py:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python manage.py shell"
+	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python manage.py shell"
 
 ## dev-run: Start shell in new copy of container
 dev-run:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend bash
+	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend bash
 
 ## dev-exec: Exec into shell of existing container
 dev-exec:

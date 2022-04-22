@@ -60,6 +60,8 @@ RUN python3 -m venv --system-site-packages dev-packages \
     && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
 
+# RUN echo "I AM A CHEESEBURGER!"
+
 RUN apt-get update
 RUN apt-get install -y curl ca-certificates apt-transport-https gnupg
 RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -70,8 +72,8 @@ RUN apt-get install -y kubectl
 RUN apt-get install -y awscli
 
 # RUN apt-get install -y aws-iam-authenticator
-COPY scripts/startup_dev.sh ./startup_dev.sh
-COPY scripts/replace_aws_iam_command.py ./replace_aws_iam_command.py
+COPY scripts/startup_dev.sh ./
+COPY scripts/replace_aws_iam_command.py ./
 RUN chmod +x ./startup_dev.sh
 
 USER controlpanel
