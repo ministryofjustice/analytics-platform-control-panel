@@ -72,9 +72,9 @@ RUN apt-get install -y kubectl
 RUN apt-get install -y awscli
 
 # RUN apt-get install -y aws-iam-authenticator
-COPY scripts/startup_dev.sh ./
+COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/startup_dev_worker.sh ./
 COPY scripts/replace_aws_iam_command.py ./
-RUN chmod +x ./startup_dev.sh
+RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh
 
 USER controlpanel
 COPY controlpanel controlpanel

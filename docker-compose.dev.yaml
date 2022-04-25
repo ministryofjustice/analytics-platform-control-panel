@@ -7,12 +7,11 @@ services:
       context: .
       network: ${NETWORK:-default}
       dockerfile: Dockerfile_EKS
-    environment:
-      EKS_CLUSTER: ${DEV_CLUSTER}
+
     stdin_open: true
     tty: true
     # command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-    command: ["./startup_dev.sh"]
+    command: ["./startup_dev_frontend.sh"]
     volumes: [
       ./controlpanel:/home/controlpanel/controlpanel,
       ./tests:/home/controlpanel/tests
@@ -24,7 +23,7 @@ services:
       network: ${NETWORK:-default}
       dockerfile: Dockerfile_EKS
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
-    command: "python manage.py migrate"
+    command: ["./startup_dev_migration.sh"]
   worker:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
@@ -34,4 +33,4 @@ services:
     stdin_open: true
     tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
-    command: ["python", "manage.py", "runworker", "background_tasks"]
+    command: ["./startup_dev_worker.sh"]
