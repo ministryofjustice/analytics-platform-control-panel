@@ -85,7 +85,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         user = self.request.user
         id_token = user.get_id_token()
-
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
 
