@@ -19,6 +19,10 @@ dev-prepare-up:
 dev-daemon: dev-prepare-up
 	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
+## dev-worker-logs: Tail the worker container logs
+dev-worker-logs: 
+	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml logs -f worker
+
 ## dev-fg: Startup with docker process in foreground
 dev-fg: dev-prepare-up
 	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
