@@ -46,6 +46,10 @@ dev-debug: clean dev-daemon
 dev-attach:
 	docker attach $(shell sh -c "docker-compose ps -q frontend")
 
+## dev-worker-attach: Attach to existing running worker docker process for purposes of debugging
+dev-worker-attach:
+	docker attach $(shell sh -c "docker-compose ps -q worker")
+
 ## dev-py: Start django shell (in the dev-packages context) in new container
 dev-py:
 	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python manage.py shell"
