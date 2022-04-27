@@ -13,11 +13,11 @@ build-local:docker-login build
 
 ## dev-prepare-up: Run migration before doing up
 dev-prepare-up:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
+	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
 
 ## dev-daemon: Startup with docker process in background (to stop afterwards use make clean)
 dev-daemon: dev-prepare-up
-	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
+	aws-vault exec $(AWS_ACCOUNT) -- docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
 ## dev-worker-logs: Tail the worker container logs
 dev-worker-logs: 
