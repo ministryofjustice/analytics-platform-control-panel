@@ -28,16 +28,30 @@ services:
       db:
         condition: service_healthy
     environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}
+      AWS_COMPUTE_ACCOUNT_ID: ${AWS_COMPUTE_ACCOUNT_ID}
+      AWS_DATA_ACCOUNT_ID: ${AWS_DATA_ACCOUNT_ID}
+      AWS_DEFAULT_REGION:
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       DB_HOST: "db"
       DB_NAME: "controlpanel"
       DB_PASSWORD: "password"
       DB_PORT: 5432
       DB_USER: "controlpanel"
       DEBUG: "True"
-      PYTHONUNBUFFERED: "1"
-      SLACK_API_TOKEN: "dummy"
+      defaultRegion: eu-west-1
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       EKS: "True"
+      ENV: "dev"
+      EKS_CLUSTER: ${DEV_CLUSTER}
+      iamRole: ${iamRole:-dev_control_panel_api}
+      OIDC_EKS_PROVIDER: ${OIDC_EKS_PROVIDER}
+      PYTHONUNBUFFERED: "1"
+      SLACK_API_TOKEN: "dummy"
+      SLACK_CHANNEL: ${SLACK_CHANNEL}
     command: sh -c "./manage.py migrate"
 
   worker:
@@ -68,13 +82,16 @@ services:
       DB_PASSWORD: password
       DB_PORT: 5432
       DB_USER: controlpanel
+      defaultRegion: eu-west-1
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
       EKS: "True"
       ENV: "dev"
       EKS_CLUSTER: ${DEV_CLUSTER}
+      iamRole: ${iamRole:-dev_control_panel_api}
       OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      OIDC_EKS_PROVIDER: ${OIDC_EKS_PROVIDER}
       OIDC_DOMAIN: dev-analytics-moj.eu.auth0.com
       OIDC_OP_AUTHORIZATION_ENDPOINT: ${OIDC_OP_AUTHORIZATION_ENDPOINT}
       OIDC_OP_JWKS_ENDPOINT: ${OIDC_OP_JWKS_ENDPOINT}
@@ -86,8 +103,7 @@ services:
       REDIS_PASSWORD: "controlpanel"
       SECRET_KEY: "1234567890"
       SLACK_API_TOKEN: "dummy"
-      defaultRegion: eu-west-1
-      iamRole: ${iamRole:-dev_control_panel_api}
+      SLACK_CHANNEL: ${SLACK_CHANNEL}
       TOOLS_DOMAIN: ${TOOLS_DOMAIN:-tools.dev.analytical-platform.service.justice.gov.uk}
 
   frontend:
@@ -140,7 +156,6 @@ services:
       K8S_WORKER_ROLE_NAME: ${K8S_WORKER_ROLE_NAME}
       LOGS_BUCKET_NAME: ${LOGS_BUCKET_NAME}
       NFS_HOSTNAME: ${NFS_HOSTNAME}
-      EFS_HOSTNAME: ${EFS_HOSTNAME}
       OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
