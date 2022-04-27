@@ -1,17 +1,30 @@
-Title the PR to complete the sentence: "Merging this PR will ..."
+<!-- The title of this PR should complete the sentence: “Merging this PR will ...” -->
 
-## What
+## :memo: Summary
+This PR closes/completes/contributes to issue #ANPL-...
+<!-- Adding the issue number above will automatically link it to our Jira board -->
 
-Describe what you have changed and *why*
+This PR ...
+<!-- Give a brief description here. 
+What changes have you made?
+Is it a version bump, bugfix, documentation, major change, something else? -->
 
-## How to review
+The changes in this PR are needed because ...
+<!-- Why should this PR be merged? -->
 
-1. Describe the steps required to test the changes
-2. ???
-3. Profit!
+Merging this PR will have the following side-effects:
+- <!-- Users who could previously could only do Y will now also be able to do Z -->
 
-Provide [http://example.com](links) to relevant tickets, articles or other
-resources.
+## :mag: What should the reviewer concentrate on?
+- <!-- Quick check only (for e.g. version bump) -->
+- <!-- Feedback on specific parts of the code -->
+- <!-- Check side effects, if any -->
 
-Note the Trello Github integration links tickets to PRs/branches/commits (in
-both directions).
+## :technologist: How should the reviewer test these changes?
+- <!-- Give a step-by-step guide here -->
+
+## :books: Documentation status
+<!-- If documentation is left until later, you must explain why and create a ticket for it -->
+- [ ] No changes to the documentation are required
+- [ ] This PR includes all relevant documentation
+- [ ] Documentation will be added in the future because ... (see #ANPL-...)
