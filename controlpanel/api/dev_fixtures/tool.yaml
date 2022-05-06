@@ -1,7 +1,7 @@
 - model: api.tool
   fields: 
-    created: 2022-01-01
-    modified: 2022-01-01
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
     description: RStudio
     chart_name: rstudio
     name: RStudio
@@ -18,8 +18,8 @@
     target_users: []
 - model: api.tool
   fields: 
-    created: 2022-01-01
-    modified: 2022-01-01
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
     description: A different RStudio
     chart_name: rstudio
     name: RStudio
@@ -36,8 +36,8 @@
     target_users: []
 - model: api.tool
   fields: 
-    created: 2022-01-01
-    modified: 2022-01-01
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
     description: Jupyter Lab Data Science (Tunnel Support)
     chart_name: jupyter-lab-datascience-notebook
     name: jupyter-lab
