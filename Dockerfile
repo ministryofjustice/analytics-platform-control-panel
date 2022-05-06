@@ -5,7 +5,7 @@ COPY jest.config.js controlpanel/frontend/static /src/
 RUN npm install
 RUN mkdir -p dist &&\
   ./node_modules/.bin/babel src/module-loader.js src/components src/javascripts -o dist/app.js -s
-RUN ./node_modules/.bin/node-sass --include-path ./node_modules/ -o dist/ --output-style compact src/app.scss
+RUN ./node_modules/.bin/sass --include-path ./node_modules/ -o dist/ --output-style compact src/app.scss
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
@@ -77,4 +77,3 @@ RUN touch .env
 RUN SLACK_API_TOKEN=dummy python3 manage.py collectstatic --noinput --ignore=*.scss
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]
-

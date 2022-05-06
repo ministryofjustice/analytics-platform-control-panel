@@ -132,7 +132,7 @@ cp -R node_modules/jquery/dist/ static/jquery
   controlpanel/frontend/static/components \
   controlpanel/frontend/static/javascripts \
   -o static/app.js -s
-./node_modules/.bin/node-sass \
+./node_modules/.bin/sass \
   --include-path node_modules/ \
   -o static/ \
   --output-style compact \
@@ -341,7 +341,7 @@ labelled `user_id` (not working for me yet).
 In order to run the app you'll need various permissions set up for you in the
 wider infrastructure of the project. This is usually achieved via the
 `aws-vault` command (please
-[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)). 
+[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)).
 
 Also please follow the previous section of ```Local AWS Configuration``` to setup your local AWS data profile
 
