@@ -62,6 +62,9 @@ dev-run:
 dev-exec:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend bash
 
+dev-populate-tools:
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh -c ./scripts/load_dev_tools.sh
+
 test-wip: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-wip:
 	@echo
