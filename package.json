@@ -10,7 +10,8 @@
     "core-js": "^2.6.9",
     "govuk-frontend": "^3.0.0",
     "html5shiv": "^3.7.3",
-    "jquery": "^3.5.0"
+    "jquery": "^3.5.0",
+    "sass": "^1.51.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
