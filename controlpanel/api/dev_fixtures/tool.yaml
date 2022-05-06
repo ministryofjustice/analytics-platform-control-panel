@@ -1,0 +1,55 @@
+- model: api.tool
+  fields: 
+    created: 2022-01-01
+    modified: 2022-01-01
+    description: RStudio
+    chart_name: rstudio
+    name: RStudio
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 4.0.5
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
+- model: api.tool
+  fields: 
+    created: 2022-01-01
+    modified: 2022-01-01
+    description: A different RStudio
+    chart_name: rstudio
+    name: RStudio
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 4.1.2
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
+- model: api.tool
+  fields: 
+    created: 2022-01-01
+    modified: 2022-01-01
+    description: Jupyter Lab Data Science (Tunnel Support)
+    chart_name: jupyter-lab-datascience-notebook
+    name: jupyter-lab
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 3.0.14
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
+  
