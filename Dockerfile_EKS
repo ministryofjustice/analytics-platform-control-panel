@@ -5,7 +5,7 @@ COPY jest.config.js controlpanel/frontend/static /src/
 RUN npm install
 RUN mkdir -p dist &&\
   ./node_modules/.bin/babel src/module-loader.js src/components src/javascripts -o dist/app.js -s
-RUN ./node_modules/.bin/sass --include-path ./node_modules/ -o dist/ --output-style compact src/app.scss
+RUN ./node_modules/.bin/sass --load-path=node_modules/ --style=compressed src/app.scss:dist/app.css
 WORKDIR /src
 RUN /node_modules/.bin/jest
 

@@ -132,11 +132,7 @@ cp -R node_modules/jquery/dist/ static/jquery
   controlpanel/frontend/static/components \
   controlpanel/frontend/static/javascripts \
   -o static/app.js -s
-./node_modules/.bin/sass \
-  --include-path node_modules/ \
-  -o static/ \
-  --output-style compact \
-  controlpanel/frontend/static/app.scss
+./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
 ```
 
 Then run collectstatic:
