@@ -63,7 +63,7 @@ dev-exec:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend bash
 
 dev-populate-tools:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh -c ./scripts/load_dev_tools.sh
+	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh -c "dev-packages/bin/python prepare_dev_tools.py"
 
 test-wip: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-wip:
