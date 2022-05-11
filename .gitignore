@@ -22,5 +22,3 @@ __pycache__
 /.python-version
 /coverage/
 .idea/
-
-controlpanel/api/dev_fixtures/tool_configured.yaml
