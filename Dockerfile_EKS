@@ -76,7 +76,7 @@ COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/st
 COPY scripts/replace_aws_iam_command.py ./
 RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh
 
-COPY scripts/prepare_dev_tools.py ./
+COPY scripts/load_dev_tools.py ./
 
 USER controlpanel
 COPY controlpanel controlpanel
