@@ -1,15 +1,13 @@
-import structlog
 import secrets
 
+import structlog
+from controlpanel.api import auth0, aws, helm
+from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
+from controlpanel.api.kubernetes import KubernetesClient
+from controlpanel.utils import github_repository_name
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
-
-from controlpanel.api import auth0, aws
-from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
-from controlpanel.api import helm
-from controlpanel.api.kubernetes import KubernetesClient
-from controlpanel.utils import github_repository_name
 
 log = structlog.getLogger(__name__)
 
@@ -44,7 +42,7 @@ class User:
     def __init__(self, user):
         self.user = user
         self.k8s_namespace = f"user-{self.user.slug}"
-        self.eks_cpanel_namespace = "cpanel"
+        self.eks_cpanel_namespace = settings.HELM_DEFAULT_NAMESPACE
 
     @property
     def iam_role_name(self):
@@ -55,6 +53,7 @@ class User:
             helm.upgrade_release(
                 f"bootstrap-user-{self.user.slug}",  # release
                 f"{settings.HELM_REPO}/bootstrap-user",  # chart
+                f"--namespace={self.eks_cpanel_namespace}",
                 f"--set="
                 + (
                     f"Username={self.user.slug}"
