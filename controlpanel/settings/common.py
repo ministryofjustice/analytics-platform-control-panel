@@ -2,11 +2,9 @@ import os
 import sys
 from os.path import abspath, dirname, join
 
+import structlog
 from controlpanel.frontend.jinja2 import environment
 from controlpanel.utils import is_truthy
-
-import structlog
-
 
 # -- Feature flags
 
@@ -378,6 +376,8 @@ HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/cache
 
 # The number of seconds helm should wait for helm delete to complete.
 HELM_DELETE_TIMEOUT = int(os.environ.get("HELM_DELETE_TIMEOUT", 10))
+
+HELM_DEFAULT_NAMESPACE = os.environ.get('HELM_NAMESPACE', 'cpanel')
 
 # domain where tools are deployed
 TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
