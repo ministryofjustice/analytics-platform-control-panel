@@ -76,6 +76,8 @@ COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/st
 COPY scripts/replace_aws_iam_command.py ./
 RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh
 
+COPY scripts/load_dev_tools.py ./
+
 USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
@@ -96,4 +98,3 @@ RUN touch .env
 RUN SLACK_API_TOKEN=dummy python3 manage.py collectstatic --noinput --ignore=*.scss
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]
-

@@ -1,0 +1,77 @@
+- model: api.tool
+  pk: 4
+  fields:
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
+    description: Airflow
+    chart_name: airflow-sqlite
+    name: Airflow
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 0.5.10
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain:
+    target_users: []
+- model: api.tool
+  pk: 5
+  fields: 
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
+    description: RStudio
+    chart_name: rstudio
+    name: RStudio
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 4.0.5
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
+- model: api.tool
+  pk: 6
+  fields: 
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
+    description: A different RStudio
+    chart_name: rstudio
+    name: RStudio
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 4.1.2
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
+- model: api.tool
+  pk: 7
+  fields: 
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
+    description: Jupyter Lab Data Science (Tunnel Support)
+    chart_name: jupyter-lab-datascience-notebook
+    name: jupyter-lab
+    values:
+      authProxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      authProxy.auth0.clientSecret:
+    version: 3.0.14
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
+  
