@@ -44,6 +44,7 @@ services:
       DEBUG: "True"
       defaultRegion: eu-west-1
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EFS_VOLUME: ${EFS_VOLUME}
       EKS: "True"
       ENV: "dev"
       EKS_CLUSTER: ${DEV_CLUSTER}
@@ -84,6 +85,7 @@ services:
       DB_USER: controlpanel
       defaultRegion: eu-west-1
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EFS_VOLUME: ${EFS_VOLUME}
       EKS: "True"
       ENV: "dev"
       EKS_CLUSTER: ${DEV_CLUSTER}
@@ -145,6 +147,7 @@ services:
       DB_USER: controlpanel
       DEBUG: "True"
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
+      EFS_VOLUME: ${EFS_VOLUME}
       EKS: "True"
       EKS_CLUSTER: ${DEV_CLUSTER}
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
