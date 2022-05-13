@@ -167,6 +167,8 @@ services:
       AWS_REGION: ${AWS_REGION:-eu-west-1}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
+      ARN_ACCESS_KEY: ${ARN_ACCESS_KEY}
+      ARN_SECRET_KEY: ${ARN_SECRET_KEY}
       DB_HOST: "db"
       DB_NAME: controlpanel
       DB_PASSWORD: password

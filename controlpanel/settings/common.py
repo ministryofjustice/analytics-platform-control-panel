@@ -373,6 +373,9 @@ TOOLS = {
 # Helm repo where tool charts are hosted
 HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
 
+HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/cache/repository")
+
+
 # The number of seconds helm should wait for helm delete to complete.
 HELM_DELETE_TIMEOUT = int(os.environ.get("HELM_DELETE_TIMEOUT", 10))
 
@@ -509,6 +512,9 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
+# TODO maybe consider to put the following value under boto3 own configuration in the future
+ARN_ACCESS_KEY = os.environ.get('ARN_ACCESS_KEY', None)
+ARN_SECRET_KEY = os.environ.get('ARN_SECRET_KEY', None)
 
 # -- Google Analytics
 if ENV == 'alpha':
