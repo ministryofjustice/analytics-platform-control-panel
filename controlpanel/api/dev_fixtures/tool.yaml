@@ -12,6 +12,7 @@
       rstudio.secureCookieKey: <SECRET_TOKEN>
       authProxy.auth0.clientId:
       authProxy.auth0.clientSecret:
+      redirectdomain: tools.dev.analytical-platform.service.justice.gov.uk
     version: 0.5.10
     is_restricted: false
     target_infrastructure: "e"
@@ -74,6 +75,6 @@
     version: 3.0.14
     is_restricted: false
     target_infrastructure: "e"
-    tool_domain: 
+    tool_domain: jupyter-lab
     target_users: []
   
