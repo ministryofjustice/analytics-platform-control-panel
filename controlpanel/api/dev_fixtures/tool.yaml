@@ -7,6 +7,7 @@
     chart_name: airflow-sqlite
     name: Airflow
     values:
+      airflow.secretKey: this-is-a-dummy-value-never-use-in-production
       authProxy.auth0.domain:
       authProxy.cookieSecret: <SECRET_TOKEN>
       rstudio.secureCookieKey: <SECRET_TOKEN>
