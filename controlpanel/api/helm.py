@@ -23,6 +23,8 @@ HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
 def get_repo_path():
     """
     Get the path for the repository cache. Will return the correct location
+    depending on the settings.EKS flag (if true, uses Helm 3's default
+    location, otherwise uses Helm 2's).
     """
     if settings.EKS:
         return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
