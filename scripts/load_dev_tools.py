@@ -24,9 +24,14 @@ if __name__ == "__main__":
         else:
             raise Exception(f"chart_name of tool, {tool['fields']['chart_name']},  should be rstudio, jupyterlab-* or airflow-sqlite")
 
-        tool["fields"]["values"]["authProxy.auth0.domain"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_DOMAIN"]
-        tool["fields"]["values"]["authProxy.auth0.clientId"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_ID"]
-        tool["fields"]["values"]["authProxy.auth0.clientSecret"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_SECRET"]
+        if "authProxy.auth0.domain" in tool["fields"]["values"]:
+            tool["fields"]["values"]["authProxy.auth0.domain"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_DOMAIN"]
+            tool["fields"]["values"]["authProxy.auth0.clientId"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_ID"]
+            tool["fields"]["values"]["authProxy.auth0.clientSecret"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_SECRET"]
+        else:
+            tool["fields"]["values"]["proxy.auth0.domain"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_DOMAIN"]
+            tool["fields"]["values"]["proxy.auth0.clientId"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_ID"]
+            tool["fields"]["values"]["proxy.auth0.clientSecret"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_SECRET"]
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as configured_fixture_file:
         configured_fixture_file.write(yaml.dump(fixture_yaml))
