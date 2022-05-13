@@ -16,11 +16,22 @@ log = structlog.getLogger(__name__)
 CACHE_FOR_MINUTES = 5 * 60
 
 
+# TODO: REMOVE the following line when we tidy up old codes for old cluster
+HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
+
+
 def get_repo_path():
     """
     Get the path for the repository cache. Will return the correct location
     """
-    return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
+    if settings.EKS:
+        return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
+    return os.path.join(
+        HELM_HOME,
+        "repository",
+        "cache",
+        f"{settings.HELM_REPO}-index.yaml",
+    )
 
 
 class HelmError(APIException):
