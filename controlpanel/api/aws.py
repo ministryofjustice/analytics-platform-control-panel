@@ -172,7 +172,7 @@ BASE_S3_ACCESS_STATEMENT = {
 
 class RefreshableBotoSession:
 
-    def __init__(self, sts_arn: str = None, session_ttl: int = 3000):
+    def __init__(self, sts_arn: str = None, session_ttl: int = 3600):
         self.sts_arn = sts_arn or "arn:aws:iam::{}:role/restricted-admin".format(settings.AWS_DATA_ACCOUNT_ID)
         self.session_name = uuid.uuid4().hex
         self.session_ttl = session_ttl
