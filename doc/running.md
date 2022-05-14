@@ -398,5 +398,5 @@ which is normal.
 The app even running on local env, it will still talk to the remote AWS data account and 
 dev cluster directly which is shared with our dev environment, especially the data account,
 it is shared not only dev environment also prod environment, all those important
-live IAM roles/groups, S3 buckets are there, so please be careful unless we complete the task
+live IAM roles/groups, S3 buckets are there, so please be careful until we complete the task
 of constructing local infrastructure.
