@@ -66,15 +66,10 @@ following environment variables:
 
 ```sh
 export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
-export SLACK_API_TOKEN=a_slack_token
 ```
 
 See [Environment Variables Reference](environment.md) for details of other
 environment variable settings.
-
-The [Slack token](https://slack.dev/python-slackclient/auth.html) need not be
-valid unless you'll be using the Slack related aspects of the system.
-
 
 ### Database
 
@@ -250,6 +245,34 @@ If you see an error, ask a colleague!
 **You probably notice that the session expires after an hour. If you're getting
 AWS errors, ensure you've not timed out.**
 
+### Local AWS Configuration
+This app needs to interact with multiple AWS accounts in order to support the users' needs.
+The AWS resources like IAM, s3 buckets are under our data account and will be managed by 
+app through boto3. In order to make sure the boto3 can obtain the right profile for local env
+The following steps will show how to create it.
+
+Assume that the name of profile for our aws data account is ```admin-data```
+
+NOTES: using ```aws-vault exec <profile>``` to inject the aws keys as envs when launching the app 
+will cause the failure of connecting cluster on dev
+
+#### Add the AWS credential into .aws/credentials
+it should look like below 
+```
+[admin-data]
+aws_access_key_id = <your aws_access_key_id>
+aws_secret_access_key = <your aws_secret_access_key>
+
+```
+
+#### Add the AWS assume role or other settings into .aws/config
+
+```
+[profile admin-data]
+role_arn=arn:aws:iam::<data account id>:role/restricted-admin
+source_profile=default
+```
+
 ### Kubernetes Configuration
 
 For Kubernetes, simply follow the instructions (linked above) for the `dev`
@@ -320,13 +343,41 @@ wider infrastructure of the project. This is usually achieved via the
 `aws-vault` command (please
 [see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)). 
 
+Also please follow the previous section of ```Local AWS Configuration``` to setup your local AWS data profile
+
+#### Create the local environment files 
+
+Download the copy of the file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
+
+Make sure you have defined the following ```AWS_PROFILE``
+
+```
+export AWS_PROFILE = "admin-data"
+```
+
+#### Run the frontend of the app
+
 You can run the app with the Django development server with
+
 ```sh
-aws-vault exec restricted-data python3 manage.py runserver
+python3 manage.py runserver
 ```
 Or with Gunicorn WSGI server:
+
 ```sh
-aws-vault exec restricted-data gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
+gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
+
+#### Run the worker of the app
+Open another terminal to run the following line
+
+```sh
+python manage.py runworker background_tasks
+```
+
 Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
 runing control panel.
+
+NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
+you may encounter a popup window for asking you to provide key-chain password from time to time, 
+which is normal.

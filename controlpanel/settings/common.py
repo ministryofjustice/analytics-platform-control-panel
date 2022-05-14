@@ -512,9 +512,6 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
-# TODO maybe consider to put the following value under boto3 own configuration in the future
-ARN_ACCESS_KEY = os.environ.get('ARN_ACCESS_KEY', None)
-ARN_SECRET_KEY = os.environ.get('ARN_SECRET_KEY', None)
 
 # -- Google Analytics
 if ENV == 'alpha':

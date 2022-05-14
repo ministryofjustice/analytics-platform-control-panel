@@ -1,16 +1,13 @@
 from copy import deepcopy
 import json
 import structlog
-import uuid
+
 import boto3
 import botocore
-
 from django.conf import settings
 
 
 log = structlog.getLogger(__name__)
-
-_boto3_session = None
 
 
 def arn(service, resource, region="", account=""):
@@ -170,64 +167,8 @@ BASE_S3_ACCESS_STATEMENT = {
 }
 
 
-class RefreshableBotoSession:
-
-    def __init__(self, sts_arn: str = None, session_ttl: int = 3600):
-        self.sts_arn = sts_arn or "arn:aws:iam::{}:role/restricted-admin".format(settings.AWS_DATA_ACCOUNT_ID)
-        self.session_name = uuid.uuid4().hex
-        self.session_ttl = session_ttl
-
-    def _get_session_credentials(self):
-        session = boto3.Session(aws_access_key_id=settings.ARN_ACCESS_KEY,
-                                aws_secret_access_key=settings.ARN_SECRET_KEY)
-
-        sts_client = session.client(service_name="sts")
-        response = sts_client.assume_role(
-            RoleArn=self.sts_arn,
-            RoleSessionName=self.session_name,
-            DurationSeconds=self.session_ttl,
-        ).get("Credentials")
-
-        credentials = {
-            "access_key": response.get("AccessKeyId"),
-            "secret_key": response.get("SecretAccessKey"),
-            "token": response.get("SessionToken"),
-            "expiry_time": response.get("Expiration").isoformat(),
-        }
-        return credentials
-
-    def refreshable_session(self) -> boto3.Session:
-        refreshable_credentials = botocore.credentials.RefreshableCredentials.create_from_metadata(
-            metadata=self._get_session_credentials(),
-            refresh_using=self._get_session_credentials,
-            method="sts-assume-role",
-        )
-        session = botocore.session.get_session()
-        session._credentials = refreshable_credentials
-        auto_refresh_session = boto3.Session(botocore_session=session)
-        return auto_refresh_session
-
-
-def _is_local_env():
-    return settings.ARN_ACCESS_KEY is not None
-
-
-def _set_boto3_session():
-    return RefreshableBotoSession().refreshable_session()
-
-
-def get_boto_session():
-    global _boto3_session
-    if _is_local_env():
-        if _boto3_session is None:
-            _boto3_session = _set_boto3_session()
-        return _boto3_session
-    else:
-        return boto3
-
-
 def create_app_role(app):
-    iam = get_boto_session().resource("iam")
+    iam = boto3.resource("iam")
     try:
         return iam.create_role(
             RoleName=app.iam_role_name,
@@ -258,7 +199,7 @@ def create_user_role(user):
         policy["Statement"].append(eks_statement)
 
     try:
-        iam = get_boto_session().resource("iam")
+        iam = boto3.resource("iam")
         iam.create_role(
             RoleName=user.iam_role_name,
             AssumeRolePolicyDocument=json.dumps(policy),
@@ -295,7 +236,7 @@ def migrate_user_role(user):
         "Attempting to update policy as part of user migration for "
         f"{user.slug}."
     )
-    iam = get_boto_session().client("iam")
+    iam = boto3.client("iam")
     role = iam.get_role(RoleName=user.iam_role_name)
     policy = role["Role"]["AssumeRolePolicyDocument"]
     policy["Statement"].append(eks_statement)
@@ -310,7 +251,7 @@ def migrate_user_role(user):
 def delete_role(name):
     """Delete the given IAM role and all inline policies"""
     try:
-        role = get_boto_session().resource("iam").Role(name)
+        role = boto3.resource("iam").Role(name)
         role.load()
     except botocore.exceptions.ClientError as e:
         if e.response["Error"]["Code"] == "NoSuchEntity":
@@ -328,8 +269,8 @@ def delete_role(name):
 
 
 def create_bucket(bucket_name, is_data_warehouse=False):
-    s3_resource = get_boto_session().resource("s3")
-    s3_client = get_boto_session().client("s3")
+    s3_resource = boto3.resource("s3")
+    s3_client = boto3.client("s3")
     try:
         bucket = s3_resource.create_bucket(
             Bucket=bucket_name,
@@ -406,7 +347,7 @@ def create_bucket(bucket_name, is_data_warehouse=False):
 def tag_bucket(bucket_name, tags):
     """Add the given `tags` to the S3 bucket called `bucket_name`"""
 
-    bucket = get_boto_session().resource("s3").Bucket(bucket_name)
+    bucket = boto3.resource("s3").Bucket(bucket_name)
     _tag_bucket(bucket, tags)
 
 
@@ -566,7 +507,7 @@ def grant_bucket_access(role_name, bucket_arn, access_level, path_arns=[]):
     if bucket_arn and not path_arns:
         path_arns = [bucket_arn]
 
-    role = get_boto_session().resource("iam").Role(role_name)
+    role = boto3.resource("iam").Role(role_name)
     policy = S3AccessPolicy(role.Policy("s3-access"))
     policy.revoke_access(bucket_arn)
     policy.grant_list_access(bucket_arn)
@@ -581,7 +522,7 @@ def revoke_bucket_access(role_name, bucket_arn=None):
         return
 
     try:
-        role = get_boto_session().resource("iam").Role(role_name)
+        role = boto3.resource("iam").Role(role_name)
         role.load()
     except botocore.exceptions.ClientError as e:
         if e.response["Error"]["Code"] == "NoSuchEntity":
@@ -595,7 +536,7 @@ def revoke_bucket_access(role_name, bucket_arn=None):
 
 
 def create_group(name, path):
-    iam = get_boto_session().resource("iam")
+    iam = boto3.resource("iam")
     try:
         iam.create_policy(
             PolicyName=name,
@@ -607,7 +548,7 @@ def create_group(name, path):
 
 
 def update_group_members(group_arn, role_names):
-    policy = get_boto_session().resource("iam").Policy(group_arn)
+    policy = boto3.resource("iam").Policy(group_arn)
     members = set(policy.attached_roles.all())
     existing = {member.role_name for member in members}
 
@@ -619,7 +560,7 @@ def update_group_members(group_arn, role_names):
 
 
 def delete_group(group_arn):
-    policy = get_boto_session().resource("iam").Policy(group_arn)
+    policy = boto3.resource("iam").Policy(group_arn)
     try:
         policy.load()
     except policy.meta.client.exceptions.NoSuchEntityException:
@@ -645,7 +586,7 @@ def grant_group_bucket_access(
     if bucket_arn and not path_arns:
         path_arns = [bucket_arn]
 
-    policy = get_boto_session().resource("iam").Policy(group_policy_arn)
+    policy = boto3.resource("iam").Policy(group_policy_arn)
     policy = ManagedS3AccessPolicy(policy)
     policy.revoke_access(bucket_arn)
     policy.grant_list_access(bucket_arn)
@@ -661,14 +602,14 @@ def revoke_group_bucket_access(group_policy_arn, bucket_arn=None):
         )
         return
 
-    policy = get_boto_session().resource("iam").Policy(group_policy_arn)
+    policy = boto3.resource("iam").Policy(group_policy_arn)
     policy = ManagedS3AccessPolicy(policy)
     policy.revoke_access(bucket_arn)
     policy.put()
 
 
 def create_parameter(name, value, role_name, description=""):
-    ssm = get_boto_session().client("ssm", region_name=settings.BUCKET_REGION)
+    ssm = boto3.client("ssm", region_name=settings.BUCKET_REGION)
     try:
         ssm.put_parameter(
             Name=name,
@@ -685,7 +626,7 @@ def create_parameter(name, value, role_name, description=""):
 
 
 def delete_parameter(name):
-    ssm = get_boto_session().client("ssm", region_name=settings.BUCKET_REGION)
+    ssm = boto3.client("ssm", region_name=settings.BUCKET_REGION)
     try:
         ssm.delete_parameter(Name=name)
     except ssm.exceptions.ParameterNotFound:
@@ -693,5 +634,5 @@ def delete_parameter(name):
 
 
 def list_role_names(prefix="/"):
-    roles = get_boto_session().resource("iam").roles.filter(PathPrefix=prefix).all()
+    roles = boto3.resource("iam").roles.filter(PathPrefix=prefix).all()
     return [role.name for role in list(roles)]
