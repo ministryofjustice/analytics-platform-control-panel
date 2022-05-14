@@ -349,10 +349,22 @@ Also please follow the previous section of ```Local AWS Configuration``` to setu
 
 Download the copy of the file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
 
-Make sure you have defined the following ```AWS_PROFILE``
+Make sure you have defined the following ```AWS_PROFILE`` in the .envrc or .env file
 
 ```
 export AWS_PROFILE = "admin-data"
+```
+
+if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
+the default value is ```/tmp/helm/cache/repository```
+
+```
+export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"
+```
+if you are not sure, can use the following command to find it out
+
+```shell
+helm env
 ```
 
 #### Run the frontend of the app
@@ -381,3 +393,10 @@ runing control panel.
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
 you may encounter a popup window for asking you to provide key-chain password from time to time, 
 which is normal.
+
+#### Important notes
+The app even running on local env, it will still talk to the remote AWS data account and 
+dev cluster directly which is shared with our dev environment, especially the data account,
+it is shared not only dev environment also prod environment, all those important
+live IAM roles/groups, S3 buckets are there, so please be careful unless we complete the task
+of constructing local infrastructure.
