@@ -248,13 +248,13 @@ AWS errors, ensure you've not timed out.**
 ### Local AWS Configuration
 This app needs to interact with multiple AWS accounts in order to support the users' needs.
 The AWS resources like IAM, s3 buckets are under our data account and will be managed by 
-app through boto3. In order to make sure the boto3 can obtain the right profile for local env
+app through boto3. In order to make sure the boto3 can obtain the right profile for local env.
 The following steps will show how to create it.
 
 Assume that the name of profile for our aws data account is ```admin-data```
 
 NOTES: using ```aws-vault exec <profile>``` to inject the aws keys as envs when launching the app 
-will cause the failure of connecting cluster on dev
+will cause the failure of connecting cluster on dev. 
 
 #### Add the AWS credential into .aws/credentials
 it should look like below 
@@ -264,6 +264,10 @@ aws_access_key_id = <your aws_access_key_id>
 aws_secret_access_key = <your aws_secret_access_key>
 
 ```
+As you need your AWS access keys above, you can find them out via the following link if you use aws-vault to manage your keys
+https://github.com/99designs/aws-vault/blob/master/USAGE.md#keychain
+
+Once the aws-vault is added, you can choose to show the value of the keys.
 
 #### Add the AWS assume role or other settings into .aws/config
 
@@ -349,10 +353,12 @@ Also please follow the previous section of ```Local AWS Configuration``` to setu
 
 Download the copy of the file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
 
-Make sure you have defined the following ```AWS_PROFILE`` in the .envrc or .env file
+- ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
+- ```EKS```: True, indicating EKS cluster will be used in the app.
 
 ```
 export AWS_PROFILE = "admin-data"
+export EKS=True
 ```
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
