@@ -2,6 +2,79 @@
 
 The advantage of using docker-compose is that it is configured to run several services that the Control Panel relies on, such as the PostgreSQL database and Redis. It initializes these ready for local development purposes.
 
+Tools deployed by the local Control Panel are deployed into the dev EKS cluster.
+
+## Setup
+
+To get started, make sure you have cloned a copy of this repository and that you have Docker installed.
+You may want to use [direnv](https://direnv.net/) to help load and unload the environment variables easily.
+
+You will also need access to our `.env` file, which contains the settings and secrets needed to start the Control Panel locally and connect to our development cluster.
+A copy of the `.env` file can be obtained from the Analytical Platform's shared folder in LastPass.
+
+While adapting the code to work with the new EKS cluster, we made changes to the `.env` file:
+- `EFS_VOLUME`: newly added
+- `TOOLS_DOMAIN`: updated
+
+
+
+## Build
+
+The two Makefiles, `Makefile` and `Makefile.local.mk` contain commands relevant to running this docker-compose setup locally.
+
+You can build the system with
+```
+make eks
+```
+
+## Run
+
+Then run
+```
+make dev-fg
+```
+to start a local instance of Control Panel.
+You should be able to log in at `localhost:8000/` (make sure to use the MFA verification code for the development system, not the production one).
+
+Once logged in, you should be able to navigate around the "Analytical tools", "Warehouse data" and other pages.
+You will notice that there are no tools currently available as the database is only pre-populated with tools suitable for the old KOPS cluster.
+To add a new set of tools, run the following from a new terminal
+```
+make dev-load-tools
+```
+which will fill in the template `controlpanel/api/dev_fixtures/tool.yaml` and load those tools into the database.
+
+## Other useful functionality
+
+There are several other commands in `Makefile.local.mk` that will be useful to you as you make changes to the codebase, such as
+```bash 
+make dev-exec   # exec into the shell of an existing container
+```
+
+## Known issues
+
+### No such entity
+If you receive a "No such entity" error after logging in, navigate to `localhost:8000/oidc/logout` and then log in again.
+
+
+### Reset user
+If you need to reset your user, run the following
+```bash
+make clean
+aws-vault login admin-dev   # take steps listed below before continuing
+make eks
+make-dev-fg                 # and then log in again as usual
+```
+From the AWS Management Console, select IAM and then Roles (under the Access Management section on the left hand side).
+Search for your username and delete that role.
+
+---
+# Previous instructions: Running with Docker
+
+The instructions below are no longer intended for use as they set up a connection to the old KOPS cluster.
+We are retaining them here for now as they may contain information relevant to our work on ANPL-839, but they should be deleted entirely when the documentation is rewritten prior to merging that PR.
+
+
 ## Build
 
 To build the docker image, use the following command:
