@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class KubeapiConfig(AppConfig):
-    name = "kubeapi"
+    name = "controlpanel.kubeapi"
