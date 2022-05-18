@@ -16,7 +16,7 @@ log = structlog.getLogger(__name__)
 CACHE_FOR_MINUTES = 5 * 60
 
 
-# TODO: Work out the story for HELM_HOME
+# TODO: REMOVE the following line when we tidy up old codes for old cluster
 HELM_HOME = "/tmp/helm"  # Helm.execute("home").stdout.read().strip()
 
 
@@ -27,12 +27,7 @@ def get_repo_path():
     location, otherwise uses Helm 2's).
     """
     if settings.EKS:
-        return os.path.join(
-            HELM_HOME,
-            "cache",
-            "repository",
-            f"{settings.HELM_REPO}-index.yaml",
-        )
+        return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
     return os.path.join(
         HELM_HOME,
         "repository",
@@ -96,6 +91,10 @@ def _execute(*args, **kwargs):
             env=env,
             **kwargs,
         )
+        if "upgrade" in args:
+            # The following lines will make sure the completion of helm command
+            log.info(proc.stdout.read())
+            log.info(proc.stderr.read())
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
@@ -285,5 +284,5 @@ def list_releases(release=None, namespace=None):
         )
     proc = _execute("list", "-aq", *args)
     result = proc.stdout.read()
-    log.info(result)
-    return result.split()
+    log.info(result.strip())
+    return result.strip().split()
