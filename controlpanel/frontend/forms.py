@@ -58,6 +58,16 @@ class CreateAppForm(forms.Form):
         required=False,
     )
 
+    connect_bucket = forms.ChoiceField(
+        required=True,
+        initial="new",
+        choices=[
+            ("new", "new"),
+            ("existing", "existing"),
+            ("later", "later"),
+        ],
+    )
+
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
