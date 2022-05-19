@@ -69,14 +69,19 @@ RUN touch /etc/apt/sources.list.d/kubernetes.list
 RUN echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
 RUN apt-get update
 RUN apt-get install -y kubectl
-RUN apt-get install -y awscli
+RUN apt-get install -y unzip
+# RUN apt-get install -y awscli
 
 # RUN apt-get install -y aws-iam-authenticator
 COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/startup_dev_worker.sh ./
-COPY scripts/replace_aws_iam_command.py ./
+COPY scripts/replace_aws_iam_command.py scripts/create_aws_conf.py ./
 RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh
 
 COPY scripts/load_dev_tools.py ./
+
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+RUN unzip awscliv2.zip
+RUN ./aws/install
 
 USER controlpanel
 COPY controlpanel controlpanel
@@ -93,6 +98,9 @@ COPY --from=jsdep node_modules/jquery/dist static/jquery
 
 # empty .env file to prevent warning messages
 RUN touch .env
+
+RUN mkdir /home/controlpanel/.aws
+# COPY controlpanel/temp_aws_config.cfg ./.aws/config
 
 # collect static files for deployment
 RUN SLACK_API_TOKEN=dummy python3 manage.py collectstatic --noinput --ignore=*.scss

@@ -22,7 +22,9 @@ if __name__ == '__main__':
         "eks",
         "get-token",
         "--cluster-name",
-        cluster_id
+        cluster_id,
+        "--profile",
+        "admin-dev"
     ]
     kube_yaml["users"][0]["user"]["exec"]["args"] = new_args
     # --region
