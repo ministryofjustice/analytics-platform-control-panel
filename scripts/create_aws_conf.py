@@ -6,11 +6,11 @@ import yaml
 from django.core import management
 
 if __name__ == "__main__":
-    AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+    AWS_ACCESS_KEY_ID = os.environ.get("LANDING_AWS_ACCESS_KEY_ID")
     AWS_DATA_ROLE = os.environ.get("AWS_DATA_ROLE")
     AWS_DEV_ROLE = os.environ.get("AWS_DEV_ROLE")
     AWS_REGION = os.environ.get("AWS_REGION")
-    AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
+    AWS_SECRET_ACCESS_KEY = os.environ.get("LANDING_AWS_SECRET_ACCESS_KEY")
     AWS_MFA_SERIAL = os.environ.get("AWS_MFA_SERIAL")
 
     aws_config = f"""
