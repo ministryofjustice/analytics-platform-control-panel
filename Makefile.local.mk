@@ -7,7 +7,7 @@ all: help
 
 ## docker-login: Authenticate docker with ECR
 docker-login:
-	aws-vault exec $(AWS_ACCOUNT) -- aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin $(REGISTRY)
+	aws ecr get-login-password --region eu-west-1 --profile=$(AWS_CLUSTER_PROFILE) | docker login --username AWS --password-stdin $(REGISTRY)
 
 ## build-local: Authenticate and build
 build-local:docker-login build
