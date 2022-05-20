@@ -6,6 +6,7 @@ if __name__ == '__main__':
     with open(".kube/config") as kube_file:
         kube_yaml = yaml.safe_load(kube_file)
 
+    AWS_CLUSTER_PROFILE = environ.get("AWS_CLUSTER_PROFILE")
 
     kube_yaml["users"][0]["user"]["exec"]["command"] = "aws"
 

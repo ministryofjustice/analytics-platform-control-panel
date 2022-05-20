@@ -6,6 +6,8 @@ import yaml
 from django.core import management
 
 if __name__ == "__main__":
+    AWS_DATA_PROFILE = os.environ.get("AWS_DATA_PROFILE")
+    AWS_CLUSTER_PROFILE = os.environ.get("AWS_CLUSTER_PROFILE")
     AWS_ACCESS_KEY_ID = os.environ.get("LANDING_AWS_ACCESS_KEY_ID")
     AWS_DATA_ROLE = os.environ.get("AWS_DATA_ROLE")
     AWS_DEV_ROLE = os.environ.get("AWS_DEV_ROLE")
@@ -21,12 +23,12 @@ if __name__ == "__main__":
     aws_access_key_id = {AWS_ACCESS_KEY_ID}
     aws_secret_access_key = {AWS_SECRET_ACCESS_KEY}
 
-    [profile admin-data]
+    [profile {AWS_DATA_PROFILE}]
     region=eu-west-1
     role_arn={AWS_DATA_ROLE}
     source_profile=landing
 
-    [profile admin-dev]
+    [profile {AWS_CLUSTER_PROFILE}]
     region=eu-west-1
     role_arn={AWS_DEV_ROLE}
     source_profile=landing
