@@ -24,6 +24,7 @@ versions of the services.
 
 You must have:
 
+* [Redis](https://redis.io/)
 * [PostgreSQL](https://www.postgresql.org/)
 * [npm](https://www.npmjs.com/)
 * [direnv](https://direnv.net/)
