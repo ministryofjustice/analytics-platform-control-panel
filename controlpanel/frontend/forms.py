@@ -1,7 +1,6 @@
 import re
 
 from django import forms
-from django.conf import settings
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
@@ -58,13 +57,11 @@ class CreateAppForm(forms.Form):
         required=False,
     )
 
-    connect_bucket = forms.ChoiceField(
+    connections = forms.MultipleChoiceField(
         required=True,
-        initial="new",
+        initial="email",
         choices=[
-            ("new", "new"),
-            ("existing", "existing"),
-            ("later", "later"),
+            ("email", "email")
         ],
     )
 
