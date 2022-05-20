@@ -47,7 +47,6 @@ class ExtendedAuth0(Auth0):
 
         self.clients = ExtendedClients(self.domain, self._token)
         self.connections = ExtendedConnections(self.domain, self._token)
-        self.users = ExtendedUsers(self.domain, self._token)
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
@@ -55,6 +54,7 @@ class ExtendedAuth0(Auth0):
         self.roles = Roles(self.authorization_extension_url, self._extension_token)
         self.permissions = Permissions(self.authorization_extension_url, self._extension_token)
         self.groups = Groups(self.authorization_extension_url, self._extension_token)
+        self.users = ExtendedUsers(self.domain, self._token, self.authorization_extension_url, self._extension_token)
 
     def _access_token(self, audience):
         get_token = authentication.GetToken(self.domain)
@@ -70,44 +70,92 @@ class ExtendedAuth0(Auth0):
 
         return token["access_token"]
 
-    def _disable_all_connections(self, client_id, ignore=[]):
-        ignore = [connection["id"] for connection in ignore]
+    def _disable_all_connections(self, client_id, ignores=[]):
+        ignore_ids = [connection["id"] for connection in ignores]
         connections = self.connections.get_all()
         for connection in connections:
-            if connection["id"] in ignore:
+            if connection["id"] in ignore_ids:
                 continue
             if client_id in connection["enabled_clients"]:
-                self.connections.disable_client(client_id)
+                self.connections.disable_client(connection, client_id)
 
     def setup_auth0_client(self, app_name):
         app_url = "https://{}.{}".format(app_name, self.app_domain)
         client = self.clients.get_or_create(
             dict(
-                name=["app-name"],
+                name=app_name,
                 callbacks=[f"{app_url}/callback"],
                 allowed_origins=[app_url],
                 app_type="regular_web"
             )
         )
         client_id = client["client_id"]
-        self.clients.update(client_id, web_origins=[app_url])
+        self.clients.update(client_id, body={"web_origins": [app_url]})
 
         connections = ["email"]
         auth0_connections = [
             self.connections.search_first_match(dict(name=connection)) for connection in connections
         ]
-        self._disable_all_connections(client_id, ignore=auth0_connections)
+        self._disable_all_connections(client_id, ignores=auth0_connections)
 
         view_app = self.permissions.get_or_create(dict(name="view:app", applicationId=client_id))
         role = self.roles.get_or_create(dict(name="app-viewer", applicationId=client_id))
-        role.add_permission(view_app)
+        self.roles.add_permission(role, view_app["_id"])
         group = self.groups.get_or_create(dict(name=app_name))
-        group.add_role(role)
+        self.groups.add_role(group["_id"], role["_id"])
 
     def add_group_members_by_emails(self, group_name, emails, user_options={}):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
         self.groups.add_group_members(group_name, user_ids=user_ids)
         return user_ids
+
+    def clear_up_group(self, group_name):
+        """
+        Deletes a group from the authorization API
+
+        It also deletes all the roles associated with the
+        group.
+
+        NOTE: Roles in the Auth0 Authorization API are
+        meant to be flexible and they could potentially
+        be attached to different groups.
+        However, in our use-case, each app has 1 group
+        and each group has 1 role (`app-viewer`) and
+        each role has 1 permission (`view:app`) so it's
+        safe to delete all the associated roles/permissions.
+       """
+
+        group_id = self.groups.get_group_id(group_name)
+        if group_id:
+            role_ids = []
+            permission_ids = []
+
+            roles = self.groups.get_group_roles(group_id=group_id)
+            for role in roles:
+                role_ids.append(role["_id"])
+                permission_ids.extend(role.get("permissions", []))
+
+            # The group needs to be removed first in order to remove the roles and permissions
+            self.groups.delete(group_id)
+            for role_id in role_ids:
+                self.roles.delete(role_id)
+            for permission_id in permission_ids:
+                self.permissions.delete(permission_id)
+
+    def clear_up_user(self, user_id):
+        """In order to remove user from auth0 correctly, removing the user from related groups needs to be done first
+        then remove user from auth0
+        """
+        groups = self.users.get_user_groups(user_id)
+        for group in groups:
+            self.groups.delete_group_members(user_ids=[user_id], group_id=group["_id"])
+        self.users.delete(user_id)
+
+    def clear_up_app(self, app_name, group_name):
+        self.clear_up_group(group_name=group_name)
+        client = self.clients.search_first_match(dict(name=app_name))
+        if client:
+            self.clients.delete(client["client_id"])
 
 
 class Auth0API(object):
@@ -241,15 +289,18 @@ class ExtendedClients(ExtendedAPIMethods, Clients):
 class ExtendedConnections(ExtendedAPIMethods, Connections):
     endpoint = 'connections'
 
-    def disable_client(self, id, client_id):
-        connection = self.get(id)
+    def disable_client(self, connection, client_id):
         if client_id in connection["enabled_clients"]:
-            self["enabled_clients"].remove(client_id)
-            self.update(id, body={"enabled_clients": connection["enabled_clients"]})
+            connection["enabled_clients"].remove(client_id)
+            self.update(connection["id"], body={"enabled_clients": connection["enabled_clients"]})
 
 
 class ExtendedUsers(ExtendedAPIMethods, Users):
     endpoint = 'users'
+
+    def __init__(self, domain, token, auth_extension_url, auth_extension_token, telemetry=True, timeout=5.0):
+        super(ExtendedUsers, self).__init__(domain, token, telemetry=telemetry, timeout=timeout)
+        self.auth_extension_users = AuthExtensionUsers(auth_extension_url, auth_extension_token)
 
     def create_user(self, email, email_verified=False, **kwargs):
         if "nickname" not in kwargs:
@@ -269,36 +320,44 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         return response
 
     def get_users_email_search(self, email, connection=None):
+        """
+        As the search performed here is based on the email, the results returned from this call won't be many
+        especially if the connection is specified as well. it should be within default page-size (50 right now),
+        so there is no pagination related param being passed into list() call.
+        """
         query_string = f"email:\"{email.lower()}\""
+        search_engine = "v2"
         if connection:
-            params = {
-                "q": f"{query_string} AND identities.connection:\"{connection}\"",
-                "search_engine":"v2",
-            }
-        else:
-            params={
-                "q":query_string,
-                "search_engine":"v2",
-            }
-
-        response = self.list(params=params)
+            query_string = f"{query_string} AND identities.connection:\"{connection}\""
+        response = self.list(q=query_string, search_engine=search_engine)
         if "error" in response:
             raise Auth0Error("get_users_email_search", response)
 
-        return response
+        return response.get(self.endpoint, [])
 
     def add_users_by_emails(self, emails, user_options={}):
-        users_to_add = OrderedDict()
+        user_ids_to_add = []
 
         for email in emails:
             lookup_response = self.get_users_email_search(email=email, connection="email")
             if lookup_response:
-                users_to_add[email] = lookup_response[0]
+                user_ids_to_add.append(lookup_response[0]["user_id"])
             else:
-                users_to_add[email] = self.create_user(
+                user_ids_to_add.append(self.create_user(
                     email=email, email_verified=True, **user_options
-                )
-        return users_to_add.values()
+                ).get("user_id"))
+        return user_ids_to_add
+
+    def get_user_groups(self, user_id):
+        return self.auth_extension_users.get_user_groups(user_id)
+
+
+class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):
+    endpoint = 'users'
+
+    def get_user_groups(self, user_id):
+        request_url = '{}/users/{}/groups'.format(self.domain, user_id)
+        return self.all(request_url=request_url)
 
 
 class Permissions(Auth0API, ExtendedAPIMethods):
@@ -312,22 +371,21 @@ class Roles(Auth0API, ExtendedAPIMethods):
 
     def pre_process_body(self, body):
         super(Roles, self).pre_process_body(body)
-        self["applicationType"] = "client"
+        body["applicationType"] = "client"
 
-    def add_permission(self, id, permission_id):
-        existing_role = self.get(id)
-        permissions = existing_role["permissions"] or []
+    def add_permission(self, role, permission_id):
+        permissions = role.get("permissions") or []
         if permission_id in permissions:
             return
         else:
             permissions.append(permission_id)
             self.put(
-                id,
+                role["_id"],
                 body={
-                    "name": existing_role["name"],
-                    "description": existing_role["description"],
-                    "applicationId": existing_role["applicationId"],
-                    "applicationType": existing_role["applicationType"],
+                    "name": role["name"],
+                    "description": role["description"],
+                    "applicationId": role["applicationId"],
+                    "applicationType": role["applicationType"],
                     "permissions": permissions,
                 },
             )
@@ -338,68 +396,46 @@ class Groups(Auth0API, ExtendedAPIMethods):
     def add_role(self, id, role_id):
         self.client.patch(self._url(id, 'roles'), data=[role_id])
 
-    def _get_group_id(self, group_name):
+    def get_group_id(self, group_name):
         group = self.search_first_match(dict(name=group_name))
-        if group:
-            return group["_id"]
-
-    def delete_group(self, group_name):
-        """
-        Deletes a group from the authorization API
-
-        It also deletes all the roles associated with the
-        group.
-
-        NOTE: Roles in the Auth0 Authorization API are
-        meant to be flexible and they could potentially
-        be attached to different groups.
-        However, in our use-case, each app has 1 group
-        and each group has 1 role (`app-viewer`) and
-        each role has 1 permission (`view:app`) so it's
-        safe to delete all the associated roles/permissions.
-
-        See Auth0 Authorization extension API docs:
-        - https://auth0.com/docs/api/authorization-extension#get-group-roles
-        - https://auth0.com/docs/api/authorization-extension#delete-group
-        - https://auth0.com/docs/api/authorization-extension#delete-role
-        - https://auth0.com/docs/api/authorization-extension#delete-permission
-        """
-
-        group_id = self._get_group_id(group_name)
-        if group_id:
-            role_ids = []
-            permission_ids = []
-
-            roles = self.request("GET", f"groups/{group_id}/roles")
-            for role in roles:
-                role_ids.append(role["_id"])
-                permission_ids.extend(role.get("permissions", []))
-
-            self.request("DELETE", f"groups/{group_id}")
-            for role_id in role_ids:
-                self.request("DELETE", f"roles/{role_id}")
-            for permission_id in permission_ids:
-                self.request("DELETE", f"permissions/{permission_id}")
+        return group.get("_id")
 
     def get_group_members(self, group_name):
-        group_id = self._get_group_id(group_name)
+        group_id = self.get_group_id(group_name)
         if group_id:
-            return self.get_all(self._url(id, "members"), "members")
+            return self.get_all(request_url=self._url(group_id, "members"), endpoint="users")
+        else:
+            return []
+
+    def get_group_roles(self, group_name=None, group_id=None):
+        if group_id is None and group_name is None:
+            raise Auth0Error("get_group_roles", "Please specify either group_id or group_name.")
+
+        if group_id is None:
+            group_id = self.get_group_id(group_name)
+        if group_id:
+            return self.all(request_url=self._url(group_id, "roles"))
+        else:
+            return []
 
     def add_group_members(self, group_name, user_ids):
-        group_id = self._get_group_id(group_name)
+        group_id = self.get_group_id(group_name)
         if not group_id:
             raise Auth0Error("Group for the app not found, was the app released?")
-        response = self.client.patch(self._url(id, "members"), data=user_ids)
+        response = self.client.patch(self._url(group_id, "members"), data=user_ids)
 
         if "error" in response:
             raise Auth0Error("add_group_members", response)
 
-    def delete_group_members(self, group_name, user_ids):
-        group_id = self._get_group_id(group_name)
+    def delete_group_members(self, user_ids, group_name=None, group_id=None):
+        if group_id is None and group_name is None:
+            raise Auth0Error("delete_group_members", "Please specify either group_id or group_name.")
+
+        if group_id is None:
+            group_id = self.get_group_id(group_name)
         if group_id:
             response = self.client.delete(
-                self._url(id, 'members'),
+                self._url(group_id, 'members'),
                 data=user_ids,
             )
             if "error" in response:

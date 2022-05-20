@@ -127,7 +127,8 @@ class User:
         aws.delete_role(self.user.iam_role_name)
         releases = helm.list_releases(namespace=self.k8s_namespace)
         # Delete all the user initialisation charts.
-        releases.append(f"init-user-{self.user.slug}")
+        if not settings.EKS:
+            releases.append(f"init-user-{self.user.slug}")
         releases.append(f"bootstrap-user-{self.user.slug}")
         releases.append(f"provision-user-{self.user.slug}")
         if settings.EKS:
@@ -236,7 +237,7 @@ class App:
 
     def delete(self):
         aws.delete_role(self.iam_role_name)
-        auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
+        auth0.ExtendedAuth0().clear_up_app(app_name=self.app.slug, group_name=self.app.slug)
 
     @property
     def url(self):

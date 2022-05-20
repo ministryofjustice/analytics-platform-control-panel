@@ -1,5 +1,4 @@
 from crequest.middleware import CrequestMiddleware
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -77,7 +76,7 @@ class User(AbstractUser):
     @property
     def github_api_token(self):
         if not getattr(self, '_github_api_token', None):
-            auth0_user = auth0.ManagementAPI().get_user(self.auth0_id)
+            auth0_user = auth0.ExtendedAuth0().users.get(self.auth0_id)
             for identity in auth0_user["identities"]:
                 if identity['provider'] == 'github':
                     self._github_api_token = identity.get('access_token')
@@ -104,7 +103,7 @@ class User(AbstractUser):
         ).count() != 0
 
     def reset_mfa(self):
-        auth0.ManagementAPI().reset_mfa(self.auth0_id)
+        auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
     def save(self, *args, **kwargs):
         existing = User.objects.filter(pk=self.pk).first()
@@ -123,6 +122,7 @@ class User(AbstractUser):
 
     def delete(self, *args, **kwargs):
         cluster.User(self).delete()
+        auth0.ExtendedAuth0.clear_up_user(self.auth0_id)
         return super().delete(*args, **kwargs)
 
     def authentication_event(self):
