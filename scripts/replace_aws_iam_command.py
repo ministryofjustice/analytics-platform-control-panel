@@ -27,11 +27,6 @@ if __name__ == '__main__':
         "admin-dev"
     ]
     kube_yaml["users"][0]["user"]["exec"]["args"] = new_args
-    # --region
-    # - eu-west-1
-    # - eks
-    # - get-token
-    # - --cluster-name
 
     with open(".kube/config", "w") as kube_file:
         documents = yaml.dump(kube_yaml, kube_file)
