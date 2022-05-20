@@ -12,6 +12,7 @@ export
 
 .PHONY: clean build help test test-python dev-up
 
+## clean: Bring all containers down and remove orphan volumes.
 clean:
 	docker-compose down --volumes --remove-orphans
 
