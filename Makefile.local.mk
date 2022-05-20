@@ -1,4 +1,6 @@
-AWS_ACCOUNT?=admin-dev
+AWS_CLUSTER_PROFILE?=admin-dev
+AWS_DATA_PROFILE?=admin-data
+
 DEV_CLUSTER?=development-aWrhyc0m
 
 all: help
