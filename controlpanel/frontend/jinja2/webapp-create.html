@@ -3,10 +3,11 @@
 {% from "input/macro.html" import govukInput %}
 {% from "label/macro.html" import govukLabel %}
 {% from "radios/macro.html" import govukRadios %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
 
 {% extends "base.html" %}
 
-{% set page_title = "Register an app" %}
+{% set page_title = "Register an app -testing" %}
 
 {% set new_datasource_html %}
   Create a new webapp data source
@@ -95,6 +96,27 @@
       },
     ]
   }) }}
+  {{ govukCheckboxes({
+    "fieldset": {
+      "legend": {
+        "text": "Oauth0 client - connections",
+        "classes": "govuk-fieldset__legend--m",
+      },
+    },
+    "classes": "govuk-!-width-two-thirds",
+    "hint": {
+      "text": 'The connection method which is allowed for the customer to login'
+    },
+    "name": "connections",
+    "items": [
+      {
+        "value": "email",
+        "text": "Email",
+        "checked": True,
+      },
+    ],
+  }) }}
+
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
   </div>

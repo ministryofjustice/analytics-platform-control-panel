@@ -79,7 +79,7 @@ class ExtendedAuth0(Auth0):
             if client_id in connection["enabled_clients"]:
                 self.connections.disable_client(connection, client_id)
 
-    def setup_auth0_client(self, app_name):
+    def setup_auth0_client(self, app_name, connections=None):
         app_url = "https://{}.{}".format(app_name, self.app_domain)
         client = self.clients.get_or_create(
             dict(
@@ -92,7 +92,7 @@ class ExtendedAuth0(Auth0):
         client_id = client["client_id"]
         self.clients.update(client_id, body={"web_origins": [app_url]})
 
-        connections = ["email"]
+        connections = connections or ["email"]
         auth0_connections = [
             self.connections.search_first_match(dict(name=connection)) for connection in connections
         ]

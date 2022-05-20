@@ -19,6 +19,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
+from controlpanel.api import auth0
 from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
 from controlpanel.api.models import (
@@ -135,13 +136,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         )
         return reverse_lazy("list-apps")
 
-    def form_valid(self, form):
-        repo_url = form.cleaned_data["repo_url"]
-        _, name = repo_url.rsplit("/", 1)
-        self.object = App.objects.create(
-            name=name,
-            repo_url=repo_url,
-        )
+    def _create_or_link_datasource(self, form):
         if form.cleaned_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
                 name=form.cleaned_data["new_datasource_name"],
@@ -163,11 +158,28 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 s3bucket=form.cleaned_data["existing_datasource_id"],
                 access_level='readonly',
             )
+
+    def form_valid(self, form):
+        repo_url = form.cleaned_data["repo_url"]
+        _, name = repo_url.rsplit("/", 1)
+
+        self.object = App.objects.create(
+            name=name,
+            repo_url=repo_url,
+        )
+
+        self._create_or_link_datasource(form)
+
         UserApp.objects.create(
             app=self.object,
             user=self.request.user,
             is_admin=True,
         )
+
+        auth0.ExtendedAuth0().setup_auth0_client(
+            self.object.slug,
+            connections=form.cleaned_data.get('connections'))
+
         return FormMixin.form_valid(self, form)
 
 

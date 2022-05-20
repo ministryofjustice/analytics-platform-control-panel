@@ -79,7 +79,6 @@ class App(TimeStampedModel):
 
         if is_create:
             cluster.App(self).create_iam_role()
-            auth0.ExtendedAuth0().setup_auth0_client(self.slug)
 
         return self
 
