@@ -84,6 +84,7 @@ class App(TimeStampedModel):
 
     def delete(self, *args, **kwargs):
         cluster.App(self).delete()
+        auth0.ExtendedAuth0().clear_up_app(app_name=self.slug, group_name=self.slug)
 
         super().delete(*args, **kwargs)
 

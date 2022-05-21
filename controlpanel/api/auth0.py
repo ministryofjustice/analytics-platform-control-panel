@@ -1,6 +1,5 @@
 import structlog
 
-from collections import OrderedDict
 from rest_framework.exceptions import APIException
 
 from auth0.v3 import authentication, exceptions
@@ -146,6 +145,9 @@ class ExtendedAuth0(Auth0):
         """In order to remove user from auth0 correctly, removing the user from related groups needs to be done first
         then remove user from auth0
         """
+        if not self.users.has_existed(user_id):
+            return
+
         groups = self.users.get_user_groups(user_id)
         for group in groups:
             self.groups.delete_group_members(user_ids=[user_id], group_id=group["_id"])
@@ -269,14 +271,13 @@ class ExtendedAPIMethods(object):
 
     def search_first_match(self, resource):
         resources = self.get_all()
-
         for other in resources:
             if all(pair in other.items() for pair in resource.items()):
                 return other
+        return None
 
     def get_or_create(self, resource):
         result = self.search_first_match(resource)
-
         if result is None:
             result = self.create(resource)
         return result
@@ -350,6 +351,14 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
     def get_user_groups(self, user_id):
         return self.auth_extension_users.get_user_groups(user_id)
+
+    def has_existed(self, user_id):
+        query_string = f"user_id:\"{user_id}\""
+        response = self.list(q=query_string, search_engine="v2")
+        if "error" in response:
+            raise Auth0Error("get_users_email_search", response)
+
+        return len(response['users']) > 0
 
 
 class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):

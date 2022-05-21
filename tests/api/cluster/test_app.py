@@ -13,7 +13,7 @@ def app():
 @pytest.yield_fixture
 def authz():
     with patch("controlpanel.api.cluster.auth0") as auth0:
-        yield auth0.AuthorizationAPI.return_value
+        yield auth0.ExtendedAuth0.return_value
 
 
 def test_app_create_iam_role(aws, app):
@@ -21,11 +21,11 @@ def test_app_create_iam_role(aws, app):
     aws.create_app_role.assert_called_with(app)
 
 
-def test_app_delete(aws, app, authz, helm):
+def test_app_delete(aws, app, authz):
     cluster.App(app).delete()
 
     aws.delete_role.assert_called_with(app.iam_role_name)
-    authz.delete_group.assert_called_with(group_name=app.slug)
+    authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
 
 
 def test_app_delete_eks(aws, app, authz, helm):
@@ -33,7 +33,7 @@ def test_app_delete_eks(aws, app, authz, helm):
         cluster.App(app).delete()
 
     aws.delete_role.assert_called_with(app.iam_role_name)
-    authz.delete_group.assert_called_with(group_name=app.slug)
+    authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
 
 
 mock_ingress = MagicMock(name="Ingress")

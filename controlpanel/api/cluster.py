@@ -2,7 +2,8 @@ import secrets
 
 import structlog
 from controlpanel.api import auth0, aws, helm
-from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
+from controlpanel.api.aws import (iam_arn,  # keep for tests; keep for tests
+                                  s3_arn)
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
 from django.conf import settings
@@ -54,10 +55,7 @@ class User:
                 f"bootstrap-user-{self.user.slug}",  # release
                 f"{settings.HELM_REPO}/bootstrap-user",  # chart
                 f"--namespace={self.eks_cpanel_namespace}",
-                f"--set="
-                + (
-                    f"Username={self.user.slug}"
-                ),
+                f"--set=" + (f"Username={self.user.slug}"),
             )
             helm.upgrade_release(
                 f"provision-user-{self.user.slug}",  # release
@@ -122,23 +120,29 @@ class User:
                 f"--set=Username={self.user.slug}",
             )
 
+    def _uninstall_helm_charts(self, hel_charts):
+        if not hel_charts:
+            return
+        if settings.EKS:
+            helm.delete_eks(self.k8s_namespace, *hel_charts)
+        else:
+            helm.delete(*hel_charts)
+
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
+        # TODO, all those codes related to helm need to be reviewed
+        # The assumption for the following codes
+        #  - any helm chart having user's name is part of user's helm chart
+        #  - the user's helm charts will be only installed under own namespace or cpanel
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        # Delete all the user initialisation charts.
-        if not settings.EKS:
-            releases.append(f"init-user-{self.user.slug}")
-        releases.append(f"bootstrap-user-{self.user.slug}")
-        releases.append(f"provision-user-{self.user.slug}")
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, *releases)
-        else:
-            helm.delete(*releases)
+        cpanel_releases = helm.list_releases(
+            namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"
+        )
+        self._uninstall_helm_charts(releases)
+        self._uninstall_helm_charts(cpanel_releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
-        aws.grant_bucket_access(
-            self.iam_role_name, bucket_arn, access_level, path_arns
-        )
+        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
@@ -170,11 +174,14 @@ class User:
         # platform. Run these helm charts to migrate the user to the new
         # platform. Ensure this is all stored in the database in case they
         # try to log into the control panel on the old infrastructure.
-        bootstrap_releases = set(helm.list_releases(namespace=self.eks_cpanel_namespace, release=bootstrap_chart_name))
+        bootstrap_releases = set(
+            helm.list_releases(
+                namespace=self.eks_cpanel_namespace, release=bootstrap_chart_name
+            )
+        )
         has_charts = (
             bootstrap_chart_name in bootstrap_releases
-            and
-            provision_chart_name in releases
+            and provision_chart_name in releases
         )
 
         if self.user.migration_state == self.user.COMPLETE:
@@ -183,7 +190,9 @@ class User:
             # charts before returning
             if not has_charts:
                 # User has migrated but for some reason has no charts so we should re-init them.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+                log.info(
+                    f"User {self.user.slug} already migrated but has no charts, initialising"
+                )
                 self._init_user()
 
             return
@@ -191,7 +200,9 @@ class User:
         # User's migration state is not yet marked as complete, and so we
         # need to migrate their AWS role before running the init-user
         # helm charts before marked it as such
-        log.info(f"Starting to migrate user {self.user.slug} from {self.user.migration_state}")
+        log.info(
+            f"Starting to migrate user {self.user.slug} from {self.user.migration_state}"
+        )
 
         self.user.migration_state = self.user.MIGRATING
         self.user.save()
@@ -227,16 +238,13 @@ class App:
         aws.create_app_role(self.app)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_bucket_access(
-            self.iam_role_name, bucket_arn, access_level, path_arns
-        )
+        aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def delete(self):
         aws.delete_role(self.iam_role_name)
-        auth0.ExtendedAuth0().clear_up_app(app_name=self.app.slug, group_name=self.app.slug)
 
     @property
     def url(self):
@@ -265,9 +273,7 @@ class S3Bucket:
         return s3_arn(self.bucket.name)
 
     def create(self):
-        return aws.create_bucket(
-            self.bucket.name, self.bucket.is_data_warehouse
-        )
+        return aws.create_bucket(self.bucket.name, self.bucket.is_data_warehouse)
 
     def mark_for_archival(self):
         aws.tag_bucket(self.bucket.name, {"to-archive": "true"})
@@ -309,9 +315,7 @@ class RoleGroup:
         aws.delete_group(self.arn)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_group_bucket_access(
-            self.arn, bucket_arn, access_level, path_arns
-        )
+        aws.grant_group_bucket_access(self.arn, bucket_arn, access_level, path_arns)
 
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_group_bucket_access(self.arn, bucket_arn)
@@ -337,9 +341,7 @@ def get_repositories(user):
             org = github.get_organization(name)
             repos.extend(org.get_repos())
         except GithubException as err:
-            log.warning(
-                f"Failed getting {name} Github org repos for {user}: {err}"
-            )
+            log.warning(f"Failed getting {name} Github org repos for {user}: {err}")
             raise err
     return repos
 
@@ -349,9 +351,7 @@ def get_repository(user, repo_name):
     try:
         return github.get_repo(repo_name)
     except GithubException.UnknownObjectException:
-        log.warning(
-            f"Failed getting {repo_name} Github repo for {user}: {err}"
-        )
+        log.warning(f"Failed getting {repo_name} Github repo for {user}: {err}")
         return None
 
 
@@ -403,7 +403,9 @@ class ToolDeployment:
                 # the old_chart_name that we should use for the old release
                 # that needs deleting.
                 old_release_name = f"{self.old_chart_name}-{self.user.slug}"
-            if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
+            if old_release_name in helm.list_releases(
+                old_release_name, self.k8s_namespace
+            ):
                 helm.delete_eks(self.k8s_namespace, old_release_name)
         else:
             old_release_name = f"{self.user.slug}-{self.chart_name}"
@@ -433,11 +435,15 @@ class ToolDeployment:
         values.update(kwargs)
         set_values = []
         for key, val in values.items():
-            if val: # Helpful for debugging configs: ignore parameters with missing values and log that the value is missing.
+            if (
+                val
+            ):  # Helpful for debugging configs: ignore parameters with missing values and log that the value is missing.
                 escaped_val = val.replace(",", "\,")
                 set_values.extend(["--set", f"{key}={escaped_val}"])
             else:
-                log.warning(f"Missing value for helm chart param release - {self.release_name} version - {self.tool.version} namespace - {self.k8s_namespace}, key name - {key}")
+                log.warning(
+                    f"Missing value for helm chart param release - {self.release_name} version - {self.tool.version} namespace - {self.k8s_namespace}, key name - {key}"
+                )
         return set_values
 
     def install(self, **kwargs):
@@ -465,10 +471,7 @@ class ToolDeployment:
         if settings.EKS:
             helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
         else:
-            helm.delete(
-                deployment.metadata.name,
-                f"--namespace={self.k8s_namespace}"
-            )
+            helm.delete(deployment.metadata.name, f"--namespace={self.k8s_namespace}")
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
@@ -478,9 +481,7 @@ class ToolDeployment:
         )
 
     @classmethod
-    def get_deployments(
-        cls, user, id_token, search_name=None, search_version=None
-    ):
+    def get_deployments(cls, user, id_token, search_name=None, search_version=None):
         deployments = []
         k8s = KubernetesClient(id_token=id_token)
         results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
@@ -521,9 +522,7 @@ class ToolDeployment:
 
         try:
             deployment = self.get_deployment(id_token)
-            _, chart_version = deployment.metadata.labels["chart"].rsplit(
-                "-", 1
-            )
+            _, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
             return chart_version
         except ObjectDoesNotExist:
             return None
@@ -541,8 +540,7 @@ class ToolDeployment:
             return TOOL_STATUS_UNKNOWN
 
         conditions = {
-            condition.type: condition
-            for condition in deployment.status.conditions
+            condition.type: condition for condition in deployment.status.conditions
         }
 
         if "Available" in conditions:
@@ -558,7 +556,5 @@ class ToolDeployment:
             elif progressing_status == "False":
                 return TOOL_DEPLOY_FAILED
 
-        log.warning(
-            f"Unknown status for {self}: {deployment.status.conditions}"
-        )
+        log.warning(f"Unknown status for {self}: {deployment.status.conditions}")
         return TOOL_STATUS_UNKNOWN

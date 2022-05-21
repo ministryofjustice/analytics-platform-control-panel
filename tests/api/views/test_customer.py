@@ -12,13 +12,13 @@ def app():
 
 
 @pytest.yield_fixture
-def AuthorizationAPI():
-    with patch('controlpanel.api.models.app.auth0.AuthorizationAPI') as authz:
+def ExtendedAuth0():
+    with patch('controlpanel.api.models.app.auth0.ExtendedAuth0') as authz:
         yield authz.return_value
 
 
-def test_get(client, app, AuthorizationAPI):
-    AuthorizationAPI.get_group_members.return_value = [{
+def test_get(client, app, ExtendedAuth0):
+    ExtendedAuth0.groups.get_group_members.return_value = [{
         "email": "a.user@digital.justice.gov.uk",
         "user_id": "email|5955f7ee86da0c1d55foobar",
         "nickname": "a.user",
@@ -41,13 +41,13 @@ def test_get(client, app, AuthorizationAPI):
     assert set(response.data[0]) == expected_fields
 
 
-def test_post(client, app, AuthorizationAPI):
+def test_post(client, app, ExtendedAuth0):
     emails = ['test1@example.com', 'test2@example.com']
     data = {'email': ', '.join(emails)}
     response = client.post(reverse('appcustomers-list', (app.id,)), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    AuthorizationAPI.add_group_members.assert_called_with(
+    ExtendedAuth0.add_group_members_by_emails.assert_called_with(
         group_name=app.slug,
         emails=emails,
         user_options={'connection': 'email'},

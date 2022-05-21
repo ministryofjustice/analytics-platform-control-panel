@@ -90,7 +90,7 @@ def test_detail(client, app):
 
 @pytest.yield_fixture
 def authz():
-    with patch("controlpanel.api.cluster.auth0.AuthorizationAPI") as authz:
+    with patch("controlpanel.api.cluster.auth0.ExtendedAuth0") as authz:
         yield authz()
 
 
@@ -98,7 +98,7 @@ def test_delete(client, app, aws, authz):
     response = client.delete(reverse('app-detail', (app.id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    authz.delete_group.assert_called_with(group_name=app.slug)
+    authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
     aws.delete_role.assert_called_with(app.iam_role_name)
 
     response = client.get(reverse('app-detail', (app.id,)))
