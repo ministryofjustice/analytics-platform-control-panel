@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
-from controlpanel.api import auth0, aws
+from controlpanel.api import aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
 from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
@@ -123,18 +123,24 @@ class User:
                 f"--set=Username={self.user.slug}",
             )
 
+    def _uninstall_helm_charts(self, hel_charts):
+        if not hel_charts:
+            return
+        if settings.EKS:
+            helm.delete_eks(self.k8s_namespace, *hel_charts)
+        else:
+            helm.delete(*hel_charts)
+
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
+        # TODO, all those codes related to helm need to be reviewed
+        # The assumption for the following codes
+        #  - any helm chart having user's name is part of user's helm chart
+        #  - the user's helm charts will be only installed under own namespace or cpanel
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        # Delete all the user initialisation charts.
-        if not settings.EKS:
-            releases.append(f"init-user-{self.user.slug}")
-        releases.append(f"bootstrap-user-{self.user.slug}")
-        releases.append(f"provision-user-{self.user.slug}")
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, *releases)
-        else:
-            helm.delete(*releases)
+        cpanel_releases = (helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"))
+        self._uninstall_helm_charts(releases)
+        self._uninstall_helm_charts(cpanel_releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -237,7 +243,6 @@ class App:
 
     def delete(self):
         aws.delete_role(self.iam_role_name)
-        auth0.ExtendedAuth0().clear_up_app(app_name=self.app.slug, group_name=self.app.slug)
 
     @property
     def url(self):

@@ -17,6 +17,12 @@ def models(users):
     mommy.make('api.UserApp', user=users['normal_user'])
 
 
+@pytest.yield_fixture
+def ExtendedAuth0():
+    with patch('controlpanel.api.models.app.auth0.ExtendedAuth0') as authz:
+        yield authz.return_value
+
+
 def test_list(client, users):
     response = client.get(reverse('user-list'))
     assert response.status_code == status.HTTP_200_OK
@@ -72,12 +78,16 @@ def test_detail(client, users):
     assert set(users3bucket['s3bucket']) == expected_fields
 
 
-def test_delete(client, helm, aws, users):
+def test_delete(client, helm, aws, users, ExtendedAuth0):
     response = client.delete(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     aws.delete_role.assert_called()
     helm.delete.assert_called()
+
+    ExtendedAuth0.clear_up_user.assert_called_with(
+        user_id=users['normal_user'].auth0_id
+    )
 
     response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND

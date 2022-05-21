@@ -122,7 +122,7 @@ class User(AbstractUser):
 
     def delete(self, *args, **kwargs):
         cluster.User(self).delete()
-        auth0.ExtendedAuth0.clear_up_user(self.auth0_id)
+        auth0.ExtendedAuth0().clear_up_user(user_id=self.auth0_id)
         return super().delete(*args, **kwargs)
 
     def authentication_event(self):

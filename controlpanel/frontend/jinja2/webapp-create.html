@@ -7,7 +7,7 @@
 
 {% extends "base.html" %}
 
-{% set page_title = "Register an app -testing" %}
+{% set page_title = "Register an app" %}
 
 {% set new_datasource_html %}
   Create a new webapp data source
@@ -103,7 +103,8 @@
         "classes": "govuk-fieldset__legend--m",
       },
     },
-    "classes": "govuk-!-width-two-thirds",
+    "errorMessage": {"html": form.connections.errors|join(". ")} if form.connections.errors else {},
+    "classes": "govuk-checkboxes--error" if form.repo_url.errors else "",
     "hint": {
       "text": 'The connection method which is allowed for the customer to login'
     },
