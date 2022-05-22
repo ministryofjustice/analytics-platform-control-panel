@@ -128,6 +128,7 @@ def test_create_app_form_clean_new_datasource():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "connections": ["email"]
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -152,6 +153,7 @@ def test_create_app_form_clean_new_datasource():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "connections": ["email"]
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -170,6 +172,7 @@ def test_create_app_form_clean_existing_datasource():
         data={
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "existing",
+            "connections": ["email"]
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -189,6 +192,7 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "connections": ["email"]
         }
     )
     f.request = mock.MagicMock()

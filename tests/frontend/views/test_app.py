@@ -8,7 +8,7 @@ from model_mommy import mommy
 import pytest
 from rest_framework import status
 
-from controlpanel.api.auth0 import Auth0Error
+from controlpanel.api import auth0
 
 
 NUM_APPS = 3
@@ -21,8 +21,8 @@ def enable_db_for_all_tests(db):
 
 @pytest.yield_fixture(autouse=True)
 def github_api_token():
-    with patch('controlpanel.api.models.user.auth0.ManagementAPI') as ManagementAPI:
-        ManagementAPI.return_value.get_user.return_value = {
+    with patch('controlpanel.api.models.user.auth0.ExtendedAuth0') as ExtendedAuth0:
+        ExtendedAuth0.return_value.users.get.return_value = {
             'identities': [
                 {
                     'provider': 'github',
@@ -30,13 +30,7 @@ def github_api_token():
                 },
             ],
         }
-        yield ManagementAPI.return_value
-
-
-@pytest.yield_fixture(autouse=True)
-def customers():
-    with patch('controlpanel.api.models.app.auth0.AuthorizationAPI') as authz:
-        yield authz.return_value
+        yield ExtendedAuth0.return_value
 
 
 @pytest.fixture(autouse=True)
@@ -157,7 +151,7 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (detail, 'app_admin', status.HTTP_200_OK),
         (detail, 'normal_user', status.HTTP_403_FORBIDDEN),
 
-        (create, 'superuser', status.HTTP_302_FOUND),
+        (create, 'superuser', status.HTTP_200_OK),
         (create, 'app_admin', status.HTTP_403_FORBIDDEN),
         (create, 'normal_user', status.HTTP_403_FORBIDDEN),
 
@@ -268,19 +262,32 @@ def remove_customer_failure(client, response):
     return f'Failed removing customer' in messages
 
 
+@pytest.yield_fixture()
+def ExtendedAuth0():
+    with patch("auth0.v3.authentication.GetToken.client_credentials") as client_credentials:
+        client_credentials.return_value = {"access_token": "access_token_testing"}
+        yield auth0.ExtendedAuth0()
+
+
+@pytest.yield_fixture
+def fixture_delete_group_members(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "delete_group_members") as request:
+        yield request
+
+
 @pytest.mark.parametrize(
     'side_effect, expected_response',
     [
         (None, remove_customer_success),
-        (Auth0Error, remove_customer_failure),
+        (auth0.Auth0Error, remove_customer_failure),
     ],
     ids=[
         'success',
         'failure',
     ],
 )
-def test_delete_customers(client, app, customers, users, side_effect, expected_response):
-    customers.delete_group_members.side_effect = side_effect
+def test_delete_customers(client, app, fixture_delete_group_members, users, side_effect, expected_response):
+    fixture_delete_group_members.side_effect = side_effect
     client.force_login(users['superuser'])
     data = {'customer': ['email|1234']}
     response = client.post(reverse('remove-app-customer', kwargs={'pk': app.id}), data)

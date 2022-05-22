@@ -90,7 +90,7 @@ def test_detail(client, app):
 
 @pytest.yield_fixture
 def authz():
-    with patch("controlpanel.api.cluster.auth0.ExtendedAuth0") as authz:
+    with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
         yield authz()
 
 

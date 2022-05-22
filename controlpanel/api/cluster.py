@@ -123,11 +123,11 @@ class User:
                 f"--set=Username={self.user.slug}",
             )
 
-    def _uninstall_helm_charts(self, hel_charts):
+    def _uninstall_helm_charts(self, related_namespace, hel_charts):
         if not hel_charts:
             return
         if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, *hel_charts)
+            helm.delete_eks(related_namespace, *hel_charts)
         else:
             helm.delete(*hel_charts)
 
@@ -138,9 +138,9 @@ class User:
         #  - any helm chart having user's name is part of user's helm chart
         #  - the user's helm charts will be only installed under own namespace or cpanel
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        cpanel_releases = (helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"))
-        self._uninstall_helm_charts(releases)
-        self._uninstall_helm_charts(cpanel_releases)
+        cpanel_releases = helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}")
+        self._uninstall_helm_charts(self.k8s_namespace, releases)
+        self._uninstall_helm_charts(self.eks_cpanel_namespace, cpanel_releases)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(

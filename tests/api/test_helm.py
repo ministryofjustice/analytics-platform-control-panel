@@ -272,6 +272,7 @@ def test_delete():
             "baz",
         )
 
+
 def test_delete_eks():
     """
     The delete_eks function (helm 3)results in the expected helm command to be
