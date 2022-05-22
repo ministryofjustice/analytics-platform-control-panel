@@ -7,12 +7,12 @@ from rest_framework.reverse import reverse
 
 
 @pytest.yield_fixture
-def AuthorizationAPI():
-    with patch('controlpanel.api.auth0.AuthorizationAPI') as authz:
+def ExtendedAuth0():
+    with patch('controlpanel.api.auth0.ExtendedAuth0') as authz:
         yield authz.return_value
 
 
-def test_delete(client, AuthorizationAPI):
+def test_delete(client, ExtendedAuth0):
     app = mommy.make('api.App')
     user_id = 'email|12345'
 
@@ -20,7 +20,7 @@ def test_delete(client, AuthorizationAPI):
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    AuthorizationAPI.delete_group_members.assert_called_with(
+    ExtendedAuth0.groups.delete_group_members.assert_called_with(
         group_name=app.slug,
         user_ids=[user_id],
     )

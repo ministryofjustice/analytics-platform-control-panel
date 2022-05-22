@@ -66,17 +66,14 @@ def test_delete_eks(aws, helm, users):
     Delete with Helm 3.
     """
     user = users['normal_user']
-    helm.list_releases.return_value = ["chart-release", ]
+    helm.list_releases.return_value = ["chart-release"]
     with patch("controlpanel.api.aws.settings.EKS", True):
         cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete_eks.assert_called_once_with(
-        user.k8s_namespace,
-        "chart-release",
-        f"init-user-{user.slug}",
-        f"bootstrap-user-{user.slug}",
-        f"provision-user-{user.slug}"
+    helm.delete_eks.assert_has_calls(
+        [call("user-bob", "chart-release"),
+         call("cpanel", "chart-release")]
     )
 
 
@@ -91,12 +88,7 @@ def test_delete_eks_with_no_releases(aws, helm, users):
         cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete_eks.assert_called_once_with(
-        user.k8s_namespace,
-        f"init-user-{user.slug}",
-        f"bootstrap-user-{user.slug}",
-        f"provision-user-{user.slug}"
-    )
+    assert not helm.delete_eks.called
 
 
 def test_on_authenticate(helm, users):
