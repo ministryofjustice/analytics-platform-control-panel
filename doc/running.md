@@ -33,12 +33,6 @@ You must have:
 These should be installed using your own OS's package manager (`brew`, `apt`
 etc...).
 
-Note that we currently need to use an older version of `node`, so run the following to get a working version fo `node` and `npm`:
-```sh
-brew install node@12    # node@14 has been reported to work as well
-echo 'export PATH="/usr/local/opt/node@12/bin:$PATH"' >> ~/.zshrc    # exact command may vary; see recommendation in output of previous command
-```
-
 For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
 `kubectl`
 [installed too](https://kubernetes.io/docs/tasks/tools/install-kubectl/), and
