@@ -140,18 +140,24 @@ def test_create_user(ManagementAPI):
 
 
 @pytest.yield_fixture
-def fixture_get_users_email_search_empty(AuthorizationAPI):
+def ManagementAPIForTest():
+    with patch('controlpanel.api.auth0.ManagementAPI') as authz:
+        yield authz.return_value
+
+
+@pytest.yield_fixture
+def fixture_get_users_email_search_empty(ManagementAPIForTest):
     with patch.object(
-        AuthorizationAPI.mgmt, "get_users_email_search"
+        ManagementAPIForTest, "get_users_email_search"
     ) as get_users_email_search:
         get_users_email_search.return_value = []
         yield get_users_email_search
 
 
 @pytest.yield_fixture
-def fixture_get_users_email_search(AuthorizationAPI):
+def fixture_get_users_email_search(ManagementAPIForTest):
     with patch.object(
-        AuthorizationAPI.mgmt, "get_users_email_search"
+        ManagementAPIForTest, "get_users_email_search"
     ) as get_users_email_search:
         get_users_email_search.return_value = [
             {
@@ -174,8 +180,8 @@ def fixture_get_users_email_search(AuthorizationAPI):
 
 
 @pytest.yield_fixture
-def fixture_create_user(AuthorizationAPI):
-    with patch.object(AuthorizationAPI.mgmt, "create_user") as create_user:
+def fixture_create_user(ManagementAPIForTest):
+    with patch.object(ManagementAPIForTest, "create_user") as create_user:
         create_user.return_value = {
             "email": "foo@test.com",
             "email_verified": True,
@@ -218,12 +224,12 @@ def test_new_user_add_to_group(
         )
 
 
-def test_existing_user_add_to_group(AuthorizationAPI,
-                               fixture_groups,
-                               fixture_get_group,
-                               fixture_get_users_email_search,
-                               fixture_create_user
-                               ):
+def test_existing_user_add_to_group(
+        AuthorizationAPI,
+        fixture_groups,
+        fixture_get_group,
+        fixture_get_users_email_search,
+        fixture_create_user):
     with patch.object(AuthorizationAPI, "request") as auth_request:
         group_id = "foo-id"
         group_name = "foo"
