@@ -1,0 +1,26 @@
+name: Create a release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: release_${{ github.event.number }}
+          release_name: Release ${{ github.event.number }}
+          body: See [Pull Request ${{ github.event.number }}](https://github.com/ministryofjustice/analytics-platform-control-panel/pull/${{ github.event.number }}) for details
+          draft: false
+          prerelease: false
