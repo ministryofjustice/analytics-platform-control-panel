@@ -68,6 +68,36 @@
   {% set customers = app.customers %}
   {% set num_customers = customers|length %}
 
+
+  {% if request.user.has_perm('api.setup_app_auth0', app) and not has_setup_completed_for_client %}
+  <h2 class="govuk-heading-m">The auth0 client has not been setup completed for this app</h2>
+  <section class="cpanel-section">
+    <form action="{{ url('setup-app-auth0', kwargs={ "pk": app.id }) }}" method="post">
+      {{ csrf_input }}
+      <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-confirm-message="Are you sure you want to setup it for this app?">
+        Set up auth0 client
+      </button>
+    </form>
+  </section>
+  {% endif %}
+
+  {% if request.user.has_perm('api.reset_app_secret', app) %}
+  <h2 class="govuk-heading-m">Reset the secret of the app on AWS Secrets Manager.</h2>
+  <p>The secret mainly including all those important settings for deploying this app.
+    The secret name is <strong>{{ app.app_aws_secret_name }}</strong> on AWS Secrets Manager.
+    Reset action will reset the value of the secret back to init setup.</p>
+  <section class="cpanel-section">
+    <form action="{{ url('reset-app-secret', kwargs={ "pk": app.id }) }}" method="post">
+      {{ csrf_input }}
+      <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-confirm-message="Are you sure you want to reset the secret?">
+        Reset the secret
+      </button>
+    </form>
+  </section>
+  {% endif %}
+
   <h2 class="govuk-heading-m">
     App customers
     {{ modal_dialog(app_customers_html|safe) }}

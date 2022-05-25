@@ -135,17 +135,9 @@ class User:
         #  - any helm chart having user's name is part of user's helm chart
         #  - the user's helm charts will be only installed under own namespace or cpanel
         releases = helm.list_releases(namespace=self.k8s_namespace)
-<<<<<<< HEAD
-        cpanel_releases = helm.list_releases(
-            namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"
-        )
-        self._uninstall_helm_charts(releases)
-        self._uninstall_helm_charts(cpanel_releases)
-=======
         cpanel_releases = helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}")
         self._uninstall_helm_charts(self.k8s_namespace, releases)
         self._uninstall_helm_charts(self.eks_cpanel_namespace, cpanel_releases)
->>>>>>> 1e321bd (Fixed the failed tests)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(self.iam_role_name, bucket_arn, access_level, path_arns)
@@ -356,7 +348,7 @@ def get_repository(user, repo_name):
     github = Github(user.github_api_token)
     try:
         return github.get_repo(repo_name)
-    except GithubException.UnknownObjectException:
+    except GithubException.UnknownObjectException as err:
         log.warning(f"Failed getting {repo_name} Github repo for {user}: {err}")
         return None
 

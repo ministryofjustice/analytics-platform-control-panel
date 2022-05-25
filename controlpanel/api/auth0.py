@@ -102,6 +102,7 @@ class ExtendedAuth0(Auth0):
         self.roles.add_permission(role, view_app["_id"])
         group = self.groups.get_or_create(dict(name=app_name))
         self.groups.add_role(group["_id"], role["_id"])
+        return client
 
     def add_group_members_by_emails(self, group_name, emails, user_options={}):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
@@ -158,6 +159,13 @@ class ExtendedAuth0(Auth0):
         client = self.clients.search_first_match(dict(name=app_name))
         if client:
             self.clients.delete(client["client_id"])
+
+    def has_setup_completed_for_client(self, app_name):
+        client = self.clients.search_first_match(dict(name=app_name))
+        if not client:
+            return False
+
+        return len(self.groups.get_group_roles(app_name)) > 0
 
 
 class Auth0API(object):
@@ -407,7 +415,10 @@ class Groups(Auth0API, ExtendedAPIMethods):
 
     def get_group_id(self, group_name):
         group = self.search_first_match(dict(name=group_name))
-        return group.get("_id")
+        if not group:
+            return None
+        else:
+            return group.get("_id")
 
     def get_group_members(self, group_name):
         group_id = self.get_group_id(group_name)
