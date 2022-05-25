@@ -4,6 +4,7 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import App
+from tests.api.fixtures.aws import *
 
 
 @pytest.yield_fixture
@@ -35,7 +36,7 @@ def test_aws_create_role_calls_service(aws):
 
 
 @pytest.mark.django_db
-def test_delete_also_deletes_app_artifacts(auth0):
+def test_delete_also_deletes_app_artifacts(auth0, secretsmanager):
     app = App.objects.create(repo_url="https://example.com/repo_name")
     authz = auth0.ExtendedAuth0.return_value
     with patch("controlpanel.api.models.app.cluster") as cluster:
