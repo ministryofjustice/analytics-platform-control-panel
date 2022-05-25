@@ -354,7 +354,7 @@ def get_repository(user, repo_name):
     github = Github(user.github_api_token)
     try:
         return github.get_repo(repo_name)
-    except GithubException.UnknownObjectException:
+    except GithubException.UnknownObjectException as err:
         log.warning(
             f"Failed getting {repo_name} Github repo for {user}: {err}"
         )

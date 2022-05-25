@@ -20,6 +20,7 @@ from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
 from controlpanel.api import auth0
+from controlpanel.api import aws
 from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
 from controlpanel.api.models import (
@@ -109,6 +110,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             errors['customer_email'] = add_customer_form_errors['customer_email']
 
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
+        context['has_setup_completed_for_client'] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
 
         return context
 
@@ -159,10 +161,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 access_level='readonly',
             )
 
-    def form_valid(self, form):
-        repo_url = form.cleaned_data["repo_url"]
-        _, name = repo_url.rsplit("/", 1)
-
+    def _register_app(self, form, name, repo_url):
         self.object = App.objects.create(
             name=name,
             repo_url=repo_url,
@@ -176,9 +175,18 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             is_admin=True,
         )
 
-        auth0.ExtendedAuth0().setup_auth0_client(
+        client = auth0.ExtendedAuth0().setup_auth0_client(
             self.object.slug,
             connections=form.cleaned_data.get('connections'))
+
+        aws.AWSSecretManager().create_or_update(
+            secret_name=self.object.app_aws_secret_name,
+            secret_data=self.object.construct_secret_data(client))
+
+    def form_valid(self, form):
+        repo_url = form.cleaned_data["repo_url"]
+        _, name = repo_url.rsplit("/", 1)
+        self._register_app(form, name, repo_url)
 
         return FormMixin.form_valid(self, form)
 
@@ -274,6 +282,46 @@ class UpdateApp(
 
     def post(self, request, *args, **kwargs):
         self.perform_update(**kwargs)
+        return super().post(request, *args, **kwargs)
+
+
+class SetupAppAuth0(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    SingleObjectMixin,
+    RedirectView,
+):
+    http_method_names = ['post']
+    permission_required = 'api.setup_app_auth0'
+    model = App
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse_lazy("manage-app", kwargs={'pk': kwargs['pk']})
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        auth0.ExtendedAuth0().setup_auth0_client(app_name=app.slug)
+        return super().post(request, *args, **kwargs)
+
+
+class ResetAppSecret(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    SingleObjectMixin,
+    RedirectView,
+):
+    http_method_names = ['post']
+    permission_required = 'api.setup_app_auth0'
+    model = App
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse_lazy("manage-app", kwargs={'pk': kwargs['pk']})
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        client = auth0.ExtendedAuth0().clients.search_first_match(dict(name=app.slug))
+        if client:
+            aws.AWSSecretManager().create_or_update(app.app_aws_secret_name, app.construct_secret_data(client))
         return super().post(request, *args, **kwargs)
 
 

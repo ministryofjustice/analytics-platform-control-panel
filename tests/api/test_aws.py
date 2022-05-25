@@ -767,3 +767,4 @@ def test_revoke_group_bucket_access(iam, group, resources):
     assert 'readonly' not in statements
     assert 'readwrite' not in statements
     assert 'list' not in statements
+
