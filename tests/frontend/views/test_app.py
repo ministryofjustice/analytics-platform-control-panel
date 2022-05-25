@@ -1,14 +1,12 @@
 from unittest.mock import patch
 
 from django.contrib.messages import get_messages
-from django.template.response import TemplateResponse
-from django.views.generic.base import TemplateResponseMixin
 from django.urls import reverse
 from model_mommy import mommy
-import pytest
 from rest_framework import status
 
 from controlpanel.api import auth0
+from tests.api.fixtures.aws import *
 
 
 NUM_APPS = 3
@@ -180,7 +178,7 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (connect_bucket, 'normal_user', status.HTTP_403_FORBIDDEN),
     ],
 )
-def test_permissions(client, app, s3buckets, users, view, user, expected_status):
+def test_permissions(client, app, s3buckets, users, view, user, expected_status, secretsmanager):
     client.force_login(users[user])
     response = view(client, app, users, s3buckets)
     assert response.status_code == expected_status
