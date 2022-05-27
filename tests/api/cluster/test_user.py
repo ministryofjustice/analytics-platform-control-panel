@@ -50,11 +50,10 @@ def test_create(aws, helm, settings, users):
 def test_reset_home(helm, users):
     user = users['normal_user']
     cluster.User(user).reset_home()
-
     expected_calls = [
         call(
-            f"reset-user-home-{user.slug}",
-            f"mojanalytics/reset-user-home",
+            f"reset-user-efs-home-{user.slug}",
+            f"mojanalytics/reset-user-efs-home",
             f"--namespace=user-{user.slug}",
             f"--set=Username={user.slug}",
         ),
