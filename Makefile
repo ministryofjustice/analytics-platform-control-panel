@@ -5,6 +5,8 @@ IMAGE_TAG ?= local
 DOCKER_BUILDKIT?=1
 REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
 MAKEFLAGS += -j2
+REGION?=eu-west-1
+AWS_PROFILE?=admin-dev
 
 include Makefile.local.mk
 export
@@ -15,7 +17,7 @@ clean:
 	docker-compose down --volumes --remove-orphans
 
 build:
-	@docker-compose build frontend
+	@docker-compose build frontend_eks
 
 eks:
 	@docker-compose build frontend_eks
