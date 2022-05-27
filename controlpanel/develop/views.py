@@ -1,14 +1,38 @@
+import json
+import subprocess
+from os import environ
 from typing import List
 
+from controlpanel.api.models import User
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
+
+
+def run_command(command, *args):
+        env = environ.copy()
+        output = subprocess.Popen(
+            [command, *args],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            encoding="utf8",
+            env=env,
+        )
+        out, err = output.communicate()
+        return out, err
 
 
 def installed_tools(username: str) -> List[str]:
     # TODO: Get a list of this user's installed tools and return
     # a list of string ["like", "this"]
 
+    user = User.objects.get(username=username)
+    raw_cmd = f"kubectl get tools -n user-{username} -o json"
+    raw_bits = raw_cmd.split()
+    command = raw_bits[0]
+    args = raw_bits[1:]
+    out, err = run_command(command, *args)
+    breakpoint()
     return []
 
 
