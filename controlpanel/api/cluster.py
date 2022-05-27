@@ -46,94 +46,107 @@ class User:
         self.k8s_namespace = f"user-{self.user.slug}"
         self.eks_cpanel_namespace = "cpanel"
 
+        self.user_helm_charts = []
+        self.helm_charts_required()
+
+    def helm_charts_required(self):
+        # The full list of the charts required for a user under different situatioins
+        # This is a user chart repo which may store somewhere rather hard coding here
+        # The order defined in the follow list is important
+        self.user_helm_charts = {
+            "installation": [
+                {"namespace": self.eks_cpanel_namespace,
+                 "release": f"bootstrap-user-{self.user.slug}",
+                 "chart": f"{settings.HELM_REPO}/bootstrap-user",
+                 "values": {"Username": self.user.slug}},
+                {"namespace": self.k8s_namespace,
+                 "release": f"provision-user-{self.user.slug}",
+                 "chart": f"{settings.HELM_REPO}/provision-user",
+                 "values": {
+                     "Username": self.user.slug,
+                     "Efsvolume": settings.EFS_VOLUME,
+                     "OidcDomain": settings.OIDC_DOMAIN,
+                     "Email": self.user.email,
+                     "Fullname": self.user.name
+                 }}],
+            "reset_home": [
+                {"namespace": self.k8s_namespace,
+                 "release": f"reset-user-efs-home-{self.user.slug}",
+                 "chart": f"{settings.HELM_REPO}/config-user",
+                 "values": {
+                     "Username": self.user.slug
+                 }}
+            ]
+        }
+
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_user_{self.user.username.lower()}"
 
+    def _run_helm_install_command(self, helm_chart_item):
+        values = []
+        for key, value in helm_chart_item["values"].items():
+            values.append("{}={}".format(key, value))
+        helm.upgrade_release(
+            helm_chart_item['release'],  # release
+            helm_chart_item['chart'],  # chart
+            f"--namespace={helm_chart_item['namespace']}",
+            f"--set="
+            + (
+                ",".join(values)
+            ),
+        )
+
     def _init_user(self):
-        if settings.EKS:
-            helm.upgrade_release(
-                f"bootstrap-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/bootstrap-user",  # chart
-                f"--set="
-                + (
-                    f"Username={self.user.slug}"
-                ),
-            )
-            helm.upgrade_release(
-                f"provision-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/provision-user",  # chart
-                f"--namespace={self.k8s_namespace}",
-                f"--set="
-                + (
-                    f"Username={self.user.slug},"
-                    f"Efsvolume={settings.EFS_VOLUME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                ),
-            )
-        else:
-            helm.upgrade_release(
-                f"init-user-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/init-user",  # chart
-                f"--set="
-                + (
-                    f"Env={settings.ENV},"
-                    f"NFSHostname={settings.NFS_HOSTNAME},"
-                    f"EFSHostname={settings.EFS_HOSTNAME},"
-                    f"OidcDomain={settings.OIDC_DOMAIN},"
-                    f"Email={self.user.email},"
-                    f"Fullname={self.user.name},"
-                    f"Username={self.user.slug}"
-                ),
-            )
+        for helm_chart_item in self.user_helm_charts["installation"]:
+            self._run_helm_install_command(helm_chart_item)
 
     def create(self):
         aws.create_user_role(self.user)
-
         self._init_user()
-
-        helm.upgrade_release(
-            f"config-user-{self.user.slug}",  # release
-            f"{settings.HELM_REPO}/config-user",  # chart
-            f"--namespace={self.k8s_namespace}",
-            f"--set=Username={self.user.slug}",
-        )
 
     def reset_home(self):
         """
         Reset the user's home directory.
         """
-        if settings.EKS:
-            # On the new EKS infrastructure, the user's home directory[s] is
-            # organised differently and on EFS. This is why we use a separate
-            # helm chart.
-            helm.upgrade_release(
-                f"reset-user-efs-home-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/reset-user-efs-home",  # chart
-                f"--namespace=user-{self.user.slug}",
-                f"--set=Username={self.user.slug}",
-            )
-        else:
-            helm.upgrade_release(
-                f"reset-user-home-{self.user.slug}",  # release
-                f"{settings.HELM_REPO}/reset-user-home",  # chart
-                f"--namespace=user-{self.user.slug}",
-                f"--set=Username={self.user.slug}",
-            )
+        for helm_chart_item in self.user_helm_charts["reset_home"]:
+            self._run_helm_install_command(helm_chart_item)
+
+    def _uninstall_helm_charts(self, related_namespace, hel_charts, root_char=""):
+        if not hel_charts:
+            return
+
+        helm.delete_eks(related_namespace, *hel_charts)
+
+    def _filter_out_installation_charts(self, helm_charts):
+        installed_charts = []
+        found_chart = None
+        for helm_chart_item in self.user_helm_charts["installation"]:
+            if helm_chart_item['release'] in helm_charts:
+                installed_charts.append(helm_chart_item['release'])
+                found_chart = helm_chart_item['release']
+        if found_chart:
+            helm_charts.remove(found_chart)
+        return installed_charts
+
+    def _clear_up_helm_charts(self):
+        # The assumption for the following codes
+        #  - any helm chart having user's name is part of user's helm chart
+        #  - the user's helm charts will be only installed under own namespace or cpanel
+        user_releases = helm.list_releases(namespace=self.k8s_namespace)
+        cpanel_releases = helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}")
+
+        installed_charts = self._filter_out_installation_charts(user_releases)
+        self._uninstall_helm_charts(self.k8s_namespace, user_releases)
+        self._uninstall_helm_charts(self.k8s_namespace, installed_charts)
+
+        installed_charts = self._filter_out_installation_charts(cpanel_releases)
+        self._uninstall_helm_charts(self.eks_cpanel_namespace, cpanel_releases)
+        self._uninstall_helm_charts(self.eks_cpanel_namespace, installed_charts)
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
-        releases = helm.list_releases(namespace=self.k8s_namespace)
-        # Delete all the user initialisation charts.
-        releases.append(f"init-user-{self.user.slug}")
-        releases.append(f"bootstrap-user-{self.user.slug}")
-        releases.append(f"provision-user-{self.user.slug}")
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, *releases)
-        else:
-            helm.delete(*releases)
+        self._clear_up_helm_charts()
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -143,51 +156,19 @@ class User:
     def revoke_bucket_access(self, bucket_arn):
         aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
-    def on_authenticate(self):
+    def _has_required_installation_charts(self):
+        """ Checks if the expected helm charts exist for the user.
         """
-        Run on each authenticated login on the control panel. Checks if the
-        expected helm charts exist for the user. If not, will set things up
-        properly. This function also checks if the user is ready to migrate
-        and is logged into the new EKS infrastructure. If so, runs all the
-        charts and AWS updates to cause the migration to be fulfilled.
-        """
-        init_chart_name = f"init-user-{self.user.slug}"
-        bootstrap_chart_name = f"bootstrap-user-{self.user.slug}"
-        provision_chart_name = f"provision-user-{self.user.slug}"
-        releases = set(helm.list_releases(namespace=self.k8s_namespace))
+        installed_helm_charts = helm.list_releases(namespace=self.k8s_namespace)
+        installed_helm_charts.extend(helm.list_releases(namespace=self.eks_cpanel_namespace,
+                                                        release=f"user-{self.user.slug}"))
+        for helm_chart_item in self.user_helm_charts["installation"]:
+            if helm_chart_item['release'] not in installed_helm_charts:
+                return False
+        return True
 
-        if not settings.EKS:
-            # On the old infrastructure...
-            if init_chart_name not in releases:
-                # The user has their charts deleted, so recreate.
-                log.warning(f"Re-running init user chart for {self.user.slug}")
-                self._init_user()
-
-            return
-
-        # On the new cluster, check if the bootstrap/provision helm
-        # charts exist. If not, this is the user's first login to the new
-        # platform. Run these helm charts to migrate the user to the new
-        # platform. Ensure this is all stored in the database in case they
-        # try to log into the control panel on the old infrastructure.
-        bootstrap_releases = set(helm.list_releases(namespace=self.eks_cpanel_namespace, release=bootstrap_chart_name))
-        has_charts = (
-            bootstrap_chart_name in bootstrap_releases
-            and
-            provision_chart_name in releases
-        )
-
-        if self.user.migration_state == self.user.COMPLETE:
-            # If the authenticated user has already migrated to this EKS system,
-            # then we just want to check that they have previously run the required
-            # charts before returning
-            if not has_charts:
-                # User has migrated but for some reason has no charts so we should re-init them.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._init_user()
-
-            return
-
+    def _migrate_user_to_eks(self):
+        # TODO This function should be removed once the migration is complete.
         # User's migration state is not yet marked as complete, and so we
         # need to migrate their AWS role before running the init-user
         # helm charts before marked it as such
@@ -207,6 +188,25 @@ class User:
         self.user.save()
 
         log.info(f"Completed migration of user {self.user.slug}")
+
+    def on_authenticate(self):
+        """
+        Run on each authenticated login on the control panel.
+        This function also checks if the user is ready to migrate
+        and is logged into the new EKS infrastructure. If so, runs all the
+        charts and AWS updates to cause the migration to be fulfilled.
+        """
+        if self.user.migration_state == self.user.COMPLETE:
+            # If the authenticated user has already migrated to this EKS system,
+            # then we just want to check that they have previously run the required
+            # charts before returning
+            if not self._has_required_installation_charts():
+                # User has migrated but for some reason has no charts so we should re-init them.
+                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+                self._clear_up_helm_charts()
+                self._init_user()
+        else :
+            self._migrate_user_to_eks()
 
 
 class App:
@@ -394,21 +394,16 @@ class ToolDeployment:
         We can remove this once every user is on new naming
         scheme for RStudio.
         """
-        if settings.EKS:
-            old_release_name = f"{self.chart_name}-{self.user.slug}"
-            if self.old_chart_name:
-                # If an old_chart_name has been passed into the deployment, it
-                # means the currently deployed instance of the tool is from a
-                # different chart to the one for this tool. Therefore, it's
-                # the old_chart_name that we should use for the old release
-                # that needs deleting.
-                old_release_name = f"{self.old_chart_name}-{self.user.slug}"
-            if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-                helm.delete_eks(self.k8s_namespace, old_release_name)
-        else:
-            old_release_name = f"{self.user.slug}-{self.chart_name}"
-            if old_release_name in helm.list_releases(old_release_name):
-                helm.delete(old_release_name)
+        old_release_name = f"{self.chart_name}-{self.user.slug}"
+        if self.old_chart_name:
+            # If an old_chart_name has been passed into the deployment, it
+            # means the currently deployed instance of the tool is from a
+            # different chart to the one for this tool. Therefore, it's
+            # the old_chart_name that we should use for the old release
+            # that needs deleting.
+            old_release_name = f"{self.old_chart_name}-{self.user.slug}"
+        if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
+            helm.delete_eks(self.k8s_namespace, old_release_name)
 
     def _set_values(self, **kwargs):
         """

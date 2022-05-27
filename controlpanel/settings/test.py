@@ -37,3 +37,5 @@ SLACK = {
     "api_token": "test-slack-api-token",
     "channel": "test-slack-channel",
 }
+
+EKS = True
