@@ -73,11 +73,9 @@ RUN apt-get install -y unzip
 # RUN apt-get install -y awscli
 
 # RUN apt-get install -y aws-iam-authenticator
-COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/startup_dev_worker.sh ./
-COPY scripts/replace_aws_iam_command.py scripts/create_aws_conf.py ./
-RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh
-
-COPY scripts/load_dev_tools.py ./
+COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/startup_dev_worker.sh scripts/run_tests.sh ./
+COPY scripts/replace_aws_iam_command.py scripts/create_aws_conf.py scripts/load_dev_tools.py ./
+RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh && chmod +x ./run_tests.sh
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 RUN unzip awscliv2.zip
