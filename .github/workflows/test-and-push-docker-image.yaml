@@ -58,15 +58,8 @@ jobs:
           echo ::set-output name=tag::${TAG}
           echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-      - name: Build image
-        run: make build
-        env:
-          NETWORK: host
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ steps.prep.outputs.tag }}
-
-      - name: Build EKS image
-        run: make eks 
+      - name: Build image for EKS
+        run: make build 
         env:
           NETWORK: host
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -79,13 +72,7 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ steps.prep.outputs.tag }}
 
-      - name: Push image
-        run: make push
-        env:
-          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ steps.prep.outputs.tag }}
-
-      - name: Push eks 
+      - name: Push image for EKS to ECR
         run: make push_eks
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
