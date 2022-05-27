@@ -6,7 +6,7 @@ services:
     build:
       context: .
       network: ${NETWORK:-default}
-      dockerfile: Dockerfile_EKS
+      dockerfile: Dockerfile
 
     stdin_open: true
     tty: true
@@ -21,7 +21,7 @@ services:
     build:
       context: .
       network: ${NETWORK:-default}
-      dockerfile: Dockerfile_EKS
+      dockerfile: Dockerfile
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: ["./startup_dev_migration.sh"]
   worker:
@@ -29,7 +29,7 @@ services:
     build:
       context: .
       network: ${NETWORK:-default}
-      dockerfile: Dockerfile_EKS
+      dockerfile: Dockerfile
     stdin_open: true
     tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
