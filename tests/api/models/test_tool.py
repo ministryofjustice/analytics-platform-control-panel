@@ -1,10 +1,9 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
+from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
 from django.conf import settings
 from model_mommy import mommy
-import pytest
-
-from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
 
 
 @pytest.fixture
@@ -30,9 +29,6 @@ def test_deploy_for_generic(helm, token_hex, tool, users):
 
     tool_deployment = ToolDeployment(tool, user)
     tool_deployment.save()
-
-    # uninstall tool with old naming scheme
-    helm.delete.assert_called_with(old_release_name)
 
     # install new release
     helm.upgrade_release.assert_called_with(
