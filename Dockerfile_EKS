@@ -19,6 +19,7 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   HELM_HOME=/tmp/helm \
   HELM_CONFIG_HOME=/tmp/helm/repository \
   HELM_CACHE_HOME=/tmp/helm/cache \
+  HELM_REPOSITORY_CACHE=/tmp/helm/cache/repository \
   HELM_DATA_HOME=/tmp/helm/data \
   EKS=True
 

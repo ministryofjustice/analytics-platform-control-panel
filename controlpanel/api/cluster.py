@@ -168,7 +168,7 @@ class User:
         return True
 
     def _migrate_user_to_eks(self):
-        # TODO This function should be removed once the migration is complete.
+        # TODO This function should be removed.
         # User's migration state is not yet marked as complete, and so we
         # need to migrate their AWS role before running the init-user
         # helm charts before marked it as such
@@ -192,21 +192,13 @@ class User:
     def on_authenticate(self):
         """
         Run on each authenticated login on the control panel.
-        This function also checks if the user is ready to migrate
-        and is logged into the new EKS infrastructure. If so, runs all the
-        charts and AWS updates to cause the migration to be fulfilled.
+        This function also checks whether the users has all those charts installed or not
         """
-        if self.user.migration_state == self.user.COMPLETE:
-            # If the authenticated user has already migrated to this EKS system,
-            # then we just want to check that they have previously run the required
-            # charts before returning
-            if not self._has_required_installation_charts():
-                # User has migrated but for some reason has no charts so we should re-init them.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._clear_up_helm_charts()
-                self._init_user()
-        else :
-            self._migrate_user_to_eks()
+        if not self._has_required_installation_charts():
+            # For some reason, user does not have all the charts required so we should re-init them.
+            log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+            self._clear_up_helm_charts()
+            self._init_user()
 
 
 class App:

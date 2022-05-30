@@ -346,9 +346,12 @@ def create_bucket(bucket_name, is_data_warehouse=False):
 
 def tag_bucket(bucket_name, tags):
     """Add the given `tags` to the S3 bucket called `bucket_name`"""
-
-    bucket = boto3.resource("s3").Bucket(bucket_name)
-    _tag_bucket(bucket, tags)
+    s3_resource = boto3.resource("s3")
+    try:
+        bucket = s3_resource.Bucket(bucket_name)
+        _tag_bucket(bucket, tags)
+    except s3_resource.meta.client.exceptions.NoSuchBucket:
+        log.warning(f"Bucket {bucket_name} doesn't exist")
 
 
 def _tag_bucket(boto_bucket, tags):
