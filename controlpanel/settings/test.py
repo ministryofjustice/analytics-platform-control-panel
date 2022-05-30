@@ -39,3 +39,5 @@ SLACK = {
 }
 
 EKS = True
+# TODO the auto-testing is still running on non-EKS docker, need to be updated
+HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/repository/cache")
