@@ -61,37 +61,6 @@ def test_reset_home(helm, users):
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
-def test_delete(aws, helm, users):
-    user = users['normal_user']
-    helm.list_releases.return_value = ["chart-release", ]
-    cluster.User(user).delete()
-
-    aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete.assert_called_once_with(
-        "chart-release",
-        f"init-user-{user.slug}",
-        f"bootstrap-user-{user.slug}",
-        f"provision-user-{user.slug}"
-    )
-
-
-def test_delete_with_no_releases(aws, helm, users):
-    """
-    If there are no releases associated with the user, don't try to delete with
-    an empty list of releases.
-    """
-    user = users['normal_user']
-    helm.list_releases.return_value = []
-    cluster.User(user).delete()
-
-    aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete.assert_called_once_with(
-        f"init-user-{user.slug}",
-        f"bootstrap-user-{user.slug}",
-        f"provision-user-{user.slug}"
-    )
-
-
 def test_delete_eks(aws, helm, users):
     """
     Delete with Helm 3.
