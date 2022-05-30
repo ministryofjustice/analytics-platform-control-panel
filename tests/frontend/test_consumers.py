@@ -1,15 +1,10 @@
 import json
+from unittest.mock import Mock, patch
 
 import pytest
-from unittest.mock import patch, Mock
-
+from controlpanel.api.cluster import (HOME_RESETTING, TOOL_DEPLOYING,
+                                      TOOL_READY, TOOL_RESTARTING)
 from controlpanel.api.models import Tool, ToolDeployment, User
-from controlpanel.api.cluster import (
-    TOOL_DEPLOYING,
-    TOOL_READY,
-    TOOL_RESTARTING,
-    HOME_RESETTING,
-)
 from controlpanel.frontend import consumers
 
 
@@ -23,8 +18,8 @@ def users(db):
 @pytest.fixture
 def tools(db):
     print("Setting up tools...")
-    Tool(chart_name="a_tool").save()
-    Tool(chart_name="another_tool").save()
+    Tool(chart_name="a_tool", target_infrastructure="e").save()
+    Tool(chart_name="another_tool", target_infrastructure="e").save()
 
 
 @pytest.yield_fixture
