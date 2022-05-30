@@ -2,14 +2,15 @@ import json
 from subprocess import CalledProcessError
 from unittest.mock import patch
 
-from botocore.exceptions import ClientError
-from model_mommy import mommy
 import pytest
+from botocore.exceptions import ClientError
+from controlpanel.api.models import User
+from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from controlpanel.api.models import User
-
+# I've experienced some issues running individual tests here, 
+# but seems to run okay as a complete run - Gemma
 
 @pytest.fixture(autouse=True)
 def models(users):
@@ -77,7 +78,7 @@ def test_delete(client, helm, aws, users):
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     aws.delete_role.assert_called()
-    helm.delete.assert_called()
+    helm.delete_eks.assert_called()
 
     response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND
