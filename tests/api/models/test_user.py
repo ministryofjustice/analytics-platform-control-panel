@@ -5,6 +5,7 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import User
+from controlpanel.api import cluster
 
 
 @pytest.fixture(autouse=True)
@@ -43,12 +44,17 @@ def test_helm_delete_user(helm):
 
     user.delete()
 
-    helm.list_releases.assert_called_with(namespace=user.k8s_namespace)
+    expected_calls = [
+        call(namespace=cluster.User(user).eks_cpanel_namespace, release=user.k8s_namespace),
+        call(namespace=user.k8s_namespace),
+    ]
+    helm.list_releases.has_calls(expected_calls)
+
     expected_calls = [
         call(helm.list_releases.return_value),
         call(f"init-user-{user.slug}"),
     ]
-    helm.delete.has_calls(expected_calls)
+    helm.delete_eks.has_calls(expected_calls)
 
 
 def test_aws_create_role_calls_service(aws):

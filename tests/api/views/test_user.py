@@ -77,7 +77,7 @@ def test_delete(client, helm, aws, users):
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     aws.delete_role.assert_called()
-    helm.delete.assert_called()
+    helm.delete_eks.assert_called()
 
     response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
     assert response.status_code == status.HTTP_404_NOT_FOUND

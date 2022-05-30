@@ -72,7 +72,7 @@ class User:
             "reset_home": [
                 {"namespace": self.k8s_namespace,
                  "release": f"reset-user-efs-home-{self.user.slug}",
-                 "chart": f"{settings.HELM_REPO}/config-user",
+                 "chart": f"{settings.HELM_REPO}/reset-user-efs-home",
                  "values": {
                      "Username": self.user.slug
                  }}

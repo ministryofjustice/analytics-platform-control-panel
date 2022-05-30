@@ -373,7 +373,7 @@ TOOLS = {
 # Helm repo where tool charts are hosted
 HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
 
-HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/cache/repository")
+HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/repository/cache")
 
 
 # The number of seconds helm should wait for helm delete to complete.
