@@ -194,11 +194,15 @@ class User:
         Run on each authenticated login on the control panel.
         This function also checks whether the users has all those charts installed or not
         """
-        if not self._has_required_installation_charts():
-            # For some reason, user does not have all the charts required so we should re-init them.
-            log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-            self._clear_up_helm_charts()
-            self._init_user()
+        if self.user.migration_state == self.user.PENDING:
+            # TODO keep the following part for short term, should be removed soon
+            self._migrate_user_to_eks()
+        else:
+            if not self._has_required_installation_charts():
+                # For some reason, user does not have all the charts required so we should re-init them.
+                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+                self._clear_up_helm_charts()
+                self._init_user()
 
 
 class App:

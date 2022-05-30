@@ -117,8 +117,6 @@ def test_on_authenticate_eks_completely_new_user(helm, users):
         user._init_user = MagicMock()
         user.on_authenticate()
         user._init_user.assert_called_once_with()
-    updated_user_model = User.objects.get(username="bob")
-    assert updated_user_model.migration_state == User.COMPLETE
 
 
 def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
@@ -128,7 +126,6 @@ def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
     """
     user_model = users['normal_user']
     user_model.migration_state = User.PENDING  # the user is ready to migrate.
-    init_helm_chart = f"init-user-{user_model.slug}"
 
     with patch("controlpanel.api.aws.settings.EKS", True):
         user = cluster.User(user_model)
@@ -160,7 +157,7 @@ def test_on_authenticate_eks_migrated_user(aws, helm, users):
         assert helm.delete.call_count == 0
 
 
-def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
+def test_on_authenticate_user_missing_charts(aws, helm, users):
     """
     On EKS, if a migrated user logs in, and they are missing their charts,
     these are recreated.
@@ -174,6 +171,4 @@ def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
         user.on_authenticate()
         # The charts are recreated.
         assert user._init_user.call_count == 1
-        # But other "migration" related events don't happen.
-        assert aws.migrate_user_role.call_count == 0
-        assert helm.delete.call_count == 0
+        assert helm.delete_eks.call_count == 0
