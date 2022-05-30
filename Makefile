@@ -25,7 +25,7 @@ test-python:
 	@echo
 	@echo "> Running Python Tests (In Docker)..."
 	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig \
-		frontend sh -c "pytest tests --color=yes"
+		frontend_eks sh -c "pytest tests --color=yes"
 
 ## test: Run tests in Docker container
 test: test-python
