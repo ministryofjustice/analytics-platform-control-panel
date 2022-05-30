@@ -1,12 +1,12 @@
 import os
-import time
-import pytest
 import subprocess
+import time
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
+
+import pytest
 from controlpanel.api import helm
 from django.conf import settings
-
 
 # ------ Original unit tests
 
@@ -107,6 +107,7 @@ def test_helm_upgrade_release():
 # ------ New (comprehensive) unit tests.
 
 
+@pytest.mark.indevelopment
 def test_get_repo_path():
     """
     The repo path is different depend on if we're running on EKS or the old
@@ -115,17 +116,10 @@ def test_get_repo_path():
     """
     assert helm.get_repo_path() == os.path.join(
         helm.HELM_HOME,
-        "repository",
         "cache",
+        "repository",
         f"{settings.HELM_REPO}-index.yaml",
     )
-    with patch("controlpanel.api.helm.settings.EKS", True):
-        assert helm.get_repo_path() == os.path.join(
-            helm.HELM_HOME,
-            "cache",
-            "repository",
-            f"{settings.HELM_REPO}-index.yaml",
-        )
 
 
 def test_execute_ignores_debug():
