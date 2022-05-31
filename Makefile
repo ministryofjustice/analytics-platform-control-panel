@@ -23,7 +23,7 @@ test-python: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-python:
 	@echo
 	@echo "> Running Python Tests (In Docker)..."
-	@docker-compose run --rm \
+	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig \
 		frontend sh -c "./run_tests.sh"
 
 ## test: Run tests in Docker container
