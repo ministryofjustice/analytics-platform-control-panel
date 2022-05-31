@@ -29,6 +29,9 @@ test-python:
 ## test: Run tests in Docker container
 test: test-python
 
+## test-local: Build and run tests
+test-local: build test
+
 prepare-up:
 	@docker-compose up -d db
 	@docker-compose run --rm --no-deps frontend sh -c "do sleep 2;done"
