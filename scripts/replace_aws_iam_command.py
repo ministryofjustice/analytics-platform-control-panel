@@ -25,7 +25,7 @@ if __name__ == '__main__':
         "--cluster-name",
         cluster_id,
         "--profile",
-        "admin-dev"
+        AWS_CLUSTER_PROFILE
     ]
     kube_yaml["users"][0]["user"]["exec"]["args"] = new_args
 
