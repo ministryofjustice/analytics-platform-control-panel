@@ -107,7 +107,6 @@ def test_helm_upgrade_release():
 # ------ New (comprehensive) unit tests.
 
 
-@pytest.mark.indevelopment
 def test_get_repo_path():
     """
     The repo path is different depend on if we're running on EKS or the old
