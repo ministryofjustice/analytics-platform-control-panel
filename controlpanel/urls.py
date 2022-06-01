@@ -1,6 +1,6 @@
+from controlpanel.api.views import health_check
 from django.conf import settings
 from django.contrib import admin
-from controlpanel.api.views import health_check
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from django_prometheus import exports
@@ -17,7 +17,7 @@ urlpatterns = [
     path("metrics", exports.ExportToDjangoView, name="prometheus-django-metrics"),
 ]
 
-if "controlpanel.develop" in settings.INSTALLED_APPS and settings.DEBUG:
+if settings.DEBUG:
     urlpatterns += [
         path("develop/", include('controlpanel.develop.urls')),
     ]
