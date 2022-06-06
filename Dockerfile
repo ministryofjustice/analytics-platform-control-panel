@@ -32,6 +32,8 @@ RUN apt-get update \
         postgresql-client \
         wget \
         less \
+        unzip \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
@@ -53,33 +55,16 @@ RUN pip install -U --no-cache-dir pip
 RUN pip install -r requirements.txt
 RUN pip uninstall python-dotenv -y
 
-# RUN apt-get install -y awscli
 
 # Re-enable dev packages
 RUN python3 -m venv --system-site-packages dev-packages \
     && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
 
-# RUN echo "I AM A CHEESEBURGER!"
-
-RUN apt-get update
-RUN apt-get install -y curl ca-certificates apt-transport-https gnupg
-RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-RUN touch /etc/apt/sources.list.d/kubernetes.list 
-RUN echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
-RUN apt-get update
-RUN apt-get install -y kubectl
-RUN apt-get install -y unzip
-# RUN apt-get install -y awscli
-
-# RUN apt-get install -y aws-iam-authenticator
-COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/startup_dev_worker.sh scripts/run_tests.sh ./
-COPY scripts/replace_aws_iam_command.py scripts/create_aws_conf.py scripts/load_dev_tools.py ./
+COPY scripts/startup_dev_frontend.sh scripts/startup_dev_migration.sh scripts/startup_dev_worker.sh scripts/run_tests.sh scripts/replace_aws_iam_command.py scripts/create_aws_conf.py scripts/load_dev_tools.py ./
 RUN chmod +x ./startup_dev_frontend.sh && chmod +x ./startup_dev_migration.sh && chmod +x ./startup_dev_worker.sh && chmod +x ./run_tests.sh
 
-RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-RUN unzip awscliv2.zip
-RUN ./aws/install
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && unzip awscliv2.zip && ./aws/install
 
 USER controlpanel
 COPY controlpanel controlpanel
