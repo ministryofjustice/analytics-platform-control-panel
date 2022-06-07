@@ -107,10 +107,6 @@ def test_helm_upgrade_release():
 # ------ New (comprehensive) unit tests.
 
 
-def test_get_repo_path():
-    return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
-
-
 def test_execute_ignores_debug():
     """
     If the DEBUG flag is set in the environment, ensure this is removed before

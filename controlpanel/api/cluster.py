@@ -119,34 +119,30 @@ class User:
         helm.delete_eks(related_namespace, *hel_charts)
 
     def _filter_out_installation_charts(self, helm_charts):
-        installed_charts = []
-        found_chart = None
+        init_installed_charts = []
         for helm_chart_item in self.user_helm_charts["installation"]:
             if helm_chart_item['release'] in helm_charts:
-                installed_charts.append(helm_chart_item['release'])
-                found_chart = helm_chart_item['release']
-        if found_chart:
-            helm_charts.remove(found_chart)
-        return installed_charts
+                init_installed_charts.append(helm_chart_item['release'])
+        # Removed those initially installed charts from the charts which are retrieved from the namespace
+        for helm_chart_item in init_installed_charts:
+            helm_charts.remove(helm_chart_item)
+        return init_installed_charts
 
-    def _clear_up_helm_charts(self):
-        # The assumption for the following codes
-        #  - any helm chart having user's name is part of user's helm chart
-        #  - the user's helm charts will be only installed under own namespace or cpanel
+    def _delete_user_helm_charts(self):
         user_releases = helm.list_releases(namespace=self.k8s_namespace)
         cpanel_releases = helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}")
 
-        installed_charts = self._filter_out_installation_charts(user_releases)
+        init_installed_charts = self._filter_out_installation_charts(user_releases)
         self._uninstall_helm_charts(self.k8s_namespace, user_releases)
-        self._uninstall_helm_charts(self.k8s_namespace, installed_charts)
+        self._uninstall_helm_charts(self.k8s_namespace, init_installed_charts)
 
-        installed_charts = self._filter_out_installation_charts(cpanel_releases)
-        self._uninstall_helm_charts(self.eks_cpanel_namespace, cpanel_releases)
-        self._uninstall_helm_charts(self.eks_cpanel_namespace, installed_charts)
+        # Only remove the installed charts from cpanel namespace
+        init_installed_charts = self._filter_out_installation_charts(cpanel_releases)
+        self._uninstall_helm_charts(self.eks_cpanel_namespace, init_installed_charts)
 
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
-        self._clear_up_helm_charts()
+        self._delete_user_helm_charts()
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
