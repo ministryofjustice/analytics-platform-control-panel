@@ -134,13 +134,17 @@ class User:
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
         # TODO, all those codes related to helm need to be reviewed
-        # The assumption for the following codes
-        #  - any helm chart having user's name is part of user's helm chart
-        #  - the user's helm charts will be only installed under own namespace or cpanel
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        cpanel_releases = [f"bootstrap-user-{self.user.slug}"]
         self._uninstall_helm_charts(self.k8s_namespace, releases)
-        self._uninstall_helm_charts(self.eks_cpanel_namespace, cpanel_releases)
+
+        # Check whether the bootstrap-user exists in the cpanel's chart list,
+        # if does, then remove it
+        cpanel_releases = helm.list_releases(
+            namespace=self.eks_cpanel_namespace,
+            release=f"user-{self.user.slug}")
+        cpanel_release_required_removal = f"bootstrap-user-{self.user.slug}"
+        if cpanel_release_required_removal in cpanel_releases:
+            self._uninstall_helm_charts(self.eks_cpanel_namespace, [cpanel_release_required_removal])
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(

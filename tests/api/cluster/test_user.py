@@ -67,14 +67,14 @@ def test_delete_eks(aws, helm, users):
     Delete with Helm 3.
     """
     user = users['normal_user']
-    helm.list_releases.return_value = ["chart-release"]
+    helm.list_releases.return_value = ["chart-release", "bootstrap-user-bob"]
     with patch("controlpanel.api.aws.settings.EKS", True):
         cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
     helm.delete_eks.assert_has_calls(
-        [call("user-bob", "chart-release"),
-         call("cpanel", "chart-release")]
+        [call("user-bob", "chart-release", "bootstrap-user-bob"),
+         call("cpanel", "bootstrap-user-bob")]
     )
 
 
