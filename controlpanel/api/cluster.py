@@ -197,7 +197,7 @@ class User:
             if not self._has_required_installation_charts():
                 # For some reason, user does not have all the charts required so we should re-init them.
                 log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._clear_up_helm_charts()
+                self._delete_user_helm_charts()
                 self._init_user()
 
 
