@@ -138,7 +138,7 @@ class User:
         #  - any helm chart having user's name is part of user's helm chart
         #  - the user's helm charts will be only installed under own namespace or cpanel
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        cpanel_releases = helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}")
+        cpanel_releases = [f"bootstrap-user-{self.user.slug}"]
         self._uninstall_helm_charts(self.k8s_namespace, releases)
         self._uninstall_helm_charts(self.eks_cpanel_namespace, cpanel_releases)
 
