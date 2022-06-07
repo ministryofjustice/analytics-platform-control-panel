@@ -1,5 +1,10 @@
 # Running directly on your machine
 
+---
+:construction: _This guide has recently undergone some major changes in order to work with the new cluster. It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, but be aware that the developers who checked the system had some things set up already. If problems arise, please open a PR to revise this documentation._
+
+---
+
 There are essentially three aspects to getting the control panel in a state for
 development on your local machine:
 
@@ -24,8 +29,6 @@ You must have:
 * [npm](https://www.npmjs.com/)
 * [direnv](https://direnv.net/)
 * [docker](https://www.docker.com/)
-* [virtualbox](https://www.virtualbox.org/)
-* [graphviz](https://graphviz.org/download/)
 
 These should be installed using your own OS's package manager (`brew`, `apt`
 etc...).
@@ -48,6 +51,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 pip3 install -r requirements.dev.txt
+pip3 uninstall python-dotenv
 ```
 
 In order to use `direnv` for managing your environment variables, you should
@@ -70,6 +74,8 @@ export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
 
 See [Environment Variables Reference](environment.md) for details of other
 environment variable settings.
+
+Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
 
 ### Database
 
@@ -132,11 +138,7 @@ cp -R node_modules/jquery/dist/ static/jquery
   controlpanel/frontend/static/components \
   controlpanel/frontend/static/javascripts \
   -o static/app.js -s
-./node_modules/.bin/node-sass \
-  --include-path node_modules/ \
-  -o static/ \
-  --output-style compact \
-  controlpanel/frontend/static/app.scss
+./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
 ```
 
 Then run collectstatic:
@@ -147,11 +149,7 @@ python3 manage.py collectstatic
 
 ### Run the tests
 
-```sh
-make test
-```
-
-or directly using `pytest`:
+Run the tests using `pytest`:
 
 ```sh
 DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
@@ -280,26 +278,12 @@ source_profile=default
 ### Kubernetes Configuration
 
 For Kubernetes, simply follow the instructions (linked above) for the `dev`
-cluster or set up a local cluster as follows:
+cluster.
 
-To run a Kubernetes cluster locally, the most convenient solution is probably
-`minikube`. Follow the
-[installation instructions for your OS](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-and check you have something working:
-
+Make sure you have the correct kubernetes context set:
+```sh
+kubectl config use-context <dev-cluster-name>   # cluster name as set in ~/.kube/config
 ```
-$ minikube status
-m01
-host: Running
-kubelet: Running
-apiserver: Running
-kubeconfig: Configured
-```
-
-You'll need a kubeconfig file (`~/.kube/config`) with the credentials for your
-kubernetes cluster. Starting `minikube` (e.g.
-`minikube start --driver=virtualbox`) should create these credentials for you
-for your local machine.
 
 You can check things are working with the following command, which will return
 information about the k8s master and KubeDNS:
@@ -312,8 +296,6 @@ kubectl cluster-info
 
 Install Helm (the K8s package manager) by following
 [these instructions for your OS](https://helm.sh/docs/intro/install/).
-
-**NOTE**: Be sure to use Helm 2. Helm 3 may not work (e.g. a new joiner couldn't run the tests because of differences in where Helm keep the repostory cache)
 
 You'll need to initialise Helm too:
 
@@ -345,7 +327,7 @@ labelled `user_id` (not working for me yet).
 In order to run the app you'll need various permissions set up for you in the
 wider infrastructure of the project. This is usually achieved via the
 `aws-vault` command (please
-[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)). 
+[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)).
 
 Also please follow the previous section of ```Local AWS Configuration``` to setup your local AWS data profile
 
@@ -372,6 +354,7 @@ if you are not sure, can use the following command to find it out
 ```shell
 helm env
 ```
+Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
 
 #### Run the frontend of the app
 

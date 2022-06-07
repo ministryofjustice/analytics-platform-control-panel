@@ -11,7 +11,7 @@
     "govuk-frontend": "^3.0.0",
     "html5shiv": "^3.7.3",
     "jquery": "^3.5.0",
-    "node-sass": "^4.13.1"
+    "sass": "^1.51.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.0",
@@ -24,7 +24,7 @@
     "npm-run-all": "^4.1.5"
   },
   "scripts": {
-    "css": "node-sass --include-path node_modules/ -o static/ --output-style compact controlpanel/frontend/static/app.scss",
+    "css": "sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css",
     "watch:css": "npm run css && npm run css -- --source-map true --source-map-embed true --watch",
     "watch:babel": "npm run babel && npm run babel -- -w",
     "watch": "npm-run-all --parallel watch:*",
