@@ -26,21 +26,6 @@ def run_command(command, *args):
         out, err = output.communicate()
         return out, err
 
-
-def installed_tools(username: str) -> List[str]:
-    # TODO: Get a list of this user's installed tools and return
-    # a list of string ["like", "this"]
-
-    user = User.objects.get(username=username)
-    raw_cmd = f"kubectl get tools -n user-{username} -o json"
-    raw_bits = raw_cmd.split()
-    command = raw_bits[0]
-    args = raw_bits[1:]
-    out, err = run_command(command, *args)
-
-    return []
-
-
 def user_selected_tool(username: str, toolname: str) -> str:
     # TODO: Create/Ensure instance of the named tool
 
