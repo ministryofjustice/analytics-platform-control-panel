@@ -47,7 +47,7 @@ enter:
 logs:
 	@docker-compose logs -f
 
-push_eks:
+push:
 	docker-compose push frontend
 
 help: Makefile
