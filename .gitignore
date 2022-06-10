@@ -23,4 +23,3 @@ __pycache__
 /coverage/
 .idea/
 .sass-cache/
-controlpanel/api/dev_fixtures/tool_configured.yaml
