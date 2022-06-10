@@ -15,7 +15,11 @@ A copy of the `.env` file can be obtained from the Analytical Platform's shared 
 While adapting the code to work with the new EKS cluster, we made changes to the `.env` file:
 - `EFS_VOLUME`: newly added
 - `TOOLS_DOMAIN`: updated
-
+- `AWS_DATA_ROLE`: newly added
+- `AWS_DEV_ROLE`: newly added
+- `LANDING_AWS_MFA_SERIAL`: newly added
+- `LANDING_AWS_ACCESS_KEY_ID`: newly added
+- `LANDING_AWS_SECRET_ACCESS_KEY`: newly added
 
 
 ## Build
