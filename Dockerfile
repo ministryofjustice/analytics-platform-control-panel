@@ -9,7 +9,6 @@ RUN ./node_modules/.bin/sass --load-path=node_modules/ --style=compressed src/ap
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-# FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
 FROM python:3.9-slim-bullseye AS base
 
 ARG HELM_VERSION=3.5.4
