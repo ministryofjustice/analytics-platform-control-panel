@@ -246,7 +246,7 @@ AWS errors, ensure you've not timed out.**
 ### Local AWS Configuration
 This app needs to interact with multiple AWS accounts in order to support the users' needs.
 The AWS resources like IAM, s3 buckets are under our data account and will be managed by 
-app through boto3. In order to make sure the boto3 can obtain the right profile for local env.
+app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
 The following steps will show how to create it.
 
 Assume that the name of profile for our aws data account is ```admin-data```
