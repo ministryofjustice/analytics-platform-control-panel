@@ -55,6 +55,34 @@ There are several other commands in `Makefile.local.mk` that will be useful to y
 make dev-exec   # exec into the shell of an existing container
 ```
 
+## Known limitations
+
+### App Deployment
+
+Deployment of apps on KOPS is not possible, either on local, or on staging (https://controlpanel.services.dev.analytical-platform.service.justice.gov.uk/), this is due to dev-concourse being decomissioned.
+
+This means the testing of changes to the app deployment workflow cannot be done currently... 
+
+You could however run the chart manually 
+
+The rough incantation is 
+
+```bash
+$ helm install charts/webapp -f chart-env-config/ENV/webapp.yml --name webapp-APPNAME --set app.name=APPNAME --set webapp.docker.repository=YOUR_WEBAPP_DOCKER_IMAGE --set webapp.docker.tag=YOUR_WEBAPP_DOCKER_TAG --namespace apps
+```
+
+Check [here](https://github.com/ministryofjustice/analytics-platform-helm-charts/tree/main/charts/webapp) for more details on running the chart
+
+### Attaching an IDE debugger
+
+Docker while presenting many advantages, can make it harder to use fully featured debuggers found in IDEs...
+
+Pycharm will connect to a python process and allow debugger access
+
+(setup docker with pycharm)[https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary]
+
+However it can have serious limitations with dealing with multiple active code containers.
+
 ## Known issues
 
 ### No such entity
