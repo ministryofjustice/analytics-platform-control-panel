@@ -70,7 +70,7 @@
 
 
   {% if request.user.has_perm('api.setup_app_auth0', app) and not has_setup_completed_for_client %}
-  <h2 class="govuk-heading-m">The auth0 client has not been setup completed for this app</h2>
+  <h2 class="govuk-heading-m">The Auth0 client setup has not been completed for this app</h2>
   <section class="cpanel-section">
     <form action="{{ url('setup-app-auth0', kwargs={ "pk": app.id }) }}" method="post">
       {{ csrf_input }}
