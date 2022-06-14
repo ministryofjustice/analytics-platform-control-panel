@@ -83,10 +83,10 @@
   {% endif %}
 
   {% if request.user.has_perm('api.reset_app_secret', app) %}
-  <h2 class="govuk-heading-m">Reset the secret of the app on AWS Secrets Manager.</h2>
-  <p>The secret mainly including all those important settings for deploying this app.
+  <h2 class="govuk-heading-m">Reset the app's deployment parameters</h2>
+  <p>The app's deployment parameters are stored in AWS Secrets Manager and contain settings relating to Auth0 used during deployment of the app.
     The secret name is <strong>{{ app.app_aws_secret_name }}</strong> on AWS Secrets Manager.
-    Reset action will reset the value of the secret back to init setup.</p>
+    Resetting the secret action will set its value back to its original value.</p>
   <section class="cpanel-section">
     <form action="{{ url('reset-app-secret', kwargs={ "pk": app.id }) }}" method="post">
       {{ csrf_input }}
