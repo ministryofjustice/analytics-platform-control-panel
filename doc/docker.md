@@ -28,7 +28,7 @@ The two Makefiles, `Makefile` and `Makefile.local.mk` contain commands relevant 
 
 You can build the system with
 ```
-make eks
+make build
 ```
 
 ## Run
@@ -59,29 +59,28 @@ make dev-exec   # exec into the shell of an existing container
 
 ### App Deployment
 
-Deployment of apps on KOPS is not possible, either on local, or on staging (https://controlpanel.services.dev.analytical-platform.service.justice.gov.uk/), this is due to dev-concourse being decomissioned.
+Deployment of apps on KOPS is not possible, either on local, or on staging (https://controlpanel.services.dev.analytical-platform.service.justice.gov.uk/).
+This is due to dev-concourse having been decommissioned.
 
-This means the testing of changes to the app deployment workflow cannot be done currently... 
+This means the changes to the app deployment workflow cannot currently be tested. 
 
-You could however run the chart manually 
-
+As an alternative, you could run the chart manually.
 The rough incantation is 
 
 ```bash
 $ helm install charts/webapp -f chart-env-config/ENV/webapp.yml --name webapp-APPNAME --set app.name=APPNAME --set webapp.docker.repository=YOUR_WEBAPP_DOCKER_IMAGE --set webapp.docker.tag=YOUR_WEBAPP_DOCKER_TAG --namespace apps
 ```
 
-Check [here](https://github.com/ministryofjustice/analytics-platform-helm-charts/tree/main/charts/webapp) for more details on running the chart
+Check [this page](https://github.com/ministryofjustice/analytics-platform-helm-charts/tree/main/charts/webapp) of the `analytics-platform-helm-charts` repository for more details on running the chart.
 
 ### Attaching an IDE debugger
 
-Docker while presenting many advantages, can make it harder to use fully featured debuggers found in IDEs...
+Docker presents many advantages, but it can make it harder to use fully featured debuggers found in IDEs.
 
-Pycharm will connect to a python process and allow debugger access
+Pycharm can connect to a Python process and allow debugger access; see ["Configure an interpreter using Docker Compose"](https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html).
+However, it can have serious limitations with dealing with multiple active code containers.
+Similar functionality is available in [VSCode](https://code.visualstudio.com/docs/containers/docker-compose#_python)
 
-(setup docker with pycharm)[https://www.jetbrains.com/help/pycharm/using-docker-compose-as-a-remote-interpreter.html#summary]
-
-However it can have serious limitations with dealing with multiple active code containers.
 
 ## Known issues
 
@@ -94,7 +93,7 @@ If you need to reset your user, run the following
 ```bash
 make clean
 aws-vault login admin-dev   # take steps listed below before continuing
-make eks
+make build
 make-dev-fg                 # and then log in again as usual
 ```
 From the AWS Management Console, select IAM and then Roles (under the Access Management section on the left hand side).
