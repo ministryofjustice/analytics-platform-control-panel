@@ -52,10 +52,11 @@ dev-run:
 dev-exec:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend bash
 
-## dev-load-tools: Load in some sample dev tool charts, for local development only.
+## dev-load-tools: Load in some sample dev tool charts (for local development only)
 dev-load-tools:
 	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend sh -c "dev-packages/bin/python load_dev_tools.py"
 
+# Only run tests with @pytest.mark.indevelopment decorator (see also `make test` in Makefile)
 test-wip: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-wip:
 	@echo
