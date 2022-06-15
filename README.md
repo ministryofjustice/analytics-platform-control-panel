@@ -1,5 +1,3 @@
-[![Docker Repository on Quay](https://quay.io/repository/mojanalytics/control-panel/status "Docker Repository on Quay")](https://quay.io/repository/mojanalytics/control-panel)
-
 # Analytical Platform Control Panel
 
 The Control Panel is a Django project made up of two parts:
@@ -13,26 +11,14 @@ The Control Panel is a Django project made up of two parts:
 
 ## Quickstart
 
-See [Running with Docker](doc/docker.md), or [Running directly on your
-machine](doc/running.md).
+You can set up a local instance of Control Panel via [Docker](doc/docker.md) or by [running directly on your machine](doc/running.md).
+Both guides recently underwent substantial revisions to make them compatible with our new EKS cluster; please discuss any issues you come across with the team and open a PR to revise the setup documentation.
 
 
 ## Deployment
 
 
-### Old (pre-EKS) Infrastructure
-
-Commits to the protected `main` branch will trigger a [Concourse CI pipeline](https://concourse.services.dev.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) which will deploy the changes to our `dev` environment.
-
-To deploy work branches for testing purposes on the old `dev` environment see [the instructions here](https://ministryofjustice.github.io/ap-tech-docs/documentation/50-systems/control-panel/Deploy-Development-Instance-of-Control-Panel.html).
-
-Versioned Github releases will trigger [another pipeline](https://concourse.services.alpha.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) and deploy to our `alpha` environment.
-
-### New (EKS) Infrastructure
-
-Currently this is NOT automated, but there is a ticket in the backlog to make
-things work in a similar fashion to how it does on the old infrastructure but
-via GitHub actions rather than Concourse.
+Currently deployment to our new EKS cluster is NOT automated, but there is a ticket in the backlog to make things work in a similar fashion to how it does on the old infrastructure but via GitHub actions rather than Concourse.
 
 The modus operandi is simple:
 
@@ -48,9 +34,13 @@ That's it..!
 
 ## Documentation
 
+Our documentation for getting started with this repo can be found in the following files in the `docs` folder:
 * [Running control panel locally](./doc/running.md)
 * [Running control panel with docker](./doc/docker.md)
 * [Control Panel environment variables](./doc/environment.md)
 * [The control panel frontend](./doc/frontend.md)
 * [The control panel data model](./doc/data_structure.md)
 * [Some semi-common errors](./doc/errors.md)
+Note that some of these pages have not been updated following the switch from the old KOPS cluster to the new EKS one, so may contain outdated information.
+
+For further details about the Analytical Platform, see our [Technical Documentation](https://silver-dollop-30c6a355.pages.github.io) site.
