@@ -1,45 +1,16 @@
 import json
-import os
+import uuid
 from unittest.mock import MagicMock, patch
-
-import boto3
-from django.conf import settings
 from model_mommy import mommy
-import moto
-import pytest
 
+from django.conf import settings
 from controlpanel.api import aws
+from tests.api.fixtures.aws import *
 
 
 @pytest.yield_fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
-
-
-@pytest.fixture(autouse=True)
-def aws_creds():
-    os.environ['AWS_ACCESS_KEY_ID'] = 'test-access-key-id'
-    os.environ['AWS_SECRET_ACCESS_KEY'] = 'test-secret-access-key'
-    os.environ['AWS_SECURITY_TOKEN'] = 'test-security-token'
-    os.environ['AWS_SESSION_TOKEN'] = 'test-session-token'
-
-
-@pytest.yield_fixture(autouse=True)
-def iam(aws_creds):
-    with moto.mock_iam():
-        yield boto3.resource('iam')
-
-
-@pytest.yield_fixture(autouse=True)
-def s3(aws_creds):
-    with moto.mock_s3():
-        yield boto3.resource('s3')
-
-
-@pytest.yield_fixture(autouse=True)
-def ssm(aws_creds):
-    with moto.mock_ssm():
-        yield boto3.client('ssm', region_name='eu-west-1')
 
 
 @pytest.fixture(autouse=True)
@@ -767,3 +738,88 @@ def test_revoke_group_bucket_access(iam, group, resources):
     assert 'readonly' not in statements
     assert 'readwrite' not in statements
     assert 'list' not in statements
+
+
+def test_create_app_secret(secretsmanager):
+    app_name = "testing_app"
+    test_data = {
+        "client_id": "testing_client_id",
+        "client_secret": uuid.uuid4().hex
+    }
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    aws.AWSSecretManager().create_secret(secret_name, test_data)
+
+    result = secretsmanager.get_secret_value(SecretId=secret_name)
+    assert result['Name'] == secret_name
+    assert result['SecretString'] == json.dumps(test_data)
+
+
+@pytest.yield_fixture
+def fixture_update_secret():
+    with patch("controlpanel.api.aws.AWSSecretManager.update_secret") as update_secret:
+        update_secret.return_value = {
+            "client_id": "testing_client_id1",
+            "ip_ranges": ["1.1.1.1"],
+            "client_secret": "testing"
+        }
+        yield update_secret
+
+
+def test_update_app_secret(secretsmanager, fixture_update_secret):
+    app_name = "testing_app"
+    test_data = {
+        "client_id": "testing_client_id",
+        "client_secret": "testing"
+    }
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    aws.AWSSecretManager().create_secret(secret_name, test_data)
+
+    update_data = {
+        "client_id": "testing_client_id1",
+        "ip_ranges": ["1.1.1.1"]
+    }
+    aws.AWSSecretManager().update_secret(secret_name, update_data)
+
+    result = secretsmanager.get_secret_value(SecretId=secret_name)
+    assert result['Name'] == secret_name
+    fixture_update_secret.assert_called_with(secret_name, update_data)
+
+
+def test_secret_has_existed_true(secretsmanager):
+    app_name = "testing_app"
+    test_data = {
+        "client_id": "testing_client_id",
+        "client_secret": uuid.uuid4().hex
+    }
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    aws.AWSSecretManager().create_secret(secret_name, test_data)
+
+    assert aws.AWSSecretManager().has_existed(secret_name)
+
+
+def test_secret_has_existed_false(secretsmanager):
+    assert not aws.AWSSecretManager().has_existed("Nonexist_secret_name")
+
+
+def test_delete_app_secret(secretsmanager):
+    app_name = "testing_app"
+    test_data = {
+        "client_id": "testing_client_id",
+        "client_secret": "testing"
+    }
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    aws.AWSSecretManager().create_secret(secret_name, test_data)
+
+    result = secretsmanager.get_secret_value(SecretId=secret_name)
+    assert result['Name'] == secret_name
+    assert result['SecretString'] == json.dumps(test_data)
+
+    aws.AWSSecretManager().delete_secret(secret_name)
+    try:
+        secretsmanager.get_secret_value(SecretId=secret_name)
+        assert False
+    except Exception as error:
+        if "ResourceNotFoundException" in str(error):
+            assert True
+        else:
+            assert False

@@ -3,7 +3,7 @@ from django.db import models
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api import auth0, cluster, elasticsearch
+from controlpanel.api import auth0, aws, cluster, elasticsearch
 from controlpanel.utils import (
     github_repository_name,
     s3_slugify,
@@ -46,13 +46,24 @@ class App(TimeStampedModel):
 
     @property
     def customers(self):
-        return auth0.AuthorizationAPI().get_group_members(group_name=self.slug) or []
+        return auth0.ExtendedAuth0().groups.get_group_members(group_name=self.slug) or []
+
+    @property
+    def app_aws_secret_name(self):
+        return f"{settings.ENV}_app_secret/{self.slug}"
+
+    def construct_secret_data(self, client):
+        return {
+            "client_id": client["client_id"],
+            "client_secret": client["client_secret"],
+            "callbacks": client["callbacks"],
+        }
 
     def add_customers(self, emails):
         emails = list(filter(None, emails))
         if emails:
             try:
-                auth0.AuthorizationAPI().add_group_members(
+                auth0.ExtendedAuth0().add_group_members_by_emails(
                     group_name=self.slug,
                     emails=emails,
                     user_options={"connection": "email"},
@@ -62,7 +73,7 @@ class App(TimeStampedModel):
 
     def delete_customers(self, user_ids):
         try:
-            auth0.AuthorizationAPI().delete_group_members(
+            auth0.ExtendedAuth0().groups.delete_group_members(
                 group_name=self.slug,
                 user_ids=user_ids,
             )
@@ -85,6 +96,8 @@ class App(TimeStampedModel):
 
     def delete(self, *args, **kwargs):
         cluster.App(self).delete()
+        auth0.ExtendedAuth0().clear_up_app(app_name=self.slug, group_name=self.slug)
+        aws.AWSSecretManager().delete_secret(secret_name=self.app_aws_secret_name)
 
         super().delete(*args, **kwargs)
 

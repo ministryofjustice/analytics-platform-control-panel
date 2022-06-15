@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
-from controlpanel.api import auth0, aws
+from controlpanel.api import aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
 from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
@@ -123,17 +123,28 @@ class User:
                 f"--set=Username={self.user.slug}",
             )
 
+    def _uninstall_helm_charts(self, related_namespace, hel_charts):
+        if not hel_charts:
+            return
+        if settings.EKS:
+            helm.delete_eks(related_namespace, *hel_charts)
+        else:
+            helm.delete(*hel_charts)
+
     def delete(self):
         aws.delete_role(self.user.iam_role_name)
+        # TODO, all those codes related to helm need to be reviewed
         releases = helm.list_releases(namespace=self.k8s_namespace)
-        # Delete all the user initialisation charts.
-        releases.append(f"init-user-{self.user.slug}")
-        releases.append(f"bootstrap-user-{self.user.slug}")
-        releases.append(f"provision-user-{self.user.slug}")
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, *releases)
-        else:
-            helm.delete(*releases)
+        self._uninstall_helm_charts(self.k8s_namespace, releases)
+
+        # Check whether the bootstrap-user exists in the cpanel's chart list,
+        # if does, then remove it
+        cpanel_releases = helm.list_releases(
+            namespace=self.eks_cpanel_namespace,
+            release=f"user-{self.user.slug}")
+        cpanel_release_required_removal = f"bootstrap-user-{self.user.slug}"
+        if cpanel_release_required_removal in cpanel_releases:
+            self._uninstall_helm_charts(self.eks_cpanel_namespace, [cpanel_release_required_removal])
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         aws.grant_bucket_access(
@@ -236,7 +247,6 @@ class App:
 
     def delete(self):
         aws.delete_role(self.iam_role_name)
-        auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
 
     @property
     def url(self):
@@ -348,7 +358,7 @@ def get_repository(user, repo_name):
     github = Github(user.github_api_token)
     try:
         return github.get_repo(repo_name)
-    except GithubException.UnknownObjectException:
+    except GithubException.UnknownObjectException as err:
         log.warning(
             f"Failed getting {repo_name} Github repo for {user}: {err}"
         )

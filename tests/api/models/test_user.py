@@ -12,6 +12,12 @@ def enable_db_for_all_tests(db):
     pass
 
 
+@pytest.yield_fixture
+def auth0():
+    with patch("controlpanel.api.models.user.auth0") as auth0:
+        yield auth0
+
+
 def test_helm_create_user(helm):
     user = mommy.prepare('api.User')
 
@@ -38,17 +44,17 @@ def test_helm_create_user(helm):
     helm.upgrade_release.has_calls(expected_calls)
 
 
-def test_helm_delete_user(helm):
-    user = mommy.prepare('api.User')
-
-    user.delete()
-
-    helm.list_releases.assert_called_with(namespace=user.k8s_namespace)
-    expected_calls = [
-        call(helm.list_releases.return_value),
-        call(f"init-user-{user.slug}"),
-    ]
-    helm.delete.has_calls(expected_calls)
+def test_helm_delete_user(helm, auth0):
+    user = User.objects.create(username='bob', auth0_id="github|user_2")
+    authz = auth0.ExtendedAuth0.return_value
+    helm.list_releases.return_value = ["chart-release", "bootstrap-user-bob"]
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        user.delete()
+        helm.delete_eks.assert_has_calls(
+            [call("user-bob", "chart-release", "bootstrap-user-bob"),
+             call("cpanel", "bootstrap-user-bob")]
+        )
+        authz.clear_up_user.assert_called_with(user_id="github|user_2")
 
 
 def test_aws_create_role_calls_service(aws):
@@ -57,12 +63,13 @@ def test_aws_create_role_calls_service(aws):
     aws.create_user_role.assert_called_with(user)
 
 
-def test_aws_delete_role_calls_service(aws):
-    user = mommy.prepare('api.User')
+def test_aws_delete_role_calls_service(aws, auth0):
+    user = User.objects.create(auth0_id="github|user_1")
 
     user.delete()
-
+    authz = auth0.ExtendedAuth0.return_value
     aws.delete_role.assert_called_with(user.iam_role_name)
+    authz.clear_up_user.assert_called_with(user_id="github|user_1")
 
 
 def test_k8s_namespace():

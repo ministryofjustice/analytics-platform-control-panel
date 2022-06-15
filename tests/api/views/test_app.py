@@ -6,6 +6,7 @@ from rest_framework.reverse import reverse
 from unittest.mock import patch
 
 from controlpanel.api.models import App
+from tests.api.fixtures.aws import *
 
 
 @pytest.fixture
@@ -90,15 +91,15 @@ def test_detail(client, app):
 
 @pytest.yield_fixture
 def authz():
-    with patch("controlpanel.api.cluster.auth0.AuthorizationAPI") as authz:
+    with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
         yield authz()
 
 
-def test_delete(client, app, aws, authz):
+def test_delete(client, app, aws, authz, secretsmanager):
     response = client.delete(reverse('app-detail', (app.id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    authz.delete_group.assert_called_with(group_name=app.slug)
+    authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
     aws.delete_role.assert_called_with(app.iam_role_name)
 
     response = client.get(reverse('app-detail', (app.id,)))
