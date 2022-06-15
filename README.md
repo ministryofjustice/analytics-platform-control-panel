@@ -1,3 +1,8 @@
+# KIND SPIKE BRANCH
+
+For details check [here](./current_status_of_spike.md)
+
+
 [![Docker Repository on Quay](https://quay.io/repository/mojanalytics/control-panel/status "Docker Repository on Quay")](https://quay.io/repository/mojanalytics/control-panel)
 
 # Analytical Platform Control Panel

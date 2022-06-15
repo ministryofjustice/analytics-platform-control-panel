@@ -1,6 +1,7 @@
 version: "3"
 services:
   db:
+    # network_mode: host
     image: "postgres:13.3"
     environment:
       POSTGRES_DB: "controlpanel"
@@ -12,13 +13,15 @@ services:
       timeout: 5s
       retries: 5
   redis:
+    # network_mode: host
     image: "redis"
     environment:
       REDIS_PASSWORD: "controlpanel"
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # network_mode: host
+    image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     depends_on:
       db:
         condition: service_healthy
@@ -35,7 +38,8 @@ services:
     command: sh -c "./manage.py migrate"
 
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # network_mode: host
+    image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     depends_on:
       redis:
         condition: service_started
@@ -63,9 +67,15 @@ services:
 
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    # network_mode: host
     build:
       context: .
-    ports: ["8000:8000"]
+
+    ports: [
+      "8000:8000",
+      # "63409:63409"
+    ]
+    # links: [worker, db, redis]
     depends_on:
       worker:
         condition: service_started
@@ -133,13 +143,12 @@ services:
       iamRole: ${iamRole:-dev_control_panel_api}
 
   frontend_eks:
+    # network_mode: host
     # Apologies to future devops. Naming is hard.
     image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     build:
       context: .
-      network: ${NETWORK:-default}
       dockerfile: Dockerfile_EKS
-    network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
     depends_on:
       worker:
@@ -208,3 +217,13 @@ services:
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
       defaultRegion: eu-west-1
       iamRole: ${iamRole:-dev_control_panel_api}
+
+networks:
+  default:
+    external:
+      name: kind
+
+
+# networks:
+#   sillygemma:
+#     driver: external

@@ -1,8 +1,8 @@
 from django.urls import path
 
-from .views import develop_index
+from .views import is_kube_connected_view
 
 
 urlpatterns = [
-    path("", develop_index, name="develop_index"),
+    path("kube_connected/", is_kube_connected_view, name="is_kube_connected"),
 ]

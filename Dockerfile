@@ -53,6 +53,20 @@ RUN python3 -m venv --system-site-packages dev-packages \
     && dev-packages/bin/pip3 install -U --no-cache-dir pip \
     && dev-packages/bin/pip3 install -r requirements.dev.txt
 
+RUN apt-get update
+RUN apt-get install -y curl ca-certificates apt-transport-https gnupg
+RUN curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+RUN touch /etc/apt/sources.list.d/kubernetes.list
+RUN echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
+RUN apt-get update
+RUN apt-get install -y kubectl
+RUN apt-get install -y awscli
+RUN apt-get install -y iputils-ping
+RUN apt install iproute2 -y
+
+# RUN echo "kind-control-plane host.docker.internal" > /etc/host.aliases
+# RUN echo "export HOSTALIASES=/etc/host.aliases" >> /etc/profile
+
 USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
