@@ -50,8 +50,8 @@ class User:
         self.helm_charts_required()
 
     def helm_charts_required(self):
-        # The full list of the charts required for a user under different situatioins
-        # This is a user chart repo which may store somewhere rather hard coding here
+        # The full list of the charts required for a user under different situations
+        # TODO this helm charts should be stored somewhere rather than hard coding here
         # The order defined in the follow list is important
         self.user_helm_charts = {
             "installation": [
@@ -112,7 +112,7 @@ class User:
         for helm_chart_item in self.user_helm_charts["reset_home"]:
             self._run_helm_install_command(helm_chart_item)
 
-    def _uninstall_helm_charts(self, related_namespace, hel_charts, root_char=""):
+    def _uninstall_helm_charts(self, related_namespace, hel_charts):
         if not hel_charts:
             return
 
