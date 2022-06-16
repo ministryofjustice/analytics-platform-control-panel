@@ -25,14 +25,14 @@ def test_deploy_for_generic(helm, token_hex, tool, users):
     user = users["normal_user"]
 
     # simulate release with old naming scheme installed
-    old_release_name = f"{user.username}-{tool.chart_name}"
+    old_release_name = f"{tool.chart_name}-{user.username}"
     helm.list_releases.return_value = [old_release_name]
 
     tool_deployment = ToolDeployment(tool, user)
     tool_deployment.save()
 
     # uninstall tool with old naming scheme
-    helm.delete.assert_called_with(old_release_name)
+    helm.delete_eks.assert_called_with(user.k8s_namespace, old_release_name)
 
     # install new release
     helm.upgrade_release.assert_called_with(

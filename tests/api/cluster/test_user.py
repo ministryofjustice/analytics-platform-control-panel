@@ -53,8 +53,8 @@ def test_reset_home(helm, users):
 
     expected_calls = [
         call(
-            f"reset-user-home-{user.slug}",
-            f"mojanalytics/reset-user-home",
+            f"reset-user-efs-home-{user.slug}",
+            f"mojanalytics/reset-user-efs-home",
             f"--namespace=user-{user.slug}",
             f"--set=Username={user.slug}",
         ),
@@ -67,15 +67,16 @@ def test_delete_eks(aws, helm, users):
     Delete with Helm 3.
     """
     user = users['normal_user']
-    helm.list_releases.return_value = ["chart-release", "bootstrap-user-bob"]
+    helm.list_releases.return_value = ["chart-release", ]
     with patch("controlpanel.api.aws.settings.EKS", True):
         cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    helm.delete_eks.assert_has_calls(
-        [call("user-bob", "chart-release", "bootstrap-user-bob"),
-         call("cpanel", "bootstrap-user-bob")]
-    )
+    expected_calls = [
+        call(f"user-{user.slug}", 'chart-release'),
+        call("cpanel", 'chart-release'),
+    ]
+    helm.delete_eks.has_calls(expected_calls)
 
 
 def test_delete_eks_with_no_releases(aws, helm, users):
@@ -116,8 +117,6 @@ def test_on_authenticate_eks_completely_new_user(helm, users):
         user._init_user = MagicMock()
         user.on_authenticate()
         user._init_user.assert_called_once_with()
-    updated_user_model = User.objects.get(username="bob")
-    assert updated_user_model.migration_state == User.COMPLETE
 
 
 def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
@@ -127,7 +126,6 @@ def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
     """
     user_model = users['normal_user']
     user_model.migration_state = User.PENDING  # the user is ready to migrate.
-    init_helm_chart = f"init-user-{user_model.slug}"
 
     with patch("controlpanel.api.aws.settings.EKS", True):
         user = cluster.User(user_model)
@@ -159,7 +157,7 @@ def test_on_authenticate_eks_migrated_user(aws, helm, users):
         assert helm.delete.call_count == 0
 
 
-def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
+def test_on_authenticate_user_missing_charts(aws, helm, users):
     """
     On EKS, if a migrated user logs in, and they are missing their charts,
     these are recreated.
@@ -173,6 +171,4 @@ def test_on_authenticate_eks_migrated_user_missing_charts(aws, helm, users):
         user.on_authenticate()
         # The charts are recreated.
         assert user._init_user.call_count == 1
-        # But other "migration" related events don't happen.
-        assert aws.migrate_user_role.call_count == 0
-        assert helm.delete.call_count == 0
+        assert helm.delete_eks.call_count == 0

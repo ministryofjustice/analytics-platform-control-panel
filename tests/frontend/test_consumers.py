@@ -23,8 +23,8 @@ def users(db):
 @pytest.fixture
 def tools(db):
     print("Setting up tools...")
-    Tool(chart_name="a_tool").save()
-    Tool(chart_name="another_tool").save()
+    Tool(chart_name="a_tool", target_infrastructure="e").save()
+    Tool(chart_name="another_tool", target_infrastructure="e").save()
 
 
 @pytest.yield_fixture
@@ -169,7 +169,7 @@ def test_get_home_reset(users, update_home_status, wait_for_home_reset):
         "controlpanel.frontend.consumers.HomeDirectory"
     ) as HomeDirectory:
         mock_hd = Mock()  # Mock home directory instance.
-        HomeDirectory.return_value = mock_hd 
+        HomeDirectory.return_value = mock_hd
 
         consumer = consumers.BackgroundTaskConsumer("test")
         consumer.home_reset(
