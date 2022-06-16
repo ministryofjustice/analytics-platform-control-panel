@@ -46,21 +46,16 @@ def test_helm_create_user(helm):
 
 
 def test_helm_delete_user(helm):
-    user = mommy.prepare('api.User')
-
-    user.delete()
-
-    expected_calls = [
-        call(namespace=cluster.User(user).eks_cpanel_namespace, release=user.k8s_namespace),
-        call(namespace=user.k8s_namespace),
-    ]
-    helm.list_releases.has_calls(expected_calls)
-
-    expected_calls = [
-        call(helm.list_releases.return_value),
-        call(f"init-user-{user.slug}"),
-    ]
-    helm.delete_eks.has_calls(expected_calls)
+    user = User.objects.create(username='bob', auth0_id="github|user_2")
+    authz = auth0.ExtendedAuth0.return_value
+    helm.list_releases.return_value = ["chart-release", "bootstrap-user-bob"]
+    with patch("controlpanel.api.aws.settings.EKS", True):
+        user.delete()
+        helm.delete_eks.assert_has_calls(
+            [call("user-bob", "chart-release", "bootstrap-user-bob"),
+             call("cpanel", "bootstrap-user-bob")]
+        )
+        authz.clear_up_user.assert_called_with(user_id="github|user_2")
 
 
 def test_aws_create_role_calls_service(aws):
