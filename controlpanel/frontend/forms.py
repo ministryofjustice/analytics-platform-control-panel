@@ -1,7 +1,6 @@
 import re
 
 from django import forms
-from django.conf import settings
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
@@ -56,6 +55,14 @@ class CreateAppForm(forms.Form):
         queryset=S3Bucket.objects.filter(is_data_warehouse=False),
         empty_label="Select",
         required=False,
+    )
+
+    connections = forms.MultipleChoiceField(
+        required=True,
+        initial="email",
+        choices=[
+            ("email", "email")
+        ],
     )
 
     def __init__(self, *args, **kwargs):

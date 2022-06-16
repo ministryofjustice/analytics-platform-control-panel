@@ -5,7 +5,7 @@ from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
-from controlpanel.api import auth0, aws
+from controlpanel.api import aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
 from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
@@ -228,7 +228,6 @@ class App:
 
     def delete(self):
         aws.delete_role(self.iam_role_name)
-        auth0.AuthorizationAPI().delete_group(group_name=self.app.slug)
 
     @property
     def url(self):
@@ -340,7 +339,7 @@ def get_repository(user, repo_name):
     github = Github(user.github_api_token)
     try:
         return github.get_repo(repo_name)
-    except GithubException.UnknownObjectException:
+    except GithubException.UnknownObjectException as err:
         log.warning(
             f"Failed getting {repo_name} Github repo for {user}: {err}"
         )

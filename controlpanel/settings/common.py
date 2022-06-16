@@ -206,6 +206,8 @@ AUTH0 = {
     "domain": OIDC_DOMAIN,
     "authorization_extension_url": os.environ.get("OIDC_AUTH_EXTENSION_URL"),
     "logout_url": f"https://{OIDC_DOMAIN}/v2/logout",
+    "app_domain": os.environ.get("APP_DOMAIN"),
+    "authorization_extension_audience": "urn:auth0-authz-api"
 }
 
 OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"

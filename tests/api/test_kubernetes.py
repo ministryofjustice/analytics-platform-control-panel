@@ -6,9 +6,7 @@ import pytest
 from controlpanel.api.kubernetes import KubernetesClient
 
 
-
 SERVICE_ACCOUNT_TEST_TOKEN = "test-service-account-token"
-
 
 
 @pytest.yield_fixture()

@@ -13,6 +13,12 @@ def enable_db_for_all_tests(db):
     pass
 
 
+@pytest.yield_fixture
+def auth0():
+    with patch("controlpanel.api.models.user.auth0") as auth0:
+        yield auth0
+
+
 def test_helm_create_user(helm):
     user = mommy.prepare('api.User')
 
@@ -63,12 +69,13 @@ def test_aws_create_role_calls_service(aws):
     aws.create_user_role.assert_called_with(user)
 
 
-def test_aws_delete_role_calls_service(aws):
-    user = mommy.prepare('api.User')
+def test_aws_delete_role_calls_service(aws, auth0):
+    user = User.objects.create(auth0_id="github|user_1")
 
     user.delete()
-
+    authz = auth0.ExtendedAuth0.return_value
     aws.delete_role.assert_called_with(user.iam_role_name)
+    authz.clear_up_user.assert_called_with(user_id="github|user_1")
 
 
 def test_k8s_namespace():

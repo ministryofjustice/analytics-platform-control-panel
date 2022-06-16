@@ -1,22 +1,20 @@
 from unittest.mock import call, patch
-
+from django.conf import settings
 import pytest
+
 from controlpanel.api import auth0
 
 
-@pytest.fixture
-def AuthorizationAPI():
-    return auth0.AuthorizationAPI()
-
-
-@pytest.fixture
-def ManagementAPI():
-    return auth0.ManagementAPI()
+@pytest.yield_fixture()
+def ExtendedAuth0():
+    with patch("auth0.v3.authentication.GetToken.client_credentials") as client_credentials:
+        client_credentials.return_value = {"access_token": "access_token_testing"}
+        yield auth0.ExtendedAuth0()
 
 
 @pytest.yield_fixture
-def fixture_users_200(AuthorizationAPI):
-    with patch.object(AuthorizationAPI, "request") as request:
+def fixture_users_200(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "all") as request:
         request.side_effect = [
             {
                 "total": 200,
@@ -35,74 +33,95 @@ def fixture_users_200(AuthorizationAPI):
 
 
 @pytest.yield_fixture
-def fixture_groups(AuthorizationAPI):
-    with patch.object(AuthorizationAPI, "request") as request:
-        request.side_effect = [
-            {
-                "total": 2,
-                "groups": [
-                    {"name": "foo", "_id": "foo-id"},
-                    {"name": "bar", "_id": "bar-id"},
-                ],
-            },
-        ]
+def fixture_users_create(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "create") as request:
+        request.side_effect = [{"name": "create-testing-bob"}]
         yield
 
 
-def test_list_more_than_100_users(AuthorizationAPI, fixture_users_200):
-    users = AuthorizationAPI.get_users()
+def test_get_all_with_more_than_100(ExtendedAuth0, fixture_users_200):
+    users = ExtendedAuth0.users.get_all()
     assert len(users) == 200
 
 
-def test_get_group_by_name(AuthorizationAPI, fixture_groups):
-    group = AuthorizationAPI.get_group("foo")
-    AuthorizationAPI.request.assert_called_with("GET", "groups", params={})
-    assert group["name"] == "foo"
+def test_search_first_match_by_name_exist(ExtendedAuth0, fixture_users_200):
+    user = ExtendedAuth0.users.search_first_match(dict(name="Test User 1"))
+    assert user['name'] == 'Test User 1'
 
 
-def test_get_group_id(AuthorizationAPI, fixture_groups):
-    group_id = AuthorizationAPI.get_group_id("foo")
-    AuthorizationAPI.request.assert_called_with("GET", "groups", params={})
-    assert group_id == "foo-id"
+def test_search_first_match_by_name_not(ExtendedAuth0, fixture_users_200):
+    user = ExtendedAuth0.users.search_first_match(dict(name="Different User"))
+    assert user is None
+
+
+def test_get_or_create_new(ExtendedAuth0, fixture_users_200, fixture_users_create):
+    user = ExtendedAuth0.users.get_or_create(dict(name="bob"))
+    assert user['name'] == 'create-testing-bob'
+
+
+def test_get_or_create_existed(ExtendedAuth0, fixture_users_200, fixture_users_create):
+    user = ExtendedAuth0.users.search_first_match(dict(name="Test User 1"))
+    assert user['name'] == 'Test User 1'
 
 
 @pytest.yield_fixture
-def fixture_get_group(AuthorizationAPI):
-    with patch.object(AuthorizationAPI, "get_group") as get_group:
-        get_group.return_value = {
+def fixture_get_group(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "search_first_match") as search_first_match:
+        search_first_match.return_value = {
             "_id": "foo-id",
             "name": "foo",
             "roles": ["role_1", "role_2"],
         }
-        yield get_group
+        yield search_first_match
 
 
-def test_delete_group(AuthorizationAPI, fixture_get_group):
-    with patch.object(AuthorizationAPI, "request") as request:
-        group_id = "foo-id"
-        role_id = "foo-role-id"
-        permission_id = "foo-permission-id"
-
-        request.return_value = [
-            {"_id": role_id, "permissions": [permission_id]},
+@pytest.yield_fixture
+def fixture_get_group_roles(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "all") as groups_all:
+        groups_all.return_value = [
+            {"name": "role1", "_id": "role1", "permissions": ["permission1"]},
+            {"name": "role2", "_id": "role2", "permissions": ["permission2"]},
         ]
-
-        AuthorizationAPI.delete_group(group_name="foo")
-
-        fixture_get_group.assert_called_with("foo")
-
-        request.assert_has_calls(
-            [
-                call("GET", f"groups/{group_id}/roles"),
-                call("DELETE", f"groups/{group_id}"),
-                call("DELETE", f"roles/{role_id}"),
-                call("DELETE", f"permissions/{permission_id}"),
-            ]
-        )
+        yield groups_all
 
 
-def test_create_user(ManagementAPI):
-    with patch.object(ManagementAPI, "request") as request:
+@pytest.yield_fixture
+def fixture_roles_delete(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.roles, "delete") as roles_delete:
+        roles_delete.return_value = []
+        yield roles_delete
+
+
+@pytest.yield_fixture
+def fixture_permission_delete(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.permissions, "delete") as permissions_delete:
+        permissions_delete.return_value = []
+        yield permissions_delete
+
+
+@pytest.yield_fixture
+def fixture_groups_delete(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "delete") as groups_delete:
+        groups_delete.return_value = []
+        yield groups_delete
+
+
+def test_clear_up_group(ExtendedAuth0,
+                        fixture_get_group,
+                        fixture_get_group_roles,
+                        fixture_roles_delete,
+                        fixture_permission_delete,
+                        fixture_groups_delete):
+
+    ExtendedAuth0.clear_up_group(group_name="foo")
+
+    fixture_groups_delete.assert_called_with("foo-id")
+    fixture_roles_delete.assert_has_calls([call("role1"), call("role2")])
+    fixture_permission_delete.assert_has_calls([call("permission1"), call("permission2")])
+
+
+def test_create_user(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "create") as request:
         email = "foo@test.com"
         nickname = "foo"
         request.return_value = {
@@ -121,43 +140,33 @@ def test_create_user(ManagementAPI):
             "user_id": "email|61f9b45470ad3d31400c8cec",
         }
 
-        ManagementAPI.create_user(email=email, email_verified=True, connection="email")
+        ExtendedAuth0.users.create_user(email=email, email_verified=True, connection="email")
 
         request.assert_has_calls(
             [
-                call(
-                    "POST",
-                    "users",
-                    json={
-                        "email": email,
-                        "email_verified": True,
-                        "connection": "email",
-                        "nickname": nickname,
-                    },
+                call({
+                    "email": email,
+                    "email_verified": True,
+                    "connection": "email",
+                    "nickname": nickname,},
                 )
             ]
         )
 
 
 @pytest.yield_fixture
-def ManagementAPIForTest():
-    with patch('controlpanel.api.auth0.ManagementAPI') as authz:
-        yield authz.return_value
-
-
-@pytest.yield_fixture
-def fixture_get_users_email_search_empty(ManagementAPIForTest):
+def fixture_get_users_email_search_empty(ExtendedAuth0):
     with patch.object(
-        ManagementAPIForTest, "get_users_email_search"
+        ExtendedAuth0.users, "get_users_email_search"
     ) as get_users_email_search:
         get_users_email_search.return_value = []
         yield get_users_email_search
 
 
 @pytest.yield_fixture
-def fixture_get_users_email_search(ManagementAPIForTest):
+def fixture_get_users_email_search(ExtendedAuth0):
     with patch.object(
-        ManagementAPIForTest, "get_users_email_search"
+        ExtendedAuth0.users, "get_users_email_search"
     ) as get_users_email_search:
         get_users_email_search.return_value = [
             {
@@ -173,15 +182,15 @@ def fixture_get_users_email_search(ManagementAPIForTest):
                 ],
                 "name": "foot@test.com",
                 "nickname": "foo",
-                "user_id": "email|new_id",
+                "user_id": "email|existing_id",
             }
         ]
         yield get_users_email_search
 
 
 @pytest.yield_fixture
-def fixture_create_user(ManagementAPIForTest):
-    with patch.object(ManagementAPIForTest, "create_user") as create_user:
+def fixture_create_user(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "create_user") as create_user:
         create_user.return_value = {
             "email": "foo@test.com",
             "email_verified": True,
@@ -200,47 +209,253 @@ def fixture_create_user(ManagementAPIForTest):
         yield create_user
 
 
+@pytest.yield_fixture
+def fixture_get_group_id(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "get_group_id") as get_group_id:
+        get_group_id.return_value = "foo-id-1"
+        yield get_group_id
+
+
+@pytest.yield_fixture
+def fixture_groups_update(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups.client, "patch") as group_update:
+        group_update.return_value = {}
+        yield group_update
+
 
 def test_new_user_add_to_group(
-    AuthorizationAPI,
-    fixture_groups,
-    fixture_get_group,
-    fixture_get_users_email_search_empty,
-    fixture_create_user,
+        ExtendedAuth0,
+        fixture_get_group_id,
+        fixture_get_users_email_search_empty,
+        fixture_create_user,
+        fixture_groups_update
 ):
-    with patch.object(AuthorizationAPI, "request") as auth_request:
-        group_id = "foo-id"
-        group_name = "foo"
-        email = "new@test.com"
-        nickname = "new"
-        new_id = "new_id"
-
-        response = AuthorizationAPI.add_group_members(
-            emails=[email], group_name="foo", user_options={"connection": "email"}
-        )
-
-        auth_request.assert_has_calls(
-            [call("PATCH", f"groups/{group_id}/members", json=[f"email|{new_id}"])]
-        )
+    group_id = "foo-id-1"
+    email = "new@test.com"
+    ExtendedAuth0.add_group_members_by_emails(
+        emails=[email], group_name="foo", user_options={"connection": "email"}
+    )
+    domain = settings.AUTH0["authorization_extension_url"]
+    fixture_groups_update.assert_has_calls(
+        [call(f"{domain}/groups/{group_id}/members", data=[f"email|new_id"])]
+    )
 
 
 def test_existing_user_add_to_group(
-        AuthorizationAPI,
-        fixture_groups,
-        fixture_get_group,
+        ExtendedAuth0,
+        fixture_get_group_id,
         fixture_get_users_email_search,
-        fixture_create_user):
-    with patch.object(AuthorizationAPI, "request") as auth_request:
-        group_id = "foo-id"
-        group_name = "foo"
-        email = "New@test.com"
-        nickname = "new"
-        new_id = "new_id"
+        fixture_create_user,
+        fixture_groups_update
+):
+    group_id = "foo-id-1"
+    email = "New@test.com"
 
-        response = AuthorizationAPI.add_group_members(
-            emails=[email], group_name="foo", user_options={"connection": "email"}
-        )
+    ExtendedAuth0.add_group_members_by_emails(
+        emails=[email], group_name="foo", user_options={"connection": "email"}
+    )
+    domain = settings.AUTH0["authorization_extension_url"]
+    fixture_groups_update.assert_has_calls(
+        [call(f"{domain}/groups/{group_id}/members", data=[f"email|existing_id"])]
+    )
 
-        auth_request.assert_has_calls([
-            call('PATCH', f'groups/{group_id}/members', json=[f'email|{new_id}'])
-        ])
+
+@pytest.yield_fixture
+def fixture_client_create(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.clients, "get_or_create") as get_or_create:
+        get_or_create.return_value = {"client_id": "new_client_id", "name": "new_client"}
+        yield get_or_create
+
+
+@pytest.yield_fixture
+def fixture_client_update(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.clients, "update") as client_update:
+        client_update.return_value = {}
+        yield client_update
+
+
+@pytest.yield_fixture
+def fixture_connection_search_first_match(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.connections, "search_first_match") as connection_search_first_match:
+        connection_search_first_match.return_value = {"name": "email", "id": "con_0000000000000001"}
+        yield connection_search_first_match
+
+
+@pytest.yield_fixture
+def fixture_connection_disable_client(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.connections, "disable_client") as connection_disable_client:
+        connection_disable_client.return_value = {}
+        yield connection_disable_client
+
+
+@pytest.yield_fixture
+def fixture_connection_get_all(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.connections, "get_all") as connection_get_all:
+        connection_get_all.return_value = [
+            {
+                "name": "email",
+                "id": "con_0000000000000001",
+                "enabled_clients": ["new_client_id"]
+            },
+            {
+                "name": "connection 1",
+                "id": "con_0000000000000002",
+                "enabled_clients": ["new_client_id"]
+            },
+            {
+                "name": "connection 2",
+                "id": "con_0000000000000003",
+                "enabled_clients": [
+                    "new_client_id"
+                ]
+            }
+        ]
+        yield connection_get_all
+
+
+@pytest.yield_fixture
+def fixture_permission_create(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.permissions, "get_or_create") as permission_create:
+        permission_create.return_value = {
+            "name": "view:app",
+            "_id": "permission_001",
+            "applicationId": "new_client_id"}
+        yield permission_create
+
+
+@pytest.yield_fixture
+def fixture_role_create(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.roles, "get_or_create") as role_create:
+        role_create.return_value = {
+            "name": "app-viewer",
+            "_id": "role_001",
+            "description": "description",
+            "applicationType": "client",
+            "applicationId": "new_client_id"}
+        yield role_create
+
+
+@pytest.yield_fixture
+def fixture_group_create(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "get_or_create") as group_create:
+        group_create.return_value = {
+            "name": "view:app",
+            "_id": "group_001"}
+        yield group_create
+
+
+@pytest.yield_fixture
+def fixture_role_add_permission(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.roles, "put") as role_add_permission:
+        role_add_permission.return_value = {}
+        yield role_add_permission
+
+
+@pytest.yield_fixture
+def fixture_group_add_role(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups.client, "patch") as group_add_role:
+        group_add_role.return_value = {}
+        yield group_add_role
+
+
+def test_setup_auth0_client(ExtendedAuth0,
+                            fixture_client_create,
+                            fixture_client_update,
+                            fixture_connection_disable_client,
+                            fixture_connection_search_first_match,
+                            fixture_connection_get_all,
+                            fixture_permission_create,
+                            fixture_role_create,
+                            fixture_group_create,
+                            fixture_role_add_permission,
+                            fixture_group_add_role):
+
+    new_client_name = 'new_client'
+    new_client_id = "new_client_id"
+    app_url = "https://{}.{}".format(new_client_name, ExtendedAuth0.app_domain)
+    connection1 = {
+        "name": "connection 1",
+        "id": "con_0000000000000002",
+        "enabled_clients": ["new_client_id"]
+    }
+    connection2 = {
+        "name": "connection 2",
+        "id": "con_0000000000000003",
+        "enabled_clients": ["new_client_id"]
+    }
+
+    ExtendedAuth0.setup_auth0_client(app_name=new_client_name)
+    fixture_client_update.assert_called_with(new_client_id, body={"web_origins": [app_url]})
+
+    fixture_connection_disable_client.assert_has_calls(
+        [call(connection1, new_client_id)],
+        [call(connection2, new_client_id)],
+    )
+    fixture_permission_create.assert_called_with(dict(name="view:app", applicationId=new_client_id))
+    fixture_role_create.assert_called_with(dict(name="app-viewer", applicationId=new_client_id))
+    fixture_group_create.assert_called_with(dict(name=new_client_name))
+
+    fixture_role_add_permission.assert_called_with(
+        'role_001',
+        body={'name': 'app-viewer',
+              'description': 'description',
+              'applicationId': 'new_client_id',
+              'applicationType': 'client',
+              'permissions': ['permission_001']})
+    domain = settings.AUTH0["authorization_extension_url"]
+    fixture_group_add_role.assert_called_with(f"{domain}/groups/group_001/roles", data=['role_001'])
+
+
+@pytest.yield_fixture
+def fixture_users_get_user_groups(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "get_user_groups") as get_user_groups:
+        get_user_groups.return_value = [
+           {
+              "_id":"2a1e2b9f-3435-4954-8c5d-56e8e9ce763f",
+              "name":"Test",
+              "description":"Test"
+           },
+           {
+              "_id":"81097bea-f7a3-48b6-a3fc-e2c3eb6c1ace",
+              "name":"Google",
+              "description":"Google"
+           }
+        ]
+        yield get_user_groups
+
+
+@pytest.yield_fixture
+def fixture_group_delete_member(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups.client, "delete") as group_delete_member:
+        group_delete_member.return_value = {}
+        yield group_delete_member
+
+
+@pytest.yield_fixture
+def fixture_user_delete(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users.client, "delete") as user_delete:
+        user_delete.return_value = {}
+        yield user_delete
+
+
+@pytest.yield_fixture
+def fixture_user_has_existed(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "has_existed") as user_has_existed:
+        user_has_existed.return_value = True
+        yield user_has_existed
+
+
+def test_clear_up_user(ExtendedAuth0,
+                       fixture_user_has_existed,
+                       fixture_users_get_user_groups,
+                       fixture_group_delete_member,
+                       fixture_user_delete):
+    user_id = "remove_user_id"
+    ExtendedAuth0.clear_up_user(user_id)
+    domain = settings.AUTH0["authorization_extension_url"]
+    fixture_group_delete_member.assert_has_calls(
+        [call(f"{domain}/groups/2a1e2b9f-3435-4954-8c5d-56e8e9ce763f/members", data=['remove_user_id']),
+         call(f"{domain}/groups/81097bea-f7a3-48b6-a3fc-e2c3eb6c1ace/members", data=['remove_user_id'])]
+    )
+    domain = settings.AUTH0["domain"]
+    fixture_user_delete.assert_called_with(f"https://{domain}/api/v2/users/{user_id}")

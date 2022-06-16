@@ -4,6 +4,7 @@ from model_mommy import mommy
 import pytest
 
 from controlpanel.api.models import App
+from tests.api.fixtures.aws import *
 
 
 @pytest.yield_fixture
@@ -35,21 +36,22 @@ def test_aws_create_role_calls_service(aws):
 
 
 @pytest.mark.django_db
-def test_delete_also_deletes_app_artifacts():
+def test_delete_also_deletes_app_artifacts(auth0, secretsmanager):
     app = App.objects.create(repo_url="https://example.com/repo_name")
-
+    authz = auth0.ExtendedAuth0.return_value
     with patch("controlpanel.api.models.app.cluster") as cluster:
         app.delete()
 
         cluster.App.assert_called_with(app)
         cluster.App.return_value.delete.assert_called()
+        authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
 
 
 @pytest.mark.django_db
 def test_get_customers(auth0):
     app = App.objects.create(repo_url="https://example.com/repo_name")
-    authz = auth0.AuthorizationAPI.return_value
-    authz.get_group_members.return_value = [
+    authz = auth0.ExtendedAuth0.return_value
+    authz.groups.get_group_members.return_value = [
         {"email": "test@example.com"}
     ]
 
@@ -62,12 +64,12 @@ def test_get_customers(auth0):
 @pytest.mark.django_db
 def test_add_customers(auth0):
     app = App.objects.create(repo_url="https://example.com/repo_name")
-    authz = auth0.AuthorizationAPI.return_value
+    authz = auth0.ExtendedAuth0.return_value
     emails = ["test1@example.com", "test2@example.com"]
 
     app.add_customers(emails)
 
-    authz.add_group_members.assert_called_with(
+    authz.add_group_members_by_emails.assert_called_with(
         group_name=app.slug,
         emails=emails,
         user_options={"connection": "email"},
@@ -77,11 +79,11 @@ def test_add_customers(auth0):
 @pytest.mark.django_db
 def test_delete_customers(auth0):
     app = App.objects.create(repo_url="https://example.com/repo_name")
-    authz = auth0.AuthorizationAPI.return_value
+    authz = auth0.ExtendedAuth0.return_value
 
     app.delete_customers(["email|123"])
 
-    authz.delete_group_members.assert_called_with(
+    authz.groups.delete_group_members.assert_called_with(
         group_name=app.slug,
         user_ids=["email|123"],
     )

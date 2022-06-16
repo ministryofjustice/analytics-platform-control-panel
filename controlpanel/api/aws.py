@@ -4,6 +4,8 @@ import structlog
 
 import boto3
 import botocore
+import base64
+from botocore.exceptions import ClientError
 from django.conf import settings
 
 
@@ -639,3 +641,93 @@ def delete_parameter(name):
 def list_role_names(prefix="/"):
     roles = boto3.resource("iam").roles.filter(PathPrefix=prefix).all()
     return [role.name for role in list(roles)]
+
+
+
+class AWSSecretManagerError(Exception):
+    pass
+
+
+class AWSSecretManager:
+
+    def __init__(self):
+        self.client = boto3.client("secretsmanager", region_name=settings.BUCKET_REGION)
+
+    def _format_error_message(self, client_error_response):
+        return format("{}: {}.".format(client_error_response.get("Error"),
+                                       client_error_response.get("Message")))
+
+    def has_existed(self, secret_name: str):
+        try:
+            self.client.get_secret_value(SecretId=secret_name)
+            return True
+        except botocore.exceptions.ClientError as error:
+            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+                return False
+            else:
+                raise AWSSecretManagerError(self._format_error_message(error.response))
+
+    def create_secret(self, secret_name: str, secret_data):
+        try:
+            kwargs = {"Name": secret_name}
+            if isinstance(secret_data, dict):
+                kwargs["SecretString"] = json.dumps(secret_data)
+            elif isinstance(secret_data, bytes):
+                kwargs["SecretBinary"] = base64.b64encode(secret_data)
+            return self.client.create_secret(**kwargs)
+        except botocore.exceptions.ClientError as error:
+            raise AWSSecretManagerError(self._format_error_message(error.response))
+
+    def get_secret(self, secret_name):
+        try:
+            response = self.client.get_secret_value(SecretId=secret_name)
+            if 'SecretString' in response:
+                secret_data = json.loads(response['SecretString'])
+            else:
+                secret_data = base64.b64decode(response['SecretBinary'])
+            return secret_data
+        except botocore.exceptions.ClientError as error:
+            raise AWSSecretManagerError(self._format_error_message(error.response))
+
+    def update_secret(self, secret_name, secret_data):
+        try:
+            kwargs = {"SecretId": secret_name}
+            response = self.client.get_secret_value(SecretId=secret_name)
+            if isinstance(secret_data, bytes):
+                kwargs["SecretBinary"] = base64.b64encode(secret_data)
+            else:
+                origin_data = {}
+                if 'SecretString' in response:
+                    origin_data = json.loads(response['SecretString'])
+                for key, value in secret_data.items():
+                    origin_data[key] = value
+                kwargs["SecretString"] = json.dumps(origin_data)
+            self.client.update_secret(**kwargs)
+        except botocore.exceptions.ClientError as error:
+            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+                return False
+            else:
+                raise AWSSecretManagerError(self._format_error_message(error.response))
+
+    def delete_secret(self, secret_name, without_recovery=True):
+        """
+        Choosing True as default value of without_recovery to allow us to create secret again
+        in a short period of time, otherwise we have to wait the recovery window ends, but it
+        does mean we lose the ability of recovering the deletion within recovery window.
+        """
+        if not self.has_existed(secret_name):
+            return
+
+        try:
+            response = self.client.delete_secret(
+                SecretId=secret_name, ForceDeleteWithoutRecovery=without_recovery)
+            return response
+        except botocore.exceptions.ClientError as error:
+            raise AWSSecretManagerError(self._format_error_message(error.response))
+
+    def create_or_update(self, secret_name, secret_data):
+        if not self.has_existed(secret_name):
+            return self.create_secret(secret_name, secret_data=secret_data)
+        else:
+            return self.update_secret(secret_name, secret_data=secret_data)
+

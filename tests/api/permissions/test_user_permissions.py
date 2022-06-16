@@ -5,8 +5,6 @@ import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-import controlpanel.api.rules
-
 
 def user_list(client, users):
     return client.get(reverse('user-list'))
@@ -64,6 +62,12 @@ def user_update_self(client, users):
     )
 
 
+@pytest.yield_fixture
+def auth0():
+    with patch("controlpanel.api.models.user.auth0") as auth0:
+        yield auth0
+
+
 @pytest.mark.parametrize(
     'view,user,expected_status',
     [
@@ -84,7 +88,7 @@ def user_update_self(client, users):
     ],
 )
 @pytest.mark.django_db
-def test_permission(client, users, view, user, expected_status):
+def test_permission(client, users, view, user, expected_status, auth0):
     client.force_login(users[user])
     response = view(client, users)
     assert response.status_code == expected_status
