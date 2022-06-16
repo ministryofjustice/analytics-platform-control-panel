@@ -45,7 +45,7 @@ def test_helm_create_user(helm):
     helm.upgrade_release.has_calls(expected_calls)
 
 
-def test_helm_delete_user(helm):
+def test_helm_delete_user(helm, auth0):
     user = User.objects.create(username='bob', auth0_id="github|user_2")
     authz = auth0.ExtendedAuth0.return_value
     helm.list_releases.return_value = ["chart-release", "bootstrap-user-bob"]
