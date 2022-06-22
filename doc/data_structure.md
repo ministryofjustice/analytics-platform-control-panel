@@ -1,4 +1,4 @@
-# Data Structure
+# Data Structure for key tables
 
 ![Data Model Structure](./images/data_structure.png "The data structure of the app")
 
@@ -6,6 +6,15 @@ Generated with
 ```bash
 ./dev-packages/bin/python manage.py graph_models -a -E --exclude-models TestModel,TimeStampedModel,ContentType,AbstractBaseSession,AbstractUser,Group,Permission -o data_structure.png
 ```
+
+
+## other tables 
+
+Explain the rest of the tables which do not appear at the above diagram
+
+## Data flow
+
+Will show a diagram about the dataflow cross different systems
 
 ## JSON format
 
