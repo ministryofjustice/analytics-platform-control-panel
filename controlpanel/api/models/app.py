@@ -50,7 +50,7 @@ class App(TimeStampedModel):
 
     @property
     def app_aws_secret_name(self):
-        return f"{settings.ENV}_app_secret/{self.slug}"
+        return f"{settings.ENV}/apps/{self.slug}/auth"
 
     def construct_secret_data(self, client):
         return {
