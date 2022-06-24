@@ -26,17 +26,10 @@
 
         <p>
             It might have timed out in which case you can
-
-            {% if EKS %}
-            <a
-                href="https://alpha-analytics-moj.eu.auth0.com/v2/logout?returnTo=https%3A%2F%2Fcontrolpanel.services.analytical-platform.service.justice.gov.uk%2Foidc%2Flogout%2F">reset
-                your session</a>,
-            {% else %}
-            <a
-                href="https://{{ environment }}-analytics-moj.eu.auth0.com/v2/logout?returnTo=https%3A%2F%2Fcontrolpanel.services.{{ environment }}.mojanalytics.xyz%2Foidc%2Flogout%2F">reset
-                your session</a>,
-            {% endif %}
-            and login again.
+            <a href="{{ auth0_logout_url }}?returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2F&client_id={{ auth0_client_id }}">
+                reset your session
+            </a>
+            , and login again.
         </p>
 
         <p>
