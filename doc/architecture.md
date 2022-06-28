@@ -70,7 +70,7 @@ client_id=<auth0_github_client_id>
 ```
 if the user hasn't signed in github yet, it will redirect into github login page
 ```shell
-https://github.com/login?client_id=de6f65236c32ea5089a7&
+https://github.com/login?client_id=<auth0_github_client_id>&
 return_to=/login/oauth/authorize?client_id=<auth0_github_client_id>&
 redirect_uri=https%3A%2F%2F<OIDC_DOMAIN>%2Flogin%2Fcallback&
 response_type=code&
