@@ -2,33 +2,59 @@
 
 # Analytical Platform Control Panel
 
-The Control Panel is a Django project made up of two parts:
+The Control Panel is a management tool which can provide the following main features to our main stakeholders, data analyst 
+and data scientist 
 
-1. A REST API for creating users, apps, tools & managing permissions in the
-   Analytical Platform Kubernetes cluster, Auth0 and AWS IAM.
+- Allow them to access important datasets cross MoJ easily and securely
+- Allow them to manage their own datasets easily and securely
+- Allow them to explore the data by using our online tooling environment 
+- Allow them to deploy their app on our hosting platform easily
 
+Also as superuser, Control panel can offer
+- User management 
+- Permission management on datasets
+- Application management
+
+As the nature of this app, Control panel interacts with underlying infrastructure mainly
+AWS services and cluster, quite heavily and also has the tight dependencies on the policies, 
+strategies about how we would like to manage our data lake and our infrastructures
+
+## Tech documents
+
+Control panel is a Django project made up of three parts:
+
+1. Major features for interacting with infrastructure for creating users, apps, tools & managing permissions in the
+   Analytical Platform Kubernetes cluster, Auth0 and AWS IAM are under /controlpanel/api. There are some codes for 
+   defining a basic structure of REST APIs for backend, but they are not used.
+   
 2. A frontend web application allowing administration of a user's apps, data
    sources and tools in the Analytical Platform.
+   
+3. A simple worker for running some time-consuming background tasks 
+   
+More information are available throught following links
 
+* [The control panel architecture](./doc/architecture.md)
+* [The control panel data model](./doc/data_structure.md)
+* [The control panel frontend](./doc/frontend.md)
 
 ## Quickstart
 
-See [Running with Docker](doc/docker.md), or [Running directly on your
-machine](doc/running.md).
+Unfortunately, there is no real quickstart for this control panel at this stage. 
+In order to be able to work on the app locally, there are 2 options
 
+- Interact with remote infrastructure (AWS platform) for dev environment 
+  
+  Under this option, first of all is to gain all those permissions required for accessing
+  different resources managed on infrastructure e.g., AWS, then See [Running with Docker](doc/docker.md), 
+  or [Running directly on your machine](doc/running.md).
 
-## Deployment
+- Interact with local infrastructure through LocalStack **(this part is under development)**
 
+For better understanding of the environment variables used in this app, please check the following lin
+* [Control Panel environment variables](./doc/environment.md)
 
-### Old (pre-EKS) Infrastructure
-
-Commits to the protected `main` branch will trigger a [Concourse CI pipeline](https://concourse.services.dev.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) which will deploy the changes to our `dev` environment.
-
-To deploy work branches for testing purposes on the old `dev` environment see [the instructions here](https://ministryofjustice.github.io/ap-tech-docs/documentation/50-systems/control-panel/Deploy-Development-Instance-of-Control-Panel.html).
-
-Versioned Github releases will trigger [another pipeline](https://concourse.services.alpha.mojanalytics.xyz/teams/admin/pipelines/cpanel-api) and deploy to our `alpha` environment.
-
-### New (EKS) Infrastructure
+## Deployment EKS Infrastructure
 
 Currently this is NOT automated, but there is a ticket in the backlog to make
 things work in a similar fashion to how it does on the old infrastructure but
@@ -46,11 +72,7 @@ The modus operandi is simple:
 That's it..!
 
 
-## Documentation
+## Other useful Documentation
 
-* [Running control panel locally](./doc/running.md)
-* [Running control panel with docker](./doc/docker.md)
-* [Control Panel environment variables](./doc/environment.md)
-* [The control panel frontend](./doc/frontend.md)
-* [The control panel data model](./doc/data_structure.md)
 * [Some semi-common errors](./doc/errors.md)
+* [Helm charts repo](https://github.com/ministryofjustice/analytics-platform-helm-charts)
