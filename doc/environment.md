@@ -3,6 +3,7 @@
 | Name | Description | Default |
 | ---- | ----------- | ------- |
 | `ALLOWED_HOSTS` | Space separated. Must be set if DEBUG is False | `[]` |
+| `ALLOWED_HOSTS` | Space separated. Must be set if DEBUG is False | `[]` |
 | `AWS_COMPUTE_ACCOUNT_ID` | ID of the AWS account where tools and apps run | |
 | `AWS_DATA_ACCOUNT_ID` | ID of the AWS account where data sits | |
 | `BUCKET_REGION` | AWS region | `eu-west-1` |
@@ -20,7 +21,6 @@
 | `ELASTICSEARCH_PASSWORD` | | |
 | `ELASTICSEARCH_PORT` | | `9243` |
 | `ELASTICSEARCH_USERNAME` | | |
-| `ENABLE_*` | See [Feature flags](feature-flags.md) | |
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
 | `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
 | `GOOGLE_ANALYTICS_ID` | Key for Google Analytics account | |
@@ -29,7 +29,6 @@
 | `KIBANA_BASE_URL` | Kibana endpoint for Elastic logs | `https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana` |
 | `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
 | `LOGS_BUCKET_NAME` | Name of S3 bucket where logs are stored | `moj-analytics-s3-logs` |
-| `NFS_HOSTNAME` | Hostname of NFS server for user homes | |
 | `OIDC_AUTH_EXTENSION_URL` | Base URL of Auth0 authorization API | |
 | `OIDC_CLIENT_ID` | Client ID from Auth0 | |
 | `OIDC_CLIENT_SECRET` | Client secret from Auth0 | |
@@ -49,6 +48,3 @@
 | `SLACK_CHANNEL` | The channel to where Slack messages are to be posted | `#analytical-platform` |
 | `TOOLS_DOMAIN` | Domain where tools are deployed | |
 | `USER_GUIDANCE_BASE_URL` | Domain where user guidance is found | |
-| `*_AUTH_CLIENT_DOMAIN` | OIDC domain for tool instances | [`OIDC_DOMAIN`]() |
-| `*_AUTH_CLIENT_ID` | OIDC client ID for tool instances | |
-| `*_AUTH_CLIENT_SECRET` | OIDC client secret for tool instances | |

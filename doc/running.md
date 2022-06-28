@@ -1,9 +1,10 @@
 # Running directly on your machine
 
----
-:construction: _This guide has recently undergone some major changes in order to work with the new cluster. It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, but be aware that the developers who checked the system had some things set up already. If problems arise, please open a PR to revise this documentation._
-
----
+This part is for running the app on local env without docker and also it will interact
+with remote AWS infrastructure with the following ones
+ - AWS Data account
+ - AWS Dev account
+ - AWS EKS cluster on Dev account
 
 There are essentially three aspects to getting the control panel in a state for
 development on your local machine:
@@ -28,7 +29,6 @@ You must have:
 * [PostgreSQL](https://www.postgresql.org/)
 * [npm](https://www.npmjs.com/)
 * [direnv](https://direnv.net/)
-* [docker](https://www.docker.com/)
 
 These should be installed using your own OS's package manager (`brew`, `apt`
 etc...).
@@ -56,14 +56,14 @@ pip3 uninstall python-dotenv
 
 In order to use `direnv` for managing your environment variables, you should
 make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
-You'll be able to get a copy of folks `.envrc` file from colleagues.
+You'll be able to get a copy of folks `.envrc` file.
 
 ## Local Environment
 
 ### <a name="env"></a>Environment variables
 
-The simplest solution is to ask for a copy of a working `.env` or `.envrc` file
-from one of the other developers with the environment variables set for development.
+The simplest solution is to download the copy of the working `.env` or `.envrc` file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
+Check each value whether it is relevant to your local env.
 
 If this isn't immediately possible and at a minimum, you need to set the
 following environment variables:
@@ -71,11 +71,10 @@ following environment variables:
 ```sh
 export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
 ```
+Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
 
 See [Environment Variables Reference](environment.md) for details of other
 environment variable settings.
-
-Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
 
 ### Database
 
@@ -178,6 +177,9 @@ an account linked to your `@digital.justice.gov.uk` account.
 
 ### AWS Configuration
 
+In order to run the app you'll need various permissions set up for you in the
+wider infrastructure of the project, mainly for AWS platform. 
+
 As the docs for AWS (linked above) mention, you'll need to add yourself an AWS
 user account linked to your MoJ email address via the
 [analytical-platform-iam](https://github.com/ministryofjustice/analytical-platform-iam)
@@ -189,70 +191,81 @@ your details to AWS. Remember to follow the remaining instructions in the
 README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
 for which you'll need to ask someone to create an initial password for you.
 
-Once you're logged you should visit your "security credentials" page (click on
-your username in the top right corner) and follow the steps to create an access key for CLI, SDK and API access.
+`aws-vault` is recommended to manage different AWS accounts
 
-You should also set up a local profile for using MoJ AWS things from your local
-machine anyway. Assuming you have the `aws` command installed for your
-operating system ([see here](https://aws.amazon.com/cli/)), you can do this
-automatically with the following command / dialog. In the example below, I use
-the profile name `moj`, but this could be something arbitrary and more
-meaningful for you. Then, simply replace the `?????` with your own details. The
-`region` and `output format` values should be as shown below.
+See [see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
+for details of information about how to setup configuration and how to use `aws-vault`.
 
-```
-$ aws configure --profile moj
-AWS Access Key ID [None]: ?????
-AWS Secret Access Key [None]: ?????
-Default region name [None]: eu-west-1
-Default output format [None]: json
+### Kubernetes Configuration
+
+For Kubernetes, simply follow the instructions (linked above) for the `dev`
+cluster.
+
+Make sure you have the correct kubernetes context set:
+```sh
+kubectl config use-context <dev-cluster-name>   # cluster name as set in ~/.kube/config
 ```
 
-Next, you need to assume particular role within AWS in order for the control
-panel to have the correct permissions to work with the resources it needs. This
-is documented
-[here](https://github.com/ministryofjustice/analytical-platform-iam#authenticating),
-but the short version is that you need to assume the [restricted-admin@data](https://signin.aws.amazon.com/switchrole?account=mojanalytics&roleName=restricted-admin-data&displayName=restricted-admin@data)
-role (clicking on the link, if you're signed into your AWS dashboard, should do
-this for you). Once you've assumed this role you need to request temporary
-credentials for working with AWS under this role. To do this type the following
-command and read the resulting JSON payload:
+You can check things are working with the following command, which will return
+information about the k8s master and KubeDNS:
 
+```sh
+kubectl cluster-info
 ```
-aws sts assume-role --role-arn "arn:aws:iam::593291632749:role/restricted-admin-data" --role-session-name data-session
+The token for accessing the cluser will be expired after certain time, in order to refresh token
+automatically, the following lines can be added into your ~/.kube/config
+
+```shell
+- name: arn:aws:eks:eu-west-1:<AWS_DEV_ACCOUNT>:cluster/<dev_cluster_name>
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - exec
+      - admin-dev
+      - --
+      - aws
+      - --region
+      - eu-west-1
+      - eks
+      - get-token
+      - --cluster-name
+      - <dev_cluster_name>
+      command: /usr/local/bin/aws-vault
+      env: null
+      provideClusterInfo: false
+```
+admin-dev is the profile name for dev AWS account in your AWS configuration file
+
+### Helm
+
+Install Helm (the K8s package manager) by following
+[these instructions for your OS](https://helm.sh/docs/intro/install/).
+
+You'll need to initialise Helm too:
+
+```sh
+helm init
 ```
 
-Finally, you need to set the following environment variables, based upon the
-values in the returned JSON payload:
+Tell Helm to use the Analytical Platform chart repository:
 
-```
-export AWS_ACCESS_KEY_ID=ASIAX........
-export AWS_SECRET_ACCESS_KEY=0vwDrU5..........
-export AWS_SESSION_TOKEN="FQoGZXIvYXdzEHQaDHBH......."
+```sh
+helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
+helm repo update
 ```
 
-The last step is to check it worked with the following command (which will
-return a JSON payload containing session details):
+## Run the app
 
-```
-aws sts get-caller-identity
-```
+**Assumption**: You have completed your local env setup by following the above sections.
 
-If you see an error, ask a colleague!
-
-**You probably notice that the session expires after an hour. If you're getting
-AWS errors, ensure you've not timed out.**
-
-### Local AWS Configuration
+### Local AWS profile setup (on first run only)
 This app needs to interact with multiple AWS accounts in order to support the users' needs.
 The AWS resources like IAM, s3 buckets are under our data account and will be managed by 
 app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
 The following steps will show how to create it.
 
 Assume that the name of profile for our aws data account is ```admin-data```
-
-NOTES: using ```aws-vault exec <profile>``` to inject the aws keys as envs when launching the app 
-will cause the failure of connecting cluster on dev. 
 
 #### Add the AWS credential into .aws/credentials
 it should look like below 
@@ -274,69 +287,18 @@ Once the aws-vault is added, you can choose to show the value of the keys.
 role_arn=arn:aws:iam::<data account id>:role/restricted-admin
 source_profile=default
 ```
+### Check Kubernetes current context
 
-### Kubernetes Configuration
+Please check the current context and make sure it is pointing to the `dev` cluster
 
-For Kubernetes, simply follow the instructions (linked above) for the `dev`
-cluster.
+```kubectl config use-context < the context name for dev cluster in your kube config file>```
 
-Make sure you have the correct kubernetes context set:
-```sh
-kubectl config use-context <dev-cluster-name>   # cluster name as set in ~/.kube/config
-```
+### Check the environment file
 
-You can check things are working with the following command, which will return
-information about the k8s master and KubeDNS:
-
-```sh
-kubectl cluster-info
-```
-
-#### Helm
-
-Install Helm (the K8s package manager) by following
-[these instructions for your OS](https://helm.sh/docs/intro/install/).
-
-You'll need to initialise Helm too:
-
-```sh
-helm init
-```
-
-Tell Helm to use the Analytical Platform chart repository:
-
-```sh
-helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
-helm repo update
-```
-
-## Create superuser (on first run only)
-
-This isn't strictly required, so feel free to skip this step.
-
-```sh
-python3 manage.py createsuperuser
-```
-
-Your `Username` needs to be your GitHub username.
-Your `Auth0 id` needs to be the number associated with you in auth0.com and
-labelled `user_id` (not working for me yet).
-
-### Run the app
-
-In order to run the app you'll need various permissions set up for you in the
-wider infrastructure of the project. This is usually achieved via the
-`aws-vault` command (please
-[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)).
-
-Also please follow the previous section of ```Local AWS Configuration``` to setup your local AWS data profile
-
-#### Create the local environment files 
-
-Download the copy of the file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
-
+Check whether you have the following 2 in the env file and make sure they are correct
 - ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
 - ```EKS```: True, indicating EKS cluster will be used in the app.
+- ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
 
 ```
 export AWS_PROFILE = "admin-data"
@@ -356,7 +318,20 @@ helm env
 ```
 Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
 
-#### Run the frontend of the app
+### Create superuser (on first run only)
+
+This isn't strictly required, so feel free to skip this step.
+
+```sh
+python3 manage.py createsuperuser
+```
+
+Your `Username` needs to be your GitHub username.
+Your `Auth0 id` needs to be the number associated with you in auth0.com and
+labelled `user_id` (not working for me yet).
+
+
+### Run the frontend of the app
 
 You can run the app with the Django development server with
 
@@ -369,7 +344,7 @@ Or with Gunicorn WSGI server:
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
 
-#### Run the worker of the app
+### Run the worker of the app
 Open another terminal to run the following line
 
 ```sh
@@ -383,7 +358,7 @@ NOTES: if you use aws-vault to manage your AWS credentials, during the running p
 you may encounter a popup window for asking you to provide key-chain password from time to time, 
 which is normal.
 
-#### Important notes
+### Important notes
 The app even running on local env, it will still talk to the remote AWS data account and 
 dev cluster directly which is shared with our dev environment, especially the data account,
 it is shared not only dev environment also prod environment, all those important
