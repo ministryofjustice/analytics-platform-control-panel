@@ -193,6 +193,8 @@ into AWS Login app domain which is
       WebIdentityToken: <id_token from auth0>,
     })  
   ```
+  **NOTE**: A trust relationship for allowing the user's role to perform assumeRoleWithWebIdentity through id_token needs to be added.
+
 - **Step 5**: A temporary security credential is returned, it contains 3 key information
   ```shell
   {
