@@ -47,4 +47,5 @@
 | `SLACK_API_TOKEN` | Slack token ([more information)](https://slack.dev/python-slackclient/auth.html) | Only required when you're working with Slack |
 | `SLACK_CHANNEL` | The channel to where Slack messages are to be posted | `#analytical-platform` |
 | `TOOLS_DOMAIN` | Domain where tools are deployed | |
+| `APP_DOMAIN` | Domain where users' applications are deployed | |
 | `USER_GUIDANCE_BASE_URL` | Domain where user guidance is found | |
