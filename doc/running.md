@@ -56,7 +56,6 @@ pip3 uninstall python-dotenv
 
 In order to use `direnv` for managing your environment variables, you should
 make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
-You'll be able to get a copy of folks `.envrc` file.
 
 ## Local Environment
 
