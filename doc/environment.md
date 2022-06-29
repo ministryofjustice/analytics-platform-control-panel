@@ -3,7 +3,6 @@
 | Name | Description | Default |
 | ---- | ----------- | ------- |
 | `ALLOWED_HOSTS` | Space separated. Must be set if DEBUG is False | `[]` |
-| `ALLOWED_HOSTS` | Space separated. Must be set if DEBUG is False | `[]` |
 | `AWS_COMPUTE_ACCOUNT_ID` | ID of the AWS account where tools and apps run | |
 | `AWS_DATA_ACCOUNT_ID` | ID of the AWS account where data sits | |
 | `BUCKET_REGION` | AWS region | `eu-west-1` |
