@@ -61,7 +61,7 @@ make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
 
 ### <a name="env"></a>Environment variables
 
-The simplest solution is to download the copy of the working `.env` or `.envrc` file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
+The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
 Check each value whether it is relevant to your local env.
 
 If this isn't immediately possible and at a minimum, you need to set the
