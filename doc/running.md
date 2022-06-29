@@ -212,8 +212,8 @@ information about the k8s master and KubeDNS:
 ```sh
 kubectl cluster-info
 ```
-The token for accessing the cluser will be expired after certain time, in order to refresh token
-automatically, the following lines can be added into your ~/.kube/config
+The token for accessing the cluser will expire periodically.
+To refresh the token automatically, the following lines can be added into your ~/.kube/config:
 
 ```shell
 - name: arn:aws:eks:eu-west-1:<AWS_DEV_ACCOUNT>:cluster/<dev_cluster_name>
