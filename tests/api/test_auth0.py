@@ -459,3 +459,28 @@ def test_clear_up_user(ExtendedAuth0,
     )
     domain = settings.AUTH0["domain"]
     fixture_user_delete.assert_called_with(f"https://{domain}/api/v2/users/{user_id}")
+
+
+@pytest.yield_fixture
+def fixture_group_members_200(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "all") as request:
+        request.side_effect = [
+            {
+                "total": 200,
+                "users": [
+                    {
+                        "name": f"Test Group Member {(i * 100) + j}",
+                        "email": f"test{(i * 100) + j}@example.com",
+                        "user_id": f"github|{(i * 100) + j}",
+                    }
+                    for j in range(100)
+                ],
+            }
+            for i in range(2)
+        ]
+        yield
+
+
+def test_group_member_more_than_100(ExtendedAuth0, fixture_get_group_id, fixture_group_members_200):
+    members = ExtendedAuth0.groups.get_group_members(group_name="test group")
+    assert len(members) == 200

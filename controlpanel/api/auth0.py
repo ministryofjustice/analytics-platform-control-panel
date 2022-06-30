@@ -236,7 +236,7 @@ class ExtendedAPIMethods(object):
     def _has_pagination_option(self):
         return not (hasattr(self, 'no_pagination') and self.no_pagination)
 
-    def get_all(self, request_url=None, endpoint=None):
+    def get_all(self, request_url=None, endpoint=None, has_pagination=False, asked_per_page=None, include_totals=True):
         items = []
         total = None
         params = None
@@ -248,11 +248,12 @@ class ExtendedAPIMethods(object):
         # passed.
         page_number = None
         per_page = None
-        has_pagination_option = self._has_pagination_option()
+        has_pagination_option = has_pagination or self._has_pagination_option()
         if has_pagination_option:
-            params = {"include_totals": "true"}
+            if include_totals:
+                params = {"include_totals": "true"}
             page_number = 0
-            per_page = PER_PAGE
+            per_page = asked_per_page if asked_per_page else PER_PAGE
 
         while True:
             response = self.all(request_url=request_url, page=page_number, per_page=per_page, extra_params=params)
@@ -423,7 +424,14 @@ class Groups(Auth0API, ExtendedAPIMethods):
     def get_group_members(self, group_name):
         group_id = self.get_group_id(group_name)
         if group_id:
-            return self.get_all(request_url=self._url(group_id, "members"), endpoint="users")
+            # All the auth extension APIs doesn't have page parameter but the API for group's members does
+            # and the maximum value of per_page is 25, not like other APIs which is 50, and it does not allow
+            # include_totals parameter. It will return `400: "include_totals" is not allowed` if this param is passed.
+            return self.get_all(request_url=self._url(group_id, "members"),
+                                endpoint="users",
+                                has_pagination=True,
+                                asked_per_page=25,
+                                include_totals=False)
         else:
             return []
 
