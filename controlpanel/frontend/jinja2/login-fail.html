@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% set page_title = "Login Failure" %}
+{% set signout_url = url("oidc_logout") %}
+
 
 {% block content %}
 <div class="govuk-grid-row" id="reset-container">
@@ -26,7 +28,7 @@
 
         <p>
             It might have timed out in which case you can
-            <a href="{{ auth0_logout_url }}?client_id={{ auth0_client_id }}&returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2Foidc%2Flogout%2F">
+            <a href={{ signout_url }}>
                 reset your session
             </a>
             , and login again.
