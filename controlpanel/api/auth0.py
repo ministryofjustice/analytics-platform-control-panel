@@ -340,7 +340,7 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         so there is no pagination related param being passed into list() call.
         """
         query_string = f"email:\"{email.lower()}\""
-        search_engine = "v2"
+        search_engine = "v3"
         if connection:
             query_string = f"{query_string} AND identities.connection:\"{connection}\""
         response = self.list(q=query_string, search_engine=search_engine)
@@ -367,7 +367,7 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
     def has_existed(self, user_id):
         query_string = f"user_id:\"{user_id}\""
-        response = self.list(q=query_string, search_engine="v2")
+        response = self.list(q=query_string, search_engine="v3")
         if "error" in response:
             raise Auth0Error("get_users_email_search", response)
 
