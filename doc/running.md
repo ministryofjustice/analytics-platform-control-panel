@@ -1,4 +1,8 @@
 # Running directly on your machine
+---
+:construction: _This guide has recently undergone some major changes in order to work with the new cluster. It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, but be aware that the developers who checked the system had some things set up already. If problems arise, please open a PR to revise this documentation._
+
+---
 
 This part is for running the app on local env without docker and also it will interact
 with remote AWS infrastructure with the following ones

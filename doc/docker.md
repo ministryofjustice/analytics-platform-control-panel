@@ -1,6 +1,9 @@
 # Running with Docker
 ---
-:construction: _This guide has recently undergone some major changes in order to work with the new cluster. It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, but be aware that the developers who checked the system had some things set up already. If problems arise, please open a PR to revise this documentation._
+:construction: _This guide has recently undergone some major changes in order to work with the new cluster. 
+It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, 
+but be aware that the developers who checked the system had some things set up already. If problems arise, please 
+open a PR to revise this documentation._
 
 ---
 
