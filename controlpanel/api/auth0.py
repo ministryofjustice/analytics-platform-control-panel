@@ -22,6 +22,9 @@ PER_PAGE = 50
 # This is the maximum they'll allow for group/members API
 PER_PAGE_FOR_GROUP_MEMBERS = 25
 
+# Default value for time_out
+DEFAULT_TIMEOUT = 20
+
 
 class Auth0Error(APIException):
     status_code = 500
@@ -47,16 +50,27 @@ class ExtendedAuth0(Auth0):
         self._token = self._access_token(audience=self.audience)
         super(ExtendedAuth0, self).__init__(self.domain, self._token)
 
-        self.clients = ExtendedClients(self.domain, self._token)
-        self.connections = ExtendedConnections(self.domain, self._token)
+        self.clients = ExtendedClients(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
+        self.connections = ExtendedConnections(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
         self._extension_token = self._access_token(audience=settings.AUTH0["authorization_extension_audience"])
-        self.roles = Roles(self.authorization_extension_url, self._extension_token)
-        self.permissions = Permissions(self.authorization_extension_url, self._extension_token)
-        self.groups = Groups(self.authorization_extension_url, self._extension_token)
-        self.users = ExtendedUsers(self.domain, self._token, self.authorization_extension_url, self._extension_token)
+        self.roles = Roles(self.authorization_extension_url, self._extension_token, timeout=DEFAULT_TIMEOUT)
+        self.permissions = Permissions(
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT)
+        self.groups = Groups(
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT)
+        self.users = ExtendedUsers(
+            self.domain,
+            self._token,
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT)
 
     def _access_token(self, audience):
         get_token = authentication.GetToken(self.domain)
