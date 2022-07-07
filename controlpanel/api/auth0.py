@@ -22,7 +22,10 @@ PER_PAGE = 50
 # This is the maximum they'll allow for group/members API
 PER_PAGE_FOR_GROUP_MEMBERS = 25
 
-# Default value for time_out
+# The default value for timeout in auth0.v3.management is 5 seconds which will get ReadTimeOut error quite easily on
+# Auth0 dev tenant when Control panel initialises the connection with it. In order to avoid this, a longer timeout
+# is defined below as the default value for this app. This value will be passed down and overwrite the default 5 seconds
+# when the API classes in Auth0 package are created
 DEFAULT_TIMEOUT = 20
 
 
