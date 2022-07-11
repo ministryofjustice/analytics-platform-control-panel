@@ -1,6 +1,5 @@
 import structlog
 
-from asgiref.sync import async_to_sync
 from controlpanel.api import cluster
 from controlpanel.api.models import Tool, ToolDeployment
 from controlpanel.frontend.consumers import start_background_task
@@ -8,12 +7,9 @@ from controlpanel.oidc import OIDCLoginRequiredMixin
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import Q
-from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
-from kubernetes.client.rest import ApiException
 from rules.contrib.views import PermissionRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -47,6 +43,58 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             Q(is_restricted=False) |
             Q(target_users=self.request.user.id)
         )
+
+    def _locate_tool_box_by_chart_name(self, chart_name):
+        tool_box = None
+        for key, bucket_name in Tool.TOOL_BOX_CHART_LOOKUP.items():
+            if key in chart_name:
+                tool_box = bucket_name
+                break
+        return tool_box
+
+    def _find_related_tool_record(self, chart_name, chart_version):
+        qs = Tool.objects.filter(chart_name=chart_name, version=chart_version)
+        return qs.first()
+
+    def _add_new_item_to_tool_box(self, user, tool_box, tool, tools_info):
+        if tool_box not in tools_info:
+            tools_info[tool_box] = {
+                "name": tool.name,
+                "url": tool.url(user),
+                "deployment": None,
+                "versions": {},
+            }
+        # Each version now needs to display the chart_name and the
+        # "app_version" metadata from helm. TODO: Stop using helm.
+        if tool.version not in tools_info[tool_box]["versions"]:
+            tools_info[tool_box]["versions"][tool.version] = {
+                "chart_name": tool.chart_name,
+                "description": tool.app_version
+            }
+
+    def _add_deployed_charts_info(self, tools_info, user, id_token):
+        # Get list of deployed tools
+        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
+        for deployment in deployments:
+            chart_name, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            tool_box = self._locate_tool_box_by_chart_name(chart_name)
+            tool_box = tool_box or 'Unknown'
+            tool = self._find_related_tool_record(chart_name, chart_version)
+            if not tool:
+                log.error("this chart({}-{}) has not available from DB. ".format(chart_name, chart_version))
+                continue
+            self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
+            tools_info[tool_box]["deployment"] = ToolDeployment(tool, user)
+
+    def _retrieve_detail_tool_info(self, user, tools):
+        tools_info = {}
+        for tool in tools:
+            # Work out which bucket the chart should be in
+            tool_box = self._locate_tool_box_by_chart_name(tool.chart_name)
+            # No matching tool bucket for the given chart. So ignore.
+            if tool_box:
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
+        return tools_info
 
     def get_context_data(self, *args, **kwargs):
         """
@@ -89,55 +137,10 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
 
-        # Get list of deployed tools
-        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
-        deployed_chart_names = []
-        for deployment in deployments:
-            chart_name, _ = deployment.metadata.labels["chart"].rsplit("-", 1)
-            deployed_chart_names.append(chart_name)
-        # Defines how a matching chart name is put into a named tool bucket.
-        # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
-        # chart name match: tool bucket
-        tool_chart_lookup = {
-            "airflow": "airflow-sqlite",
-            "jupyter": "jupyter-lab",
-            "rstudio": "rstudio",
-        }
         # Arrange tools information
-        context["tools_info"] = {}
-        for tool in context["tools"]:
-            chart_name = tool.chart_name
-            # Work out which bucket the chart should be in (it'll be one of
-            # those defined in 
-            tool_bucket = ""
-            for key, bucket_name in tool_chart_lookup.items():
-                if key in chart_name:
-                    tool_bucket = bucket_name
-                    break
-            if not tool_bucket:
-                # No matching tool bucket for the given chart. So ignore.
-                break
-            if tool_bucket not in context["tools_info"]:
-                context["tools_info"][tool_bucket] = {
-                    "name": tool.name,
-                    "url": tool.url(user),
-                    "deployment": None,
-                    "versions": {},
-                }
-
-            if chart_name in deployed_chart_names:
-                context["tools_info"][tool_bucket]["deployment"] = ToolDeployment(
-                    tool, user
-                )
-            # Each version now needs to display the chart_name and the
-            # "app_version" metadata from helm. TODO: Stop using helm.
-            context["tools_info"][tool_bucket]["versions"][
-                tool.version
-            ] = {
-                "chart_name": chart_name,
-                "description": tool.app_version
-            }
-
+        tools_info = self._retrieve_detail_tool_info(user, context["tools"])
+        self._add_deployed_charts_info(tools_info, user, id_token)
+        context["tools_info"] = tools_info
         return context
 
 
