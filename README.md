@@ -20,7 +20,7 @@ It also has tight dependencies on the policies and strategies about how we would
 
 ## Tech documents
 
-Control Panel is a Django project made up of four parts:
+Control Panel is a Django project made up of three parts:
 
 1. Major features for interacting with infrastructure for creating users, apps, tools & managing permissions in the
    Analytical Platform Kubernetes cluster, Auth0 and AWS IAM are under /controlpanel/api. And also a basic structure of 
