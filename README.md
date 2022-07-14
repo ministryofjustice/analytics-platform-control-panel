@@ -22,9 +22,7 @@ It also has tight dependencies on the policies and strategies about how we would
 
 Control Panel is a Django project made up of three parts:
 
-1. Major features for interacting with infrastructure for creating users, apps, tools & managing permissions in the
-   Analytical Platform Kubernetes cluster, Auth0 and AWS IAM are under /controlpanel/api. And also a basic structure of 
-   REST APIs for allowing external systems to view the resources has been provided too.
+1. A REST API for creating users, apps, tools & managing permissions in the Analytical Platform Kubernetes cluster, Auth0 and AWS IAM, and to allow external systems to view the created resources. This can be found under `/controlpanel/api`.
    
 2. A frontend web application allowing administration of a user's apps, data
    sources and tools in the Analytical Platform.
