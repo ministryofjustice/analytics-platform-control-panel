@@ -531,6 +531,10 @@ USER_GUIDANCE_BASE_URL = os.environ.get(
 )
 
 
+# --- Managed Airflow
+MANAGED_AIRFLOW_URL = f"https://eu-west-1.console.aws.amazon.com/mwaa/home?region=eu-west-1#environments/{'prod' if ENV == 'alpha' else 'dev'}/sso"
+
+
 # -- Slack
 SLACK = {
     "api_token": os.environ.get('SLACK_API_TOKEN'),
