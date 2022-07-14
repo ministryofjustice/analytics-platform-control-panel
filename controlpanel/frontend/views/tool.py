@@ -88,6 +88,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
+        context["aws_service_url"] = settings.AWS_SERVICE_URL
 
         # Get list of deployed tools
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
