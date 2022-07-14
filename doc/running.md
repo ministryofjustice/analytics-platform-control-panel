@@ -30,8 +30,19 @@ You must have:
 * [direnv](https://direnv.net/)
 * [docker](https://www.docker.com/)
 
-These should be installed using your own OS's package manager (`brew`, `apt`
-etc...).
+These should be installed using your own OS's package manager.
+The instructions below assume you are using Homebrew.
+
+You may want to set Postgres and Redis to start up automatically, in which case run
+```
+brew services start postgres
+brew services start redis
+```
+and you can check their status with
+```
+brew services list
+```
+Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
 
 For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
 `kubectl`
@@ -55,7 +66,7 @@ pip3 uninstall python-dotenv
 ```
 
 In order to use `direnv` for managing your environment variables, you should
-make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
+make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 You'll be able to get a copy of folks `.envrc` file from colleagues.
 
 ## Local Environment
