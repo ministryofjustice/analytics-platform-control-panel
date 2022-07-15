@@ -31,6 +31,14 @@ class Tool(TimeStampedModel):
         (EKS, "Amazon EKS infrastructure."),
     )
 
+    # Defines how a matching chart name is put into a named tool bucket.
+    # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
+    # chart name match: tool bucket
+    TOOL_BOX_CHART_LOOKUP = {
+        "jupyter": "jupyter-lab",
+        "rstudio": "rstudio"
+    }
+
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
     name = models.CharField(max_length=100, blank=False)
