@@ -596,3 +596,4 @@ structlog.configure(
 AWS_SERVICE_URL = os.environ.get(
     "AWS_SERVICE_URL",
     "https://aws.services.dev.analytical-platform.service.justice.gov.uk")
+    
