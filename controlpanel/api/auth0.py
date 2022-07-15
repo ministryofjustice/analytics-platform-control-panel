@@ -19,6 +19,15 @@ log = structlog.getLogger(__name__)
 # https://auth0.com/docs/product-lifecycle/deprecations-and-migrations/migrate-to-paginated-queries
 PER_PAGE = 50
 
+# This is the maximum they'll allow for group/members API
+PER_PAGE_FOR_GROUP_MEMBERS = 25
+
+# The default value for timeout in auth0.v3.management is 5 seconds which will get ReadTimeOut error quite easily on
+# Auth0 dev tenant when Control panel initialises the connection with it. In order to avoid this, a longer timeout
+# is defined below as the default value for this app. This value will be passed down and overwrite the default 5 seconds
+# when the API classes in Auth0 package are created
+DEFAULT_TIMEOUT = 20
+
 
 class Auth0Error(APIException):
     status_code = 500
@@ -44,16 +53,27 @@ class ExtendedAuth0(Auth0):
         self._token = self._access_token(audience=self.audience)
         super(ExtendedAuth0, self).__init__(self.domain, self._token)
 
-        self.clients = ExtendedClients(self.domain, self._token)
-        self.connections = ExtendedConnections(self.domain, self._token)
+        self.clients = ExtendedClients(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
+        self.connections = ExtendedConnections(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
         self._extension_token = self._access_token(audience=settings.AUTH0["authorization_extension_audience"])
-        self.roles = Roles(self.authorization_extension_url, self._extension_token)
-        self.permissions = Permissions(self.authorization_extension_url, self._extension_token)
-        self.groups = Groups(self.authorization_extension_url, self._extension_token)
-        self.users = ExtendedUsers(self.domain, self._token, self.authorization_extension_url, self._extension_token)
+        self.roles = Roles(self.authorization_extension_url, self._extension_token, timeout=DEFAULT_TIMEOUT)
+        self.permissions = Permissions(
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT)
+        self.groups = Groups(
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT)
+        self.users = ExtendedUsers(
+            self.domain,
+            self._token,
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT)
 
     def _access_token(self, audience):
         get_token = authentication.GetToken(self.domain)
@@ -236,23 +256,25 @@ class ExtendedAPIMethods(object):
     def _has_pagination_option(self):
         return not (hasattr(self, 'no_pagination') and self.no_pagination)
 
-    def get_all(self, request_url=None, endpoint=None):
+    def _get_pagination_params(self):
+        # pagination is optional as different APIs may not support it
+        # e.g. Authorization extension API (except group/members) doesn't
+        # support `page`/`per_page` params and it would respond with
+        # a `400 BAD REQUEST` if these are passed.
+        # plus the page is in general Zero based
+        return {"include_totals": "true"}, 0, PER_PAGE
+
+    def get_all(self, request_url=None, endpoint=None, has_pagination=False):
         items = []
         total = None
         params = None
         endpoint = self._get_request_endpoint(endpoint=endpoint)
 
-        # pagination is optional as different APIs may not support it
-        # e.g. Authorization extension API doesn't support `page`/`per_page`
-        # params and it would respond with a `400 BAD REQUEST` if these are
-        # passed.
         page_number = None
         per_page = None
-        has_pagination_option = self._has_pagination_option()
+        has_pagination_option = has_pagination or self._has_pagination_option()
         if has_pagination_option:
-            params = {"include_totals": "true"}
-            page_number = 0
-            per_page = PER_PAGE
+            params, page_number, per_page = self._get_pagination_params()
 
         while True:
             response = self.all(request_url=request_url, page=page_number, per_page=per_page, extra_params=params)
@@ -335,7 +357,7 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         so there is no pagination related param being passed into list() call.
         """
         query_string = f"email:\"{email.lower()}\""
-        search_engine = "v2"
+        search_engine = "v3"
         if connection:
             query_string = f"{query_string} AND identities.connection:\"{connection}\""
         response = self.list(q=query_string, search_engine=search_engine)
@@ -362,7 +384,7 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
     def has_existed(self, user_id):
         query_string = f"user_id:\"{user_id}\""
-        response = self.list(q=query_string, search_engine="v2")
+        response = self.list(q=query_string, search_engine="v3")
         if "error" in response:
             raise Auth0Error("get_users_email_search", response)
 
@@ -420,10 +442,20 @@ class Groups(Auth0API, ExtendedAPIMethods):
         else:
             return group.get("_id")
 
+    def _get_pagination_params(self):
+        # All the auth extension APIs doesn't have page parameter but the API for group's members does
+        # and the maximum value of per_page is 25, not like other APIs which is 50, and it does not allow
+        # include_totals parameter. It will return `400: "include_totals" is not allowed` if this param is passed.
+        # plus page parameter is One-based
+        # https://auth0.com/docs/api/authorization-extension#get-group-members
+        return None, 1, PER_PAGE_FOR_GROUP_MEMBERS
+
     def get_group_members(self, group_name):
         group_id = self.get_group_id(group_name)
         if group_id:
-            return self.get_all(request_url=self._url(group_id, "members"), endpoint="users")
+            return self.get_all(request_url=self._url(group_id, "members"),
+                                endpoint="users",
+                                has_pagination=True)
         else:
             return []
 

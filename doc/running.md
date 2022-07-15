@@ -1,4 +1,5 @@
 # Running directly on your machine
+
 ---
 :construction: _This guide has recently undergone some major changes in order to work with the new cluster. It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, but be aware that the developers who checked the system had some things set up already. If problems arise, please open a PR to revise this documentation._
 
@@ -34,8 +35,19 @@ You must have:
 * [npm](https://www.npmjs.com/)
 * [direnv](https://direnv.net/)
 
-These should be installed using your own OS's package manager (`brew`, `apt`
-etc...).
+These should be installed using your own OS's package manager.
+The instructions below assume you are using Homebrew.
+
+You may want to set Postgres and Redis to start up automatically, in which case run
+```
+brew services start postgres
+brew services start redis
+```
+and you can check their status with
+```
+brew services list
+```
+Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
 
 For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
 `kubectl`
@@ -59,7 +71,7 @@ pip3 uninstall python-dotenv
 ```
 
 In order to use `direnv` for managing your environment variables, you should
-make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
+make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 
 ## Local Environment
 
