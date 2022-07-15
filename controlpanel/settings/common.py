@@ -514,6 +514,8 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
+MANAGED_AIRFLOW_URL = os.environ.get("MANAGED_AIRFLOW_URL", "https://eu-west-1.console.aws.amazon.com/mwaa/home?region=eu-west-1#environments/dev/sso")
+
 
 # -- Google Analytics
 if ENV == 'alpha':
@@ -529,10 +531,6 @@ USER_GUIDANCE_BASE_URL = os.environ.get(
     'USER_GUIDANCE_BASE_URL',
     'https://user-guidance.services.alpha.mojanalytics.xyz'
 )
-
-
-# --- Managed Airflow
-MANAGED_AIRFLOW_URL = f"https://eu-west-1.console.aws.amazon.com/mwaa/home?region=eu-west-1#environments/{'prod' if ENV == 'alpha' else 'dev'}/sso"
 
 
 # -- Slack
