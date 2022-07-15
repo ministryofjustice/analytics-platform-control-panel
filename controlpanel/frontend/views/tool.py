@@ -136,6 +136,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
+        context["aws_service_url"] = settings.AWS_SERVICE_URL
 
         # Arrange tools information
         tools_info = self._retrieve_detail_tool_info(user, context["tools"])

@@ -592,3 +592,8 @@ structlog.configure(
     wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )
+
+AWS_SERVICE_URL = os.environ.get(
+    "AWS_SERVICE_URL",
+    "https://aws.services.dev.analytical-platform.service.justice.gov.uk")
+    
