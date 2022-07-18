@@ -511,10 +511,11 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 
 
 # -- Airflow
+AIRFLOW_REGION = os.environ.get("AIRFLOW_REGION", "eu-west-1")
+AIRFLOW_ENVIRONMENT = "prod" if ENV == "alpha" else "dev"
+
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
-
-MANAGED_AIRFLOW_URL = os.environ.get("MANAGED_AIRFLOW_URL", "https://eu-west-1.console.aws.amazon.com/mwaa/home?region=eu-west-1#environments/dev/sso")
 
 
 # -- Google Analytics

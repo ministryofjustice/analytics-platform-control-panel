@@ -1,4 +1,5 @@
 import structlog
+from urllib.parse import urlencode
 
 from controlpanel.api import cluster
 from controlpanel.api.models import Tool, ToolDeployment
@@ -137,7 +138,11 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(*args, **kwargs)
         context["id_token"] = id_token
         context["aws_service_url"] = settings.AWS_SERVICE_URL
-        context["managed_airflow_url"] = settings.MANAGED_AIRFLOW_URL
+
+        args_airflow_url = urlencode({
+        "destination": f"mwaa/home?region={settings.AIRFLOW_REGION}#/environments/{settings.AIRFLOW_ENVIRONMENT}/sso",
+        })
+        context["managed_airflow_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_url}"
 
         # Arrange tools information
         tools_info = self._retrieve_detail_tool_info(user, context["tools"])
