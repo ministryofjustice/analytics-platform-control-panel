@@ -27,9 +27,7 @@ Control Panel is a Django project made up of three parts:
 2. A frontend web application allowing administration of a user's apps, data
    sources and tools in the Analytical Platform.
    
-3. A simple worker for running some time-consuming background tasks including deploying a tooling 
-   (e.g. rstuio or jupyter) on a cluster, restarting the instance of a tooling, resetting the home directory of 
-   a user's whole tooling environment.
+3. A simple worker for running some time-consuming background tasks such as deploying a tooling (e.g. RStudio or Jupyter Lab) on a cluster, restarting the instance of a tool, and resetting the home directory of a user's whole tooling environment.
    
 More information is available through the following links:
 
