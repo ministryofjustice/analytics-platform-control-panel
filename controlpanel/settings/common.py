@@ -511,6 +511,8 @@ LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
 
 
 # -- Airflow
+AIRFLOW_REGION = os.environ.get("AIRFLOW_REGION", "eu-west-1")
+
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
