@@ -110,17 +110,24 @@
 <div class="govuk-grid-row tool sse-listener" data-tool-name="airflow">
   <div class="govuk-grid-column-two-thirds">
     <p class="govuk-body">
-      Airflow is available as an AWS managed service<br>
+      <a href="{{ user_guidance_base_url }}/tools/airflow/#airflow-2" target="_blank" rel="noopener">Airflow</a> is available as an AWS managed service<br>
     </p>
   </div>
   <div class="govuk-grid-column-one-third">
     <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
       data-action-name="open"
-      onclick="window.open('{{ managed_airflow_url }}', '_blank');"
+      onclick="window.open('{{ managed_airflow_dev_url }}', '_blank');"
       rel="noopener"
       target="_blank">
-        Open
+        Open dev
     </button>
+    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
+    data-action-name="open prod"
+    onclick="window.open('{{ managed_airflow_prod_url }}', '_blank');"
+    rel="noopener"
+    target="_blank">
+      Open prod
+  </button>
   </div>
 </div>
 <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
