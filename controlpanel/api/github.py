@@ -32,7 +32,7 @@ class GithubAPI:
     def get_repository(self, repo_name):
         try:
             return self.github.get_repo(repo_name)
-        except GithubException.UnknownObjectException as err:
+        except UnknownObjectException as err:
             log.warning(
                 f"Failed getting {repo_name} Github repo for current logoin user: {err}"
             )
