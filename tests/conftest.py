@@ -39,8 +39,8 @@ def github():
     """
     Mock calls to Github
     """
-    with patch('controlpanel.api.cluster.Github') as Github:
-        yield Github.return_value
+    with patch('controlpanel.api.github.GithubAPI') as GithubAPI:
+        yield GithubAPI.return_value
 
 
 @pytest.yield_fixture(autouse=True)
