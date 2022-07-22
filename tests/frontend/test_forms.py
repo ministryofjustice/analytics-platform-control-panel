@@ -202,7 +202,7 @@ def test_create_app_form_clean_repo_url():
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
     with mock.patch(
-        "controlpanel.frontend.forms.get_repository", mock_get_repo
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
     ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
@@ -222,7 +222,7 @@ def test_create_app_form_clean_repo_url():
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
     with mock.patch(
-        "controlpanel.frontend.forms.get_repository", mock_get_repo
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
     ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
@@ -243,7 +243,7 @@ def test_create_app_form_clean_repo_url():
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
     with mock.patch(
-        "controlpanel.frontend.forms.get_repository", mock_get_repo
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
     ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
