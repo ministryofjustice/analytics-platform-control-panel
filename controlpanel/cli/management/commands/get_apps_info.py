@@ -55,6 +55,9 @@ class Command(BaseCommand):
             self.stdout.write("Reading repo {}....".format( repo.full_name))
             try:
                 deployment_json = github_api.read_app_deploy_info(repo_instance=repo)
+                if not deployment_json:
+                    continue
+                self.stdout.write("**Found deploy.json under this repo**")
                 self._add_new_app(apps_info, repo.name)
                 apps_info[repo.name]["old_deployment"] = deployment_json
                 apps_info[repo.name]["auth"] = deployment_json
