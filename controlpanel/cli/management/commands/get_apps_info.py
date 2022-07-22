@@ -1,6 +1,9 @@
 import json
+import os
+import csv
 from urllib.parse import urlparse
 from django.core.management.base import BaseCommand, CommandError
+
 from controlpanel.api.github import GithubAPI
 from controlpanel.api.auth0 import ExtendedAuth0
 from controlpanel.api.aws import AWSParameters
@@ -19,9 +22,14 @@ class Command(BaseCommand):
     help = "Retrieve all those information related to an app including github, auth0 and DB"
 
     def add_arguments(self, parser):
-        parser.add_argument("token", type=str, help="The token for accessing the github")
-        parser.add_argument("--domain_conf", type=str, help="The file of mapping old app domain to new domain")
-        parser.add_argument("--file", type=str, help="The path for storing the applications' information")
+        parser.add_argument("-t", "--token", required=True, type=str,
+                            help="The token for accessing the github")
+        parser.add_argument("-f", "--file", required=True, type=str,
+                            help="The path for storing the applications' information")
+        parser.add_argument("-d", "--domain_conf", type=str,
+                            help="The file of mapping old app domain to new domain")
+        parser.add_argument("-od", "--odeploy", type=str,
+                            help="The path of storing application's deployment information as csv")
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
@@ -33,7 +41,7 @@ class Command(BaseCommand):
                 "auth": {}
             }
 
-    def _collect_apps_deploy_info(self, github_token, apps_info):
+    def _collect_apps_deploy_info(self, github_token, apps_info, deployment_keys):
         """
         To gain access to the github repo proves difficult than I thought, for now I will use the
         id_token from my login account, unless there is a need for frequent usage, then we need to
@@ -50,6 +58,8 @@ class Command(BaseCommand):
                 self._add_new_app(apps_info, repo.name)
                 apps_info[repo.name]["old_deployment"] = deployment_json
                 apps_info[repo.name]["auth"] = deployment_json
+
+                deployment_keys.extend([key for key in deployment_json.keys() if key not in deployment_keys])
             except Exception as ex:
                 self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
 
@@ -126,12 +136,11 @@ class Command(BaseCommand):
             para_response = aws_param_service.get_parameter(parameter.name)
             apps_info[app_name]["parameters"][parameter.key] = para_response["Parameter"]["Value"]
 
-    def _gather_apps_auth0_info(self, github_token, domains_mapping):
-        apps_info = {}
+    def _gather_apps_auth0_info(self, github_token, domains_mapping, apps_info, deployment_keys):
         auth0_instance = ExtendedAuth0()
 
         self.stdout.write("1. Collecting the deployment information of each app from github")
-        self._collect_apps_deploy_info(github_token, apps_info)
+        self._collect_apps_deploy_info(github_token, apps_info, deployment_keys)
 
         self.stdout.write("2. Collecting the auth0 client information of each app.")
         clients_id_name_map = self._collect_app_auth0_basic_info(auth0_instance, apps_info, domains_mapping)
@@ -141,22 +150,39 @@ class Command(BaseCommand):
 
         self.stdout.write("4. Collecting the parameters of each from AWS parameter store")
         self._collection_app_parameters_store_info(apps_info)
-        return apps_info
 
     def _load_json_file(self, file_name):
-        with open(file_name) as file:
-            data = json.loads(file.read())
-        return data
+        if not file_name:
+            return {}
 
-    def _save_to_file(self, app_info, output_file_name):
-        with open(output_file_name, 'w') as f:
-            json.dump(app_info, f)
-
-    def handle(self, *args, **options):
+        if not os.path.exists(file_name):
+            raise CommandError("The file({}) doesn't exist!".format(file_name))
         try:
-            domain_mapping = self._load_json_file(options["domain_conf"])
+            with open(file_name) as file:
+                data = json.loads(file.read())
+            return data
         except ValueError:
             raise CommandError("Failed to load domain_conf file")
 
-        app_info = self._gather_apps_auth0_info(options["token"], domain_mapping)
-        self._save_to_file(list(app_info.values()), options["file"])
+    def _save_to_file(self, apps_info, output_file_name):
+        with open(output_file_name, 'w') as f:
+            json.dump(apps_info, f)
+
+    def _save_app_deployments_as_csv(self, csv_file, apps_info, deployment_keys):
+        with open(csv_file, 'w') as f:
+            writer = csv.writer(f)
+            writer.writerow(deployment_keys)
+            deployment_keys.remove("app_name")
+            for app_name, app_item in apps_info.items():
+                deploy_info = app_item.get("old_deployment") or {}
+                writer.writerow([app_name] + [deploy_info.get(key, "") for key in deployment_keys])
+
+    def handle(self, *args, **options):
+        domain_mapping = self._load_json_file(options.get("domain_conf"))
+        apps_info = {}
+        deployment_keys = ["app_name"]
+        self._gather_apps_auth0_info(options["token"], domain_mapping, apps_info, deployment_keys)
+        self._save_to_file(list(apps_info.values()), options["file"])
+
+        if options.get('odeploy'):
+            self._save_app_deployments_as_csv(options.get('odeploy'), apps_info, deployment_keys)
