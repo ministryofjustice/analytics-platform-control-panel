@@ -67,8 +67,11 @@ class Command(BaseCommand):
         new_callback_urls = []
         for callback in callback_urls:
             app_domain = urlparse(callback).netloc
-            new_app_domain = domains_mapping.get(app_domain) or app_domain
-            new_callback_urls.append(callback.replace(app_domain, new_app_domain))
+            for domain, new_app_domain in domains_mapping.items():
+                if domain in app_domain:
+                    new_callback_urls.append(callback.replace(domain, new_app_domain))
+                else:
+                    new_callback_urls.append(callback)
         return ", ".join(new_callback_urls)
 
     def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, domains_mapping):
