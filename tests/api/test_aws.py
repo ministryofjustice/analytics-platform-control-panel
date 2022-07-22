@@ -346,7 +346,7 @@ def test_tag_bucket(s3):
 
 
 def test_create_parameter(ssm):
-    aws.create_parameter(
+    aws.AWSParameters().create_parameter(
         "test",
         "test_val",
         "role_name",
@@ -356,9 +356,12 @@ def test_create_parameter(ssm):
     param = ssm.get_parameter(Name="test", WithDecryption=True)['Parameter']
     assert param['Value'] == 'test_val'
 
+    param = aws.AWSParameters().get_parameter(name="test")['Parameter']
+    assert param['Value'] == 'test_val'
+
 
 def test_delete_parameter(ssm):
-    aws.delete_parameter("test")
+    aws.AWSParameters().delete_parameter("test")
 
     with pytest.raises(ssm.exceptions.ParameterNotFound):
         ssm.get_parameter(Name="test")
