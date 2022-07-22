@@ -191,7 +191,9 @@ OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 # OIDC JWT signing algorithm
 OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
 
-OIDC_RP_SCOPES = "openid email profile offline-access"
+# Remove offline_access for now as we haven't implemented the refresh_toke flow yet
+# OIDC_RP_SCOPES = "openid email profile offline_access"
+OIDC_RP_SCOPES = "openid email profile"
 
 # OIDC claims
 OIDC_FIELD_EMAIL = "email"

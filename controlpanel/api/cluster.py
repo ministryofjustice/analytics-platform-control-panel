@@ -3,7 +3,6 @@ import secrets
 
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
-from github import Github, GithubException
 
 from controlpanel.api import aws
 from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
@@ -309,41 +308,15 @@ class RoleGroup:
 
 
 def create_parameter(name, value, role, description):
-    return aws.create_parameter(name, value, role, description)
+    return aws.AWSParameters().create_parameter(name, value, role, description)
 
 
 def delete_parameter(name):
-    aws.delete_parameter(name)
+    aws.AWSParameters().delete_parameter(name)
 
 
 def list_role_names():
     return aws.list_role_names()
-
-
-def get_repositories(user):
-    repos = []
-    github = Github(user.github_api_token)
-    for name in settings.GITHUB_ORGS:
-        try:
-            org = github.get_organization(name)
-            repos.extend(org.get_repos())
-        except GithubException as err:
-            log.warning(
-                f"Failed getting {name} Github org repos for {user}: {err}"
-            )
-            raise err
-    return repos
-
-
-def get_repository(user, repo_name):
-    github = Github(user.github_api_token)
-    try:
-        return github.get_repo(repo_name)
-    except GithubException.UnknownObjectException as err:
-        log.warning(
-            f"Failed getting {repo_name} Github repo for {user}: {err}"
-        )
-        return None
 
 
 class ToolDeploymentError(Exception):
