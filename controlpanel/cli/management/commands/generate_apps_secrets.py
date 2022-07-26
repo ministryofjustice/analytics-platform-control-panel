@@ -6,7 +6,7 @@ from django.conf import settings
 
 
 class Command(BaseCommand):
-    help = "Delete an app"
+    help = "Create/update app's /auth and /params secrets on AWS"
 
     def add_arguments(self, parser):
         parser.add_argument("app_info", type=str, help="The path for storing the applications' information")
@@ -20,8 +20,13 @@ class Command(BaseCommand):
         return f"{settings.ENV}/apps/{app_name}/{secret_part}"
 
     def _generate_apps_aws_secrets(self, app_info):
+        """
+        Only the application which has been registered in control panel will be migrated over into new EKS cluster
+        """
         aws_secret_service = AWSSecretManager()
         for app_item in app_info:
+            if not app_item["registered_in_cpanel"]:
+                continue
             self.stdout.write("Creating secrets for {}....".format(app_item["app_name"]))
             if app_item.get("auth"):
                 aws_secret_service.create_or_update(

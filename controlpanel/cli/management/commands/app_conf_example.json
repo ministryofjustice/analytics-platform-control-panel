@@ -1,0 +1,15 @@
+{
+  "app_name_pattern": " {ENV}-APP: {app_name}",
+  "domains_mapping": {
+    "apps.dev.mojanalytics.xyz": "apps.eks.dev.mojanalytics.xyz"
+  },
+  "ip_range_lookup_table": {
+    "102PF Wifi": "111.222.333.444/28",
+    "Digital Wifi and VPN": "222.333.444.555/31, 666.777.888.999/32",
+    "DOM1": "222.333.444.555/31, 666.777.888.999/32",
+    "QUANTUM": "777.666.55.777/32, 66.22.111.111/32",
+    "Alan Turing Institute": "777.666.55.777/32, 66.22.111.111/32",
+    "MoJo": "777.666.55.777/32, 66.22.111.111/32",
+    "Any": ""
+  }
+}

@@ -1,0 +1,85 @@
+[
+  {
+    "app_name": "example-app",
+    "registered_in_cpanel": true,
+    "auth0_client": {
+      "tenant": "dev-analytics-moj",
+      "global": false,
+      "is_token_endpoint_ip_header_trusted": false,
+      "name": "example-app",
+      "callbacks": [
+        "https://example-app.apps.dev.mojanalytics.xyz/callback"
+      ],
+      "is_first_party": true,
+      "sso_disabled": false,
+      "cross_origin_auth": false,
+      "oidc_conformant": false,
+      "refresh_token": {
+        "expiration_type": "non-expiring",
+        "leeway": 0,
+        "infinite_token_lifetime": true,
+        "infinite_idle_token_lifetime": true,
+        "token_lifetime": 2592000,
+        "idle_token_lifetime": 1296000,
+        "rotation_type": "non-rotating"
+      },
+      "allowed_origins": [
+        "https://example-app.apps.dev.mojanalytics.xyz"
+      ],
+      "client_id": "xxxxx_client_id",
+      "callback_url_template": false,
+      "client_secret": "xxxxx_client_secret",
+      "jwt_configuration": {
+        "lifetime_in_seconds": 36000,
+        "secret_encoded": false
+      },
+      "app_type": "regular_web",
+      "grant_types": [
+        "authorization_code",
+        "implicit",
+        "refresh_token",
+        "client_credentials"
+      ],
+      "web_origins": [
+        "https://example-app.apps.dev.mojanalytics.xyz"
+      ],
+      "custom_login_page_on": true,
+      "connections": [
+        "test-github"
+      ]
+    },
+    "parameters": {},
+    "auth": {
+      "mojanalytics-deploy": "v1.0.0",
+      "disable_authentication": true,
+      "allowed_ip_ranges": [
+        "102PF Wifi",
+        "DOM1",
+        "QUANTUM",
+        "Digital Wifi and VPN"
+      ],
+      "normalised_allowed_ip_ranges": "111.222.333.444/28,222.333.444.555/31, 666.777.888.999/32,777.666.55.777/32, 66.22.111.111/32,222.333.444.555/31, 666.777.888.999/32",
+      "client_id": "xxxxx_client_id",
+      "client_secret": "xxxxx_client_secret",
+      "callbacks": [
+        "https://example-app.apps.dev.mojanalytics.xyz/callback",
+        "https://example-app.apps.eks.dev.mojanalytics.xyz/callback"
+      ],
+      "allowed_origins": [
+        "https://example-app.apps.eks.dev.mojanalytics.xyz",
+        "https://example-app.apps.dev.mojanalytics.xyz"
+      ]
+    },
+    "deployment": {
+      "mojanalytics-deploy": "v1.0.0",
+      "disable_authentication": true,
+      "allowed_ip_ranges": [
+        "102PF Wifi",
+        "DOM1",
+        "QUANTUM",
+        "Digital Wifi and VPN"
+      ]
+    },
+    "new_app_name": " dev-APP: example-app"
+  }
+]

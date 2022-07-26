@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 import os
 import csv
 from urllib.parse import urlparse
@@ -7,27 +8,41 @@ from django.core.management.base import BaseCommand, CommandError
 from controlpanel.api.github import GithubAPI
 from controlpanel.api.auth0 import ExtendedAuth0
 from controlpanel.api.aws import AWSParameters
-from controlpanel.api.models import Parameter
+from controlpanel.api.models import Parameter, App
 from django.conf import settings
 
 
 class Command(BaseCommand):
 
     """"
-    This command line tool is to retrieve full information about an app hosted on AP
-    The possible source of not missing any possible app is to reading through the github repos to get the key attributes
-    defined in the deploy.json, then use the info as the base to gather the application info from auth0 and parameters
-    from AWS parameters store. The outcome will be stored as json file.
+    This command line tool is to retrieve full information about an app hosted on AP, the steps will be
+    - Read the list of applications from control panel's DB
+    - Collect deployment info by reading the deploy.json from the app's github repo
+    - Collect the application info from auth0 including the connections information
+    - Read parameters from AWS parameters
+    Record those information in the json file, and also prepare 2 new parts for app migration:=
+    - Auth part: includes the key information from auth0 and deploy.json which will be the content of auth AWS secret
+    - Parameter part: includes the app's parameters stored in AWS param store which
+        will be the content of params AWS secret
+    The outcome will be stored as json file, app_info_example.json is the example
+
+    Setting: in order to be able to run the script and read the information from correct AWS account,the environment
+    needs to be setup properly
+        - DB connection
+        - AWS landing account or credential for AWS data account
+        - Credential to be able to call Auth0 API
     """
-    help = "Retrieve all those information related to an app including github, auth0 and DB"
+    help = "Retrieve all those information related to an app including github, auth0 and AWS parameters " \
+           "from AWS data account"
 
     def add_arguments(self, parser):
         parser.add_argument("-t", "--token", required=True, type=str,
                             help="The token for accessing the github")
         parser.add_argument("-f", "--file", required=True, type=str,
                             help="The path for storing the applications' information")
-        parser.add_argument("-d", "--domain_conf", type=str,
-                            help="The file of mapping old app domain to new domain")
+        # The example of app_conf, app_conf_example.json, is provided.
+        parser.add_argument("-c", "--app_conf", type=str,
+                            help="The configuration file for app migration")
         parser.add_argument("-od", "--odeploy", type=str,
                             help="The path of storing application's deployment information as csv")
 
@@ -35,13 +50,34 @@ class Command(BaseCommand):
         if app_name not in apps_info:
             apps_info[app_name] = {
                 "app_name": app_name,
-                "deployment": {},
+                "registered_in_cpanel": False,
                 "auth0_client": {},
                 "parameters": {},
-                "auth": {}
+                "auth": {},
             }
 
-    def _collect_apps_deploy_info(self, github_token, apps_info, deployment_keys):
+    def _init_app_info(self, app_info):
+        applications = App.objects.all()
+        for app in applications:
+            self._add_new_app(app_info, app.name)
+            app_info[app.name]["registered_in_cpanel"] = True
+
+    def _nomalize_ip_ranges(self, app_item, app_conf):
+        if app_item.get("allowed_ip_ranges") and app_conf.get('ip_range_lookup_table'):
+            lookup = app_conf['ip_range_lookup_table']
+            if 'Any' in app_item.get("allowed_ip_ranges"):
+                ip_ranges = ['']
+            else:
+                ip_ranges = [lookup[item] for item in app_item["allowed_ip_ranges"] if item in lookup]
+            not_found = [item for item in app_item.get("allowed_ip_ranges") if item not in lookup]
+            if not_found:
+                self.stdout.write("Warning: Couldn't find ip_range for {}".format(",".join([not_found])))
+            if not ip_ranges:
+                ip_ranges = [lookup['DOM1']]
+
+            app_item["normalised_allowed_ip_ranges"] = ",".join(ip_ranges)
+
+    def _collect_apps_deploy_info(self, github_token, apps_info, deployment_keys, app_conf):
         """
         To gain access to the github repo proves difficult than I thought, for now I will use the
         id_token from my login account, unless there is a need for frequent usage, then we need to
@@ -57,17 +93,24 @@ class Command(BaseCommand):
                 deployment_json = github_api.read_app_deploy_info(repo_instance=repo)
                 if not deployment_json:
                     continue
-                self.stdout.write("**Found deploy.json under this repo**")
-                self._add_new_app(apps_info, repo.name)
-                apps_info[repo.name]["old_deployment"] = deployment_json
-                apps_info[repo.name]["auth"] = deployment_json
+                if repo.name in apps_info:
+                    self.stdout.write("**Found deploy.json under this repo**")
+                else:
+                    self.stdout.write("**Found deploy.json under this repo, "
+                                      "but the app is not registered in Control panel **")
 
+                self._add_new_app(apps_info, repo.name)
+                apps_info[repo.name]["deployment"] = deployment_json
+                apps_info[repo.name]["auth"] = deepcopy(deployment_json)
+                self._nomalize_ip_ranges(apps_info[repo.name]["auth"], app_conf)
                 deployment_keys.extend([key for key in deployment_json.keys() if key not in deployment_keys])
             except Exception as ex:
                 self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
 
-    def _process_callbacks(self, callback_urls, domains_mapping):
+    def _process_urls(self, callback_urls, domains_mapping):
+        """ A new set of callbacks will be added based on the domains_mappings, the old ones will be still kept """
         new_callback_urls = []
+        new_callback_urls.extend(callback_urls)
         for callback in callback_urls:
             app_domain = urlparse(callback).netloc
             for domain, new_app_domain in domains_mapping.items():
@@ -75,9 +118,18 @@ class Command(BaseCommand):
                     new_callback_urls.append(callback.replace(domain, new_app_domain))
                 else:
                     new_callback_urls.append(callback)
-        return ", ".join(new_callback_urls)
+        return list(set(new_callback_urls))
 
-    def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, domains_mapping):
+    def _process_application_name(self, app_name, name_pattern):
+        """ only a few pre-defined variables will be supported
+         - ENV: settings.ENV
+         - app_name: application_name.
+        """
+        new_app_name = name_pattern.replace("{ENV}", settings.ENV)
+        new_app_name = new_app_name.replace("{app_name}", app_name)
+        return new_app_name
+
+    def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, app_conf):
         """
         The function to collect the auth0 information for an app
         """
@@ -89,12 +141,19 @@ class Command(BaseCommand):
                 continue
 
             self.stdout.write("Reading app({})'s auth0 information....".format(client['name']))
-
+            # Remove some fields and keep the original client info under "auth0_client"
+            del client["signing_keys"]
             apps_info[client['name']]["auth0_client"] = client
-            apps_info[client['name']]["auth"]["client_id"] = client["client_id"],
-            apps_info[client['name']]["auth"]["client_secret"] = client["client_secret"],
-            apps_info[client['name']]["auth"]["callbacks"] = self._process_callbacks(
-                client["callbacks"], domains_mapping)
+
+            # Construct the information required for aws secret
+            apps_info[client['name']]["new_app_name"] = \
+                self._process_application_name(client['name'], app_conf.get('app_name_pattern'))
+            apps_info[client['name']]["auth"]["client_id"] = client["client_id"]
+            apps_info[client['name']]["auth"]["client_secret"] = client["client_secret"]
+            apps_info[client['name']]["auth"]["callbacks"] = self._process_urls(
+                client["callbacks"], app_conf.get("domains_mapping") or {})
+            apps_info[client['name']]["auth"]["allowed_origins"] = self._process_urls(
+                client["allowed_origins"], app_conf.get("domains_mapping") or {})
             clients_id_name_map[client["client_id"]] = client['name']
         return clients_id_name_map
 
@@ -142,14 +201,14 @@ class Command(BaseCommand):
             para_response = aws_param_service.get_parameter(parameter.name)
             apps_info[app_name]["parameters"][parameter.key] = para_response["Parameter"]["Value"]
 
-    def _gather_apps_auth0_info(self, github_token, domains_mapping, apps_info, deployment_keys):
+    def _gather_apps_full_info(self, github_token, app_conf, apps_info, deployment_keys):
         auth0_instance = ExtendedAuth0()
 
         self.stdout.write("1. Collecting the deployment information of each app from github")
-        self._collect_apps_deploy_info(github_token, apps_info, deployment_keys)
+        self._collect_apps_deploy_info(github_token, apps_info, deployment_keys, app_conf)
 
         self.stdout.write("2. Collecting the auth0 client information of each app.")
-        clients_id_name_map = self._collect_app_auth0_basic_info(auth0_instance, apps_info, domains_mapping)
+        clients_id_name_map = self._collect_app_auth0_basic_info(auth0_instance, apps_info, app_conf)
 
         self.stdout.write("3. Collecting the connections information of each app from auth0")
         self._collection_apps_auth0_connectons(auth0_instance, apps_info, clients_id_name_map)
@@ -184,10 +243,11 @@ class Command(BaseCommand):
                 writer.writerow([app_name] + [deploy_info.get(key, "") for key in deployment_keys])
 
     def handle(self, *args, **options):
-        domain_mapping = self._load_json_file(options.get("domain_conf"))
+        app_conf = self._load_json_file(options.get("app_conf"))
         apps_info = {}
         deployment_keys = ["app_name"]
-        self._gather_apps_auth0_info(options["token"], domain_mapping, apps_info, deployment_keys)
+        self._init_app_info(apps_info)
+        self._gather_apps_full_info(options["token"], app_conf, apps_info, deployment_keys)
         self._save_to_file(list(apps_info.values()), options["file"])
 
         if options.get('odeploy'):
