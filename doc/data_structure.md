@@ -1,4 +1,4 @@
-# Data Structure
+# Data Structure for key tables
 
 ![Data Model Structure](./images/data_structure.png "The data structure of the app")
 
