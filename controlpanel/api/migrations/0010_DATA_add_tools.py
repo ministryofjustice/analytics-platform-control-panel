@@ -51,11 +51,30 @@ TOOLS = [
 ]
 
 
+settings_TOOLS = {
+    "rstudio": {
+        "domain": os.environ.get("RSTUDIO_AUTH_CLIENT_DOMAIN", settings.OIDC_DOMAIN),
+        "client_id": os.environ.get("RSTUDIO_AUTH_CLIENT_ID"),
+        "client_secret": os.environ.get("RSTUDIO_AUTH_CLIENT_SECRET"),
+    },
+    "jupyter-lab": {
+        "domain": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_DOMAIN", settings.OIDC_DOMAIN),
+        "client_id": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_ID"),
+        "client_secret": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_SECRET"),
+    },
+    "airflow-sqlite": {
+        "domain": os.environ.get("AIRFLOW_AUTH_CLIENT_DOMAIN", settings.OIDC_DOMAIN),
+        "client_id": os.environ.get("AIRFLOW_AUTH_CLIENT_ID"),
+        "client_secret": os.environ.get("AIRFLOW_AUTH_CLIENT_SECRET"),
+    },
+}
+
+
 def initialize_tools(apps, schema_editor):
     Tool = apps.get_model('api', 'Tool')
 
     for metadata in TOOLS:
-        conf = settings.TOOLS[metadata['chart_name']]
+        conf = settings_TOOLS[metadata['chart_name']]
         for key, value in metadata['values'].items():
             if isinstance(value, str):
                 metadata['values'][key] = value % conf
