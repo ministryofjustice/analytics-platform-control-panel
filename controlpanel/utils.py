@@ -98,8 +98,8 @@ class PatchedAsyncHttpConsumer(AsyncHttpConsumer):
 
 class FeatureFlag:
 
-    def __init__(self, enable=False):
-        self.enable = enable
+    def __init__(self, enabled=False):
+        self.enabled = enabled
 
 
 class FeatureSet:
