@@ -1,0 +1,47 @@
+enabled_features:
+  ip_ranges:
+    _DEFAULT: true
+    _HOST_dev: true
+    _HOST_prod: false
+
+AWS_SERVICE_URL:
+  _HOST_dev: "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
+  _HOST_alpha: "https://aws.services.analytical-platform.service.justice.gov.uk"
+  _HOST_prod: "https://aws.services.analytical-platform.service.justice.gov.uk"
+
+USER_GUIDANCE_BASE_URL: 'https://user-guidance.services.alpha.mojanalytics.xyz'
+
+GOOGLE_ANALYTICS_ID:
+  _HOST_dev: 'UA-151666116-4'
+  _HOST_prod: 'UA-151666116-3'
+  _HOST_alpha: 'UA-151666116-2'
+
+# Helm repo where tool charts are hosted
+HELM_REPO: 'mojanalytics'
+
+HELM_REPOSITORY_CACHE: "/tmp/helm/cache/repository"
+
+# The number of seconds helm should wait for helm delete to complete.
+HELM_DELETE_TIMEOUT: 10
+
+# domain where tools are deployed
+TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
+
+# volume name for the EFS directory for user homes
+EFS_VOLUME: fs-0dbd6739
+
+# Name of S3 bucket where logs are stored
+LOGS_BUCKET_NAME: 'moj-analytics-s3-logs'
+
+BUCKET_REGION: 'eu-west-1'
+
+K8S_WORKER_ROLE_NAME: nodes.dev.mojanalytics.xyz
+
+# -- Airflow
+AIRFLOW_REGION: "eu-west-1"
+
+EKS: true
+
+APP_DOMAIN: apps.dev.mojanalytics.xyz
+
+SLACK_CHANNEL: "#analytical-platform"

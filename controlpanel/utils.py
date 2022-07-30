@@ -1,12 +1,22 @@
 import re
+import os
+import yaml
+import structlog
 
 from channels.exceptions import StopConsumer
 from channels.generic.http import AsyncHttpConsumer
 from django.template.defaultfilters import slugify
+from django.conf import settings
+
+log = structlog.getLogger(__name__)
 
 
 INVALID_CHARS = re.compile(r"[^-a-z0-9]")
 SURROUNDING_HYPHENS = re.compile(r"^-*|-*$")
+
+_ENV_PREFIX_ = "_HOST"
+_ENV_DEFAULT_ = '_DEFAULT'
+_DEFAULT_APP_CONFIG_FILE_ = "./settings.yaml"
 
 
 def github_repository_name(url):
@@ -21,10 +31,6 @@ def github_repository_name(url):
     _, name = repo.rsplit("/", 1)
 
     return name
-
-
-def is_truthy(value):
-    return str(value).lower() not in ("", "n", "no", "off", "false", "0")
 
 
 def s3_slugify(name):
@@ -51,10 +57,6 @@ def sanitize_dns_label(label):
     label = re.sub(r"[^a-z0-9]*$", "", label)
 
     return label
-
-
-def sanitize_environment_variable(s):
-    return name.upper().replace("-", "_")
 
 
 def webapp_release_name(repo_name):
@@ -92,4 +94,102 @@ class PatchedAsyncHttpConsumer(AsyncHttpConsumer):
                 if not self.keepalive:
                     await self.disconnect()
                     raise StopConsumer()
+
+
+class FeatureFlag:
+
+    def __init__(self, enable=False):
+        self.enable = enable
+
+
+class FeatureSet:
+    """
+    enabled_features:
+      <feature flag>:
+        Local: true
+        Host-dev: true
+        Host-prod: false
+    """
+
+    def __init__(self, feature_set_json, current_env):
+        self._load_flags(feature_set_json, current_env)
+
+    def _load_flags(self, feature_set_json, current_env):
+        for feature_flag, feature_settings in feature_set_json.items():
+            enabled = False
+            if feature_settings.get(_ENV_DEFAULT_) is not None:
+                enabled = feature_settings.get(_ENV_DEFAULT_)
+            if feature_settings.get('{}_{}'.format(_ENV_PREFIX_, current_env)) is not None:
+                enabled = feature_settings.get('{}_{}'.format(_ENV_PREFIX_, current_env))
+            setattr(self, feature_flag, FeatureFlag(enabled))
+
+
+class SettingLoader:
+    """ This function is to load the settings from yaml file,
+    then will add those keys as variables into the global setting object
+    it will check whether a key has existed in the setting file or not,
+    if not, then it will load the value for this key from yaml file.
+    Tf the value has been defined in the settings and has been defined in env var,
+    then the env var take higher priority
+
+    Each conf key can be different value under different ENV, e.g.
+    node_name:
+        _DEFAULT: test
+        _HOST-local: test1
+        _HOST-dev: test2
+        _HOST-prod: test3
+        _HOST-alpha: test4
+    """
+
+    def __init__(self, settings_in_json):
+        self.settings_in_json = settings_in_json
+        self._import_conf_into_settings()
+
+    def _has_env_related_value(self, original_value, current_env):
+        return (type(original_value) is dict) and \
+               (original_value.get(_ENV_DEFAULT_) is not None or
+                original_value.get('{}_{}'.format(_ENV_PREFIX_, current_env)) is not None)
+
+    def _decide_value_for_key(self, setting_key, original_value):
+        actual_value = original_value
+        current_env = settings.ENV
+        if setting_key in os.environ:
+            actual_value = os.environ.get(setting_key)
+        else:
+            if self._has_env_related_value(original_value, current_env):
+                if original_value.get('{}_{}'.format(_ENV_PREFIX_, current_env)) is not None:
+                    actual_value = original_value.get('{}_{}'.format(_ENV_PREFIX_, current_env))
+                else:
+                    actual_value = original_value.get(_ENV_DEFAULT_)
+        return actual_value
+
+    def _setup_feature_flags(self, feature_flags):
+        setattr(settings, "features", FeatureSet(feature_flags, settings.ENV))
+
+    def _import_conf_into_settings(self):
+        if not self.settings_in_json:
+            return
+
+        for key, value in self.settings_in_json.items():
+            if not hasattr(settings, key):
+                if key.lower() == "enabled_features":
+                    self._setup_feature_flags(value)
+                else:
+                    setattr(settings, key, self._decide_value_for_key(key, value))
+
+
+def load_app_conf_from_file(yaml_file=None):
+    yaml_file = yaml_file or _DEFAULT_APP_CONFIG_FILE_
+    if not os.path.exists(yaml_file):
+        log.error("Couldn't find the file {}".format(yaml_file))
+        return
+    try:
+        with open(yaml_file, "r") as stream:
+            yaml_settings = yaml.safe_load(stream)
+        SettingLoader(yaml_settings)
+    except AttributeError as ex:
+        log.error("Failed to load the {} due to error ({})".format(yaml_file, str(ex)))
+    except ValueError as ex1:
+        log.error("Failed to load the {} due to error ({})".format(yaml_file, str(ex1)))
+
 

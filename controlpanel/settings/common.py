@@ -1,10 +1,6 @@
 import os
 import sys
 from os.path import abspath, dirname, join
-
-from controlpanel.frontend.jinja2 import environment
-from controlpanel.utils import is_truthy
-
 import structlog
 
 
@@ -13,14 +9,11 @@ import structlog
 ENABLED = {
 
     # Enable redirecting legacy API URLs to new API app
-    "redirect_legacy_api_urls": is_truthy(os.environ.get("ENABLE_LEGACY_API_REDIRECT", True)),
+    "redirect_legacy_api_urls": os.environ.get("ENABLE_LEGACY_API_REDIRECT", True),
 }
 
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
-
-# Flag to indicate if running on an EKS cluster.
-EKS = bool(os.environ.get("EKS", False))
 
 # -- Paths
 
@@ -191,7 +184,10 @@ OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 # OIDC JWT signing algorithm
 OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
 
-OIDC_RP_SCOPES = "openid email profile offline-access"
+# Commented out the offline_access for refresh_token for now as we haven't implemented the refresh_token flow yet.
+# OIDC_RP_SCOPES = "openid email profile offline_access"
+OIDC_RP_SCOPES = "openid email profile"
+
 
 # OIDC claims
 OIDC_FIELD_EMAIL = "email"
@@ -206,7 +202,6 @@ AUTH0 = {
     "domain": OIDC_DOMAIN,
     "authorization_extension_url": os.environ.get("OIDC_AUTH_EXTENSION_URL"),
     "logout_url": f"https://{OIDC_DOMAIN}/v2/logout",
-    "app_domain": os.environ.get("APP_DOMAIN"),
     "authorization_extension_audience": "urn:auth0-authz-api"
 }
 
@@ -260,7 +255,7 @@ MEDIA_URL = ""
 # -- Debug
 
 # Activates debugging
-DEBUG = is_truthy(os.environ.get("DEBUG", False))
+DEBUG = os.environ.get("DEBUG", False)
 
 
 # -- Database
@@ -320,12 +315,9 @@ REST_FRAMEWORK = {
 
 if os.environ.get("SENTRY_DSN"):
     SENTRY_ENVIRONMENT = ENV
-    if EKS:
-        KUBERNETES_ENV = "EKS"
-        if ENV == "alpha":
-            SENTRY_ENVIRONMENT = "prod"
-    else:
-        KUBERNETES_ENV = "NotKS"
+    KUBERNETES_ENV = "EKS"
+    if ENV == "alpha":
+        SENTRY_ENVIRONMENT = "prod"
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
@@ -351,47 +343,6 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
-
-# -- Tool deployments
-
-TOOLS = {
-    "rstudio": {
-        "domain": os.environ.get("RSTUDIO_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("RSTUDIO_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("RSTUDIO_AUTH_CLIENT_SECRET"),
-    },
-    "jupyter-lab": {
-        "domain": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_SECRET"),
-    },
-    "airflow-sqlite": {
-        "domain": os.environ.get("AIRFLOW_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("AIRFLOW_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("AIRFLOW_AUTH_CLIENT_SECRET"),
-    },
-}
-
-# Helm repo where tool charts are hosted
-HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
-
-HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/cache/repository")
-
-
-# The number of seconds helm should wait for helm delete to complete.
-HELM_DELETE_TIMEOUT = int(os.environ.get("HELM_DELETE_TIMEOUT", 10))
-
-# domain where tools are deployed
-TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
-
-# hostname of NFS server for user homes
-NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
-
-# volume name for the EFS directory for user homes
-EFS_VOLUME = os.environ.get("EFS_VOLUME")
-
-# hostname of the EFS server for user homes
-EFS_HOSTNAME = os.environ.get("EFS_HOSTNAME")
 
 # -- Redis
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
@@ -494,9 +445,6 @@ KIBANA_BASE_URL = os.environ.get(
 # -- AWS
 AWS_COMPUTE_ACCOUNT_ID = os.environ.get("AWS_COMPUTE_ACCOUNT_ID")
 AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
-K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME')
-
-BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
 
 # Auth0 integrated SAML provider, referenced in user policies to allow login via
 # SAML federation
@@ -506,37 +454,13 @@ SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
 # to grant AWS permissions.
 OIDC_EKS_PROVIDER = os.environ.get("OIDC_EKS_PROVIDER")
 
-# Name of S3 bucket where logs are stored
-LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
-
-
-# -- Airflow
-AIRFLOW_REGION = os.environ.get("AIRFLOW_REGION", "eu-west-1")
-
 AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
 AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
 
 
-# -- Google Analytics
-if ENV == 'alpha':
-    GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', 'UA-151666116-2')
-elif ENV == 'prod':
-    GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', 'UA-151666116-3')
-else:
-    GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', 'UA-151666116-4')
-
-
-# -- User Guidance
-USER_GUIDANCE_BASE_URL = os.environ.get(
-    'USER_GUIDANCE_BASE_URL',
-    'https://user-guidance.services.alpha.mojanalytics.xyz'
-)
-
-
 # -- Slack
 SLACK = {
-    "api_token": os.environ.get('SLACK_API_TOKEN'),
-    "channel": os.environ.get('SLACK_CHANNEL', "#analytical-platform"),
+    "api_token": os.environ.get('SLACK_API_TOKEN')
 }
 
 
@@ -594,8 +518,3 @@ structlog.configure(
     wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )
-
-AWS_SERVICE_URL = os.environ.get(
-    "AWS_SERVICE_URL",
-    "https://aws.services.dev.analytical-platform.service.justice.gov.uk")
-    
