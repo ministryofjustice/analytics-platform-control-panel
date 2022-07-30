@@ -31,7 +31,7 @@ def test_feature_flag_default_true():
         }
     }
     SettingLoader(test_json)
-    assert settings.features.test_feature.enable
+    assert settings.features.test_feature.enabled
 
 
 def test_feature_flag_default_false():
@@ -43,7 +43,7 @@ def test_feature_flag_default_false():
         }
     }
     SettingLoader(test_json)
-    assert not settings.features.test_feature.enable
+    assert not settings.features.test_feature.enabled
 
 
 def test_feature_flag_env_false():
@@ -56,7 +56,7 @@ def test_feature_flag_env_false():
         }
     }
     SettingLoader(test_json)
-    assert not settings.features.test_feature.enable
+    assert not settings.features.test_feature.enabled
 
 
 def test_feature_flag_env_True():
@@ -69,4 +69,4 @@ def test_feature_flag_env_True():
         }
     }
     SettingLoader(test_json)
-    assert settings.features.test_feature.enable
+    assert settings.features.test_feature.enabled
