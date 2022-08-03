@@ -13,6 +13,13 @@ def pytest_configure(config):
     load_app_conf_from_file()
 
 
+@pytest.fixture()
+def client(client):
+    """A Django test client instance."""
+    load_app_conf_from_file()
+    return client
+
+
 @pytest.yield_fixture(autouse=True)
 def aws():
     """
