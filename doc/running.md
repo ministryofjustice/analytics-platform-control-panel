@@ -88,8 +88,8 @@ export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
 ```
 Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
 
-See [Environment Variables Reference](environment.md) for details of other
-environment variable settings.
+See [Control Panel settings and environment variables](environment.md) for details of other
+setings and environment variables.
 
 ### Database
 

@@ -1,4 +1,56 @@
-# Environment Variables Reference
+# The Settings and Environment Variables Reference
+
+We There are several ways to set up the settings required for running this app which
+have been explained in the following sub sections
+
+## Django settings 
+Official guide [here](https://docs.djangoproject.com/en/4.0/topics/settings/)
+In general, all system level settings related to important app logic are defined here,
+it is the primary entry point for defining some global setting. An app normally have different
+running modes:
+- development mode: for local development need.
+- testing mode: for running auto-testing need.
+- production mode: for production use, usually when the app runs on non-local env, the running mode will be under this
+mode regardless which cluster environment is used for running this app.
+
+you can define different .py for mapping different running modes under `/settings/` , for this app, we did not
+define specific one for production mode. We are responsible to pass correct value to django
+environment variable `DJANGO_SETTINGS_MODULE` under different running environments(e.g., dev, staging and
+prod).
+
+Whether or not a variable can be overwritten by an environment variable is up to the implementation in `settings/*.py`
+
+## settings.yaml
+We also introduce this file to allow us to define some variables which are required to be secured but may have
+different values under different running environments and slightly more complicated logic such as feature flags.
+Also this yaml can give us easy option to define some simple constants.
+
+This file is on the top of django settings, so the variables which define in the settings/*.py has higher
+priority than the ones in the settings.yaml, if same variable has been defined in django settings, the same one in 
+the settings.yaml will be ignored
+
+The format for defining a variable with different value under different envs
+```yaml
+<The name of variable>:
+  _DEFAULT: <The default value>
+  _HOST_<settings.ENV>: <The value under specific env>
+```
+The example is below
+```yaml
+TESTING_VALUE:
+  _HOST_dev: 'DEV'
+  _HOST_prod: 'PROD'
+  _HOST_alpha: 'ALPHA'
+
+```
+
+All those variables in this file can be overwritten by the environment variable if needed.
+
+## environment variables
+
+The variables defined blow are the minimum ones which are required to be provided. As being
+mentioned from previous sections, you can overwrite any variable in settings.yaml, some of them 
+in django settings. 
 
 | Name | Description | Default |
 | ---- | ----------- | ------- |
@@ -12,9 +64,7 @@
 | `DB_PORT` | Postgres port | `5432` |
 | `DB_USER` | Postgres username | |
 | `DEBUG` | Run in debug mode, displaying stacktraces on errors, etc | `False` |
-| `EFS_HOSTNAME` | Hostname of EFS server for user homes | |
 | `EFS_VOLUME` | volume name for the EFS directory for user homes | |
-| `EKS` | Flag to indicate the application is running on EKS infrastructure | |
 | `ELASTICSEARCH_HOST` | | |
 | `ELASTICSEARCH_INDEX_S3LOGS` | | `s3logs-*` |
 | `ELASTICSEARCH_PASSWORD` | | |
@@ -24,7 +74,6 @@
 | `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
 | `GOOGLE_ANALYTICS_ID` | Key for Google Analytics account | |
 | `HELM_REPOS` | Helm repository where the tool charts are hosted | `mojanalytics` |
-| `K8S_WORKER_ROLE_NAME` | the name of the IAM role assigned to Kubernetes nodes, e.g. `nodes.dev.mojanalytics.xyz`. Combined with the ARN base to generate a full ARN like `arn:aws:iam::123456789012:role/nodes.dev.mojanalytics.xyz` | |
 | `KIBANA_BASE_URL` | Kibana endpoint for Elastic logs | `https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana` |
 | `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
 | `LOGS_BUCKET_NAME` | Name of S3 bucket where logs are stored | `moj-analytics-s3-logs` |
@@ -44,7 +93,3 @@
 | `SECRET_KEY` | Secret key used to encrypt cookies, etc | |
 | `SENTRY_DSN` | Sentry credentials | |
 | `SLACK_API_TOKEN` | Slack token ([more information)](https://slack.dev/python-slackclient/auth.html) | Only required when you're working with Slack |
-| `SLACK_CHANNEL` | The channel to where Slack messages are to be posted | `#analytical-platform` |
-| `TOOLS_DOMAIN` | Domain where tools are deployed | |
-| `APP_DOMAIN` | Domain where users' applications are deployed | |
-| `USER_GUIDANCE_BASE_URL` | Domain where user guidance is found | |

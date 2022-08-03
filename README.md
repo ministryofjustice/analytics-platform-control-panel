@@ -48,7 +48,7 @@ In order to be able to work on the app locally, there are two options:
 
 - Interact with local infrastructure through LocalStack **(currently under development)**
 
-For better understanding of the environment variables used in this app, please check the [Control Panel environment variables](./doc/environment.md) file.
+For better understanding of the settings and environment variables used in this app, please check the [Control Panel settings and environment variables](./doc/environment.md) file.
 
 ## Other useful documentation
 

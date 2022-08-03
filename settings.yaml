@@ -3,6 +3,8 @@ enabled_features:
     _DEFAULT: false
     _HOST_dev: true
     _HOST_prod: false
+  redirect_legacy_api_urls:
+    _DEFAULT: true
 
 AWS_SERVICE_URL:
   _HOST_dev: "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
@@ -25,10 +27,9 @@ HELM_REPOSITORY_CACHE: "/tmp/helm/cache/repository"
 HELM_DELETE_TIMEOUT: 10
 
 # domain where tools are deployed
-TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
-
-# volume name for the EFS directory for user homes
-EFS_VOLUME: fs-0dbd6739
+TOOLS_DOMAIN:
+  _DEFAULT: tools.dev.analytical-platform.service.justice.gov.uk
+  _HOST_alpha: tools.analytical-platform.service.justice.gov.uk
 
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME: 'moj-analytics-s3-logs'
@@ -42,6 +43,8 @@ AIRFLOW_REGION: "eu-west-1"
 
 EKS: true
 
-APP_DOMAIN: apps.dev.mojanalytics.xyz
+APP_DOMAIN:
+  _DEFAULT: apps.dev.mojanalytics.xyz
+  _HOST_alpha: apps.alpha.mojanalytics.xyz
 
 SLACK_CHANNEL: "#analytical-platform"

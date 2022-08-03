@@ -4,14 +4,6 @@ from os.path import abspath, dirname, join
 import structlog
 
 
-# -- Feature flags
-
-ENABLED = {
-
-    # Enable redirecting legacy API URLs to new API app
-    "redirect_legacy_api_urls": os.environ.get("ENABLE_LEGACY_API_REDIRECT", True),
-}
-
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
 
@@ -454,9 +446,6 @@ SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
 # to grant AWS permissions.
 OIDC_EKS_PROVIDER = os.environ.get("OIDC_EKS_PROVIDER")
 
-AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
-AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
-
 
 # -- Slack
 SLACK = {
@@ -518,3 +507,6 @@ structlog.configure(
     wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )
+
+# volume name for the EFS directory for user homes
+EFS_VOLUME = os.environ.get("EFS_VOLUME")

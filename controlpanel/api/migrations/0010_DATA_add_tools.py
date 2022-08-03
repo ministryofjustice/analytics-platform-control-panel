@@ -34,20 +34,6 @@ TOOLS = [
             'cookie_secret': '<SECRET_TOKEN>',
         },
     },
-    {
-        'chart_name': 'airflow-sqlite',
-        'version': '0.2.2',
-        'name': 'Airflow',
-        'description': '1.10.3',
-        'values': {
-            'airflow.secretKey': settings.AIRFLOW_SECRET_KEY,
-            'airflow.fernetKey': settings.AIRFLOW_FERNET_KEY,
-            'authProxy.auth0_domain': '%(domain)s',
-            'authProxy.auth0_client_id': '%(client_id)s',
-            'authProxy.auth0_client_secret': '%(client_secret)s',
-            'cookie_secret': '<SECRET_TOKEN>',
-        },
-    },
 ]
 
 
@@ -61,11 +47,6 @@ settings_TOOLS = {
         "domain": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_DOMAIN", settings.OIDC_DOMAIN),
         "client_id": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_ID"),
         "client_secret": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_SECRET"),
-    },
-    "airflow-sqlite": {
-        "domain": os.environ.get("AIRFLOW_AUTH_CLIENT_DOMAIN", settings.OIDC_DOMAIN),
-        "client_id": os.environ.get("AIRFLOW_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("AIRFLOW_AUTH_CLIENT_SECRET"),
     },
 }
 
