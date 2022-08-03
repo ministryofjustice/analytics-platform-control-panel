@@ -34,7 +34,7 @@ class GithubAPI:
             return self.github.get_repo(repo_name)
         except UnknownObjectException as err:
             log.warning(
-                f"Failed getting {repo_name} Github repo for current logoin user: {err}"
+                f"Failed getting {repo_name} Github repo for current login user: {err}"
             )
             return None
 

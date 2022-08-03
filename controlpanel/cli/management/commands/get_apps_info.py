@@ -62,7 +62,7 @@ class Command(BaseCommand):
             self._add_new_app(app_info, app.name)
             app_info[app.name]["registered_in_cpanel"] = True
 
-    def _nomalize_ip_ranges(self, app_item, app_conf):
+    def _normalize_ip_ranges(self, app_item, app_conf):
         if app_item.get("allowed_ip_ranges") and app_conf.get('ip_range_lookup_table'):
             lookup = app_conf['ip_range_lookup_table']
             if 'Any' in app_item.get("allowed_ip_ranges"):
@@ -102,7 +102,7 @@ class Command(BaseCommand):
                 self._add_new_app(apps_info, repo.name)
                 apps_info[repo.name]["deployment"] = deployment_json
                 apps_info[repo.name]["auth"] = deepcopy(deployment_json)
-                self._nomalize_ip_ranges(apps_info[repo.name]["auth"], app_conf)
+                self._normalize_ip_ranges(apps_info[repo.name]["auth"], app_conf)
                 deployment_keys.extend([key for key in deployment_json.keys() if key not in deployment_keys])
             except Exception as ex:
                 self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
@@ -151,13 +151,13 @@ class Command(BaseCommand):
             apps_info[client['name']]["auth"]["client_id"] = client["client_id"]
             apps_info[client['name']]["auth"]["client_secret"] = client["client_secret"]
             apps_info[client['name']]["auth"]["callbacks"] = self._process_urls(
-                client["callbacks"], app_conf.get("domains_mapping") or {})
+                client.get("callbacks", []), app_conf.get("domains_mapping") or {})
             apps_info[client['name']]["auth"]["allowed_origins"] = self._process_urls(
-                client["allowed_origins"], app_conf.get("domains_mapping") or {})
+                client.get("allowed_origins", []), app_conf.get("domains_mapping") or {})
             clients_id_name_map[client["client_id"]] = client['name']
         return clients_id_name_map
 
-    def _collection_apps_auth0_connectons(self, auth0_instance, apps_info, clients_id_name_map):
+    def _collection_apps_auth0_connections(self, auth0_instance, apps_info, clients_id_name_map):
         connections = auth0_instance.connections.get_all()
         for connection in connections:
             for enabled_client_id in connection["enabled_clients"] or []:
@@ -211,7 +211,7 @@ class Command(BaseCommand):
         clients_id_name_map = self._collect_app_auth0_basic_info(auth0_instance, apps_info, app_conf)
 
         self.stdout.write("3. Collecting the connections information of each app from auth0")
-        self._collection_apps_auth0_connectons(auth0_instance, apps_info, clients_id_name_map)
+        self._collection_apps_auth0_connections(auth0_instance, apps_info, clients_id_name_map)
 
         self.stdout.write("4. Collecting the parameters of each from AWS parameter store")
         self._collection_app_parameters_store_info(apps_info)
@@ -231,7 +231,7 @@ class Command(BaseCommand):
 
     def _save_to_file(self, apps_info, output_file_name):
         with open(output_file_name, 'w') as f:
-            json.dump(apps_info, f)
+            json.dump(apps_info, f, indent=4)
 
     def _save_app_deployments_as_csv(self, csv_file, apps_info, deployment_keys):
         with open(csv_file, 'w') as f:
@@ -239,7 +239,7 @@ class Command(BaseCommand):
             writer.writerow(deployment_keys)
             deployment_keys.remove("app_name")
             for app_name, app_item in apps_info.items():
-                deploy_info = app_item.get("old_deployment") or {}
+                deploy_info = app_item.get("deployment") or {}
                 writer.writerow([app_name] + [deploy_info.get(key, "") for key in deployment_keys])
 
     def handle(self, *args, **options):
