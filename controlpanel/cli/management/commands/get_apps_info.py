@@ -129,7 +129,7 @@ class Command(BaseCommand):
         new_app_name = new_app_name.replace("{app_name}", app_name)
         return new_app_name
 
-    def _remove_sentisitve_fields(self, client):
+    def _remove_sensitive_fields(self, client):
         # Remove some fields and keep the original client info under "auth0_client"
         del client["signing_keys"]
         del client["client_secret"]
@@ -146,7 +146,7 @@ class Command(BaseCommand):
                 continue
 
             self.stdout.write("Reading app({})'s auth0 information....".format(client['name']))
-            self._remove_sentisitve_fields(client)
+            self._remove_sensitive_fields(client)
 
             apps_info[client['name']]["auth0_client"] = client
 
