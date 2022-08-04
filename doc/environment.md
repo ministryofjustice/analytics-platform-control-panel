@@ -1,7 +1,7 @@
 # The Settings and Environment Variables Reference
 
-We There are several ways to set up the settings required for running this app which
-have been explained in the following sub sections
+There are several ways to set up the settings required for running this app which
+are explained in the following sub sections
 
 ## Django settings 
 Official guide [here](https://docs.djangoproject.com/en/4.0/topics/settings/)
