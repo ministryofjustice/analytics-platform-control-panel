@@ -25,7 +25,7 @@ different values under different running environments and slightly more complica
 Also this yaml can give us easy option to define some simple constants.
 
 This file is on the top of django settings, so the variables which define in the settings/*.py has higher
-priority than the ones in the settings.yaml, if same variable has been defined in django settings, the same one in 
+priority than the ones in the settings.yaml. If the same variable has been defined in the django settings file, the same one in 
 the settings.yaml will be ignored
 
 The format for defining a variable with different value under different envs
