@@ -12,8 +12,8 @@ running modes:
 - testing mode: for automated testing.
 - production mode: for production use. Usually when the app runs on non-local env, the running mode will be production regardless which cluster environment is used for running this app.
 
-you can define different .py for mapping different running modes under `/settings/` , for this app, we did not
-define specific one for production mode. We are responsible to pass correct value to django
+You can define different .py files for mapping different running modes under `/settings/`. For this app, we did not
+define a specific file for production mode. We are responsible to pass correct value to the django
 environment variable `DJANGO_SETTINGS_MODULE` under different running environments(e.g., dev, staging and
 prod).
 
