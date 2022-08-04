@@ -6,12 +6,11 @@ are explained in the following sub sections
 ## Django settings 
 Official guide [here](https://docs.djangoproject.com/en/4.0/topics/settings/)
 In general, all system level settings related to important app logic are defined here,
-it is the primary entry point for defining some global setting. An app normally have different
+it is the primary entry point for defining global settings. An app normally has different
 running modes:
-- development mode: for local development need.
-- testing mode: for running auto-testing need.
-- production mode: for production use, usually when the app runs on non-local env, the running mode will be under this
-mode regardless which cluster environment is used for running this app.
+- development mode: for local development.
+- testing mode: for automated testing.
+- production mode: for production use. Usually when the app runs on non-local env, the running mode will be production regardless which cluster environment is used for running this app.
 
 you can define different .py for mapping different running modes under `/settings/` , for this app, we did not
 define specific one for production mode. We are responsible to pass correct value to django
