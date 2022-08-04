@@ -47,7 +47,7 @@ All those variables in this file can be overwritten by the environment variable 
 
 ## environment variables
 
-The variables defined blow are the minimum ones which are required to be provided. As being
+The variables defined below are the minimum ones which are required to be provided. As being
 mentioned from previous sections, you can overwrite any variable in settings.yaml, some of them 
 in django settings. 
 
