@@ -28,7 +28,6 @@
       ],
       "client_id": "xxxxx_client_id",
       "callback_url_template": false,
-      "client_secret": "xxxxx_client_secret",
       "jwt_configuration": {
         "lifetime_in_seconds": 36000,
         "secret_encoded": false
@@ -60,7 +59,6 @@
       ],
       "normalised_allowed_ip_ranges": "111.222.333.444/28,222.333.444.555/31, 666.777.888.999/32,777.666.55.777/32, 66.22.111.111/32,222.333.444.555/31, 666.777.888.999/32",
       "client_id": "xxxxx_client_id",
-      "client_secret": "xxxxx_client_secret",
       "callbacks": [
         "https://example-app.apps.dev.mojanalytics.xyz/callback",
         "https://example-app.apps.eks.dev.mojanalytics.xyz/callback"

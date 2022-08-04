@@ -129,6 +129,11 @@ class Command(BaseCommand):
         new_app_name = new_app_name.replace("{app_name}", app_name)
         return new_app_name
 
+    def _remove_sentisitve_fields(self, client):
+        # Remove some fields and keep the original client info under "auth0_client"
+        del client["signing_keys"]
+        del client["client_secret"]
+
     def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, app_conf):
         """
         The function to collect the auth0 information for an app
@@ -141,15 +146,14 @@ class Command(BaseCommand):
                 continue
 
             self.stdout.write("Reading app({})'s auth0 information....".format(client['name']))
-            # Remove some fields and keep the original client info under "auth0_client"
-            del client["signing_keys"]
+            self._remove_sentisitve_fields(client)
+
             apps_info[client['name']]["auth0_client"] = client
 
             # Construct the information required for aws secret
             apps_info[client['name']]["new_app_name"] = \
                 self._process_application_name(client['name'], app_conf.get('app_name_pattern'))
             apps_info[client['name']]["auth"]["client_id"] = client["client_id"]
-            apps_info[client['name']]["auth"]["client_secret"] = client["client_secret"]
             apps_info[client['name']]["auth"]["callbacks"] = self._process_urls(
                 client.get("callbacks", []), app_conf.get("domains_mapping") or {})
             apps_info[client['name']]["auth"]["allowed_origins"] = self._process_urls(
