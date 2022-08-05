@@ -43,8 +43,8 @@ class Command(BaseCommand):
         # The example of app_conf, app_conf_example.json, is provided.
         parser.add_argument("-c", "--app_conf", type=str,
                             help="The configuration file for app migration")
-        parser.add_argument("-od", "--odeploy", type=str,
-                            help="The path of storing application's deployment information as csv")
+        parser.add_argument("-oa", "--oaudit", type=str,
+                            help="The path of storing application's information as csv")
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
@@ -52,6 +52,7 @@ class Command(BaseCommand):
                 "app_name": app_name,
                 "registered_in_cpanel": False,
                 "can_be_migrated": False,
+                "has_repo": False,
                 "auth0_client": {},
                 "parameters": {},
                 "auth": {},
@@ -78,7 +79,7 @@ class Command(BaseCommand):
 
             app_item["normalised_allowed_ip_ranges"] = ",".join(ip_ranges)
 
-    def _collect_apps_deploy_info(self, github_token, apps_info, deployment_keys, app_conf):
+    def _collect_apps_deploy_info(self, github_token, apps_info, audit_data_keys, app_conf):
         """
         To gain access to the github repo proves difficult than I thought, for now I will use the
         id_token from my login account, unless there is a need for frequent usage, then we need to
@@ -101,10 +102,11 @@ class Command(BaseCommand):
                                       "but the app is not registered in Control panel **")
 
                 self._add_new_app(apps_info, repo.name)
+                apps_info[repo.name]["has_repo"] = True
                 apps_info[repo.name]["deployment"] = deployment_json
                 apps_info[repo.name]["auth"] = deepcopy(deployment_json)
                 self._normalize_ip_ranges(apps_info[repo.name]["auth"], app_conf)
-                deployment_keys.extend([key for key in deployment_json.keys() if key not in deployment_keys])
+                audit_data_keys.extend([key for key in deployment_json.keys() if key not in audit_data_keys])
             except Exception as ex:
                 self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
 
@@ -206,11 +208,11 @@ class Command(BaseCommand):
             para_response = aws_param_service.get_parameter(parameter.name)
             apps_info[app_name]["parameters"][parameter.key] = para_response["Parameter"]["Value"]
 
-    def _gather_apps_full_info(self, github_token, app_conf, apps_info, deployment_keys):
+    def _gather_apps_full_info(self, github_token, app_conf, apps_info, audit_data_keys):
         auth0_instance = ExtendedAuth0()
 
         self.stdout.write("1. Collecting the deployment information of each app from github")
-        self._collect_apps_deploy_info(github_token, apps_info, deployment_keys, app_conf)
+        self._collect_apps_deploy_info(github_token, apps_info, audit_data_keys, app_conf)
 
         self.stdout.write("2. Collecting the auth0 client information of each app.")
         clients_id_name_map = self._collect_app_auth0_basic_info(auth0_instance, apps_info, app_conf)
@@ -238,14 +240,42 @@ class Command(BaseCommand):
         with open(output_file_name, 'w') as f:
             json.dump(apps_info, f, indent=4)
 
-    def _save_app_deployments_as_csv(self, csv_file, apps_info, deployment_keys):
+    def _convert_list_to_str(self, value):
+        if type(value) is list:
+            return ",".join(value)
+        if type(value) is bool:
+            return "Y" if value else "N"
+        else:
+            return str(value)
+
+    def _save_app_info_as_csv(self, csv_file, apps_info, audit_data_keys):
         with open(csv_file, 'w') as f:
             writer = csv.writer(f)
-            writer.writerow(deployment_keys)
-            deployment_keys.remove("app_name")
+            writer.writerow(audit_data_keys)
             for app_name, app_item in apps_info.items():
-                deploy_info = app_item.get("deployment") or {}
-                writer.writerow([app_name] + [deploy_info.get(key, "") for key in deployment_keys])
+                data_row = []
+                for data_key in audit_data_keys:
+                    if data_key in app_item:
+                        data_row.append(self._convert_list_to_str(app_item[data_key]))
+                    elif data_key in (app_item.get("auth0_client") or []):
+                        data_row.append(self._convert_list_to_str(app_item["auth0_client"][data_key]))
+                    elif data_key in (app_item.get("deployment") or []):
+                        data_row.append(self._convert_list_to_str(app_item["deployment"][data_key]))
+                    elif data_key == 'has_auth0':
+                        data_row.append("Y" if app_item.get("auth0_client") else "N")
+                    elif data_key == 'has_deployment':
+                        data_row.append("Y" if app_item.get("deployment") else "N")
+                    elif data_key == 'has_parameters':
+                        data_row.append("Y" if app_item.get("parameters") else "N")
+                    elif data_key == 'auth_connections':
+                        auth_conn_str = self._convert_list_to_str((app_item.get('auth0_client') or {}).
+                                                                  get("connections", []))
+                        data_row.append(auth_conn_str)
+                    else:
+                        data_row.append("")
+                        continue
+
+                writer.writerow(data_row)
 
     def _check_migration_date_of_app(self, apps_info):
         for app_name, app_item in apps_info.items():
@@ -255,12 +285,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         app_conf = self._load_json_file(options.get("app_conf"))
         apps_info = {}
-        deployment_keys = ["app_name"]
+        audit_data_keys = ["app_name", "registered_in_cpanel", "can_be_migrated", "has_auth0", "has_parameters",
+                           "has_repo", "has_deployment", "client_id", "callbacks", "grant_types", "auth_connections"]
         self._init_app_info(apps_info)
-        self._gather_apps_full_info(options["token"], app_conf, apps_info, deployment_keys)
+        self._gather_apps_full_info(options["token"], app_conf, apps_info, audit_data_keys)
         self._save_to_file(list(apps_info.values()), options["file"])
 
         self._check_migration_date_of_app(apps_info)
 
-        if options.get('odeploy'):
-            self._save_app_deployments_as_csv(options.get('odeploy'), apps_info, deployment_keys)
+        if options.get('oaudit'):
+            self._save_app_info_as_csv(options.get('oaudit'), apps_info, audit_data_keys)
