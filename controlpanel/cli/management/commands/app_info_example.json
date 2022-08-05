@@ -2,6 +2,7 @@
   {
     "app_name": "example-app",
     "registered_in_cpanel": true,
+    "can_be_migrated": true,
     "auth0_client": {
       "tenant": "dev-analytics-moj",
       "global": false,

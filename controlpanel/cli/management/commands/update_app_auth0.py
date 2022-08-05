@@ -20,7 +20,7 @@ class Command(BaseCommand):
         """
         auth0_instance = ExtendedAuth0()
         for app_item in app_info:
-            if not app_item["registered_in_cpanel"]:
+            if not app_item["can_be_migrated"]:
                 continue
             client_id = app_item["auth"]["client_id"]
             auth0_instance.clients.update(

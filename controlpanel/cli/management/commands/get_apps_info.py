@@ -51,6 +51,7 @@ class Command(BaseCommand):
             apps_info[app_name] = {
                 "app_name": app_name,
                 "registered_in_cpanel": False,
+                "can_be_migrated": False,
                 "auth0_client": {},
                 "parameters": {},
                 "auth": {},
@@ -246,6 +247,11 @@ class Command(BaseCommand):
                 deploy_info = app_item.get("deployment") or {}
                 writer.writerow([app_name] + [deploy_info.get(key, "") for key in deployment_keys])
 
+    def _check_migration_date_of_app(self, apps_info):
+        for app_name, app_item in apps_info.items():
+            if app_item.get('registered_in_cpanel') and app_item.get('deployment') and app_item.get('auth0_client'):
+                app_item["can_be_migrated"] = True
+
     def handle(self, *args, **options):
         app_conf = self._load_json_file(options.get("app_conf"))
         apps_info = {}
@@ -253,6 +259,8 @@ class Command(BaseCommand):
         self._init_app_info(apps_info)
         self._gather_apps_full_info(options["token"], app_conf, apps_info, deployment_keys)
         self._save_to_file(list(apps_info.values()), options["file"])
+
+        self._check_migration_date_of_app(apps_info)
 
         if options.get('odeploy'):
             self._save_app_deployments_as_csv(options.get('odeploy'), apps_info, deployment_keys)

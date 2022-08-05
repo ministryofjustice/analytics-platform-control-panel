@@ -31,7 +31,7 @@ class Command(BaseCommand):
 
         aws_secret_service = AWSSecretManager()
         for app_item in app_info:
-            if not app_item["registered_in_cpanel"]:
+            if not app_item["can_be_migrated"]:
                 continue
             self.stdout.write("Creating secrets for {}....".format(app_item["app_name"]))
             if app_item.get("auth"):
