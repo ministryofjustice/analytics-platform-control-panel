@@ -15,7 +15,7 @@ class LegacyAPIRedirectMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        if settings.ENABLED["redirect_legacy_api_urls"]:
+        if settings.features.redirect_legacy_api_urls.enabled:
             json_requested = request.META.get("HTTP_ACCEPT") == "application/json"
             is_api_path = legacy_api_path(request.path_info)
 

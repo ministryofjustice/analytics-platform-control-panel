@@ -25,7 +25,7 @@ You need to create a `.env` file with the settings to enable it to connect to ex
 
 Lines in this file are simply of format `KEY=value`.
 
-The full list of settings are documented here: [Environment Variables Reference](environment.md). However you can simply get a lot of these values from the settings we use to run Control Panel on the dev cluster. This will connect your locally running Control Panel to AP's dev Auth0 OIDC API, dev Kubernetes cluster, etc. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml (in the [config repo](https://github.com/ministryofjustice/analytics-platform-config) and if you've not done so already, you'll need to [decrypt the files in that repo](https://github.com/ministryofjustice/analytics-platform-ops/tree/master/git-crypt#decrypting-the-secrets)) and just change the format of each line to `KEY=value`. These are the keys you need to copy to get your control panel started:
+The full list of settings are documented here: [Control Panel settings and environment variables](environment.md). However you can simply get a lot of these values from the settings we use to run Control Panel on the dev cluster. This will connect your locally running Control Panel to AP's dev Auth0 OIDC API, dev Kubernetes cluster, etc. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml (in the [config repo](https://github.com/ministryofjustice/analytics-platform-config) and if you've not done so already, you'll need to [decrypt the files in that repo](https://github.com/ministryofjustice/analytics-platform-ops/tree/master/git-crypt#decrypting-the-secrets)) and just change the format of each line to `KEY=value`. These are the keys you need to copy to get your control panel started:
 
 ```shell
 # To log in with OIDC
@@ -41,7 +41,7 @@ Unless you're testing the Slack feature, just disable it by adding this line:
 SLACK_API_TOKEN=disabled
 ```
 
-For more details of environment variable settings, refer to: [Environment Variables Reference](environment.md).
+For more details of environment variable settings, refer to: [Control Panel settings and environment variables](environment.md).
 
 ## AWS setup
 

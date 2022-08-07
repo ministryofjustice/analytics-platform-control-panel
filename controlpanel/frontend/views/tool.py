@@ -136,6 +136,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         id_token = user.get_id_token()
 
         context = super().get_context_data(*args, **kwargs)
+        context["ip_range_feature_enabled"] = settings.features.ip_ranges.enabled
         context["id_token"] = id_token
         context["user_guidance_base_url"] = settings.USER_GUIDANCE_BASE_URL
         context["aws_service_url"] = settings.AWS_SERVICE_URL
