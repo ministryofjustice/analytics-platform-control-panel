@@ -15,7 +15,7 @@ def aws_creds():
 @pytest.yield_fixture(autouse=True)
 def iam(aws_creds):
     with moto.mock_iam():
-        yield boto3.resource('iam')
+        yield boto3.Session().resource('iam')
 
 
 @pytest.yield_fixture(autouse=True)

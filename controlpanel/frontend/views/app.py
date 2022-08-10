@@ -1,4 +1,3 @@
-import re
 import structlog
 
 from django.conf import settings
@@ -20,7 +19,6 @@ from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
 from controlpanel.api import auth0
-from controlpanel.api import aws
 from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
 from controlpanel.api.models import (
@@ -179,9 +177,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             self.object.slug,
             connections=form.cleaned_data.get('connections'))
 
-        aws.AWSSecretManager().create_or_update(
-            secret_name=self.object.app_aws_secret_name,
-            secret_data=self.object.construct_secret_data(client))
+        cluster.App(self.object).create_or_update_secret(self.object.construct_secret_data(client))
 
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
@@ -321,7 +317,7 @@ class ResetAppSecret(
         app = self.get_object()
         client = auth0.ExtendedAuth0().clients.search_first_match(dict(name=app.slug))
         if client:
-            aws.AWSSecretManager().create_or_update(app.app_aws_secret_name, app.construct_secret_data(client))
+            cluster.App(app).create_or_update_secret(app.construct_secret_data(client))
         return super().post(request, *args, **kwargs)
 
 

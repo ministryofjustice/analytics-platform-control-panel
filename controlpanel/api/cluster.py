@@ -1,15 +1,18 @@
+import os
+
 import structlog
 import secrets
-
+from copy import deepcopy
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from github import Github, GithubException
 
-from controlpanel.api import aws
-from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
+from controlpanel.api.aws import (iam_arn, s3_arn, iam_assume_role_principal, AWSRole, AWSBucket, AWSPolicy,
+                                  AWSParameterStore, AWSSecretManager)
 from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
+from controlpanel.utils import load_app_conf_from_file
 
 log = structlog.getLogger(__name__)
 
@@ -26,6 +29,27 @@ HOME_RESET_FAILED = "Failed"
 HOME_RESET = "Reset"
 
 
+BASE_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com",
+            },
+            "Action": "sts:AssumeRole",
+        },
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": iam_assume_role_principal(),
+            },
+            "Action": "sts:AssumeRole",
+        },
+    ],
+}
+
+
 class HomeDirectoryResetError(Exception):
     """
     Raised if a home directory cannot be reset.
@@ -34,26 +58,116 @@ class HomeDirectoryResetError(Exception):
     pass
 
 
-class User:
+class AWSServiceCredentialSettings:
+    """This class is responsible for defining the mapping between coding object (class[.func] or function) for creating
+    AWS resource or using AWS service for achieving something. The setting may be imported through external source, e.g.
+    from config file or db in the future, for now we assume we will read those settings through environment variables
+    """
+
+    _DEFAULT_SETTING_ROLE_KEY_ = "AWS_DEFAULT_ROLE"
+
+    def __init__(self, config_file=None):
+        self.mapping = self._load_from_config_file(config_file) or {}
+
+    def _load_from_config_file(self, config_file):
+        if not config_file:
+            return None
+        return load_app_conf_from_file(yaml_file=config_file)
+
+    def _locate_setting(self, setting_key):
+        """
+        Check a few places, the priorities are blew (highest first)
+        - environment variable
+        - settings
+        - None, None
+        """
+        if os.getenv(setting_key):
+            return os.getenv(setting_key)
+        if hasattr(settings, setting_key):
+            return getattr(settings, setting_key)
+        return None
+
+    def get_credential_setting(self, setting_name=None):
+        assume_role_name = self._locate_setting("{}_ROLE".format(setting_name))
+        profile_name = self._locate_setting("{}_PROFILE".format(setting_name))
+
+        if assume_role_name is None and profile_name is None:
+            assume_role_name = self._locate_setting(self._DEFAULT_SETTING_ROLE_KEY_)
+        return assume_role_name, profile_name
+
+
+class EntityResource:
+
+    def __init__(self):
+        self.aws_credential_settings = AWSServiceCredentialSettings()
+        self._init_aws_services()
+
+
+    def _aws_credential_setting_name(self, aws_service_class):
+        return "{}_{}".format(self.__class__.__name__, aws_service_class.__name__)
+
+    def create_aws_service(self, aws_service_class):
+        assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting(
+            self._aws_credential_setting_name(aws_service_class).upper()
+        )
+        return aws_service_class(assume_role_name=assume_role_name, profile_name=profile_name)
+
+
+class User(EntityResource):
     """
     Wraps User model to provide convenience methods to access K8S and AWS
 
     A user is represented by an IAM role, which is assumed by their tools.
     """
+    OIDC_STATEMENT = {
+        "Effect": "Allow",
+        "Principal": {
+            "Federated": iam_arn(f"oidc-provider/{settings.OIDC_DOMAIN}/"),
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+    }
+
+    SAML_STATEMENT = {
+        "Effect": "Allow",
+        "Principal": {
+            "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
+        },
+        "Action": "sts:AssumeRoleWithSAML",
+        "Condition": {
+            "StringEquals": {
+                "SAML:aud": "https://signin.aws.amazon.com/saml",
+            },
+        },
+    }
+
+    EKS_STATEMENT = {
+        "Effect": "Allow",
+        "Principal": {
+            "Federated": iam_arn(f"oidc-provider/{settings.OIDC_EKS_PROVIDER}"),
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {"StringLike": {}},
+    }
+
+    READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
+
+    ATTACH_POLICIES = [READ_INLINE_POLICIES, "airflow-dev-ui-access", "airflow-prod-ui-access"]
 
     def __init__(self, user):
         self.user = user
         self.k8s_namespace = f"user-{self.user.slug}"
         self.eks_cpanel_namespace = "cpanel"
+        super(User, self).__init__()
 
-        self.user_helm_charts = []
-        self.helm_charts_required()
+    def _init_aws_services(self):
+        self.aws_role_service = self.create_aws_service(AWSRole)
 
-    def helm_charts_required(self):
+    @property
+    def user_helm_charts(self):
         # The full list of the charts required for a user under different situations
         # TODO this helm charts should be stored somewhere rather than hard coding here
         # The order defined in the follow list is important
-        self.user_helm_charts = {
+        return {
             "installation": [
                 {"namespace": self.eks_cpanel_namespace,
                  "release": f"bootstrap-user-{self.user.slug}",
@@ -101,8 +215,27 @@ class User:
         for helm_chart_item in self.user_helm_charts["installation"]:
             self._run_helm_install_command(helm_chart_item)
 
+    @property
+    def aws_user_policy(self):
+        policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
+        policy["Statement"].append(User.SAML_STATEMENT)
+        oidc_statement = deepcopy(User.OIDC_STATEMENT)
+        oidc_statement["Condition"] = {
+            "StringEquals": {
+                f"{settings.OIDC_DOMAIN}/:sub": self.user.auth0_id,
+            }
+        }
+        policy["Statement"].append(oidc_statement)
+        eks_statement = deepcopy(User.EKS_STATEMENT)
+        match = f"system:serviceaccount:user-{self.user.slug}:{self.user.slug}-*"
+        eks_statement["Condition"]["StringLike"] = {
+            f"{settings.OIDC_EKS_PROVIDER}:sub": match
+        }
+        policy["Statement"].append(eks_statement)
+        return policy
+
     def create(self):
-        aws.create_user_role(self.user)
+        self.aws_role_service.create_role(self.iam_role_name, self.aws_user_policy, User.ATTACH_POLICIES)
         self._init_user()
 
     def reset_home(self):
@@ -141,16 +274,16 @@ class User:
         self._uninstall_helm_charts(self.eks_cpanel_namespace, init_installed_charts)
 
     def delete(self):
-        aws.delete_role(self.user.iam_role_name)
+        self.aws_role_service.delete_role(self.user.iam_role_name)
         self._delete_user_helm_charts()
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
-        aws.grant_bucket_access(
+        self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
     def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+        self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def _has_required_installation_charts(self):
         """ Checks if the expected helm charts exist for the user.
@@ -163,45 +296,19 @@ class User:
                 return False
         return True
 
-    def _migrate_user_to_eks(self):
-        # TODO This function should be removed.
-        # User's migration state is not yet marked as complete, and so we
-        # need to migrate their AWS role before running the init-user
-        # helm charts before marked it as such
-        log.info(f"Starting to migrate user {self.user.slug} from {self.user.migration_state}")
-
-        self.user.migration_state = self.user.MIGRATING
-        self.user.save()
-
-        # Migrate the AWS roles for the user.
-        aws.migrate_user_role(self.user)
-
-        # Run the new charts to configure the user for EKS infra.
-        self._init_user()
-
-        # Update the user's state in the database.
-        self.user.migration_state = self.user.COMPLETE
-        self.user.save()
-
-        log.info(f"Completed migration of user {self.user.slug}")
-
     def on_authenticate(self):
         """
         Run on each authenticated login on the control panel.
         This function also checks whether the users has all those charts installed or not
         """
-        if self.user.migration_state == self.user.PENDING:
-            # TODO keep the following part for short term, should be removed soon
-            self._migrate_user_to_eks()
-        else:
-            if not self._has_required_installation_charts():
-                # For some reason, user does not have all the charts required so we should re-init them.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._delete_user_helm_charts()
-                self._init_user()
+        if not self._has_required_installation_charts():
+            # For some reason, user does not have all the charts required so we should re-init them.
+            log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+            self._delete_user_helm_charts()
+            self._init_user()
 
 
-class App:
+class App(EntityResource):
     """
     Responsible for the apps-related interactions with the k8s cluster and AWS
     """
@@ -209,25 +316,31 @@ class App:
     APPS_NS = "apps-prod"
 
     def __init__(self, app):
+        super(App, self).__init__()
         self.app = app
+
+    def _init_aws_services(self):
+        self.aws_role_service = self.create_aws_service(AWSRole)
+        self.aws_secret_service = self.create_aws_service(AWSSecretManager)
 
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
 
     def create_iam_role(self):
-        aws.create_app_role(self.app)
+        self.aws_role_service.create_role(self.iam_role_name, BASE_ASSUME_ROLE_POLICY)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_bucket_access(
+        self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
     def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+        self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def delete(self):
-        aws.delete_role(self.iam_role_name)
+        self.aws_role_service.delete_role(self.iam_role_name)
+        self.delete_secret()
 
     @property
     def url(self):
@@ -244,27 +357,42 @@ class App:
 
         return f"https://{ingresses[0].spec.rules[0].host}"
 
+    def list_role_names(self):
+        return self.aws_role_service.list_role_names()
 
-class S3Bucket:
+    def create_or_update_secret(self, secret_data):
+        self.aws_secret_service.create_or_update(
+            secret_name=self.app.app_aws_secret_name,
+            secret_data=secret_data)
+
+    def delete_secret(self):
+        self.aws_secret_service.delete_secret(secret_name=self.app.app_aws_secret_name)
+
+
+class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
 
     def __init__(self, bucket):
+        super(S3Bucket, self).__init__()
         self.bucket = bucket
+
+    def _init_aws_services(self):
+        self.aws_bucket_service = self.create_aws_service(AWSBucket)
 
     @property
     def arn(self):
         return s3_arn(self.bucket.name)
 
     def create(self):
-        return aws.create_bucket(
+        return self.aws_bucket_service.create_bucket(
             self.bucket.name, self.bucket.is_data_warehouse
         )
 
     def mark_for_archival(self):
-        aws.tag_bucket(self.bucket.name, {"to-archive": "true"})
+        self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
 
 
-class RoleGroup:
+class RoleGroup(EntityResource):
     """
     Uses a managed policy as a way to group IAM roles that have access to same
     resources.
@@ -274,7 +402,11 @@ class RoleGroup:
     """
 
     def __init__(self, iam_managed_policy):
+        super(RoleGroup, self).__init__()
         self.policy = iam_managed_policy
+
+    def _init_aws_services(self):
+        self.aws_policy_service = self.create_aws_service(AWSPolicy)
 
     @property
     def arn(self):
@@ -285,39 +417,47 @@ class RoleGroup:
         return f"/{settings.ENV}/group/"
 
     def create(self):
-        aws.create_group(
+        self.aws_policy_service.create_policy(
             self.policy.name,
             self.policy.path,
         )
 
     def update_members(self):
-        aws.update_group_members(
+        self.aws_policy_service.update_policy_members(
             self.arn,
             {user.iam_role_name for user in self.policy.users.all()},
         )
 
     def delete(self):
-        aws.delete_group(self.arn)
+        self.aws_policy_service.delete_policy(self.arn)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_group_bucket_access(
+        self.aws_policy_service.grant_policy_bucket_access(
             self.arn, bucket_arn, access_level, path_arns
         )
 
     def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_group_bucket_access(self.arn, bucket_arn)
+        self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
 
 
-def create_parameter(name, value, role, description):
-    return aws.create_parameter(name, value, role, description)
+class AppParameter(EntityResource):
 
+    def __init__(self, parameter):
+        super(AppParameter, self).__init__()
+        self.parameter = parameter
 
-def delete_parameter(name):
-    aws.delete_parameter(name)
+    def _init_aws_services(self):
+        self.aws_param_service = self.create_aws_service(AWSParameterStore)
 
+    def create_parameter(self):
+        return self.aws_param_service.create_parameter(
+            self.parameter.name,
+            self.parameter.value,
+            self.parameter.role,
+            self.parameter.description)
 
-def list_role_names():
-    return aws.list_role_names()
+    def delete_parameter(self):
+        self.aws_param_service.delete_parameter(self.parameter.name)
 
 
 def get_repositories(user):
