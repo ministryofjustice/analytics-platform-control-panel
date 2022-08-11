@@ -20,7 +20,7 @@ those authentication flows, 3 major ones are listed below
 
 
 The variable `CONTROL_PANEL_APP_DOMAIN`, used in the following notes, is the domain name of this app. 
-Other environment variables referred in the following steps can be checked from [Control Panel environment variables](./doc/environment.md).
+Other settings and environment variables referred in the following steps can be checked from [Control Panel settings and environment variables](./doc/environment.md).
 
 #### Step 1: User initiates login process
 The user navigates to Control Panel and starts the process of logging in.

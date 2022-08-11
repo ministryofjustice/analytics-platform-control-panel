@@ -145,4 +145,11 @@
   You can <a href="{{ aws_service_url }}" target="_blank" rel="noopener"> access AWS services such as S3 and Athena via the AWS Console (opens in new tab).</a>
 </p>
 
+{% if ip_range_feature_enabled %}
+<p class="govuk-body">
+   ip ranges has been enabled
+</p>
+{% endif %}
+
+
 {% endblock %}

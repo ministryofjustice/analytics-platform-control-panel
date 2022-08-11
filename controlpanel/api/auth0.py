@@ -44,7 +44,7 @@ class ExtendedAuth0(Auth0):
             "client_secret", settings.AUTH0["client_secret"]
         )
         self.domain = kwargs.get("domain", settings.AUTH0["domain"])
-        self.app_domain = kwargs.get("domain", settings.AUTH0["app_domain"])
+        self.app_domain = kwargs.get("domain", settings.APP_DOMAIN)
         self.audience = "https://{domain}/api/v2/".format(domain=self.domain)
 
         self._init_mng_apis()

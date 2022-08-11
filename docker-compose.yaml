@@ -59,7 +59,6 @@ services:
       SECRET_KEY: "1234567890"
       SLACK_API_TOKEN: "dummy"
       defaultRegion: eu-west-1
-      iamRole: ${iamRole:-dev_control_panel_api}
 
   frontend:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
@@ -78,10 +77,6 @@ services:
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
-      AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
-      AIRFLOW_AUTH_CLIENT_SECRET: ${AIRFLOW_AUTH_CLIENT_SECRET}
-      AIRFLOW_FERNET_KEY: ${AIRFLOW_FERNET_KEY}
-      AIRFLOW_SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}
@@ -107,8 +102,6 @@ services:
       JUPYTER_LAB_AUTH_CLIENT_SECRET: ${JUPYTER_LAB_AUTH_CLIENT_SECRET}
       K8S_WORKER_ROLE_NAME: ${K8S_WORKER_ROLE_NAME}
       LOGS_BUCKET_NAME: ${LOGS_BUCKET_NAME}
-      NFS_HOSTNAME: ${NFS_HOSTNAME}
-      EFS_HOSTNAME: ${EFS_HOSTNAME}
       OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
@@ -130,7 +123,6 @@ services:
       SLACK_CHANNEL: ${SLACK_CHANNEL}
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
       defaultRegion: eu-west-1
-      iamRole: ${iamRole:-dev_control_panel_api}
 
   frontend_eks:
     # Apologies to future devops. Naming is hard.
@@ -154,10 +146,6 @@ services:
       - ~/.aws/credentials:/home/controlpanel/.aws/credentials:ro
     # command: ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
     environment:
-      AIRFLOW_AUTH_CLIENT_ID: ${AIRFLOW_AUTH_CLIENT_ID}
-      AIRFLOW_AUTH_CLIENT_SECRET: ${AIRFLOW_AUTH_CLIENT_SECRET}
-      AIRFLOW_FERNET_KEY: ${AIRFLOW_FERNET_KEY}
-      AIRFLOW_SECRET_KEY: ${AIRFLOW_SECRET_KEY}
       ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_ACCOUNT_ID: ${AWS_ACCOUNT_ID}
@@ -184,8 +172,6 @@ services:
       JUPYTER_LAB_AUTH_CLIENT_SECRET: ${JUPYTER_LAB_AUTH_CLIENT_SECRET}
       K8S_WORKER_ROLE_NAME: ${K8S_WORKER_ROLE_NAME}
       LOGS_BUCKET_NAME: ${LOGS_BUCKET_NAME}
-      NFS_HOSTNAME: ${NFS_HOSTNAME}
-      EFS_HOSTNAME: ${EFS_HOSTNAME}
       OIDC_AUTH_EXTENSION_URL: ${OIDC_AUTH_EXTENSION_URL}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
@@ -207,4 +193,3 @@ services:
       SLACK_CHANNEL: ${SLACK_CHANNEL}
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
       defaultRegion: eu-west-1
-      iamRole: ${iamRole:-dev_control_panel_api}

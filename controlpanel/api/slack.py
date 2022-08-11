@@ -17,6 +17,6 @@ def send_notification(message):
         raise ValueError("SLACK_API_TOKEN environment variable is required")
     client = slack.WebClient(token=settings.SLACK['api_token'])
     client.chat_postMessage(
-        channel=settings.SLACK["channel"],
+        channel=settings.SLACK_CHANNEL,
         text=f"{message} [{settings.ENV}]",
     )

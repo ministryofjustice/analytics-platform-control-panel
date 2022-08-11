@@ -24,11 +24,6 @@ OIDC_ALLOW_UNSECURED_JWT = True
 OIDC_DOMAIN = "oidc.idp.example.com"
 
 TOOLS_DOMAIN = 'example.com'
-TOOLS["testtool"] = {
-    "domain": "auth.example.com",
-    "client_id": "42",
-    "client_secret": "secret",
-}
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False

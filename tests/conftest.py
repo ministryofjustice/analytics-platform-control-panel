@@ -4,7 +4,20 @@ from model_mommy import mommy
 import yaml
 import pytest
 
+from controlpanel.utils import load_app_conf_from_file
+
 from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
+
+
+def pytest_configure(config):
+    load_app_conf_from_file()
+
+
+@pytest.fixture()
+def client(client):
+    """A Django test client instance."""
+    load_app_conf_from_file()
+    return client
 
 
 @pytest.yield_fixture(autouse=True)
