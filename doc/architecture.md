@@ -78,5 +78,10 @@ If there is special case like the secrets of an app is managed in third account,
 extra level below
 - `APP_AWSSECRETMANAGER_ROLE= "arn:aws:iam::<account id>:role/<role name under third account>`
 
+Right now the classes in cluster.py is not all based on entity, e.g., S3Bucket is used by User and 
+App both,  if in the future, we need to manage s3 bucket differently for User and App, we can restructure
+this class at that moment. 
+
 The current implementation also support to switch different account by profile but it is not pratical 
 under cluster environment. 
+
