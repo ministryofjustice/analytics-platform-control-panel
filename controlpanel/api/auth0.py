@@ -6,6 +6,7 @@ from auth0.v3 import authentication, exceptions
 from auth0.v3.management import Auth0
 from auth0.v3.management.clients import Clients
 from auth0.v3.management.connections import Connections
+from auth0.v3.management.device_credentials import DeviceCredentials
 from auth0.v3.management.users import Users
 from auth0.v3.management.rest import RestClient
 
@@ -55,6 +56,7 @@ class ExtendedAuth0(Auth0):
 
         self.clients = ExtendedClients(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
         self.connections = ExtendedConnections(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
+        self.device_credentials = ExtendedDeviceCredentials(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
@@ -315,6 +317,10 @@ class ExtendedAPIMethods(object):
 
 class ExtendedClients(ExtendedAPIMethods, Clients):
     endpoint = 'clients'
+
+
+class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
+    endpoint = 'device-credentials'
 
 
 class ExtendedConnections(ExtendedAPIMethods, Connections):

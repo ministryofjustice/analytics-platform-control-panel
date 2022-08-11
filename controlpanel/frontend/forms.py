@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
 
 from controlpanel.api import validators
-from controlpanel.api.cluster import get_repository
+from controlpanel.api.github import GithubAPI
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
@@ -97,7 +97,7 @@ class CreateAppForm(forms.Form):
     def clean_repo_url(self):
         value = self.cleaned_data['repo_url']
         repo_name = value.replace("https://github.com/", "", 1)
-        repo = get_repository(self.request.user, repo_name)
+        repo = GithubAPI(self.request.user.github_api_token).get_repository(repo_name)
         if repo is None:
             raise ValidationError(
                 f"Github repository not found - it may be private",

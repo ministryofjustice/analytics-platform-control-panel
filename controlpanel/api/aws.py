@@ -613,29 +613,37 @@ def revoke_group_bucket_access(group_policy_arn, bucket_arn=None):
     policy.put()
 
 
-def create_parameter(name, value, role_name, description=""):
-    ssm = boto3.client("ssm", region_name=settings.BUCKET_REGION)
-    try:
-        ssm.put_parameter(
-            Name=name,
-            Value=value,
-            Description=description,
-            Type="SecureString",
-            Tags=[{"Key": "role", "Value": role_name}],
-        )
-    except ssm.exceptions.ParameterAlreadyExists:
-        # TODO do parameter names need to be unique across the platform?
-        log.warning(
-            f"Skipping creating Parameter {name} for {role_name}: Already exists"
-        )
+class AWSParameters:
 
+    def __init__(self):
+        self.client = boto3.client("ssm", region_name=settings.BUCKET_REGION)
 
-def delete_parameter(name):
-    ssm = boto3.client("ssm", region_name=settings.BUCKET_REGION)
-    try:
-        ssm.delete_parameter(Name=name)
-    except ssm.exceptions.ParameterNotFound:
-        log.warning(f"Skipping deleting Parameter {name}: Does not exist")
+    def create_parameter(self, name, value, role_name, description=""):
+        try:
+            self.client.put_parameter(
+                Name=name,
+                Value=value,
+                Description=description,
+                Type="SecureString",
+                Tags=[{"Key": "role", "Value": role_name}],
+            )
+        except self.client.exceptions.ParameterAlreadyExists:
+            # TODO do parameter names need to be unique across the platform?
+            log.warning(
+                f"Skipping creating Parameter {name} for {role_name}: Already exists"
+            )
+
+    def delete_parameter(self, name):
+        try:
+            self.client.delete_parameter(Name=name)
+        except self.client.exceptions.ParameterNotFound:
+            log.warning(f"Skipping deleting Parameter {name}: Does not exist")
+
+    def get_parameter(self, name):
+        try:
+            return self.client.get_parameter(Name=name, WithDecryption=True)
+        except self.client.exceptions.ParameterNotFound:
+            log.warning(f"Skipping deleting Parameter {name}: Does not exist")
 
 
 def list_role_names(prefix="/"):

@@ -52,7 +52,7 @@ def github():
     """
     Mock calls to Github
     """
-    with patch('controlpanel.api.cluster.Github') as Github:
+    with patch('controlpanel.api.github.Github') as Github:
         yield Github.return_value
 
 
