@@ -265,11 +265,9 @@ class AWSRole(AWSService):
             raise e
 
         for policy in role.attached_policies.all():
-            print("--------------1", policy)
             role.detach_policy(PolicyArn=policy.arn)
 
         for policy in role.policies.all():
-            print("--------------2", policy)
             policy.delete()
 
         role.delete()

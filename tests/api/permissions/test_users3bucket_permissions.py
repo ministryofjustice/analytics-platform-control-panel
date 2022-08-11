@@ -4,9 +4,8 @@ from model_mommy import mommy
 import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
-
+from unittest.mock import patch
 from controlpanel.api.models import UserS3Bucket
-import controlpanel.api.rules
 
 
 @pytest.fixture
@@ -23,7 +22,8 @@ def users(users):
 
 @pytest.fixture
 def bucket():
-    return mommy.make("api.S3Bucket")
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        return mommy.make("api.S3Bucket")
 
 
 @pytest.fixture

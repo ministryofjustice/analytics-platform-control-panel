@@ -4,8 +4,7 @@ from model_mommy import mommy
 import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
-
-import controlpanel.api.rules
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -18,7 +17,8 @@ def users(users):
 
 @pytest.fixture
 def parameter(users):
-    return mommy.make('api.Parameter', created_by=users['parameter_owner'])
+    with patch('controlpanel.api.aws.AWSParameterStore.create_parameter') as create_parameter:
+        return mommy.make('api.Parameter', created_by=users['parameter_owner'])
 
 
 def list(client, *args):
@@ -87,8 +87,9 @@ def delete(client, parameter, *args):
 )
 @pytest.mark.django_db
 def test_permission(client, parameter, users, view, user, expected_status):
-    if user:
-        client.force_login(users[user])
-    response = view(client, parameter)
-    assert response.status_code == expected_status
+    with patch('controlpanel.api.aws.AWSParameterStore.create_parameter') as create_parameter:
+        if user:
+            client.force_login(users[user])
+        response = view(client, parameter)
+        assert response.status_code == expected_status
 

@@ -36,28 +36,28 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 
 
 @pytest.mark.django_db
-def test_aws_create(user, bucket, aws):
+def test_aws_create(user, bucket):
+    with patch('controlpanel.api.cluster.AWSRole.grant_bucket_access') as grant_bucket_access:
+        users3bucket = user.users3buckets.create(
+            s3bucket=bucket,
+            access_level=AccessToS3Bucket.READONLY,
+        )
 
-    users3bucket = user.users3buckets.create(
-        s3bucket=bucket,
-        access_level=AccessToS3Bucket.READONLY,
-    )
-
-    aws.grant_bucket_access.assert_called_with(
-        user.iam_role_name,
-        bucket.arn,
-        AccessToS3Bucket.READONLY,
-        users3bucket.resources,
-    )
-    # TODO get policy from call and assert bucket ARN present
+        grant_bucket_access.assert_called_with(
+            user.iam_role_name,
+            bucket.arn,
+            AccessToS3Bucket.READONLY,
+            users3bucket.resources,
+        )
+        # TODO get policy from call and assert bucket ARN present
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(user, bucket, users3bucket, aws):
-    users3bucket.delete()
-
-    aws.revoke_bucket_access.assert_called_with(
-        user.iam_role_name,
-        bucket.arn,
-    )
-    # TODO get policy from call and assert bucket ARN removed
+def test_delete_revoke_permissions(user, bucket, users3bucket):
+    with patch('controlpanel.api.cluster.AWSRole.revoke_bucket_access') as revoke_bucket_access_action:
+        users3bucket.delete()
+        revoke_bucket_access_action.assert_called_with(
+            user.iam_role_name,
+            bucket.arn,
+        )
+        # TODO get policy from call and assert bucket ARN removed

@@ -1,69 +1,14 @@
-import json
 import uuid
 from unittest.mock import MagicMock, patch
-from model_mommy import mommy
 
-from django.conf import settings
 from controlpanel.api import aws
+from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
 from tests.api.fixtures.aws import *
 
 
 @pytest.yield_fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
-
-
-@pytest.fixture(autouse=True)
-def managed_policy(iam):
-    result = iam.meta.client.create_policy(
-        PolicyName='test-read-user-roles-inline-policies',
-        PolicyDocument=json.dumps({
-            'Version': '2012-10-17',
-            'Statement': [{
-                'Sid': 'CanReadUserRolesInlinePolicies',
-                'Effect': 'Allow',
-                'Action': ['iam:GetRolePolicy'],
-                'Resource': ['arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/{settings.ENV}_user_*'],
-            },
-        ]}),
-    )
-    return result['Policy']
-
-
-@pytest.fixture(autouse=True)
-def airflow_dev_policy(iam):
-    policy_name = "airflow-dev-ui-access"
-    result = iam.meta.client.create_policy(
-        PolicyName=policy_name,
-        PolicyDocument=json.dumps({
-            'Version': '2012-10-17',
-            'Statement': [{
-                'Sid': 'ManagedAirflowCreateWebLoginToken',
-                'Effect': 'Allow',
-                'Action': ['iam:CreateWebLoginToken'],
-                'Resource': ['arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/{settings.ENV}_user_*'],
-            },
-        ]}),
-    )
-    return result['Policy']
-
-
-@pytest.fixture(autouse=True)
-def airflow_prod_policy(iam):
-    policy_name = "airflow-prod-ui-access"
-    result = iam.meta.client.create_policy(
-        PolicyName=policy_name,
-        PolicyDocument=json.dumps({
-            'Version': '2012-10-17',
-            'Statement': [{
-                'Sid': 'ManagedAirflowCreateWebLoginToken',
-                'Effect': 'Allow',
-                'Action': ['iam:CreateWebLoginToken'],
-                'Resource': ['arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/{settings.ENV}_user_*'],
-            },
-        ]}),
-    )
-    return result['Policy']
 
 
 def stmt_match(stmt, Action='sts:AssumeRole', Condition=None, Effect='Allow', Principal={}):
@@ -108,13 +53,14 @@ def oidc_assume_role(stmt, user):
             'Federated': f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}/",
         },
         Condition={
-            'StringEquals': {f"{settings.OIDC_DOMAIN}/:sub": user.auth0_id},
+            'StringEquals': {f"{settings.OIDC_DOMAIN}/:sub": user["auth0_id"]},
         },
     )
 
 
 def eks_assume_role(stmt, user):
-    match = f"system:serviceaccount:user-{user.slug}:{user.slug}-*"
+    user_slug = user["user_name"]
+    match = f"system:serviceaccount:user-{user_slug}:{user_slug}-*"
     return stmt_match(
         stmt,
         Action="sts:AssumeRoleWithWebIdentity",
@@ -147,31 +93,33 @@ def roles(iam):
         )
 
 
-@pytest.fixture
-def app():
-    return mommy.make('api.App', slug='test-app')
+def test_create_app_role(iam):
+    aws.AWSRole().create_role("testing-app", BASE_ASSUME_ROLE_POLICY)
 
-
-def test_create_app_role(iam, app):
-    aws.create_app_role(app)
-
-    role = iam.Role(app.iam_role_name)
+    role = iam.Role("testing-app")
     pd = role.assume_role_policy_document
     assert len(pd['Statement']) == 2
     assert ec2_assume_role(pd['Statement'][0])
     assert k8s_assume_role(pd['Statement'][1])
 
 
-def test_create_user_role_EKS(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, users):
+def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
     """
     Ensure EKS settngs are in the policy document when running on that
     infrastructure.
     """
-    user = users['normal_user']
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        aws.create_user_role(user)
-        role = iam.Role(user.iam_role_name)
-        pd = role.assume_role_policy_document
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob"
+    }
+
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES)
+    role = iam.Role(user["iam_role_name"])
+    pd = role.assume_role_policy_document
     assert len(pd['Statement']) == 5
     assert ec2_assume_role(pd['Statement'][0])
     assert k8s_assume_role(pd['Statement'][1])
@@ -185,32 +133,6 @@ def test_create_user_role_EKS(iam, managed_policy, airflow_dev_policy, airflow_p
     assert managed_policy["Arn"] in arns
     assert airflow_dev_policy["Arn"] in arns
     assert airflow_prod_policy["Arn"] in arns
-
-
-def test_migrate_user_role(iam, managed_policy, users):
-    """
-    Ensure a user who was on the old infrastructure has their IAM role policy
-    updated as expected.
-    """
-    user = users['normal_user']
-    mock_boto = MagicMock()
-    mock_iam = MagicMock()
-    mock_boto.client.return_value = mock_iam
-    policy = {
-        "Role": {
-            "AssumeRolePolicyDocument": {
-                "Statement": [],
-            }
-        }
-    }
-    mock_iam.get_role.return_value = policy
-    with patch("controlpanel.api.aws.boto3", mock_boto):
-        aws.migrate_user_role(user)
-    assert eks_assume_role(policy["Role"]["AssumeRolePolicyDocument"]["Statement"][0], user)
-    mock_iam.update_assume_role_policy.assert_called_once_with(
-        RoleName=user.iam_role_name,
-        PolicyDocument=json.dumps(policy["Role"]["AssumeRolePolicyDocument"])
-    )
 
 
 @pytest.mark.parametrize(
@@ -247,18 +169,25 @@ def role_policy():
 
 # TODO parametrize cases:
 #   - role does not exist
-def test_delete_role(iam, managed_policy, role_policy, users):
-    user = users['normal_user']
+def test_delete_role(iam, managed_policy, role_policy):
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob"
+    }
 
-    aws.create_user_role(user)
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES)
 
-    role = iam.Role(user.iam_role_name)
+    role = iam.Role(user["iam_role_name"])
     inline_policy = role_policy(role)
 
     attached_policy = iam.Policy(managed_policy['Arn'])
     assert attached_policy.attachment_count == 1
 
-    aws.delete_role(user.iam_role_name)
+    aws.AWSRole().delete_role(user["iam_role_name"])
 
     with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
         role.load()
@@ -304,7 +233,7 @@ def test_create_bucket(logs_bucket, s3):
     with pytest.raises(s3.meta.client.exceptions.NoSuchBucket):
         s3.meta.client.get_bucket_location(Bucket=bucket_name)
 
-    aws.create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
 
     # Check versioning.
     assert bucket.Versioning().status == "Enabled"
@@ -334,8 +263,8 @@ def test_tag_bucket(s3):
     bucket = s3.Bucket(bucket_name)
     bucket.create()
 
-    aws.tag_bucket(bucket_name, {"env": "test", "test-update": "old-value"})
-    aws.tag_bucket(bucket_name, {"test-update": "new-value", "to-archive": "true"})
+    aws.AWSBucket().tag_bucket(bucket_name, {"env": "test", "test-update": "old-value"})
+    aws.AWSBucket().tag_bucket(bucket_name, {"test-update": "new-value", "to-archive": "true"})
 
     tags = { tag["Key"]: tag["Value"] for tag in bucket.Tagging().tag_set }
     assert tags == {
@@ -346,7 +275,7 @@ def test_tag_bucket(s3):
 
 
 def test_create_parameter(ssm):
-    aws.create_parameter(
+    aws.AWSParameterStore().create_parameter(
         "test",
         "test_val",
         "role_name",
@@ -358,7 +287,7 @@ def test_create_parameter(ssm):
 
 
 def test_delete_parameter(ssm):
-    aws.delete_parameter("test")
+    aws.AWSParameterStore().delete_parameter("test")
 
     with pytest.raises(ssm.exceptions.ParameterNotFound):
         ssm.get_parameter(Name="test")
@@ -384,16 +313,25 @@ def get_statements_by_sid(policy_document):
         'paths',
     ],
 )
-def test_grant_bucket_access(iam, users, resources):
+def test_grant_bucket_access(iam, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
     path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
-    user = users['normal_user']
-    aws.create_user_role(user)
 
-    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns_list)
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob"
+    }
 
-    policy = iam.RolePolicy(user.iam_role_name, 's3-access')
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES)
+
+    aws.AWSRole().grant_bucket_access(user["iam_role_name"], bucket_arn, 'readonly', path_arns_list)
+
+    policy = iam.RolePolicy(user["iam_role_name"], 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
 
     if path_arns_object:
@@ -405,7 +343,7 @@ def test_grant_bucket_access(iam, users, resources):
     assert 'readwrite' not in statements
     assert set([bucket_arn]) == set(statements['list']['Resource'])
 
-    aws.grant_bucket_access(user.iam_role_name, f'{bucket_arn}-2', 'readonly')
+    aws.AWSRole().grant_bucket_access(user["iam_role_name"], f'{bucket_arn}-2', 'readonly')
     policy.reload()
     statements = get_statements_by_sid(policy.policy_document)
     expected_num_resources = 2
@@ -423,17 +361,26 @@ def test_grant_bucket_access(iam, users, resources):
         'paths'
     ]
 )
-def test_revoke_bucket_path_access(iam, users, resources):
+def test_revoke_bucket_path_access(iam, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns = [f'{bucket_arn}{resource}' for resource in resources]
-    user = users['normal_user']
-    aws.create_user_role(user)
 
-    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob"
+    }
 
-    policy = iam.RolePolicy(user.iam_role_name, 's3-access')
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES)
 
-    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly')
+    aws.AWSRole().grant_bucket_access(user["iam_role_name"], bucket_arn, 'readonly', path_arns)
+
+    policy = iam.RolePolicy(user["iam_role_name"], 's3-access')
+
+    aws.AWSRole().grant_bucket_access(user["iam_role_name"], bucket_arn, 'readonly')
     policy.reload()
     statements = get_statements_by_sid(policy.policy_document)
 
@@ -454,26 +401,35 @@ def test_revoke_bucket_path_access(iam, users, resources):
         'add-new-paths',
     ]
 )
-def test_update_bucket_path_access(iam, users, resources_1, resources_2):
+def test_update_bucket_path_access(iam, resources_1, resources_2):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns_list_1 = [f'{bucket_arn}{resource}' for resource in resources_1]
     path_arns_list_2 = [f'{bucket_arn}{resource}' for resource in resources_2]
     path_arns_object_1 = [f'{bucket_arn}{resource}/*' for resource in resources_1]
     path_arns_object_2 = [f'{bucket_arn}{resource}/*' for resource in resources_2]
-    user = users['normal_user']
-    aws.create_user_role(user)
 
-    aws.grant_bucket_access(
-        user.iam_role_name, bucket_arn, 'readonly', path_arns_list_1
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob"
+    }
+
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES)
+
+    aws.AWSRole().grant_bucket_access(
+        user["iam_role_name"], bucket_arn, 'readonly', path_arns_list_1
     )
 
-    policy = iam.RolePolicy(user.iam_role_name, 's3-access')
+    policy = iam.RolePolicy(user["iam_role_name"], 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
 
     assert set(path_arns_object_1) == set(statements['readonly']['Resource'])
 
-    aws.grant_bucket_access(
-        user.iam_role_name, bucket_arn, 'readonly', path_arns_list_2
+    aws.AWSRole().grant_bucket_access(
+        user["iam_role_name"], bucket_arn, 'readonly', path_arns_list_2
     )
 
     policy.reload()
@@ -493,16 +449,26 @@ def test_update_bucket_path_access(iam, users, resources_1, resources_2):
         'paths',
     ],
 )
-def test_revoke_bucket_access(iam, users, resources):
+def test_revoke_bucket_access(iam, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns = [f'{bucket_arn}{resource}' for resource in resources]
-    user = users['normal_user']
-    aws.create_user_role(user)
-    aws.grant_bucket_access(user.iam_role_name, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_bucket_access(user.iam_role_name, bucket_arn)
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob"
+    }
 
-    policy = iam.RolePolicy(user.iam_role_name, 's3-access')
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES)
+
+    aws.AWSRole().grant_bucket_access(user["iam_role_name"], bucket_arn, 'readonly', path_arns)
+
+    aws.AWSRole().revoke_bucket_access(user["iam_role_name"], bucket_arn)
+
+    policy = iam.RolePolicy(user["iam_role_name"], 's3-access')
     statements = get_statements_by_sid(policy.policy_document)
     assert 'readonly' not in statements
     assert 'readwrite' not in statements
@@ -518,11 +484,11 @@ def test_revoke_bucket_access_when_no_role(iam):
         role = iam.Role(role_name)
         role.load()
 
-    aws.revoke_bucket_access(role_name, bucket_arn)
+    aws.AWSRole().revoke_bucket_access(role_name, bucket_arn)
 
 
-def test_create_group(iam, settings):
-    aws.create_group('test', '/group/test/')
+def test_create_policy(iam, settings):
+    aws.AWSPolicy().create_policy('test', '/group/test/')
 
     policy = iam.Policy(f'arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test')
     pd = policy.default_version.document
@@ -544,14 +510,8 @@ def assert_group_members(policy, role_names):
 
 
 @pytest.fixture
-def user_roles(iam, users):
-    for user in users.values():
-        aws.create_user_role(user)
-
-
-@pytest.fixture
 def group(iam):
-    aws.create_group('test', '/group/test/')
+    aws.AWSPolicy().create_policy('test', '/group/test/')
     group_arn = f'arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test'
     return iam.Policy(group_arn)
 
@@ -569,22 +529,22 @@ def group(iam):
         'remove-members',
     ],
 )
-def test_update_group_members(iam, group, users, user_roles, live, stored):
-    aws.update_group_members(group.arn, set(live))
+def test_update_policy_members(iam, group, users, live, stored):
+    aws.AWSPolicy().update_policy_members(group.arn, set(live))
     assert_group_members(group, live)
 
-    aws.update_group_members(group.arn, set(stored))
+    aws.AWSPolicy().update_policy_members(group.arn, set(stored))
     assert_group_members(group, stored)
 
 
-def test_delete_group(iam, group, user_roles):
+def test_delete_policy(iam, superuser, group):
     role = iam.Role('test_user_alice')
-    aws.update_group_members(group.arn, set([role.name]))
+    aws.AWSPolicy().update_policy_members(group.arn, set([role.name]))
 
     assert len(list(role.attached_policies.all())) == 4
 
     try:
-        aws.delete_group(group.arn)
+        aws.AWSPolicy().delete_policy(group.arn)
 
     except NotImplementedError as e:
         if 'delete_policy' in str(e):
@@ -608,12 +568,12 @@ def test_delete_group(iam, group, user_roles):
         'paths',
     ],
 )
-def test_grant_group_bucket_access(iam, group, resources):
+def test_grant_policy_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns_list = [f'{bucket_arn}{resource}' for resource in resources]
     path_arns_object = [f'{bucket_arn}{resource}/*' for resource in resources]
 
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list)
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
@@ -627,7 +587,7 @@ def test_grant_group_bucket_access(iam, group, resources):
     assert 'readwrite' not in statements
     assert set([bucket_arn]) == set(statements['list']['Resource'])
 
-    aws.grant_group_bucket_access(group.arn, f'{bucket_arn}-2', 'readonly')
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, f'{bucket_arn}-2', 'readonly')
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
     expected_num_resources = 2
@@ -648,9 +608,9 @@ def test_grant_group_bucket_access(iam, group, resources):
 def test_revoke_group_bucket_path_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns = [f'{bucket_arn}{resource}' for resource in resources]
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
 
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly')
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, bucket_arn, 'readonly')
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
 
@@ -671,21 +631,21 @@ def test_revoke_group_bucket_path_access(iam, group, resources):
         'add-new-paths',
     ],
 )
-def test_update_group_bucket_path_access(iam, group, resources_1, resources_2):
+def test_update_policy_bucket_path_access(iam, group, resources_1, resources_2):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns_list_1 = [f'{bucket_arn}{resource}' for resource in resources_1]
     path_arns_list_2 = [f'{bucket_arn}{resource}' for resource in resources_2]
     path_arns_object_1 = [f'{bucket_arn}{resource}/*' for resource in resources_1]
     path_arns_object_2 = [f'{bucket_arn}{resource}/*' for resource in resources_2]
 
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list_1)
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list_1)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
 
     assert set(path_arns_object_1) == set(statements['readonly']['Resource'])
 
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list_2)
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, bucket_arn, 'readonly', path_arns_list_2)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
@@ -704,12 +664,12 @@ def test_update_group_bucket_path_access(iam, group, resources_1, resources_2):
         'paths',
     ],
 )
-def test_revoke_group_bucket_access(iam, group, resources):
+def test_revoke_policy_bucket_access(iam, group, resources):
     bucket_arn = 'arn:aws:s3:::test-bucket'
     path_arns = [f'{bucket_arn}{resource}' for resource in resources]
-    aws.grant_group_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
+    aws.AWSPolicy().grant_policy_bucket_access(group.arn, bucket_arn, 'readonly', path_arns)
 
-    aws.revoke_group_bucket_access(group.arn, bucket_arn)
+    aws.AWSPolicy().revoke_policy_bucket_access(group.arn, bucket_arn)
 
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)

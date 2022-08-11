@@ -1,12 +1,25 @@
 from model_mommy import mommy
 import pytest
+from unittest.mock import patch
 
 from controlpanel.api.cluster import (
     App,
     RoleGroup,
-    S3Bucket,
     User,
 )
+
+
+@pytest.yield_fixture
+def grant_bucket_access():
+    with patch('controlpanel.api.cluster.AWSRole.grant_bucket_access') as grant_bucket_access_action:
+        yield grant_bucket_access_action
+
+
+@pytest.yield_fixture
+def grant_policy_bucket_access():
+    with patch('controlpanel.api.cluster.AWSPolicy.grant_policy_bucket_access') as grant_policy_bucket_access_action:
+        yield grant_policy_bucket_access_action
+
 
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
@@ -42,11 +55,11 @@ def entities(bucket, users):
         'user-paths',
     ],
 )
-def test_grant_access(aws, bucket, entities, entity_type, resources):
+def test_grant_access(grant_bucket_access, bucket, entities, entity_type, resources):
     entity = entities[entity_type]
     entity.grant_bucket_access(bucket.arn, 'readonly', resources)
 
-    aws.grant_bucket_access.assert_called_with(
+    grant_bucket_access.assert_called_with(
         entity.iam_role_name,
         bucket.arn,
         'readonly',
@@ -65,14 +78,13 @@ def test_grant_access(aws, bucket, entities, entity_type, resources):
         'group-paths',
     ],
 )
-def test_grant_group_access(aws, bucket, entities, resources):
+def test_grant_group_access(grant_policy_bucket_access, bucket, entities, resources):
     entity = entities['group']
     entity.grant_bucket_access(bucket.arn, 'readonly', resources)
 
-    aws.grant_group_bucket_access.assert_called_with(
+    grant_policy_bucket_access.assert_called_with(
         entity.arn,
         bucket.arn,
         'readonly',
         resources,
     )
-

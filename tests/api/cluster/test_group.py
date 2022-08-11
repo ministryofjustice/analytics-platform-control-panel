@@ -1,6 +1,6 @@
 from model_mommy import mommy
 import pytest
-
+from unittest.mock import patch
 from controlpanel.api import cluster
 
 
@@ -20,9 +20,15 @@ def test_arn(settings, iam_managed_policy):
     )
 
 
-def test_create(aws, iam_managed_policy):
+@pytest.yield_fixture
+def aws_create_policy():
+    with patch('controlpanel.api.cluster.AWSPolicy.create_policy') as aws_create_policy_action:
+        yield aws_create_policy_action
+
+
+def test_create(aws_create_policy, iam_managed_policy):
     cluster.RoleGroup(iam_managed_policy).create()
-    aws.create_group.assert_called_with(
+    aws_create_policy.assert_called_with(
         iam_managed_policy.name,
         iam_managed_policy.path,
     )

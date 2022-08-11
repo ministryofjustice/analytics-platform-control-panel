@@ -1,6 +1,6 @@
 from model_mommy import mommy
 import pytest
-from rest_framework import status
+from unittest.mock import patch
 from rest_framework.reverse import reverse
 
 
@@ -8,8 +8,9 @@ NUM_APPS3BUCKETS = 2
 
 
 @pytest.fixture(autouse=True)
-def apps3buckets():
-    mommy.make('api.AppS3Bucket', NUM_APPS3BUCKETS)
+def apps3buckets(s3):
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        mommy.make('api.AppS3Bucket', NUM_APPS3BUCKETS)
 
 
 def list(client, *args):
