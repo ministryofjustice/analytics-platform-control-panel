@@ -285,6 +285,9 @@ def test_create_parameter(ssm):
     param = ssm.get_parameter(Name="test", WithDecryption=True)['Parameter']
     assert param['Value'] == 'test_val'
 
+    param = aws.AWSParameters().get_parameter(name="test")['Parameter']
+    assert param['Value'] == 'test_val'
+
 
 def test_delete_parameter(ssm):
     aws.AWSParameterStore().delete_parameter("test")

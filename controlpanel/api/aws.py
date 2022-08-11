@@ -22,6 +22,7 @@ def arn(service, resource, region="", account=""):
 
     return f"arn:aws:{service}:{region}:{account}:{resource}"
 
+
 def s3_arn(resource):
     return arn("s3", resource)
 
@@ -516,27 +517,35 @@ class AWSPolicy(AWSService):
 
 class AWSParameterStore(AWSService):
 
+    def __init__(self, assume_role_name = None, profile_name = None):
+        super(AWSParameterStore, self).__init__(assume_role_name=assume_role_name, profile_name=profile_name)
+        self.client = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
+
     def create_parameter(self, name, value, role_name, description=""):
-        ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
-            ssm.put_parameter(
+            self.client.put_parameter(
                 Name=name,
                 Value=value,
                 Description=description,
                 Type="SecureString",
                 Tags=[{"Key": "role", "Value": role_name}],
             )
-        except ssm.exceptions.ParameterAlreadyExists:
+        except self.client.exceptions.ParameterAlreadyExists:
             # TODO do parameter names need to be unique across the platform?
             log.warning(
                 f"Skipping creating Parameter {name} for {role_name}: Already exists"
             )
 
     def delete_parameter(self, name):
-        ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
-            ssm.delete_parameter(Name=name)
-        except ssm.exceptions.ParameterNotFound:
+            self.client.delete_parameter(Name=name)
+        except self.client.exceptions.ParameterNotFound:
+            log.warning(f"Skipping deleting Parameter {name}: Does not exist")
+
+    def get_parameter(self, name):
+        try:
+            return self.client.get_parameter(Name=name, WithDecryption=True)
+        except self.client.exceptions.ParameterNotFound:
             log.warning(f"Skipping deleting Parameter {name}: Does not exist")
 
 
