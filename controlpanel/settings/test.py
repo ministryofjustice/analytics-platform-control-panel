@@ -9,7 +9,7 @@ K8S_WORKER_ROLE_NAME = "nodes.example.com"
 SAML_PROVIDER = "test-saml"
 
 LOGGING["loggers"]["django_structlog"]["level"] = "WARNING"
-LOGGING["loggers"]["control_panel"]["level"] = "WARNING"
+LOGGING["loggers"]["controlpanel"]["level"] = "WARNING"
 
 AUTHENTICATION_BACKENDS = [
     'rules.permissions.ObjectPermissionBackend',
