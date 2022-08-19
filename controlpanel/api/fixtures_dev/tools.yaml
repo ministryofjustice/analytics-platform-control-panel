@@ -1,0 +1,20 @@
+- model: api.tool
+  pk: null
+  fields: 
+    created: 2022-01-01T00:00:00Z
+    modified: 2022-01-01T00:00:00Z
+    description: RStudio
+    chart_name: rstudio
+    name: RStudio (dev)
+    values:
+      proxy.auth0.domain:
+      proxy.cookieSecret: <SECRET_TOKEN>
+      rstudio.secureCookieKey: <SECRET_TOKEN>
+      authProxy.auth0.clientId:
+      proxy.auth0.clientSecret:
+      redirectdomain: tools.dev.analytical-platform.service.justice.gov.uk
+    version: 4.1.7
+    is_restricted: false
+    target_infrastructure: "e"
+    tool_domain: 
+    target_users: []
