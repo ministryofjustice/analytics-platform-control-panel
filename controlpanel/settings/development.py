@@ -37,3 +37,40 @@ INTERNAL_IPS = ["127.0.0.1"]
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
+
+# -- Structured logging
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json_formatter": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
+        "plain_console": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+        "key_value": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.KeyValueRenderer(key_order=['timestamp', 'level', 'event', 'logger']),
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json_formatter",
+        },
+    },
+    "loggers": {
+        "django_structlog": {
+            "handlers": ["console", ],
+            "level": "INFO",
+        },
+        # Make sure to replace the following logger's name for yours
+        "controlpanel": {
+            "handlers": ["console", ],
+            "level": "INFO",
+        },
+    }
+}
