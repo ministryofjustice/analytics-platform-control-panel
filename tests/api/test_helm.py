@@ -238,22 +238,6 @@ def test_update_helm_repository_valid_cache(helm_repository_index):
 
 def test_delete():
     """
-    The delete function (helm 2) results in the expected helm command to be
-    executed.
-    """
-    with patch("controlpanel.api.helm._execute") as mock_execute:
-        helm.delete("foo", "bar", "baz")
-        mock_execute.assert_called_once_with(
-            "delete",
-            "--purge",
-            "foo",
-            "bar",
-            "baz",
-        )
-
-
-def test_delete_eks():
-    """
     The delete_eks function (helm 3)results in the expected helm command to be
     executed.
     """
