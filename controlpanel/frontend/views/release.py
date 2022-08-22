@@ -85,8 +85,8 @@ class ReleaseCreate(OIDCLoginRequiredMixin,PermissionRequiredMixin,CreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['infra_choices'] = [
-            {"text": c[1], "value": c[0], "checked": ""}
-            for c in ToolReleaseForm.base_fields["target_infrastructure"].choices
+            {"text": c[1], "value": c[0], "checked": "True"}
+            for c in Tool.INFRASTRUCTURE_STATES_ALLOWED
         ]
         return context
 

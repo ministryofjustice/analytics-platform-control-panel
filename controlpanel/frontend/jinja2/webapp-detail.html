@@ -37,7 +37,7 @@
 
   {% if app_url %}
   <h2 class="govuk-heading-m">Deployed URL</h2>
-      {% if EKS %}
+      {% if not app_migrated %}
       <p>For the foreseeable future, apps will remain hosted on the old
       infrastructure. If the app is successfully built, it will be deployed
       here:</p>

@@ -11,16 +11,12 @@ RUN /node_modules/.bin/jest
 
 FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
 
-ARG HELM_VERSION=3.5.4
+ARG HELM_VERSION=2.13.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://get.helm.sh
 
 ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
-  HELM_HOME=/tmp/helm \
-  HELM_CONFIG_HOME=/tmp/helm/repository \
-  HELM_CACHE_HOME=/tmp/helm/cache \
-  HELM_DATA_HOME=/tmp/helm/data \
-  EKS=True
+  HELM_HOME=/tmp/helm
 
 # create a user to run as
 RUN addgroup -gid 1000 controlpanel && \
@@ -38,6 +34,7 @@ WORKDIR /home/controlpanel
 COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
 RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   tar xz -C /usr/local/bin --strip 1 linux-amd64/helm && \
+  helm init --client-only && \
   helm repo update && \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
@@ -60,6 +57,10 @@ USER controlpanel
 COPY controlpanel controlpanel
 COPY docker docker
 COPY tests tests
+COPY setup.cfg setup.cfg
+COPY pytest.ini pytest.ini
+
+
 
 # install javascript dependencies
 COPY --from=jsdep dist/app.css dist/app.js static/

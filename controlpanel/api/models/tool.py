@@ -31,6 +31,10 @@ class Tool(TimeStampedModel):
         (EKS, "Amazon EKS infrastructure."),
     )
 
+    INFRASTRUCTURE_STATES_ALLOWED = (
+        (EKS, "Amazon EKS infrastructure."),
+    )
+
     # Defines how a matching chart name is put into a named tool bucket.
     # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
     # chart name match: tool bucket
@@ -53,7 +57,7 @@ class Tool(TimeStampedModel):
         help_text="The infrastructure this tool targets.",
         max_length=1,
         choices=INFRASTRUCTURE_STATES,
-        default=OLD
+        default=EKS
     )
     # If set, the bespoke name for the tool to be used in the domain name
     # (rather than the default chart name).

@@ -60,10 +60,11 @@ services:
       SLACK_API_TOKEN: "dummy"
       defaultRegion: eu-west-1
 
-  frontend:
+  frontend_old:
     image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
     build:
       context: .
+      dockerfile: Dockerfile_old
     ports: ["8000:8000"]
     depends_on:
       worker:
@@ -124,13 +125,13 @@ services:
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
       defaultRegion: eu-west-1
 
-  frontend_eks:
+  frontend:
     # Apologies to future devops. Naming is hard.
     image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     build:
       context: .
       network: ${NETWORK:-default}
-      dockerfile: Dockerfile_EKS
+      dockerfile: Dockerfile
     network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
     depends_on:
@@ -162,7 +163,6 @@ services:
       DB_USER: controlpanel
       DEBUG: "True"
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
-      EKS: "True"
       ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME}
@@ -192,4 +192,3 @@ services:
       SLACK_API_TOKEN: "dummy"
       SLACK_CHANNEL: ${SLACK_CHANNEL}
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
-      defaultRegion: eu-west-1

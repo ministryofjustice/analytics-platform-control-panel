@@ -1,10 +1,8 @@
 import structlog
 import os
-import re
 import subprocess
 import yaml
 import time
-from datetime import datetime, timedelta
 from django.conf import settings
 from rest_framework.exceptions import APIException
 
@@ -18,9 +16,7 @@ CACHE_FOR_MINUTES = 5 * 60
 
 def get_repo_path():
     """
-    Get the path for the repository cache. Will return the correct location
-    depending on the settings.EKS flag (if true, uses Helm 3's default
-    location, otherwise uses Helm 2's).
+    Get the path for the repository cache.
     """
     return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
 
@@ -176,22 +172,6 @@ def delete_eks(namespace, *args):
         "--namespace",
         namespace,
         timeout=settings.HELM_DELETE_TIMEOUT,
-    )
-    stdout = proc.stdout.read()
-    log.info(stdout)
-
-
-def delete(*args):
-    """
-    Delete helm charts identified by the content of the args list. Helm 2
-    version.
-
-    Logs the stdout result of the command.
-    """
-    proc = _execute(
-        "delete",
-        "--purge",
-        *args
     )
     stdout = proc.stdout.read()
     log.info(stdout)
