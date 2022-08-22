@@ -5,6 +5,8 @@ import yaml
 from django.core.management.commands import loaddata
 from django.core.management.base import CommandError
 
+from controlpanel.api.models import Tool
+
 class Command(loaddata.Command):
     help = "Load examples of RStudio and JupyterLab tools into the database"
 
@@ -23,12 +25,26 @@ class Command(loaddata.Command):
                 if tool["model"] != "api.tool":
                     raise CommandError("loaddevtools should only be used for loading Tools")
 
+                # Check for very similar tools; ask user before loading likely repeats
+                matching_tools = Tool.objects.filter(description=tool["fields"]["description"],
+                                                     chart_name=tool["fields"]["chart_name"], 
+                                                     name=tool["fields"]["name"],
+                                                     version=tool["fields"]["version"],
+                                                     target_infrastructure=tool["fields"]["target_infrastructure"])
+
+                if matching_tools:
+                    print(tool)
+                    print("A tool with the same name, version etc. is already present in the database.\nDo you still want to load this tool? Y/n")
+                    confirm = input()
+                    if confirm.lower() not in ("y", "yes"):
+                        continue
+
                 if tool["fields"]["chart_name"] == "rstudio":
                     env_var_prefix = "RSTUDIO"
                 elif tool["fields"]["chart_name"].startswith("jupyter-"):
                     env_var_prefix = "JUPYTER_LAB"
                 else:
-                    raise CommandError("Tool name should begin with either 'rstudio' or 'jupyter-*'")                
+                    raise CommandError("Tool name should begin with either 'rstudio' or 'jupyter-*'")
 
                 tool["fields"]["values"]["proxy.auth0.domain"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_DOMAIN"]
                 tool["fields"]["values"]["proxy.auth0.clientId"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_ID"]
