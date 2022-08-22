@@ -130,9 +130,9 @@ services:
     image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     build:
       context: .
-      network: ${NETWORK:-default}
+#      network: ${NETWORK:-default}
       dockerfile: Dockerfile
-    network_mode: ${NETWORK:-default}
+#    network_mode: ${NETWORK:-default}
     ports: ["8000:8000"]
     depends_on:
       worker:
