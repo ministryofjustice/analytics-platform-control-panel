@@ -35,7 +35,7 @@ services:
     command: sh -c "./manage.py migrate"
 
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${REGISTRY}/${REPOSITORY}_eks:${IMAGE_TAG:-latest}
     depends_on:
       redis:
         condition: service_started
