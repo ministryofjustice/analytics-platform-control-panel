@@ -20,7 +20,9 @@ class Command(loaddata.Command):
             with open(filename) as fixture_file:
                 fixture_yaml = yaml.safe_load(fixture_file)
 
-            for tool in fixture_yaml:
+            fixture_skip_inds = []
+
+            for ind, tool in enumerate(fixture_yaml):
 
                 if tool["model"] != "api.tool":
                     raise CommandError("loaddevtools should only be used for loading Tools")
@@ -37,6 +39,7 @@ class Command(loaddata.Command):
                     print("A tool with the same name, version etc. is already present in the database.\nDo you still want to load this tool? Y/n")
                     confirm = input()
                     if confirm.lower() not in ("y", "yes"):
+                        fixture_skip_inds.append(ind)
                         continue
 
                 if tool["fields"]["chart_name"] == "rstudio":
@@ -50,9 +53,11 @@ class Command(loaddata.Command):
                 tool["fields"]["values"]["proxy.auth0.clientId"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_ID"]
                 tool["fields"]["values"]["proxy.auth0.clientSecret"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_SECRET"]
 
-                with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as configured_fixture_file:
-                    configured_fixture_file.write(yaml.dump(fixture_yaml))
-                    configured_fixture_file.flush()
+            fixture_yaml = [tool for ind, tool in enumerate(fixture_yaml) if ind not in fixture_skip_inds]
 
-                    loaddata_args = [configured_fixture_file.name]
-                    super().handle(*loaddata_args, **options)
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml") as configured_fixture_file:
+                configured_fixture_file.write(yaml.dump(fixture_yaml))
+                configured_fixture_file.flush()
+
+                loaddata_args = [configured_fixture_file.name]
+                super().handle(*loaddata_args, **options)
