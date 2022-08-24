@@ -140,8 +140,8 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         if form.cleaned_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
                 name=form.cleaned_data["new_datasource_name"],
+                bucket_owner="APP"
             )
-            cluster.S3Bucket(bucket).create(owner="APP")
             AppS3Bucket.objects.create(
                 app=self.object,
                 s3bucket=bucket,

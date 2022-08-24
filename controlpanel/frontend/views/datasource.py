@@ -168,7 +168,6 @@ class CreateDatasource(
             created_by=self.request.user,
             is_data_warehouse=datasource_type == "warehouse",
         )
-        cluster.S3Bucket(self.object).create()
         messages.success(
             self.request,
             f"Successfully created {name} {datasource_type} data source",
