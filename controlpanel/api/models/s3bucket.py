@@ -57,6 +57,11 @@ class S3Bucket(TimeStampedModel):
         db_table = "control_panel_api_s3bucket"
         ordering = ('name',)
 
+    def __init__(self, *args, **kwargs):
+        """ Overwrite this constructor to pass some non-field parameter"""
+        self.bucket_owner = kwargs.pop('bucket_owner', "User")
+        super().__init__(*args, **kwargs)
+
     def __repr__(self):
         warehouse = ""
         if self.is_data_warehouse:
@@ -97,7 +102,23 @@ class S3Bucket(TimeStampedModel):
         return "None"
 
     def save(self, *args, **kwargs):
+        is_create = not self.pk
+
         super().save(*args, **kwargs)
+
+        if is_create:
+            bucket_owner = kwargs.pop('bucket_owner', self.bucket_owner)
+            cluster.S3Bucket(self).create(bucket_owner)
+
+            # XXX created_by is always set if model is saved by the API view
+            if self.created_by:
+                UserS3Bucket.objects.create(
+                    user=self.created_by,
+                    s3bucket=self,
+                    is_admin=True,
+                    access_level=UserS3Bucket.READWRITE,
+                )
+
         return self
 
     @atomic
