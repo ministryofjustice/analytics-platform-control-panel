@@ -256,6 +256,7 @@ admin-dev is the profile name for dev AWS account in your AWS configuration file
 
 Install Helm (the K8s package manager) by following
 [these instructions for your OS](https://helm.sh/docs/intro/install/).
+Control Panel has been confirmed to work with Helm v3.6.3 and v3.8.0.
 
 You'll need to initialise Helm too:
 
@@ -367,11 +368,20 @@ python manage.py runworker background_tasks
 ```
 
 Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
-runing control panel.
+running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
 you may encounter a popup window for asking you to provide key-chain password from time to time, 
 which is normal.
+
+### Loading tools
+
+When you load up your local Control Panel for the first time, there will be no tools available on the Tools page.
+To pre-populate the database, run the following management command:
+```
+python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
+```
+You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
 
 ### Important notes
 The app even running on local env, it will still talk to the remote AWS data account and 
