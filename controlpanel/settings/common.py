@@ -485,7 +485,7 @@ LOGGING = {
         # Make sure to replace the following logger's name for yours
         "controlpanel": {
             "handlers": ["console", ],
-            "level": "INFO",
+            "level": "WARNING",
         },
     }
 }

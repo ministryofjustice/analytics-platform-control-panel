@@ -37,3 +37,6 @@ INTERNAL_IPS = ["127.0.0.1"]
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
+
+# -- Structured logging
+LOGGING["loggers"]["controlpanel"]["level"] = "INFO"
