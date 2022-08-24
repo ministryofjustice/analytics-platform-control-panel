@@ -483,9 +483,9 @@ LOGGING = {
             "level": "INFO",
         },
         # Make sure to replace the following logger's name for yours
-        "control_panel": {
+        "controlpanel": {
             "handlers": ["console", ],
-            "level": "INFO",
+            "level": "WARNING",
         },
     }
 }
