@@ -383,6 +383,9 @@ python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
 ```
 You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
 
+Note that you will need to have the RStudio and JupyterLab Auth0 environment variables present in your `.env` file in order for the missing values in the `tools.yaml` fixture file to be filled in.
+Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<TOOL>_AUTH_CLIENT_SECRET` for both RStudio and JupyterLab before running `loaddevtools`.
+
 ### Important notes
 The app even running on local env, it will still talk to the remote AWS data account and 
 dev cluster directly which is shared with our dev environment, especially the data account,
