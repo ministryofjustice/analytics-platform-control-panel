@@ -8,6 +8,7 @@ from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster, validators
 from controlpanel.api.models.users3bucket import UserS3Bucket
+from controlpanel.api.models.apps3bucket import AppS3Bucket
 
 
 def s3bucket_console_url(name):
@@ -73,6 +74,10 @@ class S3Bucket(TimeStampedModel):
     def aws_url(self):
         return s3bucket_console_url(self.name)
 
+    @property
+    def is_used_for_app(self):
+        return not (AppS3Bucket.objects.filter(s3bucket_id=self.id).first() is None)
+
     def user_is_admin(self, user):
         return self.users3buckets.filter(
             user=user,
@@ -92,25 +97,10 @@ class S3Bucket(TimeStampedModel):
         return "None"
 
     def save(self, *args, **kwargs):
-        is_create = not self.pk
-
         super().save(*args, **kwargs)
-
-        if is_create:
-            bucket = cluster.S3Bucket(self).create()
-
-            # XXX created_by is always set if model is saved by the API view
-            if self.created_by:
-                UserS3Bucket.objects.create(
-                    user=self.created_by,
-                    s3bucket=self,
-                    is_admin=True,
-                    access_level=UserS3Bucket.READWRITE,
-                )
-
         return self
 
     @atomic
     def delete(self, *args, **kwargs):
-        super().delete(*args, **kwargs)
         cluster.S3Bucket(self).mark_for_archival()
+        super().delete(*args, **kwargs)

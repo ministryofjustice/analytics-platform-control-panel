@@ -11,7 +11,6 @@ from controlpanel.api.aws import (iam_arn, s3_arn, iam_assume_role_principal, AW
 from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
-from controlpanel.utils import load_app_conf_from_file
 
 log = structlog.getLogger(__name__)
 
@@ -59,26 +58,38 @@ class HomeDirectoryResetError(Exception):
 
 class AWSServiceCredentialSettings:
     """This class is responsible for defining the mapping between coding object (class[.func] or function) for creating
-    AWS resource or using AWS service for achieving something. The setting may be imported through external source, e.g.
-    from config file or db in the future, for now we assume we will read those settings through environment variables
+    AWS resource or using AWS service for achieving something. The setting may be imported through external source e.g.
+    config yaml file or db in the future, such process will be outside this class for now, only the json object will be
+    pass in. The assumed json structure is 2 level dictionary as below:
+    AWS_ROLES_MAP:
+        DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role>
+        <Entity category>
+            DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role>
+            <AWS service name>: <The name of the environment variable which contains the actual name of the aws-assumed-role>
+    Entity category: by default, it will be same as the entity class name, but each entity class can define their own
+    DEFAULT: is the default role which will be used if an lower level config couldn't be found
+    AWS service name: by default, it will be same as the class name of AWS service but aws service can define their own
+    one example would be
+    AWS_ROLES_MAP:
+      DEFAULT_ROLE: AWS_DATA_ACCOUNT_ROLE
+      USER:
+        DEFAULT: AWS_DATA_ACCOUNT_ROLE
+        AWSROLE: AWS_DATA_ACCOUNT_ROLE
+      APP:
+        DEFAULT: AWS_DATA_ACCOUNT_ROLE
     """
 
-    _DEFAULT_SETTING_ROLE_KEY_ = "AWS_DEFAULT"
+    _DEFAULT_SETTING_ROLE_KEY_ = "DEFAULT"
 
-    def __init__(self, config_file=None):
-        self.mapping = self._load_from_config_file(config_file) or {}
-
-    def _load_from_config_file(self, config_file):
-        if not config_file:
-            return None
-        return load_app_conf_from_file(yaml_file=config_file)
+    def __init__(self, aws_rols_map=None):
+        self.mapping = aws_rols_map
 
     def _locate_setting(self, setting_key):
         """
         Check a few places, the priorities are blew (highest first)
         - environment variable
         - settings
-        - None, None
+        - None
         """
         if os.getenv(setting_key):
             return os.getenv(setting_key)
@@ -86,41 +97,54 @@ class AWSServiceCredentialSettings:
             return getattr(settings, setting_key)
         return None
 
-    def get_credential_setting(self, setting_name=None):
-        setting_name = setting_name or self._DEFAULT_SETTING_ROLE_KEY_
-        assume_role_name = self._locate_setting("{}_ROLE".format(setting_name))
-        profile_name = self._locate_setting("{}_PROFILE".format(setting_name))
-        return assume_role_name, profile_name
+    def get_credential_setting(self, category_name, aws_service_name):
+        category_name = category_name or self._DEFAULT_SETTING_ROLE_KEY_
+        found_role_name = self.mapping.get(category_name.upper(), {}).get(aws_service_name.upper(), None)
+        if not found_role_name:
+            found_role_name = self.mapping.get(category_name.upper(), {}).get(self._DEFAULT_SETTING_ROLE_KEY_)
+
+        if not found_role_name:
+            found_role_name = self.mapping.get(self._DEFAULT_SETTING_ROLE_KEY_)
+        return self._locate_setting(found_role_name)
+
 
 
 class EntityResource:
 
+    ENTITY_ASSUME_ROLE_CATEGORY = None
+
     def __init__(self):
-        self.aws_credential_settings = AWSServiceCredentialSettings()
+        self.aws_credential_settings = AWSServiceCredentialSettings(settings.AWS_ROLES_MAP)
         self._init_aws_services()
 
+    def _init_aws_services(self):
+        pass
 
-    def _aws_credential_setting_name(self, aws_service_class=None):
-        if aws_service_class is None:
-            return (self.__class__.__name__).upper()
-        else:
-            return ("{}_{}".format(self.__class__.__name__, aws_service_class.__name__)).upper()
+    @property
+    def entity_catetory_key(self):
+        return self.ENTITY_ASSUME_ROLE_CATEGORY or (self.__class__.__name__).upper()
 
-    def create_aws_service(self, aws_service_class):
-        # Check whether there is any setting on entity class + AWS service class level
-        assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting(
-            self._aws_credential_setting_name(aws_service_class)
-        )
-        # If nothing, Check whether there is any setting on entity class level
-        if assume_role_name is None and profile_name is None:
-            assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting(
-                self._aws_credential_setting_name()
-            )
+    def get_aws_service_name(self, aws_service_class):
+        try:
+            aws_service_name = aws_service_class.ASSUME_ROLE_NAME
+        except:
+            aws_service_name = aws_service_class.__name__
+        return aws_service_name
 
-        # If still nothing, Check whether there is any setting on default level
-        if assume_role_name is None and profile_name is None:
-            assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting()
-        return aws_service_class(assume_role_name=assume_role_name, profile_name=profile_name)
+    def get_assume_role(self, aws_service_class, aws_role_category=None, aws_service_name=None):
+        aws_role_category = aws_role_category or self.entity_catetory_key
+        aws_service_name = aws_service_name or self.get_aws_service_name(aws_service_class)
+        assume_role_name = self.aws_credential_settings.get_credential_setting(
+            category_name=aws_role_category,
+            aws_service_name=aws_service_name)
+        return assume_role_name
+
+    def create_aws_service(self, aws_service_class, aws_role_category=None, aws_service_name=None):
+        return aws_service_class(assume_role_name=self.get_assume_role(
+            aws_service_class=aws_service_class,
+            aws_role_category=aws_role_category,
+            aws_service_name=aws_service_name
+        ))
 
 
 class User(EntityResource):
@@ -394,12 +418,24 @@ class S3Bucket(EntityResource):
     def arn(self):
         return s3_arn(self.bucket.name)
 
-    def create(self):
+    def _get_assume_role_category(self):
+        if self.bucket.is_used_for_app:
+            return "APP"
+        else:
+            return "USER"
+
+    def create(self, owner="User"):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket,
+            aws_role_category=owner)
         return self.aws_bucket_service.create_bucket(
             self.bucket.name, self.bucket.is_data_warehouse
         )
 
     def mark_for_archival(self):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket,
+            aws_role_category=self._get_assume_role_category())
         self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
 
 
@@ -411,6 +447,8 @@ class RoleGroup(EntityResource):
     This is because IAM doesn't allow adding roles to IAM groups
     See https://stackoverflow.com/a/48087433/455642
     """
+
+    ENTITY_ASSUME_ROLE_CATEGORY = "USER"
 
     def __init__(self, iam_managed_policy):
         super(RoleGroup, self).__init__()
@@ -452,6 +490,9 @@ class RoleGroup(EntityResource):
 
 
 class AppParameter(EntityResource):
+
+    ENTITY_ASSUME_ROLE_CATEGORY = "APP"
+
     def __init__(self, parameter):
         super(AppParameter, self).__init__()
         self.parameter = parameter
