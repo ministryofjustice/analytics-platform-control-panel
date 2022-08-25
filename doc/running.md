@@ -301,7 +301,7 @@ If you want to run the control panel app to manage AWS resources under single ro
 following environment variable to define the profile you want to use
 - ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
 export AWS_PROFILE = "admin-data"
-- Make sure there is NO other AWS boto3 environment variable are defined. 
+- Make sure there is NO other AWS boto3 environment variables defined. 
 
 #### AWS credential setting for multiple AWS roles
 If you want to run the app to manage the AWS resources cross different AWS accounts by assuming 
