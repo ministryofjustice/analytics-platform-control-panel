@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import tempfile
 import yaml
@@ -52,6 +53,13 @@ class Command(loaddata.Command):
                 tool["fields"]["values"]["proxy.auth0.domain"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_DOMAIN"]
                 tool["fields"]["values"]["proxy.auth0.clientId"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_ID"]
                 tool["fields"]["values"]["proxy.auth0.clientSecret"] = os.environ[f"{env_var_prefix}_AUTH_CLIENT_SECRET"]
+
+                if tool["fields"].get("created") is None or not tool["fields"]["created"]:
+                    tool["fields"]["created"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%Z")
+
+                if tool["fields"].get("modified") is None or not tool["fields"]["modified"]:
+                    tool["fields"]["modified"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%Z")
+
 
             fixture_yaml = [tool for ind, tool in enumerate(fixture_yaml) if ind not in fixture_skip_inds]
 
