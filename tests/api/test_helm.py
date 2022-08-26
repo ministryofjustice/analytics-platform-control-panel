@@ -238,11 +238,11 @@ def test_update_helm_repository_valid_cache(helm_repository_index):
 
 def test_delete():
     """
-    The delete_eks function (helm 3)results in the expected helm command to be
+    The delete function (helm 3)results in the expected helm command to be
     executed.
     """
     with patch("controlpanel.api.helm._execute") as mock_execute:
-        helm.delete_eks("my_namespace", "foo", "bar", "baz")
+        helm.delete("my_namespace", "foo", "bar", "baz")
         mock_execute.assert_called_once_with(
             "uninstall",
             "foo",

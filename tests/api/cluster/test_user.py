@@ -61,7 +61,7 @@ def test_delete_eks(aws, helm, users):
         call(f"user-{user.slug}", 'chart-release'),
         call("cpanel", 'chart-release'),
     ]
-    helm.delete_eks.has_calls(expected_calls)
+    helm.delete.has_calls(expected_calls)
 
 
 def test_delete_eks_with_no_releases(aws, helm, users):
@@ -74,7 +74,7 @@ def test_delete_eks_with_no_releases(aws, helm, users):
     cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    assert not helm.delete_eks.called
+    assert not helm.delete.called
 
 
 def test_on_authenticate(helm, users):
@@ -115,4 +115,4 @@ def test_on_authenticate_user_missing_charts(aws, helm, users):
     user.on_authenticate()
     # The charts are recreated.
     assert user._init_user.call_count == 1
-    assert helm.delete_eks.call_count == 0
+    assert helm.delete.call_count == 0

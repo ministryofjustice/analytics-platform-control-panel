@@ -151,7 +151,7 @@ def upgrade_release(release, chart, *args):
     )
 
 
-def delete_eks(namespace, *args):
+def delete(namespace, *args):
     """
     Delete helm charts identified by the content of the args list in the
     referenced namespace. Helm 3 version.

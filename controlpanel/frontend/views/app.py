@@ -86,8 +86,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # The reason for this change is apps will be hosted on our
         # old infrastructure while users migrate to EKS. Once we have our
         # app hosting story figured out, we should do this properly.
-        context['app_migrated'] = settings.features.app_migrated.enabled
-        if settings.features.app_migrated.enabled:
+        context['apps_on_eks'] = settings.features.apps_on_eks.enabled
+        if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
         else:
             context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"

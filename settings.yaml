@@ -5,7 +5,7 @@ enabled_features:
     _HOST_prod: false
   redirect_legacy_api_urls:
     _DEFAULT: true
-  app_migrated:
+  apps_on_eks:
     _DEFAULT: false
 
 

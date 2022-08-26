@@ -4,7 +4,7 @@ This section is to give some overview about the data structure designed in this 
 
 ## Data flows
 
-### User login the app first time
+### The data flow when a user logs into Control Panel for the first time
 
 ![Data flow for first-time login](./images/user-login-flow-first-time.png "Data flow for first-time login")
 

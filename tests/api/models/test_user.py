@@ -51,7 +51,7 @@ def test_helm_delete_user(helm, auth0):
     helm.list_releases.side_effect = [["chart-release", "provision-user-bob"],
                                       ["chart-release1", "bootstrap-user-bob"]]
     user.delete()
-    helm.delete_eks.assert_has_calls(
+    helm.delete.assert_has_calls(
         [call('user-bob', 'chart-release'),
          call('user-bob', 'provision-user-bob'),
          call('cpanel', 'bootstrap-user-bob')]
