@@ -115,7 +115,7 @@ class User:
         if not hel_charts:
             return
 
-        helm.delete_eks(related_namespace, *hel_charts)
+        helm.delete(related_namespace, *hel_charts)
 
     def _filter_out_installation_charts(self, helm_charts):
         init_installed_charts = []
@@ -162,42 +162,16 @@ class User:
                 return False
         return True
 
-    def _migrate_user_to_eks(self):
-        # TODO This function should be removed.
-        # User's migration state is not yet marked as complete, and so we
-        # need to migrate their AWS role before running the init-user
-        # helm charts before marked it as such
-        log.info(f"Starting to migrate user {self.user.slug} from {self.user.migration_state}")
-
-        self.user.migration_state = self.user.MIGRATING
-        self.user.save()
-
-        # Migrate the AWS roles for the user.
-        aws.migrate_user_role(self.user)
-
-        # Run the new charts to configure the user for EKS infra.
-        self._init_user()
-
-        # Update the user's state in the database.
-        self.user.migration_state = self.user.COMPLETE
-        self.user.save()
-
-        log.info(f"Completed migration of user {self.user.slug}")
-
     def on_authenticate(self):
         """
         Run on each authenticated login on the control panel.
         This function also checks whether the users has all those charts installed or not
         """
-        if self.user.migration_state == self.user.PENDING:
-            # TODO keep the following part for short term, should be removed soon
-            self._migrate_user_to_eks()
-        else:
-            if not self._has_required_installation_charts():
-                # For some reason, user does not have all the charts required so we should re-init them.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._delete_user_helm_charts()
-                self._init_user()
+        if not self._has_required_installation_charts():
+            # For some reason, user does not have all the charts required so we should re-init them.
+            log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
+            self._delete_user_helm_charts()
+            self._init_user()
 
 
 class App:
@@ -367,7 +341,7 @@ class ToolDeployment:
             # that needs deleting.
             old_release_name = f"{self.old_chart_name}-{self.user.slug}"
         if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-            helm.delete_eks(self.k8s_namespace, old_release_name)
+            helm.delete(self.k8s_namespace, old_release_name)
 
     def _set_values(self, **kwargs):
         """
@@ -421,13 +395,7 @@ class ToolDeployment:
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
-        else:
-            helm.delete(
-                deployment.metadata.name,
-                f"--namespace={self.k8s_namespace}"
-            )
+        helm.delete(self.k8s_namespace, deployment.metadata.name)
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

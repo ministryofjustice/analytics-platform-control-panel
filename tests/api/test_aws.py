@@ -168,10 +168,9 @@ def test_create_user_role_EKS(iam, managed_policy, airflow_dev_policy, airflow_p
     infrastructure.
     """
     user = users['normal_user']
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        aws.create_user_role(user)
-        role = iam.Role(user.iam_role_name)
-        pd = role.assume_role_policy_document
+    aws.create_user_role(user)
+    role = iam.Role(user.iam_role_name)
+    pd = role.assume_role_policy_document
     assert len(pd['Statement']) == 5
     assert ec2_assume_role(pd['Statement'][0])
     assert k8s_assume_role(pd['Statement'][1])

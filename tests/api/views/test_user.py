@@ -83,7 +83,7 @@ def test_delete(client, helm, aws, users, ExtendedAuth0):
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
     aws.delete_role.assert_called()
-    helm.delete_eks.assert_called()
+    helm.delete.assert_called()
 
     ExtendedAuth0.clear_up_user.assert_called_with(
         user_id=users['normal_user'].auth0_id

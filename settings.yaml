@@ -5,6 +5,9 @@ enabled_features:
     _HOST_prod: false
   redirect_legacy_api_urls:
     _DEFAULT: true
+  apps_on_eks:
+    _DEFAULT: false
+
 
 AWS_SERVICE_URL:
   _HOST_dev: "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
@@ -40,8 +43,6 @@ K8S_WORKER_ROLE_NAME: nodes.dev.mojanalytics.xyz
 
 # -- Airflow
 AIRFLOW_REGION: "eu-west-1"
-
-EKS: true
 
 APP_DOMAIN:
   _DEFAULT: apps.dev.mojanalytics.xyz

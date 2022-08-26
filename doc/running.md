@@ -313,12 +313,10 @@ Please check the current context and make sure it is pointing to the `dev` clust
 
 Check whether you have the following 2 in the env file and make sure they are correct
 - ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
-- ```EKS```: True, indicating EKS cluster will be used in the app.
 - ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
 
 ```
 export AWS_PROFILE = "admin-data"
-export EKS=True
 ```
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```

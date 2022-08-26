@@ -54,15 +54,14 @@ def test_delete_eks(aws, helm, users):
     """
     user = users['normal_user']
     helm.list_releases.return_value = ["chart-release", ]
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        cluster.User(user).delete()
+    cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
     expected_calls = [
         call(f"user-{user.slug}", 'chart-release'),
         call("cpanel", 'chart-release'),
     ]
-    helm.delete_eks.has_calls(expected_calls)
+    helm.delete.has_calls(expected_calls)
 
 
 def test_delete_eks_with_no_releases(aws, helm, users):
@@ -72,11 +71,10 @@ def test_delete_eks_with_no_releases(aws, helm, users):
     """
     user = users['normal_user']
     helm.list_releases.return_value = []
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        cluster.User(user).delete()
+    cluster.User(user).delete()
 
     aws.delete_role.assert_called_with(user.iam_role_name)
-    assert not helm.delete_eks.called
+    assert not helm.delete.called
 
 
 def test_on_authenticate(helm, users):
@@ -98,49 +96,10 @@ def test_on_authenticate_eks_completely_new_user(helm, users):
     """
     user_model = users['normal_user']
     user_model.migration_state = User.VOID
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        user._init_user.assert_called_once_with()
-
-
-def test_on_authenticate_eks_migrating_existing_user(aws, helm, users):
-    """
-    On EKS, if a migrating user is encountered, the expected user
-    initialisation takes place.
-    """
-    user_model = users['normal_user']
-    user_model.migration_state = User.PENDING  # the user is ready to migrate.
-
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        user._init_user.assert_called_once_with()
-        aws.migrate_user_role.assert_called_once_with(user_model)
-
-    updated_user_model = User.objects.get(username="bob")
-    assert updated_user_model.migration_state == User.COMPLETE
-
-
-def test_on_authenticate_eks_migrated_user(aws, helm, users):
-    """
-    On EKS, if a migrated user logs in, they are NOT re-migrated by accident.
-    """
-    user_model = users['normal_user']
-    user_model.migration_state = User.COMPLETE # the user is migrated.
-    helm.list_releases.return_value = [
-        f"bootstrap-user-{user_model.slug}",
-        f"provision-user-{user_model.slug}",
-    ]
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        assert user._init_user.call_count == 0
-        assert aws.migrate_user_role.call_count == 0
-        assert helm.delete.call_count == 0
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    user._init_user.assert_called_once_with()
 
 
 def test_on_authenticate_user_missing_charts(aws, helm, users):
@@ -151,10 +110,9 @@ def test_on_authenticate_user_missing_charts(aws, helm, users):
     user_model = users['normal_user']
     user_model.migration_state = User.COMPLETE # the user is migrated.
     helm.list_releases.return_value = []
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        # The charts are recreated.
-        assert user._init_user.call_count == 1
-        assert helm.delete_eks.call_count == 0
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    # The charts are recreated.
+    assert user._init_user.call_count == 1
+    assert helm.delete.call_count == 0

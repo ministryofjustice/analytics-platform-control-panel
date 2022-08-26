@@ -5,23 +5,6 @@
 {% block content %}
 <div class="govuk-grid-row" id="reset-container">
     <div class="govuk-grid-column-two-thirds">
-        {% if in_wrong_place %}
-        <h2 class="govuk-heading-l">You seem to be lost</h2>
-        <p>You have migrated to the new infrastructure, but you're trying to use
-            the old version. Please update your bookmarks for the control panel
-            to:</p>
-
-        <p><a
-                href="https://controlpanel.services.analytical-platform.service.justice.gov.uk">https://controlpanel.services.analytical-platform.service.justice.gov.uk</a>
-        </p>
-
-        <p>Please
-            <a
-                href="https://alpha-analytics-moj.eu.auth0.com/v2/logout?returnTo=https%3A%2F%2Fcontrolpanel.services.analytical-platform.service.justice.gov.uk%2Foidc%2Flogout%2F">click
-                here</a>
-            to sign in on the new infrastructure.
-        </p>
-        {% else %}
         <h2 class="govuk-heading-l">There is a problem with your session</h2>
 
         <p>
@@ -47,7 +30,6 @@
                 Analytical Platform</a>
             for more information.
         </p>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -17,9 +17,6 @@ clean:
 build:
 	@docker-compose build frontend
 
-eks:
-	@docker-compose build frontend_eks
-
 test-python: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-python:
 	@echo
@@ -46,8 +43,6 @@ logs:
 	@docker-compose logs -f
 push:
 	docker-compose push frontend
-push_eks:
-	docker-compose push frontend_eks
 
 help: Makefile
 	@echo

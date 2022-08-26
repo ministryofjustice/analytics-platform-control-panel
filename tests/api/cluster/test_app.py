@@ -16,8 +16,7 @@ def test_app_create_iam_role(aws, app):
 
 
 def test_app_delete_eks(aws, app):
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        cluster.App(app).delete()
+    cluster.App(app).delete()
 
     aws.delete_role.assert_called_with(app.iam_role_name)
 

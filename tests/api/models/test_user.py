@@ -50,14 +50,13 @@ def test_helm_delete_user(helm, auth0):
     authz = auth0.ExtendedAuth0.return_value
     helm.list_releases.side_effect = [["chart-release", "provision-user-bob"],
                                       ["chart-release1", "bootstrap-user-bob"]]
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user.delete()
-        helm.delete_eks.assert_has_calls(
-            [call('user-bob', 'chart-release'),
-             call('user-bob', 'provision-user-bob'),
-             call('cpanel', 'bootstrap-user-bob')]
-        )
-        authz.clear_up_user.assert_called_with(user_id="github|user_2")
+    user.delete()
+    helm.delete.assert_has_calls(
+        [call('user-bob', 'chart-release'),
+         call('user-bob', 'provision-user-bob'),
+         call('cpanel', 'bootstrap-user-bob')]
+    )
+    authz.clear_up_user.assert_called_with(user_id="github|user_2")
 
 
 def test_aws_create_role_calls_service(aws):
