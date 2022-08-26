@@ -15,17 +15,18 @@ development on your local machine:
 
 1. Ensuring you have all the required dependencies installed, and these are all
    correctly configured.
-2. Getting hold of the source code for the project and creating a local
-   environment in which to be able to work.
-3. Acquiring the credentials and permissions needed for the various third-party
+2. Acquiring the credentials and permissions needed for the various third-party
    aspects of the project (AWS, Auth0, k8s).
+3. Getting hold of the source code for the project and creating a local
+   environment in which to be able to work.
+
 
 The third party services used by the application are labelled as either `dev`
 (for use as part of the development / testing process) and `alpha` (which is
 what our users use). Obviously, you should avoid using the `alpha` labelled
 versions of the services.
 
-## Required Dependencies
+## 1. Required Dependencies
 
 The Control Panel app requires Python 3.6.5+. It has been confirmed to work
 with Python 3.8.12.
@@ -67,99 +68,8 @@ line interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started
 In order to use `direnv` for managing your environment variables, you should
 make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 
-## Local Environment
 
-### <a name="env"></a>Environment variables
-
-The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
-Check each value whether it is relevant to your local env.
-
-Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
-
-See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
-
-### Database
-
-The Control Panel app connects to a PostgreSQL database called `controlpanel`,
-which should be accessible with the `controlpanel` user.
-
-Assuming you've got PostreSQL set up properly, the following commands should
-get you to this state:
-
-```sh
-createuser -d controlpanel
-createdb -U controlpanel controlpanel
-```
-
-Alternatively, if you prefer to use `psql` the following should work:
-```
-sudo -u postgres psql
-postgres=# create database controlpanel;
-postgres=# create user controlpanel with encrypted password 'password';
-postgres=# grant all privileges on database controlpanel to controlpanel;
-postgres=# ALTER USER controlpanel CREATEDB;
-```
-
-The last command in the sequence above ensures the `controlpanel` user has the
-required privileges to create and delete throw away databases while running the
-unit tests.
-
-You must make sure the following environment variables are set:
-```sh
-export DB_USER=controlpanel
-export DB_PASSWORD=password
-```
-
-Then you can run migrations:
-```sh
-python3 manage.py migrate
-```
-
-
-### Compile Sass and Javascript
-
-Before the first run (or after changes to static assets), you need to compile
-and collate the static assets.
-
-Static assets are compiled with Node.JS 8.16.0+
-```sh
-npm install
-mkdir static
-cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
-cp -R node_modules/govuk-frontend/ static/govuk-frontend
-cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
-cp -R node_modules/html5shiv/dist/ static/html5-shiv
-cp -R node_modules/jquery/dist/ static/jquery
-./node_modules/.bin/babel \
-  controlpanel/frontend/static/module-loader.js \
-  controlpanel/frontend/static/components \
-  controlpanel/frontend/static/javascripts \
-  -o static/app.js -s
-./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
-```
-
-Then run collectstatic:
-```sh
-python3 manage.py collectstatic
-```
-
-### Run the tests
-
-Run the tests using `pytest`:
-
-```sh
-DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
-```
-
-**NOTE** Setting `DJANGO_SETTINGS_MODULE` is important or otherwise you
-may accidentally run the tests with the `development` settings with
-unpredictable results.
-
-By this step, all the tests should pass. If not, re-check all the steps above
-and then ask a colleague for help.
-
-
-## Third Party Requirements
+## 2. Third Party Requirements
 
 Put simply, if you've completed all the steps in the
 [new joiners process](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process)
@@ -250,6 +160,98 @@ Tell Helm to use the Analytical Platform chart repository:
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 helm repo update
 ```
+
+## 3. Local Environment
+
+### <a name="env"></a>Environment variables
+
+The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
+Check each value whether it is relevant to your local env.
+
+Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
+
+See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
+
+### Database
+
+The Control Panel app connects to a PostgreSQL database called `controlpanel`,
+which should be accessible with the `controlpanel` user.
+
+Assuming you've got PostreSQL set up properly, the following commands should
+get you to this state:
+
+```sh
+createuser -d controlpanel
+createdb -U controlpanel controlpanel
+```
+
+Alternatively, if you prefer to use `psql` the following should work:
+```
+sudo -u postgres psql
+postgres=# create database controlpanel;
+postgres=# create user controlpanel with encrypted password 'password';
+postgres=# grant all privileges on database controlpanel to controlpanel;
+postgres=# ALTER USER controlpanel CREATEDB;
+```
+
+The last command in the sequence above ensures the `controlpanel` user has the
+required privileges to create and delete throw away databases while running the
+unit tests.
+
+You must make sure the following environment variables are set:
+```sh
+export DB_USER=controlpanel
+export DB_PASSWORD=password
+```
+
+Then you can run migrations:
+```sh
+python3 manage.py migrate
+```
+
+
+### Compile Sass and Javascript
+
+Before the first run (or after changes to static assets), you need to compile
+and collate the static assets.
+
+Static assets are compiled with Node.JS 8.16.0+
+```sh
+npm install
+mkdir static
+cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
+cp -R node_modules/govuk-frontend/ static/govuk-frontend
+cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
+cp -R node_modules/html5shiv/dist/ static/html5-shiv
+cp -R node_modules/jquery/dist/ static/jquery
+./node_modules/.bin/babel \
+  controlpanel/frontend/static/module-loader.js \
+  controlpanel/frontend/static/components \
+  controlpanel/frontend/static/javascripts \
+  -o static/app.js -s
+./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
+```
+
+Then run collectstatic:
+```sh
+python3 manage.py collectstatic
+```
+
+### Run the tests
+
+Run the tests using `pytest`:
+
+```sh
+DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
+```
+
+**NOTE** Setting `DJANGO_SETTINGS_MODULE` is important or otherwise you
+may accidentally run the tests with the `development` settings with
+unpredictable results.
+
+By this step, all the tests should pass. If not, re-check all the steps above
+and then ask a colleague for help.
+
 
 ## Run the app
 
