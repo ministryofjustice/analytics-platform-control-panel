@@ -36,10 +36,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         * The current user is in the beta tester group for the tool.
         """
-        if settings.EKS:
-            qs = Tool.objects.filter(target_infrastructure=Tool.EKS)
-        else:
-            qs = Tool.objects.filter(target_infrastructure=Tool.OLD)
+        qs = Tool.objects.filter(target_infrastructure=Tool.EKS)
         return qs.filter(
             Q(is_restricted=False) |
             Q(target_users=self.request.user.id)

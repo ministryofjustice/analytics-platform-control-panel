@@ -278,6 +278,11 @@ class ResetHomeDirectoryForm(forms.Form):
 
 class ToolReleaseForm(forms.ModelForm):
     target_users_list = forms.CharField(required=False)
+    target_infrastructure = forms.ChoiceField(
+        required=True,
+        initial=Tool.EKS,
+        choices=Tool.INFRASTRUCTURE_STATES_ALLOWED
+    )
 
     def get_target_users(self):
         """
@@ -339,6 +344,5 @@ class ToolReleaseForm(forms.ModelForm):
             "version",
             "values",
             "is_restricted",
-            "target_infrastructure",
             "tool_domain",
         ]

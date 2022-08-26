@@ -284,7 +284,7 @@ class User(EntityResource):
         if not hel_charts:
             return
 
-        helm.delete_eks(related_namespace, *hel_charts)
+        helm.delete(related_namespace, *hel_charts)
 
     def _filter_out_installation_charts(self, helm_charts):
         init_installed_charts = []
@@ -559,7 +559,7 @@ class ToolDeployment:
             # that needs deleting.
             old_release_name = f"{self.old_chart_name}-{self.user.slug}"
         if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-            helm.delete_eks(self.k8s_namespace, old_release_name)
+            helm.delete(self.k8s_namespace, old_release_name)
 
     def _set_values(self, **kwargs):
         """
@@ -613,13 +613,7 @@ class ToolDeployment:
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
-        else:
-            helm.delete(
-                deployment.metadata.name,
-                f"--namespace={self.k8s_namespace}"
-            )
+        helm.delete(self.k8s_namespace, deployment.metadata.name)
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

@@ -161,10 +161,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         # targetting different instances of our infrastructure. Ensure the
         # filter args flag which infrastructure we're running on, to make sure
         # the correct tool is the *first* one returned.
-        if settings.EKS:
-            tool_args["target_infrastructure"] = Tool.EKS
-        else:
-            tool_args["target_infrastructure"] = Tool.OLD
+        tool_args["target_infrastructure"] = Tool.EKS
 
         # On restart we don't specify the version as it doesn't make
         # sense to do so. As we're now allowing more than one

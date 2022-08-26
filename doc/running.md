@@ -256,6 +256,7 @@ admin-dev is the profile name for dev AWS account in your AWS configuration file
 
 Install Helm (the K8s package manager) by following
 [these instructions for your OS](https://helm.sh/docs/intro/install/).
+Control Panel has been confirmed to work with Helm v3.6.3 and v3.8.0.
 
 You'll need to initialise Helm too:
 
@@ -313,12 +314,8 @@ Please check the current context and make sure it is pointing to the `dev` clust
 #### General checks
 
 Check whether you have the following 2 in the env file and make sure they are correct
-- ```EKS```: True, indicating EKS cluster will be used in the app.
 - ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
 
-```
-export EKS=True
-```
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
 the default value is ```/tmp/helm/cache/repository```
@@ -381,11 +378,23 @@ python manage.py runworker background_tasks
 ```
 
 Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
-runing control panel.
+running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
 you may encounter a popup window for asking you to provide key-chain password from time to time, 
 which is normal.
+
+### Loading tools
+
+When you load up your local Control Panel for the first time, there will be no tools available on the Tools page.
+To pre-populate the database, run the following management command:
+```
+python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
+```
+You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
+
+Note that you will need to have the RStudio and JupyterLab Auth0 environment variables present in your `.env` file in order for the missing values in the `tools.yaml` fixture file to be filled in.
+Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<TOOL>_AUTH_CLIENT_SECRET` for both RStudio and JupyterLab before running `loaddevtools`.
 
 ### Important notes
 The app even running on local env, it will still talk to the remote AWS data account and 
