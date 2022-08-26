@@ -72,15 +72,13 @@ make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 ## 2. Third Party Requirements
 
 Put simply, if you've completed all the steps in the
-[new joiners process](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process)
+[Technical Setup](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#technical-setup) section of our New Joiners' Guide
 then you should be good to go.
 
-In particular, you'll need to make sure you're [set up with Auth0](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#auth0),
-[added to AWS](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#aws)
-and have [cluster admin access to Kubernetes](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#kubernetes).
+In particular, you'll need to make sure you're [set up with Auth0](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#auth0),
+[added to AWS](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#aws)
+and have [cluster admin access to Kubernetes](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#kubernetes).
 
-A colleague will need to set you with Auth0, and you should ensure you're using
-an account linked to your `@digital.justice.gov.uk` account.
 
 ### AWS Configuration
 
@@ -100,7 +98,7 @@ for which you'll need to ask someone to create an initial password for you.
 
 `aws-vault` is recommended to manage different AWS accounts
 
-See [see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
+See [here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
 for details of information about how to setup configuration and how to use `aws-vault`.
 
 ### Kubernetes Configuration
