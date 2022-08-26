@@ -5,13 +5,12 @@
 
 ---
 
-This part is for running the app on local env without docker and also it will interact
-with remote AWS infrastructure with the following ones
+This guide describes how to run Control Panel locally without Docker, and so that it can interact with the following remote AWS resources:
  - AWS Data account
  - AWS Dev account
  - AWS EKS cluster on Dev account
 
-There are essentially three aspects to getting the control panel in a state for
+There are essentially three aspects to getting the Control Panel in a state for
 development on your local machine:
 
 1. Ensuring you have all the required dependencies installed, and these are all
@@ -28,15 +27,28 @@ versions of the services.
 
 ## Required Dependencies
 
-You must have:
+The Control Panel app requires Python 3.6.5+. It has been confirmed to work
+with Python 3.8.12.
 
-* [Redis](https://redis.io/)
-* [PostgreSQL](https://www.postgresql.org/)
+Install python dependencies with the following command:
+```sh
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+pip3 install -r requirements.dev.txt
+pip3 uninstall python-dotenv    # see ANPL-823
+```
+
+In addition, you must have:
+
+* [Redis](https://redis.io/) (confirmed to work with v7.0.0)
+* [PostgreSQL](https://www.postgresql.org/) (v14.3)
 * [npm](https://www.npmjs.com/)
+* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos) (v1.23.4)
+* [helm](https://helm.sh/docs/intro/install/) (v3.6.3, v3.8.0)
 * [direnv](https://direnv.net/)
 
-These should be installed using your own OS's package manager.
-The instructions below assume you are using Homebrew.
+We recommend installing these tools via Homebrew.
 
 You may want to set Postgres and Redis to start up automatically, in which case run
 ```
@@ -49,26 +61,8 @@ brew services list
 ```
 Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
 
-For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
-`kubectl`
-[installed too](https://kubernetes.io/docs/tasks/tools/install-kubectl/), and
-possibly [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-(for running a local k8s cluster).
-
-It may also be useful for when interacting with AWS to have the `aws` command
-line tool [installed on your system](https://aws.amazon.com/cli/).
-
-The Control Panel app requires Python 3.6.5+. It has been confirmed to work
-with Python 3.8.2.
-
-Install python dependencies with the following command:
-```sh
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install -r requirements.dev.txt
-pip3 uninstall python-dotenv
-```
+To interact with AWS, you should also set up the [`aws` command
+line interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 In order to use `direnv` for managing your environment variables, you should
 make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
@@ -80,16 +74,9 @@ make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
 Check each value whether it is relevant to your local env.
 
-If this isn't immediately possible and at a minimum, you need to set the
-following environment variables:
-
-```sh
-export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
-```
 Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
 
-See [Control Panel settings and environment variables](environment.md) for details of other
-setings and environment variables.
+See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
 
 ### Database
 
@@ -105,7 +92,6 @@ createdb -U controlpanel controlpanel
 ```
 
 Alternatively, if you prefer to use `psql` the following should work:
-
 ```
 sudo -u postgres psql
 postgres=# create database controlpanel;
@@ -119,14 +105,12 @@ required privileges to create and delete throw away databases while running the
 unit tests.
 
 You must make sure the following environment variables are set:
-
 ```sh
 export DB_USER=controlpanel
 export DB_PASSWORD=password
 ```
 
 Then you can run migrations:
-
 ```sh
 python3 manage.py migrate
 ```
@@ -138,7 +122,6 @@ Before the first run (or after changes to static assets), you need to compile
 and collate the static assets.
 
 Static assets are compiled with Node.JS 8.16.0+
-
 ```sh
 npm install
 mkdir static
@@ -160,7 +143,6 @@ Then run collectstatic:
 python3 manage.py collectstatic
 ```
 
-
 ### Run the tests
 
 Run the tests using `pytest`:
@@ -169,7 +151,7 @@ Run the tests using `pytest`:
 DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
 ```
 
-**NOTE** Set the `DJANGO_SETTINGS_MODULE` is important or otherwise you
+**NOTE** Setting `DJANGO_SETTINGS_MODULE` is important or otherwise you
 may accidentally run the tests with the `development` settings with
 unpredictable results.
 
@@ -250,15 +232,13 @@ To refresh the token automatically, the following lines can be added into your ~
       env: null
       provideClusterInfo: false
 ```
-admin-dev is the profile name for dev AWS account in your AWS configuration file
+admin-dev is the profile name for dev AWS account in your AWS configuration file.
+
+For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
 ### Helm
 
-Install Helm (the K8s package manager) by following
-[these instructions for your OS](https://helm.sh/docs/intro/install/).
-Control Panel has been confirmed to work with Helm v3.6.3 and v3.8.0.
-
-You'll need to initialise Helm too:
+You will need to initialise Helm:
 
 ```sh
 helm init
@@ -307,7 +287,9 @@ source_profile=default
 
 Please check the current context and make sure it is pointing to the `dev` cluster
 
-```kubectl config use-context < the context name for dev cluster in your kube config file>```
+```sh
+kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/config file
+```
 
 ### Check the environment file
 
@@ -387,8 +369,6 @@ Note that you will need to have the RStudio and JupyterLab Auth0 environment var
 Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<TOOL>_AUTH_CLIENT_SECRET` for both RStudio and JupyterLab before running `loaddevtools`.
 
 ### Important notes
-The app even running on local env, it will still talk to the remote AWS data account and 
-dev cluster directly which is shared with our dev environment, especially the data account,
-it is shared not only dev environment also prod environment, all those important
-live IAM roles/groups, S3 buckets are there, so please be careful until we complete the task
-of constructing local infrastructure.
+
+Even though your instance of Control Panel is running locally, it will still interact with the remote AWS data account and development Kubernetes cluster.
+The data account is also used by our production environment, so take care when interacting with our AWS resources directly.
