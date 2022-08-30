@@ -1,22 +1,19 @@
-[![Docker Repository on Quay](https://quay.io/repository/mojanalytics/control-panel/status "Docker Repository on Quay")](https://quay.io/repository/mojanalytics/control-panel)
-
 # Analytical Platform Control Panel
 
-The Control Panel is a management tool which provides the following features to our main stakeholders, data analysts 
-and data scientists: 
+The Control Panel is a management tool which provides the following features to our main stakeholders, the Ministry of Justice's Data Analysts and Data Scientists: 
 
-- Allow them to access important datasets from across MoJ easily and securely
+- Allow them to access important datasets from across the MoJ easily and securely
 - Allow them to manage their own datasets easily and securely
 - Allow them to explore the data by using our online tooling environment 
-- Allow them to deploy their app on our hosting platform easily
+- Allow them to deploy customised dashboards on our hosting platform
 
-For administrators, Control Panel can offer
+For administrators, Control Panel offers
 - User management 
 - Permission management on datasets
 - Application management
 
-As the nature of this app, Control Panel interacts heavily with our underlying infrastructure, which is mainly AWS services and clusters.
-It also has tight dependencies on the policies and strategies about how we would like to manage our data lake and our infrastructure.
+Control Panel interacts heavily with our underlying infrastructure, such as our Kubernetes clusters and S3 buckets (AWS).
+It also has tight dependencies on the policies and strategies about how we manage our data lake and our infrastructure.
 
 ## Tech documents
 
@@ -27,7 +24,7 @@ Control Panel is a Django project made up of three parts:
 2. A frontend web application allowing administration of a user's apps, data
    sources and tools in the Analytical Platform.
    
-3. A simple worker for running some time-consuming background tasks such as deploying a tooling (e.g. RStudio or Jupyter Lab) on a cluster, restarting the instance of a tool, and resetting the home directory of a user's whole tooling environment.
+3. A simple worker for running some time-consuming background tasks such as deploying a tool (e.g. RStudio or JupyterLab) on a cluster, restarting the instance of a tool, and resetting the home directory of a user's tooling environment.
    
 More information is available through the following links:
 
@@ -37,18 +34,13 @@ More information is available through the following links:
 
 ## Quickstart
 
-Unfortunately, there is no real quickstart for this Control Panel at this stage. 
-In order to be able to work on the app locally, there are two options:
+To work with Control Panel yourself, we currently recommend setting up a local instance of the project.
+To do so, see our getting started guide in [`doc/running.md`](./doc/running.md).
 
-- Interact with remote infrastructure (AWS platform) for dev environment 
-  
-  Under this option, first you will need to obtain the permissions required to access
-  the different resources on our infrastructure e.g., AWS. Then, see [Running with Docker](doc/docker.md), 
-  or [Running directly on your machine](doc/running.md).
+Formerly, we could also run a local instance of Control Panel via Docker but we have decided to pause the work needed to update this process (which was necessary after migrating to our new EKS cluster) in favour of an improved solution via LocalStack.
+See tickets [ANPL-839](https://dsdmoj.atlassian.net/browse/ANPL-839) and [ANPL-858](https://dsdmoj.atlassian.net/browse/ANPL-858) for the current status of this work.
 
-- Interact with local infrastructure through LocalStack **(currently under development)**
-
-For better understanding of the settings and environment variables used in this app, please check the [Control Panel settings and environment variables](./doc/environment.md) file.
+For better understanding of the settings and environment variables used while running Control Panel, please check the [Control Panel settings and environment variables](./doc/environment.md) file.
 
 ## Other useful documentation
 

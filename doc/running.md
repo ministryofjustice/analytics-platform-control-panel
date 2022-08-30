@@ -5,38 +5,51 @@
 
 ---
 
-This part is for running the app on local env without docker and also it will interact
-with remote AWS infrastructure with the following ones
+This guide describes how to run Control Panel locally without Docker, and so that it can interact with the following remote AWS resources:
  - AWS Data account
  - AWS Dev account
  - AWS EKS cluster on Dev account
 
-There are essentially three aspects to getting the control panel in a state for
+There are essentially three aspects to getting the Control Panel in a state for
 development on your local machine:
 
 1. Ensuring you have all the required dependencies installed, and these are all
    correctly configured.
-2. Getting hold of the source code for the project and creating a local
-   environment in which to be able to work.
-3. Acquiring the credentials and permissions needed for the various third-party
+2. Acquiring the credentials and permissions needed for the various third-party
    aspects of the project (AWS, Auth0, k8s).
+3. Getting hold of the source code for the project and creating a local
+   environment in which to be able to work.
+
 
 The third party services used by the application are labelled as either `dev`
 (for use as part of the development / testing process) and `alpha` (which is
 what our users use). Obviously, you should avoid using the `alpha` labelled
 versions of the services.
 
-## Required Dependencies
+## 1. Required Dependencies
 
-You must have:
+The Control Panel app requires Python 3.6.5+. It has been confirmed to work
+with Python 3.8.12.
 
-* [Redis](https://redis.io/)
-* [PostgreSQL](https://www.postgresql.org/)
+Install python dependencies with the following command:
+```sh
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+pip3 install -r requirements.dev.txt
+pip3 uninstall python-dotenv    # see ANPL-823
+```
+
+In addition, you must have:
+
+* [Redis](https://redis.io/) (confirmed to work with v7.0.0)
+* [PostgreSQL](https://www.postgresql.org/) (v14.3)
 * [npm](https://www.npmjs.com/)
+* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos) (v1.23.4)
+* [helm](https://helm.sh/docs/intro/install/) (v3.6.3, v3.8.0)
 * [direnv](https://direnv.net/)
 
-These should be installed using your own OS's package manager.
-The instructions below assume you are using Homebrew.
+We recommend installing these tools via Homebrew.
 
 You may want to set Postgres and Redis to start up automatically, in which case run
 ```
@@ -49,146 +62,23 @@ brew services list
 ```
 Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
 
-For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
-`kubectl`
-[installed too](https://kubernetes.io/docs/tasks/tools/install-kubectl/), and
-possibly [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-(for running a local k8s cluster).
-
-It may also be useful for when interacting with AWS to have the `aws` command
-line tool [installed on your system](https://aws.amazon.com/cli/).
-
-The Control Panel app requires Python 3.6.5+. It has been confirmed to work
-with Python 3.8.2.
-
-Install python dependencies with the following command:
-```sh
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install -r requirements.dev.txt
-pip3 uninstall python-dotenv
-```
+To interact with AWS, you should also set up the [`aws` command
+line interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 In order to use `direnv` for managing your environment variables, you should
 make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 
-## Local Environment
 
-### <a name="env"></a>Environment variables
-
-The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
-Check each value whether it is relevant to your local env.
-
-If this isn't immediately possible and at a minimum, you need to set the
-following environment variables:
-
-```sh
-export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
-```
-Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
-
-See [Control Panel settings and environment variables](environment.md) for details of other
-setings and environment variables.
-
-### Database
-
-The Control Panel app connects to a PostgreSQL database called `controlpanel`,
-which should be accessible with the `controlpanel` user.
-
-Assuming you've got PostreSQL set up properly, the following commands should
-get you to this state:
-
-```sh
-createuser -d controlpanel
-createdb -U controlpanel controlpanel
-```
-
-Alternatively, if you prefer to use `psql` the following should work:
-
-```
-sudo -u postgres psql
-postgres=# create database controlpanel;
-postgres=# create user controlpanel with encrypted password 'password';
-postgres=# grant all privileges on database controlpanel to controlpanel;
-postgres=# ALTER USER controlpanel CREATEDB;
-```
-
-The last command in the sequence above ensures the `controlpanel` user has the
-required privileges to create and delete throw away databases while running the
-unit tests.
-
-You must make sure the following environment variables are set:
-
-```sh
-export DB_USER=controlpanel
-export DB_PASSWORD=password
-```
-
-Then you can run migrations:
-
-```sh
-python3 manage.py migrate
-```
-
-
-### Compile Sass and Javascript
-
-Before the first run (or after changes to static assets), you need to compile
-and collate the static assets.
-
-Static assets are compiled with Node.JS 8.16.0+
-
-```sh
-npm install
-mkdir static
-cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
-cp -R node_modules/govuk-frontend/ static/govuk-frontend
-cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
-cp -R node_modules/html5shiv/dist/ static/html5-shiv
-cp -R node_modules/jquery/dist/ static/jquery
-./node_modules/.bin/babel \
-  controlpanel/frontend/static/module-loader.js \
-  controlpanel/frontend/static/components \
-  controlpanel/frontend/static/javascripts \
-  -o static/app.js -s
-./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
-```
-
-Then run collectstatic:
-```sh
-python3 manage.py collectstatic
-```
-
-
-### Run the tests
-
-Run the tests using `pytest`:
-
-```sh
-DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
-```
-
-**NOTE** Set the `DJANGO_SETTINGS_MODULE` is important or otherwise you
-may accidentally run the tests with the `development` settings with
-unpredictable results.
-
-By this step, all the tests should pass. If not, re-check all the steps above
-and then ask a colleague for help.
-
-
-## Third Party Requirements
+## 2. Third Party Requirements
 
 Put simply, if you've completed all the steps in the
-[new joiners process](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process)
+[Technical Setup](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#technical-setup) section of our New Joiners' Guide
 then you should be good to go.
 
-In particular, you'll need to make sure you're [set up with Auth0](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#auth0),
-[added to AWS](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#aws)
-and have [cluster admin access to Kubernetes](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#kubernetes).
+In particular, you'll need to make sure you're [set up with Auth0](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#auth0),
+[added to AWS](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#aws)
+and have [cluster admin access to Kubernetes](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#kubernetes).
 
-A colleague will need to set you with Auth0, and you should ensure you're using
-an account linked to your `@digital.justice.gov.uk` account.
 
 ### AWS Configuration
 
@@ -208,7 +98,7 @@ for which you'll need to ask someone to create an initial password for you.
 
 `aws-vault` is recommended to manage different AWS accounts
 
-See [see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
+See [here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
 for details of information about how to setup configuration and how to use `aws-vault`.
 
 ### Kubernetes Configuration
@@ -250,15 +140,13 @@ To refresh the token automatically, the following lines can be added into your ~
       env: null
       provideClusterInfo: false
 ```
-admin-dev is the profile name for dev AWS account in your AWS configuration file
+admin-dev is the profile name for dev AWS account in your AWS configuration file.
+
+For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
 ### Helm
 
-Install Helm (the K8s package manager) by following
-[these instructions for your OS](https://helm.sh/docs/intro/install/).
-Control Panel has been confirmed to work with Helm v3.6.3 and v3.8.0.
-
-You'll need to initialise Helm too:
+You will need to initialise Helm:
 
 ```sh
 helm init
@@ -270,6 +158,98 @@ Tell Helm to use the Analytical Platform chart repository:
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 helm repo update
 ```
+
+## 3. Local Environment
+
+### <a name="env"></a>Environment variables
+
+The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
+Check each value whether it is relevant to your local env.
+
+Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
+
+See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
+
+### Database
+
+The Control Panel app connects to a PostgreSQL database called `controlpanel`,
+which should be accessible with the `controlpanel` user.
+
+Assuming you've got PostreSQL set up properly, the following commands should
+get you to this state:
+
+```sh
+createuser -d controlpanel
+createdb -U controlpanel controlpanel
+```
+
+Alternatively, if you prefer to use `psql` the following should work:
+```
+sudo -u postgres psql
+postgres=# create database controlpanel;
+postgres=# create user controlpanel with encrypted password 'password';
+postgres=# grant all privileges on database controlpanel to controlpanel;
+postgres=# ALTER USER controlpanel CREATEDB;
+```
+
+The last command in the sequence above ensures the `controlpanel` user has the
+required privileges to create and delete throw away databases while running the
+unit tests.
+
+You must make sure the following environment variables are set:
+```sh
+export DB_USER=controlpanel
+export DB_PASSWORD=password
+```
+
+Then you can run migrations:
+```sh
+python3 manage.py migrate
+```
+
+
+### Compile Sass and Javascript
+
+Before the first run (or after changes to static assets), you need to compile
+and collate the static assets.
+
+Static assets are compiled with Node.JS 8.16.0+
+```sh
+npm install
+mkdir static
+cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
+cp -R node_modules/govuk-frontend/ static/govuk-frontend
+cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
+cp -R node_modules/html5shiv/dist/ static/html5-shiv
+cp -R node_modules/jquery/dist/ static/jquery
+./node_modules/.bin/babel \
+  controlpanel/frontend/static/module-loader.js \
+  controlpanel/frontend/static/components \
+  controlpanel/frontend/static/javascripts \
+  -o static/app.js -s
+./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
+```
+
+Then run collectstatic:
+```sh
+python3 manage.py collectstatic
+```
+
+### Run the tests
+
+Run the tests using `pytest`:
+
+```sh
+DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
+```
+
+**NOTE** Setting `DJANGO_SETTINGS_MODULE` is important or otherwise you
+may accidentally run the tests with the `development` settings with
+unpredictable results.
+
+By this step, all the tests should pass. If not, re-check all the steps above
+and then ask a colleague for help.
+
 
 ## Run the app
 
@@ -307,7 +287,9 @@ source_profile=default
 
 Please check the current context and make sure it is pointing to the `dev` cluster
 
-```kubectl config use-context < the context name for dev cluster in your kube config file>```
+```sh
+kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/config file
+```
 
 ### Check the environment file
 
@@ -385,8 +367,6 @@ Note that you will need to have the RStudio and JupyterLab Auth0 environment var
 Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<TOOL>_AUTH_CLIENT_SECRET` for both RStudio and JupyterLab before running `loaddevtools`.
 
 ### Important notes
-The app even running on local env, it will still talk to the remote AWS data account and 
-dev cluster directly which is shared with our dev environment, especially the data account,
-it is shared not only dev environment also prod environment, all those important
-live IAM roles/groups, S3 buckets are there, so please be careful until we complete the task
-of constructing local infrastructure.
+
+Even though your instance of Control Panel is running locally, it will still interact with the remote AWS data account and development Kubernetes cluster.
+The data account is also used by our production environment, so take care when interacting with our AWS resources directly.
