@@ -40,10 +40,9 @@ services and clusters, which is shown in the following diagram.
 
 ![Code structure](./images/code_structure.png "The code structure of the app")
 
-In order to support the approach of managing our AWS infrastructure under different AWS accounts, 
-our control panel implement the following structure by assuming that we will setup an account to assume
-different roles under different accounts (More information about this approach is
-[here](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html) )
+In order to manage our AWS infrastructure under different AWS accounts, 
+our Control Panel connects to an account which can assume
+different roles which have the necessary permissions to access resources in different accounts. More information about this approach can be found in [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html).
 
 The high level implementation diagram is below 
 
