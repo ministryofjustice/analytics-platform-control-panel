@@ -121,7 +121,7 @@ class EntityResource:
         pass
 
     @property
-    def entity_catetory_key(self):
+    def entity_category_key(self):
         return self.ENTITY_ASSUME_ROLE_CATEGORY or (self.__class__.__name__).upper()
 
     def get_aws_service_name(self, aws_service_class):
@@ -132,7 +132,7 @@ class EntityResource:
         return aws_service_name
 
     def get_assume_role(self, aws_service_class, aws_role_category=None, aws_service_name=None):
-        aws_role_category = aws_role_category or self.entity_catetory_key
+        aws_role_category = aws_role_category or self.entity_category_key
         aws_service_name = aws_service_name or self.get_aws_service_name(aws_service_class)
         assume_role_name = self.aws_credential_settings.get_credential_setting(
             category_name=aws_role_category,
