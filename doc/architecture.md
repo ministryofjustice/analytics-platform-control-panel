@@ -74,8 +74,7 @@ AWS_ROLES_MAP:
 
 ```
 
-- The above one is most detail level you can configure under current implementation. It can be simplied as following one
-  if all the AWS resources are managed under one account, 
+The above mapping is most detailed level you can configure under current implementation. It can be simplified to following if all the AWS resources are managed under one account:
 ```yaml
 AWS_ROLES_MAP:
   DEFAULT: AWS_DATA_ACCOUNT_ROLE
