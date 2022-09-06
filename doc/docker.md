@@ -1,9 +1,7 @@
 # Running with Docker
 ---
-:construction: _This guide has recently undergone some major changes in order to work with the new cluster. 
-It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, 
-but be aware that the developers who checked the system had some things set up already. If problems arise, please 
-open a PR to revise this documentation._
+:warning: _Note that the process described in this file is **out of date** as it refers to setting up an instance of Control Panel which interacts with our old kOps cluster rather than our new EKS cluster.
+See [ANPL-839](https://dsdmoj.atlassian.net/browse/ANPL-839) for the current status of upgrade work, and **follow the instructions in [`running.md`](running.md) to set up your own instance of Control Panel for development work**._
 
 ---
 
