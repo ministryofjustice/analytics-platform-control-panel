@@ -49,11 +49,11 @@ The high level implementation diagram is below
 ![auth aws for multi accounts](./images/aws_auth_multi_roles_design_diagram.png "The design diagram for multi aws accounts")
 
 
-The mapping between which role the control panel should pick up to create the AWS resource for particular
-entity on the app is achieved by using the following convention:
-- configuration in the settings.yaml
-  2 level of structure, the first level is the role category which normally represents the entity class. 
-  The second level represents the AWS service API which maps the class in aws.py. Each level can have a default role
+The mapping between the AWS resource that Control Panel manages and the role that it should assume in order to do so is set via the mapping below, which is stored in `settings.yaml`.
+
+There are two levels of structure:
+- The first level is the role category which normally represents the entity class.
+- The second level represents the AWS service API which maps to the class in `aws.py`. Each level can have a default role.
 
 ```yaml
 AWS_ROLES_MAP:
