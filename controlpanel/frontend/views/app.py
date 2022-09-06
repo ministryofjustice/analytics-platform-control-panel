@@ -193,6 +193,14 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         #     secret_data=secret_data)
         cluster.App(self.object).create_or_update_secret(self.object.construct_secret_data(client))
 
+        # TODO: check business logic and new application
+        # secret_data: dict = self.object.construct_secret_data(client)
+        # secret_data['disable_authetication'] = disable_auth
+
+        # aws.AWSSecretManager().create_or_update(
+        #     secret_name=self.object.app_aws_secret_name,
+        #     secret_data=secret_data)
+
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
