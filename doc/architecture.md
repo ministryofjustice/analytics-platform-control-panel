@@ -79,7 +79,7 @@ The above mapping is most detailed level you can configure under current impleme
 AWS_ROLES_MAP:
   DEFAULT: AWS_DATA_ACCOUNT_ROLE
 ```  
-  or simplied as below if users' resources and apps' resources are managed under separated accounts
+or reduced to the following if users' resources and apps' resources are managed under separate accounts:
 ```yaml
 AWS_ROLES_MAP:
   DEFAULT: AWS_DATA_ACCOUNT_ROLE
