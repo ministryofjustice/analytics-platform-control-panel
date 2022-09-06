@@ -118,6 +118,31 @@
     ],
   }) }}
 
+  {{
+    govukCheckboxes({
+      "fieldset": {
+        "legend": {
+          "text": "Disable Authentication",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'A flag to indicate if the app disables authentication.'
+      },
+      "name": "disable_authetication",
+      "items": [
+        {
+          "value": "True",
+          "text": "Disable app authentication",
+          "checked": form.disable_authetication.value(),
+        },
+      ],
+      "errorMessage": { "html": form.disable_authetication.errors|join(". ") } if form.disable_authetication.errors else {}
+    })
+
+  }}
+
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
   </div>
