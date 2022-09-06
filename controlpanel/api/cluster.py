@@ -86,7 +86,7 @@ class AWSServiceCredentialSettings:
 
     def _locate_setting(self, setting_key):
         """
-        Check a few places, the priorities are blew (highest first)
+        Check a few places, the priorities are below (highest first)
         - environment variable
         - settings
         - None
