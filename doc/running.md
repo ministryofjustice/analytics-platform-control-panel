@@ -306,7 +306,14 @@ export AWS_PROFILE = "admin-data"
 #### AWS credential setting for multiple AWS roles
 If you want to run the app to manage the AWS resources cross different AWS accounts by assuming 
 different roles, then
-- First please follow the detail [here](architecture.md) (last section)
+- Check whether following 2 more environment variables have been setup in the env file or not
+  - `AWS_DATA_ACCOUNT_ROLE`: The role_arn of admin-data account
+  - `AWS_DEV_ACCOUNT_ROLE` : The role_arn of admin-dev account
+  
+if you are not sure what the value of role_arn of those two accounts is, you can find them out by
+  checking the aws config file. 
+
+More detail about the settings for mult-account is [here](architecture.md) (last section)
 - Make sure other AWS boto3 settings e.g. ```AWS_PROFILE``` are NOT defined in your env, otherwise the app will
 end up with root level session under a role, and you may get exception like `couldn't assume this role`
 
