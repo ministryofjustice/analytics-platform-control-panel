@@ -190,7 +190,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
-        disable_auth = form.cleaned_data.get("disable_authentication", False)
+        disable_auth = form.cleaned_data.pop("disable_authentication", False)
 
         self._register_app(form, name, repo_url, disable_auth)
         return FormMixin.form_valid(self, form)
