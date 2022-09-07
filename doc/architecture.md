@@ -92,5 +92,6 @@ AWS_ROLES_MAP:
   category name and aws service name, if couldn't find, then go up to the category level, if found then use the default
   role for this category, if even category name cannot be found, then the root default role will be applied.
   
-- Right now the resource like IAM roles, secrets can be managed under different accounts except the S3bucket as 
- there are some dependencies in the current implementation and the infrastructure both. 
+- Right now most resources like IAM roles and secrets can be managed under different accounts.
+S3 buckets are an exception as
+ there are some dependencies in both the current implementation and the infrastructure.
