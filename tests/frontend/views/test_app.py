@@ -89,6 +89,7 @@ def create(client, *args):
     data = {
         'repo_url': 'https://github.com/moj-analytical-services/test_app',
         'connect_bucket': 'later',
+        'disable_authentication': False,
     }
     return client.post(reverse('create-app'), data)
 

@@ -130,15 +130,15 @@
       "hint": {
         "text": 'A flag to indicate if the app disables authentication.'
       },
-      "name": "disable_authetication",
+      "name": "disable_authentication",
       "items": [
         {
           "value": "True",
           "text": "Disable app authentication",
-          "checked": form.disable_authetication.value(),
+          "checked": form.disable_authentication.value(),
         },
       ],
-      "errorMessage": { "html": form.disable_authetication.errors|join(". ") } if form.disable_authetication.errors else {}
+      "errorMessage": { "html": form.disable_authentication.errors|join(". ") } if form.disable_authentication.errors else {}
     })
 
   }}
