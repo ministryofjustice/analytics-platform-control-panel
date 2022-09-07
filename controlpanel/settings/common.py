@@ -64,7 +64,7 @@ INSTALLED_APPS = [
     # Django Rules object permissions
     "rules",
     # Logs changes to models
-    "auditlog",
+    "simple_history",
     # Analytics Platform Control Panel API
     "controlpanel.api",
     # Analytics Platform Control Panel Kubernetes API proxy

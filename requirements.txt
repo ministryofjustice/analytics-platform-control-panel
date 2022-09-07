@@ -4,13 +4,13 @@ boto3==1.20.13
 channels==2.4.0
 channels-redis==3.3.1
 Django==3.2.15
-django-auditlog==2.1.1
 django-crequest==2018.5.11
 django-dotenv==1.4.2
 django-extensions==3.1.5
 django-filter==2.4.0
 django-prometheus==2.1.0
 django-redis==4.12.1
+django-simple-history==3.1.1
 djangorestframework==3.12.4
 django-structlog==2.2.0
 djproxy==2.3.5
