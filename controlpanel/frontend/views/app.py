@@ -162,7 +162,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 access_level='readonly',
             )
 
-    def _register_app(self, form, name, repo_url, disable_auth):
+    def _register_app(self, form, name, repo_url):
         self.object = App.objects.create(
             name=name,
             repo_url=repo_url,
@@ -180,8 +180,10 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             self.object.slug,
             connections=form.cleaned_data.get('connections'))
         
-        secret_data: dict = self.object.construct_secret_data(client)
-        secret_data['disable_authentication'] = disable_auth
+        secret_data: dict = {
+            ** self.object.construct_secret_data(client),
+            "disable_authentication" : form.cleaned_data.pop("disable_authentication", False)
+        }
 
         aws.AWSSecretManager().create_or_update(
             secret_name=self.object.app_aws_secret_name,
@@ -190,9 +192,8 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
-        disable_auth = form.cleaned_data.pop("disable_authentication", False)
 
-        self._register_app(form, name, repo_url, disable_auth)
+        self._register_app(form, name, repo_url)
         return FormMixin.form_valid(self, form)
 
 
