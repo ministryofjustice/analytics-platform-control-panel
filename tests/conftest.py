@@ -7,6 +7,8 @@ import pytest
 from controlpanel.utils import load_app_conf_from_file
 
 from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
+from tests.api.fixtures.aws import *
+
 
 
 def pytest_configure(config):
@@ -18,15 +20,6 @@ def client(client):
     """A Django test client instance."""
     load_app_conf_from_file()
     return client
-
-
-@pytest.yield_fixture(autouse=True)
-def aws():
-    """
-    Mock calls to AWS
-    """
-    with patch('controlpanel.api.cluster.aws') as aws:
-        yield aws
 
 
 @pytest.yield_fixture(autouse=True)
@@ -84,7 +77,7 @@ def slack_WebClient():
 
 
 @pytest.fixture
-def superuser(db, slack_WebClient):
+def superuser(db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
     return mommy.make(
         'api.User',
         auth0_id='github|user_1',
@@ -94,7 +87,7 @@ def superuser(db, slack_WebClient):
 
 
 @pytest.fixture
-def users(db, superuser):
+def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
     return {
         'superuser': superuser,
         'normal_user': mommy.make(
@@ -109,4 +102,3 @@ def users(db, superuser):
             auth0_id="github|user_3",
         ),
     }
-

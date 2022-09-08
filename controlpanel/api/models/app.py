@@ -97,7 +97,6 @@ class App(TimeStampedModel):
     def delete(self, *args, **kwargs):
         cluster.App(self).delete()
         auth0.ExtendedAuth0().clear_up_app(app_name=self.slug, group_name=self.slug)
-        aws.AWSSecretManager().delete_secret(secret_name=self.app_aws_secret_name)
 
         super().delete(*args, **kwargs)
 

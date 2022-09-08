@@ -61,11 +61,12 @@ def repos(github):
 
 @pytest.fixture(autouse=True)
 def s3buckets(app):
-    buckets = {
-        'not_connected': mommy.make('api.S3Bucket'),
-        'connected': mommy.make('api.S3Bucket'),
-    }
-    return buckets
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        buckets = {
+            'not_connected': mommy.make('api.S3Bucket'),
+            'connected': mommy.make('api.S3Bucket'),
+        }
+        return buckets
 
 
 @pytest.fixture

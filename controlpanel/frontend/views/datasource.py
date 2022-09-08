@@ -2,7 +2,6 @@ from itertools import chain
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
@@ -30,6 +29,7 @@ from controlpanel.frontend.forms import (
     GrantAccessForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.api import cluster
 
 DATASOURCE_TYPES = [
     'warehouse',
@@ -186,9 +186,6 @@ class DeleteDatasource(
 
     def delete(self, *args, **kwargs):
         bucket = self.get_object()
-        session = self.request.session
-        user = self.request.user
-
         if not bucket.is_data_warehouse:
             self.success_url = reverse_lazy('list-webapp-datasources')
 

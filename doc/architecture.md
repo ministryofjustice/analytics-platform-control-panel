@@ -39,3 +39,59 @@ machine to machine authentication. The slightly complicated part is the interact
 services and clusters, which is shown in the following diagram. 
 
 ![Code structure](./images/code_structure.png "The code structure of the app")
+
+In order to manage our AWS infrastructure under different AWS accounts, 
+our Control Panel connects to an account which can assume
+different roles which have the necessary permissions to access resources in different accounts. More information about this approach can be found in [the AWS docs](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html).
+
+The high level implementation diagram is below 
+
+![auth aws for multi accounts](./images/aws_auth_multi_roles_design_diagram.png "The design diagram for multi aws accounts")
+
+
+The mapping between the AWS resource that Control Panel manages and the role that it should assume in order to do so is set via the mapping below, which is stored in `settings.yaml`.
+
+There are two levels of structure:
+- The first level is the role category which normally represents the entity class.
+- The second level represents the AWS service API which maps to the class in `aws.py`. Each level can have a default role.
+
+```yaml
+AWS_ROLES_MAP:
+  DEFAULT: AWS_DATA_ACCOUNT_ROLE
+  USER:
+    DEFAULT: AWS_DATA_ACCOUNT_ROLE
+    AWSROLE: AWS_DATA_ACCOUNT_ROLE
+    AWSBUCKET: AWS_DATA_ACCOUNT_ROLE
+    AWSPOLICY: AWS_DATA_ACCOUNT_ROLE
+    AWSSECRETMANAGER: AWS_DATA_ACCOUNT_ROLE
+  APP:
+    DEFAULT: AWS_APP_ACCOUNT_ROLE
+    AWSROLE: AWS_APP_ACCOUNT_ROLE
+    AWSBUCKET: AWS_DATA_ACCOUNT_ROLE
+    AWSPOLICY: AWS_DATA_ACCOUNT_ROLE
+    AWSPARAMETERSTORE: AWS_APP_ACCOUNT_ROLE
+    AWSSECRETMANAGER: AWS_APP_ACCOUNT_ROLE
+
+```
+
+The above mapping is most detailed level you can configure under current implementation. It can be simplified to following if all the AWS resources are managed under one account:
+```yaml
+AWS_ROLES_MAP:
+  DEFAULT: AWS_DATA_ACCOUNT_ROLE
+```  
+or reduced to the following if users' resources and apps' resources are managed under separate accounts:
+```yaml
+AWS_ROLES_MAP:
+  DEFAULT: AWS_DATA_ACCOUNT_ROLE
+  USER:
+    DEFAULT: AWS_DATA_ACCOUNT_ROLE
+  APP:
+    DEFAULT: AWS_APP_ACCOUNT_ROLE
+```
+- The logic for searching the roles through the configuration: it will try to search from lowest level based on the 
+  category name and aws service name, if couldn't find, then go up to the category level, if found then use the default
+  role for this category, if even category name cannot be found, then the root default role will be applied.
+  
+- Right now most resources like IAM roles and secrets can be managed under different accounts.
+S3 buckets are an exception as
+ there are some dependencies in both the current implementation and the infrastructure.

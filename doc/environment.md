@@ -56,7 +56,6 @@ in django settings.
 | `ALLOWED_HOSTS` | Space separated. Must be set if DEBUG is False | `[]` |
 | `AWS_COMPUTE_ACCOUNT_ID` | ID of the AWS account where tools and apps run | |
 | `AWS_DATA_ACCOUNT_ID` | ID of the AWS account where data sits | |
-| `BUCKET_REGION` | AWS region | `eu-west-1` |
 | `DB_HOST` | Hostname of postgres server | `127.0.0.1` |
 | `DB_NAME` | Postgres database name | `controlpanel` |
 | `DB_PASSWORD` | Postgres password | |

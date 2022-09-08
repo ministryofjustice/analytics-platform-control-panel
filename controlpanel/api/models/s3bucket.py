@@ -8,6 +8,7 @@ from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.api import cluster, validators
 from controlpanel.api.models.users3bucket import UserS3Bucket
+from controlpanel.api.models.apps3bucket import AppS3Bucket
 
 
 def s3bucket_console_url(name):
@@ -56,6 +57,11 @@ class S3Bucket(TimeStampedModel):
         db_table = "control_panel_api_s3bucket"
         ordering = ('name',)
 
+    def __init__(self, *args, **kwargs):
+        """ Overwrite this constructor to pass some non-field parameter"""
+        self.bucket_owner = kwargs.pop('bucket_owner', "User")
+        super().__init__(*args, **kwargs)
+
     def __repr__(self):
         warehouse = ""
         if self.is_data_warehouse:
@@ -72,6 +78,10 @@ class S3Bucket(TimeStampedModel):
     @property
     def aws_url(self):
         return s3bucket_console_url(self.name)
+
+    @property
+    def is_used_for_app(self):
+        return not (AppS3Bucket.objects.filter(s3bucket_id=self.id).first() is None)
 
     def user_is_admin(self, user):
         return self.users3buckets.filter(
@@ -97,7 +107,8 @@ class S3Bucket(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            bucket = cluster.S3Bucket(self).create()
+            bucket_owner = kwargs.pop('bucket_owner', self.bucket_owner)
+            cluster.S3Bucket(self).create(bucket_owner)
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:
@@ -112,5 +123,5 @@ class S3Bucket(TimeStampedModel):
 
     @atomic
     def delete(self, *args, **kwargs):
-        super().delete(*args, **kwargs)
         cluster.S3Bucket(self).mark_for_archival()
+        super().delete(*args, **kwargs)

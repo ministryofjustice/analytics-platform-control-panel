@@ -1,10 +1,9 @@
 from unittest.mock import patch
-
-from model_mommy import mommy
 import pytest
+from model_mommy import mommy
 
 from controlpanel.api.models import App
-from tests.api.fixtures.aws import *
+from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
 
 @pytest.yield_fixture
@@ -30,9 +29,10 @@ def test_slug_collisions_increments():
 
 
 @pytest.mark.django_db
-def test_aws_create_role_calls_service(aws):
-    app = App.objects.create(repo_url="https://example.com/repo_name")
-    aws.create_app_role.assert_called_with(app)
+def test_aws_create_role_calls_service():
+    with patch('controlpanel.api.cluster.AWSRole.create_role') as aws_create_role:
+        app = App.objects.create(repo_url="https://example.com/repo_name")
+        aws_create_role.assert_called_with(app.iam_role_name, BASE_ASSUME_ROLE_POLICY)
 
 
 @pytest.mark.django_db

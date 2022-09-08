@@ -13,8 +13,9 @@ from controlpanel.api.models import User
 
 @pytest.fixture(autouse=True)
 def models(users):
-    mommy.make('api.UserS3Bucket', user=users['normal_user'])
-    mommy.make('api.UserApp', user=users['normal_user'])
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        mommy.make('api.UserS3Bucket', user=users['normal_user'])
+        mommy.make('api.UserApp', user=users['normal_user'])
 
 
 @pytest.yield_fixture
@@ -78,30 +79,32 @@ def test_detail(client, users):
     assert set(users3bucket['s3bucket']) == expected_fields
 
 
-def test_delete(client, helm, aws, users, ExtendedAuth0):
-    response = client.delete(reverse('user-detail', (users['normal_user'].auth0_id,)))
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+def test_delete(client, helm, users, ExtendedAuth0):
+    with patch('controlpanel.api.aws.AWSRole.delete_role') as delete_role:
+        response = client.delete(reverse('user-detail', (users['normal_user'].auth0_id,)))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    aws.delete_role.assert_called()
-    helm.delete.assert_called()
+        delete_role.assert_called()
+        helm.delete.assert_called()
 
-    ExtendedAuth0.clear_up_user.assert_called_with(
-        user_id=users['normal_user'].auth0_id
-    )
+        ExtendedAuth0.clear_up_user.assert_called_with(
+            user_id=users['normal_user'].auth0_id
+        )
 
-    response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+        response = client.get(reverse('user-detail', (users['normal_user'].auth0_id,)))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, helm, aws):
-    data = {'auth0_id': 'github|3', 'username': 'foo'}
-    response = client.post(reverse('user-list'), data)
-    assert response.status_code == status.HTTP_201_CREATED
+def test_create(client, helm):
+    with patch('controlpanel.api.aws.AWSRole.create_role') as create_user_role:
+        data = {'auth0_id': 'github|3', 'username': 'foo'}
+        response = client.post(reverse('user-list'), data)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    assert response.data['auth0_id'] == data['auth0_id']
+        assert response.data['auth0_id'] == data['auth0_id']
 
-    aws.create_user_role.assert_called()
-    helm.upgrade_release.assert_called()
+        create_user_role.assert_called()
+        helm.upgrade_release.assert_called()
 
 
 @pytest.yield_fixture(autouse=True)
@@ -148,43 +151,33 @@ def test_update_grants_superuser_access(client, users, slack, superuser):
     )
 
 
-def test_aws_error_and_transaction(client, aws, helm):
-    aws.create_user_role.side_effect = ClientError({"foo": "bar"}, "bar")
-    data = {'auth0_id': 'github|3', 'username': 'foo'}
+def test_aws_error_and_transaction(client, helm):
+    with patch('controlpanel.api.aws.AWSRole.create_role') as create_user_role:
+        create_user_role.side_effect = ClientError({"foo": "bar"}, "bar")
+        data = {'auth0_id': 'github|3', 'username': 'foo'}
 
-    helm.reset_mock()
+        helm.reset_mock()
 
-    with pytest.raises(ClientError):
-        client.post(reverse('user-list'), data)
+        with pytest.raises(ClientError):
+            client.post(reverse('user-list'), data)
 
-    aws.create_user_role.assert_called()
-    helm.upgrade_release.assert_not_called()
+        create_user_role.assert_called()
+        helm.upgrade_release.assert_not_called()
 
-    with pytest.raises(User.DoesNotExist):
-        User.objects.get(pk=data['auth0_id'])
-
-
-def test_helm_error_and_transaction(client, aws, helm):
-    helm.upgrade_release.side_effect = CalledProcessError(1, 'Helm error')
-    data = {'auth0_id': 'github|3', 'username': 'foo'}
-
-    with pytest.raises(CalledProcessError):
-        client.post(reverse('user-list'), data)
-
-    aws.create_user_role.assert_called()
-    helm.upgrade_release.assert_called()
-
-    with pytest.raises(User.DoesNotExist):
-        User.objects.get(pk=data['auth0_id'])
+        with pytest.raises(User.DoesNotExist):
+            User.objects.get(pk=data['auth0_id'])
 
 
-@pytest.mark.skip(reason="needs to move to test_aws")
-def test_aws_error_existing_ignored(client, aws, helm):
-    e = type('EntityAlreadyExistsException', (ClientError,), {})
-    aws.create_user_role.side_effect = e({}, 'CreateRole')
+def test_helm_error_and_transaction(client, helm):
+    with patch('controlpanel.api.aws.AWSRole.create_role') as create_user_role:
+        helm.upgrade_release.side_effect = CalledProcessError(1, 'Helm error')
+        data = {'auth0_id': 'github|3', 'username': 'foo'}
 
-    data = {'auth0_id': 'github|3', 'username': 'foo'}
-    response = client.post(reverse('user-list'), data)
-    assert response.status_code == status.HTTP_201_CREATED
+        with pytest.raises(CalledProcessError):
+            client.post(reverse('user-list'), data)
 
-    aws.create_user_role.assert_called()
+        create_user_role.assert_called()
+        helm.upgrade_release.assert_called()
+
+        with pytest.raises(User.DoesNotExist):
+            User.objects.get(pk=data['auth0_id'])

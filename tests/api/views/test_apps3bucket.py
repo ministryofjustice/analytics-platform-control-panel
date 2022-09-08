@@ -1,5 +1,5 @@
 import json
-
+from unittest.mock import patch
 from model_mommy import mommy
 import pytest
 from rest_framework import status
@@ -62,61 +62,64 @@ def test_detail(client, apps3buckets):
     assert set(response.data) == expected_fields
 
 
-def test_delete(client, apps3buckets, aws):
-    response = client.delete(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
-    assert response.status_code == status.HTTP_204_NO_CONTENT
+def test_delete(client, apps3buckets):
+    with patch('controlpanel.api.aws.AWSRole.revoke_bucket_access') as revoke_bucket_access:
+        response = client.delete(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    aws.revoke_bucket_access.assert_called_with(
-        apps3buckets[1].iam_role_name,
-        apps3buckets[1].s3bucket.arn,
-    )
-    # TODO get policy document JSON from call and assert bucket ARN not present
+        revoke_bucket_access.assert_called_with(
+            apps3buckets[1].iam_role_name,
+            apps3buckets[1].s3bucket.arn,
+        )
+        # TODO get policy document JSON from call and assert bucket ARN not present
 
-    response = client.get(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-
-
-def test_create(client, apps, buckets, aws):
-    data = {
-        'app': apps[1].id,
-        's3bucket': buckets[3].id,
-        'access_level': AppS3Bucket.READONLY,
-    }
-    response = client.post(reverse('apps3bucket-list'), data)
-    assert response.status_code == status.HTTP_201_CREATED
-
-    apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
-
-    aws.grant_bucket_access.assert_called_with(
-        apps[1].iam_role_name,
-        buckets[3].arn,
-        AppS3Bucket.READONLY,
-        apps3bucket.resources,
-    )
-    # TODO get policy from call and check for presence of bucket ARN
+        response = client.get(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_update(client, apps, apps3buckets, buckets, aws):
-    data = {
-        'app': apps[1].id,
-        's3bucket': buckets[1].id,
-        'access_level': AppS3Bucket.READWRITE,
-    }
-    response = client.put(
-        reverse('apps3bucket-detail', (apps3buckets[1].id,)),
-        json.dumps(data),
-        content_type='application/json',
-    )
-    assert response.status_code == status.HTTP_200_OK
-    assert response.data['access_level'] == data['access_level']
+def test_create(client, apps, buckets):
+    with patch('controlpanel.api.aws.AWSRole.grant_bucket_access') as grant_bucket_access:
+        data = {
+            'app': apps[1].id,
+            's3bucket': buckets[3].id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = client.post(reverse('apps3bucket-list'), data)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    aws.grant_bucket_access.assert_called_with(
-        apps[1].iam_role_name,
-        buckets[1].arn,
-        AppS3Bucket.READWRITE,
-        apps3buckets[1].resources,
-    )
-    # TODO get policy from call and check for presence of bucket ARN
+        apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
+
+        grant_bucket_access.assert_called_with(
+            apps[1].iam_role_name,
+            buckets[3].arn,
+            AppS3Bucket.READONLY,
+            apps3bucket.resources,
+        )
+        # TODO get policy from call and check for presence of bucket ARN
+
+
+def test_update(client, apps, apps3buckets, buckets):
+    with patch('controlpanel.api.aws.AWSRole.grant_bucket_access') as grant_bucket_access:
+        data = {
+            'app': apps[1].id,
+            's3bucket': buckets[1].id,
+            'access_level': AppS3Bucket.READWRITE,
+        }
+        response = client.put(
+            reverse('apps3bucket-detail', (apps3buckets[1].id,)),
+            json.dumps(data),
+            content_type='application/json',
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['access_level'] == data['access_level']
+
+        grant_bucket_access.assert_called_with(
+            apps[1].iam_role_name,
+            buckets[1].arn,
+            AppS3Bucket.READWRITE,
+            apps3buckets[1].resources,
+        )
+        # TODO get policy from call and check for presence of bucket ARN
 
 
 def test_update_bad_requests(client, apps, apps3buckets, buckets):
@@ -143,25 +146,26 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets):
 
 
 def test_create_with_s3_data_warehouse_not_allowed(client, apps):
-    s3_bucket_app = mommy.make(
-        'api.S3Bucket',
-        is_data_warehouse=False,
-    )
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        s3_bucket_app = mommy.make(
+            'api.S3Bucket',
+            is_data_warehouse=False,
+        )
 
-    data = {
-        'app': apps[1].id,
-        's3bucket': s3_bucket_app.id,
-        'access_level': AppS3Bucket.READONLY,
-    }
-    response = client.post(reverse('apps3bucket-list'), data)
-    assert response.status_code == status.HTTP_201_CREATED
+        data = {
+            'app': apps[1].id,
+            's3bucket': s3_bucket_app.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = client.post(reverse('apps3bucket-list'), data)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    s3_bucket = mommy.make('api.S3Bucket', is_data_warehouse=True)
+        s3_bucket = mommy.make('api.S3Bucket', is_data_warehouse=True)
 
-    data = {
-        'app': apps[1].id,
-        's3bucket': s3_bucket.id,
-        'access_level': AppS3Bucket.READONLY,
-    }
-    response = client.post(reverse('apps3bucket-list'), data)
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+        data = {
+            'app': apps[1].id,
+            's3bucket': s3_bucket.id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = client.post(reverse('apps3bucket-list'), data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

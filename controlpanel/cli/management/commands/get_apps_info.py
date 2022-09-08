@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from controlpanel.api.github import GithubAPI
 from controlpanel.api.auth0 import ExtendedAuth0
-from controlpanel.api.aws import AWSParameters
+from controlpanel.api.aws import AWSParameterStore
 from controlpanel.api.models import Parameter, App
 from django.conf import settings
 
@@ -197,7 +197,7 @@ class Command(BaseCommand):
         control panel database has the apps' parameters in the database.
         """
         parameters = Parameter.objects.all()
-        aws_param_service = AWSParameters()
+        aws_param_service = AWSParameterStore()
         for parameter in parameters:
             # derive the application name from the role_name
             app_name = parameter.role_name.replace("{}_app_".format(settings.ENV), "")

@@ -2,11 +2,12 @@ from copy import deepcopy
 import json
 import structlog
 
-import boto3
 import botocore
 import base64
 from botocore.exceptions import ClientError
 from django.conf import settings
+
+from controlpanel.api.aws_auth import AWSCredentialSessionSet
 
 
 log = structlog.getLogger(__name__)
@@ -52,74 +53,6 @@ def iam_assume_role_principal():
         account=settings.AWS_COMPUTE_ACCOUNT_ID,
     )
 
-
-BASE_ASSUME_ROLE_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "ec2.amazonaws.com",
-            },
-            "Action": "sts:AssumeRole",
-        },
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": iam_assume_role_principal(),
-            },
-            "Action": "sts:AssumeRole",
-        },
-    ],
-}
-
-OIDC_STATEMENT = {
-    "Effect": "Allow",
-    "Principal": {
-        "Federated": iam_arn(f"oidc-provider/{settings.OIDC_DOMAIN}/"),
-    },
-    "Action": "sts:AssumeRoleWithWebIdentity",
-}
-
-SAML_STATEMENT = {
-    "Effect": "Allow",
-    "Principal": {
-        "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
-    },
-    "Action": "sts:AssumeRoleWithSAML",
-    "Condition": {
-        "StringEquals": {
-            "SAML:aud": "https://signin.aws.amazon.com/saml",
-        },
-    },
-}
-
-EKS_STATEMENT = {
-    "Effect": "Allow",
-    "Principal": {
-        "Federated": iam_arn(f"oidc-provider/{settings.OIDC_EKS_PROVIDER}"),
-    },
-    "Action": "sts:AssumeRoleWithWebIdentity",
-    "Condition": {"StringLike": {}},
-}
-
-READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
-
-BASE_S3_ACCESS_POLICY = {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "ListUserBuckets",
-            "Action": [
-                "s3:ListAllMyBuckets",
-                "s3:ListAccessPoints",
-                "s3:GetAccountPublicAccessBlock",
-            ],
-            "Effect": "Allow",
-            "Resource": "*",
-        },
-    ],
-}
 
 READ_ACTIONS = [
     "s3:GetObject",
@@ -168,236 +101,21 @@ BASE_S3_ACCESS_STATEMENT = {
     },
 }
 
-
-def create_app_role(app):
-    iam = boto3.resource("iam")
-    try:
-        return iam.create_role(
-            RoleName=app.iam_role_name,
-            AssumeRolePolicyDocument=json.dumps(BASE_ASSUME_ROLE_POLICY),
-        )
-    except iam.meta.client.exceptions.EntityAlreadyExistsException:
-        log.warning(
-            f"Skipping creating Role {app.iam_role_name}: Already exists"
-        )
-
-
-def create_user_role(user):
-    policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-    policy["Statement"].append(SAML_STATEMENT)
-    oidc_statement = deepcopy(OIDC_STATEMENT)
-    oidc_statement["Condition"] = {
-        "StringEquals": {
-            f"{settings.OIDC_DOMAIN}/:sub": user.auth0_id,
-        }
-    }
-    policy["Statement"].append(oidc_statement)
-    eks_statement = deepcopy(EKS_STATEMENT)
-    match = f"system:serviceaccount:user-{user.slug}:{user.slug}-*"
-    eks_statement["Condition"]["StringLike"] = {
-        f"{settings.OIDC_EKS_PROVIDER}:sub": match
-    }
-    policy["Statement"].append(eks_statement)
-
-    try:
-        iam = boto3.resource("iam")
-        iam.create_role(
-            RoleName=user.iam_role_name,
-            AssumeRolePolicyDocument=json.dumps(policy),
-        )
-        role = iam.Role(user.iam_role_name)
-        role.attach_policy(
-            PolicyArn=iam_arn(f"policy/{READ_INLINE_POLICIES}"),
-        )
-        # Managed Airflow policies. See ticket ANPL-711 for context.
-        # Users need both dev and prod policies attached to their role.
-        role.attach_policy(
-            PolicyArn=iam_arn(f"policy/airflow-dev-ui-access"),
-        )
-        role.attach_policy(
-            PolicyArn=iam_arn(f"policy/airflow-prod-ui-access"),
-        )
-    except iam.meta.client.exceptions.EntityAlreadyExistsException:
-        log.warning(
-            f"Skipping creating Role {user.iam_role_name}: Already exists"
-        )
-
-
-def migrate_user_role(user):
-    """
-    Migrate the user role for the EKS platform. This function is only called
-    if the user already exists from the old platform infrastructure.
-    """
-    eks_statement = deepcopy(EKS_STATEMENT)
-    match = f"system:serviceaccount:user-{user.slug}:{user.slug}-*"
-    eks_statement["Condition"]["StringLike"] = {
-        f"{settings.OIDC_EKS_PROVIDER}:sub": match
-    }
-    log.warning(
-        "Attempting to update policy as part of user migration for "
-        f"{user.slug}."
-    )
-    iam = boto3.client("iam")
-    role = iam.get_role(RoleName=user.iam_role_name)
-    policy = role["Role"]["AssumeRolePolicyDocument"]
-    policy["Statement"].append(eks_statement)
-    response = iam.update_assume_role_policy(
-        RoleName=user.iam_role_name,
-        PolicyDocument=json.dumps(policy)
-    )
-    if response:  # The response will be None if OK.
-        log.warning(response)
-
-
-def delete_role(name):
-    """Delete the given IAM role and all inline policies"""
-    try:
-        role = boto3.resource("iam").Role(name)
-        role.load()
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "NoSuchEntity":
-            log.warning(f"Skipping delete of Role {name}: Does not exist")
-            return
-        raise e
-
-    for policy in role.attached_policies.all():
-        role.detach_policy(PolicyArn=policy.arn)
-
-    for policy in role.policies.all():
-        policy.delete()
-
-    role.delete()
-
-
-def create_bucket(bucket_name, is_data_warehouse=False):
-    s3_resource = boto3.resource("s3")
-    s3_client = boto3.client("s3")
-    try:
-        bucket = s3_resource.create_bucket(
-            Bucket=bucket_name,
-            ACL="private",
-            CreateBucketConfiguration={
-                "LocationConstraint": settings.BUCKET_REGION,
-            },
-        )
-        # Enable versioning by default.
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning
-        versioning = bucket.Versioning()
-        versioning.enable()
-        # Set bucket lifecycle. Send non-current versions of files to glacier
-        # storage after 30 days.
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration
-        lifecycle_id = f"{bucket_name}_lifecycle_configuration"
-        lifecycle_conf = s3_client.put_bucket_lifecycle_configuration(
-            Bucket=bucket_name,
-            LifecycleConfiguration={
-                "Rules": [
-                    {
-                        "ID": lifecycle_id,
-                        "Status": "Enabled",
-                        "Prefix": "",
-                        "NoncurrentVersionTransitions": [
-                            {
-                                "NoncurrentDays": 30,
-                                "StorageClass": "GLACIER",
-                            },
-                        ],
-                    },
-                ]
-            },
-        )
-        if is_data_warehouse:
-            _tag_bucket(bucket, {"buckettype": "datawarehouse"})
-
-    except s3_resource.meta.client.exceptions.BucketAlreadyOwnedByYou:
-        log.warning(f"Skipping creating Bucket {bucket_name}: Already exists")
-        return
-
-    bucket.Logging().put(
-        BucketLoggingStatus={
-            "LoggingEnabled": {
-                "TargetBucket": settings.LOGS_BUCKET_NAME,
-                "TargetPrefix": f"{bucket_name}/",
-            }
-        }
-    )
-    bucket.meta.client.put_bucket_encryption(
-        Bucket=bucket_name,
-        ServerSideEncryptionConfiguration={
-            "Rules": [
-                {
-                    "ApplyServerSideEncryptionByDefault": {
-                        "SSEAlgorithm": "AES256",
-                    },
-                }
-            ]
+BASE_S3_ACCESS_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ListUserBuckets",
+            "Action": [
+                "s3:ListAllMyBuckets",
+                "s3:ListAccessPoints",
+                "s3:GetAccountPublicAccessBlock",
+            ],
+            "Effect": "Allow",
+            "Resource": "*",
         },
-    )
-    bucket.meta.client.put_public_access_block(
-        Bucket=bucket_name,
-        PublicAccessBlockConfiguration={
-            "BlockPublicAcls": True,
-            "IgnorePublicAcls": True,
-            "BlockPublicPolicy": True,
-            "RestrictPublicBuckets": True,
-        },
-    )
-    return bucket
-
-
-def tag_bucket(bucket_name, tags):
-    """Add the given `tags` to the S3 bucket called `bucket_name`"""
-    s3_resource = boto3.resource("s3")
-    try:
-        bucket = s3_resource.Bucket(bucket_name)
-        _tag_bucket(bucket, tags)
-    except s3_resource.meta.client.exceptions.NoSuchBucket:
-        log.warning(f"Bucket {bucket_name} doesn't exist")
-
-
-def _tag_bucket(boto_bucket, tags):
-    """
-    Tags the bucket with the given tags
-
-    - `boto_bucket` is boto resource
-    - `tags` is a dictionary
-
-    NOTE: The tags provided are merged with existing tags (if any)
-
-    example:
-
-    existing tags : {"buckettype": "datawarehouse"}
-    new tags: {"to-archive": "true"}
-    result: {"buckettype": "datawarehouse", "to-archive": "true"}
-
-    example:
-
-    existing tags : {"colour": "red", "foo": "bar"}
-    new tags: {"colour": "BLUE", "buckettype": "datawarehouse"}
-    result: {"colour": "BLUE", "foo": "bar", "buckettype": "datawarehouse"}
-    """
-
-    tagging = boto_bucket.Tagging()
-
-    # Get existing tag set
-    existing_tag_set = []
-    try:
-        existing_tag_set = tagging.tag_set
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "NoSuchTagSet":
-            existing_tag_set = []
-        else:
-            raise e
-
-    # merge existing tags with new ones - new have precedence
-    tags_existing = {tag["Key"]: tag["Value"] for tag in existing_tag_set}
-    tags_new = {**tags_existing, **tags}
-
-    # convert dictionary to boto/TagSet list/format
-    tag_set = [{"Key": k, "Value": v} for k, v in tags_new.items()]
-
-    # Update tags
-    tagging.put(Tagging={"TagSet": tag_set})
+    ],
+}
 
 
 class S3AccessPolicy:
@@ -502,120 +220,306 @@ class ManagedS3AccessPolicy(S3AccessPolicy):
         return self
 
 
-def grant_bucket_access(role_name, bucket_arn, access_level, path_arns=[]):
-    if access_level not in ("readonly", "readwrite"):
-        raise ValueError(
-            "access_level must be one of 'readwrite' or 'readonly'"
-        )
+class AWSService:
 
-    if bucket_arn and not path_arns:
-        path_arns = [bucket_arn]
+    def __init__(self, assume_role_name=None, profile_name=None):
+        self.assume_role_name = assume_role_name
+        self.profile_name = profile_name
 
-    role = boto3.resource("iam").Role(role_name)
-    policy = S3AccessPolicy(role.Policy("s3-access"))
-    policy.revoke_access(bucket_arn)
-    policy.grant_list_access(bucket_arn)
-    for arn in path_arns:
-        policy.grant_object_access(arn, access_level)
-    policy.put()
+        self.aws_sessions = AWSCredentialSessionSet()
+
+    @property
+    def boto3_session(self):
+        return self.aws_sessions.get_session(
+            assume_role_name=self.assume_role_name,
+            profile_name=self.profile_name)
 
 
-def revoke_bucket_access(role_name, bucket_arn=None):
-    if not bucket_arn:
-        log.warning(f"Asked to revoke {role_name} role access to nothing")
-        return
+class AWSRole(AWSService):
 
-    try:
-        role = boto3.resource("iam").Role(role_name)
-        role.load()
-    except botocore.exceptions.ClientError as e:
-        if e.response["Error"]["Code"] == "NoSuchEntity":
-            log.warning(f"Role '{role_name}' doesn't exist: Nothing to revoke")
+    def create_role(self, iam_role_name, role_policy, attach_policies: list = None):
+        iam = self.boto3_session.resource("iam")
+        try:
+            iam.create_role(
+                RoleName=iam_role_name,
+                AssumeRolePolicyDocument=json.dumps(role_policy),
+            )
+            role = iam.Role(iam_role_name)
+            for attach_policy in attach_policies or []:
+                role.attach_policy(
+                    PolicyArn=iam_arn(f"policy/{attach_policy}"),
+                )
+        except iam.meta.client.exceptions.EntityAlreadyExistsException:
+            log.warning(
+                f"Skipping creating Role {iam_role_name}: Already exists"
+            )
+
+    def delete_role(self, name):
+        """Delete the given IAM role and all inline policies"""
+        try:
+            role = self.boto3_session.resource("iam").Role(name)
+            role.load()
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Skipping delete of Role {name}: Does not exist")
+                return
+            raise e
+
+        for policy in role.attached_policies.all():
+            role.detach_policy(PolicyArn=policy.arn)
+
+        for policy in role.policies.all():
+            policy.delete()
+
+        role.delete()
+
+    def list_role_names(self, prefix="/"):
+        roles = self.boto3_session.resource("iam").roles.filter(PathPrefix=prefix).all()
+        return [role.name for role in list(roles)]
+
+    def grant_bucket_access(self, role_name, bucket_arn, access_level, path_arns=None):
+        path_arns = path_arns or []
+        if access_level not in ("readonly", "readwrite"):
+            raise ValueError(
+                "access_level must be one of 'readwrite' or 'readonly'"
+            )
+
+        if bucket_arn and not path_arns:
+            path_arns = [bucket_arn]
+
+        role = self.boto3_session.resource("iam").Role(role_name)
+        policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.revoke_access(bucket_arn)
+        policy.grant_list_access(bucket_arn)
+        for arn in path_arns:
+            policy.grant_object_access(arn, access_level)
+        policy.put()
+
+    def revoke_bucket_access(self, role_name, bucket_arn=None):
+        if not bucket_arn:
+            log.warning(f"Asked to revoke {role_name} role access to nothing")
             return
-        raise e
 
-    policy = S3AccessPolicy(role.Policy("s3-access"))
-    policy.revoke_access(bucket_arn)
-    policy.put()
+        try:
+            role = self.boto3_session.resource("iam").Role(role_name)
+            role.load()
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{role_name}' doesn't exist: Nothing to revoke")
+                return
+            raise e
+
+        policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.revoke_access(bucket_arn)
+        policy.put()
 
 
-def create_group(name, path):
-    iam = boto3.resource("iam")
-    try:
-        iam.create_policy(
-            PolicyName=name,
-            Path=path,
-            PolicyDocument=json.dumps(BASE_S3_ACCESS_POLICY),
+class AWSBucket(AWSService):
+
+    def create_bucket(self, bucket_name, is_data_warehouse=False):
+        s3_resource = self.boto3_session.resource("s3")
+        s3_client = self.boto3_session.client("s3")
+        try:
+            bucket = s3_resource.create_bucket(
+                Bucket=bucket_name,
+                ACL="private",
+                CreateBucketConfiguration={
+                    "LocationConstraint": settings.BUCKET_REGION,
+                },
+            )
+            # Enable versioning by default.
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning
+            versioning = bucket.Versioning()
+            versioning.enable()
+            # Set bucket lifecycle. Send non-current versions of files to glacier
+            # storage after 30 days.
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration
+            lifecycle_id = f"{bucket_name}_lifecycle_configuration"
+            lifecycle_conf = s3_client.put_bucket_lifecycle_configuration(
+                Bucket=bucket_name,
+                LifecycleConfiguration={
+                    "Rules": [
+                        {
+                            "ID": lifecycle_id,
+                            "Status": "Enabled",
+                            "Prefix": "",
+                            "NoncurrentVersionTransitions": [
+                                {
+                                    "NoncurrentDays": 30,
+                                    "StorageClass": "GLACIER",
+                                },
+                            ],
+                        },
+                    ]
+                },
+            )
+            if is_data_warehouse:
+                self._tag_bucket(bucket, {"buckettype": "datawarehouse"})
+
+        except s3_resource.meta.client.exceptions.BucketAlreadyOwnedByYou:
+            log.warning(f"Skipping creating Bucket {bucket_name}: Already exists")
+            return
+
+        bucket.Logging().put(
+            BucketLoggingStatus={
+                "LoggingEnabled": {
+                    "TargetBucket": settings.LOGS_BUCKET_NAME,
+                    "TargetPrefix": f"{bucket_name}/",
+                }
+            }
         )
-    except iam.meta.client.exceptions.EntityAlreadyExistsException:
-        log.warning(f"Skipping creating policy {path}{name}: Already exists")
-
-
-def update_group_members(group_arn, role_names):
-    policy = boto3.resource("iam").Policy(group_arn)
-    members = set(policy.attached_roles.all())
-    existing = {member.role_name for member in members}
-
-    for role in role_names - existing:
-        policy.attach_role(RoleName=role)
-
-    for role in existing - role_names:
-        policy.detach_role(RoleName=role)
-
-
-def delete_group(group_arn):
-    policy = boto3.resource("iam").Policy(group_arn)
-    try:
-        policy.load()
-    except policy.meta.client.exceptions.NoSuchEntityException:
-        log.warning(f"Skipping deletion of policy {group_arn}: Does not exist")
-        return
-
-    for role in policy.attached_roles.all():
-        policy.detach_role(RoleName=role.name)
-
-    for version in policy.versions.all():
-        if version.version_id != policy.default_version_id:
-            version.delete()
-
-    policy.delete()
-
-
-def grant_group_bucket_access(
-    group_policy_arn, bucket_arn, access_level, path_arns=[]
-):
-    if access_level not in ("readonly", "readwrite"):
-        raise ValueError("access_level must be 'readonly' or 'readwrite'")
-
-    if bucket_arn and not path_arns:
-        path_arns = [bucket_arn]
-
-    policy = boto3.resource("iam").Policy(group_policy_arn)
-    policy = ManagedS3AccessPolicy(policy)
-    policy.revoke_access(bucket_arn)
-    policy.grant_list_access(bucket_arn)
-    for arn in path_arns:
-        policy.grant_object_access(arn, access_level)
-    policy.put()
-
-
-def revoke_group_bucket_access(group_policy_arn, bucket_arn=None):
-    if not bucket_arn:
-        log.warning(
-            f"Asked to revoke {group_policy_arn} group access to nothing"
+        bucket.meta.client.put_bucket_encryption(
+            Bucket=bucket_name,
+            ServerSideEncryptionConfiguration={
+                "Rules": [
+                    {
+                        "ApplyServerSideEncryptionByDefault": {
+                            "SSEAlgorithm": "AES256",
+                        },
+                    }
+                ]
+            },
         )
-        return
+        bucket.meta.client.put_public_access_block(
+            Bucket=bucket_name,
+            PublicAccessBlockConfiguration={
+                "BlockPublicAcls": True,
+                "IgnorePublicAcls": True,
+                "BlockPublicPolicy": True,
+                "RestrictPublicBuckets": True,
+            },
+        )
+        return bucket
 
-    policy = boto3.resource("iam").Policy(group_policy_arn)
-    policy = ManagedS3AccessPolicy(policy)
-    policy.revoke_access(bucket_arn)
-    policy.put()
+    def _tag_bucket(self, boto_bucket, tags):
+        """
+        Tags the bucket with the given tags
+
+        - `boto_bucket` is boto resource
+        - `tags` is a dictionary
+
+        NOTE: The tags provided are merged with existing tags (if any)
+
+        example:
+
+        existing tags : {"buckettype": "datawarehouse"}
+        new tags: {"to-archive": "true"}
+        result: {"buckettype": "datawarehouse", "to-archive": "true"}
+
+        example:
+
+        existing tags : {"colour": "red", "foo": "bar"}
+        new tags: {"colour": "BLUE", "buckettype": "datawarehouse"}
+        result: {"colour": "BLUE", "foo": "bar", "buckettype": "datawarehouse"}
+        """
+
+        tagging = boto_bucket.Tagging()
+
+        # Get existing tag set
+        existing_tag_set = []
+        try:
+            existing_tag_set = tagging.tag_set
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchTagSet":
+                existing_tag_set = []
+            else:
+                raise e
+
+        # merge existing tags with new ones - new have precedence
+        tags_existing = {tag["Key"]: tag["Value"] for tag in existing_tag_set}
+        tags_new = {**tags_existing, **tags}
+
+        # convert dictionary to boto/TagSet list/format
+        tag_set = [{"Key": k, "Value": v} for k, v in tags_new.items()]
+
+        # Update tags
+        tagging.put(Tagging={"TagSet": tag_set})
+
+    def tag_bucket(self, bucket_name, tags):
+        """Add the given `tags` to the S3 bucket called `bucket_name`"""
+        s3_resource = self.boto3_session.resource("s3")
+        try:
+            bucket = s3_resource.Bucket(bucket_name)
+            self._tag_bucket(bucket, tags)
+        except s3_resource.meta.client.exceptions.NoSuchBucket:
+            log.warning(f"Bucket {bucket_name} doesn't exist")
 
 
-class AWSParameters:
+class AWSPolicy(AWSService):
 
-    def __init__(self):
-        self.client = boto3.client("ssm", region_name=settings.BUCKET_REGION)
+    def create_policy(self, name, path, policy_document=None):
+        policy_document = policy_document or BASE_S3_ACCESS_POLICY
+        iam = self.boto3_session.resource("iam")
+        try:
+            iam.create_policy(
+                PolicyName=name,
+                Path=path,
+                PolicyDocument=json.dumps(policy_document),
+            )
+        except iam.meta.client.exceptions.EntityAlreadyExistsException:
+            log.warning(f"Skipping creating policy {path}{name}: Already exists")
+
+    def update_policy_members(self, policy_arn, role_names):
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        members = set(policy.attached_roles.all())
+        existing = {member.role_name for member in members}
+
+        for role in role_names - existing:
+            policy.attach_role(RoleName=role)
+
+        for role in existing - role_names:
+            policy.detach_role(RoleName=role)
+
+    def delete_policy(self, policy_arn):
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        try:
+            policy.load()
+        except policy.meta.client.exceptions.NoSuchEntityException:
+            log.warning(f"Skipping deletion of policy {policy_arn}: Does not exist")
+            return
+
+        for role in policy.attached_roles.all():
+            policy.detach_role(RoleName=role.name)
+
+        for version in policy.versions.all():
+            if version.version_id != policy.default_version_id:
+                version.delete()
+
+        policy.delete()
+
+    def grant_policy_bucket_access(self, policy_arn, bucket_arn, access_level, path_arns=None):
+        if access_level not in ("readonly", "readwrite"):
+            raise ValueError("access_level must be 'readonly' or 'readwrite'")
+
+        if bucket_arn and not path_arns:
+            path_arns = [bucket_arn]
+
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        policy = ManagedS3AccessPolicy(policy)
+        policy.revoke_access(bucket_arn)
+        policy.grant_list_access(bucket_arn)
+        for arn in path_arns or []:
+            policy.grant_object_access(arn, access_level)
+        policy.put()
+
+    def revoke_policy_bucket_access(self, policy_arn, bucket_arn=None):
+        if not bucket_arn:
+            log.warning(
+                f"Asked to revoke {policy_arn} group access to nothing"
+            )
+            return
+
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        policy = ManagedS3AccessPolicy(policy)
+        policy.revoke_access(bucket_arn)
+        policy.put()
+
+
+class AWSParameterStore(AWSService):
+
+    def __init__(self, assume_role_name = None, profile_name = None):
+        super(AWSParameterStore, self).__init__(assume_role_name=assume_role_name, profile_name=profile_name)
+        self.client = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
 
     def create_parameter(self, name, value, role_name, description=""):
         try:
@@ -645,20 +549,15 @@ class AWSParameters:
             log.warning(f"Skipping deleting Parameter {name}: Does not exist")
 
 
-def list_role_names(prefix="/"):
-    roles = boto3.resource("iam").roles.filter(PathPrefix=prefix).all()
-    return [role.name for role in list(roles)]
-
-
-
 class AWSSecretManagerError(Exception):
     pass
 
 
-class AWSSecretManager:
+class AWSSecretManager(AWSService):
 
-    def __init__(self):
-        self.client = boto3.client("secretsmanager", region_name=settings.BUCKET_REGION)
+    def __init__(self, assume_role_name = None, profile_name = None):
+        super(AWSSecretManager, self).__init__(assume_role_name=assume_role_name, profile_name=profile_name)
+        self.client = self.boto3_session.client("secretsmanager")
 
     def _format_error_message(self, client_error_response):
         return format("{}: {}.".format(client_error_response.get("Error"),
