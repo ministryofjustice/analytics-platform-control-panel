@@ -180,6 +180,9 @@ add_perm('api.update_tool', is_authenticated & is_superuser)
 add_perm('api.destroy_tool', is_authenticated & is_superuser)
 
 
+add_perm('api.list_ip_allowlists', is_authenticated & is_superuser)
+
+
 @predicate
 def is_owner(user, obj):
     if obj is None:
