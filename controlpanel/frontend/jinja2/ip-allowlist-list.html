@@ -27,7 +27,8 @@
         {{ ip_allowlist.description }}
       </td>
       <td class="govuk-table__cell align-right no-wrap">
-        <a class="govuk-button govuk-button--secondary">
+        <a href="{{ url('manage-ip-allowlist', kwargs={ "pk": ip_allowlist.pk }) }}"
+           class="govuk-button govuk-button--secondary">
           Manage IP allowlist 
         </a>
       </td>
