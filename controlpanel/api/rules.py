@@ -181,6 +181,7 @@ add_perm('api.destroy_tool', is_authenticated & is_superuser)
 
 
 add_perm('api.list_ip_allowlists', is_authenticated & is_superuser)
+add_perm('api.create_ip_allowlists', is_authenticated & is_superuser)
 
 
 @predicate

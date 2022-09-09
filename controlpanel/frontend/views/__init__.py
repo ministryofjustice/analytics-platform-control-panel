@@ -69,6 +69,7 @@ from controlpanel.frontend.views.release import (
 )
 from controlpanel.frontend.views.ip_allowlist import (
     IPAllowlistList,
+    IPAllowlistCreate,
 )
 from controlpanel.frontend.views.reset import ResetHome
 from controlpanel.frontend.views.accessibility import Accessibility 

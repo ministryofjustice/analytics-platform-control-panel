@@ -35,4 +35,11 @@
   {% endfor %}
   </tbody>
 </table>
+{% if request.user.has_perm('api.create_ip_allowlist') %}
+  <p class="govuk-body">
+  <a class="govuk-button" href="{{ url('create-ip-allowlist') }}">
+      Create new IP allowlist
+    </a>
+  </p>
+{% endif %}
 {% endblock %}

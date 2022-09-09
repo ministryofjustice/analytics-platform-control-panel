@@ -62,5 +62,6 @@ urlpatterns = [
     path("release/<int:pk>/", views.ReleaseDetail.as_view(), name="manage-tool-release"),
     path("release/<int:pk>/delete/", views.ReleaseDelete.as_view(), name="delete-tool-release"),
     path("ip-allowlists/", views.IPAllowlistList.as_view(), name="list-ip-allowlists"),
+    path("ip-allowlists/new/", views.IPAllowlistCreate.as_view(), name="create-ip-allowlist"),
     path("accessibility/", views.Accessibility.as_view(), name="accessibility"),
 ]
