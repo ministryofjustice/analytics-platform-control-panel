@@ -98,6 +98,15 @@
   </section>
   {% endif %}
 
+  {% if request.user.has_perm('api.create_app', app) %}
+  <h2 class="govuk-heading-m" >Secrets Manager variables</h2>
+  <section>
+    <div class="govuk-form-group">
+      <a class="govuk-button" href="{{ url('add-secret', kwargs={"pk": app.id}) }}">Add new</a>
+    </div>
+  </section>
+{% endif %}
+
   <h2 class="govuk-heading-m">
     App customers
     {{ modal_dialog(app_customers_html|safe) }}
