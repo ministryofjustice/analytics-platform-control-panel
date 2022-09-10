@@ -348,3 +348,9 @@ class ToolReleaseForm(forms.ModelForm):
             "is_restricted",
             "tool_domain",
         ]
+
+class SecretsForm(forms.Form):
+    secret_key = forms.CharField(required=True, widget=forms.HiddenInput)
+    secret_value = forms.CharField(required=True, widget=forms.PasswordInput(
+        attrs={'class': 'govuk-input cpanel-input--1-3'}
+    ) )

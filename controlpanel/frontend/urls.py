@@ -1,6 +1,8 @@
+from xml.etree.ElementInclude import include
 from django.urls import path
 
 from controlpanel.frontend import views
+from controlpanel.frontend.views import secrets
 
 
 urlpatterns = [
@@ -52,6 +54,8 @@ urlpatterns = [
     path("webapps/<int:pk>/admins/", views.AddAdmin.as_view(), name="add-app-admin"),
     path("webapps/<int:pk>/admins/<str:user_id>/revoke/", views.RevokeAdmin.as_view(), name="revoke-app-admin"),
     path("webapps/<int:pk>/datasource-access/", views.GrantAppAccess.as_view(), name="grant-app-access"),
+    path('webapps/<int:pk>/secrests/add/', secrets.SecretAddViewSet.as_view(), name='add-secret'),
+    path('webapps/<int:pk>/secrests/delete/', secrets.SecretAddViewSet.as_view(), name='delete-secret'),
     path("webapp-datasource-access/<int:pk>/", views.UpdateAppAccess.as_view(), name="update-app-access"),
     path("webapp-datasource-access/<int:pk>/delete/", views.RevokeAppAccess.as_view(), name="revoke-app-access"),
     path("reset-user-home/", views.ResetHome.as_view(), name="home-reset"),
