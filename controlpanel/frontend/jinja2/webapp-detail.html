@@ -102,7 +102,7 @@
   <h2 class="govuk-heading-m" >Secrets Manager variables</h2>
   <section>
     <div class="govuk-form-group">
-      <a class="govuk-button" href="{{ url('add-secret', kwargs={"pk": app.id}) }}">Add new</a>
+      <a class="govuk-button" href="{{ url('view-secret', kwargs={"pk": app.id}) }}">View Secrets</a>
     </div>
   </section>
 {% endif %}
