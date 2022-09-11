@@ -10,6 +10,7 @@ from django.conf import settings
 
 from typing import Optional
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
+from typing import Optional
 
 
 log = structlog.getLogger(__name__)
