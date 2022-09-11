@@ -350,7 +350,13 @@ class ToolReleaseForm(forms.ModelForm):
         ]
 
 class SecretsForm(forms.Form):
-    secret_key = forms.CharField(required=True, widget=forms.HiddenInput)
     secret_value = forms.CharField(required=True, widget=forms.PasswordInput(
         attrs={'class': 'govuk-input cpanel-input--1-3'}
     ) )
+
+
+class DisableAuthForm(SecretsForm):
+    secret_value = forms.BooleanField(
+        widget=forms.CheckboxInput(attrs={'class': 'govuk-checkboxes__input'}),
+        help_text='Disable Authentication for you webapp'
+    )

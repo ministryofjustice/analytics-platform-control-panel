@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+from optparse import Option
 import structlog
 
 import boto3
@@ -7,6 +8,8 @@ import botocore
 import base64
 from botocore.exceptions import ClientError
 from django.conf import settings
+
+from typing import Optional
 
 
 log = structlog.getLogger(__name__)
@@ -738,3 +741,8 @@ class AWSSecretManager:
         else:
             return self.update_secret(secret_name, secret_data=secret_data)
 
+
+    def get_secret_if_found(self, secret_name: str) -> Optional[dict]:
+        if self.has_existed(secret_name):
+            return self.get_secret(secret_name)
+        return {}
