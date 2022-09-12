@@ -4,6 +4,10 @@ source =
     controlpanel
 omit =
     */migrations/*
+    controlpanel/wsgi.py
+    controlpanel/settings/*
+    controlpanel/asgi.py
+    controlpanel/cli/tests.py
 
 [report]
 fail_under = 75

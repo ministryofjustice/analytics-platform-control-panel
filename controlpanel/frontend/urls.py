@@ -57,7 +57,7 @@ urlpatterns = [
 
     path('webapps/<int:pk>/secrets/view/', secrets.SecretAddViewSet.as_view(), name='view-secret'),
     path('webapps/<int:pk>/secrets/add/<str:secret_key>/', secrets.SecretAddUpdate.as_view(), name='add-secret'),
-    path('webapps/<int:pk>/secrets/delete/<str:secret_key>/', secrets.SecretAddUpdate.as_view(), name='delete-secret'),
+    path('webapps/<int:pk>/secrets/delete/<str:secret_key>/', secrets.SecretDelete.as_view(), name='delete-secret'),
 
     path("webapp-datasource-access/<int:pk>/", views.UpdateAppAccess.as_view(), name="update-app-access"),
     path("webapp-datasource-access/<int:pk>/delete/", views.RevokeAppAccess.as_view(), name="revoke-app-access"),
