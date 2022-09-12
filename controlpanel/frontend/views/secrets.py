@@ -24,7 +24,7 @@ class AppSecretMixin:
 
 
 class SecretAddViewSet(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMixin, TemplateView):
-    permission_required = 'api.create_app'
+    permission_required = 'api.update_app_secret'
     template_name = 'secret-view-variable.html'
     allowed_secrets = {
         'generic': SecretsForm,
@@ -36,7 +36,6 @@ class SecretAddViewSet(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecre
         # get all set secrets
         app = self._get_app(pk)
         set_secrets = aws.AWSSecretManager().get_secret_if_found(app.app_aws_secret_name)
-        set_secrets = ['disable_authentication']
         set_secrets = [key for key, _ in self.allowed_secrets.items() if key in set_secrets]
 
         return super(SecretAddViewSet, self).get(request, *args, pk=pk, set_secrets=set_secrets, **kwargs)
@@ -49,7 +48,7 @@ class SecretAddViewSet(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecre
 
 
 class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMixin, FormView):
-    permission_required = 'api.create_app'
+    permission_required = 'api.update_app_secret'
     template_name = 'secret-add-variable.html'
     success_url = 'view-secret'
     allowed_keys = {
@@ -83,7 +82,7 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
 
 class SecretDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMixin, DeletionMixin, TemplateView):
     success_url = 'view-secret'
-    permission_required = 'api.create_app'
+    permission_required = 'api.update_app_secret'
 
     def delete(self, request, *args, pk=None, secret_key=None, **kwargs):
         """
@@ -96,5 +95,3 @@ class SecretDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMix
         aws.AWSSecretManager().delete_secret(secret_key)
         success_url = self.get_success_url()
         return HttpResponseRedirect(success_url)
-
-    
