@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from rules.contrib.views import PermissionRequiredMixin
 from django.http.response import HttpResponseRedirect
 
@@ -57,3 +57,14 @@ class IPAllowlistDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateV
         self.object = form.save()
         messages.success(self.request, "Successfully updated IP allowlist")
         return HttpResponseRedirect(reverse_lazy("list-ip-allowlists"))
+
+class IPAllowlistDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    """
+    Delete an IP allowlist
+    """
+    model = IPAllowlist
+    permission_required = 'api.destroy_ip_allowlist'
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully deleted IP allowlist")
+        return reverse_lazy("list-ip-allowlists")

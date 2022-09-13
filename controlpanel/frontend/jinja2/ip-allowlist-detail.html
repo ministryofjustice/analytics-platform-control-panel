@@ -70,4 +70,12 @@
     <button class="govuk-button">Update IP allowlist</button>
   </form>
 
+  <form action="{{ url("delete-ip-allowlist", kwargs={ "pk": ip_allowlist.pk}) }}" method="post">
+    {{ csrf_input }}
+    <button class="govuk-button cpanel-button--destructive js-confirm"
+            data-confirm-message="Are you sure you want to delete this IP allowlist?">
+      Delete IP allowlist
+    </button>
+  </form>
+
 {% endblock %}

@@ -64,5 +64,6 @@ urlpatterns = [
     path("ip-allowlists/", views.IPAllowlistList.as_view(), name="list-ip-allowlists"),
     path("ip-allowlists/new/", views.IPAllowlistCreate.as_view(), name="create-ip-allowlist"),
     path("ip-allowlists/<int:pk>/", views.IPAllowlistDetail.as_view(), name="manage-ip-allowlist"),
+    path("ip-allowlists/<int:pk>/delete/", views.IPAllowlistDelete.as_view(), name="delete-ip-allowlist"),
     path("accessibility/", views.Accessibility.as_view(), name="accessibility"),
 ]
