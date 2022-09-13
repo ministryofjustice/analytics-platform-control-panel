@@ -56,15 +56,16 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
         'disable_authentication': DisableAuthForm,
     }
 
-    def get_form(self, form_class):
+    def get_form(self, form_class=None):
         # secret_key received from the url
         form_key = self.kwargs.get('secret_key', 'generic')
         form_class = self.allowed_keys.get(form_key)
-        return form_class
+        return form_class(**self.get_form_kwargs())
 
     def get_context_data(self, **kwargs):
         secret_key = self.kwargs.get('secret_key')
         form = self.allowed_keys.get(secret_key)()
+
         return super(SecretAddUpdate, self).get_context_data(secret_key=secret_key, form=form, **kwargs)
 
     def form_valid(self, form):
