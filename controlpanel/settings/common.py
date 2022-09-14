@@ -95,6 +95,8 @@ MIDDLEWARE = [
     # Structured logging
     "django_structlog.middlewares.RequestMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    # Track which user made changes to models utilising django-simple-history
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 TEMPLATES = [

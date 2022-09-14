@@ -11,3 +11,9 @@ class IPAllowlist(TimeStampedModel):
     contact = models.CharField(max_length=60, blank=True)
     allowed_ip_ranges = models.TextField(blank=False, validators=[validate_ip_ranges])
     history = HistoricalRecords()
+
+    def __repr__(self):
+        return f"<IPAllowlist: {self.pk}|{self.name}>"
+
+    def __str__(self):
+         return f"{self.name}"
