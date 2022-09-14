@@ -36,6 +36,7 @@ from controlpanel.frontend.forms import (
     CreateAppForm,
     GrantAppAccessForm,
 )
+from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -110,9 +111,13 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             errors = context.setdefault('errors', {})
             errors['customer_email'] = add_customer_form_errors['customer_email']
 
+        set_secrets = aws.AWSSecretManager().get_secret_if_found(self.object.app_aws_secret_name)
+
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
         context['has_setup_completed_for_client'] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
-
+        context['allowed_secret_keys'] = {
+            key: set_secrets.get(key, False) for key, _ in secrets.ALLOWED_SECRETS.items()
+        }
         return context
 
 

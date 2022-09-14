@@ -589,7 +589,7 @@ class AWSSecretManager(AWSService):
         except botocore.exceptions.ClientError as error:
             raise AWSSecretManagerError(self._format_error_message(error.response))
 
-    def update_secret(self, secret_name, secret_data):
+    def update_secret(self, secret_name, secret_data, delete_keys: list=[]):
         try:
             kwargs = {"SecretId": secret_name}
             response = self.client.get_secret_value(SecretId=secret_name)
@@ -601,6 +601,10 @@ class AWSSecretManager(AWSService):
                     origin_data = json.loads(response['SecretString'])
                 for key, value in secret_data.items():
                     origin_data[key] = value
+                for key in delete_keys:
+                    if key in origin_data:
+                        del origin_data[key]
+
                 kwargs["SecretString"] = json.dumps(origin_data)
             self.client.update_secret(**kwargs)
         except botocore.exceptions.ClientError as error:

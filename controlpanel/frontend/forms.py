@@ -357,6 +357,7 @@ class SecretsForm(forms.Form):
 
 class DisableAuthForm(SecretsForm):
     secret_value = forms.BooleanField(
+        required=False,
         widget=forms.CheckboxInput(attrs={'class': 'govuk-checkboxes__input'}),
         help_text='Disable Authentication for you webapp'
     )
