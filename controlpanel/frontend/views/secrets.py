@@ -40,7 +40,6 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
 
         # get stored current secret vars
         data = aws.AWSSecretManager().get_secret(app.app_aws_secret_name)
-        print('data >>> ', data)
         form = ALLOWED_SECRETS.get(secret_key)(initial=dict(secret_value=data.get(secret_key)))
         return super(SecretAddUpdate, self).get_context_data(form=form, **kwargs)
 
