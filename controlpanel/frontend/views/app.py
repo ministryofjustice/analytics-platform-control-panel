@@ -116,7 +116,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
         context['has_setup_completed_for_client'] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
         context['allowed_secret_keys'] = {
-            key: set_secrets.get(key, False) for key, _ in secrets.ALLOWED_SECRETS.items()
+            key: set_secrets.get(key) for key, _ in secrets.ALLOWED_SECRETS.items()
         }
         return context
 
