@@ -3,6 +3,7 @@ import json
 import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
+from unittest.mock import patch
 
 from controlpanel.api.models import (
     AppS3Bucket,
@@ -51,61 +52,64 @@ def test_detail(client, users3buckets):
     assert response.data['access_level'] == 'readonly'
 
 
-def test_create(client, buckets, users, aws):
-    data = {
-        'user': users['other_user'].auth0_id,
-        's3bucket': buckets[1].id,
-        'access_level': AppS3Bucket.READONLY,
-    }
-    response = client.post(reverse('users3bucket-list'), data)
-    assert response.status_code == status.HTTP_201_CREATED
+def test_create(client, buckets, users):
+    with patch('controlpanel.api.aws.AWSRole.grant_bucket_access') as grant_bucket_access:
+        data = {
+            'user': users['other_user'].auth0_id,
+            's3bucket': buckets[1].id,
+            'access_level': AppS3Bucket.READONLY,
+        }
+        response = client.post(reverse('users3bucket-list'), data)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    users3bucket = UserS3Bucket.objects.get(user=users['other_user'], s3bucket=buckets[1])
+        users3bucket = UserS3Bucket.objects.get(user=users['other_user'], s3bucket=buckets[1])
 
-    aws.grant_bucket_access.assert_called_with(
-        users['other_user'].iam_role_name,
-        buckets[1].arn,
-        AppS3Bucket.READONLY,
-        users3bucket.resources,
-    )
-    # TODO get policy from call and assert bucket ARN exists
-
-
-def test_delete(client, users3buckets, aws):
-    response = client.delete(reverse('users3bucket-detail', (users3buckets[1].id,)))
-    assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    aws.revoke_bucket_access.assert_called_with(
-        users3buckets[1].user.iam_role_name,
-        users3buckets[1].s3bucket.arn,
-    )
-    # TODO get policy from call and assert bucket ARN not contained
-
-    response = client.get(reverse('users3bucket-detail', (users3buckets[1].id,)))
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+        grant_bucket_access.assert_called_with(
+            users['other_user'].iam_role_name,
+            buckets[1].arn,
+            AppS3Bucket.READONLY,
+            users3bucket.resources,
+        )
+        # TODO get policy from call and assert bucket ARN exists
 
 
-def test_update(client, buckets, users, users3buckets, aws):
-    data = {
-        'user': users['normal_user'].auth0_id,
-        's3bucket': buckets[1].id,
-        'access_level': UserS3Bucket.READWRITE,
-    }
-    response = client.put(
-        reverse('users3bucket-detail', (users3buckets[1].id,)),
-        json.dumps(data),
-        content_type="application/json",
-    )
-    assert response.status_code == status.HTTP_200_OK
-    assert response.data['access_level'] == data['access_level']
+def test_delete(client, users3buckets):
+    with patch('controlpanel.api.aws.AWSRole.revoke_bucket_access') as revoke_bucket_access:
+        response = client.delete(reverse('users3bucket-detail', (users3buckets[1].id,)))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
 
-    aws.grant_bucket_access.assert_called_with(
-        users['normal_user'].iam_role_name,
-        buckets[1].arn,
-        UserS3Bucket.READWRITE,
-        users3buckets[1].resources,
-    )
-    # TODO get policy and assert ARN present in correct place
+        revoke_bucket_access.assert_called_with(
+            users3buckets[1].user.iam_role_name,
+            users3buckets[1].s3bucket.arn,
+        )
+        # TODO get policy from call and assert bucket ARN not contained
+
+        response = client.get(reverse('users3bucket-detail', (users3buckets[1].id,)))
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_update(client, buckets, users, users3buckets):
+    with patch('controlpanel.api.aws.AWSRole.grant_bucket_access') as grant_bucket_access:
+        data = {
+            'user': users['normal_user'].auth0_id,
+            's3bucket': buckets[1].id,
+            'access_level': UserS3Bucket.READWRITE,
+        }
+        response = client.put(
+            reverse('users3bucket-detail', (users3buckets[1].id,)),
+            json.dumps(data),
+            content_type="application/json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['access_level'] == data['access_level']
+
+        grant_bucket_access.assert_called_with(
+            users['normal_user'].iam_role_name,
+            buckets[1].arn,
+            UserS3Bucket.READWRITE,
+            users3buckets[1].resources,
+        )
+        # TODO get policy and assert ARN present in correct place
 
 
 @pytest.mark.parametrize(

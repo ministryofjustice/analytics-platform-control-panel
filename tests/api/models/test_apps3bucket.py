@@ -33,55 +33,58 @@ def test_one_record_per_app_per_s3bucket(app, bucket):
 
 
 @pytest.mark.django_db
-def test_update_aws_permissions(app, bucket, aws):
-    apps3bucket = AppS3Bucket(
-        app=app,
-        s3bucket=bucket,
-        access_level=AppS3Bucket.READONLY,
-    )
+def test_update_aws_permissions(app, bucket):
+    with patch('controlpanel.api.cluster.AWSRole.grant_bucket_access') as grant_bucket_access_action:
+        apps3bucket = AppS3Bucket(
+            app=app,
+            s3bucket=bucket,
+            access_level=AppS3Bucket.READONLY,
+        )
 
-    apps3bucket.save()
+        apps3bucket.save()
 
-    aws.grant_bucket_access.assert_called_with(
-        app.iam_role_name,
-        bucket.arn,
-        AppS3Bucket.READONLY,
-        apps3bucket.resources,
-    )
-    # TODO get policy from call and assert ARN in correct place
-
-
-@pytest.mark.django_db
-def test_aws_create(app, bucket, aws):
-    apps3bucket = AppS3Bucket(
-        app=app,
-        s3bucket=bucket,
-        access_level=AppS3Bucket.READONLY,
-    )
-
-    apps3bucket.save()
-
-    aws.grant_bucket_access.assert_called_with(
-        app.iam_role_name,
-        bucket.arn,
-        AppS3Bucket.READONLY,
-        apps3bucket.resources,
-    )
-    # TODO make this test a case on previous
+        grant_bucket_access_action.assert_called_with(
+            app.iam_role_name,
+            bucket.arn,
+            AppS3Bucket.READONLY,
+            apps3bucket.resources,
+        )
+        # TODO get policy from call and assert ARN in correct place
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(app, aws, bucket):
-    apps3bucket = mommy.make(
-        'api.AppS3Bucket',
-        app=app,
-        s3bucket=bucket,
-        access_level=AppS3Bucket.READONLY,
-    )
+def test_aws_create(app, bucket):
+    with patch('controlpanel.api.cluster.AWSRole.grant_bucket_access') as grant_bucket_access_action:
+        apps3bucket = AppS3Bucket(
+            app=app,
+            s3bucket=bucket,
+            access_level=AppS3Bucket.READONLY,
+        )
 
-    apps3bucket.delete()
+        apps3bucket.save()
 
-    aws.revoke_bucket_access.assert_called_with(
-        apps3bucket.iam_role_name,
-        bucket.arn,
-    )
+        grant_bucket_access_action.assert_called_with(
+            app.iam_role_name,
+            bucket.arn,
+            AppS3Bucket.READONLY,
+            apps3bucket.resources,
+        )
+        # TODO make this test a case on previous
+
+
+@pytest.mark.django_db
+def test_delete_revoke_permissions(app, bucket):
+    with patch('controlpanel.api.cluster.AWSRole.revoke_bucket_access') as revoke_bucket_access_action:
+        apps3bucket = mommy.make(
+            'api.AppS3Bucket',
+            app=app,
+            s3bucket=bucket,
+            access_level=AppS3Bucket.READONLY,
+        )
+
+        apps3bucket.delete()
+
+        revoke_bucket_access_action.assert_called_with(
+            apps3bucket.iam_role_name,
+            bucket.arn,
+        )

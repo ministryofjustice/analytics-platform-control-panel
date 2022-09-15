@@ -2,7 +2,7 @@ from django.urls import reverse
 from model_mommy import mommy
 import pytest
 from rest_framework import status
-
+from unittest.mock import patch
 from controlpanel.api.models import UserS3Bucket
 
 
@@ -22,13 +22,14 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def buckets(db):
-    return {
-        'app_data1': mommy.make('api.S3Bucket', is_data_warehouse=False),
-        'app_data2': mommy.make('api.S3Bucket', is_data_warehouse=False),
-        'warehouse1': mommy.make('api.S3Bucket', is_data_warehouse=True),
-        'warehouse2': mommy.make('api.S3Bucket', is_data_warehouse=True),
-        'other': mommy.make('api.S3Bucket'),
-    }
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        return {
+            'app_data1': mommy.make('api.S3Bucket', is_data_warehouse=False),
+            'app_data2': mommy.make('api.S3Bucket', is_data_warehouse=False),
+            'warehouse1': mommy.make('api.S3Bucket', is_data_warehouse=True),
+            'warehouse2': mommy.make('api.S3Bucket', is_data_warehouse=True),
+            'other': mommy.make('api.S3Bucket'),
+        }
 
 
 @pytest.fixture(autouse=True)

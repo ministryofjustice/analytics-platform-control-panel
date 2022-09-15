@@ -2,6 +2,7 @@ from django.urls import reverse
 from model_mommy import mommy
 import pytest
 from rest_framework import status
+from unittest.mock import patch
 
 
 @pytest.fixture(autouse=True)
@@ -14,9 +15,10 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def param(users):
-    mommy.make('api.Parameter', 3, created_by=users['other_user'])
-    param = mommy.make('api.Parameter', created_by=users['owner'])
-    return param
+    with patch('controlpanel.api.aws.AWSParameterStore.create_parameter') as create_parameter:
+        mommy.make('api.Parameter', 3, created_by=users['other_user'])
+        param = mommy.make('api.Parameter', created_by=users['owner'])
+        return param
 
 
 def list(client, *args):

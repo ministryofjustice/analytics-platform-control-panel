@@ -214,19 +214,19 @@ class User(EntityResource):
         for helm_chart_item in self.user_helm_charts["installation"]:
             self._run_helm_install_command(helm_chart_item)
 
-    @property
-    def aws_user_policy(self):
+    @staticmethod
+    def aws_user_policy(user_auth0_id, user_name):
         policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
         policy["Statement"].append(User.SAML_STATEMENT)
         oidc_statement = deepcopy(User.OIDC_STATEMENT)
         oidc_statement["Condition"] = {
             "StringEquals": {
-                f"{settings.OIDC_DOMAIN}/:sub": self.user.auth0_id,
+                f"{settings.OIDC_DOMAIN}/:sub": user_auth0_id,
             }
         }
         policy["Statement"].append(oidc_statement)
         eks_statement = deepcopy(User.EKS_STATEMENT)
-        match = f"system:serviceaccount:user-{self.user.slug}:{self.user.slug}-*"
+        match = f"system:serviceaccount:user-{user_name}:{user_name}-*"
         eks_statement["Condition"]["StringLike"] = {
             f"{settings.OIDC_EKS_PROVIDER}:sub": match
         }
@@ -234,7 +234,8 @@ class User(EntityResource):
         return policy
 
     def create(self):
-        self.aws_role_service.create_role(self.iam_role_name, self.aws_user_policy, User.ATTACH_POLICIES)
+        self.aws_role_service.create_role(
+            self.iam_role_name, User.aws_user_policy(self.user.auth0_id, self.user.slug), User.ATTACH_POLICIES)
         self._init_user()
 
     def reset_home(self):
@@ -451,7 +452,7 @@ class AppParameter(EntityResource):
         return self.aws_param_service.create_parameter(
             self.parameter.name,
             self.parameter.value,
-            self.parameter.role,
+            self.parameter.role_name,
             self.parameter.description)
 
     def delete_parameter(self):

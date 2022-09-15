@@ -2,11 +2,11 @@ import json
 
 from model_mommy import mommy
 import pytest
+from unittest.mock import patch
 from rest_framework import status
 from rest_framework.reverse import reverse
 
 from controlpanel.api.models import AppS3Bucket
-import controlpanel.api.rules
 
 
 @pytest.fixture
@@ -50,23 +50,24 @@ def app(users):
 
 @pytest.fixture
 def buckets(users):
-    buckets = {
-        'first': mommy.make("api.S3Bucket", is_data_warehouse=False),
-        'other': mommy.make('api.S3Bucket', is_data_warehouse=False),
-    }
-    mommy.make(
-        'api.UserS3Bucket',
-        user=users['bucket_admin'],
-        s3bucket=buckets['first'],
-        is_admin=True,
-    )
-    mommy.make(
-        'api.UserS3Bucket',
-        user=users['app_bucket_admin'],
-        s3bucket=buckets['first'],
-        is_admin=True,
-    )
-    return buckets
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        buckets = {
+            'first': mommy.make("api.S3Bucket", is_data_warehouse=False),
+            'other': mommy.make('api.S3Bucket', is_data_warehouse=False),
+        }
+        mommy.make(
+            'api.UserS3Bucket',
+            user=users['bucket_admin'],
+            s3bucket=buckets['first'],
+            is_admin=True,
+        )
+        mommy.make(
+            'api.UserS3Bucket',
+            user=users['app_bucket_admin'],
+            s3bucket=buckets['first'],
+            is_admin=True,
+        )
+        return buckets
 
 
 @pytest.fixture

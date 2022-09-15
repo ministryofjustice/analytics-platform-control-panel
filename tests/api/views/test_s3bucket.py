@@ -13,15 +13,17 @@ from tests.api.fixtures.es import BUCKET_HITS_AGGREGATION
 
 @pytest.fixture
 def bucket():
-    return mommy.make('api.S3Bucket', name='test-bucket-1')
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        return mommy.make('api.S3Bucket', name='test-bucket-1')
 
 
 @pytest.fixture(autouse=True)
 def models(bucket):
-    mommy.make('api.S3Bucket')
-    mommy.make('api.S3Bucket', is_data_warehouse=True)
-    mommy.make('api.AppS3Bucket', s3bucket=bucket)
-    mommy.make('api.UserS3Bucket', s3bucket=bucket)
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        mommy.make('api.S3Bucket')
+        mommy.make('api.S3Bucket', is_data_warehouse=True)
+        mommy.make('api.AppS3Bucket', s3bucket=bucket)
+        mommy.make('api.UserS3Bucket', s3bucket=bucket)
 
 
 def test_list(client):
@@ -93,25 +95,26 @@ def test_delete(client, bucket):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, superuser, aws):
-    data = {'name': 'test-bucket-123'}
-    response = client.post(reverse('s3bucket-list'), data)
-    assert response.status_code == status.HTTP_201_CREATED
+def test_create(client, superuser):
+    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+        data = {'name': 'test-bucket-123'}
+        response = client.post(reverse('s3bucket-list'), data)
+        assert response.status_code == status.HTTP_201_CREATED
 
-    assert response.data['created_by'] == superuser.auth0_id
-    assert not response.data['is_data_warehouse']
+        assert response.data['created_by'] == superuser.auth0_id
+        assert not response.data['is_data_warehouse']
 
-    aws.create_bucket.assert_called()
+        create_bucket.assert_called()
 
-    users3bucket = UserS3Bucket.objects.get(
-        user_id=superuser.auth0_id,
-        s3bucket_id=response.data['id'],
-    )
+        users3bucket = UserS3Bucket.objects.get(
+            user_id=superuser.auth0_id,
+            s3bucket_id=response.data['id'],
+        )
 
-    assert users3bucket.user.auth0_id == superuser.auth0_id
-    assert response.data['id'] == users3bucket.s3bucket.id
-    assert UserS3Bucket.READWRITE == users3bucket.access_level
-    assert users3bucket.is_admin
+        assert users3bucket.user.auth0_id == superuser.auth0_id
+        assert response.data['id'] == users3bucket.s3bucket.id
+        assert UserS3Bucket.READWRITE == users3bucket.access_level
+        assert users3bucket.is_admin
 
 
 EXISTING_BUCKET_NAME = object()
