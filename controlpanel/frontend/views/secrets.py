@@ -13,7 +13,7 @@ from controlpanel.api.models import App
 from controlpanel.api import aws
 
 from django.views.generic import TemplateView
-from django.views.generic.edit import FormView, View
+from django.views.generic.edit import View
 from django.contrib import messages
 
 log = structlog.getLogger(__name__)
