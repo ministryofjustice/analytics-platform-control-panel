@@ -88,7 +88,7 @@ class ParameterDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
 class ParameterFormRoleList(OIDCLoginRequiredMixin, View):
 
     def get(self, *args, **kwargs):
-        roles = cluster.list_role_names()
+        roles = cluster.App(None).list_role_names()
         data = [
             r for r in roles
             if r.startswith(f"airflow")

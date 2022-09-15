@@ -63,15 +63,10 @@ class Parameter(TimeStampedModel):
         super().save(*args, **kwargs)
 
         if is_create:
-            cluster.create_parameter(
-                self.name,
-                self.value,
-                self.role_name,
-                self.description,
-            )
+            cluster.AppParameter(self).create_parameter()
 
         return self
 
     def delete(self, *args, **kwargs):
-        cluster.delete_parameter(self.name)
+        cluster.AppParameter(self).delete_parameter()
         super().delete(*args, **kwargs)

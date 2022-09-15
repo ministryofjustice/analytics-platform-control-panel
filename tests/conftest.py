@@ -20,13 +20,13 @@ def client(client):
     return client
 
 
-@pytest.yield_fixture(autouse=True)
-def aws():
-    """
-    Mock calls to AWS
-    """
-    with patch('controlpanel.api.cluster.aws') as aws:
-        yield aws
+# @pytest.yield_fixture(autouse=True)
+# def aws():
+#     """
+#     Mock calls to AWS
+#     """
+#     with patch('controlpanel.api.cluster.aws') as aws:
+#         yield aws
 
 
 @pytest.yield_fixture(autouse=True)
