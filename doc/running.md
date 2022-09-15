@@ -120,27 +120,7 @@ kubectl cluster-info
 The token for accessing the cluser will expire periodically.
 To refresh the token automatically, the following lines can be added into your ~/.kube/config:
 
-```shell
-- name: arn:aws:eks:eu-west-1:<AWS_DEV_ACCOUNT>:cluster/<dev_cluster_name>
-  user:
-    exec:
-      apiVersion: client.authentication.k8s.io/v1alpha1
-      args:
-      - exec
-      - admin-dev
-      - --
-      - aws
-      - --region
-      - eu-west-1
-      - eks
-      - get-token
-      - --cluster-name
-      - <dev_cluster_name>
-      command: /usr/local/bin/aws-vault
-      env: null
-      provideClusterInfo: false
-```
-admin-dev is the profile name for dev AWS account in your AWS configuration file.
+### Environment variables
 
 For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
@@ -293,12 +273,14 @@ kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/co
 
 ### Check the environment file
 
+#### General checks
+
 Check whether you have the following 2 in the env file and make sure they are correct
-- ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
+- ```EKS```: True, indicating EKS cluster will be used in the app.
 - ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
 
 ```
-export AWS_PROFILE = "admin-data"
+export EKS=True
 ```
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
@@ -313,6 +295,20 @@ if you are not sure, can use the following command to find it out
 helm env
 ```
 Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
+
+#### AWS credential setting for single AWS role
+If you want to run the control panel app to manage AWS resources under single role, you can use
+following environment variable to define the profile you want to use
+- ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
+export AWS_PROFILE = "admin-data"
+- Make sure there is NO other AWS boto3 environment variable are defined. 
+
+#### AWS credential setting for multiple AWS roles
+If you want to run the app to manage the AWS resources cross different AWS accounts by assuming 
+different roles, then
+- First please follow the detail [here](./doc/architecture.md) (last section)
+- Make sure other AWS boto3 settings e.g. ```AWS_PROFILE``` are NOT defined in your env, otherwise the app will
+end up with root level session under a role, and you may get exception like `couldn't assume this role`
 
 ### Create superuser (on first run only)
 

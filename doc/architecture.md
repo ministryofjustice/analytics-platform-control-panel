@@ -39,3 +39,44 @@ machine to machine authentication. The slightly complicated part is the interact
 services and clusters, which is shown in the following diagram. 
 
 ![Code structure](./images/code_structure.png "The code structure of the app")
+
+In order to support the approach of managing our AWS infrastructure under different AWS accounts, 
+our control panel implement the following structure by assuming that we will setup an account to assume
+different roles under different accounts (More information about this approach is
+[here](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html) )
+
+The high level implementation diagram is below 
+
+![auth aws for multi accounts](./images/aws_auth_multi_roles_design_diagram.png "The design diagram for multi aws accounts")
+
+
+The mapping between which role the control panel should pick up to create the AWS resource for particular
+entity on the app is achieved by using the following convention:
+- The entity class + AWS service class typically represents one type of aws resource required by this entity, 
+  - Level 1: The most detailed granularity for AWS role can be defined at this level.
+  - Level 2: AWS Role on entity level means all those AWS services under this Entity class will share this role
+  - Level 3: Default Role for all the entities classes
+  - Level 4: Root level, it will create boto session based on the current environment. 
+- The actual value of each AWS role will be assumed as environment variable
+- The name convention for the environment variable is 
+  `Upper case <entity class name>_<AWS service class name>`
+  e.g. `USER_AWSROLE_ROLE`, or `APP_AWSBUCKET_ROLE`
+  The name for the level 4 is `AWS_DEFAULT_ROLE`
+- The logic for the three levels: Will go through the level 1 first , if couldn't find the setting
+  from the environment, then go up to level 2, if not find again, then go up to the level 3, 
+  so on so forth
+  
+  
+Give an example here if we manage all the AWS resources for User on admin-data account, but manage
+app related the resources under admin-dev account, all other entities will be admin-data account too,
+then we can set the environment values as below
+- `USER_ROLE = "arn:aws:iam::<account id>:role/<role name under admin-data>"`
+- `APP_ROLE = "arn:aws:iam::<account id>:role/<role name under admin-dev>"`
+- `AWS_DEFAULT_ROLE = "arn:aws:iam::<account id>:role/<role name under admin-data>"`
+
+If there is special case like the secrets of an app is managed in third account, we can define
+extra level below
+- `APP_AWSSECRETMANAGER_ROLE= "arn:aws:iam::<account id>:role/<role name under third account>`
+
+The current implementation also support to switch different account by profile but it is not pratical 
+under cluster environment. 

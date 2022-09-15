@@ -63,7 +63,7 @@ class AWSServiceCredentialSettings:
     from config file or db in the future, for now we assume we will read those settings through environment variables
     """
 
-    _DEFAULT_SETTING_ROLE_KEY_ = "AWS_DEFAULT_ROLE"
+    _DEFAULT_SETTING_ROLE_KEY_ = "AWS_DEFAULT"
 
     def __init__(self, config_file=None):
         self.mapping = self._load_from_config_file(config_file) or {}
@@ -87,11 +87,9 @@ class AWSServiceCredentialSettings:
         return None
 
     def get_credential_setting(self, setting_name=None):
+        setting_name = setting_name or self._DEFAULT_SETTING_ROLE_KEY_
         assume_role_name = self._locate_setting("{}_ROLE".format(setting_name))
         profile_name = self._locate_setting("{}_PROFILE".format(setting_name))
-
-        if assume_role_name is None and profile_name is None:
-            assume_role_name = self._locate_setting(self._DEFAULT_SETTING_ROLE_KEY_)
         return assume_role_name, profile_name
 
 
@@ -102,13 +100,26 @@ class EntityResource:
         self._init_aws_services()
 
 
-    def _aws_credential_setting_name(self, aws_service_class):
-        return "{}_{}".format(self.__class__.__name__, aws_service_class.__name__)
+    def _aws_credential_setting_name(self, aws_service_class=None):
+        if aws_service_class is None:
+            return (self.__class__.__name__).upper()
+        else:
+            return ("{}_{}".format(self.__class__.__name__, aws_service_class.__name__)).upper()
 
     def create_aws_service(self, aws_service_class):
+        # Check whether there is any setting on entity class + AWS service class level
         assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting(
-            self._aws_credential_setting_name(aws_service_class).upper()
+            self._aws_credential_setting_name(aws_service_class)
         )
+        # If nothing, Check whether there is any setting on entity class level
+        if assume_role_name is None and profile_name is None:
+            assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting(
+                self._aws_credential_setting_name()
+            )
+
+        # If still nothing, Check whether there is any setting on default level
+        if assume_role_name is None and profile_name is None:
+            assume_role_name, profile_name = self.aws_credential_settings.get_credential_setting()
         return aws_service_class(assume_role_name=assume_role_name, profile_name=profile_name)
 
 
