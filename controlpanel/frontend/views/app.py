@@ -19,7 +19,6 @@ from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
 from controlpanel.api import auth0
-from controlpanel.api import aws
 from controlpanel.api.github import GithubAPI
 # from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
@@ -112,7 +111,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             errors = context.setdefault('errors', {})
             errors['customer_email'] = add_customer_form_errors['customer_email']
 
-        set_secrets = aws.AWSSecretManager().get_secret_if_found(self.object.app_aws_secret_name)
+        set_secrets = cluster.App(self.object).get_secret_if_found(self.object.app_aws_secret_name)
 
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
         context['has_setup_completed_for_client'] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
@@ -191,21 +190,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             ** self.object.construct_secret_data(client),
             "disable_authentication" : form.cleaned_data.pop("disable_authentication", False)
         }
-
-
-        # TODO: removed on commit
-        # aws.AWSSecretManager().create_or_update(
-        #     secret_name=self.object.app_aws_secret_name,
-        #     secret_data=secret_data)
         cluster.App(self.object).create_or_update_secret(secret_data)
-
-        # TODO: check business logic and new application
-        # secret_data: dict = self.object.construct_secret_data(client)
-        # secret_data['disable_authetication'] = disable_auth
-
-        # aws.AWSSecretManager().create_or_update(
-        #     secret_name=self.object.app_aws_secret_name,
-        #     secret_data=secret_data)
 
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]

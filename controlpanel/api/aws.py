@@ -8,9 +8,9 @@ import base64
 from botocore.exceptions import ClientError
 from django.conf import settings
 
-from typing import Optional
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
 from typing import Optional
+from controlpanel.api.aws_auth import AWSCredentialSessionSet
 
 
 log = structlog.getLogger(__name__)
@@ -519,6 +519,10 @@ class AWSPolicy(AWSService):
 
 class AWSParameterStore(AWSService):
 
+    def __init__(self, assume_role_name = None, profile_name = None):
+        super(AWSParameterStore, self).__init__(assume_role_name=assume_role_name, profile_name=profile_name)
+        self.client = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
+
     def create_parameter(self, name, value, role_name, description=""):
         ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
@@ -540,6 +544,12 @@ class AWSParameterStore(AWSService):
         try:
             ssm.delete_parameter(Name=name)
         except ssm.exceptions.ParameterNotFound:
+            log.warning(f"Skipping deleting Parameter {name}: Does not exist")
+
+    def get_parameter(self, name):
+        try:
+            return self.client.get_parameter(Name=name, WithDecryption=True)
+        except self.client.exceptions.ParameterNotFound:
             log.warning(f"Skipping deleting Parameter {name}: Does not exist")
 
 
@@ -589,7 +599,7 @@ class AWSSecretManager(AWSService):
         except botocore.exceptions.ClientError as error:
             raise AWSSecretManagerError(self._format_error_message(error.response))
 
-    def update_secret(self, secret_name, secret_data, delete_keys: list=[]):
+    def update_secret(self, secret_name, secret_data):
         try:
             kwargs = {"SecretId": secret_name}
             response = self.client.get_secret_value(SecretId=secret_name)
@@ -601,10 +611,6 @@ class AWSSecretManager(AWSService):
                     origin_data = json.loads(response['SecretString'])
                 for key, value in secret_data.items():
                     origin_data[key] = value
-                for key in delete_keys:
-                    if key in origin_data:
-                        del origin_data[key]
-
                 kwargs["SecretString"] = json.dumps(origin_data)
             self.client.update_secret(**kwargs)
         except botocore.exceptions.ClientError as error:

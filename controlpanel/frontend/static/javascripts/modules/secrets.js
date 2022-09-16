@@ -26,5 +26,5 @@ moj.Modules.secretsForm = {
     let updateForm = this.updateForm.bind(this);
     $(`#${this.selectID}`).on('change', updateForm);
   }
-};
+}
   

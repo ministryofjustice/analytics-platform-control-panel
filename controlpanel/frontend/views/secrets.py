@@ -27,7 +27,7 @@ ALLOWED_SECRETS = {
 class AppSecretMixin:
     def _get_app(self, pk) -> Optional[App]:
         # get app from pk
-        return get_object_or_404(App, pk=pk)
+        return App.objects.get(App, pk=pk)
     
     def get_success_url(self, message_type='added') -> str:
         messages.success(self.request, f"Successfully {message_type} secrets")

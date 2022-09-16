@@ -82,7 +82,7 @@ def test_delete_eks_with_no_releases(aws_delete_role, helm, users):
     cluster.User(user).delete()
 
     aws_delete_role.assert_called_with(user.iam_role_name)
-    assert not helm.delete_eks.called
+    assert not helm.delete.called
 
 
 def test_on_authenticate(helm, users):

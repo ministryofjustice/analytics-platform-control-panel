@@ -141,7 +141,7 @@ helm repo update
 
 ## 3. Local Environment
 
-### <a name="env"></a>Environment variables
+### Environment variables
 
 The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
 Check each value whether it is relevant to your local env.
@@ -276,12 +276,8 @@ kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/co
 #### General checks
 
 Check whether you have the following 2 in the env file and make sure they are correct
-- ```EKS```: True, indicating EKS cluster will be used in the app.
 - ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
 
-```
-export EKS=True
-```
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
 the default value is ```/tmp/helm/cache/repository```

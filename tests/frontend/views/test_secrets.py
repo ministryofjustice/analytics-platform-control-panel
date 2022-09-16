@@ -165,7 +165,7 @@ def test_view_add_update_secret_page(client, app, users, user, secret_key, expec
     response = add_secret_post(client, app, key=secret_key, data = dict(secret_value=1))
     assert response.status_code == expected_status
     assert response.get('Location') == reverse('manage-app', kwargs={'pk': app.id})
-    fixture_create_update_secret.assert_called_with(app.app_aws_secret_name, set_secrets)        
+    fixture_create_update_secret.assert_called_with(secret_name=app.app_aws_secret_name, secret_data=set_secrets)        
 
 @pytest.mark.parametrize(
     'user,secret_key,expected_status,set_secrets',[
