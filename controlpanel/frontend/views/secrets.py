@@ -11,6 +11,7 @@ from django.http import Http404, HttpResponseRedirect
 
 from controlpanel.api.models import App
 from controlpanel.api import aws
+from controlpanel.api import cluster
 
 from django.views.generic import TemplateView
 from django.views.generic.edit import View
@@ -68,7 +69,8 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
         if form.is_valid():
             secret_value = form.cleaned_data.get('secret_value')
             app = self._get_app(pk)
-            aws.AWSSecretManager().create_or_update(app.app_aws_secret_name, {secret_key: secret_value})
+            cluster.App(app).create_or_update_secret({secret_key: secret_value})
+            # aws.AWSSecretManager().create_or_update(app.app_aws_secret_name, )
         else:
             # currently, boolean values cannot fail, however will need to test this for non-bool values
             messages.error(self.request, "failed to update secrets.")
@@ -86,6 +88,7 @@ class SecretDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMix
         Override DeleteMixing method
         """
         app = self._get_app(pk)
+        # cluster.App(app).create_or_update_secret({secret_key: secret_value})
         data: dict = aws.AWSSecretManager().get_secret_if_found(app.app_aws_secret_name)
 
         if secret_key not in data:

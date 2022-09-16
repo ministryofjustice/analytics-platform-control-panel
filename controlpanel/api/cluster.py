@@ -403,6 +403,9 @@ class App(EntityResource):
     def delete_secret(self):
         self.aws_secret_service.delete_secret(secret_name=self.app.app_aws_secret_name)
 
+    def get_secret_if_found(self, secret_name):
+        return self.aws_secret_service.get_secret_if_found(secret_name)
+
 
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""

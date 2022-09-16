@@ -21,7 +21,7 @@ import sentry_sdk
 from controlpanel.api import auth0
 from controlpanel.api import aws
 from controlpanel.api.github import GithubAPI
-from controlpanel.api.cluster import get_repositories
+# from controlpanel.api.cluster import get_repositories
 from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
@@ -88,10 +88,11 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # old infrastructure while users migrate to EKS. Once we have our
         # app hosting story figured out, we should do this properly.
         context['apps_on_eks'] = settings.features.apps_on_eks.enabled
+        context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
+
         if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
-        else:
-            context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
+
 
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
@@ -196,7 +197,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         # aws.AWSSecretManager().create_or_update(
         #     secret_name=self.object.app_aws_secret_name,
         #     secret_data=secret_data)
-        cluster.App(self.object).create_or_update_secret(self.object.construct_secret_data(client))
+        cluster.App(self.object).create_or_update_secret(secret_data)
 
         # TODO: check business logic and new application
         # secret_data: dict = self.object.construct_secret_data(client)
