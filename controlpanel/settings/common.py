@@ -247,7 +247,7 @@ MEDIA_URL = ""
 # -- Debug
 
 # Activates debugging
-DEBUG = os.environ.get("DEBUG", False)
+DEBUG = (str(os.environ.get("DEBUG", False)).lower() == 'true')
 
 
 # -- Database
