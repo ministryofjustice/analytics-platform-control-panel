@@ -96,9 +96,10 @@ def fixture_get_secret_value():
         yield get_secret_value
 
 @pytest.yield_fixture
-def fixture_update_secret():
-    with patch('controlpanel.api.aws.AWSSecretManager.update_secret') as update_secret:
-        yield update_secret
+def fixture_delete_secret():
+    # with patch('controlpanel.api.aws.AWSSecretManager.update_secret') as update_secret:
+    with patch('controlpanel.api.cluster.App.delete_entries_in_secret') as delete_secret:
+        yield delete_secret
 
 def detail(client, app, *args):
     return client.get(reverse('manage-app', kwargs={'pk': app.id}))
@@ -121,24 +122,19 @@ def delete_secret_post(client, app, key=None, *args):
     ],
 )
 def test_permissions(client, app, s3buckets, users, view, user, expected_status, fixture_get_secret):
-    client.force_login(users[user])
-    response = view(client, app, users, s3buckets)
-    delete_form = '<form action="/webapps/3/secrets/delete/disable_authentication/" method="post"'
+    with patch('django.conf.settings.features.app_migration.enabled') as setting_fix:
+        # patch allows for feature allowed to be switched on/off
+        setting_fix.return_value = True
 
-    element = f'<a href="/webapps/{NUM_APPS}/secrets/add/disable_authentication/"  class="govuk-button" >disable_authentication</a>'
-    body = str(response.content)
-    assert element in body
-    assert delete_form not in body
+        client.force_login(users[user])
+        response = view(client, app, users, s3buckets)
+        edit_button = f'class="govuk-button govuk-button--secondary right" >Edit</a>'
+        body = str(response.content)
+        assert edit_button in body
 
-    fixture_get_secret.return_value = {'disable_authentication': True, **fixture_get_secret.return_value}
-    response = view(client, app, users, s3buckets)
-    body = str(response.content)
-    assert delete_form in body
-
-    fixture_get_secret.return_value = {**fixture_get_secret.return_value, 'disable_authentication': False}
     response = view(client, app, users, s3buckets)
     body = str(response.content)
-    assert delete_form in body
+    assert edit_button not in body
 
 @pytest.mark.parametrize(
     'user,secret_key,expected_status',[
@@ -172,7 +168,7 @@ def test_view_add_update_secret_page(client, app, users, user, secret_key, expec
         ['superuser', 'disable_authentication', 302, {'disable_authentication': True}]
     ]
 )
-def test_secret_delete(client, app, users, user, secret_key, expected_status, set_secrets, fixture_get_secret, fixture_update_secret):
+def test_secret_delete(client, app, users, user, secret_key, expected_status, set_secrets, fixture_get_secret, fixture_delete_secret):
     client.force_login(users[user])
     response = client.get(reverse('delete-secret', kwargs={'pk': app.id, 'secret_key': secret_key}))
     assert response.status_code == 405
@@ -188,5 +184,5 @@ def test_secret_delete(client, app, users, user, secret_key, expected_status, se
     fixture_get_secret.return_value = set_secrets
 
     response = delete_secret_post(client, app, key=secret_key)
-    fixture_update_secret.assert_called_with(app.app_aws_secret_name, {}, delete_keys=[secret_key])
+    fixture_delete_secret.assert_called_with(keys_to_delete=[secret_key])
     response.status_code == 302

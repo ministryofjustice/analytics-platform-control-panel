@@ -27,7 +27,7 @@ ALLOWED_SECRETS = {
 class AppSecretMixin:
     def _get_app(self, pk) -> Optional[App]:
         # get app from pk
-        return App.objects.get(App, pk=pk)
+        return get_object_or_404(App, pk=pk)
     
     def get_success_url(self, message_type='added') -> str:
         messages.success(self.request, f"Successfully {message_type} secrets")
@@ -70,7 +70,6 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
             secret_value = form.cleaned_data.get('secret_value')
             app = self._get_app(pk)
             cluster.App(app).create_or_update_secret({secret_key: secret_value})
-            # aws.AWSSecretManager().create_or_update(app.app_aws_secret_name, )
         else:
             # currently, boolean values cannot fail, however will need to test this for non-bool values
             messages.error(self.request, "failed to update secrets.")
@@ -88,7 +87,6 @@ class SecretDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMix
         Override DeleteMixing method
         """
         app = self._get_app(pk)
-        # cluster.App(app).create_or_update_secret({secret_key: secret_value})
         data: dict = aws.AWSSecretManager().get_secret_if_found(app.app_aws_secret_name)
 
         if secret_key not in data:
@@ -96,5 +94,5 @@ class SecretDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMix
             messages.error(self.request, f"failed to find {secret_key} in secrets")
             return HttpResponseRedirect(reverse_lazy(self.success_url, kwargs={'pk': self.kwargs.get('pk')}))
 
-        aws.AWSSecretManager().update_secret(app.app_aws_secret_name, {}, delete_keys=[secret_key])
+        cluster.App(app).delete_entries_in_secret( keys_to_delete=[secret_key])
         return HttpResponseRedirect(self.get_success_url(message_type='deleted'))
