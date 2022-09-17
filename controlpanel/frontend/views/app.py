@@ -118,6 +118,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context['allowed_secret_keys'] = {
             key: set_secrets.get(key) for key, _ in secrets.ALLOWED_SECRETS.items()
         }
+
+        context['feature_enabled'] = settings.features.app_migration.enabled
         return context
 
 

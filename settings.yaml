@@ -1,5 +1,5 @@
 enabled_features:
-  ip_ranges:
+  app_migration:
     _DEFAULT: false
     _HOST_dev: true
     _HOST_prod: false

@@ -98,7 +98,7 @@
   </section>
   {% endif %}
 
-  {% if request.user.has_perm('api.create_app', app) %}
+  {% if request.user.has_perm('api.create_app', app) and feature_enabled %}
   <section>
   <h2 class="govuk-heading-m" >Stored Variables</h2>
   <table class="govuk-table app-data-sources form-group">
@@ -112,24 +112,17 @@
       {% for key, is_set in allowed_secret_keys.items() %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
-          <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button" >{{ key }}</a>
+          {{ key }}
         </td>
         <td class="govuk-table__cell">
-          {% if is_set is not none %}
-            <form action="{{ url('delete-secret', kwargs={"pk": app.id, "secret_key": key }) }}" method="post" >
-              {{ csrf_input }}
-              <button class="govuk-button cpanel-button--destructive js-confirm"
-                data-confirm-message="Are you sure you want to delete this secret?">
-                Delete
-              </button>
-            </form>
-          {% endif %}
+          <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   </section>
+
 {% endif %}
 
   <h2 class="govuk-heading-m">
