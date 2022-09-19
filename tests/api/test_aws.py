@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import MagicMock, patch
 
 from controlpanel.api import aws
+from controlpanel.api import cluster
 from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
 from tests.api.fixtures.aws import *
 
@@ -10,6 +11,10 @@ from tests.api.fixtures.aws import *
 def enable_db_for_all_tests(db):
     pass
 
+@pytest.yield_fixture(autouse=True)
+def app_fixture():
+    with patch('tests.api.cluster.test_app.app') as app_fixture:
+        yield app_fixture
 
 def stmt_match(stmt, Action='sts:AssumeRole', Condition=None, Effect='Allow', Principal={}):
     result = stmt['Action'] == Action
@@ -765,3 +770,12 @@ def test_delete_app_secret(secretsmanager):
             assert True
         else:
             assert False
+
+def test_delete_key_in_secret(app_fixture):
+    app_name = 'test_app'
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    app_fixture.app_aws_secret_name = secret_name
+    
+    with patch('controlpanel.api.aws.AWSSecretManager.delete_keys_in_secret') as aws_fixture:
+        cluster.App(app_fixture).delete_entries_in_secret(['disable_authentication'])
+        aws_fixture.assert_called_with(secret_name=secret_name, keys_to_delete=['disable_authentication'])

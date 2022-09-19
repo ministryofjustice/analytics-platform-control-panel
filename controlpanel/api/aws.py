@@ -619,6 +619,31 @@ class AWSSecretManager(AWSService):
             else:
                 raise AWSSecretManagerError(self._format_error_message(error.response))
 
+    def delete_keys_in_secret(self, secret_name, keys_to_delete):
+        """
+        Deletes keys for a stored entry.
+        Same as update_secret, but removes entries accordingly.
+        """
+        try:
+            kwargs = {"SecretId": secret_name}
+            response = self.client.get_secret_value(SecretId=secret_name)
+            if 'SecretString' in response:
+                # only update json SecretString, ignore everything else
+                origin_data = json.loads(response['SecretString'])
+                for key in keys_to_delete:
+                    if key in origin_data:
+                        del origin_data[key]
+
+                kwargs["SecretString"] = json.dumps(origin_data)
+                self.client.update_secret(**kwargs)
+                return True
+            return False                
+        except botocore.exceptions.ClientError as error:
+            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+                return False
+            else:
+                raise AWSSecretManagerError(self._format_error_message(error.response))
+
     def delete_secret(self, secret_name, without_recovery=True):
         """
         Choosing True as default value of without_recovery to allow us to create secret again
