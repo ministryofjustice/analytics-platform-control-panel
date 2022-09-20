@@ -32,13 +32,9 @@ class IPAllowlistCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
     permission_required = "api.create_ip_allowlist"
     template_name = "ip-allowlist-create.html"
 
-    def form_valid(self, form):
-        """
-        Ensure the object is created as expected
-        """
-        self.object = form.save()
+    def get_success_url(self):
         messages.success(self.request, "Successfully created new IP allowlist")
-        return HttpResponseRedirect(reverse_lazy("list-ip-allowlists"))
+        return reverse_lazy("list-ip-allowlists")
 
 class IPAllowlistDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     """
@@ -50,13 +46,9 @@ class IPAllowlistDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateV
     permission_required = 'api.update_ip_allowlist'
     template_name = "ip-allowlist-detail.html"
 
-    def form_valid(self, form):
-        """
-        Ensure the object is updated as expected
-        """
-        self.object = form.save()
+    def get_success_url(self):
         messages.success(self.request, "Successfully updated IP allowlist")
-        return HttpResponseRedirect(reverse_lazy("list-ip-allowlists"))
+        return reverse_lazy("list-ip-allowlists")
 
 class IPAllowlistDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     """
