@@ -546,7 +546,8 @@ class AWSParameterStore(AWSService):
         try:
             return self.client.get_parameter(Name=name, WithDecryption=True)
         except self.client.exceptions.ParameterNotFound:
-            log.warning(f"Skipping deleting Parameter {name}: Does not exist")
+            log.warning(f"Parameter {name}: Does not exist")
+            return {}
 
 
 class AWSSecretManagerError(Exception):

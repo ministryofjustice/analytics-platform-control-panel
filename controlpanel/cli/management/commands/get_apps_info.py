@@ -10,6 +10,7 @@ from controlpanel.api.auth0 import ExtendedAuth0
 from controlpanel.api.aws import AWSParameterStore
 from controlpanel.api.models import Parameter, App
 from django.conf import settings
+from time import time
 
 
 class Command(BaseCommand):
@@ -64,7 +65,12 @@ class Command(BaseCommand):
             self._add_new_app(app_info, app.name)
             app_info[app.name]["registered_in_cpanel"] = True
 
-    def _normalize_ip_ranges(self, app_item, app_conf):
+    def _log_error(self, info):
+        with open(self._error_log_file_name, "a") as f:
+            f.write(info)
+            f.write("\n")
+
+    def _normalize_ip_ranges(self, app_name, app_item, app_conf):
         if app_item.get("allowed_ip_ranges") and app_conf.get('ip_range_lookup_table'):
             lookup = app_conf['ip_range_lookup_table']
             if 'Any' in app_item.get("allowed_ip_ranges"):
@@ -73,7 +79,8 @@ class Command(BaseCommand):
                 ip_ranges = [lookup[item] for item in app_item["allowed_ip_ranges"] if item in lookup]
             not_found = [item for item in app_item.get("allowed_ip_ranges") if item not in lookup]
             if not_found:
-                self.stdout.write("Warning: Couldn't find ip_range for {}".format(",".join([not_found])))
+                self._log_error("{}: Warning: Couldn't find ip_range for {}".format(app_name, ",".join(not_found)))
+                self.stdout.write("{}: Warning: Couldn't find ip_range for {}".format(app_name, ",".join(not_found)))
             if not ip_ranges:
                 ip_ranges = [lookup['DOM1']]
 
@@ -98,6 +105,8 @@ class Command(BaseCommand):
                 if repo.name in apps_info:
                     self.stdout.write("**Found deploy.json under this repo**")
                 else:
+                    self._log_error("{}: Found deploy.json under this repo, "
+                                    "but not registered in Control panel".format(repo.name))
                     self.stdout.write("**Found deploy.json under this repo, "
                                       "but the app is not registered in Control panel **")
 
@@ -105,9 +114,10 @@ class Command(BaseCommand):
                 apps_info[repo.name]["has_repo"] = True
                 apps_info[repo.name]["deployment"] = deployment_json
                 apps_info[repo.name]["auth"] = deepcopy(deployment_json)
-                self._normalize_ip_ranges(apps_info[repo.name]["auth"], app_conf)
+                self._normalize_ip_ranges(repo.name, apps_info[repo.name]["auth"], app_conf)
                 audit_data_keys.extend([key for key in deployment_json.keys() if key not in audit_data_keys])
             except Exception as ex:
+                self._log_error(f"{repo.name}: Failed to load deploy.json due to the error: {str(ex)}")
                 self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
 
     def _process_urls(self, callback_urls, domains_mapping):
@@ -206,7 +216,10 @@ class Command(BaseCommand):
 
             self._add_new_app(apps_info, app_name)
             para_response = aws_param_service.get_parameter(parameter.name)
-            apps_info[app_name]["parameters"][parameter.key] = para_response["Parameter"]["Value"]
+            if para_response and para_response.get('Parameter'):
+                apps_info[app_name]["parameters"][parameter.key] = para_response["Parameter"]["Value"]
+            else:
+                self._log_error(f"{app_name}: Couldn't find {parameter.name} from aws")
 
     def _gather_apps_full_info(self, github_token, app_conf, apps_info, audit_data_keys):
         auth0_instance = ExtendedAuth0()
@@ -287,6 +300,7 @@ class Command(BaseCommand):
         apps_info = {}
         audit_data_keys = ["app_name", "registered_in_cpanel", "can_be_migrated", "has_auth0", "has_parameters",
                            "has_repo", "has_deployment", "client_id", "callbacks", "grant_types", "auth_connections"]
+        self._error_log_file_name = "./migration_script_errors_{}.log".format(int(time()))
         self._init_app_info(apps_info)
         self._gather_apps_full_info(options["token"], app_conf, apps_info, audit_data_keys)
         self._save_to_file(list(apps_info.values()), options["file"])
