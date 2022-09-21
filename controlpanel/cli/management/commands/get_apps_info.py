@@ -40,12 +40,14 @@ class Command(BaseCommand):
         parser.add_argument("-t", "--token", required=True, type=str,
                             help="The token for accessing the github")
         parser.add_argument("-f", "--file", required=True, type=str,
-                            help="The path for storing the applications' information")
+                            help="The path for the file storing the applications' information")
         # The example of app_conf, app_conf_example.json, is provided.
         parser.add_argument("-c", "--app_conf", type=str,
-                            help="The configuration file for app migration")
+                            help="The JSON configuration file for app migration")
         parser.add_argument("-oa", "--oaudit", type=str,
-                            help="The path of storing application's information as csv")
+                            help="The path of the CSV file storing application's information")
+        parser.add_argument("-p", "--pods", type=str,
+                            help="The path of the CSV file storing apps's pods deployed on alpha cluster")
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
@@ -147,31 +149,49 @@ class Command(BaseCommand):
         del client["signing_keys"]
         del client["client_secret"]
 
+    def _generate_map_table_for_auth0_and_db(self, apps_info):
+        auth0_client_to_app_name = {}
+        for app_name, app_item in apps_info.items():
+            auth0_client_to_app_name[app_name.lower()] = app_name
+        return auth0_client_to_app_name
+
+    def _locate_app_name(self, client_name, apps_info, auth0_client_to_app_name):
+        if client_name in apps_info:
+            return client_name
+        elif client_name.lower() in auth0_client_to_app_name:
+            return auth0_client_to_app_name[client_name.lower()]
+        else:
+            return None
+
     def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, app_conf):
         """
         The function to collect the auth0 information for an app
         """
         clients = auth0_instance.clients.get_all()
         clients_id_name_map = {}
+        # all the client's name are lower cases
+        auth0_client_to_app_name = self._generate_map_table_for_auth0_and_db(apps_info)
         for client in clients:
-            if client['name'] not in apps_info:
+            app_name_key = self._locate_app_name(client['name'], apps_info, auth0_client_to_app_name)
+
+            if app_name_key is None:
+                self._log_error("{} is not recognised as an app managed on our AP platform.".format(client['name']))
                 self.stdout.write("{} is not recognised as an app managed on our AP platform.".format(client['name']))
                 continue
 
             self.stdout.write("Reading app({})'s auth0 information....".format(client['name']))
             self._remove_sensitive_fields(client)
-
-            apps_info[client['name']]["auth0_client"] = client
+            apps_info[app_name_key]["auth0_client"] = client
 
             # Construct the information required for aws secret
-            apps_info[client['name']]["new_app_name"] = \
+            apps_info[app_name_key]["new_app_name"] = \
                 self._process_application_name(client['name'], app_conf.get('app_name_pattern'))
-            apps_info[client['name']]["auth"]["client_id"] = client["client_id"]
-            apps_info[client['name']]["auth"]["callbacks"] = self._process_urls(
+            apps_info[app_name_key]["auth"]["client_id"] = client["client_id"]
+            apps_info[app_name_key]["auth"]["callbacks"] = self._process_urls(
                 client.get("callbacks", []), app_conf.get("domains_mapping") or {})
-            apps_info[client['name']]["auth"]["allowed_origins"] = self._process_urls(
+            apps_info[app_name_key]["auth"]["allowed_origins"] = self._process_urls(
                 client.get("allowed_origins", []), app_conf.get("domains_mapping") or {})
-            clients_id_name_map[client["client_id"]] = client['name']
+            clients_id_name_map[client["client_id"]] = app_name_key
         return clients_id_name_map
 
     def _collection_apps_auth0_connections(self, auth0_instance, apps_info, clients_id_name_map):
@@ -182,7 +202,7 @@ class Command(BaseCommand):
                 if not client_name:
                     continue
 
-                if not apps_info[client_name].get("connections"):
+                if not apps_info[client_name]["auth0_client"].get("connections"):
                     apps_info[client_name]["auth0_client"]["connections"] = []
                 apps_info[client_name]["auth0_client"]["connections"].append(connection["name"])
                 if not connection.get('enabled_app_names'):
@@ -261,7 +281,19 @@ class Command(BaseCommand):
         else:
             return str(value)
 
-    def _save_app_info_as_csv(self, csv_file, apps_info, audit_data_keys):
+    def _get_deployed_app_list(self, pods_csv_file):
+        pods_list = []
+        with open(pods_csv_file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            for row in csv_reader:
+                if row[0].startswith("restart"):
+                    continue
+                app_name = "-".join(row[0].split("-")[:-3])
+                if app_name not in pods_list:
+                    pods_list.append(app_name)
+        return pods_list
+
+    def _save_app_info_as_csv(self, csv_file, deployed_pods_list, apps_info, audit_data_keys):
         with open(csv_file, 'w') as f:
             writer = csv.writer(f)
             writer.writerow(audit_data_keys)
@@ -280,6 +312,8 @@ class Command(BaseCommand):
                         data_row.append("Y" if app_item.get("deployment") else "N")
                     elif data_key == 'has_parameters':
                         data_row.append("Y" if app_item.get("parameters") else "N")
+                    elif data_key == 'deployed_on_alpha':
+                        data_row.append("Y" if app_name.lower() in deployed_pods_list else "N")
                     elif data_key == 'auth_connections':
                         auth_conn_str = self._convert_list_to_str((app_item.get('auth0_client') or {}).
                                                                   get("connections", []))
@@ -298,8 +332,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         app_conf = self._load_json_file(options.get("app_conf"))
         apps_info = {}
-        audit_data_keys = ["app_name", "registered_in_cpanel", "can_be_migrated", "has_auth0", "has_parameters",
-                           "has_repo", "has_deployment", "client_id", "callbacks", "grant_types", "auth_connections"]
+        audit_data_keys = ["app_name", "registered_in_cpanel", "deployed_on_alpha", "can_be_migrated", "has_auth0",
+                           "has_parameters", "has_repo", "has_deployment", "client_id", "callbacks", "grant_types",
+                           "auth_connections"]
         self._error_log_file_name = "./migration_script_errors_{}.log".format(int(time()))
         self._init_app_info(apps_info)
         self._gather_apps_full_info(options["token"], app_conf, apps_info, audit_data_keys)
@@ -307,5 +342,10 @@ class Command(BaseCommand):
 
         self._check_migration_date_of_app(apps_info)
 
+        # Process the pod csv to extract the list of apps which has been deployed on alpha cluster
+        deployed_pods_list = []
+        if options.get('pods'):
+            deployed_pods_list = self._get_deployed_app_list(options.get('pods'))
+
         if options.get('oaudit'):
-            self._save_app_info_as_csv(options.get('oaudit'), apps_info, audit_data_keys)
+            self._save_app_info_as_csv(options.get('oaudit'), deployed_pods_list, apps_info, audit_data_keys)
