@@ -149,19 +149,22 @@ class Command(BaseCommand):
         del client["signing_keys"]
         del client["client_secret"]
 
-    def _generate_map_table_for_auth0_and_db(self, apps_info):
-        auth0_client_to_app_name = {}
-        for app_name, app_item in apps_info.items():
-            auth0_client_to_app_name[app_name.lower()] = app_name
-        return auth0_client_to_app_name
-
-    def _locate_app_name(self, client_name, apps_info, auth0_client_to_app_name):
-        if client_name in apps_info:
-            return client_name
-        elif client_name.lower() in auth0_client_to_app_name:
-            return auth0_client_to_app_name[client_name.lower()]
-        else:
-            return None
+    def _locate_app_name(self, client_name, apps_names):
+        # not efficient but logic is simple and more flexible to make sure
+        # we can locate the client_name from our registered apps, the name has been
+        # formatted by applying lower() or possible changing "_" to "-"
+        found_app_name = None
+        for app_name in apps_names:
+            if client_name == app_name:
+                found_app_name = app_name
+                break
+            if client_name == app_name.lower():
+                found_app_name = app_name
+                break
+            if client_name == app_name.lower().replace("_", "-"):
+                found_app_name = app_name
+                break
+        return found_app_name
 
     def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, app_conf):
         """
@@ -169,10 +172,9 @@ class Command(BaseCommand):
         """
         clients = auth0_instance.clients.get_all()
         clients_id_name_map = {}
-        # all the client's name are lower cases
-        auth0_client_to_app_name = self._generate_map_table_for_auth0_and_db(apps_info)
+        apps_names = apps_info.keys()
         for client in clients:
-            app_name_key = self._locate_app_name(client['name'], apps_info, auth0_client_to_app_name)
+            app_name_key = self._locate_app_name(client['name'], apps_names)
 
             if app_name_key is None:
                 self._log_error("{} is not recognised as an app managed on our AP platform.".format(client['name']))
@@ -329,6 +331,15 @@ class Command(BaseCommand):
             if app_item.get('registered_in_cpanel') and app_item.get('deployment') and app_item.get('auth0_client'):
                 app_item["can_be_migrated"] = True
 
+    def _sanity_check_for_deployed_apps(self, apps_info, deployed_pods_list):
+        app_names = list(apps_info.keys())
+        app_names.extend([app_name.lower() for app_name in apps_info.keys()])
+        app_names.extend([app_name.lower().replace("_", "-") for app_name in apps_info.keys()])
+        mysterious_apps = set(deployed_pods_list) - set(app_names)
+        if list(mysterious_apps):
+            self._log_error(f"{','.join(list(mysterious_apps))} have no any information from db, "
+                            f"auth0 and repos having deploy.json")
+
     def handle(self, *args, **options):
         app_conf = self._load_json_file(options.get("app_conf"))
         apps_info = {}
@@ -346,6 +357,7 @@ class Command(BaseCommand):
         deployed_pods_list = []
         if options.get('pods'):
             deployed_pods_list = self._get_deployed_app_list(options.get('pods'))
+            self._sanity_check_for_deployed_apps(apps_info, deployed_pods_list)
 
         if options.get('oaudit'):
             self._save_app_info_as_csv(options.get('oaudit'), deployed_pods_list, apps_info, audit_data_keys)
