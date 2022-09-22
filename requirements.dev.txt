@@ -5,3 +5,5 @@ pylint==2.12.2
 pylint-django==2.4.4
 ipython==7.31.1
 ipdb==0.13.9
+black==22.8.0
+isort==5.10.1
