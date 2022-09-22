@@ -10,7 +10,11 @@ class IPAllowlist(TimeStampedModel):
     description = models.CharField(max_length=60, blank=True)
     contact = models.CharField(max_length=60, blank=True)
     allowed_ip_ranges = models.TextField(blank=False, validators=[validate_ip_ranges])
-    history = HistoricalRecords()
+    history = HistoricalRecords(table_name="control_panel_api_ip_allowlist_history")
+
+    class Meta:
+        db_table = "control_panel_api_ip_allowlist"
+        ordering = ("name",)
 
     def __repr__(self):
         return f"<IPAllowlist: {self.pk}|{self.name}>"
