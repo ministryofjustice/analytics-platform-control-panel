@@ -105,6 +105,7 @@
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th class="govuk-table__header">key</th>
+        <th class="govuk-table__header">current value</th>
         <th class="govuk-table__header"></th>
       </tr>
     </thead>
@@ -114,6 +115,7 @@
         <td class="govuk-table__cell">
           {{ key }}
         </td>
+        <td class="govuk-table__cell">{{is_set}}</td>
         <td class="govuk-table__cell">
           <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
         </td>

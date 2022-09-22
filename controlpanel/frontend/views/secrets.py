@@ -47,7 +47,8 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
             raise Http404('Unable to access page. Invalid key.')
 
         # get stored current secret vars
-        data = aws.AWSSecretManager().get_secret(app.app_aws_secret_name)
+        data: dict = cluster.App(app).get_secret_if_found()
+
         form = ALLOWED_SECRETS.get(secret_key)(initial=dict(secret_value=data.get(secret_key)))
         return super(SecretAddUpdate, self).get_context_data(form=form, **kwargs)
 
@@ -60,7 +61,7 @@ class SecretAddUpdate(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecret
             raise Http404("Invalid Webapp")
 
         # update secret key
-        aws.AWSSecretManager().create_or_update(app.app_aws_secret_name, {secret_key: secret_value})
+        cluster.App(app).create_or_update({secret_key: secret_value})
         return super(SecretAddUpdate, self).form_valid(form)
 
     def post(self, request, pk=None, secret_key=None, **kwargs):
@@ -87,7 +88,7 @@ class SecretDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, AppSecretMix
         Override DeleteMixing method
         """
         app = self._get_app(pk)
-        data: dict = aws.AWSSecretManager().get_secret_if_found(app.app_aws_secret_name)
+        data: dict = cluster.App(app).get_secret_if_found()
 
         if secret_key not in data:
             log.error(f'trying to delete missing key {secret_key} from secrets')

@@ -46,8 +46,6 @@ AIRFLOW_REGION: "eu-west-1"
 
 AWS_DEFAULT_REGION: "eu-west-1"
 
-EKS: true
-
 APP_DOMAIN:
   _DEFAULT: apps.dev.mojanalytics.xyz
   _HOST_alpha: apps.alpha.mojanalytics.xyz

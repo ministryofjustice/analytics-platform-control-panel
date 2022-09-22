@@ -410,9 +410,11 @@ class App(EntityResource):
             keys_to_delete=keys_to_delete
         )
 
-    def get_secret_if_found(self, secret_name):
-        return self.aws_secret_service.get_secret_if_found(secret_name)
+    def get_secret_if_found(self):
+        return self.aws_secret_service.get_secret_if_found(self.app.app_aws_secret_name)
 
+    def create_or_update(self, data: dict) -> bool:
+        return self.aws_secret_service.create_or_update(self.app.app_aws_secret_name, data)
 
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""

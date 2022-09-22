@@ -104,11 +104,10 @@ def test_on_authenticate_eks_completely_new_user(helm, users):
     """
     user_model = users['normal_user']
     user_model.migration_state = User.VOID
-    with patch("controlpanel.api.aws.settings.EKS", True):
-        user = cluster.User(user_model)
-        user._init_user = MagicMock()
-        user.on_authenticate()
-        user._init_user.assert_called_once_with()
+    user = cluster.User(user_model)
+    user._init_user = MagicMock()
+    user.on_authenticate()
+    user._init_user.assert_called_once_with()
 
 
 def test_on_authenticate_user_missing_charts(helm, users):
@@ -124,4 +123,4 @@ def test_on_authenticate_user_missing_charts(helm, users):
     user.on_authenticate()
     # The charts are recreated.
     assert user._init_user.call_count == 1
-    assert helm.delete_eks.call_count == 0
+    assert helm.delete.call_count == 0

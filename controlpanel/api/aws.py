@@ -1,17 +1,15 @@
-from copy import deepcopy
+import base64
 import json
+from copy import deepcopy
 from optparse import Option
-import structlog
+from typing import Optional
 
 import botocore
-import base64
+import structlog
 from botocore.exceptions import ClientError
 from django.conf import settings
 
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
-from typing import Optional
-from controlpanel.api.aws_auth import AWSCredentialSessionSet
-
 
 log = structlog.getLogger(__name__)
 
@@ -526,14 +524,14 @@ class AWSParameterStore(AWSService):
     def create_parameter(self, name, value, role_name, description=""):
         ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
-            ssm.put_parameter(
+            self.client.put_parameter(
                 Name=name,
                 Value=value,
                 Description=description,
                 Type="SecureString",
                 Tags=[{"Key": "role", "Value": role_name}],
             )
-        except ssm.exceptions.ParameterAlreadyExists:
+        except self.client.exceptions.ParameterAlreadyExists:
             # TODO do parameter names need to be unique across the platform?
             log.warning(
                 f"Skipping creating Parameter {name} for {role_name}: Already exists"
@@ -542,8 +540,8 @@ class AWSParameterStore(AWSService):
     def delete_parameter(self, name):
         ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
-            ssm.delete_parameter(Name=name)
-        except ssm.exceptions.ParameterNotFound:
+            self.client.delete_parameter(Name=name)
+        except self.client.exceptions.ParameterNotFound:
             log.warning(f"Skipping deleting Parameter {name}: Does not exist")
 
     def get_parameter(self, name):

@@ -111,7 +111,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             errors = context.setdefault('errors', {})
             errors['customer_email'] = add_customer_form_errors['customer_email']
 
-        set_secrets = cluster.App(self.object).get_secret_if_found(self.object.app_aws_secret_name)
+        set_secrets = cluster.App(self.object).get_secret_if_found()
 
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
         context['has_setup_completed_for_client'] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
