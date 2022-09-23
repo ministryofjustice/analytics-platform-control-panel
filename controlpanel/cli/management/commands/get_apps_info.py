@@ -315,7 +315,7 @@ class Command(BaseCommand):
                     elif data_key == 'has_parameters':
                         data_row.append("Y" if app_item.get("parameters") else "N")
                     elif data_key == 'deployed_on_alpha':
-                        data_row.append("Y" if app_name.lower() in deployed_pods_list else "N")
+                        data_row.append("Y" if app_name.lower().replace('_', '-') in deployed_pods_list else "N")
                     elif data_key == 'auth_connections':
                         auth_conn_str = self._convert_list_to_str((app_item.get('auth0_client') or {}).
                                                                   get("connections", []))
