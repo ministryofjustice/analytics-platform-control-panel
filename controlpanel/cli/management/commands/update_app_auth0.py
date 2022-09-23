@@ -26,7 +26,8 @@ class Command(BaseCommand):
             auth0_instance.clients.update(
                 client_id,
                 body={"callbacks": app_item["auth"]["callbacks"],
-                      "allowed_origins": app_item["auth"]["callbacks"],
+                      "allowed_origins": app_item["auth"]["allowed_origins"],
+                      "allowed_logout_urls": app_item["auth"]["allowed_logout_urls"],
                       "name": app_item["new_app_name"]})
 
     def handle(self, *args, **options):
