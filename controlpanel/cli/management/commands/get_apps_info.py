@@ -2,7 +2,8 @@ import json
 from copy import deepcopy
 import os
 import csv
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
+from time import time
 from django.core.management.base import BaseCommand, CommandError
 
 from controlpanel.api.github import GithubAPI
@@ -10,7 +11,6 @@ from controlpanel.api.auth0 import ExtendedAuth0
 from controlpanel.api.aws import AWSParameterStore
 from controlpanel.api.models import Parameter, App
 from django.conf import settings
-from time import time
 
 
 class Command(BaseCommand):
@@ -135,6 +135,13 @@ class Command(BaseCommand):
                     new_callback_urls.append(callback)
         return list(set(new_callback_urls))
 
+    def _construct_logout_urls(self, callback_urls):
+        logout_urls = []
+        for callback in callback_urls:
+            callback_url = urlparse(callback)
+            logout_urls.append(urlunparse((callback_url.scheme, callback_url.netloc, '/logout', None, None, None)))
+        return logout_urls
+
     def _process_application_name(self, app_name, name_pattern):
         """ only a few pre-defined variables will be supported
          - ENV: settings.ENV
@@ -153,18 +160,11 @@ class Command(BaseCommand):
         # not efficient but logic is simple and more flexible to make sure
         # we can locate the client_name from our registered apps, the name has been
         # formatted by applying lower() or possible changing "_" to "-"
-        found_app_name = None
         for app_name in apps_names:
-            if client_name == app_name:
-                found_app_name = app_name
-                break
-            if client_name == app_name.lower():
-                found_app_name = app_name
-                break
-            if client_name == app_name.lower().replace("_", "-"):
-                found_app_name = app_name
-                break
-        return found_app_name
+            if client_name == app_name or client_name == app_name.lower() or \
+                    client_name == app_name.lower().replace("_", "-"):
+                return app_name
+        return None
 
     def _collect_app_auth0_basic_info(self, auth0_instance, apps_info, app_conf):
         """
@@ -188,11 +188,15 @@ class Command(BaseCommand):
             # Construct the information required for aws secret
             apps_info[app_name_key]["new_app_name"] = \
                 self._process_application_name(client['name'], app_conf.get('app_name_pattern'))
-            apps_info[app_name_key]["auth"]["client_id"] = client["client_id"]
-            apps_info[app_name_key]["auth"]["callbacks"] = self._process_urls(
-                client.get("callbacks", []), app_conf.get("domains_mapping") or {})
-            apps_info[app_name_key]["auth"]["allowed_origins"] = self._process_urls(
-                client.get("allowed_origins", []), app_conf.get("domains_mapping") or {})
+            allowed_logout_urls = client.get("allowed_logout_urls") or \
+                                  self._construct_logout_urls(client.get("callbacks", []))
+            apps_info[app_name_key]["auth"].update(
+                client_id=client["client_id"],
+                callbacks=self._process_urls(client.get("callbacks", []), app_conf.get("domains_mapping") or {}),
+                allowed_origins=self._process_urls(
+                    client.get("allowed_origins", []), app_conf.get("domains_mapping") or {}),
+                allowed_logout_urls=allowed_logout_urls
+            )
             clients_id_name_map[client["client_id"]] = app_name_key
         return clients_id_name_map
 
