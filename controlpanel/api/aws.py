@@ -522,7 +522,6 @@ class AWSParameterStore(AWSService):
         self.client = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
 
     def create_parameter(self, name, value, role_name, description=""):
-        ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
             self.client.put_parameter(
                 Name=name,
@@ -538,7 +537,6 @@ class AWSParameterStore(AWSService):
             )
 
     def delete_parameter(self, name):
-        ssm = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
         try:
             self.client.delete_parameter(Name=name)
         except self.client.exceptions.ParameterNotFound:

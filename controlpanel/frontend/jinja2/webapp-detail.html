@@ -98,7 +98,7 @@
   </section>
   {% endif %}
 
-  {% if request.user.has_perm('api.create_app', app) and feature_enabled %}
+  {% if request.user.has_perm('api.update_app_secret', app) and feature_enabled %}
   <section>
   <h2 class="govuk-heading-m" >Stored Variables</h2>
   <table class="govuk-table app-data-sources form-group">
