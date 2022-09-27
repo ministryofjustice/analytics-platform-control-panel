@@ -65,7 +65,7 @@ class CreateAppForm(forms.Form):
         ],
     )
 
-    disable_authentication = forms.BooleanField(required=True)
+    disable_authentication = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)

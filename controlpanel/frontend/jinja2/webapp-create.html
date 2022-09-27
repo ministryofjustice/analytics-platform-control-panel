@@ -118,6 +118,11 @@
     ],
   }) }}
 
+
+  {% set permissions_link %}
+    <div>For more information on permissions, please have a look at this <a href="https://user-guidance.services.alpha.mojanalytics.xyz/rshiny-app.html#set-access-permissions"  >document.</a></div>
+  {% endset %}
+
   {{
     govukCheckboxes({
       "fieldset": {
@@ -128,7 +133,7 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'A flag to indicate if the app disables authentication.'
+        "text": 'A flag to indicate if the app disables authentication. ' + permissions_link
       },
       "name": "disable_authentication",
       "items": [
@@ -140,7 +145,6 @@
       ],
       "errorMessage": { "html": form.disable_authentication.errors|join(". ") } if form.disable_authentication.errors else {}
     })
-
   }}
 
   <div class="govuk-form-group">
