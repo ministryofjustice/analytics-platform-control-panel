@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     "rest_framework",
     # Django Rules object permissions
     "rules",
+    # Logs changes to models
+    "simple_history",
     # Analytics Platform Control Panel API
     "controlpanel.api",
     # Analytics Platform Control Panel Kubernetes API proxy
