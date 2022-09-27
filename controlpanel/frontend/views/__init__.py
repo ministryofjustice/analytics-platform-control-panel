@@ -67,6 +67,12 @@ from controlpanel.frontend.views.release import (
     ReleaseDetail,
     ReleaseCreate,
 )
+from controlpanel.frontend.views.ip_allowlist import (
+    IPAllowlistList,
+    IPAllowlistCreate,
+    IPAllowlistDetail,
+    IPAllowlistDelete,
+)
 from controlpanel.frontend.views.reset import ResetHome
 from controlpanel.frontend.views.accessibility import Accessibility 
 from controlpanel.frontend.views.login_fail import LoginFail

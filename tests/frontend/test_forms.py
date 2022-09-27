@@ -249,3 +249,37 @@ def test_create_app_form_clean_repo_url():
     ):
         assert f.is_valid() is False
         assert "repo_url" in f.errors
+
+
+@pytest.mark.django_db
+def test_ip_allowlist_form_invalid_ip():
+    """
+    Make sure invalid IP allowlist configurations throw errors as expected
+    (See also validation tests in ../test_validators.py)
+    """
+    data = {
+        "name": "An IP allowlist",
+        "allowed_ip_ranges": "123, 456",
+    }
+    f = forms.IPAllowlistForm(data)
+    assert f.errors["allowed_ip_ranges"] == ["123 should be an IPv4 or IPv6 address (in a comma-separated list if several IP addresses are provided)."]
+
+
+@pytest.mark.django_db
+def test_ip_allowlist_form_missing_ip():
+    data = {
+        "name": "An IP allowlist",
+        "allowed_ip_ranges": "",
+    }
+    f = forms.IPAllowlistForm(data)
+    assert f.errors["allowed_ip_ranges"] == ["This field is required."]
+
+
+@pytest.mark.django_db
+def test_ip_allowlist_form_missing_name():
+    data = {
+        "name": "",
+        "allowed_ip_ranges": "192.168.0.0/28",
+    }
+    f = forms.IPAllowlistForm(data)
+    assert f.errors["name"] == ["This field is required."]
