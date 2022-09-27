@@ -120,7 +120,27 @@ kubectl cluster-info
 The token for accessing the cluser will expire periodically.
 To refresh the token automatically, the following lines can be added into your ~/.kube/config:
 
-### Environment variables
+```shell
+- name: arn:aws:eks:eu-west-1:<AWS_DEV_ACCOUNT>:cluster/<dev_cluster_name>
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - exec
+      - admin-dev
+      - --
+      - aws
+      - --region
+      - eu-west-1
+      - eks
+      - get-token
+      - --cluster-name
+      - <dev_cluster_name>
+      command: /usr/local/bin/aws-vault
+      env: null
+      provideClusterInfo: false
+```
+admin-dev is the profile name for dev AWS account in your AWS configuration file.
 
 For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
