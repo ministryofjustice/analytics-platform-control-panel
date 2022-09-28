@@ -308,3 +308,8 @@ class ParameterSerializer(serializers.ModelSerializer):
 
 class ToolSerializer(serializers.Serializer):
     name = serializers.CharField()
+
+
+class GithubSerializer(serializers.Serializer):
+    html_url = serializers.CharField()
+    full_name = serializers.CharField()
