@@ -48,6 +48,8 @@ class Command(BaseCommand):
                             help="The path of the CSV file storing application's information")
         parser.add_argument("-p", "--pods", type=str,
                             help="The path of the CSV file storing apps's pods deployed on alpha cluster")
+        parser.add_argument("-l", "--log", type=str,
+                            help="The path of storing the error log.")
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
@@ -250,8 +252,8 @@ class Command(BaseCommand):
     def _gather_apps_full_info(self, github_token, app_conf, apps_info, audit_data_keys):
         auth0_instance = ExtendedAuth0()
 
-        self.stdout.write("1. Collecting the deployment information of each app from github")
-        self._collect_apps_deploy_info(github_token, apps_info, audit_data_keys, app_conf)
+        # self.stdout.write("1. Collecting the deployment information of each app from github")
+        # self._collect_apps_deploy_info(github_token, apps_info, audit_data_keys, app_conf)
 
         self.stdout.write("2. Collecting the auth0 client information of each app.")
         clients_id_name_map = self._collect_app_auth0_basic_info(auth0_instance, apps_info, app_conf)
@@ -350,7 +352,7 @@ class Command(BaseCommand):
         audit_data_keys = ["app_name", "registered_in_cpanel", "deployed_on_alpha", "can_be_migrated", "has_auth0",
                            "has_parameters", "has_repo", "has_deployment", "client_id", "callbacks", "grant_types",
                            "auth_connections"]
-        self._error_log_file_name = "./migration_script_errors_{}.log".format(int(time()))
+        self._error_log_file_name = options.get('log') or "./migration_script_errors_{}.log".format(int(time()))
         self._init_app_info(apps_info)
         self._gather_apps_full_info(options["token"], app_conf, apps_info, audit_data_keys)
         self._save_to_file(list(apps_info.values()), options["file"])
