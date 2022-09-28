@@ -6,7 +6,7 @@ moj.Modules.autocomplete = {
     var search_tag = this.selector;
     $(search_tag).autocomplete({source: repos});
 
-    for (let index = 1; index < 10; index++) {
+    for (let index = 1; index < 15; index++) {
       fetch('/api/cpanel/v1/repo/users/?' + new URLSearchParams({page: index}))
       .then(response => response.json())
       .then(data => {
