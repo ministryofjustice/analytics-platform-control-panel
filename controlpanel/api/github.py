@@ -3,18 +3,26 @@ from github import Github, GithubException, UnknownObjectException
 from django.conf import settings
 import structlog
 
-
 log = structlog.getLogger(__name__)
+import requests
+
 
 
 class GithubAPI:
-
     def __init__(self, api_token):
         """
         The api_token is the
         """
         self.api_token = api_token
         self.github = Github(api_token)
+        self.header = dict(Authorization=f'token {api_token}', Accept='application/vnd.github+json')
+
+    def get_repos(self, org: str, page: int):
+        params = dict(page=page, per_page=100, sort='created', direction='desc')
+        result = requests.get(f'{settings.GITHUB_BASE_URL}/orgs/{org}/repos', params, headers=self.header)
+        if result.status_code == 200:
+            return result.json()
+        return []
 
     def get_all_repositories(self):
         repos = []

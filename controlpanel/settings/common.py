@@ -391,6 +391,7 @@ else:
 
 
 # -- Github
+GITHUB_BASE_URL = 'https://api.github.com'
 
 # Allowed Github organizations
 GITHUB_ORGS = list(filter(

@@ -16,6 +16,7 @@ router.register("users3buckets", views.UserS3BucketViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("repo/users/", views.tools.RepoApi.as_view(), name='github-repos'),
     path("apps/<int:pk>/customers/", views.AppCustomersAPIView.as_view(), name='appcustomers-list'),
     path(
         "apps/<int:pk>/customers/<str:user_id>/",
