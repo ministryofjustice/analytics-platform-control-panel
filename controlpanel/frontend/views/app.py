@@ -19,7 +19,6 @@ from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
 from controlpanel.api import auth0
-
 from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
