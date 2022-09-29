@@ -15,7 +15,6 @@ from controlpanel.api.models import (
 )
 from django.conf import settings
 from django.core.cache import cache
-import time
 
 class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     filter_backends = []
@@ -27,7 +26,8 @@ class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 class RepoApi(GenericAPIView):
     serializer_class = GithubSerializer
-    permission_classes = (permissions.IsSuperuser,)
+    permission_classes = (permissions.AppPermissions,)
+    action = 'retrieve'
 
     def get_queryset(self):
         return []
