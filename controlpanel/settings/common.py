@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     "rest_framework",
     # Django Rules object permissions
     "rules",
+    # Logs changes to models
+    "simple_history",
     # Analytics Platform Control Panel API
     "controlpanel.api",
     # Analytics Platform Control Panel Kubernetes API proxy
@@ -93,6 +95,8 @@ MIDDLEWARE = [
     # Structured logging
     "django_structlog.middlewares.RequestMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    # Track which user made changes to models utilising django-simple-history
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 TEMPLATES = [
@@ -247,7 +251,7 @@ MEDIA_URL = ""
 # -- Debug
 
 # Activates debugging
-DEBUG = os.environ.get("DEBUG", False)
+DEBUG = (str(os.environ.get("DEBUG", False)).lower() == 'true')
 
 
 # -- Database

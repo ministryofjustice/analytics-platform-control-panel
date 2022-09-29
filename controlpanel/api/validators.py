@@ -1,3 +1,5 @@
+import ipaddress
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
@@ -44,3 +46,14 @@ def validate_github_repository_url(value):
         raise ValidationError(
             f"Unknown Github organization, must be one of {orgs}",
         )
+
+
+def validate_ip_ranges(value):
+    ip_ranges = value.split(",")
+    for ip_range in ip_ranges:
+        ip_range = ip_range.strip()
+        try:
+            ipaddress.ip_network(ip_range)
+        except ValueError:
+            raise ValidationError(("%(ip_r)s should be an IPv4 or IPv6 address (in a comma-separated list if several IP addresses are provided)."),
+                                    code="invalid", params={"ip_r": ip_range})

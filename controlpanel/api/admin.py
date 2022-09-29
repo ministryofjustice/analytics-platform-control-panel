@@ -1,5 +1,7 @@
-from controlpanel.api.models import App, User, S3Bucket
+from controlpanel.api.models import App, User, S3Bucket, IPAllowlist
 from django.contrib import admin
+
+from simple_history.admin import SimpleHistoryAdmin
 
 
 def make_migration_pending(modeladmin, request, queryset):
@@ -44,6 +46,12 @@ class UserAdmin(admin.ModelAdmin):
     )
 
 
+class IPAllowlistAdmin(SimpleHistoryAdmin):
+    list_display = ("name", "description", "created", "modified")
+    history_list_display = ("description", "contact", "allowed_ip_ranges")
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
+admin.site.register(IPAllowlist, IPAllowlistAdmin)

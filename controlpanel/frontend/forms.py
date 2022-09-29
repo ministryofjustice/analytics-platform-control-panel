@@ -10,6 +10,7 @@ from controlpanel.api.github import GithubAPI
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
+from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 
@@ -361,3 +362,8 @@ class DisableAuthForm(SecretsForm):
         widget=forms.CheckboxInput(attrs={'class': 'govuk-checkboxes__input'}),
         help_text='Disable Authentication for you webapp'
     )
+class IPAllowlistForm(forms.ModelForm):
+
+    class Meta:
+        model = IPAllowlist
+        fields = ["name", "description", "contact", "allowed_ip_ranges"]
