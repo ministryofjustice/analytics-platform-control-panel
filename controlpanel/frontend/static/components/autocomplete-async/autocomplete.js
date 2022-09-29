@@ -1,5 +1,5 @@
 moj.Modules.autocomplete = {
-  selector: "#display_result",
+  selector: "#display_result_repo",
   repos : [],
   bindEvents() {
     var repos = this.repos;
@@ -17,6 +17,8 @@ moj.Modules.autocomplete = {
     }
   },
   init() {
-    this.bindEvents();
+    if($(this.selector).length){
+      this.bindEvents();
+    }
   }
 }
