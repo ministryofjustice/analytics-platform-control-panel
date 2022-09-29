@@ -19,7 +19,7 @@ from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
 from controlpanel.api import auth0
-from controlpanel.api.github import GithubAPI
+
 from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
@@ -122,7 +122,6 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['repos'] = GithubAPI(self.request.user.github_api_token).get_all_repositories()
         return context
 
     def get_form_kwargs(self):

@@ -52,21 +52,12 @@
 
 <form method="post" action="{{ url("create-app") }}">
   {{ csrf_input }}
-  {% call(repo) autocomplete({
-    "name": "repo_url",
-    "label": {
-      "text": "Github repository",
-      "classes": "govuk-label--m"
-    },
-    "errorMessage": {"html": form.repo_url.errors|join(". ")} if form.repo_url.errors else {},
-    "classes": "govuk-input--error" if form.repo_url.errors else "",
-    "value": form.repo_url.value(),
-    "items": repos
-  }) %}
-    <option value="{{ repo.html_url }}"
-            {%- if form.repo_url.value() == repo.html_url %} selected{% endif -%}
-            >{{ repo.full_name }}</option>
-  {% endcall %}
+
+  <div class="govuk-form-group" id="container-element">
+    <label class="govuk-label govuk-label--m" for="display_result">Github repository</label>
+    <input type="text" class="govuk-input" id="display_result" name="repo_url" />
+  </div>
+
   {{ govukRadios({
     "name": "connect_bucket",
     "fieldset": {
