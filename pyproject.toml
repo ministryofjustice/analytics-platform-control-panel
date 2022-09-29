@@ -1,0 +1,19 @@
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+)/
+'''
+
+[tool.isort]
+import_heading_firstparty = 'First-party/Local'
+import_heading_future = 'Future'
+import_heading_stdlib = 'Standard library'
+import_heading_thirdparty = 'Third-party'
+line_length = 88
+multi_line_output = 3
+no_lines_before = 'LOCALFOLDER'
+profile = 'black'

@@ -128,7 +128,8 @@ def test_create_app_form_clean_new_datasource():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"]
+            "connections": ["email"],
+            "disable_authentication": True
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -142,6 +143,7 @@ def test_create_app_form_clean_new_datasource():
         data={
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
+            "disable_authentication": True
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -153,7 +155,8 @@ def test_create_app_form_clean_new_datasource():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"]
+            "connections": ["email"],
+            "disable_authentication": True
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -192,7 +195,8 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"]
+            "connections": ["email"],
+            "disable_authentication": True
         }
     )
     f.request = mock.MagicMock()
@@ -213,6 +217,7 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "disable_authentication": True
         }
     )
     f.request = mock.MagicMock()
@@ -234,6 +239,7 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "disable_authentication": True
         }
     )
     f.request = mock.MagicMock()

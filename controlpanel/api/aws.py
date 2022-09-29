@@ -1,14 +1,15 @@
-from copy import deepcopy
+import base64
 import json
-import structlog
+from copy import deepcopy
+from optparse import Option
+from typing import Optional
 
 import botocore
-import base64
+import structlog
 from botocore.exceptions import ClientError
 from django.conf import settings
 
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
-
 
 log = structlog.getLogger(__name__)
 
@@ -21,7 +22,6 @@ def arn(service, resource, region="", account=""):
         region = ""
 
     return f"arn:aws:{service}:{region}:{account}:{resource}"
-
 
 def s3_arn(resource):
     return arn("s3", resource)
@@ -615,6 +615,31 @@ class AWSSecretManager(AWSService):
             else:
                 raise AWSSecretManagerError(self._format_error_message(error.response))
 
+    def delete_keys_in_secret(self, secret_name, keys_to_delete):
+        """
+        Deletes keys for a stored entry.
+        Same as update_secret, but removes entries accordingly.
+        """
+        try:
+            kwargs = {"SecretId": secret_name}
+            response = self.client.get_secret_value(SecretId=secret_name)
+            if 'SecretString' in response:
+                # only update json SecretString, ignore everything else
+                origin_data = json.loads(response['SecretString'])
+                for key in keys_to_delete:
+                    if key in origin_data:
+                        del origin_data[key]
+
+                kwargs["SecretString"] = json.dumps(origin_data)
+                self.client.update_secret(**kwargs)
+                return True
+            return False                
+        except botocore.exceptions.ClientError as error:
+            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+                return False
+            else:
+                raise AWSSecretManagerError(self._format_error_message(error.response))
+
     def delete_secret(self, secret_name, without_recovery=True):
         """
         Choosing True as default value of without_recovery to allow us to create secret again
@@ -637,3 +662,8 @@ class AWSSecretManager(AWSService):
         else:
             return self.update_secret(secret_name, secret_data=secret_data)
 
+
+    def get_secret_if_found(self, secret_name: str) -> Optional[dict]:
+        if self.has_existed(secret_name):
+            return self.get_secret(secret_name)
+        return {}
