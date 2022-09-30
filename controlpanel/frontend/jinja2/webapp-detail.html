@@ -98,6 +98,35 @@
   </section>
   {% endif %}
 
+  {% if request.user.has_perm('api.update_app_secret', app) and feature_enabled %}
+  <section>
+  <h2 class="govuk-heading-m" >Stored Variables</h2>
+  <table class="govuk-table app-data-sources form-group">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">key</th>
+        <th class="govuk-table__header">current value</th>
+        <th class="govuk-table__header"></th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% for key, is_set in allowed_secret_keys.items() %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          {{ key }}
+        </td>
+        <td class="govuk-table__cell">{{is_set}}</td>
+        <td class="govuk-table__cell">
+          <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </section>
+
+{% endif %}
+
   <h2 class="govuk-heading-m">
     App customers
     {{ modal_dialog(app_customers_html|safe) }}

@@ -19,6 +19,7 @@ from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
 
 from controlpanel.api import auth0
+
 from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
@@ -33,6 +34,7 @@ from controlpanel.frontend.forms import (
     CreateAppForm,
     GrantAppAccessForm,
 )
+from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -84,10 +86,11 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # old infrastructure while users migrate to EKS. Once we have our
         # app hosting story figured out, we should do this properly.
         context['apps_on_eks'] = settings.features.apps_on_eks.enabled
+        context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
+
         if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
-        else:
-            context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
+
 
         context["admin_options"] = User.objects.filter(
             auth0_id__isnull=False,
@@ -107,9 +110,15 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             errors = context.setdefault('errors', {})
             errors['customer_email'] = add_customer_form_errors['customer_email']
 
+        set_secrets = cluster.App(self.object).get_secret_if_found()
+
         context['kibana_base_url'] = settings.KIBANA_BASE_URL
         context['has_setup_completed_for_client'] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
+        context['allowed_secret_keys'] = {
+            key: set_secrets.get(key) for key, _ in secrets.ALLOWED_SECRETS.items()
+        }
 
+        context['feature_enabled'] = settings.features.app_migration.enabled
         return context
 
 
@@ -176,14 +185,18 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         client = auth0.ExtendedAuth0().setup_auth0_client(
             self.object.slug,
             connections=form.cleaned_data.get('connections'))
-
-        cluster.App(self.object).create_or_update_secret(self.object.construct_secret_data(client))
+        
+        secret_data: dict = {
+            ** self.object.construct_secret_data(client),
+            "disable_authentication" : form.cleaned_data.pop("disable_authentication", False)
+        }
+        cluster.App(self.object).create_or_update_secret(secret_data)
 
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
-        self._register_app(form, name, repo_url)
 
+        self._register_app(form, name, repo_url)
         return FormMixin.form_valid(self, form)
 
 

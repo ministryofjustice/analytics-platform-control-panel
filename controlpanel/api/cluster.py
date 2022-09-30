@@ -11,6 +11,7 @@ from controlpanel.api.aws import (iam_arn, s3_arn, iam_assume_role_principal, AW
 from controlpanel.api import helm
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.utils import github_repository_name
+from typing import List
 
 log = structlog.getLogger(__name__)
 
@@ -403,6 +404,17 @@ class App(EntityResource):
     def delete_secret(self):
         self.aws_secret_service.delete_secret(secret_name=self.app.app_aws_secret_name)
 
+    def delete_entries_in_secret(self, keys_to_delete: List[str]) -> bool:
+        return self.aws_secret_service.delete_keys_in_secret(
+            secret_name=self.app.app_aws_secret_name,
+            keys_to_delete=keys_to_delete
+        )
+
+    def get_secret_if_found(self):
+        return self.aws_secret_service.get_secret_if_found(self.app.app_aws_secret_name)
+
+    def create_or_update(self, data: dict) -> bool:
+        return self.aws_secret_service.create_or_update(self.app.app_aws_secret_name, data)
 
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""

@@ -66,6 +66,8 @@ class CreateAppForm(forms.Form):
         ],
     )
 
+    disable_authentication = forms.BooleanField(required=False)
+
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
@@ -348,6 +350,18 @@ class ToolReleaseForm(forms.ModelForm):
             "tool_domain",
         ]
 
+class SecretsForm(forms.Form):
+    secret_value = forms.CharField(required=True, widget=forms.PasswordInput(
+        attrs={'class': 'govuk-input cpanel-input--1-3'}
+    ) )
+
+
+class DisableAuthForm(SecretsForm):
+    secret_value = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'govuk-checkboxes__input'}),
+        help_text='Disable Authentication for you webapp'
+    )
 class IPAllowlistForm(forms.ModelForm):
 
     class Meta:
