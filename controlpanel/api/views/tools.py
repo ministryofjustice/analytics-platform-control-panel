@@ -1,8 +1,10 @@
+# Third-party
 from django.conf import settings
 from rest_framework import mixins, viewsets
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
 
+# First-party/Local
 from controlpanel.api import permissions
 from controlpanel.api.github import GithubAPI
 from controlpanel.api.models import Tool
@@ -35,7 +37,7 @@ class RepoApi(GenericAPIView):
         result = [
             {"html_url": r.get("html_url"), "full_name": r.get("full_name")}
             for r in repos
-            if not r.get("archived") and 'html_url' in r and 'full_name' in r
+            if not r.get("archived") and "html_url" in r and "full_name" in r
         ]
         return result
 
