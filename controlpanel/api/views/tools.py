@@ -28,10 +28,14 @@ class RepoApi(GenericAPIView):
     def query(self, org: str, page: int):
         token = self.request.user.github_api_token
         repos = GithubAPI(token).get_repos(org, page)
+
+        if not isinstance(repos, list):
+            return []
+
         result = [
             {"html_url": r.get("html_url"), "full_name": r.get("full_name")}
             for r in repos
-            if not r.get("archived")
+            if not r.get("archived") and 'html_url' in r and 'full_name' in r
         ]
         return result
 
