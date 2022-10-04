@@ -1,7 +1,7 @@
 # Standard library
 import json
 from dataclasses import dataclass, fields
-from typing import Any, List
+from typing import Any, Dict, List
 
 # Third-party
 import requests
@@ -15,7 +15,7 @@ log = structlog.getLogger(__name__)
 @dataclass
 class BaseDataClass:
     @classmethod
-    def from_dict(cls, dict_) -> Any:
+    def from_dict(cls, dict_: dict) -> Any:
         class_fields = {f.name for f in fields(cls)}
         return cls(**{k: v for k, v in dict_.items() if k in class_fields})
 
@@ -44,13 +44,18 @@ class GithubAPI:
             f"{settings.GITHUB_BASE_URL}/orgs/{org}/repos", params, headers=self.header
         )
 
-        if result.status_code == 200:
-            return [GithubRepo.from_dict(i) for i in result.json()]
-
         try:
+            if result.status_code == 200:
+                data: List[Dict] = result.json()
+                if not isinstance(data, list):
+                    return []
+                return [GithubRepo.from_dict(i) for i in data]
+
             result.raise_for_status()
         except requests.HTTPError as ex:
             log.error("github request failed {}".format(ex))
+        except TypeError as t_ex:
+            log.error("repo result missing keys {}".format(t_ex))
         return []
 
     def get_all_repositories(self):
