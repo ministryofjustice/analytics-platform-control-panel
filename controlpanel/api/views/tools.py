@@ -33,13 +33,7 @@ class RepoApi(GenericAPIView):
 
         if not isinstance(repos, list):
             return []
-
-        result = [
-            {"html_url": r.get("html_url"), "full_name": r.get("full_name")}
-            for r in repos
-            if not r.get("archived") and "html_url" in r and "full_name" in r
-        ]
-        return result
+        return filter(lambda r: not r.archived, repos)
 
     def get(self, request, *args, **kwargs):
         data = request.GET.dict()
@@ -47,7 +41,6 @@ class RepoApi(GenericAPIView):
         org = data.get("org", settings.GITHUB_ORGS[0])
 
         repos = self.query(org, int(page))
-
-        serializers = self.get_serializer(data=repos, many=True)
-        serializers.is_valid()
-        return Response(serializers.data)
+        serializer = self.get_serializer(data=repos, many=True)
+        serializer.is_valid()
+        return Response(serializer.data)

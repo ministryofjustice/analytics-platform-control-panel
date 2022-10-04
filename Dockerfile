@@ -67,6 +67,7 @@ COPY --from=jsdep node_modules/govuk-frontend static/govuk-frontend
 COPY --from=jsdep node_modules/@ministryofjustice/frontend/moj static/ministryofjustice-frontend
 COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
 COPY --from=jsdep node_modules/jquery/dist static/jquery
+COPY --from=jsdep node_modules/jquery-ui/dist/ static/jquery-ui
 
 # empty .env file to prevent warning messages
 RUN touch .env

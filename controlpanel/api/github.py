@@ -1,11 +1,30 @@
+# Standard library
 import json
-from github import Github, GithubException, UnknownObjectException
-from django.conf import settings
+from dataclasses import dataclass, fields
+from typing import Any, List
+
+# Third-party
+import requests
 import structlog
+from django.conf import settings
+from github import Github, GithubException, UnknownObjectException
 
 log = structlog.getLogger(__name__)
-import requests
 
+
+@dataclass
+class BaseDataClass:
+    @classmethod
+    def from_dict(cls, dict_) -> Any:
+        class_fields = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in dict_.items() if k in class_fields})
+
+
+@dataclass
+class GithubRepo(BaseDataClass):
+    html_url: str
+    full_name: str
+    archived: bool
 
 
 class GithubAPI:
@@ -15,13 +34,23 @@ class GithubAPI:
         """
         self.api_token = api_token
         self.github = Github(api_token)
-        self.header = dict(Authorization=f'token {api_token}', Accept='application/vnd.github+json')
+        self.header = dict(
+            Authorization=f"token {api_token}", Accept="application/vnd.github+json"
+        )
 
-    def get_repos(self, org: str, page: int):
-        params = dict(page=page, per_page=100, sort='created', direction='desc')
-        result = requests.get(f'{settings.GITHUB_BASE_URL}/orgs/{org}/repos', params, headers=self.header)
+    def get_repos(self, org: str, page: int) -> List[GithubRepo]:
+        params = dict(page=page, per_page=100, sort="created", direction="desc")
+        result = requests.get(
+            f"{settings.GITHUB_BASE_URL}/orgs/{org}/repos", params, headers=self.header
+        )
+
         if result.status_code == 200:
-            return result.json()
+            return [GithubRepo.from_dict(i) for i in result.json()]
+
+        try:
+            result.raise_for_status()
+        except requests.HTTPError as ex:
+            log.error("github request failed {}".format(ex))
         return []
 
     def get_all_repositories(self):
@@ -32,7 +61,7 @@ class GithubAPI:
                 repos.extend(org.get_repos())
             except GithubException as err:
                 log.warning(
-                    f"Failed getting {name} Github org repos for current login user: {err}"
+                    f"Failed getting {name} Github org repos for current login user: {err}"  # noqa: E501
                 )
                 raise err
         return repos
@@ -46,11 +75,13 @@ class GithubAPI:
             )
             return None
 
-    def read_app_deploy_info(self, repo_instance, deploy_file='deploy.json'):
+    def read_app_deploy_info(self, repo_instance, deploy_file="deploy.json"):
         if repo_instance:
             try:
-                return json.loads(repo_instance.get_contents(deploy_file).decoded_content)
+                return json.loads(
+                    repo_instance.get_contents(deploy_file).decoded_content
+                )
             except UnknownObjectException:
                 return {}
         else:
-            raise("Please provide the valid repo instance")
+            raise ("Please provide the valid repo instance")
