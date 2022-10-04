@@ -38,18 +38,20 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("-t", "--token", required=True, type=str,
-                            help="The token for accessing the github")
-        parser.add_argument("-f", "--file", required=True, type=str,
-                            help="The path for the file storing the applications' information")
+                            help="input: The token for accessing the github")
         # The example of app_conf, app_conf_example.json, is provided.
         parser.add_argument("-c", "--app_conf", type=str,
-                            help="The JSON configuration file for app migration")
-        parser.add_argument("-oa", "--oaudit", type=str,
-                            help="The path of the CSV file storing application's information")
+                            help="input: The path of the configuration file(JSON)")
         parser.add_argument("-p", "--pods", type=str,
-                            help="The path of the CSV file storing apps's pods deployed on alpha cluster")
+                            help="input: The path of the file(CSV) providing the list of apps' pods "
+                                 "deployed on alpha cluster")
+        parser.add_argument("-f", "--file", required=True, type=str,
+                            help="output: Specify the path for the file(JSON) storing outcome from the script")
         parser.add_argument("-l", "--log", type=str,
-                            help="The path of storing the error log.")
+                            help="output: Specify the path for the error log file(TXT) generated from the script")
+        parser.add_argument("-oa", "--oaudit", type=str,
+                            help="output: Specify the path of the file(CSV) containing the summary of applications info"
+                                 "generated from the script")
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
