@@ -12,7 +12,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import App, Parameter
-from controlpanel.api.serializers import ParameterSerializer
+from controlpanel.api.serializers import ParameterSecretSerializer
 from controlpanel.frontend.forms import CreateParameterForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -31,16 +31,16 @@ class SecretsMixin:
             secret_data["name"] = self.app.name
         return secret_data
 
-    def get_data(self) -> ParameterSerializer:
+    def get_data(self) -> ParameterSecretSerializer:
         secret_data = self._get_available_data()
-        serial = ParameterSerializer(data=secret_data)
+        serial = ParameterSecretSerializer(data=secret_data)
         serial.is_valid()
         return serial
 
     def get_redacted_data(self) -> dict:
         return self.get_data().current_keys()
 
-    def update_or_create(self, key: str, value: str) -> ParameterSerializer:
+    def update_or_create(self, key: str, value: str) -> ParameterSecretSerializer:
         secret = self.get_data()
         secret_serial_new, action = secret.update_item(key, value)
         secret_serial_new.is_valid()
