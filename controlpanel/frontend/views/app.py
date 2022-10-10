@@ -17,6 +17,7 @@ from django.views.generic.edit import (
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 import sentry_sdk
+from controlpanel.frontend.views.parameter import SecretsMixin
 
 from controlpanel.api import auth0
 from controlpanel.api.github import GithubAPI
@@ -64,7 +65,7 @@ class AdminAppList(AppList):
         return App.objects.all().prefetch_related('userapps')
 
 
-class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, SecretsMixin, DetailView):
     context_object_name = 'app'
     model = App
     permission_required = 'api.retrieve_app'
@@ -120,6 +121,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         }
 
         context['feature_enabled'] = settings.features.app_migration.enabled
+        context['parameters'] = self.get_manager(app).get_redacted_data()
         return context
 
 

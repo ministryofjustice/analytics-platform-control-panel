@@ -52,6 +52,10 @@ class App(TimeStampedModel):
     def app_aws_secret_name(self):
         return f"{settings.ENV}/apps/{self.slug}/auth"
 
+    @property
+    def app_aws_secret_param(self):
+        return f"{settings.ENV}/apps/{self.slug}/parameters"
+
     def construct_secret_data(self, client):
         return {
             "client_id": client["client_id"],

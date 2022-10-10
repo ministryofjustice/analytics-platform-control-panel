@@ -350,6 +350,8 @@ class App(EntityResource):
     """
 
     APPS_NS = "apps-prod"
+    secret_type_option = dict(auth="app_aws_secret_name", parameters="app_aws_secret_param")
+    secret_type = "app_aws_secret_name"
 
     def __init__(self, app):
         super(App, self).__init__()
@@ -358,6 +360,14 @@ class App(EntityResource):
     def _init_aws_services(self):
         self.aws_role_service = self.create_aws_service(AWSRole)
         self.aws_secret_service = self.create_aws_service(AWSSecretManager)
+
+    def set_secret_type(self, type_key) -> "App":
+        self.secret_type = self.secret_type_option.get(type_key, "app_aws_secret_name")
+        return self
+
+    @property
+    def _get_secret_uri(self) -> str:
+        return getattr(self.app, self.secret_type)
 
     @property
     def iam_role_name(self):
@@ -398,23 +408,23 @@ class App(EntityResource):
 
     def create_or_update_secret(self, secret_data):
         self.aws_secret_service.create_or_update(
-            secret_name=self.app.app_aws_secret_name,
+            secret_name=self._get_secret_uri,
             secret_data=secret_data)
 
     def delete_secret(self):
-        self.aws_secret_service.delete_secret(secret_name=self.app.app_aws_secret_name)
+        self.aws_secret_service.delete_secret(secret_name=self._get_secret_uri)
 
     def delete_entries_in_secret(self, keys_to_delete: List[str]) -> bool:
         return self.aws_secret_service.delete_keys_in_secret(
-            secret_name=self.app.app_aws_secret_name,
+            secret_name=self._get_secret_uri,
             keys_to_delete=keys_to_delete
         )
 
     def get_secret_if_found(self):
-        return self.aws_secret_service.get_secret_if_found(self.app.app_aws_secret_name)
+        return self.aws_secret_service.get_secret_if_found(self._get_secret_uri)
 
     def create_or_update(self, data: dict) -> bool:
-        return self.aws_secret_service.create_or_update(self.app.app_aws_secret_name, data)
+        return self.aws_secret_service.create_or_update(self._get_secret_uri, data)
 
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""

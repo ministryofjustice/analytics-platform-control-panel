@@ -308,3 +308,58 @@ class ParameterSerializer(serializers.ModelSerializer):
 
 class ToolSerializer(serializers.Serializer):
     name = serializers.CharField()
+
+
+class ParamterEntrySerializer(serializers.Serializer):
+    key = serializers.CharField()
+    value = serializers.CharField()
+
+
+class ParameterSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    items = ParamterEntrySerializer(many=True)
+
+    def current_keys(self):
+        return [item.get('key') for item in self.data.get('items')]
+
+    def update_item(self, key, value):
+        current_keys = self.current_keys()
+        serial = ParamterEntrySerializer()
+        data = self.data
+        items = data.get('items', [])
+        name = data.get('name')
+
+        if key not in current_keys:
+            item_serial = ParamterEntrySerializer(data={'key': key, 'value': value})
+            item_serial.is_valid()
+
+            items.append(item_serial.data)
+            serial = ParameterSerializer(data={'name': name, 'items': items})
+            serial.is_valid()
+            return serial, "created"
+        
+
+        for item in items:
+            if key == item.get('key'):
+                item['value'] = value
+
+        serial = ParameterSerializer(data={'name': name, 'items': items})
+        serial.is_valid()
+        return serial, "updated"
+
+
+    def delete_key(self, key):
+        if key not in self.current_keys():
+            raise Exception('failed to find key in secrets')
+
+        items = self.data.get('items', [])
+        name = self.data.get('name')
+
+        items = [item for item in items if item.get('key') != key]
+        serial = ParameterSerializer(data={'name': name, 'items': items})
+        serial.is_valid()
+        return serial, "deleted"
+
+    def redacted(self):
+        data = self.data
+        return dict(name=data.get('name'), items=self.current_keys())
