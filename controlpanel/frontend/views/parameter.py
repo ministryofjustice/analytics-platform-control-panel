@@ -25,10 +25,6 @@ class SecretsMixin:
 
     def _get_available_data(self):
         secret_data = self.secret_manager.get_secret_if_found()
-        if "items" not in secret_data:
-            secret_data["items"] = []
-        if "name" not in secret_data:
-            secret_data["name"] = self.app.name
         return secret_data
 
     def get_data(self) -> ParameterSecretSerializer:
@@ -38,22 +34,17 @@ class SecretsMixin:
         return serial
 
     def get_redacted_data(self) -> dict:
-        return self.get_data().current_keys()
+        return self.get_data().secret_keys()
 
     def update_or_create(self, key: str, value: str) -> ParameterSecretSerializer:
         secret = self.get_data()
-        secret_serial_new, action = secret.update_item(key, value)
-        secret_serial_new.is_valid()
-
+        secret_serial_new = secret.update_item(key, value)
         self.secret_manager.create_or_update(secret_serial_new.data)
         return secret_serial_new
 
     def delete(self, key_to_delete) -> str:
-        serial = self.get_data()
-        secret_serial_new, delete_status = serial.delete_key(key_to_delete)
-        secret_serial_new.is_valid()
-        self.secret_manager.create_or_update(secret_serial_new.data)
-        return delete_status
+        self.secret_manager.delete_entries_in_secret([key_to_delete])
+        return True
 
 
 class ParameterList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -135,6 +126,10 @@ class ParameterDelete(
         key = data.get("key")
         app = App.objects.get(pk=app_id)
         self.get_manager(app).delete(key)
+        messages.success(
+            self.request,
+            f"Successfully deleted {key} parameter",
+        )
         return redirect("manage-app", pk=app_id)
 
 

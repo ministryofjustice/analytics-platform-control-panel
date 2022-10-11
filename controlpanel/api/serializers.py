@@ -308,54 +308,52 @@ class ToolSerializer(serializers.Serializer):
     name = serializers.CharField()
 
 
+def key_parameter_check(value: str):
+    error_message = (
+        "Must be 50 characters or fewer and contain only "
+        "alphanumeric characters and underscores"
+    )
+    result = re.fullmatch(r"[a-zA-Z0-9_]{1,50}", value)
+    if not result:
+        raise serializers.ValidationError(error_message)
+
+
 class ParamterEntrySerializer(serializers.Serializer):
-    key = serializers.CharField()
+    key = serializers.CharField(max_length=50, validators=[key_parameter_check])
     value = serializers.CharField()
 
 
 class ParameterSecretSerializer(serializers.Serializer):
-    name = serializers.CharField()
+    app_name_unique = serializers.CharField(
+        max_length=50, validators=[key_parameter_check]
+    )
     items = ParamterEntrySerializer(many=True)
 
-    def current_keys(self):
-        return [item.get("key") for item in self.data.get("items")]
-
-    def update_item(self, key, value):
-        current_keys = self.current_keys()
-        serial = ParamterEntrySerializer()
-        data = self.data
-        items = data.get("items", [])
-        name = data.get("name")
-
-        if key not in current_keys:
-            item_serial = ParamterEntrySerializer(data={"key": key, "value": value})
-            item_serial.is_valid()
-
-            items.append(item_serial.data)
-            serial = ParameterSecretSerializer(data={"name": name, "items": items})
-            serial.is_valid()
-            return serial, "created"
-
-        for item in items:
-            if key == item.get("key"):
-                item["value"] = value
-
-        serial = ParameterSecretSerializer(data={"name": name, "items": items})
+    def _new_serial(self, data):
+        serial = ParameterSecretSerializer(data=data)
         serial.is_valid()
-        return serial, "updated"
+        return serial
 
-    def delete_key(self, key):
-        if key not in self.current_keys():
-            raise Exception("failed to find key in secrets")
+    def secret_keys(self):
+        return self.data.keys()
 
-        items = self.data.get("items", [])
-        name = self.data.get("name")
+    def to_representation(self, instance):
+        data = {}
+        for item in instance.get("items"):
+            data[item.get("key")] = item.get("value")
+        return data
 
-        items = [item for item in items if item.get("key") != key]
-        serial = ParameterSecretSerializer(data={"name": name, "items": items})
-        serial.is_valid()
-        return serial, "deleted"
+    def to_internal_value(self, data):
+        items = []
+        name = data.get("app_name_unique", "_placeholder")
+        for key, value in data.items():
+            item = ParamterEntrySerializer(data=dict(key=key, value=value))
+            item.is_valid()
+            items.append(item.data)
 
-    def redacted(self):
-        data = self.data
-        return dict(name=data.get("name"), items=self.current_keys())
+        return super().to_internal_value(dict(app_name_unique=name, items=items))
+
+    def update_item(self, key, value) -> "ParamterEntrySerializer":
+        current_data = self.data
+        current_data[key] = value
+        return self._new_serial(current_data)
