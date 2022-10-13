@@ -7,39 +7,41 @@ from django.urls import reverse
 from django.views import View
 from django.views.generic import ListView
 from django.views.generic.edit import FormMixin, FormView
+from pydantic import parse_obj_as
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import App, Parameter
-from controlpanel.api.serializers import ParameterSecretSerializer
+from controlpanel.api.serializers import SecretSerializer
 from controlpanel.frontend.forms import CreateParameterForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
 class SecretsMixin:
-    def get_manager(self, app: App):
+    def get_manager(self, app: App, secret_type="parameters"):
         self.app = app
-        self.secret_manager = cluster.App(app).set_secret_type("parameters")
+        self.secret_manager = cluster.App(app).set_secret_type(secret_type)
         return self
 
     def _get_available_data(self):
         secret_data = self.secret_manager.get_secret_if_found()
         return secret_data
 
-    def get_data(self) -> ParameterSecretSerializer:
+    def get_data(self) -> SecretSerializer:
         secret_data = self._get_available_data()
-        serial = ParameterSecretSerializer(data=secret_data)
-        serial.is_valid()
+        serial = parse_obj_as(SecretSerializer, secret_data)
         return serial
 
     def get_redacted_data(self) -> dict:
-        return self.get_data().secret_keys()
+        return self.get_data().get_data().keys()
 
-    def update_or_create(self, key: str, value: str) -> ParameterSecretSerializer:
+    def update_or_create(self, key: str, value: str) -> SecretSerializer:
         secret = self.get_data()
-        secret_serial_new = secret.update_item(key, value)
-        self.secret_manager.create_or_update(secret_serial_new.data)
+        secret_serial_new, errors = secret.update_item(key, value)
+        if errors:
+            raise Exception(errors)
+        self.secret_manager.create_or_update(secret_serial_new.get_data())
         return secret_serial_new
 
     def delete(self, key_to_delete) -> str:

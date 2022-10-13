@@ -2,9 +2,11 @@
 import re
 from collections import defaultdict
 from operator import itemgetter
+from typing import Dict, Optional, Tuple
 
 # Third-party
 from django.conf import settings
+from pydantic import BaseModel, constr, parse_obj_as
 from rest_framework import serializers
 
 # First-party/Local
@@ -318,42 +320,26 @@ def key_parameter_check(value: str):
         raise serializers.ValidationError(error_message)
 
 
-class ParamterEntrySerializer(serializers.Serializer):
-    key = serializers.CharField(max_length=50, validators=[key_parameter_check])
-    value = serializers.CharField()
+KeyValue = constr(regex=r"^[a-zA-Z0-9_]{1,50}$")
 
 
-class ParameterSecretSerializer(serializers.Serializer):
-    app_name_unique = serializers.CharField(
-        max_length=50, validators=[key_parameter_check]
-    )
-    items = ParamterEntrySerializer(many=True)
+class SecretSerializer(BaseModel):
+    __root__: Dict[KeyValue, str]
 
-    def _new_serial(self, data):
-        serial = ParameterSecretSerializer(data=data)
-        serial.is_valid()
-        return serial
+    def get_data(self) -> dict:
+        return self.dict().get("__root__", {})
 
-    def secret_keys(self):
-        return self.data.keys()
-
-    def to_representation(self, instance):
-        data = {}
-        for item in instance.get("items"):
-            data[item.get("key")] = item.get("value")
-        return data
-
-    def to_internal_value(self, data):
-        items = []
-        name = data.get("app_name_unique", "_placeholder")
-        for key, value in data.items():
-            item = ParamterEntrySerializer(data=dict(key=key, value=value))
-            item.is_valid()
-            items.append(item.data)
-
-        return super().to_internal_value(dict(app_name_unique=name, items=items))
-
-    def update_item(self, key, value) -> "ParamterEntrySerializer":
-        current_data = self.data
-        current_data[key] = value
-        return self._new_serial(current_data)
+    def update_item(
+        self, key: str, value: str
+    ) -> Tuple["SecretSerializer", Optional[str]]:
+        error_message = (
+            "Must be 50 characters or fewer and contain only "
+            "alphanumeric characters and underscores"
+        )
+        original = self.copy()
+        data = self.get_data()
+        data[key] = value
+        try:
+            return parse_obj_as(SecretSerializer, data), None
+        except Exception:
+            return original, error_message

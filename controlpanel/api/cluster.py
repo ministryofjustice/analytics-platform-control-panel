@@ -390,10 +390,7 @@ class App(EntityResource):
     """
 
     APPS_NS = "apps-prod"
-    secret_type_option = dict(
-        auth="app_aws_secret_name", parameters="app_aws_secret_param"
-    )
-    secret_type = "app_aws_secret_name"
+    secret_type = "auth"
 
     def __init__(self, app):
         super(App, self).__init__()
@@ -403,13 +400,13 @@ class App(EntityResource):
         self.aws_role_service = self.create_aws_service(AWSRole)
         self.aws_secret_service = self.create_aws_service(AWSSecretManager)
 
-    def set_secret_type(self, type_key) -> "App":
-        self.secret_type = self.secret_type_option.get(type_key, "app_aws_secret_name")
+    def set_secret_type(self, type_key: str) -> "App":
+        self.secret_type = type_key
         return self
 
     @property
     def _get_secret_uri(self) -> str:
-        return getattr(self.app, self.secret_type)
+        return self.app.get_secret_key(self.secret_type)
 
     @property
     def iam_role_name(self):

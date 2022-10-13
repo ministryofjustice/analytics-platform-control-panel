@@ -1,50 +1,52 @@
 # Third-party
 import pytest
+from pydantic import parse_obj_as
 
 # First-party/Local
-from controlpanel.api.serializers import ParameterSecretSerializer
+from controlpanel.api.serializers import SecretSerializer
 
 
 @pytest.mark.parametrize(
-    "name, items, expected, error_num",
+    "items,error_num",
     [
-        ("hell-~o", {}, False, 1),
-        ("hello-world", {}, False, 1),
-        ("valid_key", {}, True, 0),
+        ({"hell-~o": "here"}, 1),
+        ({"hello-world": "here"}, 1),
+        ({"valid_key": "here"}, 0),
     ],
 )
-def test_secret_parameter_name(name, items, expected, error_num):
-    serial = ParameterSecretSerializer(data=dict(app_name_unique=name, **items))
-    assert serial.is_valid() == expected
-    assert len(serial.errors) == error_num
+def test_secret_parameter_name(items, error_num):
+    try:
+        parse_obj_as(SecretSerializer, items)
+        assert error_num == 0
+    except Exception:
+        assert error_num
 
 
 @pytest.mark.parametrize(
-    "data_dump, is_valid, result_data, error_num",
+    "data_dump,result_data,error_num",
     [
         (
             dict(environment="alpha", deployment="auto"),
-            True,
             dict(environment="alpha", deployment="auto"),
             0,
         ),
         (
             dict(environment="alpha", deployment="auto"),
-            True,
             dict(environment="alpha", deployment="auto"),
             0,
         ),
         (
             dict(environment="alpha", deployment="auto"),
-            True,
             dict(environment="alpha", deployment="auto"),
             0,
         ),
-        ({"environment": "alpha", "deplo--yment": "auto"}, False, {}, 1),
+        ({"environment": "alpha", "deplo--yment": "auto"}, {}, 1),
     ],
 )
-def test_key_value_to_serial(data_dump, is_valid, result_data, error_num):
-    serial = ParameterSecretSerializer(data=data_dump)
-    assert serial.is_valid() == is_valid
-    assert serial.data == result_data
-    assert len(serial.errors) == error_num
+def test_key_value_to_serial(data_dump, result_data, error_num):
+    try:
+        serial = parse_obj_as(SecretSerializer, data_dump)
+        assert serial.get_data() == result_data
+        assert error_num == 0
+    except Exception:
+        assert error_num
