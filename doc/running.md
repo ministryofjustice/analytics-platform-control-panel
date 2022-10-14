@@ -38,6 +38,8 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 pip3 install -r requirements.dev.txt
 pip3 uninstall python-dotenv    # see ANPL-823
+pre-commit install --hook-type commit-msg
+pre-commit install
 ```
 
 In addition, you must have:
@@ -83,7 +85,7 @@ and have [cluster admin access to Kubernetes](https://silver-dollop-30c6a355.pag
 ### AWS Configuration
 
 In order to run the app you'll need various permissions set up for you in the
-wider infrastructure of the project, mainly for AWS platform. 
+wider infrastructure of the project, mainly for AWS platform.
 
 As the docs for AWS (linked above) mention, you'll need to add yourself an AWS
 user account linked to your MoJ email address via the
@@ -258,14 +260,14 @@ and then ask a colleague for help.
 
 ### Local AWS profile setup (on first run only)
 This app needs to interact with multiple AWS accounts in order to support the users' needs.
-The AWS resources like IAM, s3 buckets are under our data account and will be managed by 
+The AWS resources like IAM, s3 buckets are under our data account and will be managed by
 app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
 The following steps will show how to create it.
 
 Assume that the name of profile for our aws data account is ```admin-data```
 
 #### Add the AWS credential into .aws/credentials
-it should look like below 
+it should look like below
 ```
 [admin-data]
 aws_access_key_id = <your aws_access_key_id>
@@ -318,17 +320,17 @@ If you want to run the control panel app to manage AWS resources under single ro
 following environment variable to define the profile you want to use
 - ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
 export AWS_PROFILE = "admin-data"
-- Make sure there is NO other AWS boto3 environment variables defined. 
+- Make sure there is NO other AWS boto3 environment variables defined.
 
 #### AWS credential setting for multiple AWS roles
-If you want to run the app to manage the AWS resources cross different AWS accounts by assuming 
+If you want to run the app to manage the AWS resources cross different AWS accounts by assuming
 different roles, then
 - Check whether following 2 more environment variables have been setup in the env file or not
   - `AWS_DATA_ACCOUNT_ROLE`: The role_arn of admin-data account
   - `AWS_DEV_ACCOUNT_ROLE` : The role_arn of admin-dev account
-  
+
 if you are not sure what the value of role_arn of those two accounts is, you can find them out by
-  checking the aws config file. 
+  checking the aws config file.
 
 More detail about the settings for mult-account is [here](architecture.md) (last section)
 - Make sure other AWS boto3 settings e.g. ```AWS_PROFILE``` are NOT defined in your env, otherwise the app will
@@ -371,7 +373,7 @@ Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
 running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
-you may encounter a popup window for asking you to provide key-chain password from time to time, 
+you may encounter a popup window for asking you to provide key-chain password from time to time,
 which is normal.
 
 ### Loading tools
