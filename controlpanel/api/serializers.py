@@ -1,6 +1,7 @@
 from collections import defaultdict
 from operator import itemgetter
 import re
+from typing import List
 
 from django.conf import settings
 
@@ -310,6 +311,16 @@ class ToolSerializer(serializers.Serializer):
     name = serializers.CharField()
 
 
-class GithubSerializer(serializers.Serializer):
-    html_url = serializers.CharField()
-    full_name = serializers.CharField()
+class GithubItemSerializer(serializers.Serializer):
+    html_url = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    archived = serializers.SerializerMethodField()
+
+    def get_html_url(self, obj):
+        return obj.get('html_url')
+    
+    def get_full_name(self, obj):
+        return obj.get('full_name')
+    
+    def get_archived(self, obj):
+        return obj.get('archived')

@@ -8,7 +8,7 @@ import requests
 import structlog
 from django.conf import settings
 from github import Github, GithubException, UnknownObjectException
-
+from controlpanel.api.serializers import GithubItemSerializer
 log = structlog.getLogger(__name__)
 
 
@@ -49,7 +49,16 @@ class GithubAPI:
                 data: List[Dict] = result.json()
                 if not isinstance(data, list):
                     return []
-                return [GithubRepo.from_dict(i) for i in data]
+
+                items = []
+                for entry in data:
+                    entry = dict(
+                        html_url= entry.get('html_url'),
+                        full_name = entry.get('full_name'),
+                        archived = entry.get('archived')
+                    )
+                    items.append(entry)
+                return items
 
             result.raise_for_status()
         except requests.HTTPError as ex:

@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from controlpanel.api import permissions
 from controlpanel.api.github import GithubAPI
 from controlpanel.api.models import Tool
-from controlpanel.api.serializers import GithubSerializer, ToolSerializer
+from controlpanel.api.serializers import ToolSerializer, GithubItemSerializer
 
 
 class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
@@ -20,7 +20,7 @@ class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
 
 class RepoApi(GenericAPIView):
-    serializer_class = GithubSerializer
+    serializer_class = GithubItemSerializer
     permission_classes = (permissions.AppPermissions,)
     action = "retrieve"
 
@@ -33,7 +33,8 @@ class RepoApi(GenericAPIView):
 
         if not isinstance(repos, list):
             return []
-        return filter(lambda r: not r.archived, repos)
+
+        return list(filter(lambda r: not r.get('archived'), repos))
 
     def get(self, request, *args, **kwargs):
         data = request.GET.dict()

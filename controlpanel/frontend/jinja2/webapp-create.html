@@ -55,6 +55,10 @@
   <div class="govuk-form-group" id="container-element">
     <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
       <div style="float: right;">
+        <div style="float: left;" >
+          <input type="hidden" value="0" id="current_index" />
+          <button id="add_more" type="button" class="govuk-button govuk-button--secondary" style="margin-right: 20px" >load more</button>
+        </div>
         <div style="float: left;" id="loading_text">loading repos: </div>
         <div id="repos_loaded" style="float: left;" >0</div>
         <div class="windows8" id="loading_gif" style="float: left;">
