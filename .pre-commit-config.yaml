@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+    - id: requirements-txt-fixer
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
+  - repo: https://github.com/psf/black
+    rev: 22.8.0
+    hooks:
+    - id: black
+      args: ['.']
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ['--filter-files', '.']
+        entry: isort
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
+    hooks:
+    -   id: flake8
+      args: ['--config=.flake8', '.']
+
+  - repo: local
+    hooks:
+    - id: jira-ticket
+      name: check for jira ticket
+      language: pygrep
+      entry: '\A(?![A-Z]+-[0-9]+)'
+      args: [--multiline]
+      stages: [commit-msg]

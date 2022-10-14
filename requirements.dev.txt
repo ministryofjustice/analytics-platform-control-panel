@@ -1,9 +1,11 @@
 django-debug-toolbar==3.2.4
 django-debug-toolbar-requests==1.0.5
 django-elasticsearch-debug-toolbar==2.0.0
-pylint==2.12.2
+pylint==2.15.4
 pylint-django==2.4.4
 ipython==7.31.1
 ipdb==0.13.9
 black==22.8.0
 isort==5.10.1
+pre-commit==2.20.0
+flake8==5.0.4
