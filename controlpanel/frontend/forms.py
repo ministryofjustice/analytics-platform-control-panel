@@ -201,18 +201,17 @@ class GrantAppAccessForm(forms.Form):
 class CreateParameterForm(forms.Form):
     app_id = forms.CharField(widget=forms.HiddenInput)
     key = forms.CharField(
-        max_length=50,
         validators=[
             RegexValidator(
-                r"[a-zA-Z0-9_]{1,50}",
+                r"[a-zA-Z0-9_]",
                 message=(
-                    "Must be 50 characters or fewer and contain only alphanumeric "
-                    "characters and underscores"
+                    "Must contain only alphanumeric characters and underscores"
                 ),
             ),
         ],
     )
     value = forms.CharField(
+        max_length=65536,
         widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"})
     )
 
