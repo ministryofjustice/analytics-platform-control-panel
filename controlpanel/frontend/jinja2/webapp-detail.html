@@ -145,11 +145,11 @@
             <a class="govuk-button govuk-button--secondary right" href="{{ url('create-parameter', kwargs={"app_id": app.id }) }}?key={{ parameter }}" >Update</a>
           </td>
           <td class="govuk-table__cell">
-            <form action="{{ url('delete-parameter') }}"  >
+            <form action="{{ url('delete-parameter') }}" onsubmit="return confirm('Do you really want to delete this parameter?');" >
               {{ csrf_input }}
               <input type="hidden" name="key"  value="{{parameter}}" />
               <input type="hidden" name="app_id" value="{{app.id}}" />
-              <button class="govuk-button govuk-button--secondary right" >Delete</button>
+              <button class="govuk-button govuk-button--secondary right" id="delete_parameter" >Delete</button>
             </form>
           </td>
         </tr>
