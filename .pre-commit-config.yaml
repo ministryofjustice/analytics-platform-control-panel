@@ -1,3 +1,4 @@
+default_stages: [commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
@@ -34,3 +35,11 @@ repos:
       entry: '\A(?![A-Z]+-[0-9]+)'
       args: [--multiline]
       stages: [commit-msg]
+
+    - id: pytest-check
+      name: pytest-check
+      entry: bash -c 'DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest > /dev/tty'
+      language: system
+      pass_filenames: false
+      always_run: true
+      # verbose: true
