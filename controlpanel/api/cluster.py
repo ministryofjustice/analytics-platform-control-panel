@@ -461,9 +461,6 @@ class App(EntityResource):
     def get_secret_if_found(self):
         return self.aws_secret_service.get_secret_if_found(self._get_secret_uri)
 
-    def create_or_update(self, data: dict) -> bool:
-        return self.aws_secret_service.create_or_update(self._get_secret_uri, data)
-
 
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
