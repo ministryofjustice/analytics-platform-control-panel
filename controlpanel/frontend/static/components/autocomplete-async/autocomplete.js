@@ -7,9 +7,7 @@ function addToRepos(index) {
   fetch('/api/cpanel/v1/repos/?' + new URLSearchParams({page: index}))
   .then(response => response.json())
   .then(data => {
-
     repos = repos.concat(data.map(item => ({label: item.full_name, value: item.html_url})));
-    let count = parseInt($('#repos_loaded').text());
     $('#repos_loaded').text(repos.length)
     $(search_tag).autocomplete('option', 'source', repos);
 
@@ -27,6 +25,8 @@ moj.Modules.autocomplete = {
     $(search_tag).autocomplete({source: repos});
 
     let index = parseInt($('#current_index').val());
+
+
     addToRepos(index)
     $('#ui-id-1').css({'padding-inline-start': '0px'})
 

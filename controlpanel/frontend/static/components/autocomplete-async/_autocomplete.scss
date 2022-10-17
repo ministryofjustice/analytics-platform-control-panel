@@ -7,7 +7,10 @@
 }
 
 .ui-autocomplete {
-  width: 500px!important;
+  width: 600px!important;
+  overflow-y: auto;
+  padding-right: 20px;
+  max-height: 400px;
 }
 .ui-autocomplete > li {
   display: block;

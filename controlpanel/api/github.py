@@ -1,30 +1,16 @@
 # Standard library
 import json
-from dataclasses import dataclass, fields
-from typing import Any, Dict, List
+
+# from dataclasses import dataclass, fields
+from typing import Dict, List
 
 # Third-party
 import requests
 import structlog
 from django.conf import settings
 from github import Github, GithubException, UnknownObjectException
-from controlpanel.api.serializers import GithubItemSerializer
+
 log = structlog.getLogger(__name__)
-
-
-@dataclass
-class BaseDataClass:
-    @classmethod
-    def from_dict(cls, dict_: dict) -> Any:
-        class_fields = {f.name for f in fields(cls)}
-        return cls(**{k: v for k, v in dict_.items() if k in class_fields})
-
-
-@dataclass
-class GithubRepo(BaseDataClass):
-    html_url: str
-    full_name: str
-    archived: bool
 
 
 class GithubAPI:
@@ -38,7 +24,7 @@ class GithubAPI:
             Authorization=f"token {api_token}", Accept="application/vnd.github+json"
         )
 
-    def get_repos(self, org: str, page: int) -> List[GithubRepo]:
+    def get_repos(self, org: str, page: int) -> List[dict]:
         params = dict(page=page, per_page=100, sort="created", direction="desc")
         result = requests.get(
             f"{settings.GITHUB_BASE_URL}/orgs/{org}/repos", params, headers=self.header
@@ -50,16 +36,7 @@ class GithubAPI:
                 if not isinstance(data, list):
                     return []
 
-                items = []
-                for entry in data:
-                    entry = dict(
-                        html_url= entry.get('html_url'),
-                        full_name = entry.get('full_name'),
-                        archived = entry.get('archived')
-                    )
-                    items.append(entry)
-                return items
-
+                return data
             result.raise_for_status()
         except requests.HTTPError as ex:
             log.error("github request failed {}".format(ex))
