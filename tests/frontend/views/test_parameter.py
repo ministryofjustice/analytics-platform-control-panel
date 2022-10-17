@@ -5,11 +5,7 @@ from unittest.mock import patch
 import pytest
 from django.urls import reverse
 from model_mommy import mommy
-from pydantic import parse_obj_as
 from rest_framework import status
-
-# First-party/Local
-from controlpanel.api.serializers import SecretSerializer
 
 NUM_APPS = 3
 
@@ -51,6 +47,14 @@ def delete(client, app, param, *args):
     return client.get(reverse("delete-parameter"), dict(key=key, app_id=app.id))
 
 
+@pytest.yield_fixture
+def fixture_create_update_secret():
+    with patch(
+        "controlpanel.api.aws.AWSSecretManager.create_or_update"
+    ) as create_or_update:
+        yield create_or_update
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status,data_input",
     [
@@ -67,48 +71,19 @@ def delete(client, app, param, *args):
         (delete, "normal_user", status.HTTP_302_FOUND, dict(key="hello")),
     ],
 )
-def test_permission(client, app, users, view, user, expected_status, data_input):
+def test_permission(
+    client,
+    app,
+    users,
+    fixture_create_update_secret,
+    view,
+    user,
+    expected_status,
+    data_input,
+):
     client.force_login(users[user])
     response = view(client, app, data_input)
     assert response.status_code == expected_status
-
-
-@pytest.yield_fixture
-def fixture_create_update_secret():
-    with patch(
-        "controlpanel.api.aws.AWSSecretManager.create_or_update"
-    ) as create_or_update:
-        yield create_or_update
-
-
-@pytest.mark.parametrize(
-    "data_input,change,valid_after,out",
-    [
-        (dict(environ="alpha"), {}, [], dict(environ="alpha")),
-        (
-            dict(environ="alpha"),
-            dict(prod="True"),
-            [],
-            dict(environ="alpha", prod="True"),
-        ),
-        (dict(environ="alpha"), {"bad#-key": "value"}, [1], None),
-        (
-            dict(environ="alpha", complex="True"),
-            {"extra_key": "value"},
-            [],
-            dict(environ="alpha", complex="True", extra_key="value"),
-        ),
-        (dict(), {"extra_key": "value"}, [], dict(extra_key="value")),
-    ],
-)
-def test_add_parameter_serializer(data_input, change, valid_after, out):
-    serial = parse_obj_as(SecretSerializer, data_input)
-    errors = []
-    for key, value in change.items():
-        serial, error = serial.update_item(key, value)
-        if error:
-            errors.append(error)
-
-    assert len(valid_after) == len(errors)
-    if out:
-        assert serial.get_data() == out
+    assert fixture_create_update_secret.called_once()
+    if data_input:
+        assert fixture_create_update_secret.called_once_with(data_input)

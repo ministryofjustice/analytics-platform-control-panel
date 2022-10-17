@@ -60,7 +60,11 @@
           "errorMessage": { "html": form.value.errors|join(". ") } if form.value.errors else {}
         })
       }}
+      {% if form.key.value() %}
+      <button class="govuk-button">Update parameter</button>
+      {% else %}
       <button class="govuk-button">Create parameter</button>
+      {% endif %}
     {% endcall %}
   </form>
 {% endblock %}

@@ -30,7 +30,6 @@ from controlpanel.frontend.forms import (
     GrantAppAccessForm,
 )
 from controlpanel.frontend.views import secrets
-from controlpanel.frontend.views.parameter import SecretsMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -59,9 +58,7 @@ class AdminAppList(AppList):
         return App.objects.all().prefetch_related("userapps")
 
 
-class AppDetail(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, SecretsMixin, DetailView
-):
+class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "app"
     model = App
     permission_required = "api.retrieve_app"
@@ -126,7 +123,9 @@ class AppDetail(
         }
 
         context["feature_enabled"] = settings.features.app_migration.enabled
-        context["parameters"] = self.get_manager(app).get_redacted_data()
+        context["parameters"] = (
+            cluster.App(app).set_secret_type("parameters").get_secret_if_found()
+        )
         return context
 
 

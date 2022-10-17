@@ -2,11 +2,9 @@
 import re
 from collections import defaultdict
 from operator import itemgetter
-from typing import Dict, Optional, Tuple
 
 # Third-party
 from django.conf import settings
-from pydantic import BaseModel, constr, parse_obj_as
 from rest_framework import serializers
 
 # First-party/Local
@@ -308,38 +306,3 @@ class ParameterSerializer(serializers.ModelSerializer):
 
 class ToolSerializer(serializers.Serializer):
     name = serializers.CharField()
-
-
-def key_parameter_check(value: str):
-    error_message = (
-        "Must be 50 characters or fewer and contain only "
-        "alphanumeric characters and underscores"
-    )
-    result = re.fullmatch(r"[a-zA-Z0-9_]{1,50}", value)
-    if not result:
-        raise serializers.ValidationError(error_message)
-
-
-KeyValue = constr(regex=r"^[a-zA-Z0-9_]{1,50}$")
-
-
-class SecretSerializer(BaseModel):
-    __root__: Dict[KeyValue, str]
-
-    def get_data(self) -> dict:
-        return self.dict().get("__root__", {})
-
-    def update_item(
-        self, key: str, value: str
-    ) -> Tuple["SecretSerializer", Optional[str]]:
-        error_message = (
-            "Must be 50 characters or fewer and contain only "
-            "alphanumeric characters and underscores"
-        )
-        original = self.copy()
-        data = self.get_data()
-        data[key] = value
-        try:
-            return parse_obj_as(SecretSerializer, data), None
-        except Exception:
-            return original, error_message
