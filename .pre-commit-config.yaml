@@ -38,7 +38,7 @@ repos:
 
     - id: pytest-check
       name: pytest-check
-      entry: bash -c 'DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest > /dev/tty'
+      entry: bash -c 'DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest -W ignore > /dev/tty'
       language: system
       pass_filenames: false
       always_run: true
