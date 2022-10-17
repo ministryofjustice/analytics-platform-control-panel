@@ -32,7 +32,7 @@ NULL_KEY_ENTRY = [dict(unknow_key="here", full_name="my-repo")]
             BASIC_GOOD_DATA[:2],
         ),
         (dict(status_code=200, json=lambda: BAD_JSON), 200, []),
-        (dict(status_code=200, json=lambda: NULL_KEY_ENTRY), 200, []),
+        (dict(status_code=200, json=lambda: NULL_KEY_ENTRY), 400, []),
     ],
 )
 def test_github_repo_get(
@@ -48,5 +48,8 @@ def test_github_repo_get(
     with patch("controlpanel.api.github.requests.get") as request_fixture:
         request_fixture.return_value = Mock(**input)
         response = client.get(reverse("github-repos"))
-        assert response.data == expected_result
+        # data = [dict(item) for item in response.data]
+        # print('\n\n expected_result >>> ', data, '\n\n\n', expected_result, '\n\n\n')
         assert response.status_code == expected_status
+        if response.status_code != 400:
+            assert response.data == expected_result

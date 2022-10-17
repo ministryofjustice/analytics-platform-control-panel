@@ -311,4 +311,3 @@ class ToolSerializer(serializers.Serializer):
 class GithubItemSerializer(serializers.Serializer):
     html_url = serializers.CharField()
     full_name = serializers.CharField()
-    archived = serializers.BooleanField(default=False)
