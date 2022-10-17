@@ -36,7 +36,7 @@ TOOLS_DOMAIN:
 
 # kibana url where the users can check the logs of their apps
 KIBANA_BASE_URL:
-  _DEFAULT: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
+  _DEFAULT: 'https://kibana.services.dev.analytical-platform.service.justice.gov.uk/app/kibana'
   _HOST_prod: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
   _HOST_alpha: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
 
