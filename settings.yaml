@@ -34,6 +34,13 @@ TOOLS_DOMAIN:
   _DEFAULT: tools.dev.analytical-platform.service.justice.gov.uk
   _HOST_alpha: tools.analytical-platform.service.justice.gov.uk
 
+# kibana url where the users can check the logs of their apps
+KIBANA_BASE_URL:
+  _DEFAULT: 'https://kibana.services.dev.analytical-platform.service.justice.gov.uk/app/kibana'
+  _HOST_prod: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
+  _HOST_alpha: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
+
+
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME: 'moj-analytics-s3-logs'
 

@@ -395,6 +395,7 @@ else:
 
 
 # -- Github
+GITHUB_BASE_URL = 'https://api.github.com'
 
 # Allowed Github organizations
 GITHUB_ORGS = list(filter(
@@ -431,11 +432,6 @@ ELASTICSEARCH = {
         ),
     },
 }
-
-KIBANA_BASE_URL = os.environ.get(
-    'KIBANA_BASE_URL',
-    f'https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana',
-)
 
 
 # -- AWS
