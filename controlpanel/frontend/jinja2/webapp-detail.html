@@ -125,6 +125,41 @@
   </table>
   </section>
 
+
+  <section>
+    <h2 class="govuk-heading-m" >Stored Parameters</h2>
+    <table class="govuk-table app-data-sources form-group">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th class="govuk-table__header" colspan="3">key</th>
+
+
+        </tr>
+      </thead>
+
+      <tbody class="govuk-table__body">
+        {% for parameter in parameters %}
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ parameter }}</td>
+          <td class="govuk-table__cell">
+            <a class="govuk-button govuk-button--secondary right" href="{{ url('create-parameter', kwargs={"app_id": app.id }) }}?key={{ parameter }}" >Update</a>
+          </td>
+          <td class="govuk-table__cell">
+            <form action="{{ url('delete-parameter') }}" onsubmit="return confirm('Do you really want to delete this parameter?');" >
+              {{ csrf_input }}
+              <input type="hidden" name="key"  value="{{parameter}}" />
+              <input type="hidden" name="app_id" value="{{app.id}}" />
+              <button class="govuk-button govuk-button--secondary right" id="delete_parameter" >Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr class="govuk-table__row">
+          <td><a href="{{ url('create-parameter', kwargs={"app_id": app.id} ) }}" class="govuk-button" >Add new Parameter</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 {% endif %}
 
   <h2 class="govuk-heading-m">

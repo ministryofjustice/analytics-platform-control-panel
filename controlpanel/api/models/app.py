@@ -1,29 +1,27 @@
+# Third-party
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api import auth0, aws, cluster, elasticsearch
-from controlpanel.utils import (
-    github_repository_name,
-    s3_slugify,
-    webapp_release_name,
-)
+# First-party/Local
+from controlpanel.api import auth0, cluster, elasticsearch
+from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
 
 
 class App(TimeStampedModel):
     name = models.CharField(max_length=100, blank=False)
     description = models.TextField(blank=True)
-    slug = AutoSlugField(populate_from='_repo_name', slugify_function=s3_slugify)
+    slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
 
     class Meta:
         db_table = "control_panel_api_app"
-        ordering = ('name',)
+        ordering = ("name",)
 
     def __repr__(self):
-        return f'<App: {self.slug}>'
+        return f"<App: {self.slug}>"
 
     @property
     def admins(self):
@@ -46,11 +44,22 @@ class App(TimeStampedModel):
 
     @property
     def customers(self):
-        return auth0.ExtendedAuth0().groups.get_group_members(group_name=self.slug) or []
+        return (
+            auth0.ExtendedAuth0().groups.get_group_members(group_name=self.slug) or []
+        )
 
     @property
     def app_aws_secret_name(self):
         return f"{settings.ENV}/apps/{self.slug}/auth"
+
+    @property
+    def app_aws_secret_param(self):
+        return f"{settings.ENV}/apps/{self.slug}/parameters"
+
+    def get_secret_key(self, name):
+        if name == "parameters":
+            return self.app_aws_secret_param
+        return self.app_aws_secret_name
 
     def construct_secret_data(self, client):
         return {
