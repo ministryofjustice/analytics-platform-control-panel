@@ -222,6 +222,7 @@ cp -R node_modules/govuk-frontend/ static/govuk-frontend
 cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
 cp -R node_modules/html5shiv/dist/ static/html5-shiv
 cp -R node_modules/jquery/dist/ static/jquery
+cp -R node_modules/jquery-ui/dist/ static/jquery-ui
 ./node_modules/.bin/babel \
   controlpanel/frontend/static/module-loader.js \
   controlpanel/frontend/static/components \
