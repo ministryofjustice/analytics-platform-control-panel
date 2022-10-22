@@ -331,7 +331,7 @@ class User(EntityResource):
             helm_charts.remove(helm_chart_item)
         return init_installed_charts
 
-    def _delete_user_helm_charts(self):
+    def delete_user_helm_charts(self):
         user_releases = helm.list_releases(namespace=self.k8s_namespace)
         cpanel_releases = helm.list_releases(
             namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"
@@ -347,7 +347,7 @@ class User(EntityResource):
 
     def delete(self):
         self.aws_role_service.delete_role(self.user.iam_role_name)
-        self._delete_user_helm_charts()
+        self.delete_user_helm_charts()
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
         self.aws_role_service.grant_bucket_access(
@@ -357,7 +357,7 @@ class User(EntityResource):
     def revoke_bucket_access(self, bucket_arn):
         self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
-    def _has_required_installation_charts(self):
+    def has_required_installation_charts(self):
         """Checks if the expected helm charts exist for the user."""
         installed_helm_charts = helm.list_releases(namespace=self.k8s_namespace)
         installed_helm_charts.extend(
@@ -375,12 +375,12 @@ class User(EntityResource):
         Run on each authenticated login on the control panel.
         This function also checks whether the users has all those charts installed or not # noqa : E501
         """
-        if not self._has_required_installation_charts():
+        if not self.has_required_installation_charts():
             # For some reason, user does not have all the charts required so we should re-init them. # noqa : E501
             log.info(
                 f"User {self.user.slug} already migrated but has no charts, initialising"  # noqa : E501
             )
-            self._delete_user_helm_charts()
+            self.delete_user_helm_charts()
             self._init_user()
 
 
