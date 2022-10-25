@@ -251,6 +251,7 @@ def test_delete():
             "--namespace",
             "my_namespace",
             timeout=settings.HELM_DELETE_TIMEOUT,
+            dry_run=False
         )
 
 

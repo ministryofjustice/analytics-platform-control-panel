@@ -51,6 +51,10 @@ def _execute(*args, **kwargs):
     of a success or failure.
     """
     log.info(" ".join(["helm", *args]))
+
+    if "dry_run" in kwargs and kwargs.pop("dry_run"):
+        return None
+
     log.info("Helm process args: " + str(kwargs))
     # Flag to indicate if the helm process will be blocking.
     wait = False
@@ -151,7 +155,7 @@ def upgrade_release(release, chart, *args):
     )
 
 
-def delete(namespace, *args):
+def delete(namespace, *args, dry_run=False):
     """
     Delete helm charts identified by the content of the args list in the
     referenced namespace. Helm 3 version.
@@ -172,9 +176,11 @@ def delete(namespace, *args):
         "--namespace",
         namespace,
         timeout=settings.HELM_DELETE_TIMEOUT,
+        dry_run=dry_run
     )
-    stdout = proc.stdout.read()
-    log.info(stdout)
+    if proc:
+        stdout = proc.stdout.read()
+        log.info(stdout)
 
 
 def get_chart_info(chart_name):
