@@ -315,11 +315,11 @@ class User(EntityResource):
         for helm_chart_item in self.user_helm_charts["reset_home"]:
             self._run_helm_install_command(helm_chart_item)
 
-    def _uninstall_helm_charts(self, related_namespace, hel_charts):
+    def _uninstall_helm_charts(self, related_namespace, hel_charts, dry_run=False):
         if not hel_charts:
             return
 
-        helm.delete(related_namespace, *hel_charts)
+        helm.delete(related_namespace, *hel_charts, dry_run=dry_run)
 
     def _filter_out_installation_charts(self, helm_charts):
         init_installed_charts = []
@@ -331,19 +331,19 @@ class User(EntityResource):
             helm_charts.remove(helm_chart_item)
         return init_installed_charts
 
-    def delete_user_helm_charts(self):
+    def delete_user_helm_charts(self, dry_run=False):
         user_releases = helm.list_releases(namespace=self.k8s_namespace)
         cpanel_releases = helm.list_releases(
             namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"
         )
 
         init_installed_charts = self._filter_out_installation_charts(user_releases)
-        self._uninstall_helm_charts(self.k8s_namespace, user_releases)
-        self._uninstall_helm_charts(self.k8s_namespace, init_installed_charts)
+        self._uninstall_helm_charts(self.k8s_namespace, user_releases, dry_run=dry_run)
+        self._uninstall_helm_charts(self.k8s_namespace, init_installed_charts, dry_run=dry_run)
 
         # Only remove the installed charts from cpanel namespace
         init_installed_charts = self._filter_out_installation_charts(cpanel_releases)
-        self._uninstall_helm_charts(self.eks_cpanel_namespace, init_installed_charts)
+        self._uninstall_helm_charts(self.eks_cpanel_namespace, init_installed_charts, dry_run=dry_run)
 
     def delete(self):
         self.aws_role_service.delete_role(self.user.iam_role_name)
