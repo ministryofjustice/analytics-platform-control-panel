@@ -48,10 +48,6 @@ class Command(BaseCommand):
                 self._log_info(f"{user.slug}, {str(user.last_login)} : no namespace exist")
                 self.stdout.write(f"{str(counter)} - Removing namespace for username: {user.slug}")
 
-    def _log_error(self, info):
-        with open(self._error_log_file_name, "a") as f:
-            f.write(info)
-
     def _read_user_from_csv(self, user_csv_file):
         user_list = []
         with open(user_csv_file) as csv_file:
