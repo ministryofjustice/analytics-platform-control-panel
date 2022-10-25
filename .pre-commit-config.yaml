@@ -32,14 +32,6 @@ repos:
     - id: jira-ticket
       name: check for jira ticket
       language: pygrep
-      entry: '\A(?![A-Z]+-[0-9]+)'
+      entry: '\A(?!ANPL+-[0-9]+)'
       args: [--multiline]
       stages: [commit-msg]
-
-    - id: pytest-check
-      name: pytest-check
-      entry: bash -c 'DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest -W ignore > /dev/tty'
-      language: system
-      pass_filenames: false
-      always_run: true
-      # verbose: true
