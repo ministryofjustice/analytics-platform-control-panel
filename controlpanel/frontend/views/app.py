@@ -12,6 +12,7 @@ from django.views.generic.edit import (
     CreateView,
     DeleteView,
     FormMixin,
+    FormView,
     UpdateView,
 )
 from django.views.generic.list import ListView
@@ -24,7 +25,9 @@ from controlpanel.api.github import GithubAPI
 from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
+    AppIPAllowlist,
     AppS3Bucket,
+    IPAllowlist,
     S3Bucket,
     User,
     UserApp,
@@ -34,6 +37,7 @@ from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
     GrantAppAccessForm,
+    SelectAppIPAllowlistsForm,
 )
 from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -200,6 +204,53 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
         self._register_app(form, name, repo_url)
         return FormMixin.form_valid(self, form)
+
+
+class SelectAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
+
+    template_name = "webapp-select-ip-allowlists.html"
+    form_class = SelectAppIPAllowlistsForm
+    permission_required = "api.update_app_secret"
+
+    def _update_app_ip_allowlists(self, initial_ip_allowlists, selected_ip_allowlists):
+
+        for ip_to_add in selected_ip_allowlists.difference(initial_ip_allowlists):
+            AppIPAllowlist.objects.create(ip_allowlist=ip_to_add, app=App.objects.get(pk=self.kwargs["pk"]))
+
+        for ip_to_delete in initial_ip_allowlists.difference(selected_ip_allowlists):
+            app_ip_allowlist = get_object_or_404(AppIPAllowlist, ip_allowlist=ip_to_delete, app=App.objects.get(pk=self.kwargs["pk"]))
+            app_ip_allowlist.delete()
+
+    def _update_app_ip_allowlist_secrets(self):
+        app_ip_allowlists = AppIPAllowlist.objects.filter(app=App.objects.get(pk=self.kwargs["pk"]))
+        allowed_ip_ranges = app_ip_allowlists.values_list("ip_allowlist__allowed_ip_ranges", flat=True).order_by("ip_allowlist__pk")
+        allowed_ip_ranges_secret_string = ", ".join(list(allowed_ip_ranges))
+
+    def get_form_kwargs(self):
+        form_data = super().get_form_kwargs()
+        form_data["initial"] =  {**form_data["initial"],
+                                 "selected_ip_allowlists": IPAllowlist.objects.filter(pk__in=AppIPAllowlist.objects.filter(app__pk=self.kwargs["pk"]).values("ip_allowlist"))}
+        return form_data
+
+    def get_context_data(self, *args, **kwargs):
+
+        context = super().get_context_data(*args, **kwargs)
+        context["app"] = App.objects.get(pk=self.kwargs["pk"])
+
+        return context
+
+    def form_valid(self, form):
+
+        if form.has_changed():
+            self._update_app_ip_allowlists(form.initial["selected_ip_allowlists"], form.cleaned_data["selected_ip_allowlists"])
+
+        self._update_app_ip_allowlist_secrets()
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully updated the IP allowlists associated with this app")
+        return reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]})
 
 
 class GrantAppAccess(
@@ -402,4 +453,3 @@ class RevokeAdmin(UpdateApp):
         userapp = get_object_or_404(UserApp, app=app, user=user)
         userapp.delete()
         messages.success(self.request, f"Revoked admin access for {user.name}")
-

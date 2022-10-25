@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
+
+{% set page_title = "Add/Update Secret" %}
+{% set page_name = "webapps" %}
+
+{% block content %}
+
+
+<h3 class="govuk-heading-m">Update IP allowlists for {{ app.name }}</h3>
+
+<section class="cpanel-section form-section">
+    <div>
+        {% if form.errors %}
+        {{ govukErrorMessage({"text": form.errors}) }}
+        {% endif %}
+    </div>
+
+    <form action="{{ url('select-app-ip-allowlists', kwargs={'pk': app.pk}) }}" method="post">
+        {{ csrf_input }}
+
+          {{ form.selected_ip_allowlists }}
+
+        <div class="govuk-form-group">
+            <button class="govuk-button">Update IP allowlists</button>
+        </div>
+
+    </form>
+
+</section>
+
+
+{% endblock %}

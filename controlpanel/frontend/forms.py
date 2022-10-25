@@ -11,6 +11,7 @@ from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
+from controlpanel.api.models.app_ip_allowlist import AppIPAllowlist
 from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 
@@ -276,6 +277,14 @@ class ResetHomeDirectoryForm(forms.Form):
         required=True,
         help_text="I confirm that I want to reset my home directory.",
         widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"})
+    )
+
+
+class SelectAppIPAllowlistsForm(forms.Form):
+    selected_ip_allowlists = forms.ModelMultipleChoiceField(
+        queryset=IPAllowlist.objects.all(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "govuk-checkboxes"})
     )
 
 

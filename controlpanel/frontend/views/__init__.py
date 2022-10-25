@@ -16,6 +16,7 @@ from controlpanel.frontend.views.app import (
     GrantAppAccess,
     UpdateAppAccess,
     RevokeAppAccess,
+    SelectAppIPAllowlists,
     SetupAppAuth0,
     ResetAppSecret,
 )
