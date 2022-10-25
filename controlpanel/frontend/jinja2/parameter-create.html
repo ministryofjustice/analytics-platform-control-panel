@@ -19,7 +19,7 @@
     <div class="error">{{ form.error }}</div>
   {% endif %}
 
-  <form action="{{ url('create-parameter', kwargs={'app_id': app.id }) }}" method="post" class="appRoles">
+  <form action="{{ url('create-parameter', kwargs={'app_id': app.id }) }}" method="post">
     {{ csrf_input }}
     {{ form.app_id }}
 
