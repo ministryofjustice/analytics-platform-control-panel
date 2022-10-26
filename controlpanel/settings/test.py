@@ -32,3 +32,5 @@ SLACK = {
     "api_token": "test-slack-api-token",
     "channel": "test-slack-channel",
 }
+
+test_var_to_delete=1
