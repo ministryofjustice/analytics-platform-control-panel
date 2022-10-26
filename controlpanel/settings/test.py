@@ -1,6 +1,5 @@
 from controlpanel.settings.common import *
 
-
 ENV = 'test'
 
 AWS_COMPUTE_ACCOUNT_ID = "test_compute_account_id"
@@ -32,5 +31,3 @@ SLACK = {
     "api_token": "test-slack-api-token",
     "channel": "test-slack-channel",
 }
-
-test_var_to_delete=1
