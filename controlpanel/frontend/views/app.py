@@ -226,6 +226,8 @@ class SelectAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
         allowed_ip_ranges = app_ip_allowlists.values_list("ip_allowlist__allowed_ip_ranges", flat=True).order_by("ip_allowlist__pk")
         allowed_ip_ranges_secret_string = ", ".join(list(allowed_ip_ranges))
 
+        cluster.App(App.objects.get(pk=self.kwargs["pk"])).create_or_update_secret({"allowed_ip_ranges": allowed_ip_ranges_secret_string})
+
     def get_form_kwargs(self):
         form_data = super().get_form_kwargs()
         form_data["initial"] =  {**form_data["initial"],
