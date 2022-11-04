@@ -12,9 +12,10 @@ from auth0.v3.management.clients import Clients
 from auth0.v3.management.connections import Connections
 from auth0.v3.management.device_credentials import DeviceCredentials
 from auth0.v3.management.rest import RestClient
-from jinja2 import Environment
 
 from auth0.v3.management.users import Users
+from jinja2 import Environment
+
 from django.conf import settings
 from rest_framework.exceptions import APIException
 

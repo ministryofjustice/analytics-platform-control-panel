@@ -256,6 +256,41 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
         return FormMixin.form_valid(self, form)
 
 
+class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+
+    form_class = UpdateAppAuth0ConnectionsForm
+    model = App
+    permission_required = 'api.create_app'
+    template_name = "webapp-auth0-connections-update.html"
+    success_url = "manage-app"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = FormMixin.get_form_kwargs(self)
+        app = self.get_object()
+        kwargs.update(request=self.request, auth0_connections=app.auth0_connections)
+        return kwargs
+
+    def get_success_url(self):
+        messages.success(self.request,  f"Successfully update {self.object.name} webapp's auth0 connections")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
+
+    def form_valid(self, form):
+        try:
+            auth0.ExtendedAuth0().update_client_auth_connections(
+                self.object.slug,
+                new_conns=form.cleaned_data.get("auth0_connections"),
+                existing_conns=form.auth0_connections
+            )
+        except Exception as ex:
+            form.add_error("connections", str(ex))
+            return FormMixin.form_invalid(self, form)
+        return FormMixin.form_valid(self, form)
+
+
 class GrantAppAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
