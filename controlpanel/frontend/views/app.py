@@ -204,8 +204,11 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
-
-        self._register_app(form, name, repo_url)
+        try:
+            self._register_app(form, name, repo_url)
+        except Exception as ex:
+            form.add_error("repo_url", str(ex))
+            return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
 
