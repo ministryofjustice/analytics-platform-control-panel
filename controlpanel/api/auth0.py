@@ -101,12 +101,6 @@ class ExtendedAuth0(Auth0):
         those which is not used by any app. This way is quite annoying, it means we have to go through all those
         unchosen connections to diable the client from it, then enable nomis login if nomis login has been chosen
         """
-        # auth0_connections = [
-        #     self.connections.search_first_match(dict(name=connection)) for connection in chosen_connections
-        # ]
-        # ignore_ids = [connection["id"] for connection in auth0_connections if connection]
-
-        # disable the client from unchosen connections
         connections = self.connections.get_all()
         for connection in connections:
             if connection["name"] in chosen_connections:
