@@ -14,6 +14,8 @@ from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
+from controlpanel.api import auth0
+
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -27,7 +29,71 @@ class DatasourceChoiceField(forms.ModelChoiceField):
         return instance.name
 
 
-class CreateAppForm(forms.Form):
+class AppAuth0Form(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        self.auth0_connections = kwargs.pop("auth0_connections", ["email"])
+        super(AppAuth0Form, self).__init__(*args, **kwargs)
+
+        self.custom_connections = auth0.ExtendedAuth0().connections.custom_connections
+        self._create_inputs_for_custom_connections()
+
+    def _create_inputs_for_custom_connections(self):
+        connections = auth0.ExtendedAuth0().connections.get_all_connection_names()
+        self.fields["connections"] = forms.MultipleChoiceField(
+            required=False,
+            initial=self.auth0_connections,
+            choices=list(zip(connections, connections))
+        )
+        for connection in self.custom_connections:
+            self.fields["{}_auth0_client_id".format(connection)] = forms.CharField(
+                max_length=128,
+                required=False,
+                validators=[validators.validate_auth0_client_id])
+            self.fields["{}_auth0_client_secret".format(connection)] = forms.CharField(
+                widget=forms.PasswordInput,
+                required=False)
+            self.fields["{}_auth0_conn_name".format(connection)] = forms.CharField(
+                max_length=128,
+                required=False,
+                validators=[validators.validate_auth0_conn_name])
+
+    def _chosen_custom_connections(self, connections):
+        return list(set(self.custom_connections) & set(connections))
+
+    def _check_inputs_for_custom_connection(self, cleaned_data):
+        auth0_connections = cleaned_data.get('connections')
+        auth0_conn_data = {}
+        chosen_custom_connections = self._chosen_custom_connections(auth0_connections)
+        for connection in auth0_connections:
+            auth0_conn_data[connection] = {}
+            if connection not in chosen_custom_connections:
+                continue
+
+            if cleaned_data.get("{}_auth0_client_id".format(connection), '') == '':
+                self.add_error("{}_auth0_client_id".format(connection), "This field is required.")
+
+            if cleaned_data.get("{}_auth0_client_secret".format(connection), '') == '':
+                self.add_error("{}_auth0_client_secret".format(connection), "This field is required.")
+
+            conn_name = cleaned_data.get("{}_auth0_conn_name".format(connection), '')
+            if conn_name == '':
+                self.add_error("{}_auth0_conn_name".format(connection), "This field is required.")
+            else:
+                if (conn_name, conn_name) in self.fields["connections"].choices:
+                    self.add_error("{}_auth0_conn_name".format(connection),
+                                   "This name has been existed in the connections.")
+
+            auth0_conn_data[connection] = {
+                "client_id": cleaned_data.get("{}_auth0_client_id".format(connection)),
+                "client_secret": cleaned_data.get("{}_auth0_client_secret".format(connection)),
+                "name": cleaned_data.get("{}_auth0_conn_name".format(connection)),
+            }
+        return auth0_conn_data
+
+
+class CreateAppForm(AppAuth0Form):
     repo_url = forms.CharField(
         max_length=512,
         validators=[
@@ -58,25 +124,15 @@ class CreateAppForm(forms.Form):
         required=False,
     )
 
-    connections = forms.MultipleChoiceField(
-        required=True,
-        initial="email",
-        choices=[("email", "email")],
-    )
-
     disable_authentication = forms.BooleanField(required=False)
-
-    def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop("request", None)
-        super().__init__(*args, **kwargs)
 
     def clean(self):
         cleaned_data = super().clean()
-        connect = cleaned_data["connect_bucket"]
+        connect_data_source = cleaned_data["connect_bucket"]
         new_datasource = cleaned_data.get("new_datasource_name")
         existing_datasource = cleaned_data.get("existing_datasource_id")
 
-        if connect == "new":
+        if connect_data_source == "new":
             if new_datasource:
                 try:
                     S3Bucket.objects.get(name=new_datasource)
@@ -90,8 +146,10 @@ class CreateAppForm(forms.Form):
             else:
                 self.add_error("new_datasource_name", "This field is required.")
 
-        if connect == "existing" and not existing_datasource:
+        if connect_data_source == "existing" and not existing_datasource:
             self.add_error("existing_datasource_id", "This field is required.")
+
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(cleaned_data)
 
         return cleaned_data
 
@@ -108,6 +166,14 @@ class CreateAppForm(forms.Form):
             raise ValidationError("App already exists for this repository URL")
 
         return value
+
+
+class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
+
+    def clean(self):
+        cleaned_data = super(UpdateAppAuth0ConnectionsForm, self).clean()
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(cleaned_data)
+        return cleaned_data
 
 
 class CreateDatasourceForm(forms.Form):

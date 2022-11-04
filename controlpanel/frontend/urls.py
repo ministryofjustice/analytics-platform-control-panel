@@ -114,6 +114,11 @@ urlpatterns = [
         name="setup-app-auth0",
     ),
     path(
+        "webapps/<int:pk>/update_auth0_connections/",
+        views.UpdateAppAuth0Connections.as_view(),
+        name="update-auth0-connections",
+    ),
+    path(
         "webapps/<int:pk>/reset_app_secret/",
         views.ResetAppSecret.as_view(),
         name="reset-app-secret",

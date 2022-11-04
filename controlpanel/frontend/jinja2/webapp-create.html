@@ -3,6 +3,8 @@
 {% from "label/macro.html" import govukLabel %}
 {% from "radios/macro.html" import govukRadios %}
 {% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "includes/auth0-connections-form.html" import auth0_connections_form with context %}
+
 
 {% extends "base.html" %}
 
@@ -54,6 +56,7 @@
 
   <div class="govuk-form-group" id="container-element">
     <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
+
       <div style="float: right;">
         <div style="float: left;" >
           <input type="hidden" value="1" id="current_index" />
@@ -61,6 +64,7 @@
         </div>
         <div style="float: left;" id="loading_text">loading repos: </div>
         <div id="repos_loaded" style="float: left;" >0</div>
+
         <div class="windows8" id="loading_gif" style="float: left;">
           <div class="wBall" id="wBall_1">
             <div class="wInnerBall"></div>
@@ -81,6 +85,16 @@
       </div>
 
     </label>
+
+    {% set error_repo_msg = form.errors.get("repo_url") %}
+    {% if error_repo_msg %}
+      {% set errorId = 'repo-url-error' %}
+      {{ govukErrorMessage({
+        "id": errorId,
+        "html": error_repo_msg|join(". "),
+      }) }}
+    {% endif %}
+
     <input type="text" class="govuk-input" id="display_result_repo" name="repo_url" />
   </div>
 
@@ -113,28 +127,19 @@
       },
     ]
   }) }}
-  {{ govukCheckboxes({
-    "fieldset": {
-      "legend": {
+
+  {{ auth0_connections_form({
+      "fieldset": {
+        "legend": {
         "text": "Oauth0 client - connections",
         "classes": "govuk-fieldset__legend--m",
+        },
       },
-    },
-    "errorMessage": {"html": form.connections.errors|join(". ")} if form.connections.errors else {},
-    "classes": "govuk-checkboxes--error" if form.repo_url.errors else "",
-    "hint": {
-      "text": 'Select the preferred option to allow customers to login'
-    },
-    "name": "connections",
-    "items": [
-      {
-        "value": "email",
-        "text": "Email",
-        "checked": True,
-      },
-    ],
-  }) }}
-
+      "errors": form.errors,
+      "field": form.fields['connections'],
+      "selected_values": form.connections.value()
+    } )
+  }}
 
   {% set permissions_link %}
     <div>For more information on permissions, please have a look at this <a href="https://user-guidance.services.alpha.mojanalytics.xyz/rshiny-app.html#set-access-permissions"  >document.</a></div>
