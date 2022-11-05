@@ -98,7 +98,7 @@
   </section>
   {% endif %}
 
-  {% if request.user.has_perm('api.update_app_secret', app) and feature_enabled %}
+  {% if feature_enabled %}
   <section>
   <h2 class="govuk-heading-m" >Authentication Settings</h2>
   <table class="govuk-table app-data-sources form-group">
@@ -116,9 +116,11 @@
           {{ key }}
         </td>
         <td class="govuk-table__cell">{{is_set}}</td>
-        <td class="govuk-table__cell">
-          <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
-        </td>
+        {% if request.user.has_perm('api.update_app_secret', app) %}
+          <td class="govuk-table__cell">
+            <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
+          </td>
+        {% endif %}
       </tr>
       {% endfor %}
       <tr class="govuk-table__row">

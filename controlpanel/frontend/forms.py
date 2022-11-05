@@ -14,7 +14,6 @@ from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
-from controlpanel.api import auth0
 
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
@@ -34,17 +33,17 @@ class AppAuth0Form(forms.Form):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
         self.auth0_connections = kwargs.pop("auth0_connections", ["email"])
+        self.all_connections_names = kwargs.pop("all_connections_names", ["email"])
+        self.custom_connections = kwargs.pop("custom_connections", [])
         super(AppAuth0Form, self).__init__(*args, **kwargs)
 
-        self.custom_connections = auth0.ExtendedAuth0().connections.custom_connections
         self._create_inputs_for_custom_connections()
 
     def _create_inputs_for_custom_connections(self):
-        connections = auth0.ExtendedAuth0().connections.get_all_connection_names()
         self.fields["connections"] = forms.MultipleChoiceField(
             required=False,
             initial=self.auth0_connections,
-            choices=list(zip(connections, connections))
+            choices=list(zip(self.all_connections_names, self.all_connections_names))
         )
         for connection in self.custom_connections:
             self.fields["{}_auth0_client_id".format(connection)] = forms.CharField(
@@ -58,6 +57,7 @@ class AppAuth0Form(forms.Form):
                 max_length=128,
                 required=False,
                 validators=[validators.validate_auth0_conn_name])
+        print()
 
     def _chosen_custom_connections(self, connections):
         return list(set(self.custom_connections) & set(connections))

@@ -1,3 +1,6 @@
+import json
+import mock
+
 from unittest.mock import call, patch
 from django.conf import settings
 import pytest
@@ -262,9 +265,9 @@ def test_existing_user_add_to_group(
 
 @pytest.yield_fixture
 def fixture_client_create(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.clients, "get_or_create") as get_or_create:
-        get_or_create.return_value = {"client_id": "new_client_id", "name": "new_client"}
-        yield get_or_create
+    with patch.object(ExtendedAuth0.clients, "create") as client_create:
+        client_create.return_value = {"client_id": "new_client_id", "name": "new_client"}
+        yield client_create
 
 
 @pytest.yield_fixture
@@ -286,6 +289,13 @@ def fixture_connection_disable_client(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "disable_client") as connection_disable_client:
         connection_disable_client.return_value = {}
         yield connection_disable_client
+
+
+@pytest.yield_fixture
+def fixture_connection_enable_client(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.connections, "enable_client") as connection_enable_client:
+        connection_enable_client.return_value = {}
+        yield connection_enable_client
 
 
 @pytest.yield_fixture
@@ -315,7 +325,7 @@ def fixture_connection_get_all(ExtendedAuth0):
 
 @pytest.yield_fixture
 def fixture_permission_create(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.permissions, "get_or_create") as permission_create:
+    with patch.object(ExtendedAuth0.permissions, "create") as permission_create:
         permission_create.return_value = {
             "name": "view:app",
             "_id": "permission_001",
@@ -325,7 +335,7 @@ def fixture_permission_create(ExtendedAuth0):
 
 @pytest.yield_fixture
 def fixture_role_create(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.roles, "get_or_create") as role_create:
+    with patch.object(ExtendedAuth0.roles, "create") as role_create:
         role_create.return_value = {
             "name": "app-viewer",
             "_id": "role_001",
@@ -337,7 +347,7 @@ def fixture_role_create(ExtendedAuth0):
 
 @pytest.yield_fixture
 def fixture_group_create(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.groups, "get_or_create") as group_create:
+    with patch.object(ExtendedAuth0.groups, "create") as group_create:
         group_create.return_value = {
             "name": "view:app",
             "_id": "group_001"}
@@ -362,6 +372,7 @@ def test_setup_auth0_client(ExtendedAuth0,
                             fixture_client_create,
                             fixture_client_update,
                             fixture_connection_disable_client,
+                            fixture_connection_enable_client,
                             fixture_connection_search_first_match,
                             fixture_connection_get_all,
                             fixture_permission_create,
@@ -484,3 +495,84 @@ def fixture_group_members_200(ExtendedAuth0):
 def test_group_member_more_than_100(ExtendedAuth0, fixture_get_group_id, fixture_group_members_200):
     members = ExtendedAuth0.groups.get_group_members(group_name="test group")
     assert len(members) == 200
+
+
+@pytest.yield_fixture
+def fixture_client_search_first_match(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.clients, "search_first_match") as client_search_first_match:
+        client_search_first_match.return_value = {
+            "client_id": "new_client_id"
+        }
+        yield client_search_first_match
+
+
+def test_update_client_auth_connections(ExtendedAuth0,
+                                        fixture_connection_disable_client,
+                                        fixture_connection_enable_client,
+                                        fixture_connection_get_all,
+                                        fixture_client_search_first_match):
+    new_client_id = "new_client_id"
+
+    connection1 = {
+        "name": "connection 1",
+        "id": "con_0000000000000002",
+        "enabled_clients": ["new_client_id"]
+    }
+    connection2 = {
+        "name": "connection 2",
+        "id": "con_0000000000000003",
+        "enabled_clients": ["new_client_id"]
+    }
+
+    ExtendedAuth0.update_client_auth_connections(
+        app_name="test",
+        new_conns={"email": {}, "connection 1": {}},
+        existing_conns=["email", "connection 2"])
+
+    fixture_connection_disable_client.assert_has_calls(
+        [call(connection2, new_client_id)],
+    )
+    fixture_connection_enable_client.assert_has_calls(
+        [call(connection1, new_client_id)],
+    )
+
+
+@pytest.yield_fixture
+def fixture_connection_create(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.connections, "create") as connection_create:
+        connection_create.return_value = {
+            "name": "test_nomis_connection",
+            "id": "new_connection",
+            "client_id": "test_nomis_connection_id"
+        }
+        yield connection_create
+
+
+def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
+    def _clean_string(content):
+        return content.replace(" ", "").replace("\n", "")
+
+    ExtendedAuth0.connections.create_custom_connection(
+        "auth0_nomis",
+        input_values={
+            "name": "test_nomis_connection",
+            "client_id": "test_nomis_connection_id",
+            "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu"
+        }
+    )
+    fixture_connection_create.assert_called_once_with(mock.ANY)
+    with open("./tests/api/fixtures/nomis_body.json") as body_file :
+        expected = json.loads(body_file.read())
+
+    # Check whether the json argument passed into connection.create is expected
+    call = fixture_connection_create.call_args
+    call_args, call_kwargs = call
+    actual_arg = call_args[0]
+    print(call_args[0]["name"])
+
+    actual_arg["options"]["scripts"]["fetchUserProfile"] = _clean_string(
+        actual_arg["options"]["scripts"]["fetchUserProfile"])
+    expected["options"]["scripts"]["fetchUserProfile"] = _clean_string(
+        expected["options"]["scripts"]["fetchUserProfile"])
+
+    assert actual_arg == expected

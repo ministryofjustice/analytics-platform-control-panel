@@ -33,15 +33,15 @@ validate_s3_bucket_labels = RegexValidator(
 
 
 validate_auth0_conn_name = RegexValidator(
-    regex='^([a-z][a-z0-9-]*[a-z0-9])([a-z][a-z0-9-]*[a-z0-9])*$',
+    regex='^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])$',
     message="is invalid, check Auth0 connection name restrictions (for example, "
             "can only start and end with alphanumeric alphanumeric, only contain alphanumeric and hyphens)",
 )
 
 
 validate_auth0_client_id = RegexValidator(
-    regex='^([a-z][a-z0-9-]*[a-z0-9])(_[a-z][a-z0-9-]*[a-z0-9])*$',
-    message="is invalid, check Auth0 connection name restrictions (for example, "
+    regex='^([_a-zA-Z0-9-]*)$',
+    message="is invalid, check Auth0 client_id restrictions (for example, "
             "can only contain alphanumeric, underscores and hyphens)",
 )
 

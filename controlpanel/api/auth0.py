@@ -112,7 +112,7 @@ class ExtendedAuth0(Auth0):
     def _create_custom_connection(self, app_name, connections):
         new_connections = []
         for connection_name, user_inputs in connections.items():
-            if connection_name in self.connections.custom_connections:
+            if connection_name in ExtendedConnections.custom_connections():
                 if "name" not in user_inputs:
                     user_inputs["name"] = app_name
                 new_connection_name = self.connections.create_custom_connection(
@@ -131,7 +131,7 @@ class ExtendedAuth0(Auth0):
                     <connection_name>: {<user_inputs if need}
                 }
         """
-        connections = connections or {"email": {}}
+        connections = {"email": {}} if connections is None else connections
         new_connections = self._create_custom_connection(app_name, connections)
         app_url = "https://{}.{}".format(app_name, self.app_domain)
         client = self.clients.create(
@@ -240,7 +240,7 @@ class ExtendedAuth0(Auth0):
         """
         client = self.clients.search_first_match(dict(name=app_name))
         if client:
-            connections = new_conns or {"email": {}}
+            connections = {"email": {}} if new_conns is None else new_conns
             new_connections = self._create_custom_connection(app_name, connections)
 
             # Get the list of  removed connections based on the existing connections
@@ -399,9 +399,9 @@ class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
 class ExtendedConnections(ExtendedAPIMethods, Connections):
     endpoint = 'connections'
 
-    def __init__(self, domain, token, telemetry=True, timeout=5.0):
-        super(ExtendedConnections, self).__init__(domain=domain, token=token, telemetry=telemetry, timeout=timeout)
-        self.custom_connections = self._get_custom_connections_from_setting()
+    @staticmethod
+    def custom_connections():
+        return (settings.CUSTOM_AUTH_CONNECTIONS or "").split()
 
     def disable_client(self, connection, client_id):
         if client_id in connection["enabled_clients"]:
@@ -416,13 +416,10 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
     def _get_template_path_for_custom_connection(self, connection_name: str):
         return Path(__file__).parents[0] / Path("auth0_conns") / Path(connection_name)
 
-    def _get_custom_connections_from_setting(self):
-        return (settings.CUSTOM_AUTH_CONNECTIONS or "").split()
-
     def get_all_connection_names(self):
         connections = super(ExtendedConnections, self).get_all()
         connection_names = [connection["name"] for connection in connections]
-        connection_names.extend(self.custom_connections)
+        connection_names.extend(ExtendedConnections.custom_connections())
         return connection_names
 
     def _get_default_settings_for_custom_connection(self, connection_name, input_values):

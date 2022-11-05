@@ -142,7 +142,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
-        kwargs.update(request=self.request)
+        kwargs.update(request=self.request,
+                      all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
+                      custom_connections=auth0.ExtendedConnections.custom_connections())
         return kwargs
 
     def get_success_url(self):
@@ -227,7 +229,10 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         app = self.get_object()
-        kwargs.update(request=self.request, auth0_connections=app.auth0_connections)
+        kwargs.update(request=self.request,
+                      all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
+                      custom_connections=auth0.ExtendedConnections.custom_connections(),
+                      auth0_connections=app.auth0_connections)
         return kwargs
 
     def get_success_url(self):

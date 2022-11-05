@@ -1,0 +1,20 @@
+{
+  "options": {
+    "scripts": {
+      "fetchUserProfile": "function(accessToken, ctx, cb) {\n  var base_url = \"https://testing.com\";\n  var user_endpoint = \"/auth/api/user/me\";\n  var user_profile_url = base_url + user_endpoint;\n\n  // call oauth2 API with the accesstoken and create the profile\n  request.get(\n    user_profile_url, {\n      headers: {\n        Authorization: \"Bearer \" + accessToken\n      }\n    },\n    function(err, resp, body) {\n      if (err) {\n        cb(err);\n        return;\n      }\n      if (!/^2/.test(\"\" + resp.statusCode)) {\n        cb(body);\n        return;\n      }\n      var parsedBody = JSON.parse(body);\n      var profile = {\n        user_id: parsedBody.staffId,\n        nickname: parsedBody.name,\n        name: parsedBody.name,\n        email: parsedBody.username + \"+\" + parsedBody.activeCaseLoadId + \"@nomis\",\n        username: parsedBody.username,\n        blocked: !parsedBody.active,\n        activeCaseLoadId: parsedBody.activeCaseLoadId,\n        _nomisAccessToken: accessToken\n      };\n      cb(null, profile);\n    }\n  );\n}"
+    },
+    "client_id": "test_nomis_connection_id",
+    "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+    "authorizationURL": "https://testing.com/auth/oauth/authorize",
+    "tokenURL": "https://testing.com/auth/oauth/token",
+    "scope": "",
+    "customHeaders": {
+      "Authorization": "Basic dGVzdF9ub21pc19jb25uZWN0aW9uX2lkOldOWEZrTTNGQ1RYSmhVV3MwUTFOd2NLRnU=",
+      "Content-Type": "application/json"
+    }
+  },
+  "strategy": "oauth2",
+  "name": "test_nomis_connection",
+  "is_domain_connection": false,
+  "enabled_clients": []
+}

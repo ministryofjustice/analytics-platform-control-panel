@@ -211,6 +211,7 @@ def test_create_app_form_clean_repo_url():
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
         assert f.is_valid() is True
+
     # Repo not found.
     f = forms.CreateAppForm(
         data={
@@ -233,6 +234,7 @@ def test_create_app_form_clean_repo_url():
     ):
         assert f.is_valid() is False
         assert "repo_url" in f.errors
+
     # App already exists.
     f = forms.CreateAppForm(
         data={
@@ -255,6 +257,106 @@ def test_create_app_form_clean_repo_url():
     ):
         assert f.is_valid() is False
         assert "repo_url" in f.errors
+
+
+def test_create_app_with_custom_connection():
+    # Good case.
+    f = forms.CreateAppForm(
+        data={
+            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "connect_bucket": "new",
+            "new_datasource_name": "test-bucketname",
+            "connections": ["email", "auth0_nomis"],
+            "disable_authentication": True,
+            "auth0_nomis_auth0_client_id": 'nomis-client-id',
+            "auth0_nomis_auth0_client_secret": 'nomis-client-secret',
+            "auth0_nomis_auth0_conn_name": 'nomis-conn-name'
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"]
+    )
+    f.request = mock.MagicMock()
+    mock_get_repo = mock.MagicMock(return_value=True)
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    mock_s3 = mock.MagicMock()
+    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
+    with mock.patch(
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
+    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
+        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    ):
+        assert f.is_valid() is True
+
+    # Bad case: missing client credential for nomis login + not valid connection name
+    f = forms.CreateAppForm(
+        data={
+            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "connect_bucket": "new",
+            "new_datasource_name": "test-bucketname",
+            "connections": ["email", "auth0_nomis"],
+            "disable_authentication": True,
+            "auth0_nomis_auth0_client_id": 'nomis-client-id',
+            "auth0_nomis_auth0_client_secret": '',
+            "auth0_nomis_auth0_conn_name": 'nomis_conn_name'
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"]
+    )
+    f.request = mock.MagicMock()
+    mock_get_repo = mock.MagicMock(return_value=True)
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    mock_s3 = mock.MagicMock()
+    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
+    with mock.patch(
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
+    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
+        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    ):
+        assert f.is_valid() is False
+        assert "auth0_nomis_auth0_client_secret" in f.errors
+        assert "auth0_nomis_auth0_conn_name" in f.errors
+
+
+def test_update_app_with_custom_connection():
+    # Good case.
+    f = forms.UpdateAppAuth0ConnectionsForm(
+        data={
+            "connections": ["email", "auth0_nomis"],
+            "auth0_nomis_auth0_client_id": 'nomis-client-id',
+            "auth0_nomis_auth0_client_secret": 'nomis-client-secret',
+            "auth0_nomis_auth0_conn_name": 'nomis-conn-name'
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"],
+        auth0_connections=["github"]
+    )
+    f.request = mock.MagicMock()
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    with mock.patch("controlpanel.frontend.forms.App", mock_app):
+        assert f.is_valid() is True
+
+    # Bad case: missing client credential for nomis login + not valid connection name
+    f = forms.UpdateAppAuth0ConnectionsForm(
+        data={
+            "connections": ["email", "auth0_nomis"],
+            "auth0_nomis_auth0_client_id": 'nomis-client-id',
+            "auth0_nomis_auth0_client_secret": '',
+            "auth0_nomis_auth0_conn_name": 'nomis_conn_name'
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"],
+        auth0_connections=["github"]
+    )
+    f.request = mock.MagicMock()
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    with mock.patch("controlpanel.frontend.forms.App", mock_app):
+        assert f.is_valid() is False
+        assert "auth0_nomis_auth0_client_secret" in f.errors
+        assert "auth0_nomis_auth0_conn_name" in f.errors
 
 
 @pytest.mark.django_db
