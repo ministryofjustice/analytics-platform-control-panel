@@ -17,7 +17,6 @@ from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.cluster import AWSRoleCategory
 
 
-
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
 
@@ -59,6 +58,7 @@ class AppAuth0Form(forms.Form):
                 max_length=128,
                 required=False,
                 validators=[validators.validate_auth0_conn_name])
+        print()
 
     def _chosen_custom_connections(self, connections):
         return list(set(self.custom_connections) & set(connections))
