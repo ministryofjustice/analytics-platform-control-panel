@@ -127,6 +127,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["parameters"] = (
             cluster.App(app).set_secret_type("parameters").get_secret_if_found()
         )
+        
         return context
 
 

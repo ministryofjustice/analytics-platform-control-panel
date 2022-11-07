@@ -4,6 +4,7 @@ from rest_framework import routers
 
 # First-party/Local
 from controlpanel.api import views
+from controlpanel.api.views import customers
 
 router = routers.DefaultRouter()
 router.register("apps", views.AppViewSet)
@@ -22,6 +23,11 @@ urlpatterns = [
         "apps/<int:pk>/customers/",
         views.AppCustomersAPIView.as_view(),
         name="appcustomers-list",
+    ),
+    path(
+        "app/<int:pk>/customers/<int:page>/",
+        customers.AppCustomersPageAPIView.as_view(),
+        name="appcustomers-page"
     ),
     path(
         "apps/<int:pk>/customers/<str:user_id>/",

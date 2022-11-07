@@ -11,6 +11,23 @@ from rest_framework.response import Response
 
 from controlpanel.api import permissions, serializers
 from controlpanel.api.models import App
+from django.contrib.auth.models import Permission
+
+class AppCustomersPageAPIView(GenericAPIView):
+    queryset = App.objects.all()
+    serializer_class = serializers.Auth0ResponseSerializer
+    permission_classes = (permissions.AppPermissions,)
+    action = "retrieve"
+
+    def get(self, request, *args, pk=None, page=1, **kwargs):
+        app = App.objects.get(pk=pk)
+        customers = app.customer_paginated(page)
+        if not customers:
+            raise Http404
+
+        serializer = self.get_serializer(data=customers)
+        serializer.is_valid()
+        return Response(serializer.data)
 
 
 class AppCustomersAPIView(GenericAPIView):

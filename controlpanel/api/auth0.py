@@ -1,3 +1,4 @@
+from wsgiref.util import request_uri
 import structlog
 import base64
 import yaml
@@ -286,7 +287,6 @@ class Auth0API(object):
         params['fields'] = fields and ','.join(fields) or None
         params['page'] = page
         params['per_page'] = per_page
-
         return self.client.get(request_url or self._url(), params=params)
 
     def pre_process_body(self, body):
@@ -565,6 +565,8 @@ class Roles(Auth0API, ExtendedAPIMethods):
             )
 
 
+
+
 class Groups(Auth0API, ExtendedAPIMethods):
 
     def add_role(self, id, role_id):
@@ -584,6 +586,14 @@ class Groups(Auth0API, ExtendedAPIMethods):
         # plus page parameter is One-based
         # https://auth0.com/docs/api/authorization-extension#get-group-members
         return None, 1, PER_PAGE_FOR_GROUP_MEMBERS
+
+    def get_group_members_paginated(self, group_name, page=1, per_page=5):
+        """gets members based on page number"""
+        group_id = self.get_group_id(group_name)
+
+        request_url = self._url(group_id, "members")
+        response = self.all(request_url=request_url, page=page, per_page=per_page)
+        return response
 
     def get_group_members(self, group_name):
         group_id = self.get_group_id(group_name)
