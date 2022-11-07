@@ -168,7 +168,8 @@ class S3AccessPolicy:
         if statement:
             resources = statement.get("Resource", [])
             for resource in list(resources):
-                if resource.startswith(arn):
+                # Make sure the resource can be removed only when the arn is part of paths of the resource
+                if resource.startswith(f"{arn}/"):
                     resources.remove(resource)
 
     def grant_object_access(self, arn, access_level):
