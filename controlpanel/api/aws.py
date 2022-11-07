@@ -170,16 +170,13 @@ class S3AccessPolicy:
         This function is to make the check more general based on the bucket convention rules
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
         """
-        if resource == arn:
-            return True
-        if len(resource) < len(arn):
-            return False
-        else:
-            end_char = resource[len(arn)]
-            if resource.startswith(arn) and not re.match("^[a-z0-9-.]$", end_char):
-                return True
+        if resource.startswith(arn):
+            if len(resource) > len(arn):
+                end_char = resource[len(arn)]
+                return not re.match("^[a-z0-9-.]$", end_char)
             else:
-                return False
+                return True
+        return False
 
     def remove_resource(self, arn, sid):
         statement = self.statement(sid)
