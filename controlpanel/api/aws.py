@@ -1,7 +1,7 @@
 import base64
 import json
+import re
 from copy import deepcopy
-from optparse import Option
 from typing import Optional
 
 import botocore
@@ -163,13 +163,31 @@ class S3AccessPolicy:
             if arn not in statement["Resource"]:
                 statement["Resource"].append(arn)
 
+    def _is_arn_part_of_resource(self, resource, arn):
+        """In general, the partition letter for path is / , but in some of occasions, it will have other parts, e.g.
+        in moto (the python package for mocking aws service), somehow add [] at the end of bucket
+        e.g. arn:aws:s3:::test-bucket[]/* which is strange.
+        This function is to make the check more general based on the bucket convention rules
+        https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+        """
+        if resource == arn:
+            return True
+        if len(resource) < len(arn):
+            return False
+        else:
+            end_char = resource[len(arn)]
+            if resource.startswith(arn) and not re.match("^[a-z0-9-.]$", end_char):
+                return True
+            else:
+                return False
+
     def remove_resource(self, arn, sid):
         statement = self.statement(sid)
         if statement:
             resources = statement.get("Resource", [])
             for resource in list(resources):
                 # Make sure the resource can be removed only when the arn is part of paths of the resource
-                if resource.startswith(f"{arn}/"):
+                if self._is_arn_part_of_resource(resource, arn):
                     resources.remove(resource)
 
     def grant_object_access(self, arn, access_level):
