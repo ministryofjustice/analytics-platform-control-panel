@@ -4,6 +4,7 @@ from rest_framework import routers
 
 # First-party/Local
 from controlpanel.api import views
+from controlpanel.api.views import customers
 
 router = routers.DefaultRouter()
 router.register("apps", views.AppViewSet)
