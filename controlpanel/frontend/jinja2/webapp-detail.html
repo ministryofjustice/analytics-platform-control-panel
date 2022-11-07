@@ -25,6 +25,7 @@
 {% endset %}
 
 {% block content %}
+<input type="hidden" id="app_id" value="{{app.id}}" />
 <header>
   <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
@@ -65,10 +66,6 @@
 </header>
 
 <section class="cpanel-section">
-  {% set customers = app.customers %}
-  {% set num_customers = customers|length %}
-
-
   {% if request.user.has_perm('api.setup_app_auth0', app) and not has_setup_completed_for_client %}
   <h2 class="govuk-heading-m">The Auth0 client setup has not been completed for this app</h2>
   <section class="cpanel-section">
@@ -186,37 +183,59 @@
             value="submit">
       Remove all selected customers
     </button>
+    <input type="hidden" 
+      id="has_remove_client_perm" 
+      value="{% if request.user.has_perm('api.remove_app_customer', app) %}true{% else %}false{% endif %}" 
+    />
     <table class="govuk-table selectable-rows">
       <thead class="govuk-table__head">
         <tr class="govuk-table__row">
-          <th class="govuk-table__header"></th>
-          <th class="govuk-table__header">Customer email</th>
+          <th class="govuk-table__header" ></th>
+          <th class="govuk-table__header" colspan="2">Customer email</th>
+          
           <th class="govuk-table__header">
             <span class="govuk-visually-hidden">Actions</span>
+            <div id="list-users-paginated" style="display: flex; float: right;" >
+                <div class="windows8" id="loading_gif" >
+                  <div class="wBall" id="wBall_1">
+                    <div class="wInnerBall"></div>
+                  </div>
+                  <div class="wBall" id="wBall_2">
+                    <div class="wInnerBall"></div>
+                  </div>
+                  <div class="wBall" id="wBall_3">
+                    <div class="wInnerBall"></div>
+                  </div>
+                  <div class="wBall" id="wBall_4">
+                    <div class="wInnerBall"></div>
+                  </div>
+                  <div class="wBall" id="wBall_5">
+                    <div class="wInnerBall"></div>
+                  </div>
+                </div>
+
+                <div  >
+                  <input type="hidden" value="1" id="current_index" />
+                  <button id="add_more" type="button" class="govuk-button govuk-button--secondary" style="margin-right: 20px" >load more</button>
+                </div>
+                <div id="loading_text">loading repos: </div>
+                <div id="repos_loaded" >0</div>
+                <div id="total_available"></div>
+                
+            </div>
           </th>
         </tr>
       </thead>
-      <tbody class="govuk-table__body">
-        {% for customer in customers %}
-        <tr class="govuk-table__row">
-          <td class="govuk-table__cell">{{ row_selector('customer', customer.user_id) }}</td>
-          <td class="govuk-table__cell">{{ customer.email }}</td>
-          {% if request.user.has_perm('api.remove_app_customer', app) %}
-          <td class="govuk-table__cell">
-            <button class="govuk-button govuk-button--secondary right"
-                    name="customer"
-                    value="{{ customer.user_id }}">
-              Remove customer
-            </button>
+      <tbody class="govuk-table__body" id="list-customers-paginated">
+        <tr id="checkbox-controller" >
+          <td class="govuk-table__cell checkbox-cell" colspan="3">
+            <input type="checkbox" class="row-selector" id="toggle-controller" >
           </td>
-          {% endif %}
         </tr>
-        {% endfor %}
       </tbody>
       <tfoot class="govuk-table__foot">
         <tr class="govuk-table__row">
           <td class="govuk-table__cell" colspan="3">
-            {{ num_customers }} app customer{% if num_customers != 1 %}s{% endif %}
           </td>
         </tr>
       </tfoot>
