@@ -17,6 +17,49 @@ def ExtendedAuth0():
         yield authz.return_value
 
 
+@pytest.yield_fixture
+def fixture_users_200(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.users, "all") as request:
+        request.side_effect = [
+            {
+                "total": 200,
+                "users": [
+                    {
+                        "name": f"Test User {(i * 100) + j}",
+                        "email": f"test{(i * 100) + j}@example.com",
+                        "user_id": f"github|{(i * 100) + j}",
+                        "extra_field": True
+                    }
+                    for j in range(100)
+                ],
+            }
+            for i in range(2)
+        ]
+        yield
+
+
+@pytest.yield_fixture
+def fixture_customers_mocked(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "get_group_members_paginated") as request:
+        items = [
+            {
+                'total': 10,
+                'users': [
+                    {
+                        "name": f"Test User {(i * 5) + j}",
+                        "email": f"test{(i * 5) + j}@example.com",
+                        "user_id": f"github|{(i * 5) + j}",
+                    } for j in range(5)
+                ]
+            } for i in range(2)
+        ]
+
+        items.append([])
+
+        request.side_effect = items
+        yield request
+
+
 def test_get(client, app, ExtendedAuth0):
     ExtendedAuth0.groups.get_group_members.return_value = [{
         "email": "a.user@digital.justice.gov.uk",
@@ -52,3 +95,18 @@ def test_post(client, app, ExtendedAuth0):
         emails=emails,
         user_options={'connection': 'email'},
     )
+
+
+def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
+    response = client.get(reverse('appcustomers-page', (app.id, 1)))
+    fixture_customers_mocked.assert_called_with(group_name=app.slug, page=1, per_page=25)
+
+    first_users = response.json().get('users', [])
+    assert len(first_users) == 5
+
+    response = client.get(reverse('appcustomers-page', (app.id, 2)))
+    fixture_customers_mocked.assert_called_with(group_name=app.slug, page=2, per_page=25)
+    second_users = response.json().get('users', [])
+
+    assert len(second_users) == 5
+    assert first_users != second_users
