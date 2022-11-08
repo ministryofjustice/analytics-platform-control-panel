@@ -214,11 +214,11 @@ class SelectAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
 
     def _update_app_ip_allowlists(self, initial_ip_allowlists, selected_ip_allowlists):
 
-        for ip_to_add in selected_ip_allowlists.difference(initial_ip_allowlists):
-            AppIPAllowlist.objects.create(ip_allowlist=ip_to_add, app=App.objects.get(pk=self.kwargs["pk"]))
+        for ip_to_add in set(selected_ip_allowlists).difference(set(initial_ip_allowlists)):
+            AppIPAllowlist.objects.create(ip_allowlist=IPAllowlist.objects.get(pk=ip_to_add), app=App.objects.get(pk=self.kwargs["pk"]))
 
-        for ip_to_delete in initial_ip_allowlists.difference(selected_ip_allowlists):
-            app_ip_allowlist = get_object_or_404(AppIPAllowlist, ip_allowlist=ip_to_delete, app=App.objects.get(pk=self.kwargs["pk"]))
+        for ip_to_delete in set(initial_ip_allowlists).difference(set(selected_ip_allowlists)):
+            app_ip_allowlist = get_object_or_404(AppIPAllowlist, ip_allowlist=IPAllowlist.objects.get(pk=ip_to_delete), app=App.objects.get(pk=self.kwargs["pk"]))
             app_ip_allowlist.delete()
 
     def _update_app_ip_allowlist_secrets(self):
@@ -231,13 +231,22 @@ class SelectAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
     def get_form_kwargs(self):
         form_data = super().get_form_kwargs()
         form_data["initial"] =  {**form_data["initial"],
-                                 "selected_ip_allowlists": IPAllowlist.objects.filter(pk__in=AppIPAllowlist.objects.filter(app__pk=self.kwargs["pk"]).values("ip_allowlist"))}
+                                "selected_ip_allowlists": list(IPAllowlist.objects.filter(pk__in=AppIPAllowlist.objects.filter(app__pk=self.kwargs["pk"]).values("ip_allowlist")).values_list("pk", flat=True))}
         return form_data
 
     def get_context_data(self, *args, **kwargs):
 
         context = super().get_context_data(*args, **kwargs)
         context["app"] = App.objects.get(pk=self.kwargs["pk"])
+
+        context["available_ip_allowlists"] = [
+            {
+                "text": ip_allowlist.name,
+                "value": ip_allowlist.pk,
+                "checked": bool(AppIPAllowlist.objects.filter(ip_allowlist__pk=ip_allowlist.pk).filter(app__pk=self.kwargs["pk"]))
+            }
+            for ip_allowlist in IPAllowlist.objects.all()
+        ]
 
         return context
 

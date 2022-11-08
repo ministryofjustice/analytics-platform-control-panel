@@ -1,15 +1,11 @@
 {% extends "base.html" %}
 {% from "checkboxes/macro.html" import govukCheckboxes %}
 {% from "error-message/macro.html" import govukErrorMessage %}
-{% from "input/macro.html" import govukInput %}
 
-{% set page_title = "Add/Update Secret" %}
-{% set page_name = "webapps" %}
+{% set page_title = "Update IP Allowlists" %}
+{% set page_name = "select-app-ip-allowlists" %}
 
 {% block content %}
-
-
-<h3 class="govuk-heading-m">Update IP allowlists for {{ app.name }}</h3>
 
 <section class="cpanel-section form-section">
     <div>
@@ -21,15 +17,26 @@
     <form action="{{ url('select-app-ip-allowlists', kwargs={'pk': app.pk}) }}" method="post">
         {{ csrf_input }}
 
-          {{ form.selected_ip_allowlists }}
+        {{ govukCheckboxes({
+            "fieldset": {
+                "legend": {
+                    "text": "IP allowlists for " + app.name,
+                    "classes": "govuk-fieldset__legend--m",
+                },
+            },
+            "classes": "govuk-!-width-two-thirds",
+            "hint": {
+                "text": "Customers will only be able to access this app from the IP networks in the allowlists selected below"
+            },
+            "name": "selected_ip_allowlists",
+            "items": available_ip_allowlists,
+          })
+        }}
 
         <div class="govuk-form-group">
             <button class="govuk-button">Update IP allowlists</button>
         </div>
-
     </form>
-
 </section>
-
 
 {% endblock %}

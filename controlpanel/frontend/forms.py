@@ -281,11 +281,15 @@ class ResetHomeDirectoryForm(forms.Form):
 
 
 class SelectAppIPAllowlistsForm(forms.Form):
-    selected_ip_allowlists = forms.ModelMultipleChoiceField(
-        queryset=IPAllowlist.objects.all(),
+    selected_ip_allowlists = forms.MultipleChoiceField(
+        choices=list(IPAllowlist.objects.all().values_list("pk", "name")),
         required=False,
-        widget=forms.CheckboxSelectMultiple(attrs={"class": "govuk-checkboxes"})
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        cleaned_data["selected_ip_allowlists"] = [int(ipa_pk) for ipa_pk in cleaned_data["selected_ip_allowlists"]]
+        return cleaned_data
 
 
 class ToolReleaseForm(forms.ModelForm):
