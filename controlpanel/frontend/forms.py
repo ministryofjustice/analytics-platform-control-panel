@@ -337,6 +337,7 @@ class ToolReleaseForm(forms.ModelForm):
             "values",
             "is_restricted",
             "tool_domain",
+            "description"
         ]
 
 

@@ -112,29 +112,15 @@ def _execute(*args, **kwargs):
     return proc
 
 
-def update_helm_repository():
+def update_helm_repository(force=False):
     """
     Updates the helm repository and returns a dictionary representation of
-    all the available charts. Raises a HelmError if there's a problem reading
-    the helm repository cache.
+    all the available charts.
     """
     repo_path = get_repo_path()
     # If there's no helm repository cache, call helm repo update to fill it.
-    if not os.path.exists(repo_path):
-        _execute("repo", "update", timeout=None)  # timeout = infinity.
-    # Execute the helm repo update command if the helm repository cache is
-    # stale (older than CACHE_FOR_MINUTES value).
-    if os.path.getmtime(repo_path) + CACHE_FOR_MINUTES < time.time():
-        _execute("repo", "update", timeout=None)  # timeout = infinity.
-    try:
-        with open(repo_path) as f:
-            return yaml.load(f, Loader=yaml.FullLoader)
-    except Exception as ex:
-        error = HelmError(ex)
-        error.detail = (
-            f"Error while opening/parsing helm repository cache: '{repo_path}'"
-        )
-        raise HelmError(error)
+    if not os.path.exists(repo_path) or force:
+        _execute("repo", "update", timeout=None)
 
 
 def upgrade_release(release, chart, *args):
@@ -195,7 +181,18 @@ def get_chart_info(chart_name):
     """
     chart_info = {}  # The end result.
     # Update and grab repository metadata.
-    repository = update_helm_repository()
+    update_helm_repository()
+    repo_path = get_repo_path()
+    try:
+        with open(repo_path) as f:
+            repository = yaml.load(f, Loader=yaml.FullLoader)
+    except Exception as ex:
+        error = HelmError(ex)
+        error.detail = (
+            f"Error while opening/parsing helm repository cache: '{repo_path}'"
+        )
+        raise HelmError(error)
+
     if not repository:
         # Metadata not available, so bail with empty dictionary.
         return chart_info

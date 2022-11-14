@@ -732,9 +732,10 @@ class ToolDeployment:
         except ObjectDoesNotExist:
             return None
 
-    def get_status(self, id_token):
+    def get_status(self, id_token, deployment=None):
         try:
-            deployment = self.get_deployment(id_token)
+            if deployment is None:
+                deployment = self.get_deployment(id_token)
 
         except ObjectDoesNotExist:
             log.warning(f"{self} not found")

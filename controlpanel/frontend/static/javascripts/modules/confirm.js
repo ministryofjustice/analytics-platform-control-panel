@@ -25,9 +25,21 @@ moj.Modules.jsConfirm = {
       if (window.confirm(this.getConfirmMessage($el))) {
         // Check if the button has a target form to submit.
         const target = $el.data("form-target");
+        // Check if the button has API URL for submit
+        const target_url = $el.data("form-url");
         if(target) {
             document.getElementById(target).submit();
-        } else {
+        } else if (target_url) {
+            $.ajax({
+                type: "POST",
+                url: target_url,
+                data: $('#' + target).serializeArray(),
+                success: function () {
+                    alert('success post');
+                }
+            });
+        } else
+        {
             // If not, just submit the closest form.
             $el.closest('form').submit();
         }

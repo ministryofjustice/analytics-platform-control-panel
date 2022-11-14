@@ -62,12 +62,11 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "deployment": None,
                 "versions": {},
             }
-        # Each version now needs to display the chart_name and the
-        # "app_version" metadata from helm. TODO: Stop using helm.
-        if tool.version not in tools_info[tool_box]["versions"]:
+        # Each version now needs to display the chart_name and the description
+        if tool and tool.version not in tools_info[tool_box]["versions"]:
             tools_info[tool_box]["versions"][tool.version] = {
                 "chart_name": tool.chart_name,
-                "description": tool.app_version
+                "description": tool.description
             }
 
     def _add_deployed_charts_info(self, tools_info, user, id_token):
@@ -79,10 +78,15 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             tool_box = tool_box or 'Unknown'
             tool = self._find_related_tool_record(chart_name, chart_version)
             if not tool:
-                log.error("this chart({}-{}) has not available from DB. ".format(chart_name, chart_version))
-                continue
+                log.warn("this chart({}-{}) has not available from DB. ".format(chart_name, chart_version))
             self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
-            tools_info[tool_box]["deployment"] = ToolDeployment(tool, user)
+            tool_deployment = ToolDeployment(tool, user)
+            tools_info[tool_box]["deployment"] = {
+                "chart_name": chart_name,
+                "chart_version": chart_version,
+                "description": tool.description if tool else 'Not available',
+                "status": tool_deployment.get_status(id_token, deployment=deployment)
+            }
 
     def _retrieve_detail_tool_info(self, user, tools):
         tools_info = {}
@@ -111,7 +115,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                "rstudio": {
                    "name": "RStudio",
                    "url: "https://john-rstudio.tools.example.com",
-                   "deployment": ToolDeployment(RStudio, John),
+                   "deployment": {"chart_name": "", "chart_version": "", "app_version": "", "status": ""},
                    "versions": {
                        "2.2.5": {
                            "chart_name": "rstudio",
@@ -134,7 +138,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         context = super().get_context_data(*args, **kwargs)
         context["ip_range_feature_enabled"] = settings.features.app_migration.enabled
-        context["id_token"] = id_token
         context["user_guidance_base_url"] = settings.USER_GUIDANCE_BASE_URL
         context["aws_service_url"] = settings.AWS_SERVICE_URL
 

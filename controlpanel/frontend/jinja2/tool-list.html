@@ -26,7 +26,7 @@
         {% if deployment %}
         <input
             type="hidden"
-            value="{{ deployment.tool.chart_name }}"
+            value="{{ deployment['chart_name'] }}"
             name="deployed_chart_name" />
         {% endif%}
       <div class="govuk-form-group">
@@ -38,9 +38,9 @@
             id="tools-{{ chart_name }}" name="version">
             {% set installed_chart_version = None %}
             {% if deployment %}
-              {% set installed_chart_version = deployment.get_installed_chart_version(id_token) %}
-              <option class="installed" value="{{ deployment.tool.chart_name }}__{{ installed_chart_version }}">
-              [{{ deployment.tool.chart_name }} {{ installed_chart_version }}]  {{ deployment.get_installed_app_version(id_token) or "Unknown" }} (installed)
+              {% set installed_chart_version = deployment["chart_version"] %}
+              <option class="installed" value="{{ deployment['chart_name'] }}__{{ installed_chart_version }}">
+              [{{ deployment['chart_name'] }} {{ installed_chart_version }}]  {{ deployment["description"] or "Unknown" }} (installed)
               </option>
             {% else %}
               <option class="not-installed">Not deployed - select a tool from this list and click "Deploy" to start</option>
@@ -48,7 +48,7 @@
             {% for chart_version, app_version in tool_info["versions"].items(): %}
               {% if chart_version != installed_chart_version: %}
                 <option value="{{ app_version.chart_name }}__{{ chart_version }}">
-                  [{{ app_version.chart_name }} {{ chart_version }}]  {{ app_version.description or "Unknown" }}
+                  [{{ app_version.chart_name }} {{ chart_version }}]  {{ app_version['description'] or "Unknown" }}
                 </option>
               {% endif %}
             {% endfor %}
@@ -60,7 +60,7 @@
   <p class="govuk-!-margin-bottom-1">Status:
   <span class="govuk-!-font-weight-bold tool-status-label">
     {% if deployment %}
-      {{ deployment.get_status(id_token) | default("") }}
+      {{ deployment['status'] | default("") }}
     {% else %}
     Not deployed
     {% endif %}
@@ -89,7 +89,7 @@
 
   <form
     {% if deployment %}
-    action="{{ url('restart-tool', kwargs={'name': deployment.tool.chart_name}) }}"
+    action="{{ url('restart-tool', kwargs={'name': deployment['chart_name']}) }}"
     {% endif %}
     data-action-name="restart"
     method="post"
