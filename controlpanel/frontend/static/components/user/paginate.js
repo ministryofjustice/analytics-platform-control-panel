@@ -18,9 +18,9 @@ function getCustomerEntry(user_id, email, delete_perm) {
 
   return `<tr class="govuk-table__row">
       <td class="govuk-table__cell checkbox-cell">
-        <input type="checkbox" class="row-selector customer-checkbox" name="customer" value="${ user_id }" autocomplete="off">
+        <input type="checkbox" class="row-selector customer-checkbox" name="customer" value="${user_id}" autocomplete="off" />
       </td>
-      <td class="govuk-table__cell">${ email }</td>
+      <td class="govuk-table__cell">${email}</td>
       ${delete_customer}
     </tr>`
 }
@@ -36,15 +36,15 @@ function enableMore() {
 function loadCustomers(app_pk, index, perm) {
   $("#loading_gif").show();
   disableMore();
-  let url = `/api/cpanel/v1/app/${app_pk}/customers/${index}/`;
+  let url = `/api/cpanel/v1/app/${app_pk}/customers/paginate/?page=${index}`;
 
   fetch(url)
   .then(response => response.json())
   .then(data => {
-    let new_entries = data.users.map(item => getCustomerEntry(item.user_id, item.email, perm))
+    let new_entries = data.map(item => getCustomerEntry(item.user_id, item.email, perm))
     app_customers = app_customers.concat(new_entries);
 
-    $('#repos_loaded').text(app_customers.length);
+    $('#customers_loaded').text(app_customers.length);
 
     // $(search_tag).autocomplete('option', 'source', app_customers);
     $(display_tag).append(new_entries);
@@ -53,9 +53,9 @@ function loadCustomers(app_pk, index, perm) {
     $("#loading_text").text("loaded: ");
 
     $('#current_index').val(index +1);
-    $('#total_available').html(`/${ data.total }`);
+    $('#total_available').html(`/${ data.length }`);
 
-    if(app_customers.length >= parseInt(data.total)){
+    if(app_customers.length >= parseInt(data.length)){
       disableMore();
     }
     else {
