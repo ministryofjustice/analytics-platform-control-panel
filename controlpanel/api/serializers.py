@@ -268,6 +268,17 @@ class AppCustomerSerializer(serializers.Serializer):
         )
 
 
+class ToolDeploymentrSerializer(serializers.Serializer):
+    old_chart_name = serializers.CharField(max_length=64, required=False)
+    version = serializers.CharField(max_length=64, required=True)
+
+    def validate_version(self, value):
+        try:
+            _, _ = value.split("__")
+        except ValueError:
+            raise serializers.ValidationError('This field include chart name and version and they are joined by "__".')
+
+
 class ESBucketHitsSerializer(serializers.BaseSerializer):
     def to_representation(self, bucket_hits):
         access_count = defaultdict(int)

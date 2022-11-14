@@ -23,8 +23,8 @@ def users(db):
 @pytest.fixture
 def tools(db):
     print("Setting up tools...")
-    Tool(chart_name="a_tool", target_infrastructure="e").save()
-    Tool(chart_name="another_tool", target_infrastructure="e").save()
+    Tool(chart_name="a_tool", target_infrastructure="e", description="testing").save()
+    Tool(chart_name="another_tool", target_infrastructure="e", description="testing").save()
 
 
 @pytest.yield_fixture
@@ -201,7 +201,7 @@ def test_update_tool_status():
     tool_deployment = Mock()
     tool_deployment.tool = tool
     tool_deployment.user = user
-    tool_deployment.get_installed_app_version.return_value = app_version
+    # tool_deployment.get_installed_app_version.return_value = app_version
 
     expected_sse_event = {
         "event": "toolStatus",
@@ -209,7 +209,7 @@ def test_update_tool_status():
             {
                 "toolName": tool.chart_name,
                 "version": tool.version,
-                "appVersion": app_version,
+                # "appVersion": app_version,
                 "status": status,
             }
         ),
@@ -219,5 +219,5 @@ def test_update_tool_status():
         consumers.update_tool_status(
             tool_deployment, id_token, status,
         )
-        tool_deployment.get_installed_app_version.assert_called_with(id_token)
+        # tool_deployment.get_installed_app_version.assert_called_with(id_token)
         send_sse.assert_called_with(user.auth0_id, expected_sse_event)

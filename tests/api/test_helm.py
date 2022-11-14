@@ -196,26 +196,8 @@ def test_update_helm_repository_non_existent_cache(helm_repository_index):
     ), patch(
         "controlpanel.api.helm.os.path.exists", return_value=False
     ):
-        result = helm.update_helm_repository()
+        helm.update_helm_repository()
         mock_execute.assert_called_once_with("repo", "update", timeout=None)
-        assert result["entries"]  # There's a dictionary with chart entries.
-
-
-def test_update_helm_repository_out_of_date_cache(helm_repository_index):
-    """
-    Ensure the function updates the helm repository, then returns the YAML
-    parsed helm repository cache.
-    """
-    with patch("builtins.open", helm_repository_index), patch(
-        "controlpanel.api.helm._execute"
-    ) as mock_execute, patch(
-        "controlpanel.api.helm.os.path.getmtime", return_value=12345.678
-    ), patch(
-        "controlpanel.api.helm.os.path.exists", return_value=True
-    ):
-        result = helm.update_helm_repository()
-        mock_execute.assert_called_once_with("repo", "update", timeout=None)
-        assert result["entries"]  # There's a dictionary with chart entries.
 
 
 def test_update_helm_repository_valid_cache(helm_repository_index):
@@ -231,9 +213,8 @@ def test_update_helm_repository_valid_cache(helm_repository_index):
     ), patch(
         "controlpanel.api.helm.os.path.exists", return_value=True
     ):
-        result = helm.update_helm_repository()
+        helm.update_helm_repository()
         assert mock_execute.call_count == 0
-        assert result["entries"]  # There's a dictionary with chart entries.
 
 
 def test_delete():

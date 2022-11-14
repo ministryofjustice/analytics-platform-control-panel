@@ -3,11 +3,13 @@ from rest_framework.generics import GenericAPIView
 from rest_framework import status
 
 from controlpanel.frontend.consumers import start_background_task
+from controlpanel.api import serializers
 
 
 class ToolDeploymentAPIView(GenericAPIView):
 
     http_method_names = ['post']
+    serializer_class = serializers.ToolDeploymentrSerializer
 
     def _deploy(self, chart_name, data):
         """
@@ -43,10 +45,14 @@ class ToolDeploymentAPIView(GenericAPIView):
         )
 
     def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
         chart_name = self.kwargs["tool_name"]
         tool_action = self.kwargs["action"]
         tool_action_function = getattr(self, f"_{tool_action}", None)
-        if callable(tool_action_function):
+        if tool_action_function and callable(tool_action_function):
             tool_action_function(chart_name, request.data)
-
-        return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)

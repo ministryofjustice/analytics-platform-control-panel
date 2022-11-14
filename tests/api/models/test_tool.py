@@ -12,16 +12,7 @@ def tool(db):
     return mommy.make("api.Tool")
 
 
-@pytest.yield_fixture
-def token_hex():
-    with patch("controlpanel.api.models.tool.secrets") as secrets:
-        yield secrets.token_hex
-
-
-def test_deploy_for_generic(helm, token_hex, tool, users):
-    cookie_secret_proxy = "cookie secret proxy"
-    cookie_secret_tool = "cookie secret tool"
-    token_hex.side_effect = [cookie_secret_proxy, cookie_secret_tool]
+def test_deploy_for_generic(helm, tool, users):
     user = users["normal_user"]
 
     # simulate release with old naming scheme installed
@@ -83,20 +74,20 @@ def test_tool_deployment_get_installed_app_version(
     cluster.ToolDeployment.assert_called_with(user, tool)
     cluster_td.get_installed_chart_version.assert_called_with(id_token)
 
-
+@pytest.mark.django_db
 @pytest.mark.parametrize(
-    "chart_version, expected_app_version",
+    "chart_version, expected_description",
     [
-        ("unknown-version", None),
-        ("1.0.0", None),
+        ("unknown-version", ''),
+        ("1.0.0", ''),
         ("2.2.5", "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"),
     ],
     ids=["unknown-version", "chart-with-no-appVersion", "chart-with-appVersion",],
 )
-def test_tool_app_version(helm_repository_index, chart_version, expected_app_version):
-    tool = Tool(chart_name="rstudio", version=chart_version)
+def test_tool_description_from_helm_chart(helm_repository_index, chart_version, expected_description):
+    tool = Tool(chart_name="rstudio", version=chart_version).save()
 
-    assert tool.app_version == expected_app_version
+    assert tool.description == expected_description
 
 
 def test_home_directory_reset(cluster):

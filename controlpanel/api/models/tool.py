@@ -90,7 +90,7 @@ class Tool(TimeStampedModel):
             helm.update_helm_repository(force=True)
 
         if not self.description:
-            self.description = helm.get_chart_app_version(self.chart_name, self.version)
+            self.description = helm.get_chart_app_version(self.chart_name, self.version) or ''
 
         super().save(*args, **kwargs)
         return self
