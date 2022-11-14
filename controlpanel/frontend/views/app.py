@@ -21,6 +21,7 @@ from controlpanel.api import auth0, cluster
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
+    IPAllowlist,
     S3Bucket,
     User,
     UserApp,
@@ -253,6 +254,37 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
             form.add_error("connections", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
+
+
+class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+
+    model = App
+    template_name = "webapp-update-ip-allowlists.html"
+    permission_required = "api.update_app_secret"
+    fields = ["ip_allowlists"]
+
+    def get_context_data(self, *args, **kwargs):
+
+        context = super().get_context_data(*args, **kwargs)
+        context["app"] = self.get_object()
+        context["app_ip_allowlists"] = [
+            {
+                "text": ip_allowlist.name,
+                "value": ip_allowlist.pk,
+                "checked": ip_allowlist in self.get_object().ip_allowlists.all()
+            }
+            for ip_allowlist in IPAllowlist.objects.all()
+        ]
+
+        return context
+
+    def form_valid(self, form):
+        self.get_object().ip_allowlists.set(form.cleaned_data["ip_allowlists"])
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        messages.success(self.request, f"Successfully updated the IP allowlists associated with app {self.get_object().name}")
+        return reverse_lazy("manage-app", kwargs={"pk": self.get_object().id})
 
 
 class GrantAppAccess(

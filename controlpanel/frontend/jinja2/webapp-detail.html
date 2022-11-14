@@ -116,6 +116,13 @@
       </tr>
       {% endfor %}
       <tr class="govuk-table__row">
+        <td class="govuk-table__cell">Allowed IP networks</td>
+        <td class="govuk-table__cell"></td>
+        <td class="govuk-table__cell">
+          <a href="{{ url('update-app-ip-allowlists', kwargs={'pk': app.id}) }}"  class="govuk-button govuk-button--secondary right">Edit</a>
+        </td>
+      </tr>
+      <tr class="govuk-table__row">
         <td class="govuk-table__cell">Auth0 Connections</td>
         <td class="govuk-table__cell">{{ app.auth0_connections }}</td>
         {% if request.user.has_perm('api.create_app') %}
