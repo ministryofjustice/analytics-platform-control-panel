@@ -163,6 +163,10 @@ urlpatterns = [
         name="delete-secret",
     ),
     path(
+        "webapps/<int:pk>/update-ip-allowlists/",
+        views.UpdateAppIPAllowlists.as_view(),
+        name="update-app-ip-allowlists"),
+    path(
         "webapp-datasource-access/<int:pk>/",
         views.UpdateAppAccess.as_view(),
         name="update-app-access",

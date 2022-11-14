@@ -22,6 +22,7 @@ from controlpanel.frontend.views.app import (
     SetupAppAuth0,
     UpdateAppAccess,
     UpdateAppAuth0Connections,
+    UpdateAppIPAllowlists,
 )
 from controlpanel.frontend.views.datasource import (
     AdminBucketList,
