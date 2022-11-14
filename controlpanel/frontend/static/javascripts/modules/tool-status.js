@@ -49,6 +49,7 @@ moj.Modules.toolStatus = {
           break;
         case 'DEPLOYING':
           toolstatus.showActions(listener, []);
+          toolstatus.updateMessage("Deploying " + data.toolName + "... this may take several minutes")
           // maybe have a Cancel button? Report issue?
           break;
         case 'READY':

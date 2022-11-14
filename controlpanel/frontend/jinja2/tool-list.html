@@ -17,7 +17,7 @@
 <h2 class="govuk-heading-m">{{ tool_info.name }}</h2>
 <div class="govuk-grid-row tool sse-listener" data-tool-name="{{ chart_name }}">
   <div class="govuk-grid-column-two-thirds">
-    <form action="{{ url('deploy-tool', kwargs={"name": chart_name}) }}"
+    <form action="{{ url('tool-deployments', kwargs={'tool_name': chart_name, 'action': 'deploy'}) }}"
         data-action-name="deploy"
         class="tool-action"
         id="form-{{ chart_name }}"
@@ -67,10 +67,12 @@
   </span>
   </p>
 
+
   <form style="display: inline;">
     <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 js-confirm tool-action"
         data-action-name="deploy"
         data-form-target="form-{{ chart_name }}"
+        data-form-url="{{ url('tool-deployments', kwargs={'tool_name': chart_name, 'action': 'deploy'}) }}"
         id="deploy-{{ chart_name }}"
         data-confirm-message="Do you wish to install this version of {{ tool_info['name'] }}?"
         disabled>

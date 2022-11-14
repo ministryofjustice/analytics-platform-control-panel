@@ -9,7 +9,7 @@ class ToolDeploymentAPIView(GenericAPIView):
 
     http_method_names = ['post']
 
-    def _deploy(self, chart_name, tool_version, data):
+    def _deploy(self, chart_name, data):
         """
         This is the most backwards thing you'll see for a while. The helm
         task to deploy the tool apparently must happen when the view class
@@ -21,6 +21,14 @@ class ToolDeploymentAPIView(GenericAPIView):
         # the currently installed chart for the tool before installing the
         # new chart.
         old_chart_name = data.get("deployed_chart_name", None)
+        # The selected option from the "version" select control contains the
+        # data we need.
+        chart_info = data.get("version")
+        # The tool name and version are stored in the selected option's value
+        # attribute and then split on "__" to extract them. Why? Because we
+        # need both pieces of information to kick off the background helm
+        # deploy.
+        tool_name, tool_version = chart_info.split("__")
 
         # Kick off the helm chart as a background task.
         start_background_task(
@@ -35,11 +43,10 @@ class ToolDeploymentAPIView(GenericAPIView):
         )
 
     def post(self, request, *args, **kwargs):
-        chart_name = self.kwargs["tool-name"]
-        tool_version = self.kwargs["version"]
+        chart_name = self.kwargs["tool_name"]
         tool_action = self.kwargs["action"]
         tool_action_function = getattr(self, f"_{tool_action}", None)
         if callable(tool_action_function):
-            tool_action_function(chart_name, tool_version, request.data)
+            tool_action_function(chart_name, request.data)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)

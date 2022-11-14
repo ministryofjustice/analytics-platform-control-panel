@@ -29,8 +29,8 @@ urlpatterns = [
         name="appcustomers-detail",
     ),
     path(
-        "tool-deployments/<str:tool-name>/<str:version>/<str:action>",
+        "tool-deployments/<str:tool_name>/<str:action>",
         views.ToolDeploymentAPIView.as_view(),
-        name="appcustomers-detail",
+        name="tool-deployments",
     ),
 ]

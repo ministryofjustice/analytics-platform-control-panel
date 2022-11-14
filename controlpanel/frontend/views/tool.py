@@ -157,50 +157,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-class DeployTool(OIDCLoginRequiredMixin, RedirectView):
-    http_method_names = ["post"]
-    url = reverse_lazy("list-tools")
-
-    def get_redirect_url(self, *args, **kwargs):
-        """
-        This is the most backwards thing you'll see for a while. The helm
-        task to deploy the tool apparently must happen when the view class
-        attempts to redirect to the target url. I'm sure there's a good
-        reason why.
-        """
-        # If there's already a tool deployed, we need to get this from a
-        # hidden field posted back in the form. This is used by helm to delete
-        # the currently installed chart for the tool before installing the 
-        # new chart.
-        old_chart_name = self.request.POST.get("deployed_chart_name", None)
-        # The selected option from the "version" select control contains the
-        # data we need.
-        chart_info = self.request.POST["version"]
-        # The tool name and version are stored in the selected option's value
-        # attribute and then split on "__" to extract them. Why? Because we
-        # need both pieces of information to kick off the background helm
-        # deploy.
-        tool_name, version = chart_info.split("__")
-
-        # Kick off the helm chart as a background task.
-        start_background_task(
-            "tool.deploy",
-            {
-                "tool_name": tool_name,
-                "version": version,
-                "user_id": self.request.user.id,
-                "id_token": self.request.user.get_id_token(),
-                "old_chart_name": old_chart_name,
-            },
-        )
-        # Tell the user stuff's happening.
-        messages.success(
-            self.request, f"Deploying {tool_name}... this may take several minutes",
-        )
-        # Continue the redirect to the target URL (list-tools).
-        return super().get_redirect_url(*args, **kwargs)
-
-
 class RestartTool(OIDCLoginRequiredMixin, RedirectView):
     http_method_names = ["post"]
     url = reverse_lazy("list-tools")
