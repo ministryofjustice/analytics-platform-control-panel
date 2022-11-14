@@ -6,6 +6,7 @@ from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import auth0, cluster, elasticsearch
+from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
 
 
@@ -15,6 +16,7 @@ class App(TimeStampedModel):
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
+    ip_allowlists = models.ManyToManyField(IPAllowlist, related_name="apps", related_query_name="app", blank=True)
 
     class Meta:
         db_table = "control_panel_api_app"
