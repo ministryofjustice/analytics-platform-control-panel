@@ -73,6 +73,11 @@ class App(TimeStampedModel):
     def app_aws_secret_param(self):
         return f"{settings.ENV}/apps/{self.slug}/parameters"
 
+    @property
+    def app_allowed_ip_ranges(self):
+        allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by("pk")
+        return ", ".join(list(allowed_ip_ranges))
+
     def get_secret_key(self, name):
         if name == "parameters":
             return self.app_aws_secret_param
@@ -87,10 +92,6 @@ class App(TimeStampedModel):
             if len(client["callbacks"]) >= 1
             else "",
         }
-
-    def construct_ip_allowlists_string(self):
-        app_allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by("pk")
-        return ", ".join(list(app_allowed_ip_ranges))
 
     def add_customers(self, emails):
         emails = list(filter(None, emails))
