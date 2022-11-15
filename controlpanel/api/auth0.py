@@ -147,13 +147,13 @@ class ExtendedAuth0(Auth0):
         client_id = client["client_id"]
         self.clients.update(client_id, body={"web_origins": [app_url]})
 
-        self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
-
         view_app = self.permissions.create(dict(name="view:app", applicationId=client_id))
         role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
         group = self.groups.create(dict(name=app_name))
         self.groups.add_role(group["_id"], role["_id"])
+
+        self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client
 
     def add_group_members_by_emails(self, group_name, emails, user_options={}):
