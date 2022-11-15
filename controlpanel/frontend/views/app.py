@@ -267,6 +267,7 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
 
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
+        context["app_migration_feature_enabled"] = settings.features.app_migration.enabled
         context["app_ip_allowlists"] = [
             {
                 "text": ip_allowlist.name,
@@ -282,7 +283,7 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
 
         app = self.get_object()
         app.ip_allowlists.set(form.cleaned_data["ip_allowlists"])
-        cluster.App(app).create_or_update_secret({"allowed_ip_ranges": app.construct_ip_allowlists_string()})
+        cluster.App(app).create_or_update_secret({"allowed_ip_ranges": app.app_allowed_ip_ranges})
 
         return HttpResponseRedirect(self.get_success_url())
 

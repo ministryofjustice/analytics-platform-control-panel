@@ -14,6 +14,8 @@
         {% endif %}
     </div>
 
+    {% if app_migration_feature_enabled %}
+
     <form action="{{ url('update-app-ip-allowlists', kwargs={'pk': app.pk}) }}" method="post">
         {{ csrf_input }}
 
@@ -37,6 +39,14 @@
             <button class="govuk-button">Update IP allowlists</button>
         </div>
     </form>
+
+    {% else %}
+
+    <h2 class="govuk-heading-m">IP allowlists for {{app.name}}</h2>
+    <p>This feature is not yet available for general use.</p>
+
+    {% endif %}
+
 </section>
 
 {% endblock %}
