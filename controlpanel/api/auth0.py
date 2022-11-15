@@ -112,15 +112,16 @@ class ExtendedAuth0(Auth0):
     def _create_custom_connection(self, app_name, connections):
         new_connections = []
         for connection_name, user_inputs in connections.items():
-            if connection_name in ExtendedConnections.custom_connections():
-                if "name" not in user_inputs:
-                    user_inputs["name"] = app_name
-                new_connection_name = self.connections.create_custom_connection(
-                    connection_name=connection_name,
-                    input_values=user_inputs)
-                new_connections.append(new_connection_name)
-            else:
+            if connection_name not in ExtendedConnections.custom_connections():
                 new_connections.append(connection_name)
+                continue
+
+            if "name" not in user_inputs:
+                user_inputs["name"] = app_name
+            new_connection_name = self.connections.create_custom_connection(
+                connection_name=connection_name,
+                input_values=user_inputs)
+            new_connections.append(new_connection_name)
         return new_connections
 
     def setup_auth0_client(self, app_name, connections=None):
@@ -131,7 +132,8 @@ class ExtendedAuth0(Auth0):
                     <connection_name>: {<user_inputs if need}
                 }
         """
-        connections = {"email": {}} if connections is None else connections
+        if connections is None:
+            connections = {"email": {}}
         new_connections = self._create_custom_connection(app_name, connections)
         app_url = "https://{}.{}".format(app_name, self.app_domain)
         client = self.clients.create(
@@ -225,13 +227,12 @@ class ExtendedAuth0(Auth0):
         client = self.clients.search_first_match(dict(name=app_name))
         if not client:
             return []
-        else:
-            connections = self.connections.get_all()
-            enabled_connections = []
-            for connection in connections:
-                if client["client_id"] in connection["enabled_clients"]:
-                    enabled_connections.append(connection["name"])
-            return enabled_connections
+        connections = self.connections.get_all()
+        enabled_connections = []
+        for connection in connections:
+            if client["client_id"] in connection["enabled_clients"]:
+                enabled_connections.append(connection["name"])
+        return enabled_connections
 
     def update_client_auth_connections(self, app_name: str, new_conns: dict, existing_conns: list):
         """
@@ -239,27 +240,29 @@ class ExtendedAuth0(Auth0):
         connections, then check whether the client (client_id) is in the list of enabled_clients
         """
         client = self.clients.search_first_match(dict(name=app_name))
-        if client:
-            connections = {"email": {}} if new_conns is None else new_conns
-            new_connections = self._create_custom_connection(app_name, connections)
+        if not client:
+            return
 
-            # Get the list of  removed connections based on the existing connections
-            removed_connections = list(set(existing_conns) - set(new_connections))
-            real_new_connections = list(set(new_connections) - set(existing_conns))
+        connections = {"email": {}} if new_conns is None else new_conns
+        new_connections = self._create_custom_connection(app_name, connections)
 
-            # Remove the old connections
-            auth0_connections = [
-                self.connections.search_first_match(dict(name=connection)) for connection in removed_connections
-            ]
-            for connection in auth0_connections:
-                self.connections.disable_client(connection, client["client_id"])
+        # Get the list of  removed connections based on the existing connections
+        removed_connections = list(set(existing_conns) - set(new_connections))
+        real_new_connections = list(set(new_connections) - set(existing_conns))
 
-            # Enable the new connections
-            auth0_connections = [
-                self.connections.search_first_match(dict(name=connection)) for connection in real_new_connections
-            ]
-            for connection in auth0_connections:
-                self.connections.enable_client(connection, client["client_id"])
+        # Remove the old connections
+        auth0_connections = [
+            self.connections.search_first_match(dict(name=connection)) for connection in removed_connections
+        ]
+        for connection in auth0_connections:
+            self.connections.disable_client(connection, client["client_id"])
+
+        # Enable the new connections
+        auth0_connections = [
+            self.connections.search_first_match(dict(name=connection)) for connection in real_new_connections
+        ]
+        for connection in auth0_connections:
+            self.connections.enable_client(connection, client["client_id"])
 
 
 class Auth0API(object):

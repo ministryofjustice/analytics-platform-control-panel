@@ -20,8 +20,8 @@ function(accessToken, ctx, cb) {
         cb(body);
         return;
       }
-      var parsedBody = JSON.parse(body);
-      var profile = {
+      let parsedBody = JSON.parse(body);
+      let profile = {
         user_id: parsedBody.staffId,
         nickname: parsedBody.name,
         name: parsedBody.name,

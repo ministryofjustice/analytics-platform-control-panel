@@ -568,7 +568,6 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
     call = fixture_connection_create.call_args
     call_args, call_kwargs = call
     actual_arg = call_args[0]
-    print(call_args[0]["name"])
 
     actual_arg["options"]["scripts"]["fetchUserProfile"] = _clean_string(
         actual_arg["options"]["scripts"]["fetchUserProfile"])
