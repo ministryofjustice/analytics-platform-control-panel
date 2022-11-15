@@ -14,6 +14,7 @@ from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
+from controlpanel.api.cluster import AWS_ROLE_CATEGORY_APP, AWS_ROLE_CATEGORY_USER
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -49,6 +50,7 @@ class CreateAppForm(forms.Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
+            validators.ValidatorS3Bucket(AWS_ROLE_CATEGORY_APP)
         ],
         required=False,
     )
@@ -117,6 +119,7 @@ class CreateDatasourceForm(forms.Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
+            validators.ValidatorS3Bucket(AWS_ROLE_CATEGORY_USER)
         ],
     )
 

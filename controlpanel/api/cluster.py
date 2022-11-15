@@ -38,6 +38,9 @@ HOME_RESETTING = "Resetting"
 HOME_RESET_FAILED = "Failed"
 HOME_RESET = "Reset"
 
+AWS_ROLE_CATEGORY_APP = "APP"
+AWS_ROLE_CATEGORY_USER = "USER"
+
 
 BASE_ASSUME_ROLE_POLICY = {
     "Version": "2012-10-17",
@@ -478,11 +481,11 @@ class S3Bucket(EntityResource):
 
     def _get_assume_role_category(self):
         if self.bucket.is_used_for_app:
-            return "APP"
+            return AWS_ROLE_CATEGORY_APP
         else:
-            return "USER"
+            return AWS_ROLE_CATEGORY_USER
 
-    def create(self, owner="User"):
+    def create(self, owner=AWS_ROLE_CATEGORY_USER):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             AWSBucket, aws_role_category=owner
         )
@@ -496,6 +499,12 @@ class S3Bucket(EntityResource):
         )
         self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
 
+    def has_existed(self, bucket_name, bucket_owner):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket, aws_role_category=bucket_owner
+        )
+        return self.aws_bucket_service.has_existed(bucket_name)
+
 
 class RoleGroup(EntityResource):
     """
@@ -506,7 +515,7 @@ class RoleGroup(EntityResource):
     See https://stackoverflow.com/a/48087433/455642
     """
 
-    ENTITY_ASSUME_ROLE_CATEGORY = "USER"
+    ENTITY_ASSUME_ROLE_CATEGORY = AWS_ROLE_CATEGORY_USER
 
     def __init__(self, iam_managed_policy):
         super(RoleGroup, self).__init__()
@@ -549,7 +558,7 @@ class RoleGroup(EntityResource):
 
 class AppParameter(EntityResource):
 
-    ENTITY_ASSUME_ROLE_CATEGORY = "APP"
+    ENTITY_ASSUME_ROLE_CATEGORY = AWS_ROLE_CATEGORY_APP
 
     def __init__(self, parameter):
         super(AppParameter, self).__init__()

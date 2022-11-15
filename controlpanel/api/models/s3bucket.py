@@ -59,7 +59,7 @@ class S3Bucket(TimeStampedModel):
 
     def __init__(self, *args, **kwargs):
         """ Overwrite this constructor to pass some non-field parameter"""
-        self.bucket_owner = kwargs.pop('bucket_owner', "User")
+        self.bucket_owner = kwargs.pop('bucket_owner', cluster.AWS_ROLE_CATEGORY_USER)
         super().__init__(*args, **kwargs)
 
     def __repr__(self):

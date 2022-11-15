@@ -3,6 +3,7 @@ import ipaddress
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from controlpanel.api import cluster
 
 
 def validate_env_prefix(value):
@@ -16,6 +17,18 @@ validate_s3_bucket_length = RegexValidator(
     regex='^.{3,63}$',
     message="must be between 3 and 63 characters",
 )
+
+
+class ValidatorS3Bucket(object):
+    def __init__(self, bucket_owner):
+        self.bucket_owner = bucket_owner
+
+    def __call__(self, value):
+        if cluster.S3Bucket(None).has_existed(value, bucket_owner=self.bucket_owner):
+            raise ValidationError(
+                f"'{value}' has already existed. ",
+            )
+
 
 # See: AWS' Bucket Restrictions and Limitations
 # http://docs.aws.amazon.com/en_gb/AmazonS3/latest/dev/BucketRestrictions.html

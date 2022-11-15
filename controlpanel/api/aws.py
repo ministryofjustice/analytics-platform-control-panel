@@ -444,6 +444,16 @@ class AWSBucket(AWSService):
         except s3_resource.meta.client.exceptions.NoSuchBucket:
             log.warning(f"Bucket {bucket_name} doesn't exist")
 
+    def has_existed(self, bucket_name):
+        try:
+            s3_client = self.boto3_session.client("s3")
+            s3_client.head_bucket(
+                Bucket=bucket_name
+            )
+            return True
+        except botocore.exceptions.ClientError:
+            return False
+
 
 class AWSPolicy(AWSService):
 
