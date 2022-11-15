@@ -145,6 +145,10 @@ def connect_bucket(client, app, _, s3buckets, *args):
     return client.post(reverse("grant-app-access", kwargs={"pk": app.id}), data)
 
 
+def update_ip_allowlists(client, app, *args):
+    return client.post(reverse("update-app-ip-allowlists", kwargs={"pk": app.id}))
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -157,6 +161,9 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (detail, "superuser", status.HTTP_200_OK),
         (detail, "app_admin", status.HTTP_200_OK),
         (detail, "normal_user", status.HTTP_403_FORBIDDEN),
+        (update_auth0_connections, "superuser", status.HTTP_200_OK),
+        (update_auth0_connections, "app_admin", status.HTTP_403_FORBIDDEN),
+        (update_auth0_connections, "normal_user", status.HTTP_403_FORBIDDEN),
         (create, "superuser", status.HTTP_200_OK),
         (create, "app_admin", status.HTTP_403_FORBIDDEN),
         (create, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -178,6 +185,9 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (connect_bucket, "superuser", status.HTTP_302_FOUND),
         (connect_bucket, "app_admin", status.HTTP_403_FORBIDDEN),
         (connect_bucket, "normal_user", status.HTTP_403_FORBIDDEN),
+        (update_ip_allowlists, "superuser", status.HTTP_302_FOUND),
+        (update_ip_allowlists, "app_admin", status.HTTP_302_FOUND),
+        (update_ip_allowlists, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
