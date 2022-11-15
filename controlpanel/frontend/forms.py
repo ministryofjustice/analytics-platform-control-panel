@@ -79,10 +79,9 @@ class AppAuth0Form(forms.Form):
             conn_name = cleaned_data.get("{}_auth0_conn_name".format(connection), '')
             if conn_name == '':
                 self.add_error("{}_auth0_conn_name".format(connection), "This field is required.")
-            else:
-                if (conn_name, conn_name) in self.fields["connections"].choices:
-                    self.add_error("{}_auth0_conn_name".format(connection),
-                                   "This name has been existed in the connections.")
+            elif (conn_name, conn_name) in self.fields["connections"].choices:
+                self.add_error("{}_auth0_conn_name".format(connection),
+                               "This name has been existed in the connections.")
 
             auth0_conn_data[connection] = {
                 "client_id": cleaned_data.get("{}_auth0_client_id".format(connection)),
