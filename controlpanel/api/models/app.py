@@ -88,6 +88,10 @@ class App(TimeStampedModel):
             else "",
         }
 
+    def construct_ip_allowlists_string(self):
+        app_allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by("pk")
+        return ", ".join(list(app_allowed_ip_ranges))
+
     def add_customers(self, emails):
         emails = list(filter(None, emails))
         if emails:
