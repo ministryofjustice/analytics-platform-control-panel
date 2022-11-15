@@ -279,7 +279,11 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         return context
 
     def form_valid(self, form):
-        self.get_object().ip_allowlists.set(form.cleaned_data["ip_allowlists"])
+
+        app = self.get_object()
+        app.ip_allowlists.set(form.cleaned_data["ip_allowlists"])
+        cluster.App(app).create_or_update_secret({"allowed_ip_ranges": app.construct_ip_allowlists_string()})
+
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
