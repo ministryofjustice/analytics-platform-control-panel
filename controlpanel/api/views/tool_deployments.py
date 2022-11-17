@@ -9,7 +9,7 @@ from controlpanel.api import serializers
 class ToolDeploymentAPIView(GenericAPIView):
 
     http_method_names = ['post']
-    serializer_class = serializers.ToolDeploymentrSerializer
+    serializer_class = serializers.ToolDeploymentSerializer
 
     def _deploy(self, chart_name, data):
         """
