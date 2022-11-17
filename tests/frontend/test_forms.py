@@ -212,7 +212,7 @@ def test_create_new_datasource_but_bucket_existed():
         }
     )
     assert f.is_valid() is False
-    assert "has already existed" in ".".join(f.errors["name"])
+    assert "already exists" in ".".join(f.errors["name"])
 
 
 def test_create_app_form_clean_repo_url():

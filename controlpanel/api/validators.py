@@ -24,7 +24,7 @@ class ValidatorS3Bucket(object):
         self.bucket_owner = bucket_owner
 
     def __call__(self, value):
-        if cluster.S3Bucket(None).has_existed(value, bucket_owner=self.bucket_owner):
+        if cluster.S3Bucket(None).exists(value, bucket_owner=self.bucket_owner):
             raise ValidationError(
                 f"'{value}' already exists",
             )

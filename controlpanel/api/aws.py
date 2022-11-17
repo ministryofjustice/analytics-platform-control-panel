@@ -1,7 +1,6 @@
 import base64
 import json
 from copy import deepcopy
-from optparse import Option
 from typing import Optional
 
 import botocore
@@ -444,7 +443,7 @@ class AWSBucket(AWSService):
         except s3_resource.meta.client.exceptions.NoSuchBucket:
             log.warning(f"Bucket {bucket_name} doesn't exist")
 
-    def has_existed(self, bucket_name):
+    def exists(self, bucket_name):
         try:
             s3_client = self.boto3_session.client("s3")
             s3_client.head_bucket(
