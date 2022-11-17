@@ -119,8 +119,13 @@ def update_helm_repository(force=False):
     """
     repo_path = get_repo_path()
     # If there's no helm repository cache, call helm repo update to fill it.
-    if not os.path.exists(repo_path) or force:
+    if not os.path.exists(repo_path):
         _execute("repo", "update", timeout=None)
+    else:
+        # Execute the helm repo update command if the helm repository cache is
+        # stale (older than CACHE_FOR_MINUTES value).
+        if force or os.path.getmtime(repo_path) + CACHE_FOR_MINUTES < time.time():
+            _execute("repo", "update", timeout=None)  # timeout = infinity.
 
 
 def upgrade_release(release, chart, *args):
@@ -180,8 +185,9 @@ def get_chart_info(chart_name):
     index.
     """
     chart_info = {}  # The end result.
-    # Update and grab repository metadata.
+    # Update
     update_helm_repository()
+    # Grab repository metadata.
     repo_path = get_repo_path()
     try:
         with open(repo_path) as f:

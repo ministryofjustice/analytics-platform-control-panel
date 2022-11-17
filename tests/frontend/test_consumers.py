@@ -196,12 +196,10 @@ def test_update_tool_status():
     user = User(auth0_id="github|123")
     id_token = "user id_token"
     status = TOOL_READY
-    app_version = "R: 42, Python: 2.0.0"
 
     tool_deployment = Mock()
     tool_deployment.tool = tool
     tool_deployment.user = user
-    # tool_deployment.get_installed_app_version.return_value = app_version
 
     expected_sse_event = {
         "event": "toolStatus",
@@ -209,7 +207,6 @@ def test_update_tool_status():
             {
                 "toolName": tool.chart_name,
                 "version": tool.version,
-                # "appVersion": app_version,
                 "status": status,
             }
         ),
