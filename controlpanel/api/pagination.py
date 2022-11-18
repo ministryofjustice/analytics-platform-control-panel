@@ -75,5 +75,6 @@ class Auth0Pagination(PageNumberPagination):
     def get_next_link(self):
         url = super().get_next_link()
         page_size  = self.get_page_size(self.request)
-        url = replace_query_param(url, self.page_size_query_param, page_size)
+        if url:
+            url = replace_query_param(url, self.page_size_query_param, page_size)
         return url
