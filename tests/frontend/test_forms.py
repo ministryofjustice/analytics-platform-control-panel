@@ -2,6 +2,7 @@ import pytest
 from unittest import mock
 from controlpanel.frontend import forms
 from controlpanel.api.models import S3Bucket
+from controlpanel.api import aws
 
 
 def test_tool_release_form_check_release_name():
@@ -182,6 +183,36 @@ def test_create_app_form_clean_existing_datasource():
     # A valid form returns True.
     assert f.is_valid() is False
     assert "existing_datasource_id" in f.errors
+
+
+def test_create_app_form_new_datasource_but_bucket_existed():
+    bucket_name = "test-bucketname"
+    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+
+    f = forms.CreateAppForm(
+        data={
+            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "connect_bucket": "new",
+            "new_datasource_name": bucket_name,
+            "connections": ["email"]
+        }
+    )
+    f.clean_repo_url = mock.MagicMock()
+    assert f.is_valid() is False
+    assert "already exists" in ".".join(f.errors["new_datasource_name"])
+
+
+def test_create_new_datasource_but_bucket_existed():
+    bucket_name = "test-bucketname"
+    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+
+    f = forms.CreateDatasourceForm(
+        data={
+            "name": bucket_name,
+        }
+    )
+    assert f.is_valid() is False
+    assert "already exists" in ".".join(f.errors["name"])
 
 
 def test_create_app_form_clean_repo_url():
