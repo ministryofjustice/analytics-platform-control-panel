@@ -1,7 +1,98 @@
-var app_customers = [];
-var search_tag = "#list-users-paginated";
-var display_tag = "#list-customers-paginated";
-var checkbox_controller_row = "#checkbox-controller"
+
+class CustomerUi {
+  disableMore() {
+    $("#add_more").prop('disabled', true);
+  }
+
+  enableMore() {
+    $("#add_more").prop('disabled', false);
+  }
+
+  updateCount(count) {
+    $("#loading_text").text("loaded: ");
+    $('#total_available').html(`/${ count }`);
+  }
+
+  loadedCount(count) {
+    $('#customers_loaded').text(count);
+  }
+
+  showLoadingGif() {
+    $("#loading_gif").show();
+  }
+
+  hideLoadingGif() {
+    $("#loading_gif").hide();
+  }
+}
+
+class CustomerSelectable {
+  constructor(checkbox_controller_row) {
+    this.checkbox_cntl = checkbox_controller_row;
+  }
+
+  toggleRemoveAll() {
+    let submit = $('.selectable-rows__enable-on-selections');
+    let disabled = ""
+    if ($('.customer-checkbox:checked').length == 0) {
+      disabled = "disabled";
+    }
+    submit.prop("disabled", disabled);
+  }
+  
+  toggleSelected() {
+    let element = $(`${this.checkbox_cntl}>td>input`);
+    let new_value = element.prop('checked');
+    $('.customer-checkbox').prop('checked', new_value);
+    this.toggleRemoveAll();
+  }
+}
+
+class PaginateRequest {
+  constructor(url, ui) {
+    this.next_url = url;
+    this.ui = ui;
+    this.perm = $('#has_remove_client_perm').val()
+    this.app_customers = [];
+
+    this.display_tag = "#list-customers-paginated";
+    this.processDataFunc = this.processData.bind(this);
+  }
+
+  processData(data) {
+    let new_entries = data.results.map(item => getCustomerEntry(item.user_id, item.email, this.perm))
+    this.app_customers = this.app_customers.concat(new_entries);
+
+    this.ui.loadedCount(this.app_customers.length);
+    $(this.display_tag).append(new_entries);
+
+    this.ui.updateCount(data.count);
+    this.next_url = data.links.next;
+
+    (!data.links.next)?this.ui.disableMore():this.ui.enableMore();
+  }
+
+  responseError(err) {
+    console.log('err >>> ', err, '<<<');
+    let error_msg = "Error. contact the AP team if this error persists.";
+    let content = `<span><span class="ui-icon ui-icon-alert"></span> ${error_msg}</span>`;
+    $('#list-users-paginated').html(content);
+  }
+
+  getNextPage() {
+    this.ui.showLoadingGif();
+
+    fetch(this.next_url)
+      .then(response => {
+        this.ui.hideLoadingGif();
+        return response.json();
+      })
+      .then(this.processDataFunc)
+      .catch(this.responseError);
+
+
+  }
+}
 
 function getCustomerEntry(user_id, email, delete_perm) {
   let delete_customer = '';
@@ -25,101 +116,35 @@ function getCustomerEntry(user_id, email, delete_perm) {
     </tr>`
 }
 
-function disableMore() {
-  $("#add_more").prop('disabled', true);
-}
-
-function enableMore() {
-  $("#add_more").prop('disabled', false);
-}
-
-function loadCustomers(app_pk, index, perm) {
-  $("#loading_gif").show();
-  disableMore();
-  let url = `/api/cpanel/v1/app/${app_pk}/customers/paginate/?page=${index}`;
-
-  fetch(url)
-  .then(response => response.json())
-  .then(data => {
-    let new_entries = data.map(item => getCustomerEntry(item.user_id, item.email, perm))
-    app_customers = app_customers.concat(new_entries);
-
-    $('#customers_loaded').text(app_customers.length);
-
-    // $(search_tag).autocomplete('option', 'source', app_customers);
-    $(display_tag).append(new_entries);
-
-    $("#loading_gif").hide();
-    $("#loading_text").text("loaded: ");
-
-    $('#current_index').val(index +1);
-    $('#total_available').html(`/${ data.length }`);
-
-    if(app_customers.length >= parseInt(data.length)){
-      disableMore();
-    }
-    else {
-      enableMore();
-    }
-  })
-  .catch((err) => {
-    let error_msg = "Error. contact the AP team if this error persists.";
-    let content = `<span><span class="ui-icon ui-icon-alert"></span> ${error_msg}</span>`;
-    $('#list-users-paginated').html(content);
-  });
-}
-
-function toggleRemoveAll() {
-  let submit = $('.selectable-rows__enable-on-selections');
-  let disabled = ""
-  if ($('.customer-checkbox:checked').length == 0) {
-    disabled = "disabled";
-  }
-  submit.prop("disabled", disabled);
-}
-
-function toggleSelected() {
-  let element = $(`${checkbox_controller_row}>td>input`);
-  let new_value = element.prop('checked');
-  $('.customer-checkbox').prop('checked', new_value);
-  toggleRemoveAll();
-}
-
 moj.Modules.paginate = {
-  selector: search_tag,
-  has_remove_client_perm: false,
   bindEvents() {
+    let selected = new CustomerSelectable("#checkbox-controller");
+
     // toggle checkboxes feature - start
     $(`#toggle-controller`).on('click', function() {
       $(this).prop("checked", !$(this).prop("checked"));
-      toggleSelected();
+      selected.toggleSelected();
     });
 
-    $(document).on('click', '.customer-checkbox', () => toggleRemoveAll());
+    $(document).on('click', '.customer-checkbox', () => selected.toggleRemoveAll());
 
-    $(`${checkbox_controller_row}`).on('click', function(){
-      let checkBox = $(`${checkbox_controller_row}>td>input`);
+    $(`${selected.checkbox_cntl}`).on('click', function(){
+      let checkBox = $(`${selected.checkbox_cntl}>td>input`);
       checkBox.prop("checked", !checkBox.prop("checked"));
-      toggleSelected()
+      selected.toggleSelected();
     })
     // end
 
-    // vars
-    const perm = $('#has_remove_client_perm').val();
     const app_pk = $('#app_id').val();
-    let index = parseInt($('#current_index').val());
+    let ui = new CustomerUi();
+    let paginate = new PaginateRequest(`/api/cpanel/v1/app/${app_pk}/customers/paginate/`, ui);
 
-    loadCustomers(app_pk, index, perm);
     $('#ui-id-1').css({'padding-inline-start': '0px'});
-
-    $('#add_more').on('click', function() {
-      let index = parseInt($('#current_index').val());
-      loadCustomers(app_pk, index, perm);
-      $('#ui-id-1').css({'padding-inline-start': '0px'});
-    });
+    paginate.getNextPage();
+    $('#add_more').on('click', () => paginate.getNextPage());
   },
   init() {
-    if($(display_tag).length){
+    if($("#list-customers-paginated").length){
       this.bindEvents();
     }
   }
