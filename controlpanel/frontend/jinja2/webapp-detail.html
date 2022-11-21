@@ -98,9 +98,9 @@
   </section>
   {% endif %}
 
-  {% if request.user.has_perm('api.update_app_secret', app) and feature_enabled %}
+  {% if feature_enabled %}
   <section>
-  <h2 class="govuk-heading-m" >Stored Variables</h2>
+  <h2 class="govuk-heading-m" >Authentication Settings</h2>
   <table class="govuk-table app-data-sources form-group">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
@@ -116,11 +116,22 @@
           {{ key }}
         </td>
         <td class="govuk-table__cell">{{is_set}}</td>
-        <td class="govuk-table__cell">
-          <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
-        </td>
+        {% if request.user.has_perm('api.update_app_secret', app) %}
+          <td class="govuk-table__cell">
+            <a href="{{ url('add-secret', kwargs={"pk": app.id, "secret_key": key }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
+          </td>
+        {% endif %}
       </tr>
       {% endfor %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">Auth0 Connections</td>
+        <td class="govuk-table__cell">{{ app.auth0_connections }}</td>
+        {% if request.user.has_perm('api.create_app') %}
+          <td class="govuk-table__cell">
+            <a href="{{ url('update-auth0-connections', kwargs={"pk": app.id }) }}"  class="govuk-button govuk-button--secondary right" >Edit</a>
+          </td>
+        {% endif %}
+      </tr>
     </tbody>
   </table>
   </section>

@@ -47,6 +47,20 @@ validate_s3_bucket_labels = RegexValidator(
 )
 
 
+validate_auth0_conn_name = RegexValidator(
+    regex='^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])$',
+    message="is invalid, check Auth0 connection name restrictions (for example, "
+            "can only start and end with alphanumeric alphanumeric, only contain alphanumeric and hyphens)",
+)
+
+
+validate_auth0_client_id = RegexValidator(
+    regex='^([_a-zA-Z0-9-]*)$',
+    message="is invalid, check Auth0 client_id restrictions (for example, "
+            "can only contain alphanumeric, underscores and hyphens)",
+)
+
+
 def validate_github_repository_url(value):
     github_base_url = "https://github.com/"
 
