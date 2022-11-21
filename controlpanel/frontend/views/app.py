@@ -236,7 +236,7 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
         return kwargs
 
     def get_success_url(self):
-        messages.success(self.request,  f"Successfully update {self.object.name} webapp's auth0 connections")
+        messages.success(self.request,  f"Successfully updated {self.object.name} webapp's auth0 connections")
         return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
 
     def form_valid(self, form):
