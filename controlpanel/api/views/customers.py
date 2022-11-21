@@ -15,6 +15,15 @@ from django.contrib.auth.models import Permission
 from rest_framework.pagination import PageNumberPagination
 from controlpanel.api.pagination import Auth0Pagination
 
+class AppGroupIdApiView(GenericAPIView):
+    queryset = App.objects.all()
+    permission_classes = (permissions.AppPermissions,)
+    action = "retrieve"
+
+    def get(self, request, *args, pk=None, **kwargs):
+        app = App.objects.get(pk=pk)
+        return Response(dict(group_id=app.get_group_id()))
+
 
 class AppCustomersPageAPIView(GenericAPIView):
     queryset = App.objects.all()
@@ -28,10 +37,11 @@ class AppCustomersPageAPIView(GenericAPIView):
 
         page = request.GET.get('page', 1)
         per_page = request.GET.get('per_page', 25)
-        
-        customers = app.customer_paginated(page, per_page=per_page)
+        group_id = request.GET.get('group_id')
+
+        customers = app.customer_paginated(page, group_id=group_id, per_page=per_page)
         if not customers:
-            raise Http404
+            return Response([])
 
         total_count = customers.get('total', 0)
         customer_result = customers.get('users', [])

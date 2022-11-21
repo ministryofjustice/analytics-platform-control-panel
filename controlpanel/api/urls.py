@@ -30,7 +30,7 @@ urlpatterns = [
         name="appcustomers-page"
     ),
     path(
-        "apps/<int:pk>/customers/<str:user_id>/",
+        "app/<int:pk>/customers/<str:user_id>/",
         views.AppCustomersDetailAPIView.as_view(),
         name="appcustomers-detail",
     ),

@@ -139,6 +139,7 @@ class CustomerSelectable {
 class PaginateRequest {
   constructor(url, ui) {
     this.next_url = url;
+    // this.group_id = group_id;
     this.ui = ui;
     this.app_customers = {customers: []};
     this.ui.data = this.app_customers;
@@ -176,6 +177,13 @@ class PaginateRequest {
   }
 }
 
+const fetchGroupId = (app_id) => {
+  let url = `/api/cpanel/v1/app/${ app_id }/group_id/`
+  return fetch(url)
+    .then(response => response.json())
+    .then(result => result.group_id)
+    .catch('failed to get group_id')
+}
 
 moj.Modules.paginate = {
   bindEvents() {
@@ -197,14 +205,18 @@ moj.Modules.paginate = {
     // end
 
     const app_pk = $('#app_id').val();
-    let perm = $('#has_remove_client_perm').val()
-    let ui = new CustomerUi(perm);
-    CustomerSearchable(ui);
-    let paginate = new PaginateRequest(`/api/cpanel/v1/app/${app_pk}/customers/paginate/`, ui);
+    let group_id = fetchGroupId(app_pk);
 
-    $('#ui-id-1').css({'padding-inline-start': '0px'});
-    paginate.getNextPage();
-    $('#add_more').on('click', () => paginate.getNextPage());
+    group_id.then( group_id => {
+      let perm = $('#has_remove_client_perm').val()
+      let ui = new CustomerUi(perm);
+      CustomerSearchable(ui);
+      let paginate = new PaginateRequest(`/api/cpanel/v1/app/${app_pk}/customers/paginate/?${ new URLSearchParams({"group_id": group_id }) }`, ui);
+  
+      $('#ui-id-1').css({'padding-inline-start': '0px'});
+      paginate.getNextPage();
+      $('#add_more').on('click', () => paginate.getNextPage());
+    });
   },
   init() {
     if($("#list-customers-paginated").length){
