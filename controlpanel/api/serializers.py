@@ -323,8 +323,3 @@ class ToolSerializer(serializers.Serializer):
 class GithubItemSerializer(serializers.Serializer):
     html_url = serializers.CharField()
     full_name = serializers.CharField()
-
-
-class Auth0ResponseSerializer(serializers.Serializer):
-    total = serializers.IntegerField()
-    users = serializers.ListField(child=AppCustomerSerializer())

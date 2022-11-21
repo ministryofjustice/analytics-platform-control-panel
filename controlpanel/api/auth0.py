@@ -587,10 +587,8 @@ class Groups(Auth0API, ExtendedAPIMethods):
         # https://auth0.com/docs/api/authorization-extension#get-group-members
         return None, 1, PER_PAGE_FOR_GROUP_MEMBERS
 
-    def get_group_members_paginated(self, group_name, page=1, per_page=25):
+    def get_group_members_paginated(self, group_id, page=1, per_page=25):
         """gets members based on page number"""
-        group_id = self.get_group_id(group_name)
-
         request_url = self._url(group_id, "members")
         response = self.all(request_url=request_url, page=page, per_page=per_page)
         return response
