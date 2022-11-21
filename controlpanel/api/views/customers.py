@@ -27,7 +27,7 @@ class AppCustomersPageAPIView(GenericAPIView):
         app = App.objects.get(pk=pk)
 
         page = request.GET.get('page', 1)
-        per_page = request.GET.get('per_page', 2)
+        per_page = request.GET.get('per_page', 25)
         
         customers = app.customer_paginated(page, per_page=per_page)
         if not customers:
