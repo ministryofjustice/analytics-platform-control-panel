@@ -1,5 +1,20 @@
+// class Customer {
+//   user_id: String = ""
+//   email: String = ""
+// }
+
+// const CustomerList {
+//   customers: Customer
+// }
+
 
 class CustomerUi {
+  constructor(delete_perm) {
+    this.delete_perm = delete_perm;
+    this.display_tag = "#list-customers-paginated";
+    this.data = {customers: []};
+  }
+
   disableMore() {
     $("#add_more").prop('disabled', true);
   }
@@ -13,8 +28,8 @@ class CustomerUi {
     $('#total_available').html(`/${ count }`);
   }
 
-  loadedCount(count) {
-    $('#customers_loaded').text(count);
+  loadedCount() {
+    $('#customers_loaded').text(this.data.customers.length);
   }
 
   showLoadingGif() {
@@ -24,6 +39,79 @@ class CustomerUi {
   hideLoadingGif() {
     $("#loading_gif").hide();
   }
+
+  updateRows() {
+    let rows = this.data.customers || [];
+    let items = rows.map(item => this.getCustomerEntry(item.user_id, item.email));
+
+    $(this.display_tag).empty();
+    $(this.display_tag).append(items);
+    this.loadedCount();
+  }
+
+  getCustomerEntry(user_id, email) {
+    let delete_customer = '';
+  
+    if(this.delete_perm) {
+      delete_customer = `<td class="govuk-table__cell">
+        <button class="govuk-button govuk-button--secondary right"
+              name="customer"
+              value="${user_id}">
+          Remove customer
+        </button>
+      </td>`
+    }
+  
+    return `<tr class="govuk-table__row result_rows" data-user="${ email }" >
+        <td class="govuk-table__cell checkbox-cell">
+          <input type="checkbox" class="row-selector customer-checkbox" name="customer" value="${user_id}" autocomplete="off" />
+        </td>
+        <td class="govuk-table__cell">${email}</td>
+        ${delete_customer}
+      </tr>`
+  }
+
+  getData() {
+    return this.data;
+  }
+
+  hideAll() {
+    $('.result_rows').hide();
+  }
+
+  showAll() {
+    $('.result_rows').show();
+  }
+
+  showRows(customer_data) {
+    // customer_data: "Customer"
+    let entries = $('.result_rows');
+    let customer_emails = customer_data.map(item => item.email);
+
+    entries.each( (index, element) => {
+      if (customer_emails.includes($(element).data("user") )) {
+        $(element).show();
+      }
+    });
+  }
+}
+
+const CustomerSearchable = function(ui) {
+  let searchTag = '#customer-search-box';
+  $(searchTag).on('keyup', function() {
+    let value = $(this).val();
+    if (value.length < 3) {
+      ui.showAll();
+      return
+    }
+
+    let data = ui.getData();
+    let items = data.customers;
+    let found_items = items.filter( item => item.email.indexOf(value.toLowerCase()) > -1 );
+
+    ui.hideAll();
+    ui.showRows(found_items);
+  });
 }
 
 class CustomerSelectable {
@@ -52,28 +140,24 @@ class PaginateRequest {
   constructor(url, ui) {
     this.next_url = url;
     this.ui = ui;
-    this.perm = $('#has_remove_client_perm').val()
-    this.app_customers = [];
-
-    this.display_tag = "#list-customers-paginated";
+    this.app_customers = {customers: []};
+    this.ui.data = this.app_customers;
     this.processDataFunc = this.processData.bind(this);
   }
 
   processData(data) {
-    let new_entries = data.results.map(item => getCustomerEntry(item.user_id, item.email, this.perm))
-    this.app_customers = this.app_customers.concat(new_entries);
-
-    this.ui.loadedCount(this.app_customers.length);
-    $(this.display_tag).append(new_entries);
+    // let new_entries = data.results.map(item => getCustomerEntry(item.user_id, item.email, this.perm))
+    let new_entries = data.results.map(item => ({"user_id": item.user_id, "email": item.email}));
+    this.app_customers.customers = this.app_customers.customers.concat(new_entries);
+    this.ui.updateRows();
 
     this.ui.updateCount(data.count);
     this.next_url = data.links.next;
-
     (!data.links.next)?this.ui.disableMore():this.ui.enableMore();
   }
 
   responseError(err) {
-    console.log('err >>> ', err, '<<<');
+    console.log(err);
     let error_msg = "Error. contact the AP team if this error persists.";
     let content = `<span><span class="ui-icon ui-icon-alert"></span> ${error_msg}</span>`;
     $('#list-users-paginated').html(content);
@@ -89,32 +173,9 @@ class PaginateRequest {
       })
       .then(this.processDataFunc)
       .catch(this.responseError);
-
-
   }
 }
 
-function getCustomerEntry(user_id, email, delete_perm) {
-  let delete_customer = '';
-
-  if(delete_perm) {
-    delete_customer = `<td class="govuk-table__cell">
-      <button class="govuk-button govuk-button--secondary right"
-            name="customer"
-            value="${user_id}">
-        Remove customer
-      </button>
-    </td>`
-  }
-
-  return `<tr class="govuk-table__row">
-      <td class="govuk-table__cell checkbox-cell">
-        <input type="checkbox" class="row-selector customer-checkbox" name="customer" value="${user_id}" autocomplete="off" />
-      </td>
-      <td class="govuk-table__cell">${email}</td>
-      ${delete_customer}
-    </tr>`
-}
 
 moj.Modules.paginate = {
   bindEvents() {
@@ -136,7 +197,9 @@ moj.Modules.paginate = {
     // end
 
     const app_pk = $('#app_id').val();
-    let ui = new CustomerUi();
+    let perm = $('#has_remove_client_perm').val()
+    let ui = new CustomerUi(perm);
+    CustomerSearchable(ui);
     let paginate = new PaginateRequest(`/api/cpanel/v1/app/${app_pk}/customers/paginate/`, ui);
 
     $('#ui-id-1').css({'padding-inline-start': '0px'});
