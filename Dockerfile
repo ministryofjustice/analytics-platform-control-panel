@@ -48,7 +48,6 @@ RUN pip install -U pip
 COPY requirements.txt requirements.dev.txt manage.py settings.yaml ./
 RUN pip install -U --no-cache-dir pip
 RUN pip install -r requirements.txt
-RUN pip uninstall python-dotenv -y
 
 # Re-enable dev packages
 RUN python3 -m venv --system-site-packages dev-packages \
@@ -72,7 +71,9 @@ COPY --from=jsdep node_modules/jquery-ui/dist/ static/jquery-ui
 # empty .env file to prevent warning messages
 RUN touch .env
 
+RUN which python
+
 # collect static files for deployment
-RUN SLACK_API_TOKEN=dummy dev-packages/bin/python manage.py collectstatic --noinput --ignore=*.scss
+RUN SLACK_API_TOKEN=dummy python manage.py collectstatic --noinput --ignore=*.scss
 EXPOSE 8000
 CMD ["gunicorn", "-b", "0.0.0.0:8000", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "controlpanel.asgi:application"]
