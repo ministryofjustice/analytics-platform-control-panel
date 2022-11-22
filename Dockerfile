@@ -71,8 +71,6 @@ COPY --from=jsdep node_modules/jquery-ui/dist/ static/jquery-ui
 # empty .env file to prevent warning messages
 RUN touch .env
 
-RUN which python
-
 # collect static files for deployment
 RUN SLACK_API_TOKEN=dummy python manage.py collectstatic --noinput --ignore=*.scss
 EXPOSE 8000
