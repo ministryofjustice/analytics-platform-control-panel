@@ -392,3 +392,32 @@ Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<T
 
 Even though your instance of Control Panel is running locally, it will still interact with the remote AWS data account and development Kubernetes cluster.
 The data account is also used by our production environment, so take care when interacting with our AWS resources directly.
+
+### Git commit and pre-commit
+
+Pre-commit is a code checking tool that is used for local development.
+
+Current checks are:-
+- requirements.txt library sort and check
+- yaml file check
+- end-of-file must have white line
+- trailing white spaces check
+- <b>black</b> library (formats python code)
+- isort library (formats order of python imports)
+- flake8 library (checks use of variables)
+- Jira ticket (as part of tracking of work, comments must have the ticket number)
+
+To override the above for whatever reason (maybe you don't have a ticket number and is a hotfix) you can use the following command.
+
+`PRE_COMMIT_ALLOW_NO_CONFIG=1 git push ...`
+
+### Git commit message
+
+commit messages should follow the appropriate format.
+All commits must begin with the Jira ticket they are associated with.
+
+format: `ANPL-[int]`
+
+e.g.
+
+`git commit -m "ANPL-1234 insert message here"`
