@@ -53,7 +53,7 @@ class AppCustomersPageAPIView(GenericAPIView):
         serializer = self.get_serializer(data=customer_result, many=True)
         serializer.is_valid(raise_exception=True)
 
-        return paginator.get_paginated_response(serializer.data, total_count=total_count)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class AppCustomersAPIView(GenericAPIView):
