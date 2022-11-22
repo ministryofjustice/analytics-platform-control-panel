@@ -39,6 +39,13 @@ def fixture_users_200(ExtendedAuth0):
 
 
 @pytest.yield_fixture
+def fixture_group_mocked(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "get_group_id") as request:
+        request.side_effect = 'my_group_id'
+        yield request
+
+
+@pytest.yield_fixture
 def fixture_customers_mocked(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "get_group_members_paginated") as request:
         items = [
@@ -98,15 +105,17 @@ def test_post(client, app, ExtendedAuth0):
 
 
 def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
-    response = client.get(reverse('appcustomers-page', (app.id, 1)))
-    fixture_customers_mocked.assert_called_with(group_name=app.slug, page=1, per_page=25)
+    group_id = 1
+    url_dict = {"group_id": group_id}
 
-    first_users = response.json().get('users', [])
+    response = client.get(reverse('appcustomers-page', args=(app.id,)), url_dict )
+    fixture_customers_mocked.assert_called_with(str(group_id), page=1, per_page=25)
+
+    first_users = response.json().get('results', [])
     assert len(first_users) == 5
 
-    response = client.get(reverse('appcustomers-page', (app.id, 2)))
-    fixture_customers_mocked.assert_called_with(group_name=app.slug, page=2, per_page=25)
-    second_users = response.json().get('users', [])
 
-    assert len(second_users) == 5
-    assert first_users != second_users
+def test_get_group_id(client, app, ExtendedAuth0, fixture_group_mocked):
+    response = client.get(reverse('app-group-id', args=(app.id,)))
+    assert response.json().get('group_id') == 'm'
+
