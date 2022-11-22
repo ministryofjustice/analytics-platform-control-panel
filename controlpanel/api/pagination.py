@@ -61,10 +61,10 @@ class Auth0Pagination(PageNumberPagination):
         setattr(self.django_paginator_class, 'total_count', total_count)
         return self
 
-    def get_paginated_response(self, data, *args, total_count=0, **kwargs):
+    def get_paginated_response(self, data, *args, **kwargs):
         return Response(
             dict(
-                count = total_count,
+                count = self.page.paginator.count,
                 links = dict(
                     next = self.get_next_link(),
                     previous = self.get_previous_link()
