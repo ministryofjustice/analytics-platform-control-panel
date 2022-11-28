@@ -15,7 +15,6 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
-from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -24,6 +23,7 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
+from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
@@ -32,7 +32,6 @@ from controlpanel.frontend.forms import (
 )
 from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.api.pagination import Auth0Paginator
 
 log = structlog.getLogger(__name__)
 
@@ -128,7 +127,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["parameters"] = (
             cluster.App(app).set_secret_type("parameters").get_secret_if_found()
         )
-        
+
         return context
 
 
@@ -421,25 +420,26 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        app = context.get('app')
+        app = context.get("app")
 
-        group_id = self.kwargs.get('group_id')
-        page = self.kwargs.get('page')
-        context['group_id'] = group_id
-        context['page'] = page
-        customers = app.customer_paginated(page, group_id=group_id, per_page=2)
+        context["group_id"] = group_id = self.kwargs.get("group_id")
+        context["page"] = page = self.kwargs.get("page")
+        customers = app.customer_paginated(page, group_id=group_id)
 
-        context['customers'] = customers.get('users', [])
-        context['page_obj'] =  self._paginate_customers(self.request, customers, per_page=2)
+        context["customers"] = customers.get("users", [])
+        context["page_obj"] = self._paginate_customers(
+            self.request, customers, page=page
+        )
         return context
 
-    def _paginate_customers(self, request, auth_results, per_page=25):
-        total_count = auth_results.get('total', 0)
-        customer_result = auth_results.get('users', [])
-        paginator = Auth0Paginator(customer_result, per_page=per_page, total_count=total_count)
+    def _paginate_customers(self, request, auth_results, per_page=25, page=1):
+        total_count = auth_results.get("total", 0)
+        customer_result = auth_results.get("users", [])
+        paginator = Auth0Paginator(
+            customer_result, per_page=per_page, total_count=total_count
+        )
 
-        page = paginator.page(1)
-        return page
+        return paginator.page(page)
 
 
 class RemoveCustomer(UpdateApp):
