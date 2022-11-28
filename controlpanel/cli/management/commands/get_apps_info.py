@@ -92,7 +92,7 @@ class Command(BaseCommand):
 
     def _collect_apps_deploy_info(self, github_token, apps_info, audit_data_keys, app_conf):
         """
-        To gain access to the github repo proves difficult than I thought, for now I will use the
+        To gain access to the GitHub repo proves difficult than I thought, for now I will use the
         id_token from my login account, unless there is a need for frequent usage, then we need to
         implement device code flow
 
