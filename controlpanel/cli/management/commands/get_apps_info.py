@@ -49,9 +49,7 @@ class Command(BaseCommand):
                             help="output: Specify the path for the file(JSON) storing outcome from the script")
         parser.add_argument("-l", "--log", type=str,
                             help="output: Specify the path for the error log file(TXT) generated from the script")
-        parser.add_argument("-oa", "--oaudit", type=str,
-                            help="output: Specify the path of the file(CSV) containing the summary of applications info"
-                                 "generated from the script")
+        parser.add_argument("-oa", "--oaudit", type=str, help="output: Specify the path of the file(CSV) containing the summary of applications info generated from the script")
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
