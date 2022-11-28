@@ -53,14 +53,7 @@ class Command(BaseCommand):
 
     def _add_new_app(self, apps_info, app_name):
         if app_name not in apps_info:
-            apps_info[app_name] = {
-                "app_name": app_name,
-                "registered_in_cpanel": False,
-                "can_be_migrated": False,
-                "has_repo": False,
-                "auth0_client": {},
-                "parameters": {},
-                "auth": {},
+            apps_info[app_name] = {"app_name": app_name, "registered_in_cpanel": False, "can_be_migrated": False, "has_repo": False, "auth0_client": {}, "parameters": {}, "auth": {},
             }
 
     def _init_app_info(self, app_info):
