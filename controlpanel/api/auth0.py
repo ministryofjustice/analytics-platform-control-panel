@@ -1,4 +1,4 @@
-from wsgiref.util import request_uri
+# Third-party
 import structlog
 import base64
 import yaml
@@ -11,12 +11,12 @@ from auth0.v3.management import Auth0
 from auth0.v3.management.clients import Clients
 from auth0.v3.management.connections import Connections
 from auth0.v3.management.device_credentials import DeviceCredentials
-from auth0.v3.management.users import Users
 from auth0.v3.management.rest import RestClient
 from jinja2 import Environment
 
+from auth0.v3.management.users import Users
 from django.conf import settings
-
+from rest_framework.exceptions import APIException
 
 log = structlog.getLogger(__name__)
 
@@ -28,10 +28,12 @@ PER_PAGE = 50
 # This is the maximum they'll allow for group/members API
 PER_PAGE_FOR_GROUP_MEMBERS = 25
 
-# The default value for timeout in auth0.v3.management is 5 seconds which will get ReadTimeOut error quite easily on
-# Auth0 dev tenant when Control panel initialises the connection with it. In order to avoid this, a longer timeout
-# is defined below as the default value for this app. This value will be passed down and overwrite the default 5 seconds
-# when the API classes in Auth0 package are created
+# The default value for timeout in auth0.v3.management is 5 seconds which will
+# get ReadTimeOut error quite easily on Auth0 dev tenant when Control panel
+# initialises the connection with it. In order to avoid this, a longer timeout
+# is defined below as the default value for this app. This value will be passed
+# down and overwrite the default 5 seconds when the API classes in Auth0
+# package are created
 DEFAULT_TIMEOUT = 20
 
 
@@ -42,7 +44,6 @@ class Auth0Error(APIException):
 
 
 class ExtendedAuth0(Auth0):
-
     def __init__(self, **kwargs):
         self.client_id = kwargs.get("client_id", settings.AUTH0["client_id"])
         self.client_secret = kwargs.get(
@@ -59,38 +60,54 @@ class ExtendedAuth0(Auth0):
         self._token = self._access_token(audience=self.audience)
         super(ExtendedAuth0, self).__init__(self.domain, self._token)
 
-        self.clients = ExtendedClients(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
-        self.connections = ExtendedConnections(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
-        self.device_credentials = ExtendedDeviceCredentials(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
+        self.clients = ExtendedClients(
+            self.domain, self._token, timeout=DEFAULT_TIMEOUT
+        )
+        self.connections = ExtendedConnections(
+            self.domain, self._token, timeout=DEFAULT_TIMEOUT
+        )
+        self.device_credentials = ExtendedDeviceCredentials(
+            self.domain, self._token, timeout=DEFAULT_TIMEOUT
+        )
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
-        self._extension_token = self._access_token(audience=settings.AUTH0["authorization_extension_audience"])
-        self.roles = Roles(self.authorization_extension_url, self._extension_token, timeout=DEFAULT_TIMEOUT)
+        self._extension_token = self._access_token(
+            audience=settings.AUTH0["authorization_extension_audience"]
+        )
+        self.roles = Roles(
+            self.authorization_extension_url,
+            self._extension_token,
+            timeout=DEFAULT_TIMEOUT,
+        )
         self.permissions = Permissions(
             self.authorization_extension_url,
             self._extension_token,
-            timeout=DEFAULT_TIMEOUT)
+            timeout=DEFAULT_TIMEOUT,
+        )
         self.groups = Groups(
             self.authorization_extension_url,
             self._extension_token,
-            timeout=DEFAULT_TIMEOUT)
+            timeout=DEFAULT_TIMEOUT,
+        )
         self.users = ExtendedUsers(
             self.domain,
             self._token,
             self.authorization_extension_url,
             self._extension_token,
-            timeout=DEFAULT_TIMEOUT)
+            timeout=DEFAULT_TIMEOUT,
+        )
 
     def _access_token(self, audience):
         get_token = authentication.GetToken(self.domain)
         try:
             token = get_token.client_credentials(
-                self.client_id,
-                self.client_secret,
-                audience)
+                self.client_id, self.client_secret, audience
+            )
         except exceptions.Auth0Error as error:
-            error_detail = f"Access token error: {self.client_id}, {self.domain}, {error}"
+            error_detail = (
+                f"Access token error: {self.client_id}, {self.domain}, {error}"
+            )
             log.error(error_detail)
             raise Auth0Error(error_detail)
 
@@ -142,7 +159,7 @@ class ExtendedAuth0(Auth0):
                 name=app_name,
                 callbacks=[f"{app_url}/callback"],
                 allowed_origins=[app_url],
-                app_type="regular_web"
+                app_type="regular_web",
             )
         )
         client_id = client["client_id"]
@@ -176,7 +193,7 @@ class ExtendedAuth0(Auth0):
         and each group has 1 role (`app-viewer`) and
         each role has 1 permission (`view:app`) so it's
         safe to delete all the associated roles/permissions.
-       """
+        """
 
         group_id = self.groups.get_group_id(group_name)
         if group_id:
@@ -188,7 +205,8 @@ class ExtendedAuth0(Auth0):
                 role_ids.append(role["_id"])
                 permission_ids.extend(role.get("permissions", []))
 
-            # The group needs to be removed first in order to remove the roles and permissions
+            # The group needs to be removed first in order to remove the roles
+            # and permissions
             self.groups.delete(group_id)
             for role_id in role_ids:
                 self.roles.delete(role_id)
@@ -196,7 +214,9 @@ class ExtendedAuth0(Auth0):
                 self.permissions.delete(permission_id)
 
     def clear_up_user(self, user_id):
-        """In order to remove user from auth0 correctly, removing the user from related groups needs to be done first
+        """
+        In order to remove user from auth0 correctly, removing the user from
+        related groups needs to be done first
         then remove user from auth0
         """
         if not self.users.has_existed(user_id):
@@ -267,7 +287,6 @@ class ExtendedAuth0(Auth0):
 
 
 class Auth0API(object):
-
     def __init__(self, domain, token, telemetry=True, timeout=5.0):
         self.domain = domain
         self.client = RestClient(jwt=token, telemetry=telemetry, timeout=timeout)
@@ -275,18 +294,20 @@ class Auth0API(object):
 
     def _url(self, id=None, resource_name=None):
         endpoint = "{}".format(self.__class__.__name__.lower())
-        url = '{}/{}'.format(self.domain, endpoint)
+        url = "{}/{}".format(self.domain, endpoint)
         if id is not None:
-            url = '{}/{}'.format(url, id)
+            url = "{}/{}".format(url, id)
         if resource_name is not None:
-            url = '{}/{}'.format(url, resource_name)
+            url = "{}/{}".format(url, resource_name)
         return url
 
-    def all(self, request_url=None, fields=None, page=None, per_page=None, extra_params=None):
+    def all(
+        self, request_url=None, fields=None, page=None, per_page=None, extra_params=None
+    ):
         params = extra_params or {}
-        params['fields'] = fields and ','.join(fields) or None
-        params['page'] = page
-        params['per_page'] = per_page
+        params["fields"] = fields and ",".join(fields) or None
+        params["page"] = page
+        params["per_page"] = per_page
         return self.client.get(request_url or self._url(), params=params)
 
     def pre_process_body(self, body):
@@ -298,8 +319,10 @@ class Auth0API(object):
         return self.client.post(self._url(), data=body)
 
     def get(self, id, fields=None, include_fields=True):
-        params = {'fields': fields and ','.join(fields) or None,
-                  'include_fields': str(include_fields).lower()}
+        params = {
+            "fields": fields and ",".join(fields) or None,
+            "include_fields": str(include_fields).lower(),
+        }
 
         return self.client.get(self._url(id), params=params)
 
@@ -314,24 +337,33 @@ class Auth0API(object):
 
 
 class ExtendedAPIMethods(object):
-
-    def all(self, request_url=None, fields=None, include_fields=True, page=None, per_page=None, extra_params=None):
+    def all(
+        self,
+        request_url=None,
+        fields=None,
+        include_fields=True,
+        page=None,
+        per_page=None,
+        extra_params=None,
+    ):
         params = extra_params or {}
-        params['fields'] = fields and ','.join(fields) or None
-        params['include_fields'] = str(include_fields).lower()
-        params['page'] = page
-        params['per_page'] = per_page
+        params["fields"] = fields and ",".join(fields) or None
+        params["include_fields"] = str(include_fields).lower()
+        params["page"] = page
+        params["per_page"] = per_page
 
         return self.client.get(request_url or self._url(), params=params)
 
     def _get_request_endpoint(self, endpoint=None):
         class_endpoint = None
-        if hasattr(self, 'endpoint'):
+        if hasattr(self, "endpoint"):
             class_endpoint = self.endpoint
-        return endpoint or class_endpoint or "{}".format(self.__class__.__name__.lower())
+        return (
+            endpoint or class_endpoint or "{}".format(self.__class__.__name__.lower())
+        )
 
     def _has_pagination_option(self):
-        return not (hasattr(self, 'no_pagination') and self.no_pagination)
+        return not (hasattr(self, "no_pagination") and self.no_pagination)
 
     def _get_pagination_params(self):
         # pagination is optional as different APIs may not support it
@@ -354,7 +386,12 @@ class ExtendedAPIMethods(object):
             params, page_number, per_page = self._get_pagination_params()
 
         while True:
-            response = self.all(request_url=request_url, page=page_number, per_page=per_page, extra_params=params)
+            response = self.all(
+                request_url=request_url,
+                page=page_number,
+                per_page=per_page,
+                extra_params=params,
+            )
 
             if "total" not in response:
                 raise Auth0Error(f"get_all {endpoint}: Missing 'total' property")
@@ -391,16 +428,16 @@ class ExtendedAPIMethods(object):
 
 
 class ExtendedClients(ExtendedAPIMethods, Clients):
-    endpoint = 'clients'
+    endpoint = "clients"
 
 
 
 class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
-    endpoint = 'device-credentials'
+    endpoint = "device-credentials"
 
 
 class ExtendedConnections(ExtendedAPIMethods, Connections):
-    endpoint = 'connections'
+    endpoint = "connections"
 
     @staticmethod
     def custom_connections():
@@ -409,7 +446,10 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
     def disable_client(self, connection, client_id):
         if client_id in connection["enabled_clients"]:
             connection["enabled_clients"].remove(client_id)
-            self.update(connection["id"], body={"enabled_clients": connection["enabled_clients"]})
+            self.update(
+                connection["id"],
+                body={"enabled_clients": connection["enabled_clients"]},
+            )
 
     def enable_client(self, connection, client_id):
         if client_id not in connection["enabled_clients"]:
@@ -462,17 +502,31 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
 
 
 class ExtendedUsers(ExtendedAPIMethods, Users):
-    endpoint = 'users'
+    endpoint = "users"
 
-    def __init__(self, domain, token, auth_extension_url, auth_extension_token, telemetry=True, timeout=5.0):
-        super(ExtendedUsers, self).__init__(domain, token, telemetry=telemetry, timeout=timeout)
-        self.auth_extension_users = AuthExtensionUsers(auth_extension_url, auth_extension_token)
+    def __init__(
+        self,
+        domain,
+        token,
+        auth_extension_url,
+        auth_extension_token,
+        telemetry=True,
+        timeout=5.0,
+    ):
+        super(ExtendedUsers, self).__init__(
+            domain, token, telemetry=telemetry, timeout=timeout
+        )
+        self.auth_extension_users = AuthExtensionUsers(
+            auth_extension_url, auth_extension_token
+        )
 
     def create_user(self, email, email_verified=False, **kwargs):
         if "nickname" not in kwargs:
-            kwargs["nickname"], _, _ = email.partition('@')
+            kwargs["nickname"], _, _ = email.partition("@")
 
-        response = self.create({"email": email, "email_verified": email_verified, **kwargs})
+        response = self.create(
+            {"email": email, "email_verified": email_verified, **kwargs}
+        )
         if "error" in response:
             raise Auth0Error("create_user", response)
         return response
@@ -487,14 +541,15 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
     def get_users_email_search(self, email, connection=None):
         """
-        As the search performed here is based on the email, the results returned from this call won't be many
-        especially if the connection is specified as well. it should be within default page-size (50 right now),
+        As the search performed here is based on the email, the results
+        returned from this call won't be many especially if the connection is
+        specified as well. it should be within default page-size (50 right now)
         so there is no pagination related param being passed into list() call.
         """
-        query_string = f"email:\"{email.lower()}\""
+        query_string = f'email:"{email.lower()}"'
         search_engine = "v3"
         if connection:
-            query_string = f"{query_string} AND identities.connection:\"{connection}\""
+            query_string = f'{query_string} AND identities.connection:"{connection}"'
         response = self.list(q=query_string, search_engine=search_engine)
         if "error" in response:
             raise Auth0Error("get_users_email_search", response)
@@ -505,44 +560,46 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         user_ids_to_add = []
 
         for email in emails:
-            lookup_response = self.get_users_email_search(email=email, connection="email")
+            lookup_response = self.get_users_email_search(
+                email=email, connection="email"
+            )
             if lookup_response:
                 user_ids_to_add.append(lookup_response[0]["user_id"])
             else:
-                user_ids_to_add.append(self.create_user(
-                    email=email, email_verified=True, **user_options
-                ).get("user_id"))
+                user_ids_to_add.append(
+                    self.create_user(
+                        email=email, email_verified=True, **user_options
+                    ).get("user_id")
+                )
         return user_ids_to_add
 
     def get_user_groups(self, user_id):
         return self.auth_extension_users.get_user_groups(user_id)
 
     def has_existed(self, user_id):
-        query_string = f"user_id:\"{user_id}\""
+        query_string = f'user_id:"{user_id}"'
         response = self.list(q=query_string, search_engine="v3")
         if "error" in response:
             raise Auth0Error("get_users_email_search", response)
 
-        return len(response['users']) > 0
+        return len(response["users"]) > 0
 
 
 class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):
-    endpoint = 'users'
+    endpoint = "users"
 
     def get_user_groups(self, user_id):
-        request_url = '{}/users/{}/groups'.format(self.domain, user_id)
+        request_url = "{}/users/{}/groups".format(self.domain, user_id)
         return self.all(request_url=request_url)
 
 
 class Permissions(Auth0API, ExtendedAPIMethods):
-
     def pre_process_body(self, body):
         super(Permissions, self).pre_process_body(body)
         body["applicationType"] = "client"
 
 
 class Roles(Auth0API, ExtendedAPIMethods):
-
     def pre_process_body(self, body):
         super(Roles, self).pre_process_body(body)
         body["applicationType"] = "client"
@@ -565,12 +622,9 @@ class Roles(Auth0API, ExtendedAPIMethods):
             )
 
 
-
-
 class Groups(Auth0API, ExtendedAPIMethods):
-
     def add_role(self, id, role_id):
-        self.client.patch(self._url(id, 'roles'), data=[role_id])
+        self.client.patch(self._url(id, "roles"), data=[role_id])
 
     def get_group_id(self, group_name):
         group = self.search_first_match(dict(name=group_name))
@@ -580,15 +634,20 @@ class Groups(Auth0API, ExtendedAPIMethods):
             return group.get("_id")
 
     def _get_pagination_params(self):
-        # All the auth extension APIs doesn't have page parameter but the API for group's members does
-        # and the maximum value of per_page is 25, not like other APIs which is 50, and it does not allow
-        # include_totals parameter. It will return `400: "include_totals" is not allowed` if this param is passed.
+        # All the auth extension APIs doesn't have page parameter but the API
+        # for group's members does and the maximum value of per_page is 25, not
+        # like other APIs which is 50, and it does not allow
+        # include_totals parameter. It will return `400: "include_totals" is
+        # not allowed` if this param is passed.
         # plus page parameter is One-based
         # https://auth0.com/docs/api/authorization-extension#get-group-members
         return None, 1, PER_PAGE_FOR_GROUP_MEMBERS
 
     def get_group_members_paginated(self, group_id, page=1, per_page=25):
-        """gets members based on page number"""
+        """
+            gets members based on page number
+            There is a maximum limit of 25 entries per page for customers
+        """
         request_url = self._url(group_id, "members")
         response = self.all(request_url=request_url, page=page, per_page=per_page)
         return response
@@ -596,15 +655,19 @@ class Groups(Auth0API, ExtendedAPIMethods):
     def get_group_members(self, group_name):
         group_id = self.get_group_id(group_name)
         if group_id:
-            return self.get_all(request_url=self._url(group_id, "members"),
-                                endpoint="users",
-                                has_pagination=True)
+            return self.get_all(
+                request_url=self._url(group_id, "members"),
+                endpoint="users",
+                has_pagination=True,
+            )
         else:
             return []
 
     def get_group_roles(self, group_name=None, group_id=None):
         if group_id is None and group_name is None:
-            raise Auth0Error("get_group_roles", "Please specify either group_id or group_name.")
+            raise Auth0Error(
+                "get_group_roles", "Please specify either group_id or group_name."
+            )
 
         if group_id is None:
             group_id = self.get_group_id(group_name)
@@ -624,13 +687,15 @@ class Groups(Auth0API, ExtendedAPIMethods):
 
     def delete_group_members(self, user_ids, group_name=None, group_id=None):
         if group_id is None and group_name is None:
-            raise Auth0Error("delete_group_members", "Please specify either group_id or group_name.")
+            raise Auth0Error(
+                "delete_group_members", "Please specify either group_id or group_name."
+            )
 
         if group_id is None:
             group_id = self.get_group_id(group_name)
         if group_id:
             response = self.client.delete(
-                self._url(group_id, 'members'),
+                self._url(group_id, "members"),
                 data=user_ids,
             )
             if "error" in response:

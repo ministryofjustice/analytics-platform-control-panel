@@ -55,7 +55,7 @@
   {% for page_number in page_obj.paginator.page_range %}
     <a
         href="{{ url('appcustomers-page', kwargs={"pk": app.id, "group_id": group_id, "page": page_number }) }}"
-        class="govuk-button {% if page_number == page %}current govuk-button--secondary{% endif %}"
+        class="govuk-button {% if page_number == page_obj.number %}current govuk-button--secondary{% endif %}"
     >
         {{page_number}}
     </a>
