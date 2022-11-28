@@ -32,6 +32,7 @@ from controlpanel.frontend.forms import (
 )
 from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.api.pagination import Auth0Paginator
 
 log = structlog.getLogger(__name__)
 
@@ -411,6 +412,34 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
         return reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]})
+
+
+class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = App
+    permission_required = "api.add_app_customer"
+    template_name = "customers/display-list.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        app = context.get('app')
+
+        group_id = self.kwargs.get('group_id')
+        page = self.kwargs.get('page')
+        context['group_id'] = group_id
+        context['page'] = page
+        customers = app.customer_paginated(page, group_id=group_id, per_page=2)
+
+        context['customers'] = customers.get('users', [])
+        context['page_obj'] =  self._paginate_customers(self.request, customers, per_page=2)
+        return context
+
+    def _paginate_customers(self, request, auth_results, per_page=25):
+        total_count = auth_results.get('total', 0)
+        customer_result = auth_results.get('users', [])
+        paginator = Auth0Paginator(customer_result, per_page=per_page, total_count=total_count)
+
+        page = paginator.page(1)
+        return page
 
 
 class RemoveCustomer(UpdateApp):

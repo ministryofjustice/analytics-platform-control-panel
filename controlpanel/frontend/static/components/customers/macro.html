@@ -1,0 +1,26 @@
+<!-- customers/macro.html import display_customer -->
+{% macro display_customer(params) %}
+
+{% set customer = params['customer'] %}
+{% set remove_perm = params['has_remove_perm'] %}
+
+<tr class="govuk-table__row result_rows" >
+  <td class="govuk-table__cell checkbox-cell">
+    <div class="govuk-checkboxes__item" >
+      <input type="checkbox" class="row-selector customer-checkbox govuk-checkboxes__input" name="customer" value="{{ customer.user_id }}" autocomplete="off" />
+    </div>
+  </td>
+  <td class="govuk-table__cell">{{ customer.email }}</td>
+
+  <td class="govuk-table__cell">
+    {% if remove_perm %}
+    <button class="govuk-button govuk-button--secondary right"
+          name="customer"
+          value="{{ customer.user_id}}">
+      Remove customer
+    </button>
+    {% endif %}
+  </td>
+</tr>
+
+{% endmacro %}
