@@ -4,10 +4,10 @@ import base64
 import yaml
 from pathlib import Path
 from collections import defaultdict
-from rest_framework.exceptions import APIException
 
 from auth0.v3 import authentication, exceptions
 from auth0.v3.management import Auth0
+from auth0.v3.management.users import Users
 from auth0.v3.management.clients import Clients
 from auth0.v3.management.connections import Connections
 from auth0.v3.management.device_credentials import DeviceCredentials
@@ -621,8 +621,6 @@ class Roles(Auth0API, ExtendedAPIMethods):
                     "permissions": permissions,
                 },
             )
-
-
 
 
 class Groups(Auth0API, ExtendedAPIMethods):
