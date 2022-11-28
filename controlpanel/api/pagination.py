@@ -46,9 +46,13 @@ class CustomPageNumberPagination(PageNumberPagination):
 
 
 class Auth0Paginator(Paginator):
+    def __init__(self, object_list, per_page, total_count=25, **kwargs):
+        self.total_count = total_count
+        super().__init__(object_list, per_page, **kwargs)
+
     @property
     def count(self):
-        """Return the total number of objects."""
+        """Return the total number of objects, across all pages."""
         return self.total_count
 
 
@@ -78,3 +82,16 @@ class Auth0Pagination(PageNumberPagination):
         if url:
             url = replace_query_param(url, self.page_size_query_param, page_size)
         return url
+    
+    def get_page_size(self, request):
+        if self.page_size_query_param:
+            try:
+                return _positive_int(
+                    request.GET[self.page_size_query_param],
+                    strict=True,
+                    cutoff=self.max_page_size
+                )
+            except (KeyError, ValueError):
+                pass
+
+        return self.page_size

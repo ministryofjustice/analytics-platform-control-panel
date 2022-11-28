@@ -25,11 +25,6 @@ urlpatterns = [
         name="appcustomers-list",
     ),
     path(
-        "app/<int:pk>/customers/paginate/",
-        customers.AppCustomersPageAPIView.as_view(),
-        name="appcustomers-page"
-    ),
-    path(
         "app/<int:pk>/customers/<str:user_id>/",
         views.AppCustomersDetailAPIView.as_view(),
         name="appcustomers-detail",

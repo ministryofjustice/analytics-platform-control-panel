@@ -25,37 +25,6 @@ class AppGroupIdApiView(GenericAPIView):
         return Response(dict(group_id=app.get_group_id()))
 
 
-class AppCustomersPageAPIView(GenericAPIView):
-    queryset = App.objects.all()
-    serializer_class = serializers.AppCustomerSerializer
-    permission_classes = (permissions.AppPermissions,)
-    action = "retrieve"
-    pagination_class = Auth0Pagination
-
-    def get(self, request, *args, pk=None, **kwargs):
-        app = App.objects.get(pk=pk)
-
-        page = request.GET.get('page', 1)
-        per_page = request.GET.get('per_page', 25)
-        group_id = request.GET.get('group_id')
-
-        customers = app.customer_paginated(page, group_id=group_id, per_page=per_page)
-        if not customers:
-            return Response([])
-
-        total_count = customers.get('total', 0)
-        customer_result = customers.get('users', [])
-        paginator = self.pagination_class().add_total(total_count)
-        paginator.page_size = per_page
-
-        paginator.paginate_queryset(queryset=customer_result, request=request)
-
-        serializer = self.get_serializer(data=customer_result, many=True)
-        serializer.is_valid(raise_exception=True)
-
-        return paginator.get_paginated_response(serializer.data)
-
-
 class AppCustomersAPIView(GenericAPIView):
     queryset = App.objects.all()
     serializer_class = serializers.AppCustomerSerializer

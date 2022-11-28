@@ -174,7 +174,10 @@
     App customers
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
-  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
+  <!-- app/<int:pk>/customers/paginate/<uuid:group_id>/<int:page>/ -->
+  <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "group_id": app.get_group_id(), "page": "1"}) }}" target="_blank" class="govuk-button" >View/Edit List</a>
+
+  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}" style="display: none" >
     {{ csrf_input }}
     <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
             type="submit"
@@ -244,28 +247,6 @@
       </tfoot>
     </table>
   </form>
-
-  {% if request.user.has_perm('api.add_app_customer', app) %}
-  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
-    {{ csrf_input }}
-    <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
-      <label class="govuk-label" for="customer_email">
-        Add app customers by entering their email addresses (separated by spaces)
-      </label>
-      {% if errors and errors.customer_email %}
-        {% for error in errors.customer_email %}
-      <span id="customer_email-error" class="govuk-error-message">
-        <span class="govuk-visually-hidden">Error:</span> {{ error }}
-      </span>
-        {% endfor %}
-      {% endif %}
-      <input id="customer_email" class="govuk-input cpanel-input--1-3" name="customer_email" autocomplete="off">
-    </div>
-    <div class="govuk-form-group">
-      <button class="govuk-button">Add customer</button>
-    </div>
-  </form>
-  {% endif %}
 </section>
 
 <section class="cpanel-section">
