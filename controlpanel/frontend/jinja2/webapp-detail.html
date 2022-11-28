@@ -174,79 +174,8 @@
     App customers
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
-  <!-- app/<int:pk>/customers/paginate/<uuid:group_id>/<int:page>/ -->
   <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "group_id": app.get_group_id(), "page": "1"}) }}" target="_blank" class="govuk-button" >View/Edit List</a>
 
-  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}" style="display: none" >
-    {{ csrf_input }}
-    <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
-            type="submit"
-            name="submit"
-            disabled="disabled"
-            value="submit">
-      Remove all selected customers
-    </button>
-
-    <input type="text" placeholder="Search by Email" id="customer-search-box" class="govuk-input cpanel-input--1-3 left selectable-rows__enable-on-selections" />
-
-    <input type="hidden" 
-      id="has_remove_client_perm" 
-      value="{% if request.user.has_perm('api.remove_app_customer', app) %}true{% else %}false{% endif %}" 
-    />
-    <table class="govuk-table selectable-rows">
-      <thead class="govuk-table__head">
-        <tr class="govuk-table__row">
-          <th class="govuk-table__header" ></th>
-          <th class="govuk-table__header" colspan="2">Customer email</th>
-          
-          <th class="govuk-table__header">
-            <span class="govuk-visually-hidden">Actions</span>
-            <div id="list-users-paginated" style="display: flex; float: right;" >
-                <div class="windows8" id="loading_gif" >
-                  <div class="wBall" id="wBall_1">
-                    <div class="wInnerBall"></div>
-                  </div>
-                  <div class="wBall" id="wBall_2">
-                    <div class="wInnerBall"></div>
-                  </div>
-                  <div class="wBall" id="wBall_3">
-                    <div class="wInnerBall"></div>
-                  </div>
-                  <div class="wBall" id="wBall_4">
-                    <div class="wInnerBall"></div>
-                  </div>
-                  <div class="wBall" id="wBall_5">
-                    <div class="wInnerBall"></div>
-                  </div>
-                </div>
-
-                <div  >
-                  <input type="hidden" value="1" id="current_index" />
-                  <button id="add_more" type="button" class="govuk-button govuk-button--secondary" style="margin-right: 20px" >load more</button>
-                </div>
-                <div id="loading_text">loading customers: </div>
-                <div id="customers_loaded" >0</div>
-                <div id="total_available"></div>
-                
-            </div>
-          </th>
-        </tr>
-      </thead>
-      <tbody class="govuk-table__body" id="list-customers-paginated">
-        <tr id="checkbox-controller" >
-          <td class="govuk-table__cell checkbox-cell" colspan="3">
-            <input type="checkbox" class="row-selector" id="toggle-controller" >
-          </td>
-        </tr>
-      </tbody>
-      <tfoot class="govuk-table__foot">
-        <tr class="govuk-table__row">
-          <td class="govuk-table__cell" colspan="3">
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-  </form>
 </section>
 
 <section class="cpanel-section">
