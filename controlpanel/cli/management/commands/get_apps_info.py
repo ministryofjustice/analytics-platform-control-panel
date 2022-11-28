@@ -47,8 +47,7 @@ class Command(BaseCommand):
                                  "deployed on alpha cluster")
         parser.add_argument("-f", "--file", required=True, type=str,
                             help="output: Specify the path for the file(JSON) storing outcome from the script")
-        parser.add_argument("-l", "--log", type=str,
-                            help="output: Specify the path for the error log file(TXT) generated from the script")
+        parser.add_argument("-l", "--log", type=str, help="output: Specify the path for the error log file(TXT) generated from the script")
         parser.add_argument("-oa", "--oaudit", type=str, help="output: Specify the path of the file(CSV) containing the summary of applications info generated from the script")
 
     def _add_new_app(self, apps_info, app_name):
