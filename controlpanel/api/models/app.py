@@ -1,6 +1,7 @@
 # Third-party
 from django.conf import settings
 from django.db import models
+from django.dispatch import receiver
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -132,6 +133,17 @@ class App(TimeStampedModel):
         auth0.ExtendedAuth0().clear_up_app(app_name=self.slug, group_name=self.slug)
 
         super().delete(*args, **kwargs)
+
+
+@receiver(models.signals.m2m_changed, sender=App.ip_allowlists.through)
+def app_ip_allowlists_changed(sender, instance, action, **kwargs):
+    """
+    Trigger an update of an App's entry in AWS Secrets Manager whenever its list of
+    allowed IP ranges changes (via IPAllowlists in the App's ip_allowlists attribute).
+    """
+
+    if isinstance(instance, App) and action in ["post_add", "post_remove"]:
+        cluster.App(instance).create_or_update_secret({"allowed_ip_ranges": instance.app_allowed_ip_ranges})
 
 
 class AddCustomerError(Exception):
