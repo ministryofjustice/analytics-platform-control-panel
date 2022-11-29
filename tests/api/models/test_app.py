@@ -1,7 +1,4 @@
-# Standard library
-from unittest.mock import patch
-
-# Third-party
+from unittest.mock import call, patch
 import pytest
 from model_mommy import mommy
 
@@ -14,6 +11,12 @@ from controlpanel.api.models import App
 def auth0():
     with patch("controlpanel.api.models.app.auth0") as auth0:
         yield auth0
+
+
+@pytest.yield_fixture
+def update_aws_secrets_manager():
+    with patch("controlpanel.api.cluster.App.create_or_update_secret") as update_aws_secrets_manager:
+        yield update_aws_secrets_manager
 
 
 @pytest.mark.django_db
@@ -106,3 +109,27 @@ def test_repo_name(url, expected_name):
     app = mommy.prepare("api.App")
     app.repo_url = url
     assert app._repo_name == expected_name
+
+
+@pytest.mark.django_db
+def test_add_ip_allowlist_to_app_updates_aws_secrets_manager(update_aws_secrets_manager):
+    ip_allowlist = mommy.make("api.IPAllowlist", allowed_ip_ranges="123")
+    app = mommy.make("api.App")
+
+    app.ip_allowlists.set([ip_allowlist])
+
+    update_aws_secrets_manager.assert_has_calls([
+        call({"allowed_ip_ranges": "123"}),
+    ])
+
+
+@pytest.mark.django_db
+def test_remove_ip_allowlist_from_app_updates_aws_secrets_manager(update_aws_secrets_manager):
+    ip_allowlists = mommy.make("api.IPAllowlist", allowed_ip_ranges="123", _quantity=2)
+    app = mommy.make("api.App", ip_allowlists=ip_allowlists)
+
+    app.ip_allowlists.set([ip_allowlists[0]])
+
+    update_aws_secrets_manager.assert_has_calls([
+        call({"allowed_ip_ranges": "123"}),
+    ])
