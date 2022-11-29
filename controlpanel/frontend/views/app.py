@@ -289,10 +289,14 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         return context
 
     def form_valid(self, form):
+        """
+        Update the App's list of IPAllowlists, which will trigger the App's entry in
+        AWS Secrets Manager to be updated (see signal app_ip_allowlists_changed() in
+        App model).
+        """
 
         app = self.get_object()
         app.ip_allowlists.set(form.cleaned_data["ip_allowlists"])
-        cluster.App(app).create_or_update_secret({"allowed_ip_ranges": app.app_allowed_ip_ranges})
 
         return HttpResponseRedirect(self.get_success_url())
 
