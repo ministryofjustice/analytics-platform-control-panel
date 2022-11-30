@@ -174,7 +174,8 @@
     App customers
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
-  <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "group_id": app.get_group_id(), "page": "1"}) }}" target="_blank" class="govuk-button" >View/Edit List</a>
+
+  <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "group_id": app.get_group_id(), "page_no": "1"}) }}" target="_blank" class="govuk-button" >View/Edit List</a>
 
 </section>
 

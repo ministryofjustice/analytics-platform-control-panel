@@ -2,6 +2,7 @@
 
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "customers/macro.html" import display_customer %}
+{% from "menus/generic.html" import displayMenu %}
 
 {% set page_title = "App customers" %}
 {% set page_name = "customers" %}
@@ -51,16 +52,21 @@
     </table>
   </form>
 
-<div>
-  {% for page_number in page_obj.paginator.page_range %}
-    <a
-        href="{{ url('appcustomers-page', kwargs={"pk": app.id, "group_id": group_id, "page": page_number }) }}"
-        class="govuk-button {% if page_number == page_obj.number %}current govuk-button--secondary{% endif %}"
-    >
-        {{page_number}}
-    </a>
-  {% endfor %}
-</div>
+  {{ displayMenu({
+      "reverse": {
+        "url": "appcustomers-page",
+        "kwargs": {"pk": app.id, "group_id": group_id },
+        "first_kw": {"pk": app.id, "group_id": group_id, "page_no": paginator.page_range[0]},
+        "previous_kw": {"pk": app.id, "group_id": group_id, "page_no": page_no-1},
+        "next_kw": {"pk": app.id, "group_id": group_id, "page_no": page_no+1},
+        "last_kw": {"pk": app.id, "group_id": group_id, "page_no": paginator.page_range[-1]}
+      },
+      "paginator": paginator,
+      "elided": elided,
+      "page_no": page_no
+    })
+  }}
+
 
 {% if request.user.has_perm('api.add_app_customer', app) %}
   <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">

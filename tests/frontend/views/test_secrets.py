@@ -121,7 +121,7 @@ def delete_secret_post(client, app, key=None, *args):
         (detail, 'superuser', status.HTTP_200_OK),
     ],
 )
-def test_permissions(client, app, s3buckets, users, view, user, expected_status, fixture_get_secret):
+def test_permissions(client, app, s3buckets, users, view, user, expected_status, fixture_get_secret, fixture_get_group_id):
     with patch('django.conf.settings.features.app_migration.enabled') as setting_fix:
         # patch allows for feature allowed to be switched on/off
         setting_fix.return_value = True

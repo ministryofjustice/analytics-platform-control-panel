@@ -423,23 +423,25 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         app = context.get("app")
 
         context["group_id"] = group_id = self.kwargs.get("group_id")
-        context["page"] = page = self.kwargs.get("page")
-        customers = app.customer_paginated(page, group_id=group_id)
+        context["page_no"] = page_no = self.kwargs.get("page_no")
+        customers = app.customer_paginated(page_no, group_id=group_id)
 
         context["customers"] = customers.get("users", [])
-        context["page_obj"] = self._paginate_customers(
-            self.request, customers, page=page
+        context["paginator"] = paginator = self._paginate_customers(
+            self.request, customers
+        )
+        context["elided"] = paginator.get_elided_page_range(
+            page_no, on_each_side=3, on_ends=2
         )
         return context
 
-    def _paginate_customers(self, request, auth_results, per_page=25, page=1):
+    def _paginate_customers(self, request, auth_results, per_page=25):
         total_count = auth_results.get("total", 0)
         customer_result = auth_results.get("users", [])
         paginator = Auth0Paginator(
             customer_result, per_page=per_page, total_count=total_count
         )
-
-        return paginator.page(page)
+        return paginator
 
 
 class RemoveCustomer(UpdateApp):
