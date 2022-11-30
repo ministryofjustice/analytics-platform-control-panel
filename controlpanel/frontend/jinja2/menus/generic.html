@@ -1,0 +1,45 @@
+
+{% macro displayMenu(
+    params, 
+    buttons={
+      "next_btn": "Next",
+      "last_btn": "Last",
+      "first_btn": "First",
+      "prev_btn": "Previous"
+    }
+  )
+-%}
+
+{% set next_btn = buttons.next_btn|default("Next") %}
+{% set last_btn = buttons.last_btn|default("Last") %}
+{% set first_btn = buttons.first_btn|default("First") %}
+{% set prev_btn = buttons.prev_btn|default("Previous") %}
+
+<div style="display: flex; justify-content: center; align-items: center;">
+  <div style="display: block;">
+    {% if params.paginator.page_range[0] != params.page_no %}
+      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.first_kw ) }}" >{{ first_btn }}</a>
+      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.previous_kw ) }}" >{{ prev_btn }}</a>
+    {% endif %}
+
+    {% for page_number in params.elided %}
+      {% if page_number == "…" %}
+        <a class="govuk-button">…</a>
+      {% else %}
+        {% set _ = params.reverse.kwargs.update(page_no=page_number) %}
+        <a
+        href="{{ url(params.reverse.url, kwargs=params.reverse.kwargs ) }}"
+        class="govuk-button {% if page_number == params.page_no %}current govuk-button--secondary{% endif %}"
+        >
+        {{ page_number }}
+      </a>
+      {% endif %}
+    {% endfor %}
+
+    {% if params.paginator.page_range[-1] != params.page_no %}
+      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.next_kw ) }}" >{{ next_btn }}</a>
+      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.last_kw ) }}" >{{ last_btn }}</a>
+    {% endif %}
+  </div>
+</div>
+{% endmacro -%}
