@@ -52,6 +52,14 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         return tool_box
 
     def _find_related_tool_record(self, chart_name, chart_version, image_tag):
+        """
+        The current logic is to link the deployment back to the tool-release record is based
+        - chart_name
+        - chart_version
+        - image_tag
+        if somehow we make a tool-release with duplicated 3 above fields but different other parameters e.g.
+        memory, CPU etc, then the linkage will be confused although it won't affect people usage.
+        """
         tool_set = Tool.objects.filter(chart_name=chart_name, version=chart_version)
         for item in tool_set:
             if item.image_tag == image_tag:
@@ -124,12 +132,12 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         charts_info = {}
         chart_entries = get_helm_entries()
         for tool in tool_list:
-            if tool.version in charts_info or tool.image_tag:
+            if tool.version in charts_info:
                 continue
 
             chart_app_version = get_chart_version_info(chart_entries, tool.chart_name, tool.version)
-            image_tag = None
-            if chart_app_version:
+            image_tag = tool.image_tag
+            if chart_app_version and not image_tag:
                 image_tag = get_default_image_tag_from_helm_chart(chart_app_version.chart_url, tool.chart_name)
             charts_info[tool.version] ={
                 "app_version": chart_app_version.app_version if chart_app_version else 'Unknown',
