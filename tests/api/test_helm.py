@@ -1,4 +1,3 @@
-import os
 import time
 import pytest
 import subprocess
@@ -18,6 +17,7 @@ def test_chart_app_version():
         "RStudio with Auth0 authentication proxy",
         "2.2.5",
         app_version,
+        "https://testing/rstudio.tgz"
     )
 
     assert chart.app_version == app_version
