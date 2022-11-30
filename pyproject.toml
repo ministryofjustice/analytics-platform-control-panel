@@ -9,7 +9,7 @@ exclude = '''
 '''
 
 [tool.isort]
-profile = "black"
+profile = 'black'
 import_heading_firstparty = 'First-party/Local'
 import_heading_future = 'Future'
 import_heading_stdlib = 'Standard library'
