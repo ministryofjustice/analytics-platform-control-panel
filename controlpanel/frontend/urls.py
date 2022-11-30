@@ -90,8 +90,8 @@ urlpatterns = [
         "parameters/delete/", views.ParameterDelete.as_view(), name="delete-parameter"
     ),
     path("tools/", views.ToolList.as_view(), name="list-tools"),
-    path("tools/<str:name>/deploy/", views.DeployTool.as_view(), name="deploy-tool"),
-    path("tools/<str:name>/restart/", views.RestartTool.as_view(), name="restart-tool"),
+    path("tools/<str:name>/deploy", views.DeployTool.as_view(), name="deploy-tool"),
+    path("tools/<str:name>/restart/<str:tool_id>", views.RestartTool.as_view(), name="restart-tool"),
     path("users/", views.UserList.as_view(), name="list-users"),
     path("users/<str:pk>/", views.UserDetail.as_view(), name="manage-user"),
     path("users/<str:pk>/delete/", views.UserDelete.as_view(), name="delete-user"),

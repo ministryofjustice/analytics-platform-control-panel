@@ -104,6 +104,15 @@ class Tool(TimeStampedModel):
         """
         return helm.get_chart_app_version(self.chart_name, self.version)
 
+    @property
+    def image_tag(self):
+        chart_image_key_name = self.chart_name.split("-")[0]
+        return self.values.get("{}.tag".format(chart_image_key_name)) or \
+               self.values.get("{}.image.tag".format(chart_image_key_name))
+
+    def tool_release_tag(self, image_tag=None):
+        return "{}-{}-{}".format(self.chart_name, self.version, image_tag or self.image_tag)
+
 
 class ToolDeploymentManager:
     """
@@ -192,7 +201,7 @@ class ToolDeployment:
             self.user, self.tool, self.old_chart_name
         ).install()
 
-    def get_status(self, id_token):
+    def get_status(self, id_token, deployment=None):
         """
         Get the current status of the deployment.
         Polls the subprocess if running, otherwise returns idled status.
@@ -205,7 +214,8 @@ class ToolDeployment:
                 log.info(status)
                 return status
         return cluster.ToolDeployment(self.user, self.tool).get_status(
-            id_token
+            id_token,
+            deployment=deployment
         )
 
     def _poll(self):
