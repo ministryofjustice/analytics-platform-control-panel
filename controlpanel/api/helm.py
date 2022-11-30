@@ -142,7 +142,7 @@ def get_default_image_tag_from_helm_chart(chart_url, chart_name):
     proc = _execute("show", "values", chart_url)
     if proc:
         output = proc.stdout.read()
-        values = yaml.safe_load(output)
+        values = yaml.safe_load(output) or {}
         tool_name = chart_name.split("-")[0]
         return values.get(tool_name, {}).get("tag") or \
                values.get(tool_name, {}).get("image", {}).get("tag")
