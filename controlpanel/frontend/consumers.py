@@ -152,24 +152,9 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Restarted {tool.name} for {user}")
 
     def get_tool_and_user(self, message):
-        tool_args = {"chart_name": message["tool_name"]}
-        if "version" in message:
-            tool_args["version"] = message["version"]
-        # There may be two charts with the same name and version, but
-        # targetting different instances of our infrastructure. Ensure the
-        # filter args flag which infrastructure we're running on, to make sure
-        # the correct tool is the *first* one returned.
-        tool_args["target_infrastructure"] = Tool.EKS
-
-        # On restart we don't specify the version as it doesn't make
-        # sense to do so. As we're now allowing more than one
-        # Tool instance for the same chart name this means we have to
-        # use `filter().first()` (instead of `.get()`) to avoid getting
-        # a Django exception when `get()` finds more than 1 Tool record
-        # with the same chart name
-        tool = Tool.objects.filter(**tool_args).first()
+        tool = Tool.objects.get(pk=message["tool_id"])
         if not tool:
-            raise Exception(f"no Tool record found for query {tool_args}")
+            raise Exception(f"no Tool record found for query {message['tool_id']}")
         user = User.objects.get(auth0_id=message["user_id"])
         return tool, user
 

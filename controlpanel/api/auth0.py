@@ -1,5 +1,8 @@
 import structlog
-
+import base64
+import yaml
+from pathlib import Path
+from collections import defaultdict
 from rest_framework.exceptions import APIException
 
 from auth0.v3 import authentication, exceptions
@@ -9,6 +12,7 @@ from auth0.v3.management.connections import Connections
 from auth0.v3.management.device_credentials import DeviceCredentials
 from auth0.v3.management.users import Users
 from auth0.v3.management.rest import RestClient
+from jinja2 import Environment
 
 from django.conf import settings
 
@@ -91,18 +95,48 @@ class ExtendedAuth0(Auth0):
 
         return token["access_token"]
 
-    def _disable_all_connections(self, client_id, ignores=[]):
-        ignore_ids = [connection["id"] for connection in ignores]
+    def _enable_connections_for_new_client(self, client_id, chosen_connections):
+        """
+        When an auth0 client is created, by default all the available connections are enabled for this client except
+        those which is not used by any app. This way is quite annoying, it means we have to go through all those
+        unchosen connections to diable the client from it, then enable nomis login if nomis login has been chosen
+        """
         connections = self.connections.get_all()
         for connection in connections:
-            if connection["id"] in ignore_ids:
-                continue
-            if client_id in connection["enabled_clients"]:
+            if connection["name"] in chosen_connections:
+                self.connections.enable_client(connection, client_id)
+            else:
                 self.connections.disable_client(connection, client_id)
 
+
+    def _create_custom_connection(self, app_name, connections):
+        new_connections = []
+        for connection_name, user_inputs in connections.items():
+            if connection_name not in ExtendedConnections.custom_connections():
+                new_connections.append(connection_name)
+                continue
+
+            if "name" not in user_inputs:
+                user_inputs["name"] = app_name
+            new_connection_name = self.connections.create_custom_connection(
+                connection_name=connection_name,
+                input_values=user_inputs)
+            new_connections.append(new_connection_name)
+        return new_connections
+
     def setup_auth0_client(self, app_name, connections=None):
+        """
+        parameters:
+            connections:
+                {
+                    <connection_name>: {<user_inputs if need}
+                }
+        """
+        if connections is None:
+            connections = {"email": {}}
+        new_connections = self._create_custom_connection(app_name, connections)
         app_url = "https://{}.{}".format(app_name, self.app_domain)
-        client = self.clients.get_or_create(
+        client = self.clients.create(
             dict(
                 name=app_name,
                 callbacks=[f"{app_url}/callback"],
@@ -113,17 +147,13 @@ class ExtendedAuth0(Auth0):
         client_id = client["client_id"]
         self.clients.update(client_id, body={"web_origins": [app_url]})
 
-        connections = connections or ["email"]
-        auth0_connections = [
-            self.connections.search_first_match(dict(name=connection)) for connection in connections
-        ]
-        self._disable_all_connections(client_id, ignores=auth0_connections)
-
-        view_app = self.permissions.get_or_create(dict(name="view:app", applicationId=client_id))
-        role = self.roles.get_or_create(dict(name="app-viewer", applicationId=client_id))
+        view_app = self.permissions.create(dict(name="view:app", applicationId=client_id))
+        role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
-        group = self.groups.get_or_create(dict(name=app_name))
+        group = self.groups.create(dict(name=app_name))
         self.groups.add_role(group["_id"], role["_id"])
+
+        self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client
 
     def add_group_members_by_emails(self, group_name, emails, user_options={}):
@@ -188,6 +218,51 @@ class ExtendedAuth0(Auth0):
             return False
 
         return len(self.groups.get_group_roles(app_name)) > 0
+
+    def get_client_enabled_connections(self, app_name):
+        """
+        There is no Auth0 API to get the list of enabled connection for a client, so we have to get all social
+        connections, then check whether the client (client_id) is in the list of enabled_clients
+        """
+        client = self.clients.search_first_match(dict(name=app_name))
+        if not client:
+            return []
+        connections = self.connections.get_all()
+        enabled_connections = []
+        for connection in connections:
+            if client["client_id"] in connection["enabled_clients"]:
+                enabled_connections.append(connection["name"])
+        return enabled_connections
+
+    def update_client_auth_connections(self, app_name: str, new_conns: dict, existing_conns: list):
+        """
+        There is no Auth0 API to get the list of enabled connection for a client, so we have to get all social
+        connections, then check whether the client (client_id) is in the list of enabled_clients
+        """
+        client = self.clients.search_first_match(dict(name=app_name))
+        if not client:
+            return
+
+        connections = {"email": {}} if new_conns is None else new_conns
+        new_connections = self._create_custom_connection(app_name, connections)
+
+        # Get the list of  removed connections based on the existing connections
+        removed_connections = list(set(existing_conns) - set(new_connections))
+        real_new_connections = list(set(new_connections) - set(existing_conns))
+
+        # Remove the old connections
+        auth0_connections = [
+            self.connections.search_first_match(dict(name=connection)) for connection in removed_connections
+        ]
+        for connection in auth0_connections:
+            self.connections.disable_client(connection, client["client_id"])
+
+        # Enable the new connections
+        auth0_connections = [
+            self.connections.search_first_match(dict(name=connection)) for connection in real_new_connections
+        ]
+        for connection in auth0_connections:
+            self.connections.enable_client(connection, client["client_id"])
 
 
 class Auth0API(object):
@@ -319,6 +394,7 @@ class ExtendedClients(ExtendedAPIMethods, Clients):
     endpoint = 'clients'
 
 
+
 class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
     endpoint = 'device-credentials'
 
@@ -326,10 +402,63 @@ class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
 class ExtendedConnections(ExtendedAPIMethods, Connections):
     endpoint = 'connections'
 
+    @staticmethod
+    def custom_connections():
+        return (settings.CUSTOM_AUTH_CONNECTIONS or "").split()
+
     def disable_client(self, connection, client_id):
         if client_id in connection["enabled_clients"]:
             connection["enabled_clients"].remove(client_id)
             self.update(connection["id"], body={"enabled_clients": connection["enabled_clients"]})
+
+    def enable_client(self, connection, client_id):
+        if client_id not in connection["enabled_clients"]:
+            connection["enabled_clients"].append(client_id)
+            self.update(connection["id"], body={"enabled_clients": connection["enabled_clients"]})
+
+    def _get_template_path_for_custom_connection(self, connection_name: str):
+        return Path(__file__).parents[0] / Path("auth0_conns") / Path(connection_name)
+
+    def get_all_connection_names(self):
+        connections = super(ExtendedConnections, self).get_all()
+        connection_names = [connection["name"] for connection in connections]
+        connection_names.extend(ExtendedConnections.custom_connections())
+        return connection_names
+
+    def _get_default_settings_for_custom_connection(self, connection_name, input_values):
+        input_values["gateway_url"] = ""
+        if hasattr(settings, "{}_gateway_url".format(connection_name).upper()):
+            input_values["gateway_url"] = getattr(settings, "{}_gateway_url".format(connection_name).upper())
+
+    def create_custom_connection(self, connection_name: str, input_values: dict()):
+        """ This method is only used to create custom connections which has configuration file within this repo"""
+        jinja_env = Environment()
+        jinja_env.filters["base64enc"] = lambda x: base64.urlsafe_b64encode(
+            x.encode("utf8")
+        ).decode()
+
+        # render the scripts
+        template_path = self._get_template_path_for_custom_connection(connection_name)
+        scripts = template_path.glob("*.js")
+        script_templates = {
+            x.stem: jinja_env.from_string(x.open(encoding="utf8").read())
+            for x in scripts
+        }
+        scripts_rendered = {}
+        self._get_default_settings_for_custom_connection(connection_name, input_values)
+        for name, script_template in script_templates.items():
+            scripts_rendered[name] = script_template.render(**input_values)
+
+        # render the main connection template
+        with (template_path / Path("config.yaml")).open("r") as config_yaml_file:
+            yaml_rendered = jinja_env.from_string(config_yaml_file.read()).render(
+                **input_values
+            )
+            body = yaml.safe_load(yaml_rendered) or defaultdict(dict)
+            body["options"]["scripts"] = scripts_rendered
+
+        self.create(body)
+        return input_values["name"]
 
 
 class ExtendedUsers(ExtendedAPIMethods, Users):

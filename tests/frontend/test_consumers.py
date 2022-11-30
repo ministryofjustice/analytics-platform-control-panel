@@ -70,6 +70,7 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
                 "user_id": user.auth0_id,
                 "tool_name": tool.chart_name,
                 "id_token": id_token,
+                "tool_id": tool.id
             }
         )
 
@@ -101,7 +102,8 @@ def test_tool_deploy_with_old_chart_name(users, tools, update_tool_status, wait_
                 "user_id": user.auth0_id,
                 "tool_name": tool.chart_name,
                 "id_token": id_token,
-                "old_chart_name": old_chart_name
+                "old_chart_name": old_chart_name,
+                "tool_id": tool.id
             }
         )
 
@@ -132,6 +134,7 @@ def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
                 "user_id": user.auth0_id,
                 "tool_name": tool.chart_name,
                 "id_token": id_token,
+                "tool_id": tool.id
             }
         )
 
@@ -154,6 +157,7 @@ def test_get_tool_and_user(users, tools):
         "user_id": expected_user.auth0_id,
         "tool_name": expected_tool.chart_name,
         "id_token": "not used by this method",
+        "tool_id": expected_tool.id
     }
 
     consumer = consumers.BackgroundTaskConsumer("test")
@@ -216,5 +220,4 @@ def test_update_tool_status():
         consumers.update_tool_status(
             tool_deployment, id_token, status,
         )
-        # tool_deployment.get_installed_app_version.assert_called_with(id_token)
         send_sse.assert_called_with(user.auth0_id, expected_sse_event)

@@ -95,6 +95,16 @@ class Tool(TimeStampedModel):
         super().save(*args, **kwargs)
         return self
 
+    @property
+    def image_tag(self):
+        chart_image_key_name = self.chart_name.split("-")[0]
+        values = self.values or {}
+        return values.get("{}.tag".format(chart_image_key_name)) or \
+               values.get("{}.image.tag".format(chart_image_key_name))
+
+    def tool_release_tag(self, image_tag=None):
+        return "{}-{}-{}".format(self.chart_name, self.version, image_tag or self.image_tag)
+
 
 class ToolDeploymentManager:
     """

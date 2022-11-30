@@ -49,6 +49,10 @@ class App(TimeStampedModel):
         )
 
     @property
+    def auth0_connections(self):
+        return  auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
+
+    @property
     def app_aws_secret_name(self):
         return f"{settings.ENV}/apps/{self.slug}/auth"
 
@@ -62,10 +66,11 @@ class App(TimeStampedModel):
         return self.app_aws_secret_name
 
     def construct_secret_data(self, client):
+        """ The assumption is per app per callback url"""
         return {
             "client_id": client["client_id"],
             "client_secret": client["client_secret"],
-            "callbacks": client["callbacks"],
+            "callbacks": client["callbacks"][0] if len(client["callbacks"])>=1 else ""
         }
 
     def add_customers(self, emails):

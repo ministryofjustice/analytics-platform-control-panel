@@ -3,6 +3,7 @@ import ipaddress
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from controlpanel.api import cluster
 
 
 def validate_env_prefix(value):
@@ -17,6 +18,20 @@ validate_s3_bucket_length = RegexValidator(
     message="must be between 3 and 63 characters",
 )
 
+
+class ValidatorS3Bucket(object):
+    def __init__(self, bucket_owner):
+        self.bucket_owner = bucket_owner
+
+    def __call__(self, value):
+        if cluster.S3Bucket(None).exists(value, bucket_owner=self.bucket_owner):
+            raise ValidationError(
+                f"'{value}' already exists",
+            )
+        else:
+            return value
+
+
 # See: AWS' Bucket Restrictions and Limitations
 # http://docs.aws.amazon.com/en_gb/AmazonS3/latest/dev/BucketRestrictions.html
 #
@@ -29,6 +44,20 @@ validate_s3_bucket_length = RegexValidator(
 validate_s3_bucket_labels = RegexValidator(
     regex='^([a-z][a-z0-9-]*[a-z0-9])(.[a-z][a-z0-9-]*[a-z0-9])*$',
     message="is invalid, check AWS S3 bucket names restrictions (for example, ""can only contains letters, digits, dots and hyphens)",
+)
+
+
+validate_auth0_conn_name = RegexValidator(
+    regex='^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])$',
+    message="is invalid, check Auth0 connection name restrictions (for example, "
+            "can only start and end with alphanumeric alphanumeric, only contain alphanumeric and hyphens)",
+)
+
+
+validate_auth0_client_id = RegexValidator(
+    regex='^([_a-zA-Z0-9-]*)$',
+    message="is invalid, check Auth0 client_id restrictions (for example, "
+            "can only contain alphanumeric, underscores and hyphens)",
 )
 
 

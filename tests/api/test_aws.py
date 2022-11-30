@@ -514,6 +514,39 @@ def test_revoke_bucket_access(iam, resources):
     assert "list" not in statements
 
 
+def test_revoke_sub_string_bucket_access(iam):
+    bucket_arn = "arn:aws:s3:::test-bucket"
+    bucket_another_arn = "arn:aws:s3:::test-bucket-another"
+
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob",
+    }
+
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES,
+    )
+
+    aws.AWSRole().grant_bucket_access(
+        user["iam_role_name"], bucket_arn, "readonly"
+    )
+    aws.AWSRole().grant_bucket_access(
+        user["iam_role_name"], bucket_another_arn, "readonly"
+    )
+
+    aws.AWSRole().revoke_bucket_access(user["iam_role_name"], bucket_arn)
+
+    policy = iam.RolePolicy(user["iam_role_name"], "s3-access")
+    statements = get_statements_by_sid(policy.policy_document)
+    assert bucket_arn not in statements["readonly"]["Resource"]
+    assert bucket_arn not in statements["list"]["Resource"]
+    assert set([f"{bucket_another_arn}/*"]) == set(statements["readonly"]["Resource"])
+    assert set([f"{bucket_another_arn}"]) == set(statements["list"]["Resource"])
+
+
 def test_revoke_bucket_access_when_no_role(iam):
     role_name = "test_role_non_existent"
     bucket_arn = "arn:aws:s3:::test-bucket"

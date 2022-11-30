@@ -28,6 +28,7 @@ from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
     GrantAppAccessForm,
+    UpdateAppAuth0ConnectionsForm
 )
 from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -141,7 +142,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
-        kwargs.update(request=self.request)
+        kwargs.update(request=self.request,
+                      all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
+                      custom_connections=auth0.ExtendedConnections.custom_connections())
         return kwargs
 
     def get_success_url(self):
@@ -189,7 +192,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         )
 
         client = auth0.ExtendedAuth0().setup_auth0_client(
-            self.object.slug, connections=form.cleaned_data.get("connections")
+            self.object.slug, connections=form.cleaned_data.get("auth0_connections")
         )
 
         secret_data: dict = {
@@ -203,8 +206,49 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
+        try:
+            self._register_app(form, name, repo_url)
+        except Exception as ex:
+            form.add_error("repo_url", str(ex))
+            return FormMixin.form_invalid(self, form)
+        return FormMixin.form_valid(self, form)
 
-        self._register_app(form, name, repo_url)
+
+class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+
+    form_class = UpdateAppAuth0ConnectionsForm
+    model = App
+    permission_required = 'api.create_app'
+    template_name = "webapp-auth0-connections-update.html"
+    success_url = "manage-app"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
+
+    def get_form_kwargs(self):
+        kwargs = FormMixin.get_form_kwargs(self)
+        app = self.get_object()
+        kwargs.update(request=self.request,
+                      all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
+                      custom_connections=auth0.ExtendedConnections.custom_connections(),
+                      auth0_connections=app.auth0_connections)
+        return kwargs
+
+    def get_success_url(self):
+        messages.success(self.request,  f"Successfully updated {self.object.name} webapp's auth0 connections")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
+
+    def form_valid(self, form):
+        try:
+            auth0.ExtendedAuth0().update_client_auth_connections(
+                self.object.slug,
+                new_conns=form.cleaned_data.get("auth0_connections"),
+                existing_conns=form.auth0_connections
+            )
+        except Exception as ex:
+            form.add_error("connections", str(ex))
+            return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
 

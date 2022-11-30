@@ -32,11 +32,12 @@ class HelmChart:
     Instances represent a Helm chart.
     """
 
-    def __init__(self, name, description, version, app_version):
+    def __init__(self, name, description, version, app_version, chart_url):
         self.name = name
         self.description = description  # Human readable description.
         self.version = version  # Helm chart version.
         self.app_version = app_version  # App version used in the chart.
+        self.chart_url = chart_url
 
 
 def _execute(*args, **kwargs):
@@ -128,6 +129,47 @@ def update_helm_repository(force=False):
             _execute("repo", "update", timeout=None)  # timeout = infinity.
 
 
+def get_default_image_tag_from_helm_chart(chart_url, chart_name):
+    proc = _execute("show", "values", chart_url)
+    if proc:
+        output = proc.stdout.read()
+        values = yaml.safe_load(output) or {}
+        tool_name = chart_name.split("-")[0]
+        return values.get(tool_name, {}).get("tag") or \
+               values.get(tool_name, {}).get("image", {}).get("tag")
+    else:
+        return None
+
+
+def get_helm_entries():
+    # Update and grab repository metadata.
+    repository = update_helm_repository()
+    if not repository:
+        # Metadata not available, so bail with empty dictionary.
+        return {}
+    return repository.get("entries")
+
+
+def get_chart_version_info(entries, chart_name, chart_version):
+    versions = entries.get(chart_name)
+    chart = None
+    # There are versions for the referenced chart. Add them to the
+    # result as HelmChart instances.
+    for version in versions or []:
+        if version["version"] == chart_version:
+            chart = HelmChart(
+                version["name"],
+                version["description"],
+                version["version"],
+                # appVersion is relatively new so some old charts don't
+                # have it.
+                version.get("appVersion"),
+                version["urls"][0],
+            )
+            break
+    return chart
+
+
 def upgrade_release(release, chart, *args):
     """
     Upgrade to a new release version (for an app - e.g. RStudio).
@@ -216,6 +258,7 @@ def get_chart_info(chart_name):
                     # appVersion is relatively new so some old charts don't
                     # have it.
                     version.get("appVersion"),
+                    version["urls"][0],
                 )
                 chart_info[chart.version] = chart
     return chart_info

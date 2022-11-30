@@ -3,6 +3,7 @@ import os
 import secrets
 from copy import deepcopy
 from typing import List
+from enum import Enum
 
 # Third-party
 import structlog
@@ -58,6 +59,11 @@ BASE_ASSUME_ROLE_POLICY = {
         },
     ],
 }
+
+
+class AWSRoleCategory(str, Enum):
+    app = 'APP'
+    user = 'USER'
 
 
 class HomeDirectoryResetError(Exception):
@@ -478,11 +484,11 @@ class S3Bucket(EntityResource):
 
     def _get_assume_role_category(self):
         if self.bucket.is_used_for_app:
-            return "APP"
+            return AWSRoleCategory.app
         else:
-            return "USER"
+            return AWSRoleCategory.user
 
-    def create(self, owner="User"):
+    def create(self, owner=AWSRoleCategory.user):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             AWSBucket, aws_role_category=owner
         )
@@ -496,6 +502,12 @@ class S3Bucket(EntityResource):
         )
         self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
 
+    def exists(self, bucket_name, bucket_owner):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket, aws_role_category=bucket_owner
+        )
+        return self.aws_bucket_service.exists(bucket_name)
+
 
 class RoleGroup(EntityResource):
     """
@@ -506,7 +518,7 @@ class RoleGroup(EntityResource):
     See https://stackoverflow.com/a/48087433/455642
     """
 
-    ENTITY_ASSUME_ROLE_CATEGORY = "USER"
+    ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.user
 
     def __init__(self, iam_managed_policy):
         super(RoleGroup, self).__init__()
@@ -549,7 +561,7 @@ class RoleGroup(EntityResource):
 
 class AppParameter(EntityResource):
 
-    ENTITY_ASSUME_ROLE_CATEGORY = "APP"
+    ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
 
     def __init__(self, parameter):
         super(AppParameter, self).__init__()
@@ -686,11 +698,26 @@ class ToolDeployment:
         )
 
     @classmethod
+    def is_tool_deployment(cls, metadata):
+        """
+        Currently the logic for checking whether a deployment is for tool is based on the information we put in the
+        deployment yaml,  the common info cross tools' helm chart is the unidler-key or unide
+        (somehow typo in the helm chart :(), we have other alternative field for such check, e.g. whether name contains
+        some key words, but IMO, it is too specific.
+
+        We may change this part if we want to refactor how the tool is released and managed.
+        """
+        return metadata.labels.get('unidler-key') is not None or metadata.labels.get('unidle-key')
+
+    @classmethod
     def get_deployments(cls, user, id_token, search_name=None, search_version=None):
         deployments = []
         k8s = KubernetesClient(id_token=id_token)
         results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
         for deployment in results.items:
+            if not cls.is_tool_deployment(deployment.metadata):
+                continue
+
             app_name = deployment.metadata.labels["app"]
             _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
             if search_name and search_name not in app_name:

@@ -1,0 +1,101 @@
+{% from "input/macro.html" import govukInput %}
+{% from "label/macro.html" import govukLabel %}
+{% from "fieldset/macro.html" import govukFieldset %}
+
+
+{% macro auth0_connections_form(params) -%}
+
+{% set innerHtml %}
+  {% set main_field_error_message = params.errors.get("connections") %}
+  {% if main_field_error_message %}
+    {% set errorId = 'connections-error' %}
+    {{ govukErrorMessage({
+      "id": errorId,
+      "html": main_field_error_message|join(". "),
+    }) }}
+  {% endif %}
+
+  <div class="govuk-checkboxes">
+    {% for item in params.field.choices %}
+    {% set id = "connections-" + loop.index|string %}
+    {% set name = "connections" %}
+    {% set itemHintId = id + '-item-hint' %}
+    <div class="govuk-checkboxes__item">
+      <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ item[1] }}"
+      {{-" checked" if item[0] in params.selected_values else "" }}>
+      {{ govukLabel({
+        "text": item[0],
+        "classes": 'govuk-checkboxes__label' + (' ' + (item.label|default({})).classes|default("")),
+        "attributes": (item.label|default({})).attributes|default(""),
+        "for": id
+      }) }}
+      {% set client_id_field_name = item[1] + '_auth0_client_id' %}
+      {% set client_secret_field_name = item[1] + '_auth0_client_secret' %}
+      {% set conn_name_field_name = item[1] + '_auth0_conn_name' %}
+      {% set has_linked_client_fields = (form.fields.get(client_id_field_name, None)) %}
+
+      {% if has_linked_client_fields %}
+          {% set client_id_field = form.fields.get(client_id_field_name) %}
+          {% set client_secret_field = form.fields.get(client_secret_field_name) %}
+          {% set conn_name_field = form.fields.get(conn_name_field_name) %}
+          (Please provide the client credential from the provider)
+          <div class="cpanel-subform" data-show-if-selected="{{ item[0] }}">
+            <br/>
+          {{ govukInput({
+            "name": conn_name_field_name,
+            "classes": "govuk-!-width-one-half",
+            "label": {
+              "text": "connection name",
+              "classes": "govuk-label--s",
+            },
+            "errorMessage": {"text": params.errors[conn_name_field_name]|join(". ")} if params.errors.get(conn_name_field_name) else {},
+            "value": form.auth0_nomis_auth0_conn_name.value()
+          }) }}
+
+          {{ govukInput({
+            "name": client_id_field_name,
+            "classes": "govuk-!-width-one-half",
+            "label": {
+              "text": "client id",
+              "classes": "govuk-label--s",
+            },
+            "errorMessage": {"text": params.errors[client_id_field_name]|join(". ")} if params.errors.get(client_id_field_name) else {},
+            "value": form.auth0_nomis_auth0_client_id.value()
+          }) }}
+
+          {{
+            govukInput({
+              "type":"password",
+              "label": {
+                "text": "Client secret",
+                "classes": "govuk-label--s",
+              },
+              "classes": "govuk-!-width-two-thirds",
+              "name": client_secret_field_name,
+              "value": "",
+              "errorMessage": {"text": params.errors[client_secret_field_name]|join(". ")} if params.errors.get(client_secret_field_name) else {},
+            })
+          }}
+          </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+{% endset -%}
+
+<div class="govuk-form-group {%- if params.errorMessage %} govuk-form-group--error{% endif %} {%- if params.formGroup and params.formGroup.classes %} {{ params.formGroup.classes }}{% endif %}">
+{% if params.fieldset %}
+  {% call govukFieldset({
+    "describedBy": describedBy,
+    "classes": params.fieldset.classes,
+    "attributes": params.fieldset.attributes,
+    "legend": params.fieldset.legend
+  }) %}
+  {{ innerHtml }}
+  {% endcall %}
+{% else %}
+  {{ innerHtml }}
+{% endif %}
+</div>
+
+{%- endmacro %}

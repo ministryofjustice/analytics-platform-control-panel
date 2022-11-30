@@ -86,6 +86,10 @@ def detail(client, app, *args):
     return client.get(reverse('manage-app', kwargs={'pk': app.id}))
 
 
+def update_auth0_connections(client, app, *args):
+    return client.get(reverse('update-auth0-connections', kwargs={'pk': app.id}))
+
+
 def create(client, *args):
     data = {
         'repo_url': 'https://github.com/moj-analytical-services/test_app',
@@ -150,6 +154,10 @@ def connect_bucket(client, app, _, s3buckets, *args):
         (detail, 'superuser', status.HTTP_200_OK),
         (detail, 'app_admin', status.HTTP_200_OK),
         (detail, 'normal_user', status.HTTP_403_FORBIDDEN),
+
+        (update_auth0_connections, 'superuser', status.HTTP_200_OK),
+        (update_auth0_connections, 'app_admin', status.HTTP_403_FORBIDDEN),
+        (update_auth0_connections, 'normal_user', status.HTTP_403_FORBIDDEN),
 
         (create, 'superuser', status.HTTP_200_OK),
         (create, 'app_admin', status.HTTP_403_FORBIDDEN),
@@ -292,4 +300,3 @@ def test_delete_customers(client, app, fixture_delete_group_members, users, side
     data = {'customer': ['email|1234']}
     response = client.post(reverse('remove-app-customer', kwargs={'pk': app.id}), data)
     assert expected_response(client, response)
-
