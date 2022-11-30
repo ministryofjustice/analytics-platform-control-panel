@@ -17,14 +17,14 @@ repos:
     hooks:
       - id: black
         name: black formatting
-        entry: bash -c 'black $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
+        entry: bash -c 'black --check $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/isort
     rev: 5.10.1
     hooks:
       - id: isort
         name: isort (python)
-        entry: bash -c 'isort $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
+        entry: bash -c 'isort --check-only $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/flake8
     rev: 5.0.4
