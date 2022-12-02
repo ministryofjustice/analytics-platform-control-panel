@@ -69,8 +69,7 @@ Create a new release of a tool in the analytical platform.
       },
       "name": "description",
       "attributes": {
-        "pattern": "[a-z0-9.-]{1,60}",
-        "maxlength": "60",
+        "maxlength": "100",
       },
       "value": form.description.value(),
       "errorMessage": { "html": form.description.errors|join(". ") } if form.description.errors else {}

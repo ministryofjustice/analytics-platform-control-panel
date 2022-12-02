@@ -23,32 +23,25 @@ def test_chart_app_version():
     assert chart.app_version == app_version
 
 
-def test_helm_repository_chart_info_when_chart_not_found(
-    helm_repository_index,
-):
-    with patch("builtins.open", helm_repository_index):
-        info = helm.get_chart_info("notfound")
-        assert info == {}
-
-
-def test_helm_repository_chart_info_when_chart_found(helm_repository_index):
+def test_helm_repository(helm_repository_index):
     with patch("builtins.open", helm_repository_index):
         # See tests/api/fixtures/helm_mojanalytics_index.py
-        rstudio_info = helm.get_chart_info("rstudio")
+        entries = helm.get_helm_entries()
+        rstudio_info = entries.get('rstudio')
 
         rstudio_2_2_5_app_version = (
             "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
         )
 
         assert len(rstudio_info) == 2
-        assert "2.2.5" in rstudio_info
-        assert "1.0.0" in rstudio_info
+        assert "2.2.5" in rstudio_info[0]["version"]
+        assert "1.0.0" in rstudio_info[1]["version"]
 
-        assert rstudio_info["2.2.5"].app_version == rstudio_2_2_5_app_version
+        assert rstudio_info[0].get("appVersion") == rstudio_2_2_5_app_version
         # Helm added `appVersion` field in metadata only
         # "recently" so for testing that for old chart
         # version this returns `None`
-        assert rstudio_info["1.0.0"].app_version == None
+        assert rstudio_info[1].get("appVersion") == None
 
 
 @pytest.mark.parametrize(

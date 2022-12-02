@@ -211,6 +211,7 @@ def test_update_tool_status():
             {
                 "toolName": tool.chart_name,
                 "version": tool.version,
+                "tool_id": tool.id,
                 "status": status,
             }
         ),

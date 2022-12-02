@@ -20,6 +20,6 @@ def test_post_not_supported_action(client):
 
 
 def test_post(client):
-    data = {'version': "rstudio__v1.0.0"}
+    data = {'version': "rstudio__v1.0.0__1"}
     response = client.post(reverse('tool-deployments', ('rstudio', 'deploy')), data)
     assert response.status_code == status.HTTP_200_OK

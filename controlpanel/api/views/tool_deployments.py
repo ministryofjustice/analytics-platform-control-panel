@@ -30,7 +30,7 @@ class ToolDeploymentAPIView(GenericAPIView):
         # attribute and then split on "__" to extract them. Why? Because we
         # need both pieces of information to kick off the background helm
         # deploy.
-        tool_name, tool_version = chart_info.split("__")
+        tool_name, tool_version, tool_id = chart_info.split("__")
 
         # Kick off the helm chart as a background task.
         start_background_task(
@@ -38,6 +38,7 @@ class ToolDeploymentAPIView(GenericAPIView):
             {
                 "tool_name": chart_name,
                 "version": tool_version,
+                "tool_id": tool_id,
                 "user_id": self.request.user.id,
                 "id_token": self.request.user.get_id_token(),
                 "old_chart_name": old_chart_name,

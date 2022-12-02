@@ -142,8 +142,20 @@ def get_default_image_tag_from_helm_chart(chart_url, chart_name):
 
 
 def get_helm_entries():
-    # Update and grab repository metadata.
-    repository = update_helm_repository()
+    # Update repository metadata.
+    update_helm_repository()
+    # Grab repository metadata.
+    repo_path = get_repo_path()
+    try:
+        with open(repo_path) as f:
+            repository = yaml.load(f, Loader=yaml.FullLoader)
+    except Exception as ex:
+        error = HelmError(ex)
+        error.detail = (
+            f"Error while opening/parsing helm repository cache: '{repo_path}'"
+        )
+        raise HelmError(error)
+
     if not repository:
         # Metadata not available, so bail with empty dictionary.
         return {}
@@ -216,54 +228,6 @@ def delete(namespace, *args, dry_run=False):
         log.info(stdout)
 
 
-def get_chart_info(chart_name):
-    """
-    Get information about the given chart.
-
-    Returns a dictionary with the chart versions as keys and instances of the
-    HelmChart class as associated values.
-
-    Returns an empty dictionary when the chart is not in the helm repository
-    index.
-    """
-    chart_info = {}  # The end result.
-    # Update
-    update_helm_repository()
-    # Grab repository metadata.
-    repo_path = get_repo_path()
-    try:
-        with open(repo_path) as f:
-            repository = yaml.load(f, Loader=yaml.FullLoader)
-    except Exception as ex:
-        error = HelmError(ex)
-        error.detail = (
-            f"Error while opening/parsing helm repository cache: '{repo_path}'"
-        )
-        raise HelmError(error)
-
-    if not repository:
-        # Metadata not available, so bail with empty dictionary.
-        return chart_info
-    entries = repository.get("entries")
-    if entries:
-        versions = entries.get(chart_name)
-        if versions:
-            # There are versions for the referenced chart. Add them to the
-            # result as HelmChart instances.
-            for version in versions:
-                chart = HelmChart(
-                    version["name"],
-                    version["description"],
-                    version["version"],
-                    # appVersion is relatively new so some old charts don't
-                    # have it.
-                    version.get("appVersion"),
-                    version["urls"][0],
-                )
-                chart_info[chart.version] = chart
-    return chart_info
-
-
 def get_chart_app_version(chart_name, chart_version):
     """
     Returns the "appVersion" metadata for the helm chart with the referenced
@@ -273,8 +237,8 @@ def get_chart_app_version(chart_name, chart_version):
     "appVersion" metadata.
     """
 
-    chart = get_chart_info(chart_name)
-    chart_at_version = chart.get(chart_version)
+    entries = get_helm_entries()
+    chart_at_version = get_chart_version_info(entries, chart_name, chart_version)
     if chart_at_version:
         return chart_at_version.app_version
     else:

@@ -39,7 +39,7 @@ moj.Modules.toolStatus = {
     const toolstatus = this;
     return event => {
       const data = JSON.parse(event.data);
-      if (data.toolName != listener.dataset.toolName) {
+      if (data.toolName.startsWith(listener.dataset.toolName) === false ) {
         return;
       }
       listener.querySelector(toolstatus.statusLabelClass).innerText = data.status;
@@ -89,14 +89,14 @@ moj.Modules.toolStatus = {
       }
 
       // 3. add "(installed)" suffix and class to new version
-      let newValue = newVersionData.toolName + "__" + newVersionData.version;
+      let newValue = newVersionData.toolName + "__" + newVersionData.version + "__" + newVersionData.tool_id;
       let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newValue + "']");
       if (newVersionOption) {
         newVersionOption.innerText = newVersionOption.innerText + this.installedSuffix;
         newVersionOption.classList.add(this.versionInstalledClass)
 
         // set the new version as the current chosen item
-        const dropDownToolId = "tools-" + newVersionData.toolName;
+        const dropDownToolId = "tools-" + listener.dataset.toolName;
         document.getElementById(dropDownToolId).selectedIndex = newVersionOption.index;
       }
     }

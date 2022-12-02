@@ -38,9 +38,9 @@
             id="tools-{{ chart_name }}" name="version">
             {% set installed_chart_version = None %}
             {% set installed_release_version = None %}
-            {% if deployment %}
-              {% set installed_chart_version = deployment.app_version %}
-              {% set installed_release_version = deployment.tool_release_tag %}
+            {% if deployment and deployment.tool_id > -1 %}
+              {% set installed_chart_version = deployment.description %}
+              {% set installed_release_version = deployment.tool_id %}
               <option class="installed" value="{{ deployment.chart_name }}__{{ installed_chart_version }}__{{ deployment.tool_id }}">
               [{{ deployment.chart_name }} {{ deployment.image_tag }}]  {{ installed_chart_version or "Unknown" }} (installed)
               </option>
@@ -100,12 +100,22 @@
     {{ csrf_input }}
     <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
       data-action-name="restart"
-      {% if not deployment %} disabled {% endif %}>
+      {% if not deployment or deployment.tool_id == -1 %} disabled {% endif %}>
       Restart
     </button>
   </form>
   </div>
 </div>
+
+{% if deployment and deployment.tool_id == -1 %}
+<div>
+  <p class="govuk-body">
+    Looks like your current deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
+    was not recognised within current maintained tool release versions, No worry you can still open it and have a look,
+    then feel free to switch one of versions from above dropdown list.
+  </p>
+</div>
+{% endif %}
 <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
 {% endfor %}
 

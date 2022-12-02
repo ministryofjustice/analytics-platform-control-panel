@@ -50,30 +50,6 @@ def cluster():
         yield cluster
 
 
-@pytest.mark.parametrize(
-    "chart_version, expected_app_version",
-    [
-        (None, None),
-        ("1.0.0", None),
-        ("2.2.5", "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"),
-    ],
-    ids=["no-chart-installed", "old-chart-version", "new-chart-version",],
-)
-def test_tool_deployment_get_installed_app_version(
-    helm_repository_index, cluster, chart_version, expected_app_version
-):
-    tool = Tool(chart_name="rstudio")
-    user = User(username="test-user")
-    td = ToolDeployment(tool, user)
-    id_token = "dummy"
-
-    cluster_td = cluster.ToolDeployment.return_value
-    cluster_td.get_installed_chart_version.return_value = chart_version
-
-    assert td.get_installed_app_version(id_token) == expected_app_version
-    cluster.ToolDeployment.assert_called_with(user, tool)
-    cluster_td.get_installed_chart_version.assert_called_with(id_token)
-
 @pytest.mark.django_db
 @pytest.mark.parametrize(
     "chart_version, expected_description",

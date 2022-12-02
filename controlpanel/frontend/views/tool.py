@@ -76,10 +76,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             }
         image_tag = tool.image_tag
         if not image_tag:
-            image_tag = charts_info.get(tool.version, {}).get('image_tag') or 'unknown'
-        tool_release_tag = tool.tool_release_tag(image_tag=image_tag)
-        if tool_release_tag not in tools_info[tool_box]["releases"]:
-            tools_info[tool_box]["releases"][tool_release_tag] = {
+            image_tag = charts_info.get(tool.version, {}) or 'unknown'
+        if tool.id not in tools_info[tool_box]["releases"]:
+            tools_info[tool_box]["releases"][tool.id] = {
                 "tool_id": tool.id,
                 "chart_name": tool.chart_name,
                 "description": tool.description,
@@ -104,15 +103,14 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             tool = self._find_related_tool_record(chart_name, chart_version, image_tag)
             if not tool:
                 log.warn("this chart({}-{}) has not available from DB. ".format(chart_name, chart_version))
-                continue
-            self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
+            else:
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
             tools_info[tool_box]["deployment"] = {
-                "tool_id": tool.id,
+                "tool_id": tool.id if tool else -1,
                 "chart_name": chart_name,
                 "chart_version": chart_version,
                 "image_tag": image_tag,
                 "description": tool.description if tool else 'Not available',
-                "tool_release_tag": tool.tool_release_tag(image_tag=image_tag),
                 "status": ToolDeployment(tool, user).get_status(id_token, deployment=deployment)
             }
 
@@ -127,22 +125,25 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         return tools_info
 
     def _get_charts_info(self, tool_list):
-        # Each version now needs to display the chart_name and the
-        # "app_version" metadata from helm. TODO: Stop using helm.
+        # We may need the default image_tag from helm chart
+        # unless we configure it specifically in parameters of tool release
         charts_info = {}
-        chart_entries = get_helm_entries()
+        chart_entries = None
         for tool in tool_list:
             if tool.version in charts_info:
                 continue
 
-            chart_app_version = get_chart_version_info(chart_entries, tool.chart_name, tool.version)
             image_tag = tool.image_tag
-            if chart_app_version and not image_tag:
+            if image_tag:
+                continue
+
+            if chart_entries is None:
+                # load the potential massive helm chart yaml only it is necessary
+                chart_entries = get_helm_entries()
+            chart_app_version = get_chart_version_info(chart_entries, tool.chart_name, tool.version)
+            if chart_app_version:
                 image_tag = get_default_image_tag_from_helm_chart(chart_app_version.chart_url, tool.chart_name)
-            charts_info[tool.version] ={
-                "app_version": chart_app_version.app_version if chart_app_version else 'Unknown',
-                "image_tag": image_tag
-            }
+            charts_info[tool.version] = image_tag
         return charts_info
 
     def get_context_data(self, *args, **kwargs):
@@ -169,10 +170,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                        "chart_version": <chart_version>,
                        "tool_id": <id of the tool in table>,
                        "status": <current status of the deployed tool,
-                       "tool_release_tag": < from tool.tool_release_tag property>
                    },
                    "releases": {
-                       "rstudio-2.2.5-<rstudio image tag>": {
+                       "<tool_id>": {
                            "chart_name": "rstudio",
                            "description": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
                            "image_tag": "4.0.5",

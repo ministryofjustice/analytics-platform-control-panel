@@ -197,6 +197,7 @@ def update_tool_status(tool_deployment, id_token, status):
     payload = {
         "toolName": tool.chart_name,
         "version": tool.version,
+        "tool_id": tool.id,
         "status": status,
     }
     send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})

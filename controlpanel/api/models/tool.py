@@ -102,9 +102,6 @@ class Tool(TimeStampedModel):
         return values.get("{}.tag".format(chart_image_key_name)) or \
                values.get("{}.image.tag".format(chart_image_key_name))
 
-    def tool_release_tag(self, image_tag=None):
-        return "{}-{}-{}".format(self.chart_name, self.version, image_tag or self.image_tag)
-
 
 class ToolDeploymentManager:
     """
@@ -136,43 +133,6 @@ class ToolDeployment:
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
-
-    def get_installed_chart_version(self, id_token):
-        """
-        Returns the installed chart version for this tool
-
-        Returns None if the chart is not installed for the user
-        """
-        td = cluster.ToolDeployment(self.user, self.tool)
-        return td.get_installed_chart_version(id_token)
-
-    def get_installed_app_version(self, id_token, chart_version=None):
-        """
-        Returns the version of the deployed tool
-
-        NOTE: This is the version coming from the helm
-        chart `appVersion` field, **not** the version
-        of the chart released in the user namespace.
-
-        e.g. if user has `rstudio-2.2.5` (chart version)
-        installed in his namespace, this would return
-        "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
-        **not** "2.2.5".
-
-        Also bear in mind that Helm added this `appVersion`
-        field only "recently" so if a user has an old
-        version of a tool chart installed this would return
-        `None` as we can't determine the tool version
-        as this information is simply not available
-        in the helm repository index.
-        """
-        if not chart_version:
-            chart_version = self.get_installed_chart_version(id_token)
-        if chart_version:
-            return helm.get_chart_app_version(
-                self.tool.chart_name, chart_version
-            )
-        return None
 
     def delete(self, id_token):
         """
