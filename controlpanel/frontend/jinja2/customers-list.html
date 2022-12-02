@@ -37,10 +37,10 @@
       </thead>
       <tbody class="govuk-table__body" id="list-customers-paginated">
         {% for customer in customers %}
-          {{ display_customer({
-            "customer": customer,
-            "has_remove_perm": remove_perm
-          }) }}
+          {{ display_customer(
+              customer = customer,
+              has_remove_perm= remove_perm
+            ) }}
         {% endfor %}
       </tbody>
       <tfoot class="govuk-table__foot">
@@ -61,11 +61,11 @@
         "next_kw": {"pk": app.id, "page_no": page_no+1},
         "last_kw": {"pk": app.id, "page_no": paginator.page_range[-1]}
       },
-      paginator= paginator,
+      paginator = paginator,
       elided = elided,
       show_dots = False,
-      page_no= page_no,
-      group_id= group_id
+      page_no = page_no,
+      group_id = group_id
     )
   }}
 

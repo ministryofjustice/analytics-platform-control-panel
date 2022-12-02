@@ -1,7 +1,7 @@
-{% macro display_customer(params) %}
-
-{% set customer = params['customer'] %}
-{% set remove_perm = params['has_remove_perm'] %}
+{% macro display_customer(
+  customer = None,
+  has_remove_perm = False
+) %}
 
 <tr class="govuk-table__row result_rows" >
   <td class="govuk-table__cell checkbox-cell">
