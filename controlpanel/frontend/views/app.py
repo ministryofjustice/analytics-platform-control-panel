@@ -1,3 +1,6 @@
+# Standard library
+from typing import List
+
 # Third-party
 import sentry_sdk
 import structlog
@@ -410,19 +413,20 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
-        return reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]})
+        return reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
 
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = App
     permission_required = "api.add_app_customer"
-    template_name = "customers/display-list.html"
+    template_name = "customers-list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        app = context.get("app")
+        app: App = context.get("app")
 
-        context["group_id"] = group_id = self.kwargs.get("group_id")
+        group_id = self.request.GET.get("group_id") or app.get_group_id()
+        context["group_id"] = group_id
         context["page_no"] = page_no = self.kwargs.get("page_no")
         customers = app.customer_paginated(page_no, group_id=group_id)
 
@@ -435,7 +439,7 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         )
         return context
 
-    def _paginate_customers(self, request, auth_results, per_page=25):
+    def _paginate_customers(self, request, auth_results: List[dict], per_page=25):
         total_count = auth_results.get("total", 0)
         customer_result = auth_results.get("users", [])
         paginator = Auth0Paginator(

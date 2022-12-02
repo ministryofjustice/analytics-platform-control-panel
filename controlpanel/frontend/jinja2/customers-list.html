@@ -2,7 +2,7 @@
 
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "customers/macro.html" import display_customer %}
-{% from "menus/generic.html" import displayMenu %}
+{% from "menus/customers.html" import displayCustomerMenu %}
 
 {% set page_title = "App customers" %}
 {% set page_name = "customers" %}
@@ -52,19 +52,21 @@
     </table>
   </form>
 
-  {{ displayMenu({
-      "reverse": {
+  {{ displayCustomerMenu(
+      reverse = {
         "url": "appcustomers-page",
-        "kwargs": {"pk": app.id, "group_id": group_id },
-        "first_kw": {"pk": app.id, "group_id": group_id, "page_no": paginator.page_range[0]},
-        "previous_kw": {"pk": app.id, "group_id": group_id, "page_no": page_no-1},
-        "next_kw": {"pk": app.id, "group_id": group_id, "page_no": page_no+1},
-        "last_kw": {"pk": app.id, "group_id": group_id, "page_no": paginator.page_range[-1]}
+        "kwargs": {"pk": app.id },
+        "first_kw": {"pk": app.id, "page_no": paginator.page_range[0]},
+        "previous_kw": {"pk": app.id, "page_no": page_no-1},
+        "next_kw": {"pk": app.id, "page_no": page_no+1},
+        "last_kw": {"pk": app.id, "page_no": paginator.page_range[-1]}
       },
-      "paginator": paginator,
-      "elided": elided,
-      "page_no": page_no
-    })
+      paginator= paginator,
+      elided = elided,
+      show_dots = False,
+      page_no= page_no,
+      group_id= group_id
+    )
   }}
 
 

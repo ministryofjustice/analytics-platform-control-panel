@@ -1,12 +1,25 @@
 
 {% macro displayMenu(
-    params, 
-    buttons={
-      "next_btn": "Next",
-      "last_btn": "Last",
-      "first_btn": "First",
-      "prev_btn": "Previous"
-    }
+  reverse = dict(
+      url = None,
+      kwargs = {},
+      first_kw = {},
+      previous_kw = {},
+      next_kw = {},
+      last_kw = {},
+
+    ), 
+    buttons = dict(
+      next_btn = "Next",
+      last_btn = "Last",
+      first_btn = "First",
+      prev_btn = "Previous"
+    ),
+    group_id = None,
+    paginator = [],
+    elided = [],
+    show_dots = False,
+    page_no= 1
   )
 -%}
 
@@ -17,28 +30,29 @@
 
 <div style="display: flex; justify-content: center; align-items: center;">
   <div style="display: block;">
-    {% if params.paginator.page_range[0] != params.page_no %}
-      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.first_kw ) }}" >{{ first_btn }}</a>
-      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.previous_kw ) }}" >{{ prev_btn }}</a>
+    {% if paginator.page_range[0] != page_no %}
+
+      <a class="govuk-button" href="{{ url(reverse.url, kwargs=reverse.first_kw ) }}" >{{ first_btn }}</a>
+      <a class="govuk-button" href="{{ url(reverse.url, kwargs=reverse.previous_kw ) }}" >{{ prev_btn }}</a>
     {% endif %}
 
-    {% for page_number in params.elided %}
+    {% for page_number in elided %}
       {% if page_number == "…" %}
         <a class="govuk-button">…</a>
       {% else %}
-        {% set _ = params.reverse.kwargs.update(page_no=page_number) %}
+        {% set _ = reverse.kwargs.update(page_no=page_number) %}
         <a
-        href="{{ url(params.reverse.url, kwargs=params.reverse.kwargs ) }}"
-        class="govuk-button {% if page_number == params.page_no %}current govuk-button--secondary{% endif %}"
+        href="{{ url(reverse.url, kwargs=reverse.kwargs ) }}"
+        class="govuk-button {% if page_number == page_no %}current govuk-button--secondary{% endif %}"
         >
         {{ page_number }}
       </a>
       {% endif %}
     {% endfor %}
 
-    {% if params.paginator.page_range[-1] != params.page_no %}
-      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.next_kw ) }}" >{{ next_btn }}</a>
-      <a class="govuk-button" href="{{ url(params.reverse.url, kwargs=params.reverse.last_kw ) }}" >{{ last_btn }}</a>
+    {% if paginator.page_range[-1] != page_no %}
+      <a class="govuk-button" href="{{ url(reverse.url, kwargs=reverse.next_kw ) }}" >{{ next_btn }}</a>
+      <a class="govuk-button" href="{{ url(reverse.url, kwargs=reverse.last_kw ) }}" >{{ last_btn }}</a>
     {% endif %}
   </div>
 </div>

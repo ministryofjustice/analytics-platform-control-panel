@@ -16,6 +16,9 @@
         {{ modal_dialog(admin_access_html|safe) }}
       </th>
       <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Customers</span>
+      </th>
+      <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
     </tr>
@@ -32,6 +35,10 @@
       </td>
       <td class="govuk-table__cell">
         {{ yes_no(user.is_app_admin(app.id)) }}
+      </td>
+      <td class="govuk-table__cell">
+        <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1"}) }}" 
+          target="_blank" class="govuk-button govuk-button--secondary right" >View/Edit Customer List</a>
       </td>
       <td class="govuk-table__cell">
         <a class="govuk-button govuk-button--secondary right {%- if not request.user.has_perm('api.retrieve_app', app) %} govuk-visually-hidden{% endif %}"
