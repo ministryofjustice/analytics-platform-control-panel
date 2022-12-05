@@ -28,4 +28,9 @@ urlpatterns = [
         views.AppCustomersDetailAPIView.as_view(),
         name="appcustomers-detail",
     ),
+    path(
+        "tool-deployments/<str:tool_name>/<str:action>",
+        views.ToolDeploymentAPIView.as_view(),
+        name="tool-deployments",
+    ),
 ]

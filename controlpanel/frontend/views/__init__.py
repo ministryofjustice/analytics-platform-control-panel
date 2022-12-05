@@ -52,7 +52,6 @@ from controlpanel.frontend.views.parameter import (
 )
 from controlpanel.frontend.views.tool import (
     ToolList,
-    DeployTool,
     RestartTool,
 )
 from controlpanel.frontend.views.user import (

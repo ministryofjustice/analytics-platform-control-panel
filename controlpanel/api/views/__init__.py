@@ -17,3 +17,6 @@ from controlpanel.api.views.tools import (
 from controlpanel.api.views.health_check import (
     health_check,
 )
+from controlpanel.api.views.tool_deployments import (
+    ToolDeploymentAPIView
+)

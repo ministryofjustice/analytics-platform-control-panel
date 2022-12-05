@@ -4,13 +4,11 @@ import json
 import structlog
 from pathlib import Path
 from time import sleep
-import uuid
 
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.layers import get_channel_layer
-from django.conf import settings
-from django.urls import reverse
+
 
 from controlpanel.api.cluster import (
     TOOL_DEPLOYING,
@@ -199,6 +197,7 @@ def update_tool_status(tool_deployment, id_token, status):
     payload = {
         "toolName": tool.chart_name,
         "version": tool.version,
+        "tool_id": tool.id,
         "status": status,
     }
     send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})

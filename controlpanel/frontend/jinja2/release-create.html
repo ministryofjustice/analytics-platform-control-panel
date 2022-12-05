@@ -57,6 +57,22 @@
     }) }}
     {{ govukInput({
       "label": {
+        "text": "Description",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'The description for this version, if you leave it blank, the info from helm repo will be used instead'
+      },
+      "name": "description",
+      "attributes": {
+        "maxlength": "100",
+      },
+      "value": form.description.value(),
+      "errorMessage": { "html": form.description.errors|join(". ") } if form.description.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
         "text": "Version",
         "classes": "govuk-label--m",
       },

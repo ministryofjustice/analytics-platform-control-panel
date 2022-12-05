@@ -23,8 +23,8 @@ def users(db):
 @pytest.fixture
 def tools(db):
     print("Setting up tools...")
-    Tool(chart_name="a_tool", target_infrastructure="e").save()
-    Tool(chart_name="another_tool", target_infrastructure="e").save()
+    Tool(chart_name="a_tool", target_infrastructure="e", description="testing").save()
+    Tool(chart_name="another_tool", target_infrastructure="e", description="testing").save()
 
 
 @pytest.yield_fixture
@@ -211,6 +211,7 @@ def test_update_tool_status():
             {
                 "toolName": tool.chart_name,
                 "version": tool.version,
+                "tool_id": tool.id,
                 "status": status,
             }
         ),

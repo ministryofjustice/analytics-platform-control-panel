@@ -2,7 +2,6 @@ from channels.auth import AuthMiddlewareStack
 from channels.http import AsgiHandler
 from channels.routing import ChannelNameRouter, ProtocolTypeRouter, URLRouter
 from django.conf.urls import url
-from django.urls import path
 
 from controlpanel.frontend.consumers import BackgroundTaskConsumer, SSEConsumer
 
