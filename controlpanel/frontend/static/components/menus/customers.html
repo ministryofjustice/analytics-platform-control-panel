@@ -29,8 +29,8 @@
 {% set first_btn = buttons.first_btn|default("First") %}
 {% set prev_btn = buttons.prev_btn|default("Previous") %}
 
-<div style="display: flex; justify-content: center; align-items: center;">
-  <div style="display: block;">
+<div class="pagination-menu" >
+  <div>
     {% if paginator.page_range[0] != page_no %}
       {{
         customerItem(

@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from bs4 import BeautifulSoup
 from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -52,17 +53,17 @@ def fixture_customers_mocked(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "get_group_members_paginated") as request:
         items = [
             {
-                "total": 10,
+                "total": 250,
                 "users": [
                     {
                         "name": f"Test User {(i * 5) + j}",
                         "email": f"test{(i * 5) + j}@example.com",
                         "user_id": f"github|{(i * 5) + j}",
                     }
-                    for j in range(5)
+                    for j in range(25)
                 ],
             }
-            for i in range(2)
+            for i in range(10)
         ]
 
         items.append([])
@@ -110,17 +111,54 @@ def test_post(client, app, ExtendedAuth0):
     )
 
 
+def remove_chars(item_to_replace=[]):
+    def wrap(item: str) -> str:
+        for fltr in item_to_replace:
+            _from, to = fltr
+            item = item.replace(_from, to)
+        return item
+
+    return wrap
+
+
+def get_buttons(content: str) -> list:
+    soup = BeautifulSoup(content, "html.parser")
+    menu_holder = soup.find("div", {"class": "pagination-menu"})
+    return menu_holder.findAll("a", {"class": "govuk-button"})
+
+
 def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
     group_id = 1
     url_dict = {"group_id": group_id}
+    page_no = 1
 
-    response = client.get(reverse("appcustomers-page", args=(app.id,)), url_dict)
-    fixture_customers_mocked.assert_called_with(str(group_id), page=1, per_page=25)
+    response = client.get(
+        reverse("appcustomers-page", args=(app.id, page_no)), url_dict
+    )
+    fixture_customers_mocked.assert_called_with(
+        str(group_id), page=page_no, per_page=25
+    )
 
-    first_users = response.json().get("results", [])
-    assert len(first_users) == 5
+    assert response.status_code == 200
+    assert len(response.context_data.get("customers")) == 25
 
+    buttons = get_buttons(response.content)
+    btn_texts = [btn.text for btn in buttons]
+    callback = remove_chars([(" ", ""), ("\n", "")])
+    btn_texts = list(map(callback, btn_texts))
+    expected = [str(i) for i in range(1, 11)] + ["Next", "Last"]
+    for expect in expected:
+        assert expect in btn_texts
 
-# def test_get_group_id(client, app, ExtendedAuth0, fixture_group_mocked):
-#     response = client.get(reverse('app-group-id', args=(app.id,)))
-#     assert response.json().get('group_id') == 'm'
+    response = client.get(
+        reverse("appcustomers-page", args=(app.id, page_no + 1)), url_dict
+    )
+    assert response.status_code == 200
+    assert len(response.context_data.get("customers")) == 25
+    buttons = get_buttons(response.content)
+
+    btn_texts = [btn.text for btn in buttons]
+    btn_texts = list(map(callback, btn_texts))
+    expected = ["First", "Previous"] + [str(i) for i in range(2, 11)] + ["Next", "Last"]
+    for expect in expected:
+        assert expect in btn_texts
