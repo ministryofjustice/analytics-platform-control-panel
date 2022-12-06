@@ -1,37 +1,33 @@
-default_stages: [push]
+default_stages: [commit]
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
     hooks:
     - id: requirements-txt-fixer
-      stages: [push]
     - id: check-yaml
-      stages: [push]
     - id: end-of-file-fixer
-      stages: [push]
     - id: trailing-whitespace
-      stages: [push]
 
   - repo: https://github.com/psf/black
     rev: 22.8.0
     hooks:
       - id: black
         name: black formatting
-        entry: bash -c 'black --check $(git diff --name-only origin/$(git rev-parse --abbrev-ref HEAD)..HEAD | grep .py)'
+        entry: bash -c 'black --check  $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/isort
     rev: 5.10.1
     hooks:
       - id: isort
         name: isort (python)
-        entry: bash -c 'isort --check-only $(git diff --name-only origin/$(git rev-parse --abbrev-ref HEAD)..HEAD | grep .py)'
+        entry: bash -c 'isort --check-only $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/flake8
     rev: 5.0.4
     hooks:
     - id: flake8
       name: flake8 format check
-      entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only origin/$(git rev-parse --abbrev-ref HEAD)..HEAD | grep .py)'
+      entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: local
     hooks:
