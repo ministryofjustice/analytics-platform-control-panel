@@ -1,4 +1,7 @@
+# Standard library
 from unittest import mock
+
+# First-party/Local
 from controlpanel.frontend.views import release
 
 
