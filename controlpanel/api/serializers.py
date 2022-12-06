@@ -11,6 +11,7 @@ from rest_framework import serializers
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
+    IPAllowlist,
     Parameter,
     S3Bucket,
     User,
@@ -80,6 +81,17 @@ class AppSimpleSerializer(serializers.ModelSerializer):
         )
 
 
+class IPAllowlistSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IPAllowlist
+        fields = (
+            "name",
+            "description",
+            "contact",
+            "allowed_ip_ranges"
+        )
+
+
 class S3BucketSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = S3Bucket
@@ -133,6 +145,7 @@ class UserAppNestedInAppSerializer(serializers.ModelSerializer):
 class AppSerializer(serializers.ModelSerializer):
     userapps = UserAppNestedInAppSerializer(many=True, read_only=True)
     apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
+    ip_allowlists = IPAllowlistSimpleSerializer(many=True, read_only=True)
 
     class Meta:
         model = App
@@ -147,6 +160,8 @@ class AppSerializer(serializers.ModelSerializer):
             "created_by",
             "apps3buckets",
             "userapps",
+            "ip_allowlists",
+            "app_allowed_ip_ranges"
         )
 
     def validate_repo_url(self, value):
