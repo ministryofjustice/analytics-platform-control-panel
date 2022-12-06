@@ -261,7 +261,7 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
 
     model = App
     template_name = "webapp-update-ip-allowlists.html"
-    permission_required = "api.update_app_secret"
+    permission_required = "api.update_app_ip_allowlists"
     fields = ["ip_allowlists"]
 
     def get_context_data(self, *args, **kwargs):
