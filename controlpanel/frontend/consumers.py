@@ -65,7 +65,7 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         await self.send_body(b"", more_body=True)
 
         # schedule a coroutine to send keepalive updates
-        asyncio.get_event_loop().create_task(self.stream())
+        asyncio.get_running_loop().create_task(self.stream())
 
         # listen for messages for the current request user only
         group = sanitize_dns_label(self.scope.get("user").auth0_id)
@@ -106,6 +106,7 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
 
 
 class BackgroundTaskConsumer(SyncConsumer):
+
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user

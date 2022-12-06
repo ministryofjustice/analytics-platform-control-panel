@@ -33,6 +33,7 @@ STATICFILES_DIRS = [
 # -- Application
 
 INSTALLED_APPS = [
+    "daphne",
     # Django channels for asynchronous support
     "channels",
     # Django Admin
@@ -359,9 +360,10 @@ PROMETHEUS_EXPORT_MIGRATIONS = False
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
 
 # See: https://pypi.org/project/channels-redis/
+# https://github.com/django/channels_redis/issues/332
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'BACKEND': 'channels_redis.pubsub.RedisPubSubChannelLayer',
         'CONFIG': {
             'hosts': [{
                 "address": REDIS_URI,
