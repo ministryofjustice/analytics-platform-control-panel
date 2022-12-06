@@ -89,6 +89,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # app hosting story figured out, we should do this properly.
         context["apps_on_eks"] = settings.features.apps_on_eks.enabled
         context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
+        context["app_ip_allowlists_names"] = ", ".join(list(app.ip_allowlists.values_list("name", flat=True)))
 
         if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
