@@ -28,7 +28,7 @@ versions of the services.
 
 ## 1. Required Dependencies
 
-The Control Panel app requires Python 3.6.5+. It has been confirmed to work
+The Control Panel app requires Python 3.8+ It has been confirmed to work
 with Python 3.8.12.
 
 Install python dependencies with the following command:
