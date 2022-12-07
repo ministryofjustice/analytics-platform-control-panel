@@ -38,7 +38,7 @@
       </td>
       <td class="govuk-table__cell">
         <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1"}) }}" 
-          target="_blank" class="govuk-button govuk-button--secondary right" >View/Edit Customer List</a>
+          class="govuk-button govuk-button--secondary right" >Manage customers</a>
       </td>
       <td class="govuk-table__cell">
         <a class="govuk-button govuk-button--secondary right {%- if not request.user.has_perm('api.retrieve_app', app) %} govuk-visually-hidden{% endif %}"
