@@ -48,7 +48,6 @@ RUN pip install -U pip
 COPY requirements.txt requirements.dev.txt manage.py settings.yaml ./
 RUN pip install -U --no-cache-dir pip
 RUN pip install -r requirements.txt
-RUN pip uninstall python-dotenv -y
 
 # Re-enable dev packages
 RUN python3 -m venv --system-site-packages dev-packages \
