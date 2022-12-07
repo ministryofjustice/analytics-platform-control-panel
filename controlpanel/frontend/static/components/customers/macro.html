@@ -12,7 +12,7 @@
   <td class="govuk-table__cell">{{ customer.email }}</td>
 
   <td class="govuk-table__cell">
-    {% if remove_perm %}
+    {% if has_remove_perm %}
     <button class="govuk-button govuk-button--secondary right"
           name="customer"
           value="{{ customer.user_id}}">
