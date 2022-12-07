@@ -64,7 +64,7 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
         tool_deployment = Mock()
         ToolDeployment.return_value = tool_deployment
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_deploy(
             message={
                 "user_id": user.auth0_id,
@@ -95,8 +95,10 @@ def test_tool_deploy_with_old_chart_name(users, tools, update_tool_status, wait_
     with patch("controlpanel.frontend.consumers.ToolDeployment") as ToolDeployment:
         tool_deployment = Mock()
         ToolDeployment.return_value = tool_deployment
+        recevier = Mock()
+        sender = Mock()
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_deploy(
             message={
                 "user_id": user.auth0_id,
@@ -128,7 +130,7 @@ def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
         tool_deployment = Mock()
         ToolDeployment.return_value = tool_deployment
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_restart(
             message={
                 "user_id": user.auth0_id,
@@ -160,7 +162,7 @@ def test_get_tool_and_user(users, tools):
         "tool_id": expected_tool.id
     }
 
-    consumer = consumers.BackgroundTaskConsumer("test")
+    consumer = consumers.BackgroundTaskConsumer()
     tool, user = consumer.get_tool_and_user(message)
     assert expected_user == user
     assert expected_tool == tool
@@ -175,7 +177,7 @@ def test_get_home_reset(users, update_home_status, wait_for_home_reset):
         mock_hd = Mock()  # Mock home directory instance.
         HomeDirectory.return_value = mock_hd
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.home_reset(
             message={
                 "user_id": user.auth0_id,
