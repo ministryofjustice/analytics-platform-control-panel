@@ -5,7 +5,17 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from django_prometheus import exports
 
+def worker_test(request):
+    from django.http import HttpResponse
+    from controlpanel.celery import debug_task
+
+    result = debug_task.delay()
+    print(result.get())
+
+    return HttpResponse("working")
+
 urlpatterns = [
+    path("test/", worker_test),
     path("", include("controlpanel.frontend.urls")),
     path("admin/", admin.site.urls),
     path("api/cpanel/v1/", include("controlpanel.api.urls")),

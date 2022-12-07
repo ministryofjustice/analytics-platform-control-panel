@@ -33,3 +33,4 @@ slackclient==2.8.1
 urllib3==1.26.5
 uvicorn[standard]==0.17.5
 pyyaml==6.0
+celery==5.2.7
