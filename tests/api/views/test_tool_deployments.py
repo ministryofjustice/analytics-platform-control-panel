@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.reverse import reverse
+from unittest.mock import patch
 
 
 def test_get(client):
@@ -20,6 +21,8 @@ def test_post_not_supported_action(client):
 
 
 def test_post(client):
-    data = {'version': "rstudio__v1.0.0__1"}
-    response = client.post(reverse('tool-deployments', ('rstudio', 'deploy')), data)
-    assert response.status_code == status.HTTP_200_OK
+    with patch('controlpanel.api.views.tool_deployments.start_background_task') as start_background_task:
+        data = {'version': "rstudio__v1.0.0__1"}
+        response = client.post(reverse('tool-deployments', ('rstudio', 'deploy')), data)
+        start_background_task.assert_called()
+        assert response.status_code == status.HTTP_200_OK
