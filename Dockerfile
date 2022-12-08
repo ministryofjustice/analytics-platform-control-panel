@@ -1,4 +1,4 @@
-FROM quay.io/mojanalytics/node:8-alpine AS jsdep
+FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/node:18-alpine-1 AS jsdep
 COPY package.json package-lock.json ./
 COPY jest.config.js controlpanel/frontend/static /src/
 
