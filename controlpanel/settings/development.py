@@ -4,7 +4,7 @@ from controlpanel.settings.common import *
 DEBUG = True
 
 # Allow all hostnames to access the server
-ALLOWED_HOSTS = "*"
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 # Install the develop pages in development mode
 INSTALLED_APPS.append("controlpanel.develop")

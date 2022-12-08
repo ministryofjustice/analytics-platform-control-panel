@@ -33,6 +33,7 @@ STATICFILES_DIRS = [
 # -- Application
 
 INSTALLED_APPS = [
+    "daphne",
     # Django channels for asynchronous support
     "channels",
     # Django Admin
@@ -342,13 +343,13 @@ STATICFILES_FINDERS = [
 
 # -- Redis
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', "")
 REDIS_PORT = "6379"
 REDIS_SCHEME = os.environ.get("REDIS_SCHEME", "redis")
 if REDIS_SCHEME not in ["redis", "rediss"]:
     raise ValueError(f"Invalid value for 'REDIS_SCHEME' environment variable. Must be 'redis' or 'rediss' (to use SSL/TLS). It was '{REDIS_SCHEME}' which is invalid.")
 
-REDIS_URI = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/1"
+REDIS_URI = f"{REDIS_SCHEME}://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/1"
 
 # -- Prometheus
 
@@ -359,9 +360,10 @@ PROMETHEUS_EXPORT_MIGRATIONS = False
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
 
 # See: https://pypi.org/project/channels-redis/
+# https://github.com/django/channels_redis/issues/332
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'BACKEND': 'channels_redis.pubsub.RedisPubSubChannelLayer',
         'CONFIG': {
             'hosts': [{
                 "address": REDIS_URI,
@@ -370,8 +372,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
-if REDIS_PASSWORD:
-    CHANNEL_LAYERS['default']['CONFIG']['hosts'][0]['password'] = REDIS_PASSWORD
 
 # -- Cache
 if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:

@@ -1,20 +1,20 @@
 from channels.auth import AuthMiddlewareStack
-from channels.http import AsgiHandler
 from channels.routing import ChannelNameRouter, ProtocolTypeRouter, URLRouter
-from django.conf.urls import url
+from django.urls import re_path
+from django.core.asgi import get_asgi_application
 
 from controlpanel.frontend.consumers import BackgroundTaskConsumer, SSEConsumer
 
 
 application = ProtocolTypeRouter({
     'channel': ChannelNameRouter({
-        'background_tasks': BackgroundTaskConsumer,
+        'background_tasks': BackgroundTaskConsumer.as_asgi(),
     }),
     'http': AuthMiddlewareStack(
         URLRouter([
-            url(r"^events/$", SSEConsumer),
+            re_path(r"^events/$", SSEConsumer.as_asgi()),
             # Default http routing for rest of Django app
-            url(r"", AsgiHandler),
+            re_path(r"", get_asgi_application()),
         ]),
     )
 })
