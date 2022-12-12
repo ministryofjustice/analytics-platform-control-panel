@@ -133,7 +133,7 @@ urlpatterns = [
         name="remove-app-customer",
     ),
     path(
-        "app/<int:pk>/customers/paginate/<int:page_no>/",
+        "apps/<int:pk>/customers/paginate/<int:page_no>/",
         views.app.AppCustomersPageView.as_view(),
         name="appcustomers-page"
     ),

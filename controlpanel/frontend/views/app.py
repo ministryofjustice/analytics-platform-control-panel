@@ -462,15 +462,13 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         group_id = self.request.GET.get("group_id") or app.get_group_id()
         context["group_id"] = group_id
         context["page_no"] = page_no = self.kwargs.get("page_no")
-        customers = app.customer_paginated(page_no, group_id=group_id)
+        customers = app.customer_paginated(page_no, group_id)
 
         context["customers"] = customers.get("users", [])
         context["paginator"] = paginator = self._paginate_customers(
             self.request, customers
         )
-        context["elided"] = paginator.get_elided_page_range(
-            page_no, on_each_side=3, on_ends=2
-        )
+        context["elided"] = paginator.get_elided_page_range(page_no)
         return context
 
     def _paginate_customers(self, request, auth_results: List[dict], per_page=25):
