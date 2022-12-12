@@ -24,11 +24,6 @@
   )
 -%}
 
-{% set next_btn = buttons.next_btn|default("Next") %}
-{% set last_btn = buttons.last_btn|default("Last") %}
-{% set first_btn = buttons.first_btn|default("First") %}
-{% set prev_btn = buttons.prev_btn|default("Previous") %}
-
 <div class="pagination-menu" >
   <div>
     {% for page_number in elided %}
