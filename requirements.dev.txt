@@ -7,5 +7,5 @@ ipdb==0.13.9
 ipython==7.31.1
 isort==5.10.1
 pre-commit==2.20.0
-pylint==2.15.4
+pylint==2.15.8
 pylint-django==2.4.4
