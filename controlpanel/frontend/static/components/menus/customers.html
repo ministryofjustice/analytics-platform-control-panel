@@ -9,7 +9,7 @@
       next_kw = {},
       last_kw = {},
 
-    ), 
+    ),
     buttons = dict(
       next_btn = "Next",
       last_btn = "Last",
@@ -31,30 +31,6 @@
 
 <div class="pagination-menu" >
   <div>
-    {% if paginator.page_range[0] != page_no %}
-      {{
-        customerItem(
-          reverse = {
-            "url": reverse.url,
-            "kwargs": reverse.first_kw
-          },
-          group_id= group_id,
-          button_text= first_btn
-        )
-      }}
-
-      {{
-        customerItem(
-        reverse= {
-          "url": reverse.url,
-          "kwargs": reverse.previous_kw
-        },
-        group_id= group_id,
-        button_text= prev_btn
-        )
-      }}
-    {% endif %}
-
     {% for page_number in elided %}
       {% if page_number == "…" and show_dots %}
         <a class="govuk-button">…</a>
@@ -74,30 +50,6 @@
       {% endif %}
     {% endfor %}
 
-    {% if paginator.page_range[-1] != page_no %}
-    {{
-      customerItem(
-        reverse= {
-          "url": reverse.url,
-          "kwargs": reverse.next_kw
-        },
-        group_id= group_id,
-        button_text= next_btn
-      )
-    }}
-
-    {{
-      customerItem(
-        reverse= {
-          "url": reverse.url,
-          "kwargs": reverse.last_kw
-        },
-        group_id= group_id,
-        button_text= last_btn
-      )
-    }}
-
-    {% endif %}
   </div>
 </div>
 {% endmacro -%}
