@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -482,6 +482,9 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
 
 class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
 
     def perform_update(self, **kwargs):
         app = self.get_object()

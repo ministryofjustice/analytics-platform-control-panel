@@ -24,11 +24,6 @@ urlpatterns = [
         name="appcustomers-list",
     ),
     path(
-        "app/<int:pk>/customers/<str:user_id>/",
-        views.AppCustomersDetailAPIView.as_view(),
-        name="appcustomers-detail",
-    ),
-    path(
         "tool-deployments/<str:tool_name>/<str:action>",
         views.ToolDeploymentAPIView.as_view(),
         name="tool-deployments",
