@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
 from controlpanel.frontend.consumers import start_background_task
 from controlpanel.api import serializers
@@ -10,6 +11,8 @@ class ToolDeploymentAPIView(GenericAPIView):
 
     http_method_names = ['post']
     serializer_class = serializers.ToolDeploymentSerializer
+    permission_classes = (IsAuthenticated, )
+
 
     def _deploy(self, chart_name, data):
         """
