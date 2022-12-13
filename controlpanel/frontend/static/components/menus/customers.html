@@ -24,11 +24,27 @@
   )
 -%}
 
+{% set next_btn = buttons.next_btn|default("Next") %}
+{% set prev_btn = buttons.prev_btn|default("Previous") %}
+
 <div class="pagination-menu" >
   <div>
+    {% if paginator.page_range[0] != page_no %}
+      {{
+        customerItem(
+        reverse= {
+          "url": reverse.url,
+          "kwargs": reverse.previous_kw
+        },
+        group_id= group_id,
+        button_text= prev_btn
+        )
+      }}
+    {% endif %}
+
     {% for page_number in elided %}
-      {% if page_number == "…" and show_dots %}
-        <a class="govuk-button">…</a>
+      {% if page_number == "…" %}
+        <div class="govuk-button non-button">...</div>
       {% else %}
         {% set _ = reverse.kwargs.update(page_no=page_number) %}
         {{
@@ -45,6 +61,18 @@
       {% endif %}
     {% endfor %}
 
+    {% if paginator.page_range[-1] != page_no %}
+    {{
+      customerItem(
+        reverse= {
+          "url": reverse.url,
+          "kwargs": reverse.next_kw
+        },
+        group_id= group_id,
+        button_text= next_btn
+      )
+    }}
+    {% endif %}
   </div>
 </div>
 {% endmacro -%}

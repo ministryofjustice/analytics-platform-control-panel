@@ -146,7 +146,7 @@ def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
     btn_texts = [btn.text for btn in buttons]
     callback = remove_chars([(" ", ""), ("\n", "")])
     btn_texts = list(map(callback, btn_texts))
-    expected = [str(i) for i in range(1, 11)] + ["Next", "Last"]
+    expected = [str(i) for i in range(1, 11)] + ["Next"]
     for expect in expected:
         assert expect in btn_texts
 
@@ -159,6 +159,6 @@ def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
 
     btn_texts = [btn.text for btn in buttons]
     btn_texts = list(map(callback, btn_texts))
-    expected = ["First", "Previous"] + [str(i) for i in range(2, 11)] + ["Next", "Last"]
+    expected = ["Previous"] + [str(i) for i in range(2, 11)] + ["Next"]
     for expect in expected:
         assert expect in btn_texts

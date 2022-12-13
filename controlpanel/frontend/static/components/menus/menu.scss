@@ -1,0 +1,14 @@
+.non-button {
+    background: white;
+    color: black;
+    cursor: none;
+    border-bottom-color: white;
+    border-width: 0px;
+    box-shadow: none;
+}
+
+.non-button:hover {
+    background: white;
+    cursor: pointer;
+    color: black;
+}
