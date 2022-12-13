@@ -105,6 +105,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 log.warn("this chart({}-{}) has not available from DB. ".format(chart_name, chart_version))
             else:
                 self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
+            if tool_box not in tools_info:
+                # up to this stage, if the tool_box is still empty, it means there is no tool release available in db
+                tools_info[tool_box] = {"releases": {}}
             tools_info[tool_box]["deployment"] = {
                 "tool_id": tool.id if tool else -1,
                 "chart_name": chart_name,
