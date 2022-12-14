@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "customers/macro.html" import display_customer %}
+{% from "menus/customers.html" import displayCustomerMenu %}
+
+{% set page_title = "App customers" %}
+{% set page_name = "customers" %}
+{% set remove_perm = request.user.has_perm('api.remove_app_customer', app) %}
+
+{% set app_customers_html %}
+{% include "modals/app_customers.html" %}
+{% endset %}
+
+{% block content %}
+  <h2 class="govuk-heading-m">
+    App customers
+    {{ modal_dialog(app_customers_html|safe) }}
+  </h2>
+
+  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
+    {{ csrf_input }}
+    <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
+            type="submit"
+            name="submit"
+            disabled="disabled"
+            value="submit">
+      Remove all selected customers
+    </button>
+
+    <table class="govuk-table selectable-rows">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th class="govuk-table__header" ></th>
+          <th class="govuk-table__header" colspan="2">Customer email</th>
+
+          <th class="govuk-table__header">
+            <span class="govuk-visually-hidden">Actions</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body" id="list-customers-paginated">
+        {% for customer in customers %}
+          {{ display_customer(
+              customer = customer,
+              has_remove_perm= remove_perm
+            ) }}
+        {% endfor %}
+      </tbody>
+      <tfoot class="govuk-table__foot">
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell" colspan="3">
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </form>
+
+  {{ displayCustomerMenu(
+      reverse = {
+        "url": "appcustomers-page",
+        "kwargs": {"pk": app.id },
+        "first_kw": {"pk": app.id, "page_no": paginator.page_range[0]},
+        "previous_kw": {"pk": app.id, "page_no": page_no-1},
+        "next_kw": {"pk": app.id, "page_no": page_no+1},
+        "last_kw": {"pk": app.id, "page_no": paginator.page_range[-1]}
+      },
+      paginator = paginator,
+      elided = elided,
+      show_dots = False,
+      page_no = page_no,
+      group_id = group_id
+    )
+  }}
+
+
+{% if request.user.has_perm('api.add_app_customer', app) %}
+  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
+    {{ csrf_input }}
+    <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
+      <label class="govuk-label" for="customer_email">
+        Add app customers by entering their email addresses (separated by spaces)
+      </label>
+      {% if errors and errors.customer_email %}
+        {% for error in errors.customer_email %}
+      <span id="customer_email-error" class="govuk-error-message">
+        <span class="govuk-visually-hidden">Error:</span> {{ error }}
+      </span>
+        {% endfor %}
+      {% endif %}
+      <input id="customer_email" class="govuk-input cpanel-input" name="customer_email" autocomplete="off">
+    </div>
+    <div class="govuk-form-group">
+      <button class="govuk-button">Add customer</button>
+    </div>
+  </form>
+{% endif %}
+
+{% endblock %}

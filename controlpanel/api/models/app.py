@@ -42,6 +42,18 @@ class App(TimeStampedModel):
     def get_logs(self, num_hours=None):
         return elasticsearch.app_logs(self, num_hours=num_hours)
 
+    def get_group_id(self):
+        return auth0.ExtendedAuth0().groups.get_group_id(self.slug)
+
+    def customer_paginated(self, page, group_id, per_page=25):
+        return (
+            auth0.ExtendedAuth0().groups.get_group_members_paginated(
+                group_id,
+                page=page,
+                per_page=per_page
+            ) or []
+        )
+
     @property
     def customers(self):
         return (

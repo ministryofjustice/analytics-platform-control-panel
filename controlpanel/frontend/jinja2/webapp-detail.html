@@ -12,10 +12,6 @@
 {% set page_name = "webapps" %}
 {% set page_title = app.name %}
 
-{% set app_customers_html %}
-{% include "modals/app_customers.html" %}
-{% endset %}
-
 {% set app_admins_html %}
 {% include "modals/app_admins.html" %}
 {% endset %}
@@ -65,10 +61,6 @@
 </header>
 
 <section class="cpanel-section">
-  {% set customers = app.customers %}
-  {% set num_customers = customers|length %}
-
-
   {% if request.user.has_perm('api.setup_app_auth0', app) and not has_setup_completed_for_client %}
   <h2 class="govuk-heading-m">The Auth0 client setup has not been completed for this app</h2>
   <section class="cpanel-section">
@@ -173,77 +165,6 @@
   </section>
 {% endif %}
 
-  <h2 class="govuk-heading-m">
-    App customers
-    {{ modal_dialog(app_customers_html|safe) }}
-  </h2>
-  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
-    {{ csrf_input }}
-    <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
-            type="submit"
-            name="submit"
-            disabled="disabled"
-            value="submit">
-      Remove all selected customers
-    </button>
-    <table class="govuk-table selectable-rows">
-      <thead class="govuk-table__head">
-        <tr class="govuk-table__row">
-          <th class="govuk-table__header"></th>
-          <th class="govuk-table__header">Customer email</th>
-          <th class="govuk-table__header">
-            <span class="govuk-visually-hidden">Actions</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody class="govuk-table__body">
-        {% for customer in customers %}
-        <tr class="govuk-table__row">
-          <td class="govuk-table__cell">{{ row_selector('customer', customer.user_id) }}</td>
-          <td class="govuk-table__cell">{{ customer.email }}</td>
-          {% if request.user.has_perm('api.remove_app_customer', app) %}
-          <td class="govuk-table__cell">
-            <button class="govuk-button govuk-button--secondary right"
-                    name="customer"
-                    value="{{ customer.user_id }}">
-              Remove customer
-            </button>
-          </td>
-          {% endif %}
-        </tr>
-        {% endfor %}
-      </tbody>
-      <tfoot class="govuk-table__foot">
-        <tr class="govuk-table__row">
-          <td class="govuk-table__cell" colspan="3">
-            {{ num_customers }} app customer{% if num_customers != 1 %}s{% endif %}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-  </form>
-
-  {% if request.user.has_perm('api.add_app_customer', app) %}
-  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
-    {{ csrf_input }}
-    <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
-      <label class="govuk-label" for="customer_email">
-        Add app customers by entering their email addresses (separated by spaces)
-      </label>
-      {% if errors and errors.customer_email %}
-        {% for error in errors.customer_email %}
-      <span id="customer_email-error" class="govuk-error-message">
-        <span class="govuk-visually-hidden">Error:</span> {{ error }}
-      </span>
-        {% endfor %}
-      {% endif %}
-      <input id="customer_email" class="govuk-input cpanel-input--1-3" name="customer_email" autocomplete="off">
-    </div>
-    <div class="govuk-form-group">
-      <button class="govuk-button">Add customer</button>
-    </div>
-  </form>
-  {% endif %}
 </section>
 
 <section class="cpanel-section">

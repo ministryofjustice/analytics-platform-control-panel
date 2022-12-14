@@ -1,3 +1,6 @@
+# Standard library
+from typing import List
+
 # Third-party
 import sentry_sdk
 import structlog
@@ -6,7 +9,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -15,7 +18,6 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
-from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -24,6 +26,7 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
+from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
@@ -409,11 +412,42 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
-        return reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]})
+        return reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+
+
+class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = App
+    permission_required = "api.retrieve_app"
+    template_name = "customers-list.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        app: App = context.get("app")
+
+        group_id = self.request.GET.get("group_id") or app.get_group_id()
+        context["group_id"] = group_id
+        context["page_no"] = page_no = self.kwargs.get("page_no")
+        customers = app.customer_paginated(page_no, group_id)
+
+        context["customers"] = customers.get("users", [])
+        context["paginator"] = paginator = self._paginate_customers(customers)
+        context["elided"] = paginator.get_elided_page_range(page_no)
+        return context
+
+    def _paginate_customers(self, auth_results: List[dict], per_page=25):
+        total_count = auth_results.get("total", 0)
+        customer_result = auth_results.get("users", [])
+        paginator = Auth0Paginator(
+            customer_result, per_page=per_page, total_count=total_count
+        )
+        return paginator
 
 
 class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
 
     def perform_update(self, **kwargs):
         app = self.get_object()

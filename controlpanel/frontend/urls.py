@@ -132,6 +132,11 @@ urlpatterns = [
         views.RemoveCustomer.as_view(),
         name="remove-app-customer",
     ),
+    path(
+        "apps/<int:pk>/customers/paginate/<int:page_no>/",
+        views.app.AppCustomersPageView.as_view(),
+        name="appcustomers-page"
+    ),
     path("webapps/<int:pk>/admins/", views.AddAdmin.as_view(), name="add-app-admin"),
     path(
         "webapps/<int:pk>/admins/<str:user_id>/revoke/",
