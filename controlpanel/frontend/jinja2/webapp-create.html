@@ -169,6 +169,24 @@
     })
   }}
 
+  {{
+    govukCheckboxes({
+    "fieldset": {
+      "legend": {
+      "text": "IP allowlists",
+      "classes": "govuk-fieldset__legend--m",
+      },
+    },
+    "classes": "govuk-!-width-two-thirds",
+    "hint": {
+      "text": "Customers will only be able to access this app from the IP networks in the allowlists selected below. If no allowlists are selected, the app will be accessible from any IP address."
+    },
+    "name": "app_ip_allowlists",
+    "items": initial_app_ip_allowlists,
+    "errorMessage": { "html": form.app_ip_allowlists.errors|join(". ") } if form.app_ip_allowlists.errors else {}
+    })
+  }}
+
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
   </div>

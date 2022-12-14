@@ -137,6 +137,12 @@ class CreateAppForm(AppAuth0Form):
 
     disable_authentication = forms.BooleanField(required=False)
 
+    app_ip_allowlists = forms.MultipleChoiceField(
+        required=False,
+        initial=list(set(App.DEFAULT_IP_ALLOWLISTS) & set(IPAllowlist.objects.all().values_list("name", flat=True))),
+        choices=list(zip(IPAllowlist.objects.all().values_list("pk", flat=True), IPAllowlist.objects.all().values_list("name", flat=True)))
+    )
+
     def clean(self):
         cleaned_data = super().clean()
         connect_data_source = cleaned_data["connect_bucket"]

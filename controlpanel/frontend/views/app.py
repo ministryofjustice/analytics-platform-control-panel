@@ -143,6 +143,14 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["initial_app_ip_allowlists"] = [
+            {
+                "text": ip_allowlist.name,
+                "value": ip_allowlist.pk,
+                "checked": ip_allowlist.name in App.DEFAULT_IP_ALLOWLISTS
+            }
+            for ip_allowlist in IPAllowlist.objects.all()
+        ]
         return context
 
     def get_form_kwargs(self):
@@ -184,11 +192,13 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 access_level="readonly",
             )
 
-    def _register_app(self, form, name, repo_url):
+    def _register_app(self, form, name, repo_url, ip_allowlists):
         self.object = App.objects.create(
             name=name,
             repo_url=repo_url,
         )
+
+        self.object.ip_allowlists.add(*IPAllowlist.objects.filter(pk__in=ip_allowlists))
 
         self._create_or_link_datasource(form)
 
@@ -212,9 +222,11 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
+        ip_allowlists = form.cleaned_data["app_ip_allowlists"]
+
         _, name = repo_url.rsplit("/", 1)
         try:
-            self._register_app(form, name, repo_url)
+            self._register_app(form, name, repo_url, ip_allowlists)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
