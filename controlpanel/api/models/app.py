@@ -19,6 +19,8 @@ class App(TimeStampedModel):
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
     ip_allowlists = models.ManyToManyField(IPAllowlist, related_name="apps", related_query_name="app", blank=True)
 
+    DEFAULT_IP_ALLOWLISTS = ["DOM1"]
+
     class Meta:
         db_table = "control_panel_api_app"
         ordering = ("name",)
@@ -125,6 +127,7 @@ class App(TimeStampedModel):
 
         if is_create:
             cluster.App(self).create_iam_role()
+            cluster.App(self).create_or_update_secret({"allowed_ip_ranges": self.app_allowed_ip_ranges})
 
         return self
 
