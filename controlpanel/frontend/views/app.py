@@ -255,41 +255,6 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
         return FormMixin.form_valid(self, form)
 
 
-class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-
-    form_class = UpdateAppAuth0ConnectionsForm
-    model = App
-    permission_required = 'api.create_app'
-    template_name = "webapp-auth0-connections-update.html"
-    success_url = "manage-app"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
-
-    def get_form_kwargs(self):
-        kwargs = FormMixin.get_form_kwargs(self)
-        app = self.get_object()
-        kwargs.update(request=self.request, auth0_connections=app.auth0_connections)
-        return kwargs
-
-    def get_success_url(self):
-        messages.success(self.request,  f"Successfully update {self.object.name} webapp's auth0 connections")
-        return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
-
-    def form_valid(self, form):
-        try:
-            auth0.ExtendedAuth0().update_client_auth_connections(
-                self.object.slug,
-                new_conns=form.cleaned_data.get("auth0_connections"),
-                existing_conns=form.auth0_connections
-            )
-        except Exception as ex:
-            form.add_error("connections", str(ex))
-            return FormMixin.form_invalid(self, form)
-        return FormMixin.form_valid(self, form)
-
-
 class GrantAppAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
@@ -452,7 +417,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     model = App
-    permission_required = "api.add_app_customer"
+    permission_required = "api.retrieve_app"
     template_name = "customers-list.html"
 
     def get_context_data(self, **kwargs):
@@ -465,13 +430,11 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         customers = app.customer_paginated(page_no, group_id)
 
         context["customers"] = customers.get("users", [])
-        context["paginator"] = paginator = self._paginate_customers(
-            self.request, customers
-        )
+        context["paginator"] = paginator = self._paginate_customers(customers)
         context["elided"] = paginator.get_elided_page_range(page_no)
         return context
 
-    def _paginate_customers(self, request, auth_results: List[dict], per_page=25):
+    def _paginate_customers(self, auth_results: List[dict], per_page=25):
         total_count = auth_results.get("total", 0)
         customer_result = auth_results.get("users", [])
         paginator = Auth0Paginator(

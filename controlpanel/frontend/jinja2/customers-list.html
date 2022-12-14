@@ -8,6 +8,10 @@
 {% set page_name = "customers" %}
 {% set remove_perm = request.user.has_perm('api.remove_app_customer', app) %}
 
+{% set app_customers_html %}
+{% include "modals/app_customers.html" %}
+{% endset %}
+
 {% block content %}
   <h2 class="govuk-heading-m">
     App customers
