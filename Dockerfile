@@ -1,4 +1,4 @@
-FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/node:18-buster AS jsdep
+FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/node:18.12.1-slim AS jsdep
 COPY package.json package-lock.json ./
 COPY jest.config.js controlpanel/frontend/static /src/
 
