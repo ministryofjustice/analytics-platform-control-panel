@@ -147,9 +147,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             {
                 "text": ip_allowlist.name,
                 "value": ip_allowlist.pk,
-                "checked": ip_allowlist.name in App.DEFAULT_IP_ALLOWLISTS
+                "checked": ip_allowlist.is_recommended
             }
-            for ip_allowlist in IPAllowlist.objects.all()
+            for ip_allowlist in IPAllowlist.objects.all().order_by("name")
         ]
         return context
 

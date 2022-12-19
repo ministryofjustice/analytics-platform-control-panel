@@ -1,7 +1,8 @@
-{% from "input/macro.html" import govukInput %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "error-message/macro.html" import govukErrorMessage %}
 {% from "fieldset/macro.html" import govukFieldset %}
 {% from "includes/list-field.html" import list_field_textarea %}
-{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
 
 {% extends "base.html" %}
 
@@ -22,7 +23,7 @@
     {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
     {{ govukInput({
       "label": {
-        "text": "Allowlist name",
+        "text": "Name",
         "classes": "govuk-label--m",
       },
       "classes": "govuk-!-width-two-thirds",
@@ -66,6 +67,26 @@
         form.allowed_ip_ranges.value() or "",
         form.allowed_ip_ranges.errors
     ) }}
+    {{ govukCheckboxes({
+      "name": "is_recommended",
+      "fieldset": {
+        "legend": {
+          "text": "Recommended",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Recommended IP allowlists will be pre-selected when creating a new app"
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Recommended",
+          "checked": form.is_recommended.value()
+        },
+      ],
+      "errorMessage": { "html": form.is_recommended.errors|join(". ") } if form.is_recommended.errors else {}
+    }) }}
     <button class="govuk-button">Create IP allowlist</button>
   </form>
   {% endcall %}

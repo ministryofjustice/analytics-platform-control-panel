@@ -128,8 +128,8 @@ class CreateAppForm(AppAuth0Form):
 
     app_ip_allowlists = forms.MultipleChoiceField(
         required=False,
-        initial=list(set(App.DEFAULT_IP_ALLOWLISTS) & set(IPAllowlist.objects.all().values_list("name", flat=True))),
-        choices=list(zip(IPAllowlist.objects.all().values_list("pk", flat=True), IPAllowlist.objects.all().values_list("name", flat=True)))
+        initial=list(IPAllowlist.objects.all().order_by("name").values_list("is_recommended", flat=True)),
+        choices=list(IPAllowlist.objects.all().order_by("name").values_list("pk", "name"))
     )
 
     def clean(self):
@@ -432,4 +432,4 @@ class DisableAuthForm(SecretsForm):
 class IPAllowlistForm(forms.ModelForm):
     class Meta:
         model = IPAllowlist
-        fields = ["name", "description", "contact", "allowed_ip_ranges"]
+        fields = ["name", "description", "contact", "allowed_ip_ranges", "is_recommended"]
