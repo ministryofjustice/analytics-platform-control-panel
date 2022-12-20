@@ -88,7 +88,8 @@ class IPAllowlistSimpleSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "contact",
-            "allowed_ip_ranges"
+            "allowed_ip_ranges",
+            "is_recommended"
         )
 
 
