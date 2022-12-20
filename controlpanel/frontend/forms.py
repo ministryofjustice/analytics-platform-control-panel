@@ -139,7 +139,6 @@ class CreateAppForm(AppAuth0Form):
 
     app_ip_allowlists = forms.MultipleChoiceField(
         required=False,
-        initial=list(IPAllowlist.objects.all().order_by("name").values_list("is_recommended", flat=True)),
         choices=list(IPAllowlist.objects.all().order_by("name").values_list("pk", "name"))
     )
 
