@@ -34,14 +34,15 @@ def test_ip_allowlist_without_app_save_does_not_update_aws_secrets_manager(updat
 
 
 def test_ip_allowlist_delete_updates_aws_secrets_manager(update_aws_secrets_manager):
-    ip_allowlists = mommy.make("api.IPAllowlist", allowed_ip_ranges="123", _quantity=2)
+    ip_allowlists = [mommy.make("api.IPAllowlist", allowed_ip_ranges="xyz"),
+                     mommy.make("api.IPAllowlist", allowed_ip_ranges="123")]
     apps = mommy.make("api.App", ip_allowlists=ip_allowlists, _quantity=2)
 
     ip_allowlists[0].delete()
 
     update_aws_secrets_manager.assert_has_calls([
-        call({"allowed_ip_ranges": "123, 123"}),
-        call({"allowed_ip_ranges": "123, 123"}),
+        call({"allowed_ip_ranges": "123"}),
+        call({"allowed_ip_ranges": "123"})
     ])
 
 
