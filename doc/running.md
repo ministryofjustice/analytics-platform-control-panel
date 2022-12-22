@@ -219,7 +219,8 @@ Static assets are compiled with Node.JS v18.12.0+
 Dockerfile uses Base image that has no Critical or High security vulnerabilities.
 
 amd64/node:18.12.1-slim
-- source: [dockerhub](https://github.com/nodejs/docker-node/blob/7bc9983852d4a0a8910f3865b199d78157d1440b/18/buster-slim/Dockerfile)
+- located on [dockerhub](https://hub.docker.com/r/amd64/node/)
+- source base image build: [github](https://github.com/nodejs/docker-node/blob/7bc9983852d4a0a8910f3865b199d78157d1440b/18/buster-slim/Dockerfile)
 
 
 ```sh
