@@ -126,9 +126,14 @@ class CreateAppForm(AppAuth0Form):
 
     disable_authentication = forms.BooleanField(required=False)
 
-    app_ip_allowlists = forms.ModelMultipleChoiceField(
+    def __init__(self, *args, **kwargs):
+        self.app_ip_allowlists = kwargs.pop("app_ip_allowlists", None)
+        super(CreateAppForm, self).__init__(*args, **kwargs)
+
+        self.fields["app_ip_allowlists"] = forms.MultipleChoiceField(
         required=False,
-        queryset=IPAllowlist.objects.all()
+        initial=self.app_ip_allowlists,
+        choices=list(IPAllowlist.objects.all().order_by("name").values_list("name", "name"))
     )
 
     def clean(self):
@@ -155,6 +160,7 @@ class CreateAppForm(AppAuth0Form):
             self.add_error("existing_datasource_id", "This field is required.")
 
         cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(cleaned_data)
+        self.app_ip_allowlists = cleaned_data.get("app_ip_allowlists")
 
         return cleaned_data
 

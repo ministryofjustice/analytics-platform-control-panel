@@ -169,23 +169,29 @@
     })
   }}
 
-  {{
-    govukCheckboxes({
-    "fieldset": {
-      "legend": {
-      "text": "IP allowlists",
-      "classes": "govuk-fieldset__legend--m",
-      },
-    },
-    "classes": "govuk-!-width-two-thirds",
-    "hint": {
-      "text": "Customers will only be able to access this app from the IP networks in the allowlists selected below. If no allowlists are selected, the app will be accessible from any IP address."
-    },
-    "name": "app_ip_allowlists",
-    "items": initial_app_ip_allowlists,
-    "errorMessage": { "html": form.app_ip_allowlists.errors|join(". ") } if form.app_ip_allowlists.errors else {}
-    })
-  }}
+  <div class="govuk-form-group">
+    <label class="govuk-label govuk-label--m">IP Allowlists</label>
+    <span class="govuk-hint">
+      Customers will only be able to access this app from the IP networks in the allowlists selected below.
+      If no allowlists are selected, the app will be accessible from any IP address.
+    </span>
+
+    <div class="govuk-checkboxes">
+    {% for ip_allowlist in form.fields.app_ip_allowlists.choices %}
+      {% set id = "app-ip-allowlists-" + loop.index|string %}
+      {% set name = "app_ip_allowlists" %}
+      <div class="govuk-checkboxes__item">
+        <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ ip_allowlist[1] }}" {{-" checked" if ip_allowlist[0] in form.app_ip_allowlists else "" }}>
+        {{ govukLabel({
+          "text": ip_allowlist[0],
+          "classes": 'govuk-checkboxes__label' + (' ' + (ip_allowlist.label|default({})).classes|default("")),
+          "attributes": (ip_allowlist.label|default({})).attributes|default(""),
+          "for": id
+        }) }}
+      </div>
+    {% endfor %}
+    </div>
+  </div>
 
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
