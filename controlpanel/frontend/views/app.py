@@ -141,18 +141,6 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = "api.create_app"
     template_name = "webapp-create.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["initial_app_ip_allowlists"] = [
-            {
-                "text": ip_allowlist.name,
-                "value": ip_allowlist.pk,
-                "checked": ip_allowlist.is_recommended
-            }
-            for ip_allowlist in IPAllowlist.objects.all().order_by("name")
-        ]
-        return context
-
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         kwargs.update(
@@ -198,7 +186,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             repo_url=repo_url,
         )
 
-        self.object.ip_allowlists.add(*IPAllowlist.objects.filter(pk__in=ip_allowlists))
+        self.object.ip_allowlists.add(*IPAllowlist.objects.filter(name__in=ip_allowlists))
 
         self._create_or_link_datasource(form)
 
