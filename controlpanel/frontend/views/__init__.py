@@ -20,11 +20,10 @@ from controlpanel.frontend.views.app import (
     RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
-    UpdateAppAccess,
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
 )
-from controlpanel.frontend.views.datasource import (
+from controlpanel.frontend.views.datasource import (  # noqa: F401
     AdminBucketList,
     BucketDetail,
     BucketList,
