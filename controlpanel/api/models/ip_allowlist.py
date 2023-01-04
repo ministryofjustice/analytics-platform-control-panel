@@ -1,9 +1,11 @@
+# Third-party
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
-
 from simple_history.models import HistoricalRecords
 
+# First-party/Local
 from controlpanel.api.validators import validate_ip_ranges
+
 
 class IPAllowlist(TimeStampedModel):
     name = models.CharField(max_length=60, blank=False, unique=True)
@@ -20,4 +22,4 @@ class IPAllowlist(TimeStampedModel):
         return f"<IPAllowlist: {self.pk}|{self.name}>"
 
     def __str__(self):
-         return f"{self.name}"
+        return f"{self.name}"

@@ -1,7 +1,10 @@
+# Standard library
 import os
+
+# Third-party
 import jinja2
-from django.contrib import messages
 from django.conf import settings
+from django.contrib import messages
 from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.timesince import timesince

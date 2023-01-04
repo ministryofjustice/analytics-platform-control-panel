@@ -1,16 +1,24 @@
-from django.core.management.base import BaseCommand, CommandError
+# Standard library
 import json
 
-from controlpanel.api.aws import AWSSecretManager
+# Third-party
 from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+
+# First-party/Local
 from controlpanel.api.auth0 import ExtendedAuth0
+from controlpanel.api.aws import AWSSecretManager
 
 
 class Command(BaseCommand):
     help = "Create/update app's /auth and /params secrets on AWS"
 
     def add_arguments(self, parser):
-        parser.add_argument("app_info", type=str, help="The path for storing the applications' information")
+        parser.add_argument(
+            "app_info",
+            type=str,
+            help="The path for storing the applications' information",
+        )
 
     def _load_json_file(self, file_name):
         with open(file_name) as file:
@@ -25,7 +33,8 @@ class Command(BaseCommand):
 
     def _generate_apps_aws_secrets(self, app_info):
         """
-        Only the application which has been registered in control panel will be migrated over into new EKS cluster
+        Only the application which has been registered in control panel will be
+        migrated over into new EKS cluster
         """
         auth0_instance = ExtendedAuth0()
 
@@ -33,18 +42,24 @@ class Command(BaseCommand):
         for app_item in app_info:
             if not app_item["can_be_migrated"]:
                 continue
-            self.stdout.write("Creating secrets for {}....".format(app_item["app_name"]))
+            self.stdout.write(
+                "Creating secrets for {}....".format(app_item["app_name"])
+            )
             if app_item.get("auth"):
-                if app_item['auth'].get('client_id'):
-                    client = self._get_app_auth0_client_info(auth0_instance, app_item['auth']['client_id'])
-                    app_item['auth']['client_secret'] = client['client_secret']
+                if app_item["auth"].get("client_id"):
+                    client = self._get_app_auth0_client_info(
+                        auth0_instance, app_item["auth"]["client_id"]
+                    )
+                    app_item["auth"]["client_secret"] = client["client_secret"]
                 aws_secret_service.create_or_update(
                     self._app_aws_secret_name(app_item["app_name"], "auth"),
-                    app_item["auth"])
+                    app_item["auth"],
+                )
             if app_item.get("parameters"):
                 aws_secret_service.create_or_update(
                     self._app_aws_secret_name(app_item["app_name"], "params"),
-                    app_item["parameters"])
+                    app_item["parameters"],
+                )
 
     def handle(self, *args, **options):
         try:

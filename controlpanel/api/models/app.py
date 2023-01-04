@@ -48,10 +48,9 @@ class App(TimeStampedModel):
     def customer_paginated(self, page, group_id, per_page=25):
         return (
             auth0.ExtendedAuth0().groups.get_group_members_paginated(
-                group_id,
-                page=page,
-                per_page=per_page
-            ) or []
+                group_id, page=page, per_page=per_page
+            )
+            or []
         )
 
     @property
@@ -62,7 +61,7 @@ class App(TimeStampedModel):
 
     @property
     def auth0_connections(self):
-        return  auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
+        return auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
 
     @property
     def app_aws_secret_name(self):
@@ -78,11 +77,13 @@ class App(TimeStampedModel):
         return self.app_aws_secret_name
 
     def construct_secret_data(self, client):
-        """ The assumption is per app per callback url"""
+        """The assumption is per app per callback url"""
         return {
             "client_id": client["client_id"],
             "client_secret": client["client_secret"],
-            "callbacks": client["callbacks"][0] if len(client["callbacks"])>=1 else ""
+            "callbacks": client["callbacks"][0]
+            if len(client["callbacks"]) >= 1
+            else "",
         }
 
     def add_customers(self, emails):

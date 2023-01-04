@@ -1,5 +1,7 @@
-import dateutil.parser
+# Standard library
 from datetime import datetime, timedelta
+
+# Third-party
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
@@ -8,7 +10,8 @@ from django.views.generic.edit import DeleteView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
-from controlpanel.api import auth0
+# First-party/Local
+from controlpanel.api import auth0  # noqa: F401
 from controlpanel.api.models import User
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -23,15 +26,19 @@ def ninety_days_ago():
 
 
 class UserList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
-    context_object_name = 'users'
+    context_object_name = "users"
     model = User
-    permission_required = 'api.list_user'
-    queryset = User.objects.exclude(auth0_id='')
+    permission_required = "api.list_user"
+    queryset = User.objects.exclude(auth0_id="")
     template_name = "user-list.html"
 
     def get_ordering(self):
         order_by = self.request.GET.get("o", "username")
-        valid_fields = ["username", "email", "last_login", ]
+        valid_fields = [
+            "username",
+            "email",
+            "last_login",
+        ]
         if order_by not in valid_fields:
             order_by = "username"
         return order_by
@@ -45,13 +52,13 @@ class UserList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                     unused_users.append(user)
             else:
                 unused_users.append(user)
-        context['unused_users'] = unused_users
+        context["unused_users"] = unused_users
         return context
 
 
 class UserDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = User
-    permission_required = 'api.destroy_user'
+    permission_required = "api.destroy_user"
 
     def get_success_url(self):
         messages.success(self.request, "Successfully deleted user")
@@ -59,9 +66,9 @@ class UserDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
 
 class UserDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    context_object_name = 'user'
+    context_object_name = "user"
     model = User
-    permission_required = 'api.retrieve_user'
+    permission_required = "api.retrieve_user"
     template_name = "user-detail.html"
 
     def get_context_data(self, **kwargs):
@@ -78,10 +85,10 @@ class UserDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
 
 class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    fields = ['is_superuser']
-    http_method_names = ['post']
+    fields = ["is_superuser"]
+    http_method_names = ["post"]
     model = User
-    permission_required = 'api.add_superuser'
+    permission_required = "api.add_superuser"
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated superadmin status")
@@ -95,7 +102,7 @@ class ResetMFA(
     RedirectView,
 ):
     model = User
-    permission_required = 'api.reset_mfa'
+    permission_required = "api.reset_mfa"
 
     def get_redirect_url(self, *args, **kwargs):
         user = self.get_object()

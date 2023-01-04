@@ -1,6 +1,4 @@
 # Standard library
-import secrets
-from http.client import HTTPResponse
 from typing import Optional
 
 # Third-party
@@ -14,7 +12,7 @@ from django.views.generic.edit import View
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.api import aws, cluster
+from controlpanel.api import cluster
 from controlpanel.api.models import App
 from controlpanel.frontend.forms import DisableAuthForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -79,7 +77,8 @@ class SecretAddUpdate(
             app = self._get_app(pk)
             cluster.App(app).create_or_update_secret({secret_key: secret_value})
         else:
-            # currently, boolean values cannot fail, however will need to test this for non-bool values
+            # currently, boolean values cannot fail, however will need to test
+            # this for non-bool values
             messages.error(self.request, "failed to update secrets.")
             return reverse_lazy(
                 "add-secret",

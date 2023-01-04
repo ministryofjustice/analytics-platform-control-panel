@@ -1,11 +1,14 @@
+# Standard library
 from datetime import datetime, timedelta
 from pathlib import Path
 from sys import exit
 
+# Third-party
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
+# First-party/Local
 from controlpanel.frontend.consumers import WORKER_HEALTH_FILENAME
 
 
@@ -17,7 +20,7 @@ class Command(BaseCommand):
             "--stale-after-secs",
             type=int,
             default=120,
-            help="For how many seconds the last executed task is considered recent enough for the health check to pass",
+            help="For how many seconds the last executed task is considered recent enough for the health check to pass",  # noqa: E501
         )
 
     def handle(self, *args, **options):
@@ -52,7 +55,7 @@ class Command(BaseCommand):
         # Health ping file is fresh, success
         self.stdout.write(
             self.style.SUCCESS(
-                f"Health ping file is fresh. This worker ran health task recently."
+                "Health ping file is fresh. This worker ran health task recently."
             )
         )
         exit(0)

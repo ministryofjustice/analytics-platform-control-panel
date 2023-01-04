@@ -1,24 +1,29 @@
-from django.conf import settings
+# Third-party
+from django.conf import settings  # noqa: F401
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import ListView, CreateView
+from django.views.generic import CreateView, ListView
 from django.views.generic.detail import SingleObjectMixin
-from django.views.generic.edit import FormMixin, DeleteView, UpdateView
+from django.views.generic.edit import DeleteView, FormMixin, UpdateView
 from rules.contrib.views import PermissionRequiredMixin
 
+# First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import IAMManagedPolicy, User
 from controlpanel.api.permissions import is_superuser
-from controlpanel.frontend.forms import CreateIAMManagedPolicyForm, AddUserToIAMManagedPolicyForm
+from controlpanel.frontend.forms import (
+    AddUserToIAMManagedPolicyForm,
+    CreateIAMManagedPolicyForm,
+)
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
 class IAMManagedPolicyList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
-    context_object_name = 'policies'
+    context_object_name = "policies"
     model = IAMManagedPolicy
-    permission_required = 'api.list_policy'
+    permission_required = "api.list_policy"
     template_name = "policy-list.html"
 
     def get_queryset(self):
@@ -26,16 +31,18 @@ class IAMManagedPolicyList(OIDCLoginRequiredMixin, PermissionRequiredMixin, List
 
 
 class AdminIAMManagedPolicyList(IAMManagedPolicyList):
-    permission_required = 'api.is_superuser'
+    permission_required = "api.is_superuser"
 
     def get_queryset(self):
         return IAMManagedPolicy.objects.all()
 
 
-class IAMManagedPolicyCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class IAMManagedPolicyCreate(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView
+):
     form_class = CreateIAMManagedPolicyForm
     model = IAMManagedPolicy
-    permission_required = 'api.create_policy'
+    permission_required = "api.create_policy"
     template_name = "policy-create.html"
 
     def get_form_kwargs(self):
@@ -46,8 +53,7 @@ class IAMManagedPolicyCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, Cr
 
     def form_valid(self, form):
         self.object = IAMManagedPolicy(
-            name=form.cleaned_data['name'],
-            created_by=self.request.user
+            name=form.cleaned_data["name"], created_by=self.request.user
         )
         self.object.save()
         messages.success(
@@ -57,11 +63,12 @@ class IAMManagedPolicyCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, Cr
         return FormMixin.form_valid(self, form)
 
 
-
-class IAMManagedPolicyDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class IAMManagedPolicyDetail(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
+):
     form_class = AddUserToIAMManagedPolicyForm
     model = IAMManagedPolicy
-    permission_required = 'api.create_policy'
+    permission_required = "api.create_policy"
     template_name = "policy-update.html"
     context_object_name = "policy"
 
@@ -71,21 +78,16 @@ class IAMManagedPolicyDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, Up
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user_options = User.objects.exclude(
-            pk__in=self.object.users.values_list('auth0_id', flat=True)
+            pk__in=self.object.users.values_list("auth0_id", flat=True)
         )
-        context.update({
-            "users_options": user_options
-        })
+        context.update({"users_options": user_options})
         return context
 
     def get_success_url(self):
-        return reverse_lazy(
-                "manage-policy",
-                kwargs={"pk": self.object.id}
-            )
+        return reverse_lazy("manage-policy", kwargs={"pk": self.object.id})
 
     def form_valid(self, form):
-        user_id = form.cleaned_data['user_id']
+        user_id = form.cleaned_data["user_id"]
         user = User.objects.get(pk=user_id)
         self.object.users.add(user)
         self.object.save()
@@ -96,9 +98,11 @@ class IAMManagedPolicyDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, Up
         return FormMixin.form_valid(self, form)
 
 
-class IAMManagedPolicyDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+class IAMManagedPolicyDelete(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView
+):
     model = IAMManagedPolicy
-    permission_required = 'api.destroy_policy'
+    permission_required = "api.destroy_policy"
 
     def get_success_url(self):
         messages.success(self.request, "Successfully delete data source")
@@ -112,20 +116,21 @@ class IAMManagedPolicyDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, De
 
 
 class IAMManagedPolicyFormRoleList(OIDCLoginRequiredMixin, View):
-
     def get(self, *args, **kwargs):
         roles = cluster.list_role_names()
         data = [
-            r for r in roles
-            if r.startswith(f"airflow")
-            or r.startswith(f"{settings.ENV}_app")
+            r
+            for r in roles
+            if r.startswith("airflow") or r.startswith(f"{settings.ENV}_app")
         ]
         return JsonResponse(data, safe=False)
 
 
-class IAMManagedPolicyRemoveUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, View):
+class IAMManagedPolicyRemoveUser(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, View
+):
     model = IAMManagedPolicy
-    permission_required = 'api.update_policy'
+    permission_required = "api.update_policy"
 
     def get_success_url(self):
         messages.success(self.request, "Successfully removed user")
@@ -133,6 +138,6 @@ class IAMManagedPolicyRemoveUser(OIDCLoginRequiredMixin, PermissionRequiredMixin
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        user = User.objects.get(pk=kwargs['user_id'])
+        user = User.objects.get(pk=kwargs["user_id"])
         self.object.users.remove(user)
         return HttpResponseRedirect(self.get_success_url())

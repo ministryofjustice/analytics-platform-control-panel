@@ -1,14 +1,16 @@
+# Standard library
 import base64
 import json
 import re
 from copy import deepcopy
 from typing import Optional
 
+# Third-party
 import botocore
 import structlog
-from botocore.exceptions import ClientError
 from django.conf import settings
 
+# First-party/Local
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
 
 log = structlog.getLogger(__name__)
@@ -22,6 +24,7 @@ def arn(service, resource, region="", account=""):
         region = ""
 
     return f"arn:aws:{service}:{region}:{account}:{resource}"
+
 
 def s3_arn(resource):
     return arn("s3", resource)
@@ -38,12 +41,10 @@ def iam_assume_role_principal():
     - ARN of the assuming role when both roles are in same account
     - AWS account ID where the assuming IAM role is if in a different account
 
-    See AWS example: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html#example-delegate-xaccount-S3
+    See AWS example: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html#example-delegate-xaccount-S3  # noqa: F401, E501
     """
 
-    cross_account = (
-        settings.AWS_COMPUTE_ACCOUNT_ID != settings.AWS_DATA_ACCOUNT_ID
-    )
+    cross_account = settings.AWS_COMPUTE_ACCOUNT_ID != settings.AWS_DATA_ACCOUNT_ID
 
     if cross_account:
         return settings.AWS_COMPUTE_ACCOUNT_ID
@@ -164,10 +165,12 @@ class S3AccessPolicy:
                 statement["Resource"].append(arn)
 
     def _is_arn_part_of_resource(self, resource, arn):
-        """In general, the partition letter for path is / , but in some of occasions, it will have other parts, e.g.
-        in moto (the python package for mocking aws service), somehow add [] at the end of bucket
+        """In general, the partition letter for path is / , but in some of occasions,
+        it will have other parts, e.g. in moto (the python package for mocking
+        aws service), somehow add [] at the end of bucket
         e.g. arn:aws:s3:::test-bucket[]/* which is strange.
-        This function is to make the check more general based on the bucket convention rules
+        This function is to make the check more general based on the bucket
+        convention rules
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
         """
         if resource.startswith(arn):
@@ -183,7 +186,8 @@ class S3AccessPolicy:
         if statement:
             resources = statement.get("Resource", [])
             for resource in list(resources):
-                # Make sure the resource can be removed only when the arn is part of paths of the resource
+                # Make sure the resource can be removed only when the arn is part
+                # of paths of the resource
                 if self._is_arn_part_of_resource(resource, arn):
                     resources.remove(resource)
 
@@ -204,9 +208,7 @@ class S3AccessPolicy:
 
         # remove statements with no resources
         policy_document["Statement"][:] = [
-            stmt
-            for stmt in policy_document["Statement"]
-            if stmt.get("Resource")
+            stmt for stmt in policy_document["Statement"] if stmt.get("Resource")
         ]
 
         return self.save_policy_document(policy_document)
@@ -237,7 +239,6 @@ class ManagedS3AccessPolicy(S3AccessPolicy):
 
 
 class AWSService:
-
     def __init__(self, assume_role_name=None, profile_name=None):
         self.assume_role_name = assume_role_name
         self.profile_name = profile_name
@@ -247,12 +248,11 @@ class AWSService:
     @property
     def boto3_session(self):
         return self.aws_sessions.get_session(
-            assume_role_name=self.assume_role_name,
-            profile_name=self.profile_name)
+            assume_role_name=self.assume_role_name, profile_name=self.profile_name
+        )
 
 
 class AWSRole(AWSService):
-
     def create_role(self, iam_role_name, role_policy, attach_policies: list = None):
         iam = self.boto3_session.resource("iam")
         try:
@@ -266,9 +266,7 @@ class AWSRole(AWSService):
                     PolicyArn=iam_arn(f"policy/{attach_policy}"),
                 )
         except iam.meta.client.exceptions.EntityAlreadyExistsException:
-            log.warning(
-                f"Skipping creating Role {iam_role_name}: Already exists"
-            )
+            log.warning(f"Skipping creating Role {iam_role_name}: Already exists")
 
     def delete_role(self, name):
         """Delete the given IAM role and all inline policies"""
@@ -296,9 +294,7 @@ class AWSRole(AWSService):
     def grant_bucket_access(self, role_name, bucket_arn, access_level, path_arns=None):
         path_arns = path_arns or []
         if access_level not in ("readonly", "readwrite"):
-            raise ValueError(
-                "access_level must be one of 'readwrite' or 'readonly'"
-            )
+            raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
         if bucket_arn and not path_arns:
             path_arns = [bucket_arn]
@@ -331,7 +327,6 @@ class AWSRole(AWSService):
 
 
 class AWSBucket(AWSService):
-
     def create_bucket(self, bucket_name, is_data_warehouse=False):
         s3_resource = self.boto3_session.resource("s3")
         s3_client = self.boto3_session.client("s3")
@@ -344,14 +339,14 @@ class AWSBucket(AWSService):
                 },
             )
             # Enable versioning by default.
-            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning  # noqa: E501
             versioning = bucket.Versioning()
             versioning.enable()
             # Set bucket lifecycle. Send non-current versions of files to glacier
             # storage after 30 days.
-            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration
+            # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration  # noqa: E501
             lifecycle_id = f"{bucket_name}_lifecycle_configuration"
-            lifecycle_conf = s3_client.put_bucket_lifecycle_configuration(
+            s3_client.put_bucket_lifecycle_configuration(
                 Bucket=bucket_name,
                 LifecycleConfiguration={
                     "Rules": [
@@ -463,16 +458,13 @@ class AWSBucket(AWSService):
     def exists(self, bucket_name):
         try:
             s3_client = self.boto3_session.client("s3")
-            s3_client.head_bucket(
-                Bucket=bucket_name
-            )
+            s3_client.head_bucket(Bucket=bucket_name)
             return True
         except botocore.exceptions.ClientError:
             return False
 
 
 class AWSPolicy(AWSService):
-
     def create_policy(self, name, path, policy_document=None):
         policy_document = policy_document or BASE_S3_ACCESS_POLICY
         iam = self.boto3_session.resource("iam")
@@ -513,7 +505,9 @@ class AWSPolicy(AWSService):
 
         policy.delete()
 
-    def grant_policy_bucket_access(self, policy_arn, bucket_arn, access_level, path_arns=None):
+    def grant_policy_bucket_access(
+        self, policy_arn, bucket_arn, access_level, path_arns=None
+    ):
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be 'readonly' or 'readwrite'")
 
@@ -530,9 +524,7 @@ class AWSPolicy(AWSService):
 
     def revoke_policy_bucket_access(self, policy_arn, bucket_arn=None):
         if not bucket_arn:
-            log.warning(
-                f"Asked to revoke {policy_arn} group access to nothing"
-            )
+            log.warning(f"Asked to revoke {policy_arn} group access to nothing")
             return
 
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
@@ -542,10 +534,13 @@ class AWSPolicy(AWSService):
 
 
 class AWSParameterStore(AWSService):
-
-    def __init__(self, assume_role_name = None, profile_name = None):
-        super(AWSParameterStore, self).__init__(assume_role_name=assume_role_name, profile_name=profile_name)
-        self.client = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
+    def __init__(self, assume_role_name=None, profile_name=None):
+        super(AWSParameterStore, self).__init__(
+            assume_role_name=assume_role_name, profile_name=profile_name
+        )
+        self.client = self.boto3_session.client(
+            "ssm", region_name=settings.AWS_DEFAULT_REGION
+        )
 
     def create_parameter(self, name, value, role_name, description=""):
         try:
@@ -581,21 +576,25 @@ class AWSSecretManagerError(Exception):
 
 
 class AWSSecretManager(AWSService):
-
-    def __init__(self, assume_role_name = None, profile_name = None):
-        super(AWSSecretManager, self).__init__(assume_role_name=assume_role_name, profile_name=profile_name)
+    def __init__(self, assume_role_name=None, profile_name=None):
+        super(AWSSecretManager, self).__init__(
+            assume_role_name=assume_role_name, profile_name=profile_name
+        )
         self.client = self.boto3_session.client("secretsmanager")
 
     def _format_error_message(self, client_error_response):
-        return format("{}: {}.".format(client_error_response.get("Error"),
-                                       client_error_response.get("Message")))
+        return format(
+            "{}: {}.".format(
+                client_error_response.get("Error"), client_error_response.get("Message")
+            )
+        )
 
     def has_existed(self, secret_name: str):
         try:
             self.client.get_secret_value(SecretId=secret_name)
             return True
         except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
                 raise AWSSecretManagerError(self._format_error_message(error.response))
@@ -614,10 +613,10 @@ class AWSSecretManager(AWSService):
     def get_secret(self, secret_name):
         try:
             response = self.client.get_secret_value(SecretId=secret_name)
-            if 'SecretString' in response:
-                secret_data = json.loads(response['SecretString'])
+            if "SecretString" in response:
+                secret_data = json.loads(response["SecretString"])
             else:
-                secret_data = base64.b64decode(response['SecretBinary'])
+                secret_data = base64.b64decode(response["SecretBinary"])
             return secret_data
         except botocore.exceptions.ClientError as error:
             raise AWSSecretManagerError(self._format_error_message(error.response))
@@ -630,14 +629,14 @@ class AWSSecretManager(AWSService):
                 kwargs["SecretBinary"] = base64.b64encode(secret_data)
             else:
                 origin_data = {}
-                if 'SecretString' in response:
-                    origin_data = json.loads(response['SecretString'])
+                if "SecretString" in response:
+                    origin_data = json.loads(response["SecretString"])
                 for key, value in secret_data.items():
                     origin_data[key] = value
                 kwargs["SecretString"] = json.dumps(origin_data)
             self.client.update_secret(**kwargs)
         except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
                 raise AWSSecretManagerError(self._format_error_message(error.response))
@@ -650,9 +649,9 @@ class AWSSecretManager(AWSService):
         try:
             kwargs = {"SecretId": secret_name}
             response = self.client.get_secret_value(SecretId=secret_name)
-            if 'SecretString' in response:
+            if "SecretString" in response:
                 # only update json SecretString, ignore everything else
-                origin_data = json.loads(response['SecretString'])
+                origin_data = json.loads(response["SecretString"])
                 for key in keys_to_delete:
                     if key in origin_data:
                         del origin_data[key]
@@ -660,25 +659,27 @@ class AWSSecretManager(AWSService):
                 kwargs["SecretString"] = json.dumps(origin_data)
                 self.client.update_secret(**kwargs)
                 return True
-            return False                
+            return False
         except botocore.exceptions.ClientError as error:
-            if error.response['Error']['Code'] == 'ResourceNotFoundException':
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
                 raise AWSSecretManagerError(self._format_error_message(error.response))
 
     def delete_secret(self, secret_name, without_recovery=True):
         """
-        Choosing True as default value of without_recovery to allow us to create secret again
-        in a short period of time, otherwise we have to wait the recovery window ends, but it
-        does mean we lose the ability of recovering the deletion within recovery window.
+        Choosing True as default value of without_recovery to allow us to create
+        secret again in a short period of time, otherwise we have to wait the
+        recovery window ends, but it does mean we lose the ability of recovering
+        the deletion within recovery window.
         """
         if not self.has_existed(secret_name):
             return
 
         try:
             response = self.client.delete_secret(
-                SecretId=secret_name, ForceDeleteWithoutRecovery=without_recovery)
+                SecretId=secret_name, ForceDeleteWithoutRecovery=without_recovery
+            )
             return response
         except botocore.exceptions.ClientError as error:
             raise AWSSecretManagerError(self._format_error_message(error.response))
@@ -688,7 +689,6 @@ class AWSSecretManager(AWSService):
             return self.create_secret(secret_name, secret_data=secret_data)
         else:
             return self.update_secret(secret_name, secret_data=secret_data)
-
 
     def get_secret_if_found(self, secret_name: str) -> Optional[dict]:
         if self.has_existed(secret_name):

@@ -1,7 +1,9 @@
-from controlpanel.api.models import App, User, S3Bucket, IPAllowlist
+# Third-party
 from django.contrib import admin
-
 from simple_history.admin import SimpleHistoryAdmin
+
+# First-party/Local
+from controlpanel.api.models import App, IPAllowlist, S3Bucket, User
 
 
 def make_migration_pending(modeladmin, request, queryset):

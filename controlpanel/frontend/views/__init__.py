@@ -1,26 +1,29 @@
-from django.views.generic.base import TemplateView
+# Third-party
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.views.generic.base import TemplateView
 from mozilla_django_oidc.views import OIDCLogoutView
 
-from controlpanel.frontend.views.app import (
+# First-party/Local
+from controlpanel.frontend.views.accessibility import Accessibility  # noqa: F401
+from controlpanel.frontend.views.app import (  # noqa: F401
+    AddAdmin,
+    AddCustomers,
     AdminAppList,
-    AppList,
     AppDetail,
+    AppList,
     CreateApp,
     DeleteApp,
-    AddCustomers,
-    RemoveCustomer,
-    AddAdmin,
-    RevokeAdmin,
     GrantAppAccess,
-    UpdateAppAccess,
+    RemoveCustomer,
+    ResetAppSecret,
+    RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
-    ResetAppSecret,
-    UpdateAppAuth0Connections
+    UpdateAppAccess,
+    UpdateAppAuth0Connections,
 )
-from controlpanel.frontend.views.datasource import (
+from controlpanel.frontend.views.datasource import (  # noqa: F401
     AdminBucketList,
     BucketDetail,
     BucketList,
@@ -29,54 +32,50 @@ from controlpanel.frontend.views.datasource import (
     GrantAccess,
     GrantPolicyAccess,
     RevokeAccess,
+    RevokeIAMManagedPolicyAccess,
     UpdateAccessLevel,
     UpdateIAMManagedPolicyAccessLevel,
-    RevokeIAMManagedPolicyAccess,
     WebappBucketList,
 )
-from controlpanel.frontend.views.policy import (
+from controlpanel.frontend.views.help import Help  # noqa: F401
+from controlpanel.frontend.views.ip_allowlist import (  # noqa: F401
+    IPAllowlistCreate,
+    IPAllowlistDelete,
+    IPAllowlistDetail,
+    IPAllowlistList,
+)
+from controlpanel.frontend.views.login_fail import LoginFail  # noqa: F401
+from controlpanel.frontend.views.parameter import (  # noqa: F401
+    AdminParameterList,
+    ParameterCreate,
+    ParameterDelete,
+    ParameterFormRoleList,
+    ParameterList,
+)
+from controlpanel.frontend.views.policy import (  # noqa: F401
     AdminIAMManagedPolicyList,
-    IAMManagedPolicyList,
     IAMManagedPolicyCreate,
     IAMManagedPolicyDelete,
     IAMManagedPolicyDetail,
     IAMManagedPolicyFormRoleList,
+    IAMManagedPolicyList,
     IAMManagedPolicyRemoveUser,
 )
-from controlpanel.frontend.views.parameter import (
-    AdminParameterList,
-    ParameterList,
-    ParameterCreate,
-    ParameterDelete,
-    ParameterFormRoleList,
-)
-from controlpanel.frontend.views.tool import (
-    ToolList,
-    RestartTool,
-)
-from controlpanel.frontend.views.user import (
-    ResetMFA,
-    SetSuperadmin,
-    UserList,
-    UserDelete,
-    UserDetail,
-)
-from controlpanel.frontend.views.release import (
-    ReleaseList,
+from controlpanel.frontend.views.release import (  # noqa: F401
+    ReleaseCreate,
     ReleaseDelete,
     ReleaseDetail,
-    ReleaseCreate,
+    ReleaseList,
 )
-from controlpanel.frontend.views.ip_allowlist import (
-    IPAllowlistList,
-    IPAllowlistCreate,
-    IPAllowlistDetail,
-    IPAllowlistDelete,
+from controlpanel.frontend.views.reset import ResetHome  # noqa: F401
+from controlpanel.frontend.views.tool import RestartTool, ToolList  # noqa: F401
+from controlpanel.frontend.views.user import (  # noqa: F401
+    ResetMFA,
+    SetSuperadmin,
+    UserDelete,
+    UserDetail,
+    UserList,
 )
-from controlpanel.frontend.views.reset import ResetHome
-from controlpanel.frontend.views.accessibility import Accessibility 
-from controlpanel.frontend.views.login_fail import LoginFail
-from controlpanel.frontend.views.help import Help
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 

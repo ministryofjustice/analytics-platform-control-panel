@@ -1,22 +1,17 @@
-from controlpanel.api.views.customers import (
+# First-party/Local
+from controlpanel.api.views.customers import (  # noqa: F401
     AppCustomersAPIView,
     AppCustomersDetailAPIView,
 )
-from controlpanel.api.views.models import (
-    UserViewSet,
-    AppViewSet,
+from controlpanel.api.views.health_check import health_check  # noqa: F401
+from controlpanel.api.views.models import (  # noqa: F401
     AppS3BucketViewSet,
-    UserS3BucketViewSet,
+    AppViewSet,
+    ParameterViewSet,
     S3BucketViewSet,
     UserAppViewSet,
-    ParameterViewSet
+    UserS3BucketViewSet,
+    UserViewSet,
 )
-from controlpanel.api.views.tools import (
-    ToolViewSet,
-)
-from controlpanel.api.views.health_check import (
-    health_check,
-)
-from controlpanel.api.views.tool_deployments import (
-    ToolDeploymentAPIView
-)
+from controlpanel.api.views.tool_deployments import ToolDeploymentAPIView  # noqa: F401
+from controlpanel.api.views.tools import ToolViewSet  # noqa: F401

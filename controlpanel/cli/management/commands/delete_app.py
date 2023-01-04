@@ -1,7 +1,9 @@
+# Third-party
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_slug
-from django.core.exceptions import ValidationError
 
+# First-party/Local
 from controlpanel.api.models import App
 
 

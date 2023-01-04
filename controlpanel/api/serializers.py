@@ -276,8 +276,10 @@ class ToolDeploymentSerializer(serializers.Serializer):
         try:
             _, _, _ = value.split("__")
         except ValueError:
-            raise serializers.ValidationError('This field include chart name, version and tool.id,'
-                                              ' they are joined by "__".')
+            raise serializers.ValidationError(
+                "This field include chart name, version and tool.id,"
+                ' they are joined by "__".'
+            )
 
 
 class ESBucketHitsSerializer(serializers.BaseSerializer):
