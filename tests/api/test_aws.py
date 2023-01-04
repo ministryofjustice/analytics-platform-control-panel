@@ -8,8 +8,8 @@ import pytest
 
 # First-party/Local
 from controlpanel.api import aws, cluster
-from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
-from tests.api.fixtures.aws import *
+from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User  # noqa: F403
+from tests.api.fixtures.aws import *  # noqa: F403
 
 
 @pytest.yield_fixture(autouse=True)

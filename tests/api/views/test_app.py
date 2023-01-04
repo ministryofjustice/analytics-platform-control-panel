@@ -9,7 +9,7 @@ from rest_framework.reverse import reverse
 
 # First-party/Local
 from controlpanel.api.models import App
-from tests.api.fixtures.aws import *
+from tests.api.fixtures.aws import *  # noqa: F403
 
 
 @pytest.fixture  # noqa: F405
