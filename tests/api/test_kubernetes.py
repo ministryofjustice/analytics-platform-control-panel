@@ -1,10 +1,12 @@
+# Standard library
 from unittest.mock import patch
 
+# Third-party
 import kubernetes
 import pytest
 
+# First-party/Local
 from controlpanel.api.kubernetes import KubernetesClient
-
 
 SERVICE_ACCOUNT_TEST_TOKEN = "test-service-account-token"
 
@@ -12,7 +14,9 @@ SERVICE_ACCOUNT_TEST_TOKEN = "test-service-account-token"
 @pytest.yield_fixture()
 def k8s_config():
     config = kubernetes.client.Configuration()
-    with patch("controlpanel.api.kubernetes.kubernetes.client.Configuration") as Configuration:
+    with patch(
+        "controlpanel.api.kubernetes.kubernetes.client.Configuration"
+    ) as Configuration:
         config.host = "https://api.k8s.localhost"
         config.api_key_prefix = {"authorization": "Bearer"}
         config.api_key = {"authorization": SERVICE_ACCOUNT_TEST_TOKEN}

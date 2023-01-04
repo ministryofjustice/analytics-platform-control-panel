@@ -1,20 +1,16 @@
+# Third-party
 from model_mommy import mommy
 from rest_framework.reverse import reverse
 from rest_framework.test import APITestCase
 
 
 class AppFilterTest(APITestCase):
-
     def setUp(self):
-        self.superuser = mommy.make(
-            "api.User", is_superuser=True)
-        self.normal_user = mommy.make(
-            "api.User", is_superuser=False)
+        self.superuser = mommy.make("api.User", is_superuser=True)
+        self.normal_user = mommy.make("api.User", is_superuser=False)
 
-        self.app_1 = mommy.make(
-            "api.App", name="App 1")
-        self.app_2 = mommy.make(
-            "api.App", name="App 2")
+        self.app_1 = mommy.make("api.App", name="App 1")
+        self.app_2 = mommy.make("api.App", name="App 2")
 
     def test_everyone_see_everything(self):
         for user in [self.superuser, self.normal_user]:

@@ -1,6 +1,11 @@
-from model_mommy import mommy
-import pytest
+# Standard library
 from unittest.mock import patch
+
+# Third-party
+import pytest
+from model_mommy import mommy
+
+# First-party/Local
 from controlpanel.api import cluster
 
 
@@ -11,7 +16,7 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def iam_managed_policy():
-    return mommy.make('api.IAMManagedPolicy', name='test')
+    return mommy.make("api.IAMManagedPolicy", name="test")
 
 
 def test_arn(settings, iam_managed_policy):
@@ -22,7 +27,9 @@ def test_arn(settings, iam_managed_policy):
 
 @pytest.yield_fixture
 def aws_create_policy():
-    with patch('controlpanel.api.cluster.AWSPolicy.create_policy') as aws_create_policy_action:
+    with patch(
+        "controlpanel.api.cluster.AWSPolicy.create_policy"
+    ) as aws_create_policy_action:
         yield aws_create_policy_action
 
 
@@ -32,4 +39,3 @@ def test_create(aws_create_policy, iam_managed_policy):
         iam_managed_policy.name,
         iam_managed_policy.path,
     )
-

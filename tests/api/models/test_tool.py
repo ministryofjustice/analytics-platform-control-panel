@@ -1,10 +1,13 @@
-from unittest.mock import patch, MagicMock
+# Standard library
+from unittest.mock import MagicMock, patch
 
+# Third-party
+import pytest
 from django.conf import settings
 from model_mommy import mommy
-import pytest
 
-from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
+# First-party/Local
+from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
 
 
 @pytest.fixture
@@ -54,13 +57,19 @@ def cluster():
 @pytest.mark.parametrize(
     "chart_version, expected_description",
     [
-        ("unknown-version", ''),
-        ("1.0.0", ''),
+        ("unknown-version", ""),
+        ("1.0.0", ""),
         ("2.2.5", "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"),
     ],
-    ids=["unknown-version", "chart-with-no-appVersion", "chart-with-appVersion",],
+    ids=[
+        "unknown-version",
+        "chart-with-no-appVersion",
+        "chart-with-appVersion",
+    ],
 )
-def test_tool_description_from_helm_chart(helm_repository_index, chart_version, expected_description):
+def test_tool_description_from_helm_chart(
+    helm_repository_index, chart_version, expected_description
+):
     tool = Tool(chart_name="rstudio", version=chart_version).save()
 
     assert tool.description == expected_description
