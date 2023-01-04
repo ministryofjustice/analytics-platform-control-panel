@@ -214,7 +214,8 @@ python3 manage.py migrate
 Before the first run (or after changes to static assets), you need to compile
 and collate the static assets.
 
-Static assets are compiled with Node.JS 8.16.0+
+Static assets are compiled with Node.JS v18.12.0+
+
 ```sh
 npm install
 mkdir static

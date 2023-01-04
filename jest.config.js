@@ -31,5 +31,5 @@ module.exports = {
     "/node_modules/",
     "\\.test\\.js"
   ],
-
+  "testEnvironment": "jsdom",
 };
