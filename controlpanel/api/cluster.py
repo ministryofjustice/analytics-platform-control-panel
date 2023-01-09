@@ -406,13 +406,13 @@ class App(EntityResource):
         self.aws_role_service = self.create_aws_service(AWSRole)
         self.aws_secret_service = self.create_aws_service(AWSSecretManager)
 
-    def set_secret_type(self, type_key: str) -> "App":
-        self.secret_type = type_key
-        return self
-
-    @property
-    def _get_secret_uri(self) -> str:
-        return self.app.get_secret_key(self.secret_type)
+    # def set_secret_type(self, type_key: str) -> "App":
+    #     self.secret_type = type_key
+    #     return self
+    #
+    # @property
+    # def _get_secret_uri(self) -> str:
+    #     return self.app.get_secret_key(self.secret_type)
 
     @property
     def iam_role_name(self):
@@ -431,7 +431,8 @@ class App(EntityResource):
 
     def delete(self):
         self.aws_role_service.delete_role(self.iam_role_name)
-        self.delete_secret()
+        self.delete_secret(secret_name=self.app.app_aws_secret_auth_name)
+        self.delete_secret(secret_name=self.app.app_aws_secret_param_name)
 
     @property
     def url(self):
@@ -451,21 +452,21 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
-    def create_or_update_secret(self, secret_data):
+    def create_or_update_secret(self, secret_name, secret_data):
         self.aws_secret_service.create_or_update(
-            secret_name=self._get_secret_uri, secret_data=secret_data
+            secret_name=secret_name, secret_data=secret_data
         )
 
-    def delete_secret(self):
-        self.aws_secret_service.delete_secret(secret_name=self._get_secret_uri)
+    def delete_secret(self, secret_name):
+        self.aws_secret_service.delete_secret(secret_name=secret_name)
 
-    def delete_entries_in_secret(self, keys_to_delete: List[str]) -> bool:
+    def delete_entries_in_secret(self, secret_name, keys_to_delete: List[str]) -> bool:
         return self.aws_secret_service.delete_keys_in_secret(
-            secret_name=self._get_secret_uri, keys_to_delete=keys_to_delete
+            secret_name=secret_name, keys_to_delete=keys_to_delete
         )
 
-    def get_secret_if_found(self):
-        return self.aws_secret_service.get_secret_if_found(self._get_secret_uri)
+    def get_secret_if_found(self, secret_name=None):
+        return self.aws_secret_service.get_secret_if_found(secret_name)
 
 
 class S3Bucket(EntityResource):
@@ -559,27 +560,27 @@ class RoleGroup(EntityResource):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
 
 
-class AppParameter(EntityResource):
-
-    ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
-
-    def __init__(self, parameter):
-        super(AppParameter, self).__init__()
-        self.parameter = parameter
-
-    def _init_aws_services(self):
-        self.aws_param_service = self.create_aws_service(AWSParameterStore)
-
-    def create_parameter(self):
-        return self.aws_param_service.create_parameter(
-            self.parameter.name,
-            self.parameter.value,
-            self.parameter.role_name,
-            self.parameter.description,
-        )
-
-    def delete_parameter(self):
-        self.aws_param_service.delete_parameter(self.parameter.name)
+# class AppParameter(EntityResource):
+#
+#     ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
+#
+#     def __init__(self, parameter):
+#         super(AppParameter, self).__init__()
+#         self.parameter = parameter
+#
+#     def _init_aws_services(self):
+#         self.aws_param_service = self.create_aws_service(AWSParameterStore)
+#
+#     def create_parameter(self):
+#         return self.aws_param_service.create_parameter(
+#             self.parameter.name,
+#             self.parameter.value,
+#             self.parameter.role_name,
+#             self.parameter.description,
+#         )
+#
+#     def delete_parameter(self):
+#         self.aws_param_service.delete_parameter(self.parameter.name)
 
 
 class ToolDeploymentError(Exception):

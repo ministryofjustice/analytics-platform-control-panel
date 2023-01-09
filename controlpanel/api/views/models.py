@@ -35,6 +35,8 @@ class AppViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.AppPermissions,)
     filterset_fields = ('name', 'repo_url', 'slug')
+    lookup_field = "res_id"
+    lookup_value_regex = "[^/]+"
 
     @atomic
     def perform_create(self, serializer):
@@ -91,12 +93,12 @@ class UserAppViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.UserAppSerializer
 
 
-class ParameterViewSet(viewsets.ModelViewSet):
-    queryset = Parameter.objects.all()
-    serializer_class = serializers.ParameterSerializer
-    filter_backends = (filters.ParameterFilter,)
-    permission_classes = (permissions.ParameterPermissions,)
-
-    @atomic
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+# class ParameterViewSet(viewsets.ModelViewSet):
+#     queryset = Parameter.objects.all()
+#     serializer_class = serializers.ParameterSerializer
+#     filter_backends = (filters.ParameterFilter,)
+#     permission_classes = (permissions.ParameterPermissions,)
+#
+#     @atomic
+#     def perform_create(self, serializer):
+#         serializer.save(created_by=self.request.user)

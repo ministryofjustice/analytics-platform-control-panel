@@ -13,11 +13,9 @@ from rest_framework.response import Response
 
 # First-party/Local
 from controlpanel.api import permissions, serializers
-from controlpanel.api.models import App
 
 
 class AppCustomersAPIView(GenericAPIView):
-    queryset = App.objects.all()
     serializer_class = serializers.AppCustomerSerializer
     permission_classes = (permissions.IsSuperuser,)
 
@@ -58,8 +56,8 @@ class AppCustomersAPIView(GenericAPIView):
 
 
 class AppCustomersDetailAPIView(GenericAPIView):
-    queryset = App.objects.all()
     permission_classes = (permissions.IsSuperuser,)
+    http_method_names = ['delete']
 
     def delete(self, request, *args, **kwargs):
         app = self.get_object()

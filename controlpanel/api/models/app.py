@@ -1,4 +1,5 @@
 # Third-party
+import uuid
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
@@ -15,6 +16,7 @@ class App(TimeStampedModel):
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
+    res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -65,17 +67,29 @@ class App(TimeStampedModel):
         return  auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
 
     @property
-    def app_aws_secret_name(self):
+    def app_aws_secret_auth_name(self):
         return f"{settings.ENV}/apps/{self.slug}/auth"
 
     @property
-    def app_aws_secret_param(self):
+    def app_aws_secret_auth(self):
+        return {
+            "name": self.app_aws_secret_auth_name
+        }
+
+    @property
+    def app_aws_secret_param_name(self):
         return f"{settings.ENV}/apps/{self.slug}/parameters"
 
-    def get_secret_key(self, name):
-        if name == "parameters":
-            return self.app_aws_secret_param
-        return self.app_aws_secret_name
+    @property
+    def app_aws_secret_param(self):
+        return {
+            "name": self.app_aws_secret_param_name
+        }
+
+    # def get_secret_key(self, name):
+    #     if name == "parameters":
+    #         return self.app_aws_secret_param_name
+    #     return self.app_aws_secret_auth_name
 
     def construct_secret_data(self, client):
         """ The assumption is per app per callback url"""

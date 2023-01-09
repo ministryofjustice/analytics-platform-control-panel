@@ -292,13 +292,17 @@ TIME_ZONE = "UTC"
 
 # -- Django REST Framework
 
+# questions: the list of authentication methods, as long as one of them is met, it will be passed.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # Token authentication
+        # need to check why a user can be created automatically during a process of authentication flow for our cases
         "controlpanel.api.jwt_auth.JWTAuthentication",
+        # save question as above
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
-        # required for browsable API
-        'rest_framework.authentication.BasicAuthentication',
+        # REMOVE basic auth from the authentication methods
+        # 'rest_framework.authentication.BasicAuthentication',
+        # Require browsable api and also allow frontend to call api via session
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": ["controlpanel.api.filters.SuperusersOnlyFilter"],

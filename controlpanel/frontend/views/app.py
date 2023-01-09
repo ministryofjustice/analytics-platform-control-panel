@@ -128,7 +128,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
         context["feature_enabled"] = settings.features.app_migration.enabled
         context["parameters"] = (
-            cluster.App(app).set_secret_type("parameters").get_secret_if_found()
+            cluster.App(app).get_secret_if_found(secret_name=app.app_aws_secret_param_name)
         )
         return context
 
@@ -204,7 +204,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 "disable_authentication", False
             ),
         }
-        cluster.App(self.object).create_or_update_secret(secret_data)
+        cluster.App(self.object).create_or_update_secret(
+            secret_name=self.object.app_aws_secret_auth_name,
+            secret_data=secret_data)
 
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
@@ -387,7 +389,9 @@ class ResetAppSecret(
         app = self.get_object()
         client = auth0.ExtendedAuth0().clients.search_first_match(dict(name=app.slug))
         if client:
-            cluster.App(app).create_or_update_secret(app.construct_secret_data(client))
+            cluster.App(app).create_or_update_secret(
+                secret_name=app.app_aws_secret_auth_name,
+                secret_data=app.construct_secret_data(client))
         return super().post(request, *args, **kwargs)
 
 

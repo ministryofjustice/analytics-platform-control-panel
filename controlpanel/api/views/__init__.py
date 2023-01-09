@@ -8,8 +8,7 @@ from controlpanel.api.views.models import (
     AppS3BucketViewSet,
     UserS3BucketViewSet,
     S3BucketViewSet,
-    UserAppViewSet,
-    ParameterViewSet
+    UserAppViewSet
 )
 from controlpanel.api.views.tools import (
     ToolViewSet,
@@ -19,4 +18,7 @@ from controlpanel.api.views.health_check import (
 )
 from controlpanel.api.views.tool_deployments import (
     ToolDeploymentAPIView
+)
+from controlpanel.api.views.apps import (
+    AppDetailAPIView
 )

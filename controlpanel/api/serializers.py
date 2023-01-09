@@ -131,13 +131,18 @@ class UserAppNestedInAppSerializer(serializers.ModelSerializer):
 
 
 class AppSerializer(serializers.ModelSerializer):
-    userapps = UserAppNestedInAppSerializer(many=True, read_only=True)
-    apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
+    user_apps = UserAppNestedInAppSerializer(many=True, read_only=True)
+    app_s3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
+    url = serializers.HyperlinkedIdentityField(
+        view_name='app-detail',
+        lookup_field='res_id'
+    )
 
     class Meta:
         model = App
+        lookup_field = "res_id"
         fields = (
-            "id",
+            "res_id",
             "url",
             "name",
             "description",
@@ -145,8 +150,10 @@ class AppSerializer(serializers.ModelSerializer):
             "repo_url",
             "iam_role_name",
             "created_by",
-            "apps3buckets",
-            "userapps",
+            "app_s3buckets",
+            "user_apps",
+            "app_aws_secret_auth",
+            "app_aws_secret_param"
         )
 
     def validate_repo_url(self, value):
@@ -307,13 +314,13 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
         return "unknown", key
 
 
-class ParameterSerializer(serializers.ModelSerializer):
-    value = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Parameter
-        fields = ("id", "name", "role_name", "value", "key")
-        read_only_fields = ("name",)
+# class ParameterSerializer(serializers.ModelSerializer):
+#     value = serializers.CharField(write_only=True)
+#
+#     class Meta:
+#         model = Parameter
+#         fields = ("id", "name", "role_name", "value", "key")
+#         read_only_fields = ("name",)
 
 
 class ToolSerializer(serializers.Serializer):
