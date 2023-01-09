@@ -127,4 +127,4 @@ services:
       SLACK_API_TOKEN: "dummy"
       SLACK_CHANNEL: ${SLACK_CHANNEL}
       TOOLS_DOMAIN: tools.dev.mojanalytics.xyz
-      SKIP_DB_SSL: "True"
+      Enable_DB_SSL: "False"
