@@ -257,7 +257,7 @@ DEBUG = (str(os.environ.get("DEBUG", False)).lower() == 'true')
 
 # -- Database
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
-SKIP_DB_SSL = os.environ.get("SKIP_DB_SSL", DB_HOST in ["127.0.0.1", "localhost"])
+ENABLE_DB_SSL = os.environ.get("ENABLE_DB_SSL", DB_HOST not in ["127.0.0.1", "localhost"])
 DATABASES = {
     "default": {
         "ENGINE": "django_prometheus.db.backends.postgresql",
