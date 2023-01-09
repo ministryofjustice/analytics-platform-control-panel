@@ -126,10 +126,10 @@ class CreateAppForm(AppAuth0Form):
 
     disable_authentication = forms.BooleanField(required=False)
 
-    app_ip_allowlists = forms.MultipleChoiceField(
+    app_ip_allowlists = forms.ModelMultipleChoiceField(
         required=False,
-        initial = list(IPAllowlist.objects.filter(is_recommended=True).values_list("name", flat=True)),
-        choices=list(IPAllowlist.objects.all().order_by("name").values_list("name", "name"))
+        initial=IPAllowlist.objects.filter(is_recommended=True),
+        queryset=IPAllowlist.objects.all()
     )
 
     def clean(self):

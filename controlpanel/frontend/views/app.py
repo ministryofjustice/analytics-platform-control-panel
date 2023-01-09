@@ -185,7 +185,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             repo_url=repo_url,
         )
 
-        self.object.ip_allowlists.add(*IPAllowlist.objects.filter(name__in=ip_allowlists))
+        self.object.ip_allowlists.add(*ip_allowlists)
 
         self._create_or_link_datasource(form)
 
