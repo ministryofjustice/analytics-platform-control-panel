@@ -124,7 +124,6 @@ def test_tool_release_form_get_target_users():
         )
 
 
-@pytest.mark.django_db
 def test_create_app_form_clean_new_datasource():
     """
     The CreateAppForm class has a bespoke "clean" method. We should ensure it
@@ -173,7 +172,6 @@ def test_create_app_form_clean_new_datasource():
         assert "new_datasource_name" in f.errors
 
 
-@pytest.mark.django_db
 def test_create_app_form_clean_existing_datasource():
     """
     An existing datasource name is required if the datasource is marked as
@@ -192,7 +190,6 @@ def test_create_app_form_clean_existing_datasource():
     assert "existing_datasource_id" in f.errors
 
 
-@pytest.mark.django_db
 def test_create_app_form_new_datasource_but_bucket_existed():
     bucket_name = "test-bucketname"
     aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
@@ -223,7 +220,6 @@ def test_create_new_datasource_but_bucket_existed():
     assert "already exists" in ".".join(f.errors["name"])
 
 
-@pytest.mark.django_db
 def test_create_app_form_clean_repo_url():
     """
     Ensure the various states of a GitHub repository result in a valid form or
@@ -299,7 +295,6 @@ def test_create_app_form_clean_repo_url():
         assert "repo_url" in f.errors
 
 
-@pytest.mark.django_db
 def test_create_app_with_custom_connection():
     # Good case.
     f = forms.CreateAppForm(

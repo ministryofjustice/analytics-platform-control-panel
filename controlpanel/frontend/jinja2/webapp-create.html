@@ -181,9 +181,9 @@
       {% set id = "app-ip-allowlists-" + loop.index|string %}
       {% set name = "app_ip_allowlists" %}
       <div class="govuk-checkboxes__item">
-        <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ ip_allowlist[1] }}" {{-" checked" if ip_allowlist[0] in form.app_ip_allowlists.value() else "" }}>
+        <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ ip_allowlist[0] }}" {{-" checked" if (ip_allowlist[0] in form.app_ip_allowlists.value() or ip_allowlist[0]|string in form.app_ip_allowlists.value()) else "" }}>
         {{ govukLabel({
-          "text": ip_allowlist[0],
+          "text": ip_allowlist[1],
           "classes": 'govuk-checkboxes__label' + (' ' + (ip_allowlist.label|default({})).classes|default("")),
           "attributes": (ip_allowlist.label|default({})).attributes|default(""),
           "for": id
