@@ -146,7 +146,6 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         kwargs.update(request=self.request,
                       all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
                       custom_connections=auth0.ExtendedConnections.custom_connections(),
-                      app_ip_allowlists=list(IPAllowlist.objects.filter(is_recommended=True).values_list("name", flat=True)),
                       )
         return kwargs
 
