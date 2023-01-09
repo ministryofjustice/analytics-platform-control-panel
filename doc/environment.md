@@ -91,4 +91,4 @@ in django settings.
 | `SECRET_KEY` | Secret key used to encrypt cookies, etc | |
 | `SENTRY_DSN` | Sentry credentials | |
 | `SLACK_API_TOKEN` | Slack token ([more information)](https://slack.dev/python-slackclient/auth.html) | Only required when you're working with Slack |
-| `SKIP_DB_SSL` | Optional: Decide whether the DB connection requires ssl | Default is True (skip) for local env but False (do not skip) for cloud env |
+| `ENABLE_DB_SSL` | Optional: When set to True ensures the database connection requires SSL. If set to False, allow unencrypted connections | Default is False for local env but True for production |
