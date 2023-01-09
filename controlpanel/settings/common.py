@@ -272,7 +272,7 @@ DATABASES = {
     }
 }
 
-if not SKIP_DB_SSL:
+if ENABLE_DB_SSL:
     DATABASES["default"]["OPTIONS"] = {'sslmode': 'require'}
 
 # Wrap each request in a transaction
