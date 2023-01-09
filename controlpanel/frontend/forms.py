@@ -137,13 +137,9 @@ class CreateAppForm(AppAuth0Form):
 
     disable_authentication = forms.BooleanField(required=False)
 
-    def __init__(self, *args, **kwargs):
-        self.app_ip_allowlists = kwargs.pop("app_ip_allowlists", None)
-        super(CreateAppForm, self).__init__(*args, **kwargs)
-
-        self.fields["app_ip_allowlists"] = forms.MultipleChoiceField(
+    app_ip_allowlists = forms.MultipleChoiceField(
         required=False,
-        initial=self.app_ip_allowlists,
+        initial = list(IPAllowlist.objects.filter(is_recommended=True).values_list("name", flat=True)),
         choices=list(IPAllowlist.objects.all().order_by("name").values_list("name", "name"))
     )
 
