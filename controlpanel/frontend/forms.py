@@ -128,9 +128,12 @@ class CreateAppForm(AppAuth0Form):
 
     app_ip_allowlists = forms.ModelMultipleChoiceField(
         required=False,
-        initial=IPAllowlist.objects.filter(is_recommended=True),
         queryset=IPAllowlist.objects.all()
     )
+
+    def __init__(self, *args, **kwargs):
+        super(CreateAppForm, self).__init__(*args, **kwargs)
+        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(is_recommended=True)
 
     def clean(self):
         cleaned_data = super().clean()
