@@ -1,11 +1,13 @@
 # Third-party
 from django.conf import settings
 from django.db import models
+from django.dispatch import receiver
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import auth0, cluster, elasticsearch
+from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
 
 
@@ -15,6 +17,7 @@ class App(TimeStampedModel):
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
+    ip_allowlists = models.ManyToManyField(IPAllowlist, related_name="apps", related_query_name="app", blank=True)
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -72,6 +75,11 @@ class App(TimeStampedModel):
     def app_aws_secret_param(self):
         return f"{settings.ENV}/apps/{self.slug}/parameters"
 
+    @property
+    def app_allowed_ip_ranges(self):
+        allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by("pk")
+        return ", ".join(list(allowed_ip_ranges))
+
     def get_secret_key(self, name):
         if name == "parameters":
             return self.app_aws_secret_param
@@ -117,6 +125,7 @@ class App(TimeStampedModel):
 
         if is_create:
             cluster.App(self).create_iam_role()
+            cluster.App(self).create_or_update_secret({"allowed_ip_ranges": self.app_allowed_ip_ranges})
 
         return self
 
@@ -125,6 +134,17 @@ class App(TimeStampedModel):
         auth0.ExtendedAuth0().clear_up_app(app_name=self.slug, group_name=self.slug)
 
         super().delete(*args, **kwargs)
+
+
+@receiver(models.signals.m2m_changed, sender=App.ip_allowlists.through)
+def app_ip_allowlists_changed(sender, instance, action, **kwargs):
+    """
+    Trigger an update of an App's entry in AWS Secrets Manager whenever its list of
+    allowed IP ranges changes (via IPAllowlists in the App's ip_allowlists attribute).
+    """
+
+    if isinstance(instance, App) and action in ["post_add", "post_remove"]:
+        cluster.App(instance).create_or_update_secret({"allowed_ip_ranges": instance.app_allowed_ip_ranges})
 
 
 class AddCustomerError(Exception):

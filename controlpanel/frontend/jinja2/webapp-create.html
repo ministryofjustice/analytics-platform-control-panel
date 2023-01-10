@@ -170,6 +170,30 @@
   }}
 
   <div class="govuk-form-group">
+    <label class="govuk-label govuk-label--m">IP Allowlists</label>
+    <span class="govuk-hint">
+      Customers will only be able to access this app from the IP networks in the allowlists selected below.
+      If no allowlists are selected, the app will be accessible from any IP address.
+    </span>
+
+    <div class="govuk-checkboxes">
+    {% for ip_allowlist in form.fields.app_ip_allowlists.choices %}
+      {% set id = "app-ip-allowlists-" + loop.index|string %}
+      {% set name = "app_ip_allowlists" %}
+      <div class="govuk-checkboxes__item">
+        <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ ip_allowlist[0] }}" {{-" checked" if (ip_allowlist[0] in form.app_ip_allowlists.value() or ip_allowlist[0]|string in form.app_ip_allowlists.value()) else "" }}>
+        {{ govukLabel({
+          "text": ip_allowlist[1],
+          "classes": 'govuk-checkboxes__label' + (' ' + (ip_allowlist.label|default({})).classes|default("")),
+          "attributes": (ip_allowlist.label|default({})).attributes|default(""),
+          "for": id
+        }) }}
+      </div>
+    {% endfor %}
+    </div>
+  </div>
+
+  <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
   </div>
 </form>
