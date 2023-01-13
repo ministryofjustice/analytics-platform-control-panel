@@ -66,6 +66,11 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
 
 
 class AppSimpleSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='app-detail',
+        lookup_field='res_id'
+    )
+
     class Meta:
         model = App
         fields = (
@@ -312,15 +317,6 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
             return match.group(1), match.group(2)
 
         return "unknown", key
-
-
-# class ParameterSerializer(serializers.ModelSerializer):
-#     value = serializers.CharField(write_only=True)
-#
-#     class Meta:
-#         model = Parameter
-#         fields = ("id", "name", "role_name", "value", "key")
-#         read_only_fields = ("name",)
 
 
 class ToolSerializer(serializers.Serializer):

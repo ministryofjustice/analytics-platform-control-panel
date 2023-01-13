@@ -1,10 +1,20 @@
-from rest_framework.generics import GenericAPIView
-from rest_framework.response import Response
+from rest_framework import viewsets, mixins
+from django_filters.rest_framework import DjangoFilterBackend
+
+from controlpanel.api.models import App
+from controlpanel.api import (
+    permissions,
+    serializers,
+)
 
 
-class AppDetailAPIView(GenericAPIView):
-    permission_classes = ()
+class AppDetailAPIView(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    resource = "app"
+
+    queryset = App.objects.all()
+
+    serializer_class = serializers.AppSerializer
+    permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
+    filter_backends = (DjangoFilterBackend,)
     http_method_names = ['get']
-
-    def get(self, request, *args, **kwargs):
-        app = self.get_object()
+    lookup_field = "name"

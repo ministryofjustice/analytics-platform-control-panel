@@ -204,6 +204,8 @@ AUTH0 = {
 
 OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
 
+# The audience for Control Panel RESTful APIs
+OIDC_CPANEL_API_AUDIENCE = os.environ.get("OIDC_CPANEL_API_AUDIENCE")
 
 # -- Security
 

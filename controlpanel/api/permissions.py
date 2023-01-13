@@ -15,6 +15,18 @@ def is_superuser(user):
     return user and user.is_superuser
 
 
+class JWTTokenResourcePermissions(BasePermission):
+    """
+    The permission class for checking whether the M2M client has required scope
+    """
+
+    def has_permission(self, request, view):
+        if hasattr(view, "resource"):
+            return f'{view.action}:{view.resource}' in request.user.scope
+        else:
+            return False
+
+
 class IsSuperuser(BasePermission):
     """
     Only superusers are authorised

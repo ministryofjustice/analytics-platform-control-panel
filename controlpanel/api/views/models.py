@@ -17,8 +17,7 @@ from controlpanel.api.models import (
     S3Bucket,
     User,
     UserApp,
-    UserS3Bucket,
-    Parameter,
+    UserS3Bucket
 )
 
 
@@ -30,13 +29,14 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class AppViewSet(viewsets.ModelViewSet):
+    resource = "app"
+
     queryset = App.objects.all()
     serializer_class = serializers.AppSerializer
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = (permissions.AppPermissions,)
+    permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
     filterset_fields = ('name', 'repo_url', 'slug')
     lookup_field = "res_id"
-    lookup_value_regex = "[^/]+"
 
     @atomic
     def perform_create(self, serializer):
@@ -57,6 +57,7 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.AppS3BucketSerializer
     permission_classes = (permissions.AppS3BucketPermissions,)
     filter_backends = (filters.AppS3BucketFilter,)
+    lookup_field = "res_id"
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
@@ -91,14 +92,3 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()
     serializer_class = serializers.UserAppSerializer
-
-
-# class ParameterViewSet(viewsets.ModelViewSet):
-#     queryset = Parameter.objects.all()
-#     serializer_class = serializers.ParameterSerializer
-#     filter_backends = (filters.ParameterFilter,)
-#     permission_classes = (permissions.ParameterPermissions,)
-#
-#     @atomic
-#     def perform_create(self, serializer):
-#         serializer.save(created_by=self.request.user)

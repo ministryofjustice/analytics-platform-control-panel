@@ -7,7 +7,6 @@ from collections import defaultdict
 
 from auth0.v3 import authentication, exceptions
 from auth0.v3.management import Auth0
-from auth0.v3.management.users import Users
 from auth0.v3.management.clients import Clients
 from auth0.v3.management.connections import Connections
 from auth0.v3.management.device_credentials import DeviceCredentials
