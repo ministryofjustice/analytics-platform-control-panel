@@ -406,14 +406,6 @@ class App(EntityResource):
         self.aws_role_service = self.create_aws_service(AWSRole)
         self.aws_secret_service = self.create_aws_service(AWSSecretManager)
 
-    # def set_secret_type(self, type_key: str) -> "App":
-    #     self.secret_type = type_key
-    #     return self
-    #
-    # @property
-    # def _get_secret_uri(self) -> str:
-    #     return self.app.get_secret_key(self.secret_type)
-
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
@@ -560,27 +552,27 @@ class RoleGroup(EntityResource):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
 
 
-# class AppParameter(EntityResource):
-#
-#     ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
-#
-#     def __init__(self, parameter):
-#         super(AppParameter, self).__init__()
-#         self.parameter = parameter
-#
-#     def _init_aws_services(self):
-#         self.aws_param_service = self.create_aws_service(AWSParameterStore)
-#
-#     def create_parameter(self):
-#         return self.aws_param_service.create_parameter(
-#             self.parameter.name,
-#             self.parameter.value,
-#             self.parameter.role_name,
-#             self.parameter.description,
-#         )
-#
-#     def delete_parameter(self):
-#         self.aws_param_service.delete_parameter(self.parameter.name)
+class AppParameter(EntityResource):
+
+    ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
+
+    def __init__(self, parameter):
+        super(AppParameter, self).__init__()
+        self.parameter = parameter
+
+    def _init_aws_services(self):
+        self.aws_param_service = self.create_aws_service(AWSParameterStore)
+
+    def create_parameter(self):
+        return self.aws_param_service.create_parameter(
+            self.parameter.name,
+            self.parameter.value,
+            self.parameter.role_name,
+            self.parameter.description,
+        )
+
+    def delete_parameter(self):
+        self.aws_param_service.delete_parameter(self.parameter.name)
 
 
 class ToolDeploymentError(Exception):
