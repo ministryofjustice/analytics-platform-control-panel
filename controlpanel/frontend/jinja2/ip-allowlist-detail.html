@@ -23,7 +23,7 @@
     {{ csrf_input }}
     {{ govukInput({
       "label": {
-        "text": "Allowlist name",
+        "text": "Name",
         "classes": "govuk-label--m",
       },
       "classes": "govuk-!-width-two-thirds",
@@ -67,6 +67,26 @@
         form.allowed_ip_ranges.value() or "",
         form.allowed_ip_ranges.errors
     ) }}
+    {{ govukCheckboxes({
+      "name": "is_recommended",
+      "fieldset": {
+        "legend": {
+          "text": "Recommended",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Recommended IP allowlists will be pre-selected when creating a new app"
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Recommended",
+          "checked": form.is_recommended.value()
+        },
+      ],
+      "errorMessage": { "html": form.is_recommended.errors|join(". ") } if form.is_recommended.errors else {}
+    }) }}
     <button class="govuk-button">Update IP allowlist</button>
   </form>
 

@@ -21,6 +21,7 @@ from controlpanel.api import auth0, cluster
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
+    IPAllowlist,
     S3Bucket,
     User,
     UserApp,
@@ -88,6 +89,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # app hosting story figured out, we should do this properly.
         context["apps_on_eks"] = settings.features.apps_on_eks.enabled
         context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
+        context["app_ip_allowlists_names"] = ", ".join(list(app.ip_allowlists.values_list("name", flat=True)))
 
         if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
@@ -139,15 +141,12 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = "api.create_app"
     template_name = "webapp-create.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
-
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         kwargs.update(request=self.request,
                       all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
-                      custom_connections=auth0.ExtendedConnections.custom_connections())
+                      custom_connections=auth0.ExtendedConnections.custom_connections(),
+                      )
         return kwargs
 
     def get_success_url(self):
@@ -180,11 +179,13 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
                 access_level="readonly",
             )
 
-    def _register_app(self, form, name, repo_url):
+    def _register_app(self, form, name, repo_url, ip_allowlists):
         self.object = App.objects.create(
             name=name,
             repo_url=repo_url,
         )
+
+        self.object.ip_allowlists.add(*ip_allowlists)
 
         self._create_or_link_datasource(form)
 
@@ -210,9 +211,11 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def form_valid(self, form):
         repo_url = form.cleaned_data["repo_url"]
+        ip_allowlists = form.cleaned_data["app_ip_allowlists"]
+
         _, name = repo_url.rsplit("/", 1)
         try:
-            self._register_app(form, name, repo_url)
+            self._register_app(form, name, repo_url, ip_allowlists)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
@@ -255,6 +258,46 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
             form.add_error("connections", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
+
+
+class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+
+    model = App
+    template_name = "webapp-update-ip-allowlists.html"
+    permission_required = "api.update_app_ip_allowlists"
+    fields = ["ip_allowlists"]
+
+    def get_context_data(self, *args, **kwargs):
+
+        context = super().get_context_data(*args, **kwargs)
+        context["app"] = self.get_object()
+        context["app_migration_feature_enabled"] = settings.features.app_migration.enabled
+        context["app_ip_allowlists"] = [
+            {
+                "text": ip_allowlist.name,
+                "value": ip_allowlist.pk,
+                "checked": ip_allowlist in self.get_object().ip_allowlists.all()
+            }
+            for ip_allowlist in IPAllowlist.objects.all()
+        ]
+
+        return context
+
+    def form_valid(self, form):
+        """
+        Update the App's list of IPAllowlists, which will trigger the App's entry in
+        AWS Secrets Manager to be updated (see signal app_ip_allowlists_changed() in
+        App model).
+        """
+
+        app = self.get_object()
+        app.ip_allowlists.set(form.cleaned_data["ip_allowlists"])
+
+        return HttpResponseRedirect(self.get_success_url())
+
+    def get_success_url(self):
+        messages.success(self.request, f"Successfully updated the IP allowlists associated with app {self.get_object().name}")
+        return reverse_lazy("manage-app", kwargs={"pk": self.get_object().id})
 
 
 class GrantAppAccess(

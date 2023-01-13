@@ -62,6 +62,7 @@ add_perm('api.create_policys3bucket', is_authenticated & is_superuser)
 add_perm('api.setup_app_auth0', is_authenticated & is_superuser)
 add_perm('api.reset_app_secret', is_authenticated & is_superuser)
 add_perm('api.update_app_secret', is_authenticated & is_app_admin)
+add_perm('api.update_app_ip_allowlists', is_authenticated & is_app_admin)
 
 
 @predicate

@@ -18,7 +18,8 @@ from controlpanel.frontend.views.app import (
     RevokeAppAccess,
     SetupAppAuth0,
     ResetAppSecret,
-    UpdateAppAuth0Connections
+    UpdateAppAuth0Connections,
+    UpdateAppIPAllowlists,
 )
 from controlpanel.frontend.views.datasource import (
     AdminBucketList,
