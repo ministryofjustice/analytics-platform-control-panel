@@ -85,8 +85,8 @@ class JWTAuthentication(authentication.BaseAuthentication):
                 return AuthenticatedServiceClient(jwt.payload)
             else:
                 raise exceptions.AuthenticationFailed()
-        except JWTDecodeError as jwt_error:
-            raise exceptions.AuthenticationFailed(jwt_error)
+        except JWTDecodeError:
+            raise exceptions.AuthenticationFailed("Failed to be authenticated due to JWT decoder error!")
 
     @staticmethod
     def requires_scope(required_scope):
