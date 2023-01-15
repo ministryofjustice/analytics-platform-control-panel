@@ -8,7 +8,7 @@ from controlpanel.api import (
 )
 
 
-class AppDetailAPIView(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     resource = "app"
 
     queryset = App.objects.all()

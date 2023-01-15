@@ -161,7 +161,7 @@ def test_view_add_update_secret_page(client, app, users, user, secret_key, expec
     response = add_secret_post(client, app, key=secret_key, data = dict(secret_value=1))
     assert response.status_code == expected_status
     assert response.get('Location') == reverse('manage-app', kwargs={'pk': app.id})
-    fixture_create_update_secret.assert_called_with(secret_name=app.app_aws_secret_name, secret_data=set_secrets)        
+    fixture_create_update_secret.assert_called_with(secret_name=app.app_aws_secret_auth_name, secret_data=set_secrets)
 
 @pytest.mark.parametrize(
     'user,secret_key,expected_status,set_secrets',[
@@ -184,5 +184,5 @@ def test_secret_delete(client, app, users, user, secret_key, expected_status, se
     fixture_get_secret.return_value = set_secrets
 
     response = delete_secret_post(client, app, key=secret_key)
-    fixture_delete_secret.assert_called_with(keys_to_delete=[secret_key])
+    fixture_delete_secret.assert_called_with(secret_name=app.app_aws_secret_auth_name, keys_to_delete=[secret_key])
     response.status_code == 302

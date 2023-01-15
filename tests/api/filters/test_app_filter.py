@@ -21,7 +21,7 @@ class AppFilterTest(APITestCase):
             self.client.force_login(user)
 
             response = self.client.get(reverse("app-list"))
-            app_ids = [app["id"] for app in response.data["results"]]
-            self.assertEqual(len(app_ids), 2)
-            self.assertIn(self.app_1.id, app_ids)
-            self.assertIn(self.app_2.id, app_ids)
+            app_res_ids = [app["res_id"] for app in response.data["results"]]
+            self.assertEqual(len(app_res_ids), 2)
+            self.assertIn(str(self.app_1.res_id), app_res_ids)
+            self.assertIn(str(self.app_2.res_id), app_res_ids)

@@ -149,8 +149,8 @@ class UserAppNestedInAppSerializer(serializers.ModelSerializer):
 
 
 class AppSerializer(serializers.ModelSerializer):
-    user_apps = UserAppNestedInAppSerializer(many=True, read_only=True)
-    app_s3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
+    userapps = UserAppNestedInAppSerializer(many=True, read_only=True)
+    apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
     ip_allowlists = IPAllowlistSimpleSerializer(many=True, read_only=True)
     url = serializers.HyperlinkedIdentityField(
         view_name='app-detail',
@@ -159,7 +159,7 @@ class AppSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = App
-        lookup_field = "res_id"
+        # lookup_field = "id"
         fields = (
             "res_id",
             "url",
@@ -169,8 +169,8 @@ class AppSerializer(serializers.ModelSerializer):
             "repo_url",
             "iam_role_name",
             "created_by",
-            "app_s3buckets",
-            "user_apps",
+            "apps3buckets",
+            "userapps",
             "app_aws_secret_auth",
             "app_aws_secret_param",
             "ip_allowlists",

@@ -20,5 +20,5 @@ from controlpanel.api.views.tool_deployments import (
     ToolDeploymentAPIView
 )
 from controlpanel.api.views.apps import (
-    AppDetailAPIView
+    AppByNameViewSet
 )

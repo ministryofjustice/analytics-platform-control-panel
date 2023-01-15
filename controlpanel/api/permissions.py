@@ -21,10 +21,13 @@ class JWTTokenResourcePermissions(BasePermission):
     """
 
     def has_permission(self, request, view):
-        if hasattr(view, "resource"):
+        if hasattr(view, "resource") and hasattr(request.user, "scope"):
             return f'{view.action}:{view.resource}' in request.user.scope
         else:
             return False
+
+    def has_object_permission(self, request, view, obj):
+        return hasattr(request.user, "is_client") and request.user.is_client
 
 
 class IsSuperuser(BasePermission):

@@ -77,9 +77,7 @@ class SecretAddUpdate(
         if form.is_valid():
             secret_value = form.cleaned_data.get("secret_value")
             app = self._get_app(pk)
-            cluster.App(app).create_or_update_secret(
-                secret_name=app.app_aws_secret_auth_name,
-                secret_data={secret_key: secret_value})
+            cluster.App(app).create_or_update_secret(secret_data={secret_key: secret_value})
         else:
             # currently, boolean values cannot fail, however will need to test this for non-bool values
             messages.error(self.request, "failed to update secrets.")

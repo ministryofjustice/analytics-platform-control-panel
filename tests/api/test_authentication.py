@@ -39,7 +39,7 @@ IFoHfA1uQMhlVFdiBwIDAQAB
 @pytest.fixture(autouse=True)
 def audience(settings):
     # override django settings
-    settings.OIDC_RP_CLIENT_ID = TEST_CLIENT_ID
+    settings.OIDC_CPANEL_API_AUDIENCE = TEST_CLIENT_ID
 
 
 @pytest.yield_fixture(autouse=True)
@@ -93,15 +93,19 @@ def token(claims={}, headers={}):
     'auth_header, status',
     [
         (None, 403),
-        (f'Bearer {token()}', 200),
-        (f'JWT {token()}', 200),
+        (f'Bearer {token()}', 403),
+        (f'Bearer {token(claims={"scope": "list:app"})}', 403),
+        (f'Bearer {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
+        (f'JWT {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
         (f'FOO {token()}', 403),
         (f'Bearer invalid_token', 403),
         (f'Bearer {token(headers={"kid": "no_match"})}', 403),
     ],
     ids=[
         'No token',
-        'Valid token',
+        'Valid token but no scope',
+        'Valid token with list scope but no gty claim',
+        'Valid token with list scope and gty claim',
         'Legacy auth header format',
         'Malformed auth header',
         'Invalid token',
@@ -110,15 +114,6 @@ def token(claims={}, headers={}):
 )
 def test_token_auth(api_request, auth_header, status):
     assert api_request(HTTP_AUTHORIZATION=auth_header).status_code == status
-
-
-def test_unknown_user_created(api_request):
-    with pytest.raises(User.DoesNotExist):
-        User.objects.get(pk=TEST_SUB)
-
-    assert api_request(HTTP_AUTHORIZATION=f'Bearer {token()}').status_code == 200
-
-    assert User.objects.get(pk=TEST_SUB)
 
 
 def test_bad_request_for_jwks(api_request, jwks):

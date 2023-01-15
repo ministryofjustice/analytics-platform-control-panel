@@ -6,8 +6,8 @@ from rest_framework import routers
 from controlpanel.api import views
 
 router = routers.DefaultRouter()
-router.register("apps", views.AppViewSet)
-router.register("apps/app_name", views.AppDetailAPIView)
+router.register("apps", views.AppViewSet, basename='app')
+router.register("apps/app_name", views.AppByNameViewSet, basename="apps-by-name")
 router.register("apps3buckets", views.AppS3BucketViewSet)
 router.register("s3buckets", views.S3BucketViewSet)
 router.register("tools", views.ToolViewSet, basename="tool")

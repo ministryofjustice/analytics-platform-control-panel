@@ -5,6 +5,8 @@ from rest_framework import authentication, exceptions
 from controlpanel.api.models import User
 from controlpanel.jwt import JWT, JWTDecodeError
 
+M2M_CLAIM_FLAG = "client-credentials"
+
 
 class AuthenticatedServiceClient:
     """"
@@ -39,6 +41,10 @@ class AuthenticatedServiceClient:
     def is_superuser(self):
         return False
 
+    @property
+    def is_client(self):
+        return True
+
     def has_perm(self, perm, obj=None):
         return False
 
@@ -65,7 +71,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
         return self._get_client(jwt), None
 
     def _is_m2m(self, payload):
-        return payload.get('gty', '') == "client-credentials"
+        return payload.get('gty', '') == M2M_CLAIM_FLAG
 
     def _get_client(self, jwt):
         """

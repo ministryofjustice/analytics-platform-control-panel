@@ -444,21 +444,24 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
-    def create_or_update_secret(self, secret_name, secret_data):
+    def create_or_update_secret(self, secret_data, secret_name=None):
         self.aws_secret_service.create_or_update(
-            secret_name=secret_name, secret_data=secret_data
+            secret_name=secret_name or self.app.app_aws_secret_auth_name,
+            secret_data=secret_data
         )
 
-    def delete_secret(self, secret_name):
-        self.aws_secret_service.delete_secret(secret_name=secret_name)
+    def delete_secret(self, secret_name=None):
+        self.aws_secret_service.delete_secret(
+            secret_name=secret_name or self.app.app_aws_secret_auth_name)
 
-    def delete_entries_in_secret(self, secret_name, keys_to_delete: List[str]) -> bool:
+    def delete_entries_in_secret(self, keys_to_delete: List[str], secret_name=None) -> bool:
         return self.aws_secret_service.delete_keys_in_secret(
-            secret_name=secret_name, keys_to_delete=keys_to_delete
+            secret_name=secret_name or self.app.app_aws_secret_auth_name,
+            keys_to_delete=keys_to_delete
         )
 
     def get_secret_if_found(self, secret_name=None):
-        return self.aws_secret_service.get_secret_if_found(secret_name)
+        return self.aws_secret_service.get_secret_if_found(secret_name or self.app.app_aws_secret_auth_name)
 
 
 class S3Bucket(EntityResource):

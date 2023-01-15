@@ -22,6 +22,11 @@ def users(users):
             username="dave",
             auth0_id="github|user_4",
         ),
+        "app_user": mommy.make(
+            "api.User",
+            username="testing",
+            auth0_id="github|user_5",
+        ),
     })
     return users
 
@@ -31,6 +36,9 @@ def app(users):
     app = mommy.make("api.App", name="Test App 1")
     user = users["app_admin"]
     mommy.make("api.UserApp", user=user, app=app, is_admin=True)
+
+    user = users["app_user"]
+    mommy.make("api.UserApp", user=user, app=app, is_admin=False)
     return app
 
 
@@ -39,11 +47,11 @@ def app_list(client, *args):
 
 
 def app_detail(client, app, *args):
-    return client.get(reverse('app-detail', (app.id,)))
+    return client.get(reverse('app-detail', (app.res_id,)))
 
 
 def app_delete(client, app, *args):
-    return client.delete(reverse('app-detail', (app.id,)))
+    return client.delete(reverse('app-detail', (app.res_id,)))
 
 
 def app_create(client, *args):
@@ -54,7 +62,7 @@ def app_create(client, *args):
 def app_update(client, app, *args):
     data = {'name': 'test-app', 'repo_url': "https://example.com"}
     return client.put(
-        reverse('app-detail', (app.id,)),
+        reverse('app-detail', (app.res_id,)),
         json.dumps(data),
         content_type='application/json',
     )
@@ -81,7 +89,8 @@ def test_authenticated_user_has_basic_perms(client, users):
         (app_update, 'superuser', status.HTTP_200_OK),
 
         (app_list, 'normal_user', status.HTTP_200_OK),
-        (app_detail, 'normal_user', status.HTTP_403_FORBIDDEN),
+        (app_detail, 'app_user', status.HTTP_403_FORBIDDEN),
+        (app_detail, 'normal_user', status.HTTP_404_NOT_FOUND),
         (app_delete, 'normal_user', status.HTTP_403_FORBIDDEN),
         (app_create, 'normal_user', status.HTTP_403_FORBIDDEN),
         (app_update, 'normal_user', status.HTTP_403_FORBIDDEN),
@@ -101,3 +110,25 @@ def test_permission(client, app, users, view, user, expected_status):
     with patch("controlpanel.api.views.models.App.delete"):
         response = view(client, app)
         assert response.status_code == expected_status
+
+
+def apps_by_name_detail(client, app, *args):
+    return client.get(reverse('apps-by-name-detail', (app.name,)))
+
+
+@pytest.mark.parametrize(
+    'view,user,expected_status',
+    [
+        (apps_by_name_detail, 'superuser', status.HTTP_200_OK),
+        (apps_by_name_detail, 'app_user', status.HTTP_403_FORBIDDEN),
+        (apps_by_name_detail, 'normal_user', status.HTTP_403_FORBIDDEN),
+        (apps_by_name_detail, 'app_admin', status.HTTP_200_OK),
+    ],
+)
+@pytest.mark.django_db
+def test_apps_by_name_permission(client, app, users, view, user, expected_status):
+    u = users[user]
+    client.force_login(u)
+
+    response = view(client, app)
+    assert response.status_code == expected_status

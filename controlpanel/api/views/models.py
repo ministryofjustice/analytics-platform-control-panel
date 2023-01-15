@@ -31,12 +31,22 @@ class UserViewSet(viewsets.ModelViewSet):
 class AppViewSet(viewsets.ModelViewSet):
     resource = "app"
 
-    queryset = App.objects.all()
     serializer_class = serializers.AppSerializer
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
     filterset_fields = ('name', 'repo_url', 'slug')
     lookup_field = "res_id"
+
+    def _skip_queryset_restriction(self):
+        return self.request.user.is_superuser or \
+               (hasattr(self.request.user, "is_client") and self.request.user.is_client)
+
+    def get_queryset(self):
+        if self._skip_queryset_restriction():
+            return App.objects.all()
+        else:
+            qs = App.objects.all().prefetch_related("userapps")
+            return qs.filter(userapps__user=self.request.user)
 
     @atomic
     def perform_create(self, serializer):
@@ -57,7 +67,6 @@ class AppS3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.AppS3BucketSerializer
     permission_classes = (permissions.AppS3BucketPermissions,)
     filter_backends = (filters.AppS3BucketFilter,)
-    lookup_field = "res_id"
 
 
 class UserS3BucketViewSet(viewsets.ModelViewSet):
