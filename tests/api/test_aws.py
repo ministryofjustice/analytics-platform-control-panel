@@ -832,7 +832,7 @@ def test_delete_app_secret(secretsmanager):
 def test_delete_key_in_secret(app_fixture):
     app_name = "test_app"
     secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
-    app_fixture.app_aws_secret_name = secret_name
+    app_fixture.app_aws_secret_auth_name = secret_name
     app_fixture.get_secret_key.return_value = secret_name
 
     with patch(
