@@ -107,8 +107,8 @@ def _execute(*args, **kwargs):
         # The helm command returned a non-0 return code. Log all the things!
         stdout = proc.stdout.read()
         stderr = proc.stderr.read()
-        log.warning(f"Helm Error event: {proc.returncode}, {stderr}")
-        log.warning(f"Helm Error event: {proc.returncode}, {stderr}")
+        log.warning(f"Helm Error event: returncode [{proc.returncode}], stdout [{stdout}]")
+        log.warning(f"Helm Error event: returncode [{proc.returncode}], stderr [{stderr}]")
         log.warning(stderr)
         log.warning(stdout)
         raise HelmError(stderr)
