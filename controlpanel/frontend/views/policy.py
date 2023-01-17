@@ -1,5 +1,5 @@
 # Third-party
-from django.conf import settings  # noqa: F401
+from django.conf import settings
 from django.contrib import messages
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse_lazy

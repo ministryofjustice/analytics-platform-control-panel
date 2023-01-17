@@ -6,15 +6,15 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.contrib import auth  # noqa: F401
+from django.contrib import auth
 from django.contrib.auth import get_user
 from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
-from rules import has_perm, perm_exists  # noqa: F401
+from rules import has_perm, perm_exists
 
 # First-party/Local
-import controlpanel.api.rules  # noqa: F401
+import controlpanel.api.rules
 
 
 @pytest.fixture

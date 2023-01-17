@@ -8,9 +8,9 @@ from model_mommy import mommy
 from rest_framework import status
 
 # First-party/Local
-from controlpanel.api import auth0  # noqa: F401
-from controlpanel.settings.common import SECRET_KEY  # noqa: F401
-from tests.api.fixtures.aws import *  # noqa: F403
+from controlpanel.api import auth0
+from controlpanel.settings.common import SECRET_KEY
+from tests.api.fixtures.aws import *
 
 NUM_APPS = 3
 

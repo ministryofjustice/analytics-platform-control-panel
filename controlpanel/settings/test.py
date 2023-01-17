@@ -1,5 +1,5 @@
 # First-party/Local
-from controlpanel.settings.common import *  # noqa: F403
+from controlpanel.settings.common import *
 
 ENV = "test"
 

@@ -5,12 +5,12 @@ from copy import deepcopy
 
 # Third-party
 import kubernetes
-from django.conf import settings  # noqa: F401
+from django.conf import settings
 
 # First-party/Local
 # This patch fixes incorrect base64 padding in the Kubernetes Python client.
 # Hopefully it will be fixed in the next release.
-from controlpanel.kubeapi import oidc_patch  # noqa: F401
+from controlpanel.kubeapi import oidc_patch
 
 
 def get_config():

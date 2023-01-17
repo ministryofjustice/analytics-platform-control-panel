@@ -1,5 +1,4 @@
 # Third-party
-import pytest  # noqa: F401
 from django.conf import settings
 
 # First-party/Local

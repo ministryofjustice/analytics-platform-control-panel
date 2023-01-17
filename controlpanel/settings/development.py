@@ -2,7 +2,7 @@
 import os
 
 # First-party/Local
-from controlpanel.settings.common import *  # noqa: F403
+from controlpanel.settings.common import *
 
 # Enable debugging
 DEBUG = True

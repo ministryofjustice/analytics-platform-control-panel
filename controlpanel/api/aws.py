@@ -41,7 +41,7 @@ def iam_assume_role_principal():
     - ARN of the assuming role when both roles are in same account
     - AWS account ID where the assuming IAM role is if in a different account
 
-    See AWS example: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html#example-delegate-xaccount-S3  # noqa: F401, E501
+    See AWS example: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html#example-delegate-xaccount-S3  # noqa: E501
     """
 
     cross_account = settings.AWS_COMPUTE_ACCOUNT_ID != settings.AWS_DATA_ACCOUNT_ID

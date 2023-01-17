@@ -4,7 +4,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from django.urls import reverse
-from model_mommy import mommy  # noqa: F401
+from model_mommy import mommy
 from rest_framework import status
 
 

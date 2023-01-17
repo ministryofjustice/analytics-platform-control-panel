@@ -1,2 +1,2 @@
 # First-party/Local
-import controlpanel.api.signals  # noqa: F401
+import controlpanel.api.signals

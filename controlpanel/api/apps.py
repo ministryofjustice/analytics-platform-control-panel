@@ -8,4 +8,4 @@ class ApiConfig(AppConfig):
 
     def ready(self):
         # First-party/Local
-        from controlpanel.api import rules  # noqa: F401
+        from controlpanel.api import rules

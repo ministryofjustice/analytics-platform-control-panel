@@ -13,7 +13,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.api import cluster  # noqa: F401
+from controlpanel.api import cluster
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     IAMManagedPolicy,

@@ -10,7 +10,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api import auth0
-from tests.api.fixtures.aws import *  # noqa F403,F401
+from tests.api.fixtures.aws import *
 
 NUM_APPS = 3
 

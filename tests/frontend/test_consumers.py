@@ -12,7 +12,7 @@ from controlpanel.api.cluster import (
     TOOL_READY,
     TOOL_RESTARTING,
 )
-from controlpanel.api.models import Tool, ToolDeployment, User  # noqa: F401
+from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.frontend import consumers
 
 
