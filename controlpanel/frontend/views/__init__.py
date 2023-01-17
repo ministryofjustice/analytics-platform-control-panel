@@ -23,7 +23,7 @@ from controlpanel.frontend.views.app import (
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
 )
-from controlpanel.frontend.views.datasource import (  # noqa: F401
+from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,
     BucketList,
