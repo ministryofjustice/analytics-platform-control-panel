@@ -83,8 +83,8 @@ def _execute(*args, **kwargs):
         )
         if "upgrade" in args or "uninstall" in args:
             # The following lines will make sure the completion of helm command
-            log.info(proc.stdout.read())
-            log.info(proc.stderr.read())
+            log.warning(proc.stdout.read())
+            log.warning(proc.stderr.read())
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
