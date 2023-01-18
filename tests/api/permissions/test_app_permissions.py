@@ -11,10 +11,7 @@ from django.contrib.auth import get_user
 from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
-from rules import has_perm, perm_exists
-
-# First-party/Local
-import controlpanel.api.rules
+from rules import perm_exists
 
 
 @pytest.fixture

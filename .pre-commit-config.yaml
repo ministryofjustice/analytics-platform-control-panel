@@ -28,8 +28,9 @@ repos:
     hooks:
     - id: flake8
       name: flake8 format check
-      args: ["--config=.flake8", "$(git diff --name-only --cached --diff-filter=ACMR | grep .py)"]
-      # entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
+      # entry: git diff --name-only --cached --diff-filter=ACMR | grep .py
+      # args: ["--config=.flake8", "$(git diff --name-only --cached --diff-filter=ACMR | grep .py)"]
+      entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: local
     hooks:

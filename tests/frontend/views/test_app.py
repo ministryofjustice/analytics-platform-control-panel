@@ -15,7 +15,7 @@ from tests.api.fixtures.aws import *
 NUM_APPS = 3
 
 
-@pytest.fixture(autouse=True)  # noqa: F405
+@pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
 
@@ -34,7 +34,7 @@ def github_api_token():
         yield ExtendedAuth0.return_value
 
 
-@pytest.fixture(autouse=True)  # noqa: F405
+@pytest.fixture(autouse=True)
 def users(users):
     users.update(
         {
@@ -44,7 +44,7 @@ def users(users):
     return users
 
 
-@pytest.fixture(autouse=True)  # noqa: F405
+@pytest.fixture(autouse=True)
 def app(users):
     mommy.make("api.App", NUM_APPS - 1)
     app = mommy.make("api.App")
@@ -52,7 +52,7 @@ def app(users):
     return app
 
 
-@pytest.yield_fixture(autouse=True)  # noqa: F405
+@pytest.yield_fixture(autouse=True)
 def repos(github):
     test_repo = {
         "full_name": "Test App",
@@ -64,7 +64,7 @@ def repos(github):
     yield github
 
 
-@pytest.fixture(autouse=True)  # noqa: F405
+@pytest.fixture(autouse=True)
 def s3buckets(app):
     with patch("controlpanel.api.aws.AWSBucket.create_bucket") as _:
         buckets = {
@@ -74,7 +74,7 @@ def s3buckets(app):
         return buckets
 
 
-@pytest.fixture  # noqa: F405
+@pytest.fixture
 def apps3bucket(app, s3buckets):
     return mommy.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
 
@@ -145,7 +145,7 @@ def connect_bucket(client, app, _, s3buckets, *args):
     return client.post(reverse("grant-app-access", kwargs={"pk": app.id}), data)
 
 
-@pytest.mark.parametrize(  # noqa: F405
+@pytest.mark.parametrize(
     "view,user,expected_status",
     [
         (list_apps, "superuser", status.HTTP_200_OK),
@@ -200,7 +200,7 @@ def disconnect_bucket(client, apps3bucket, *args, **kwargs):
     return client.post(reverse("revoke-app-access", kwargs={"pk": apps3bucket.id}))
 
 
-@pytest.mark.parametrize(  # noqa: F405
+@pytest.mark.parametrize(
     "view,user,expected_status",
     [
         (disconnect_bucket, "superuser", status.HTTP_302_FOUND),
@@ -214,7 +214,7 @@ def test_bucket_permissions(client, apps3bucket, users, view, user, expected_sta
     assert response.status_code == expected_status
 
 
-@pytest.mark.parametrize(  # noqa: F405
+@pytest.mark.parametrize(
     "view,user,expected_count",
     [
         (list_apps, "superuser", 0),
@@ -237,7 +237,7 @@ def add_customer_form_error(client, response):
     return "add_customer_form_errors" in client.session
 
 
-@pytest.mark.parametrize(  # noqa: F405
+@pytest.mark.parametrize(
     "emails, expected_response",
     [
         ("foo@example.com", add_customer_success),
@@ -271,13 +271,13 @@ def remove_customer_failure(client, response):
     return "Failed removing customer" in messages
 
 
-@pytest.yield_fixture  # noqa: F405
+@pytest.yield_fixture
 def fixture_delete_group_members(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "delete_group_members") as request:
         yield request
 
 
-@pytest.mark.parametrize(  # noqa: F405
+@pytest.mark.parametrize(
     "side_effect, expected_response",
     [
         (None, remove_customer_success),
