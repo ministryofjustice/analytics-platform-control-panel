@@ -1,4 +1,5 @@
 default_stages: [commit]
+exclude: controlpanel/api/migrations/
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.2.0
@@ -27,7 +28,8 @@ repos:
     hooks:
     - id: flake8
       name: flake8 format check
-      entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
+      args: ["--config=.flake8", "$(git diff --name-only --cached --diff-filter=ACMR | grep .py)"]
+      # entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: local
     hooks:
