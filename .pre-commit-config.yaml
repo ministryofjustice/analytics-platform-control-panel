@@ -26,14 +26,8 @@ repos:
   - repo: https://github.com/pycqa/flake8
     rev: 5.0.4
     hooks:
-    # - id: run flake8 locally
-    #   name: flake8
-    #   entry: flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)
-
     - id: flake8
       name: flake8 format check
-      # entry: git diff --name-only --cached --diff-filter=ACMR | grep .py
-      # args: ["--config=.flake8", "$(git diff --name-only --cached --diff-filter=ACMR | grep .py)"]
       entry: bash -c 'flake8 --config=.flake8 $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: local
