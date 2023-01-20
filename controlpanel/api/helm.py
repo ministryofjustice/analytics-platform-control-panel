@@ -83,8 +83,12 @@ def _execute(*args, **kwargs):
         )
         if "upgrade" in args or "uninstall" in args:
             # The following lines will make sure the completion of helm command
-            log.warning(proc.stdout.read())
-            log.warning(proc.stderr.read())
+            stdout = proc.stdout.read()
+            stderr = proc.stderr.read()
+            log.warning(stdout)
+            log.warning(stderr)
+            if "error " in stderr.lower():
+                raise HelmError(stderr)
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
@@ -107,8 +111,6 @@ def _execute(*args, **kwargs):
         # The helm command returned a non-0 return code. Log all the things!
         stdout = proc.stdout.read()
         stderr = proc.stderr.read()
-        log.warning(f"Helm Error event: returncode [{proc.returncode}], stdout [{stdout}]")
-        log.warning(f"Helm Error event: returncode [{proc.returncode}], stderr [{stderr}]")
         log.warning(stderr)
         log.warning(stdout)
         raise HelmError(stderr)
