@@ -83,9 +83,7 @@ def _execute(*args, **kwargs):
         )
         if "upgrade" in args or "uninstall" in args:
             # The following lines will make sure the completion of helm command
-            stdout = proc.stdout.read()
             stderr = proc.stderr.read()
-            log.warning(stdout)
             log.warning(stderr)
             if "error " in stderr.lower():
                 raise HelmError(stderr)

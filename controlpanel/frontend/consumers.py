@@ -1,4 +1,5 @@
 import asyncio
+import os
 from datetime import datetime
 import json
 import structlog
@@ -122,6 +123,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         try:
             tool_deployment.save()
         except ToolDeployment.Error as err:
+            self._send_to_sentry(err)
             update_tool_status(tool_deployment, id_token, TOOL_DEPLOY_FAILED)
             log.error(err)
             return
@@ -132,6 +134,11 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.warning(f"Failed deploying {tool.name} for {user}")
         else:
             log.debug(f"Deployed {tool.name} for {user}")
+
+    def _send_to_sentry(self, error):
+        if os.environ.get("SENTRY_DSN"):
+            import sentry_sdk
+            sentry_sdk.capture_exception(error)
 
     def tool_restart(self, message):
         """
