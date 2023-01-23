@@ -438,7 +438,7 @@ class App(EntityResource):
         k8s = KubernetesClient(use_cpanel_creds=True)
 
         repo_name = github_repository_name(self.app.repo_url)
-        ingresses = k8s.ExtensionsV1beta1Api.list_namespaced_ingress(
+        ingresses = k8s.NetworkingV1Api.list_namespaced_ingress(
             self.APPS_NS,
             label_selector=f"repo={repo_name}",
         ).items

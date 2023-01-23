@@ -83,9 +83,11 @@ def _execute(*args, **kwargs):
         )
         if "upgrade" in args or "uninstall" in args:
             # The following lines will make sure the completion of helm command
+            stdout = proc.stdout.read()
             stderr = proc.stderr.read()
             log.warning(stderr)
-            if "error " in stderr.lower():
+            log.warning(stdout)
+            if "error" in stderr.lower() or "error" in stdout.lower():
                 raise HelmError(stderr)
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
@@ -145,7 +147,7 @@ def get_default_image_tag_from_helm_chart(chart_url, chart_name):
 
 def get_helm_entries():
     # Update repository metadata.
-    update_helm_repository()
+    # update_helm_repository()
     # Grab repository metadata.
     repo_path = get_repo_path()
     try:

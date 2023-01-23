@@ -20,7 +20,7 @@ def get_config():
     else:
         kubernetes.config.load_kube_config()
 
-    config = kubernetes.client.Configuration()
+    config = kubernetes.client.Configuration().get_default_copy()
 
     # A deepcopy of the configuration is used to avoid a race condition
     # caused by subsequent calls to Configuration() reusing a singleton
@@ -65,6 +65,7 @@ class KubernetesClient:
         if id_token:
             config.api_key_prefix["authorization"] = "Bearer"
             config.api_key["authorization"] = id_token
+            print(id_token)
 
         self.api_client = kubernetes.client.ApiClient(config)
 
