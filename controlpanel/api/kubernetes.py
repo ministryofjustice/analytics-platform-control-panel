@@ -65,7 +65,6 @@ class KubernetesClient:
         if id_token:
             config.api_key_prefix["authorization"] = "Bearer"
             config.api_key["authorization"] = id_token
-            print(id_token)
 
         self.api_client = kubernetes.client.ApiClient(config)
 
