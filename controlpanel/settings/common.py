@@ -252,8 +252,7 @@ MEDIA_URL = ""
 # -- Debug
 
 # Activates debugging
-#  DEBUG = (str(os.environ.get("DEBUG", False)).lower() == 'true')
-DEBUG = True
+DEBUG = (str(os.environ.get("DEBUG", False)).lower() == 'true')
 
 # -- Database
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
