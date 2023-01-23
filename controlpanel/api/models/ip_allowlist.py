@@ -3,11 +3,9 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-<<<<<<< HEAD
+
 # First-party/Local
-=======
 from controlpanel.api import cluster
->>>>>>> 3d0841c (Update AWS Secrets for relevant apps after change to associated IP allowlist)
 from controlpanel.api.validators import validate_ip_ranges
 
 

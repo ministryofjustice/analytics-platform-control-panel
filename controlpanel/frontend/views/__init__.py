@@ -20,6 +20,7 @@ from controlpanel.frontend.views.app import (
     RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
+    ResetAppSecret,
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
 )
