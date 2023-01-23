@@ -6,6 +6,8 @@ from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
+
+# isort: off
 from controlpanel.frontend.views.app import (
     AddAdmin,
     AddCustomers,
@@ -20,10 +22,13 @@ from controlpanel.frontend.views.app import (
     RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
-    ResetAppSecret,
+    UpdateAppAccess,
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
 )
+
+# isort: on
+# First-party/Local
 from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,

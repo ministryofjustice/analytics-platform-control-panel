@@ -161,7 +161,7 @@ def test_permissions(
 
         client.force_login(users[user])
         response = view(client, app, users, s3buckets)
-        edit_button = 'class="govuk-button govuk-button--secondary right" >Edit</a>'
+        edit_button = 'class="govuk-button govuk-button--secondary right">Edit</a>'
         body = str(response.content)
         assert edit_button in body
 
