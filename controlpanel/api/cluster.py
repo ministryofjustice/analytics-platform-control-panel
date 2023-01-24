@@ -605,7 +605,12 @@ class ToolDeployment:
 
     @property
     def release_name(self):
-        return f"{self.chart_name}-{self.user.slug}"
+        return self.escape_namespace_len(
+            f"{self.chart_name}-{self.user.slug}"
+        )
+
+    def escape_namespace_len(self, name: str) -> str:
+        return name[:settings.MAX_RELEASE_NAME_LEN]
 
     def _delete_legacy_release(self):
         """
@@ -622,6 +627,8 @@ class ToolDeployment:
         scheme for RStudio.
         """
         old_release_name = f"{self.chart_name}-{self.user.slug}"
+        old_release_name = self.escape_namespace_len(old_release_name)
+
         if self.old_chart_name:
             # If an old_chart_name has been passed into the deployment, it
             # means the currently deployed instance of the tool is from a
@@ -629,6 +636,8 @@ class ToolDeployment:
             # the old_chart_name that we should use for the old release
             # that needs deleting.
             old_release_name = f"{self.old_chart_name}-{self.user.slug}"
+            old_release_name = self.escape_namespace_len(old_release_name)
+
         if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
             helm.delete(self.k8s_namespace, old_release_name)
 
