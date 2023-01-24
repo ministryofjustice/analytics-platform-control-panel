@@ -610,7 +610,7 @@ class ToolDeployment:
         )
 
     def escape_namespace_len(self, name: str) -> str:
-        return name[:53]
+        return name[:settings.MAX_RELEASE_NAME_LEN]
 
     def _delete_legacy_release(self):
         """
