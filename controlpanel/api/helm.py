@@ -147,7 +147,7 @@ def get_default_image_tag_from_helm_chart(chart_url, chart_name):
 
 def get_helm_entries():
     # Update repository metadata.
-    # update_helm_repository()
+    update_helm_repository()
     # Grab repository metadata.
     repo_path = get_repo_path()
     try:
