@@ -42,19 +42,6 @@ def k8s_assume_role(stmt):
     return stmt_match(stmt, Principal={"AWS": principal})
 
 
-def saml_assume_role(stmt):
-    return stmt_match(
-        stmt,
-        Action="sts:AssumeRoleWithSAML",
-        Principal={
-            "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:saml-provider/{settings.SAML_PROVIDER}",
-        },
-        Condition={
-            "StringEquals": {"SAML:aud": "https://signin.aws.amazon.com/saml"},
-        },
-    )
-
-
 def oidc_assume_role(stmt, user):
     return stmt_match(
         stmt,
@@ -114,7 +101,7 @@ def test_create_app_role(iam):
     pd = role.assume_role_policy_document
     assert len(pd["Statement"]) == 2
     assert ec2_assume_role(pd["Statement"][0])
-    assert k8s_assume_role(pd["Statement"][1])
+    # assert k8s_assume_role(pd["Statement"][1])
 
 
 def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
@@ -137,8 +124,8 @@ def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_
     pd = role.assume_role_policy_document
     assert len(pd["Statement"]) == 5
     assert ec2_assume_role(pd["Statement"][0])
-    assert k8s_assume_role(pd["Statement"][1])
-    assert saml_assume_role(pd["Statement"][2])
+    # assert k8s_assume_role(pd["Statement"][1])
+    # assert saml_assume_role(pd["Statement"][2])
     assert oidc_assume_role(pd["Statement"][3], user)
     assert eks_assume_role(pd["Statement"][4], user)
 

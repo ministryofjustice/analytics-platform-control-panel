@@ -19,7 +19,6 @@ from controlpanel.api.aws import (
     AWSRole,
     AWSSecretManager,
     iam_arn,
-    iam_assume_role_principal,
     s3_arn,
 )
 from controlpanel.api.kubernetes import KubernetesClient
@@ -49,14 +48,7 @@ BASE_ASSUME_ROLE_POLICY = {
                 "Service": "ec2.amazonaws.com",
             },
             "Action": "sts:AssumeRole",
-        },
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": iam_assume_role_principal(),
-            },
-            "Action": "sts:AssumeRole",
-        },
+        }
     ],
 }
 
@@ -193,18 +185,18 @@ class User(EntityResource):
         "Action": "sts:AssumeRoleWithWebIdentity",
     }
 
-    SAML_STATEMENT = {
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
-        },
-        "Action": "sts:AssumeRoleWithSAML",
-        "Condition": {
-            "StringEquals": {
-                "SAML:aud": "https://signin.aws.amazon.com/saml",
-            },
-        },
-    }
+    # SAML_STATEMENT = {
+    #     "Effect": "Allow",
+    #     "Principal": {
+    #         "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
+    #     },
+    #     "Action": "sts:AssumeRoleWithSAML",
+    #     "Condition": {
+    #         "StringEquals": {
+    #             "SAML:aud": "https://signin.aws.amazon.com/saml",
+    #         },
+    #     },
+    # }
 
     EKS_STATEMENT = {
         "Effect": "Allow",
@@ -381,6 +373,8 @@ class User(EntityResource):
         Run on each authenticated login on the control panel.
         This function also checks whether the users has all those charts installed or not # noqa : E501
         """
+        from controlpanel.api import cluster
+        cluster.User(self.user).create()
         if not self.has_required_installation_charts():
             # For some reason, user does not have all the charts required so we should re-init them. # noqa : E501
             log.info(

@@ -31,29 +31,6 @@ def iam_arn(resource, account=settings.AWS_DATA_ACCOUNT_ID):
     return arn("iam", resource, account=account)
 
 
-def iam_assume_role_principal():
-    """
-    returns the principal required to assume the IAM role
-
-    - ARN of the assuming role when both roles are in same account
-    - AWS account ID where the assuming IAM role is if in a different account
-
-    See AWS example: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_policy-examples.html#example-delegate-xaccount-S3
-    """
-
-    cross_account = (
-        settings.AWS_COMPUTE_ACCOUNT_ID != settings.AWS_DATA_ACCOUNT_ID
-    )
-
-    if cross_account:
-        return settings.AWS_COMPUTE_ACCOUNT_ID
-
-    return iam_arn(
-        f"role/{settings.K8S_WORKER_ROLE_NAME}",
-        account=settings.AWS_COMPUTE_ACCOUNT_ID,
-    )
-
-
 READ_ACTIONS = [
     "s3:GetObject",
     "s3:GetObjectAcl",
