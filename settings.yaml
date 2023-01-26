@@ -40,9 +40,11 @@ KIBANA_BASE_URL:
   _HOST_prod: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
   _HOST_alpha: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
 
-
 # Name of S3 bucket where logs are stored
-LOGS_BUCKET_NAME: 'moj-analytics-s3-logs-dev'
+LOGS_BUCKET_NAME:
+  _DEFAULT: 'moj-analytics-s3-logs-dev'
+  _HOST_prod: 'moj-analytics-s3-logs'
+  _HOST_alpha: 'moj-analytics-s3-logs'
 
 BUCKET_REGION: 'eu-west-1'
 
