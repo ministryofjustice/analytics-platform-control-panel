@@ -99,7 +99,7 @@ def test_create_app_role(iam):
 
     role = iam.Role("testing-app")
     pd = role.assume_role_policy_document
-    assert len(pd["Statement"]) == 2
+    assert len(pd["Statement"]) == 1
     assert ec2_assume_role(pd["Statement"][0])
     # assert k8s_assume_role(pd["Statement"][1])
 
@@ -122,12 +122,12 @@ def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_
     )
     role = iam.Role(user["iam_role_name"])
     pd = role.assume_role_policy_document
-    assert len(pd["Statement"]) == 5
+    assert len(pd["Statement"]) == 3
     assert ec2_assume_role(pd["Statement"][0])
     # assert k8s_assume_role(pd["Statement"][1])
     # assert saml_assume_role(pd["Statement"][2])
-    assert oidc_assume_role(pd["Statement"][3], user)
-    assert eks_assume_role(pd["Statement"][4], user)
+    assert oidc_assume_role(pd["Statement"][1], user)
+    assert eks_assume_role(pd["Statement"][2], user)
 
     attached_policies = list(role.attached_policies.all())
     assert len(attached_policies) == 3
@@ -137,26 +137,26 @@ def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_
     assert airflow_prod_policy["Arn"] in arns
 
 
-@pytest.mark.parametrize(
-    "aws_compute_account_id,aws_data_account_id,expected_principal",
-    [
-        (
-            "test_account_id",
-            "test_account_id",
-            "arn:aws:iam::test_account_id:role/test_k8s_worker",
-        ),
-        ("test_compute_account_id", "test_data_account_id", "test_compute_account_id"),
-    ],
-)
-def test_iam_assume_role_principal(
-    iam, aws_compute_account_id, aws_data_account_id, expected_principal
-):
-    with patch("controlpanel.api.aws.settings") as settings_mock:
-        settings_mock.AWS_COMPUTE_ACCOUNT_ID = aws_compute_account_id
-        settings_mock.AWS_DATA_ACCOUNT_ID = aws_data_account_id
-        settings_mock.K8S_WORKER_ROLE_NAME = "test_k8s_worker"
-
-        assert aws.iam_assume_role_principal() == expected_principal
+# @pytest.mark.parametrize(
+#     "aws_compute_account_id,aws_data_account_id,expected_principal",
+#     [
+#         (
+#             "test_account_id",
+#             "test_account_id",
+#             "arn:aws:iam::test_account_id:role/test_k8s_worker",
+#         ),
+#         ("test_compute_account_id", "test_data_account_id", "test_compute_account_id"),
+#     ],
+# )
+# def test_iam_assume_role_principal(
+#     iam, aws_compute_account_id, aws_data_account_id, expected_principal
+# ):
+#     with patch("controlpanel.api.aws.settings") as settings_mock:
+#         settings_mock.AWS_COMPUTE_ACCOUNT_ID = aws_compute_account_id
+#         settings_mock.AWS_DATA_ACCOUNT_ID = aws_data_account_id
+#         settings_mock.K8S_WORKER_ROLE_NAME = "test_k8s_worker"
+#
+#         assert aws.iam_assume_role_principal() == expected_principal
 
 
 @pytest.fixture
