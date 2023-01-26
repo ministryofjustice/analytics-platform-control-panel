@@ -282,7 +282,7 @@ class User(EntityResource):
     @staticmethod
     def aws_user_policy(user_auth0_id, user_name):
         policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-        policy["Statement"].append(User.SAML_STATEMENT)
+        # policy["Statement"].append(User.SAML_STATEMENT)
         oidc_statement = deepcopy(User.OIDC_STATEMENT)
         oidc_statement["Condition"] = {
             "StringEquals": {
