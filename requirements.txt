@@ -13,7 +13,7 @@ django-prometheus==2.1.0
 django-redis==5.2.0
 django-simple-history==3.1.1
 django-structlog==2.2.0
-djangorestframework==3.12.4
+djangorestframework==3.14.0
 djproxy==2.3.6
 elasticsearch-dsl==7.2.1
 gunicorn==20.1.0
