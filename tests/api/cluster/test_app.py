@@ -54,7 +54,7 @@ mock_ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
     ids=["no-ingresses", "multiple-ingresses", "single-ingress"],
 )
 def test_app_url(k8s_client, app, ingresses, expected_url):
-    list_namespaced_ingress = k8s_client.ExtensionsV1beta1Api.list_namespaced_ingress
+    list_namespaced_ingress = k8s_client.NetworkingV1Api.list_namespaced_ingress
 
     list_namespaced_ingress.return_value.items = ingresses
     assert cluster.App(app).url == expected_url
