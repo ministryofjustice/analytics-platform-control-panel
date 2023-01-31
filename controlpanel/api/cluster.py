@@ -373,8 +373,6 @@ class User(EntityResource):
         Run on each authenticated login on the control panel.
         This function also checks whether the users has all those charts installed or not # noqa : E501
         """
-        from controlpanel.api import cluster
-        cluster.User(self.user).create()
         if not self.has_required_installation_charts():
             # For some reason, user does not have all the charts required so we should re-init them. # noqa : E501
             log.info(
