@@ -50,7 +50,7 @@ You can test what AWS Account is currently configured on your command-line, like
 ```shell
 $ pip install boto3
 $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
-arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
+arn:aws:sts::<aws dev account id>:assumed-role/restricted-admin-dev/botocore-session-1590188888
 ```
 
 As an AP developer, if you don't have a Landing AWS Account user account yet, follow the steps here:
@@ -58,19 +58,19 @@ As an AP developer, if you don't have a Landing AWS Account user account yet, fo
 1. [Create your AWS user](https://github.com/ministryofjustice/analytical-platform-iam#user-creation). Make sure you're added to the group that gives you access to the 'restricted-admin' role in the 'data' AWS account.
 2. Continue those instructions: 'Approve and apply an IAM change', and 'First login'.
 3. [Configure your AWS CLI](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli)
-4. [Add the special 'data' profile](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli-using-profile).
+4. [Add the special 'dev' profile](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli-using-profile).
 5. Test it:
 
     ```sh
-    $ AWS_PROFILE=data
+    $ AWS_PROFILE=admin-dev
     $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
-    arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
+    arn:aws:sts::<aws dev account id>:assumed-role/restricted-admin-dev/botocore-session-1590188888
     ```
 
-Note: You'll have to remember to enable your 'data' AWS profile before running Control Panel, as you would to use the AWS cli:
+Note: You'll have to remember to enable your 'dev' AWS profile before running Control Panel, as you would to use the AWS cli:
 
 ```shell
-AWS_PROFILE=data
+AWS_PROFILE=dev
 ```
 
 With this profile activated, boto3 and awscli (`aws`) commands will access the 'data' AWS Account (by using your Landing Account creds and switching to the 'data' account).

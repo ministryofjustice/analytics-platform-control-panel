@@ -87,7 +87,6 @@ in django settings.
 | `OIDC_RP_SIGN_ALGO` | Algorithm to use for signing JWTs | `RS256` |
 | `REDIS_HOST` | Hostname of Redis server | `localhost` |
 | `REDIS_PORT` | Port number of Redis server | `6379` |
-| `SAML_PROVIDER` | the name of the SAML provider within AWS, which Auth0 integrates with, e.g. `dev-auth0`. This is referenced in user policies to allow them to log in via SAML federation. | |
 | `SECRET_KEY` | Secret key used to encrypt cookies, etc | |
 | `SENTRY_DSN` | Sentry credentials | |
 | `SLACK_API_TOKEN` | Slack token ([more information)](https://slack.dev/python-slackclient/auth.html) | Only required when you're working with Slack |

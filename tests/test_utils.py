@@ -6,10 +6,10 @@ from controlpanel.utils import SettingLoader
 
 def test_not_overwrite_var_in_setting():
     test_json={
-        "K8S_WORKER_ROLE_NAME": "new_role_name"
+        "AWS_COMPUTE_ACCOUNT_ID": "new_account_id"
     }
     SettingLoader(test_json)
-    assert settings.K8S_WORKER_ROLE_NAME == "nodes.example.com"
+    assert settings.AWS_COMPUTE_ACCOUNT_ID == "test_compute_account_id"
 
 
 def test_add_new_var_in_setting():

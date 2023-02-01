@@ -260,16 +260,16 @@ and then ask a colleague for help.
 
 ### Local AWS profile setup (on first run only)
 This app needs to interact with multiple AWS accounts in order to support the users' needs.
-The AWS resources like IAM, s3 buckets are under our data account and will be managed by
+The AWS resources like IAM, s3 buckets are under our dev account and will be managed by
 app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
 The following steps will show how to create it.
 
-Assume that the name of profile for our aws data account is ```admin-data```
+Assume that the name of profile for our aws dev account is ```admin-dev```
 
 #### Add the AWS credential into .aws/credentials
 it should look like below
 ```
-[admin-data]
+[admin-dev]
 aws_access_key_id = <your aws_access_key_id>
 aws_secret_access_key = <your aws_secret_access_key>
 
@@ -282,8 +282,8 @@ Once the aws-vault is added, you can choose to show the value of the keys.
 #### Add the AWS assume role or other settings into .aws/config
 
 ```
-[profile admin-data]
-role_arn=arn:aws:iam::<data account id>:role/restricted-admin
+[profile admin-dev]
+role_arn=arn:aws:iam::<dev account id>:role/restricted-admin
 source_profile=default
 ```
 ### Check Kubernetes current context
@@ -319,7 +319,7 @@ Note that even if the variable is set correctly in the output of the above comma
 If you want to run the control panel app to manage AWS resources under single role, you can use
 following environment variable to define the profile you want to use
 - ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
-export AWS_PROFILE = "admin-data"
+export AWS_PROFILE = "admin-dev"
 - Make sure there is NO other AWS boto3 environment variables defined.
 
 #### AWS credential setting for multiple AWS roles
@@ -390,8 +390,8 @@ Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<T
 
 ### Important notes
 
-Even though your instance of Control Panel is running locally, it will still interact with the remote AWS data account and development Kubernetes cluster.
-The data account is also used by our production environment, so take care when interacting with our AWS resources directly.
+Even though your instance of Control Panel is running locally, it will still interact with the remote AWS dev account and development Kubernetes cluster.
+The dev account is also used by our development cloud environment, so take care when interacting with our AWS resources directly.
 
 
 ## Development Practices
