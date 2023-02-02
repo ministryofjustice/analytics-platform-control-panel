@@ -10,7 +10,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api import auth0
-from tests.api.fixtures.aws import *  # noqa F403,F401
+from tests.api.fixtures.aws import *
 
 NUM_APPS = 3
 
@@ -92,7 +92,7 @@ def detail(client, app, *args):
 
 
 def update_auth0_connections(client, app, *args):
-    return client.get(reverse('update-auth0-connections', kwargs={'pk': app.id}))
+    return client.get(reverse("update-auth0-connections", kwargs={"pk": app.id}))
 
 
 def create(client, *args):

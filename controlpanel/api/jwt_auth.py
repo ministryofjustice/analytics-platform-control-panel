@@ -1,6 +1,8 @@
+# Third-party
 from django.conf import settings
 from rest_framework import authentication, exceptions
 
+# First-party/Local
 from controlpanel.api.models import User
 from controlpanel.jwt import JWT, JWTDecodeError
 
@@ -22,11 +24,11 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
 def get_or_create_user(jwt):
     try:
-        return User.objects.get(pk=jwt.payload['sub'])
+        return User.objects.get(pk=jwt.payload["sub"])
 
     except User.DoesNotExist:
         return User.objects.create(
-            pk=jwt.payload['sub'],
+            pk=jwt.payload["sub"],
             username=jwt.payload[settings.OIDC_FIELD_USERNAME],
             email=jwt.payload[settings.OIDC_FIELD_EMAIL],
             name=jwt.payload[settings.OIDC_FIELD_NAME],

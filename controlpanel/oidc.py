@@ -1,16 +1,19 @@
-import structlog
+# Standard library
 from urllib.parse import urlencode
 
-from django.utils import timezone
-
-from controlpanel.api.models import User
+# Third-party
+import structlog
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import SuspiciousOperation
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils import timezone
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
+
+# First-party/Local
+from controlpanel.api.models import User
 
 log = structlog.getLogger(__name__)
 
@@ -52,11 +55,13 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         if authenticated_user:
             # User states that are allowed on non-EKS infra platforms. See the
             # api.models.user.User model for details of what these mean.
-            valid_old_infra_states = [
+            valid_old_infra_states = [  # noqa: F841
                 authenticated_user.VOID,
                 authenticated_user.PENDING,
                 authenticated_user.REVERTED,
             ]
+            # TODO: valid_old_infra_states variable is instantiated but never user.
+
             # Calling the authentication event will ensure the user is
             # correctly set up for the current infrastructure (including the
             # process of migrating the user from the old infra -> EKS).
@@ -65,31 +70,32 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
 
 
 class StateMismatchHandler(OIDCAuthenticationCallbackView):
-
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
         except SuspiciousOperation as e:
-            log.warning(f'Caught {e}: redirecting to login')
+            log.warning(f"Caught {e}: redirecting to login")
             return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL_FAILURE)
 
 
 def logout(request):
-    params = urlencode({
-        "returnTo": f"{request.scheme}://{request.get_host()}{reverse('index')}",
-        "client_id": settings.OIDC_RP_CLIENT_ID,
-    })
+    params = urlencode(
+        {
+            "returnTo": f"{request.scheme}://{request.get_host()}{reverse('index')}",
+            "client_id": settings.OIDC_RP_CLIENT_ID,
+        }
+    )
     return f"{settings.AUTH0['logout_url']}?{params}"
 
 
 class OIDCLoginRequiredMixin(LoginRequiredMixin):
     """Verify that the current user is (still) authenticated."""
+
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         current_seconds = timezone.now().timestamp()
-        token_expiry_seconds = self.request.session.get('oidc_id_token_expiration')
-        if token_expiry_seconds and \
-                current_seconds > token_expiry_seconds:
+        token_expiry_seconds = self.request.session.get("oidc_id_token_expiration")
+        if token_expiry_seconds and current_seconds > token_expiry_seconds:
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)

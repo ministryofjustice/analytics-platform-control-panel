@@ -1,13 +1,12 @@
+# Third-party
 import structlog
-
 from rest_framework.permissions import BasePermission
 
-
 ALLOWED_APIS = [
-    'api/v1',
-    'apis/apps/v1',
-    'apis/apps/v1beta2',
-    'apis/extensions/v1beta1',
+    "api/v1",
+    "apis/apps/v1",
+    "apis/apps/v1beta2",
+    "apis/extensions/v1beta1",
 ]
 
 
@@ -36,7 +35,7 @@ class K8sPermissions(BasePermission):
                 return False
         else:
             if not has_access_token(request):
-                log.debug(f"User not authenticated and bearer token missing")
+                log.debug("User not authenticated and bearer token missing")
                 return False
 
         return True
@@ -45,6 +44,5 @@ class K8sPermissions(BasePermission):
 def has_access_token(request):
     auth_header = request.META.get("HTTP_AUTHORIZATION")
     return auth_header and (
-        auth_header.startswith("Bearer ") or
-        auth_header.startswith("JWT ")
+        auth_header.startswith("Bearer ") or auth_header.startswith("JWT ")
     )

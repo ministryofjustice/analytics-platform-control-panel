@@ -1,10 +1,12 @@
+# Standard library
 from unittest.mock import patch
 
+# Third-party
 import kubernetes
 import pytest
 
+# First-party/Local
 from controlpanel.api.kubernetes import KubernetesClient
-
 
 SERVICE_ACCOUNT_TEST_TOKEN = "test-service-account-token"
 

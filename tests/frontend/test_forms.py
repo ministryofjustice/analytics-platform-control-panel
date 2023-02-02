@@ -1,8 +1,13 @@
-import pytest
+# Standard library
 from unittest import mock
-from controlpanel.frontend import forms
-from controlpanel.api.models import S3Bucket
+
+# Third-party
+import pytest
+
+# First-party/Local
 from controlpanel.api import aws
+from controlpanel.api.models import S3Bucket
+from controlpanel.frontend import forms
 
 
 def test_tool_release_form_check_release_name():
@@ -130,7 +135,7 @@ def test_create_app_form_clean_new_datasource():
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
             "connections": ["email"],
-            "disable_authentication": True
+            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -144,7 +149,7 @@ def test_create_app_form_clean_new_datasource():
         data={
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
-            "disable_authentication": True
+            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -157,7 +162,7 @@ def test_create_app_form_clean_new_datasource():
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
             "connections": ["email"],
-            "disable_authentication": True
+            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -176,7 +181,7 @@ def test_create_app_form_clean_existing_datasource():
         data={
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "existing",
-            "connections": ["email"]
+            "connections": ["email"],
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -194,7 +199,7 @@ def test_create_app_form_new_datasource_but_bucket_existed():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": bucket_name,
-            "connections": ["email"]
+            "connections": ["email"],
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -227,7 +232,7 @@ def test_create_app_form_clean_repo_url():
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
             "connections": ["email"],
-            "disable_authentication": True
+            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -249,7 +254,7 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "disable_authentication": True
+            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -272,7 +277,7 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "disable_authentication": True
+            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -299,12 +304,12 @@ def test_create_app_with_custom_connection():
             "new_datasource_name": "test-bucketname",
             "connections": ["email", "auth0_nomis"],
             "disable_authentication": True,
-            "auth0_nomis_auth0_client_id": 'nomis-client-id',
-            "auth0_nomis_auth0_client_secret": 'nomis-client-secret',
-            "auth0_nomis_auth0_conn_name": 'nomis-conn-name'
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "nomis-client-secret",
+            "auth0_nomis_auth0_conn_name": "nomis-conn-name",
         },
         all_connections_names=["github", "email", "auth0_nomis"],
-        custom_connections=["auth0_nomis"]
+        custom_connections=["auth0_nomis"],
     )
     f.request = mock.MagicMock()
     mock_get_repo = mock.MagicMock(return_value=True)
@@ -327,12 +332,12 @@ def test_create_app_with_custom_connection():
             "new_datasource_name": "test-bucketname",
             "connections": ["email", "auth0_nomis"],
             "disable_authentication": True,
-            "auth0_nomis_auth0_client_id": 'nomis-client-id',
-            "auth0_nomis_auth0_client_secret": '',
-            "auth0_nomis_auth0_conn_name": 'nomis_conn_name'
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "",
+            "auth0_nomis_auth0_conn_name": "nomis_conn_name",
         },
         all_connections_names=["github", "email", "auth0_nomis"],
-        custom_connections=["auth0_nomis"]
+        custom_connections=["auth0_nomis"],
     )
     f.request = mock.MagicMock()
     mock_get_repo = mock.MagicMock(return_value=True)
@@ -355,13 +360,13 @@ def test_update_app_with_custom_connection():
     f = forms.UpdateAppAuth0ConnectionsForm(
         data={
             "connections": ["email", "auth0_nomis"],
-            "auth0_nomis_auth0_client_id": 'nomis-client-id',
-            "auth0_nomis_auth0_client_secret": 'nomis-client-secret',
-            "auth0_nomis_auth0_conn_name": 'nomis-conn-name'
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "nomis-client-secret",
+            "auth0_nomis_auth0_conn_name": "nomis-conn-name",
         },
         all_connections_names=["github", "email", "auth0_nomis"],
         custom_connections=["auth0_nomis"],
-        auth0_connections=["github"]
+        auth0_connections=["github"],
     )
     f.request = mock.MagicMock()
     mock_app = mock.MagicMock()
@@ -373,13 +378,13 @@ def test_update_app_with_custom_connection():
     f = forms.UpdateAppAuth0ConnectionsForm(
         data={
             "connections": ["email", "auth0_nomis"],
-            "auth0_nomis_auth0_client_id": 'nomis-client-id',
-            "auth0_nomis_auth0_client_secret": '',
-            "auth0_nomis_auth0_conn_name": 'nomis_conn_name'
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "",
+            "auth0_nomis_auth0_conn_name": "nomis_conn_name",
         },
         all_connections_names=["github", "email", "auth0_nomis"],
         custom_connections=["auth0_nomis"],
-        auth0_connections=["github"]
+        auth0_connections=["github"],
     )
     f.request = mock.MagicMock()
     mock_app = mock.MagicMock()
@@ -401,7 +406,9 @@ def test_ip_allowlist_form_invalid_ip():
         "allowed_ip_ranges": "123, 456",
     }
     f = forms.IPAllowlistForm(data)
-    assert f.errors["allowed_ip_ranges"] == ["123 should be an IPv4 or IPv6 address (in a comma-separated list if several IP addresses are provided)."]
+    assert f.errors["allowed_ip_ranges"] == [
+        "123 should be an IPv4 or IPv6 address (in a comma-separated list if several IP addresses are provided)."  # noqa: E501
+    ]
 
 
 @pytest.mark.django_db

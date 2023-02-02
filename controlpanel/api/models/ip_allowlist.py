@@ -1,10 +1,12 @@
+# Third-party
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
-
 from simple_history.models import HistoricalRecords
 
+# First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.validators import validate_ip_ranges
+
 
 class IPAllowlist(TimeStampedModel):
     """
@@ -13,6 +15,7 @@ class IPAllowlist(TimeStampedModel):
     Access to an App is only possible from the IP ranges specified in the App's
     associated IPAllowlists.
     """
+
     name = models.CharField(max_length=60, blank=False, unique=True)
     description = models.CharField(max_length=60, blank=True)
     contact = models.CharField(max_length=60, blank=True)
@@ -28,7 +31,7 @@ class IPAllowlist(TimeStampedModel):
         return f"<IPAllowlist: {self.pk}|{self.name}>"
 
     def __str__(self):
-         return f"{self.name}"
+        return f"{self.name}"
 
     def save(self, *args, **kwargs):
         """
@@ -37,7 +40,9 @@ class IPAllowlist(TimeStampedModel):
         """
         super().save(*args, **kwargs)
         for app in self.apps.all():
-            cluster.App(app).create_or_update_secret({"allowed_ip_ranges": app.app_allowed_ip_ranges})
+            cluster.App(app).create_or_update_secret(
+                {"allowed_ip_ranges": app.app_allowed_ip_ranges}
+            )
         return self
 
     def delete(self, *args, **kwargs):

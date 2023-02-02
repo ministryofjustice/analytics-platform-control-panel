@@ -1,16 +1,16 @@
-import structlog
+# Standard library
 import re
 
+# Third-party
+import structlog
 from django.conf import settings
 
-
-API_PATH = re.compile(r'^/(?P<resource>[^/]+)')
+API_PATH = re.compile(r"^/(?P<resource>[^/]+)")
 
 log = structlog.getLogger(__name__)
 
 
 class LegacyAPIRedirectMiddleware:
-
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -29,13 +29,13 @@ class LegacyAPIRedirectMiddleware:
 def legacy_api_path(path):
     match = API_PATH.match(path)
     if match:
-        return match.group('resource') in [
-            'apps',
-            'apps3buckets',
-            'groups',
-            's3buckets',
-            'userapps',
-            'users',
-            'users3buckets',
-            'tools',
+        return match.group("resource") in [
+            "apps",
+            "apps3buckets",
+            "groups",
+            "s3buckets",
+            "userapps",
+            "users",
+            "users3buckets",
+            "tools",
         ]

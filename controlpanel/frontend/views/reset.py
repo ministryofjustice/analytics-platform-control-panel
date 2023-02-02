@@ -1,9 +1,11 @@
-from django.conf import settings
-from django.urls import reverse_lazy
+# Third-party
 from django.contrib import messages
+from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
-from controlpanel.frontend.forms import ResetHomeDirectoryForm
+
+# First-party/Local
 from controlpanel.frontend.consumers import start_background_task
+from controlpanel.frontend.forms import ResetHomeDirectoryForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 

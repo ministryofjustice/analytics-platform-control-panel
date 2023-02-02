@@ -1,7 +1,10 @@
-from unittest.mock import patch
+# Standard library
+from unittest.mock import patch  # noqa: F401
 
+# Third-party
 import pytest
 
+# First-party/Local
 from controlpanel.api import slack
 
 
@@ -14,6 +17,7 @@ def message_sent(settings, slack_WebClient):
             text=f"{message} [{settings.ENV}]",
         )
         return True
+
     return check_sent
 
 
@@ -22,6 +26,7 @@ def test_send_notification(message_sent):
     slack.send_notification(message)
 
     assert message_sent(message)
+
 
 @pytest.mark.parametrize(
     "request_user",
@@ -32,10 +37,10 @@ def test_send_notification(message_sent):
     ids=[
         "no-request-user",
         "with-request-user",
-    ]
+    ],
 )
 def test_notify_superuser_created(message_sent, users, request_user):
-    user = users['other_user']
+    user = users["other_user"]
     expected_message = slack.CREATE_SUPERUSER_MESSAGE.format(username=user.username)
     by_username = None
     if request_user:

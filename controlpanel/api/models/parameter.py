@@ -1,16 +1,16 @@
+# Third-party
 from django.conf import settings
 from django.core.validators import RegexValidator
 from django.db import models
-
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api.aws import arn
+# First-party/Local
 from controlpanel.api import cluster
-
+from controlpanel.api.aws import arn
 
 APP_TYPE_CHOICES = (
-    ('airflow', 'Airflow'),
-    ('webapp', 'Web app'),
+    ("airflow", "Airflow"),
+    ("webapp", "Web app"),
 )
 
 
@@ -36,17 +36,12 @@ class Parameter(TimeStampedModel):
         return f"/{settings.ENV}/{self.app_type}/{self.role_name}/secrets/{self.key}"
 
     key = models.CharField(
-        max_length=50,
-        validators=[RegexValidator(r'[a-zA-Z0-9_]{1,50}')]
+        max_length=50, validators=[RegexValidator(r"[a-zA-Z0-9_]{1,50}")]
     )
     description = models.CharField(max_length=600)
-    app_type = models.CharField(
-        max_length=8,
-        choices=APP_TYPE_CHOICES
-    )
+    app_type = models.CharField(max_length=8, choices=APP_TYPE_CHOICES)
     role_name = models.CharField(
-        max_length=63,
-        validators=[RegexValidator(r'[a-zA-Z0-9_]{1,63}')]
+        max_length=63, validators=[RegexValidator(r"[a-zA-Z0-9_]{1,63}")]
     )
     created_by = models.ForeignKey(
         "User",

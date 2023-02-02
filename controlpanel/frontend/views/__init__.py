@@ -1,26 +1,34 @@
-from django.views.generic.base import TemplateView
+# Third-party
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.views.generic.base import TemplateView
 from mozilla_django_oidc.views import OIDCLogoutView
 
+# First-party/Local
+from controlpanel.frontend.views.accessibility import Accessibility
+
+# isort: off
 from controlpanel.frontend.views.app import (
+    AddAdmin,
+    AddCustomers,
     AdminAppList,
-    AppList,
     AppDetail,
+    AppList,
     CreateApp,
     DeleteApp,
-    AddCustomers,
-    RemoveCustomer,
-    AddAdmin,
-    RevokeAdmin,
     GrantAppAccess,
-    UpdateAppAccess,
+    RemoveCustomer,
+    ResetAppSecret,
+    RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
-    ResetAppSecret,
+    UpdateAppAccess,
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
 )
+
+# isort: on
+# First-party/Local
 from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,
@@ -30,54 +38,50 @@ from controlpanel.frontend.views.datasource import (
     GrantAccess,
     GrantPolicyAccess,
     RevokeAccess,
+    RevokeIAMManagedPolicyAccess,
     UpdateAccessLevel,
     UpdateIAMManagedPolicyAccessLevel,
-    RevokeIAMManagedPolicyAccess,
     WebappBucketList,
+)
+from controlpanel.frontend.views.help import Help
+from controlpanel.frontend.views.ip_allowlist import (
+    IPAllowlistCreate,
+    IPAllowlistDelete,
+    IPAllowlistDetail,
+    IPAllowlistList,
+)
+from controlpanel.frontend.views.login_fail import LoginFail
+from controlpanel.frontend.views.parameter import (
+    AdminParameterList,
+    ParameterCreate,
+    ParameterDelete,
+    ParameterFormRoleList,
+    ParameterList,
 )
 from controlpanel.frontend.views.policy import (
     AdminIAMManagedPolicyList,
-    IAMManagedPolicyList,
     IAMManagedPolicyCreate,
     IAMManagedPolicyDelete,
     IAMManagedPolicyDetail,
     IAMManagedPolicyFormRoleList,
+    IAMManagedPolicyList,
     IAMManagedPolicyRemoveUser,
 )
-from controlpanel.frontend.views.parameter import (
-    AdminParameterList,
-    ParameterList,
-    ParameterCreate,
-    ParameterDelete,
-    ParameterFormRoleList,
+from controlpanel.frontend.views.release import (
+    ReleaseCreate,
+    ReleaseDelete,
+    ReleaseDetail,
+    ReleaseList,
 )
-from controlpanel.frontend.views.tool import (
-    ToolList,
-    RestartTool,
-)
+from controlpanel.frontend.views.reset import ResetHome
+from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
     ResetMFA,
     SetSuperadmin,
-    UserList,
     UserDelete,
     UserDetail,
+    UserList,
 )
-from controlpanel.frontend.views.release import (
-    ReleaseList,
-    ReleaseDelete,
-    ReleaseDetail,
-    ReleaseCreate,
-)
-from controlpanel.frontend.views.ip_allowlist import (
-    IPAllowlistList,
-    IPAllowlistCreate,
-    IPAllowlistDetail,
-    IPAllowlistDelete,
-)
-from controlpanel.frontend.views.reset import ResetHome
-from controlpanel.frontend.views.accessibility import Accessibility 
-from controlpanel.frontend.views.login_fail import LoginFail
-from controlpanel.frontend.views.help import Help
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 

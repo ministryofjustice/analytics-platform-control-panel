@@ -1,20 +1,23 @@
+# Standard library
 from unittest.mock import patch
 
+# Third-party
+import pytest
 from django.db.utils import IntegrityError
 from model_mommy import mommy
-import pytest
 
+# First-party/Local
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
 @pytest.fixture
 def user():
-    return mommy.make('api.User', auth0_id='github|user_1', username="user_1")
+    return mommy.make("api.User", auth0_id="github|user_1", username="user_1")
 
 
 @pytest.fixture
 def bucket():
-    return mommy.make('api.S3Bucket', name="test-bucket-1")
+    return mommy.make("api.S3Bucket", name="test-bucket-1")
 
 
 @pytest.fixture
@@ -37,7 +40,9 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 
 @pytest.mark.django_db
 def test_aws_create(user, bucket):
-    with patch('controlpanel.api.cluster.AWSRole.grant_bucket_access') as grant_bucket_access:
+    with patch(
+        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
+    ) as grant_bucket_access:
         users3bucket = user.users3buckets.create(
             s3bucket=bucket,
             access_level=AccessToS3Bucket.READONLY,
@@ -54,7 +59,9 @@ def test_aws_create(user, bucket):
 
 @pytest.mark.django_db
 def test_delete_revoke_permissions(user, bucket, users3bucket):
-    with patch('controlpanel.api.cluster.AWSRole.revoke_bucket_access') as revoke_bucket_access_action:
+    with patch(
+        "controlpanel.api.cluster.AWSRole.revoke_bucket_access"
+    ) as revoke_bucket_access_action:
         users3bucket.delete()
         revoke_bucket_access_action.assert_called_with(
             user.iam_role_name,

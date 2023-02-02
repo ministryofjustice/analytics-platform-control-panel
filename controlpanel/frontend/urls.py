@@ -90,7 +90,11 @@ urlpatterns = [
         "parameters/delete/", views.ParameterDelete.as_view(), name="delete-parameter"
     ),
     path("tools/", views.ToolList.as_view(), name="list-tools"),
-    path("tools/<str:name>/restart/<str:tool_id>", views.RestartTool.as_view(), name="restart-tool"),
+    path(
+        "tools/<str:name>/restart/<str:tool_id>",
+        views.RestartTool.as_view(),
+        name="restart-tool",
+    ),
     path("users/", views.UserList.as_view(), name="list-users"),
     path("users/<str:pk>/", views.UserDetail.as_view(), name="manage-user"),
     path("users/<str:pk>/delete/", views.UserDelete.as_view(), name="delete-user"),
@@ -135,7 +139,7 @@ urlpatterns = [
     path(
         "apps/<int:pk>/customers/paginate/<int:page_no>/",
         views.app.AppCustomersPageView.as_view(),
-        name="appcustomers-page"
+        name="appcustomers-page",
     ),
     path("webapps/<int:pk>/admins/", views.AddAdmin.as_view(), name="add-app-admin"),
     path(
@@ -161,7 +165,8 @@ urlpatterns = [
     path(
         "webapps/<int:pk>/update-ip-allowlists/",
         views.UpdateAppIPAllowlists.as_view(),
-        name="update-app-ip-allowlists"),
+        name="update-app-ip-allowlists",
+    ),
     path(
         "webapp-datasource-access/<int:pk>/",
         views.UpdateAppAccess.as_view(),

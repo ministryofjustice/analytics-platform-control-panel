@@ -2,8 +2,8 @@
 import os
 import secrets
 from copy import deepcopy
-from typing import List
 from enum import Enum
+from typing import List
 
 # Third-party
 import structlog
@@ -62,8 +62,8 @@ BASE_ASSUME_ROLE_POLICY = {
 
 
 class AWSRoleCategory(str, Enum):
-    app = 'APP'
-    user = 'USER'
+    app = "APP"
+    user = "USER"
 
 
 class HomeDirectoryResetError(Exception):
@@ -75,10 +75,12 @@ class HomeDirectoryResetError(Exception):
 
 
 class AWSServiceCredentialSettings:
-    """This class is responsible for defining the mapping between coding object (class[.func] or function) for creating # noqa : E501
-    AWS resource or using AWS service for achieving something. The setting may be imported through external source e.g. # noqa : E501
-    config yaml file or db in the future, such process will be outside this class for now, only the json object will be # noqa : E501
-    pass in. The assumed json structure is 2 level dictionary as below:
+    """This class is responsible for defining the mapping between coding object
+    (class[.func] or function) for creating AWS resource or using AWS service
+    for achieving something. The setting may be imported through external source
+    e.g. config yaml file or db in the future, such process will be outside this
+    class for now, only the json object will be pass in. The assumed json
+    structure is 2 level dictionary as below:
     AWS_ROLES_MAP:
         DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
         <Entity category>
@@ -332,7 +334,8 @@ class User(EntityResource):
         for helm_chart_item in self.user_helm_charts["installation"]:
             if helm_chart_item["release"] in helm_charts:
                 init_installed_charts.append(helm_chart_item["release"])
-        # Removed those initially installed charts from the charts which are retrieved from the namespace # noqa : E501
+        # Removed those initially installed charts from the charts which are
+        # retrieved from the namespace
         for helm_chart_item in init_installed_charts:
             helm_charts.remove(helm_chart_item)
         return init_installed_charts
@@ -345,11 +348,15 @@ class User(EntityResource):
 
         init_installed_charts = self._filter_out_installation_charts(user_releases)
         self._uninstall_helm_charts(self.k8s_namespace, user_releases, dry_run=dry_run)
-        self._uninstall_helm_charts(self.k8s_namespace, init_installed_charts, dry_run=dry_run)
+        self._uninstall_helm_charts(
+            self.k8s_namespace, init_installed_charts, dry_run=dry_run
+        )
 
         # Only remove the installed charts from cpanel namespace
         init_installed_charts = self._filter_out_installation_charts(cpanel_releases)
-        self._uninstall_helm_charts(self.eks_cpanel_namespace, init_installed_charts, dry_run=dry_run)
+        self._uninstall_helm_charts(
+            self.eks_cpanel_namespace, init_installed_charts, dry_run=dry_run
+        )
 
     def delete(self):
         self.aws_role_service.delete_role(self.user.iam_role_name)
@@ -379,10 +386,12 @@ class User(EntityResource):
     def on_authenticate(self):
         """
         Run on each authenticated login on the control panel.
-        This function also checks whether the users has all those charts installed or not # noqa : E501
+        This function also checks whether the users has all those charts
+        installed or not
         """
         if not self.has_required_installation_charts():
-            # For some reason, user does not have all the charts required so we should re-init them. # noqa : E501
+            # For some reason, user does not have all the charts required so we
+            # should re-init them.
             log.info(
                 f"User {self.user.slug} already migrated but has no charts, initialising"  # noqa : E501
             )
@@ -664,9 +673,9 @@ class ToolDeployment:
         values.update(kwargs)
         set_values = []
         for key, val in values.items():
-            if (
-                val
-            ):  # Helpful for debugging configs: ignore parameters with missing values and log that the value is missing. # noqa : E501
+            if val:
+                # Helpful for debugging configs: ignore parameters with missing
+                # values and log that the value is missing.
                 escaped_val = val.replace(",", "\,")  # noqa : W605
                 set_values.extend(["--set", f"{key}={escaped_val}"])
             else:
@@ -709,14 +718,18 @@ class ToolDeployment:
     @classmethod
     def is_tool_deployment(cls, metadata):
         """
-        Currently the logic for checking whether a deployment is for tool is based on the information we put in the
-        deployment yaml,  the common info cross tools' helm chart is the unidler-key or unide
-        (somehow typo in the helm chart :(), we have other alternative field for such check, e.g. whether name contains
-        some key words, but IMO, it is too specific.
+        Currently the logic for checking whether a deployment is for tool is
+        based on the information we put in the deployment yaml, the common info
+        cross tools' helm chart is the unidler-key or unide (somehow typo in
+        the helm chart :(), we have other alternative field for such check,
+        e.g. whether name contains some key words, but IMO, it is too specific.
 
-        We may change this part if we want to refactor how the tool is released and managed.
+        We may change this part if we want to refactor how the tool is released
+        and managed.
         """
-        return metadata.labels.get('unidler-key') is not None or metadata.labels.get('unidle-key')
+        return metadata.labels.get("unidler-key") is not None or metadata.labels.get(
+            "unidle-key"
+        )
 
     @classmethod
     def get_deployments(cls, user, id_token, search_name=None, search_version=None):

@@ -1,6 +1,11 @@
-from model_mommy import mommy
-import pytest
+# Standard library
 from unittest.mock import patch
+
+# Third-party
+import pytest
+from model_mommy import mommy
+
+# First-party/Local
 from controlpanel.api import cluster
 
 
@@ -11,22 +16,26 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def bucket():
-    return mommy.prepare('api.S3Bucket', name='test-bucket')
+    return mommy.prepare("api.S3Bucket", name="test-bucket")
 
 
 def test_arn(bucket):
-    assert cluster.S3Bucket(bucket).arn == 'arn:aws:s3:::test-bucket'
+    assert cluster.S3Bucket(bucket).arn == "arn:aws:s3:::test-bucket"
 
 
 @pytest.yield_fixture
 def aws_create_bucket():
-    with patch('controlpanel.api.cluster.AWSBucket.create_bucket') as aws_create_bucket_action:
+    with patch(
+        "controlpanel.api.cluster.AWSBucket.create_bucket"
+    ) as aws_create_bucket_action:
         yield aws_create_bucket_action
 
 
 @pytest.yield_fixture
 def aws_tag_bucket():
-    with patch('controlpanel.api.cluster.AWSBucket.tag_bucket') as aws_tag_bucket_action:
+    with patch(
+        "controlpanel.api.cluster.AWSBucket.tag_bucket"
+    ) as aws_tag_bucket_action:
         yield aws_tag_bucket_action
 
 

@@ -4,9 +4,11 @@ Custom filters
 See: http://www.django-rest-framework.org/api-guide/filtering/#custom-generic-filtering
 """
 
+# Third-party
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 
+# First-party/Local
 from controlpanel.api.models import S3Bucket
 from controlpanel.api.permissions import is_superuser
 
@@ -44,7 +46,6 @@ class S3BucketFilter(DjangoFilterBackend):
 
 
 class AppS3BucketFilter(DjangoFilterBackend):
-
     def filter_queryset(self, request, queryset, view):
         queryset = super().filter_queryset(request, queryset, view)
 
