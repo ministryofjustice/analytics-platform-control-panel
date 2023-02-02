@@ -138,13 +138,14 @@ class CreateAppForm(AppAuth0Form):
     disable_authentication = forms.BooleanField(required=False)
 
     app_ip_allowlists = forms.ModelMultipleChoiceField(
-        required=False,
-        queryset=IPAllowlist.objects.all()
+        required=False, queryset=IPAllowlist.objects.all()
     )
 
     def __init__(self, *args, **kwargs):
         super(CreateAppForm, self).__init__(*args, **kwargs)
-        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(is_recommended=True)
+        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
+            is_recommended=True
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -447,4 +448,10 @@ class DisableAuthForm(SecretsForm):
 class IPAllowlistForm(forms.ModelForm):
     class Meta:
         model = IPAllowlist
-        fields = ["name", "description", "contact", "allowed_ip_ranges", "is_recommended"]
+        fields = [
+            "name",
+            "description",
+            "contact",
+            "allowed_ip_ranges",
+            "is_recommended",
+        ]

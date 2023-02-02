@@ -17,7 +17,9 @@ class App(TimeStampedModel):
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
-    ip_allowlists = models.ManyToManyField(IPAllowlist, related_name="apps", related_query_name="app", blank=True)
+    ip_allowlists = models.ManyToManyField(
+        IPAllowlist, related_name="apps", related_query_name="app", blank=True
+    )
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -76,7 +78,9 @@ class App(TimeStampedModel):
 
     @property
     def app_allowed_ip_ranges(self):
-        allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by("pk")
+        allowed_ip_ranges = self.ip_allowlists.values_list(
+            "allowed_ip_ranges", flat=True
+        ).order_by("pk")
         return ", ".join(list(allowed_ip_ranges))
 
     def get_secret_key(self, name):
@@ -126,7 +130,9 @@ class App(TimeStampedModel):
 
         if is_create:
             cluster.App(self).create_iam_role()
-            cluster.App(self).create_or_update_secret({"allowed_ip_ranges": self.app_allowed_ip_ranges})
+            cluster.App(self).create_or_update_secret(
+                {"allowed_ip_ranges": self.app_allowed_ip_ranges}
+            )
 
         return self
 
@@ -145,7 +151,9 @@ def app_ip_allowlists_changed(sender, instance, action, **kwargs):
     """
 
     if isinstance(instance, App) and action in ["post_add", "post_remove"]:
-        cluster.App(instance).create_or_update_secret({"allowed_ip_ranges": instance.app_allowed_ip_ranges})
+        cluster.App(instance).create_or_update_secret(
+            {"allowed_ip_ranges": instance.app_allowed_ip_ranges}
+        )
 
 
 class AddCustomerError(Exception):

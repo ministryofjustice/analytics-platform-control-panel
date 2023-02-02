@@ -89,7 +89,9 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # app hosting story figured out, we should do this properly.
         context["apps_on_eks"] = settings.features.apps_on_eks.enabled
         context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
-        context["app_ip_allowlists_names"] = ", ".join(list(app.ip_allowlists.values_list("name", flat=True)))
+        context["app_ip_allowlists_names"] = ", ".join(
+            list(app.ip_allowlists.values_list("name", flat=True))
+        )
 
         if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
@@ -266,7 +268,9 @@ class UpdateAppAuth0Connections(
         return FormMixin.form_valid(self, form)
 
 
-class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class UpdateAppIPAllowlists(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
+):
 
     model = App
     template_name = "webapp-update-ip-allowlists.html"
@@ -277,12 +281,14 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
 
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
-        context["app_migration_feature_enabled"] = settings.features.app_migration.enabled
+        context[
+            "app_migration_feature_enabled"
+        ] = settings.features.app_migration.enabled
         context["app_ip_allowlists"] = [
             {
                 "text": ip_allowlist.name,
                 "value": ip_allowlist.pk,
-                "checked": ip_allowlist in self.get_object().ip_allowlists.all()
+                "checked": ip_allowlist in self.get_object().ip_allowlists.all(),
             }
             for ip_allowlist in IPAllowlist.objects.all()
         ]
@@ -302,7 +308,10 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        messages.success(self.request, f"Successfully updated the IP allowlists associated with app {self.get_object().name}")
+        messages.success(
+            self.request,
+            f"Successfully updated the IP allowlists associated with app {self.get_object().name}",  # noqa:E501
+        )
         return reverse_lazy("manage-app", kwargs={"pk": self.get_object().id})
 
 

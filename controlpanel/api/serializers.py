@@ -89,7 +89,7 @@ class IPAllowlistSimpleSerializer(serializers.ModelSerializer):
             "description",
             "contact",
             "allowed_ip_ranges",
-            "is_recommended"
+            "is_recommended",
         )
 
 
@@ -162,7 +162,7 @@ class AppSerializer(serializers.ModelSerializer):
             "apps3buckets",
             "userapps",
             "ip_allowlists",
-            "app_allowed_ip_ranges"
+            "app_allowed_ip_ranges",
         )
 
     def validate_repo_url(self, value):

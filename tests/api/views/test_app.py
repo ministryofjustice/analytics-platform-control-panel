@@ -51,18 +51,18 @@ def test_detail(client, app):
     assert response.status_code == status.HTTP_200_OK
 
     expected_fields = {
-        'id',
-        'url',
-        'name',
-        'description',
-        'slug',
-        'repo_url',
-        'iam_role_name',
-        'created_by',
-        'apps3buckets',
-        'userapps',
-        'ip_allowlists',
-        'app_allowed_ip_ranges',
+        "id",
+        "url",
+        "name",
+        "description",
+        "slug",
+        "repo_url",
+        "iam_role_name",
+        "created_by",
+        "apps3buckets",
+        "userapps",
+        "ip_allowlists",
+        "app_allowed_ip_ranges",
     }
     assert expected_fields == set(response.data)
     assert response.data["iam_role_name"] == app.iam_role_name
