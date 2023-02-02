@@ -1,3 +1,4 @@
+# Third-party
 from django.apps import AppConfig
 
 
@@ -6,4 +7,5 @@ class ApiConfig(AppConfig):
     name = "controlpanel.api"
 
     def ready(self):
+        # First-party/Local
         from controlpanel.api import rules

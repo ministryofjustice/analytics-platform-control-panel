@@ -1,21 +1,22 @@
+# Standard library
 import json
 from unittest.mock import patch
-from model_mommy import mommy
+
+# Third-party
 import pytest
+from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
 
-from controlpanel.api.models import (
-    AppS3Bucket,
-    S3Bucket,
-)
+# First-party/Local
+from controlpanel.api.models import AppS3Bucket, S3Bucket
 
 
 @pytest.fixture
 def apps():
     return {
-        1: mommy.make('api.App', name='app_1'),
-        2: mommy.make('api.App', name='app_2'),
+        1: mommy.make("api.App", name="app_1"),
+        2: mommy.make("api.App", name="app_2"),
     }
 
 
@@ -43,28 +44,24 @@ def apps3buckets(apps, buckets):
 
 
 def test_list(client, apps3buckets):
-    response = client.get(reverse('apps3bucket-list'))
+    response = client.get(reverse("apps3bucket-list"))
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.data['results']) == 2
+    assert len(response.data["results"]) == 2
 
 
 def test_detail(client, apps3buckets):
-    response = client.get(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
+    response = client.get(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
     assert response.status_code == status.HTTP_200_OK
 
-    expected_fields = {
-        'id',
-        'url',
-        'app',
-        's3bucket',
-        'access_level'
-    }
+    expected_fields = {"id", "url", "app", "s3bucket", "access_level"}
     assert set(response.data) == expected_fields
 
 
 def test_delete(client, apps3buckets):
-    with patch('controlpanel.api.aws.AWSRole.revoke_bucket_access') as revoke_bucket_access:
-        response = client.delete(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
+    with patch(
+        "controlpanel.api.aws.AWSRole.revoke_bucket_access"
+    ) as revoke_bucket_access:
+        response = client.delete(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         revoke_bucket_access.assert_called_with(
@@ -73,18 +70,20 @@ def test_delete(client, apps3buckets):
         )
         # TODO get policy document JSON from call and assert bucket ARN not present
 
-        response = client.get(reverse('apps3bucket-detail', (apps3buckets[1].id,)))
+        response = client.get(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_create(client, apps, buckets):
-    with patch('controlpanel.api.aws.AWSRole.grant_bucket_access') as grant_bucket_access:
+    with patch(
+        "controlpanel.api.aws.AWSRole.grant_bucket_access"
+    ) as grant_bucket_access:
         data = {
-            'app': apps[1].id,
-            's3bucket': buckets[3].id,
-            'access_level': AppS3Bucket.READONLY,
+            "app": apps[1].id,
+            "s3bucket": buckets[3].id,
+            "access_level": AppS3Bucket.READONLY,
         }
-        response = client.post(reverse('apps3bucket-list'), data)
+        response = client.post(reverse("apps3bucket-list"), data)
         assert response.status_code == status.HTTP_201_CREATED
 
         apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
@@ -99,19 +98,21 @@ def test_create(client, apps, buckets):
 
 
 def test_update(client, apps, apps3buckets, buckets):
-    with patch('controlpanel.api.aws.AWSRole.grant_bucket_access') as grant_bucket_access:
+    with patch(
+        "controlpanel.api.aws.AWSRole.grant_bucket_access"
+    ) as grant_bucket_access:
         data = {
-            'app': apps[1].id,
-            's3bucket': buckets[1].id,
-            'access_level': AppS3Bucket.READWRITE,
+            "app": apps[1].id,
+            "s3bucket": buckets[1].id,
+            "access_level": AppS3Bucket.READWRITE,
         }
         response = client.put(
-            reverse('apps3bucket-detail', (apps3buckets[1].id,)),
+            reverse("apps3bucket-detail", (apps3buckets[1].id,)),
             json.dumps(data),
-            content_type='application/json',
+            content_type="application/json",
         )
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['access_level'] == data['access_level']
+        assert response.data["access_level"] == data["access_level"]
 
         grant_bucket_access.assert_called_with(
             apps[1].iam_role_name,
@@ -125,20 +126,20 @@ def test_update(client, apps, apps3buckets, buckets):
 def test_update_bad_requests(client, apps, apps3buckets, buckets):
     fixtures = (
         {
-            'app': apps[2].id,  # when app changed
-            's3bucket': buckets[1].id,
-            'access_level': AppS3Bucket.READWRITE,
+            "app": apps[2].id,  # when app changed
+            "s3bucket": buckets[1].id,
+            "access_level": AppS3Bucket.READWRITE,
         },
         {
-            'app': apps[1].id,  # when s3bucket changed
-            's3bucket': buckets[2].id,
-            'access_level': AppS3Bucket.READWRITE,
+            "app": apps[1].id,  # when s3bucket changed
+            "s3bucket": buckets[2].id,
+            "access_level": AppS3Bucket.READWRITE,
         },
     )
 
     for data in fixtures:
         response = client.put(
-            reverse('apps3bucket-detail', (apps3buckets[1].id,)),
+            reverse("apps3bucket-detail", (apps3buckets[1].id,)),
             json.dumps(data),
             content_type="application/json",
         )
@@ -146,26 +147,26 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets):
 
 
 def test_create_with_s3_data_warehouse_not_allowed(client, apps):
-    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
+    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
         s3_bucket_app = mommy.make(
-            'api.S3Bucket',
+            "api.S3Bucket",
             is_data_warehouse=False,
         )
 
         data = {
-            'app': apps[1].id,
-            's3bucket': s3_bucket_app.id,
-            'access_level': AppS3Bucket.READONLY,
+            "app": apps[1].id,
+            "s3bucket": s3_bucket_app.id,
+            "access_level": AppS3Bucket.READONLY,
         }
-        response = client.post(reverse('apps3bucket-list'), data)
+        response = client.post(reverse("apps3bucket-list"), data)
         assert response.status_code == status.HTTP_201_CREATED
 
-        s3_bucket = mommy.make('api.S3Bucket', is_data_warehouse=True)
+        s3_bucket = mommy.make("api.S3Bucket", is_data_warehouse=True)
 
         data = {
-            'app': apps[1].id,
-            's3bucket': s3_bucket.id,
-            'access_level': AppS3Bucket.READONLY,
+            "app": apps[1].id,
+            "s3bucket": s3_bucket.id,
+            "access_level": AppS3Bucket.READONLY,
         }
-        response = client.post(reverse('apps3bucket-list'), data)
+        response = client.post(reverse("apps3bucket-list"), data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST

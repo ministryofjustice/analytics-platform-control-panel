@@ -1,6 +1,10 @@
 # Standard library
+import json
 import uuid
 from unittest.mock import MagicMock, patch
+
+# Third-party
+import pytest
 
 # First-party/Local
 from controlpanel.api import aws, cluster
@@ -39,10 +43,12 @@ def oidc_assume_role(stmt, user):
         stmt,
         Action="sts:AssumeRoleWithWebIdentity",
         Principal={
-            "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}/",
+            "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_DOMAIN}/",  # noqa: F405, E501
         },
         Condition={
-            "StringEquals": {f"{settings.OIDC_DOMAIN}/:sub": user["auth0_id"]},
+            "StringEquals": {
+                f"{settings.OIDC_DOMAIN}/:sub": user["auth0_id"]  # noqa: F405
+            },
         },
     )
 
@@ -54,10 +60,10 @@ def eks_assume_role(stmt, user):
         stmt,
         Action="sts:AssumeRoleWithWebIdentity",
         Principal={
-            "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_EKS_PROVIDER}",
+            "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_EKS_PROVIDER}",  # noqa: F405, E501
         },
         Condition={
-            "StringLike": {f"{settings.OIDC_EKS_PROVIDER}:sub": match},
+            "StringLike": {f"{settings.OIDC_EKS_PROVIDER}:sub": match},  # noqa: F405
         },
     )
 
@@ -172,10 +178,10 @@ def test_delete_role(iam, managed_policy, role_policy):
 
     aws.AWSRole().delete_role(user["iam_role_name"])
 
-    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
+    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):  # noqa: F405
         role.load()
 
-    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
+    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):  # noqa: F405
         inline_policy.load()
 
     attached_policy.reload()
@@ -184,10 +190,10 @@ def test_delete_role(iam, managed_policy, role_policy):
 
 @pytest.fixture
 def logs_bucket(s3):
-    bucket = s3.Bucket(settings.LOGS_BUCKET_NAME)
+    bucket = s3.Bucket(settings.LOGS_BUCKET_NAME)  # noqa: F405
     bucket.create(
         CreateBucketConfiguration={
-            "LocationConstraint": settings.BUCKET_REGION,
+            "LocationConstraint": settings.BUCKET_REGION,  # noqa: F405
         }
     )
     bucket.Acl().put(
@@ -234,7 +240,10 @@ def test_create_bucket(logs_bucket, s3):
     assert rule["NoncurrentVersionTransitions"][0]["StorageClass"] == "GLACIER"
 
     # Check logging
-    assert bucket.Logging().logging_enabled["TargetBucket"] == settings.LOGS_BUCKET_NAME
+    assert (
+        bucket.Logging().logging_enabled["TargetBucket"]
+        == settings.LOGS_BUCKET_NAME  # noqa: F405, E501
+    )
     # Check tagging
     tags = {tag["Key"]: tag["Value"] for tag in bucket.Tagging().tag_set}
     assert tags["buckettype"] == "datawarehouse"
@@ -484,9 +493,7 @@ def test_revoke_sub_string_bucket_access(iam):
         User.ATTACH_POLICIES,
     )
 
-    aws.AWSRole().grant_bucket_access(
-        user["iam_role_name"], bucket_arn, "readonly"
-    )
+    aws.AWSRole().grant_bucket_access(user["iam_role_name"], bucket_arn, "readonly")
     aws.AWSRole().grant_bucket_access(
         user["iam_role_name"], bucket_another_arn, "readonly"
     )
@@ -506,7 +513,7 @@ def test_revoke_bucket_access_when_no_role(iam):
     bucket_arn = "arn:aws:s3:::test-bucket"
 
     # be sure role doesn't exist before calling revoke_bucket_access()
-    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
+    with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):  # noqa: F405
         role = iam.Role(role_name)
         role.load()
 
@@ -540,7 +547,7 @@ def assert_group_members(policy, role_names):
 @pytest.fixture
 def group(iam):
     aws.AWSPolicy().create_policy("test", "/group/test/")
-    group_arn = f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test"
+    group_arn = f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test"  # noqa: F405, E501
     return iam.Policy(group_arn)
 
 
@@ -716,7 +723,7 @@ def test_revoke_policy_bucket_access(iam, group, resources):
 def test_create_app_secret(secretsmanager):
     app_name = "testing_app"
     test_data = {"client_id": "testing_client_id", "client_secret": uuid.uuid4().hex}
-    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)  # noqa: F405
     aws.AWSSecretManager().create_secret(secret_name, test_data)
 
     result = secretsmanager.get_secret_value(SecretId=secret_name)
@@ -738,7 +745,7 @@ def fixture_update_secret():
 def test_update_app_secret(secretsmanager, fixture_update_secret):
     app_name = "testing_app"
     test_data = {"client_id": "testing_client_id", "client_secret": "testing"}
-    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)  # noqa: F405
     aws.AWSSecretManager().create_secret(secret_name, test_data)
 
     update_data = {"client_id": "testing_client_id1", "ip_ranges": ["1.1.1.1"]}
@@ -752,7 +759,7 @@ def test_update_app_secret(secretsmanager, fixture_update_secret):
 def test_secret_has_existed_true(secretsmanager):
     app_name = "testing_app"
     test_data = {"client_id": "testing_client_id", "client_secret": uuid.uuid4().hex}
-    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)  # noqa: F405
     aws.AWSSecretManager().create_secret(secret_name, test_data)
 
     assert aws.AWSSecretManager().has_existed(secret_name)
@@ -765,7 +772,7 @@ def test_secret_has_existed_false(secretsmanager):
 def test_delete_app_secret(secretsmanager):
     app_name = "testing_app"
     test_data = {"client_id": "testing_client_id", "client_secret": "testing"}
-    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)  # noqa: F405
     aws.AWSSecretManager().create_secret(secret_name, test_data)
 
     result = secretsmanager.get_secret_value(SecretId=secret_name)
@@ -785,7 +792,7 @@ def test_delete_app_secret(secretsmanager):
 
 def test_delete_key_in_secret(app_fixture):
     app_name = "test_app"
-    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)
+    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)  # noqa: F405
     app_fixture.app_aws_secret_name = secret_name
     app_fixture.get_secret_key.return_value = secret_name
 

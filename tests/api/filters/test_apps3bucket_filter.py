@@ -1,32 +1,33 @@
-from model_mommy import mommy
-import pytest
+# Standard library
 from unittest.mock import patch
-from rest_framework.reverse import reverse
 
+# Third-party
+import pytest
+from model_mommy import mommy
+from rest_framework.reverse import reverse
 
 NUM_APPS3BUCKETS = 2
 
 
 @pytest.fixture(autouse=True)
 def apps3buckets(s3):
-    with patch('controlpanel.api.aws.AWSBucket.create_bucket') as create_bucket:
-        mommy.make('api.AppS3Bucket', NUM_APPS3BUCKETS)
+    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+        mommy.make("api.AppS3Bucket", NUM_APPS3BUCKETS)
 
 
 def list(client, *args):
-    return client.get(reverse('apps3bucket-list'))
+    return client.get(reverse("apps3bucket-list"))
 
 
 @pytest.mark.parametrize(
-    'view,user,expected_length',
+    "view,user,expected_length",
     [
-        (list, 'superuser', NUM_APPS3BUCKETS),
-        (list, 'normal_user', 0),
+        (list, "superuser", NUM_APPS3BUCKETS),
+        (list, "normal_user", 0),
     ],
 )
 @pytest.mark.django_db
 def test_filters(client, users, view, user, expected_length):
     client.force_login(users[user])
     response = view(client)
-    assert len(response.data['results']) == expected_length
-
+    assert len(response.data["results"]) == expected_length

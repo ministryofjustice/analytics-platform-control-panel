@@ -1,7 +1,10 @@
+# Standard library
 from unittest.mock import MagicMock, patch
 
+# Third-party
 import pytest
 
+# First-party/Local
 from controlpanel.api import cluster, models
 from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
@@ -13,13 +16,17 @@ def app():
 
 @pytest.yield_fixture
 def aws_create_role():
-    with patch('controlpanel.api.cluster.AWSRole.create_role') as aws_create_role_action:
+    with patch(
+        "controlpanel.api.cluster.AWSRole.create_role"
+    ) as aws_create_role_action:
         yield aws_create_role_action
 
 
 @pytest.yield_fixture
 def aws_delete_role():
-    with patch('controlpanel.api.cluster.AWSRole.delete_role') as aws_delete_role_action:
+    with patch(
+        "controlpanel.api.cluster.AWSRole.delete_role"
+    ) as aws_delete_role_action:
         yield aws_delete_role_action
 
 

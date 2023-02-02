@@ -17,7 +17,9 @@ class App(TimeStampedModel):
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
-    ip_allowlists = models.ManyToManyField(IPAllowlist, related_name="apps", related_query_name="app", blank=True)
+    ip_allowlists = models.ManyToManyField(
+        IPAllowlist, related_name="apps", related_query_name="app", blank=True
+    )
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -51,10 +53,9 @@ class App(TimeStampedModel):
     def customer_paginated(self, page, group_id, per_page=25):
         return (
             auth0.ExtendedAuth0().groups.get_group_members_paginated(
-                group_id,
-                page=page,
-                per_page=per_page
-            ) or []
+                group_id, page=page, per_page=per_page
+            )
+            or []
         )
 
     @property
@@ -65,7 +66,7 @@ class App(TimeStampedModel):
 
     @property
     def auth0_connections(self):
-        return  auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
+        return auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
 
     @property
     def app_aws_secret_name(self):
@@ -77,7 +78,9 @@ class App(TimeStampedModel):
 
     @property
     def app_allowed_ip_ranges(self):
-        allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by("pk")
+        allowed_ip_ranges = self.ip_allowlists.values_list(
+            "allowed_ip_ranges", flat=True
+        ).order_by("pk")
         return ", ".join(list(allowed_ip_ranges))
 
     def get_secret_key(self, name):
@@ -86,11 +89,13 @@ class App(TimeStampedModel):
         return self.app_aws_secret_name
 
     def construct_secret_data(self, client):
-        """ The assumption is per app per callback url"""
+        """The assumption is per app per callback url"""
         return {
             "client_id": client["client_id"],
             "client_secret": client["client_secret"],
-            "callbacks": client["callbacks"][0] if len(client["callbacks"])>=1 else ""
+            "callbacks": client["callbacks"][0]
+            if len(client["callbacks"]) >= 1
+            else "",
         }
 
     def add_customers(self, emails):
@@ -125,7 +130,9 @@ class App(TimeStampedModel):
 
         if is_create:
             cluster.App(self).create_iam_role()
-            cluster.App(self).create_or_update_secret({"allowed_ip_ranges": self.app_allowed_ip_ranges})
+            cluster.App(self).create_or_update_secret(
+                {"allowed_ip_ranges": self.app_allowed_ip_ranges}
+            )
 
         return self
 
@@ -144,7 +151,9 @@ def app_ip_allowlists_changed(sender, instance, action, **kwargs):
     """
 
     if isinstance(instance, App) and action in ["post_add", "post_remove"]:
-        cluster.App(instance).create_or_update_secret({"allowed_ip_ranges": instance.app_allowed_ip_ranges})
+        cluster.App(instance).create_or_update_secret(
+            {"allowed_ip_ranges": instance.app_allowed_ip_ranges}
+        )
 
 
 class AddCustomerError(Exception):

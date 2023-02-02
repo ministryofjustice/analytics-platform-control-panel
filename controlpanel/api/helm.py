@@ -1,11 +1,13 @@
-import structlog
+# Standard library
 import os
 import subprocess
-import yaml
 import time
+
+# Third-party
+import structlog
+import yaml
 from django.conf import settings
 from rest_framework.exceptions import APIException
-
 
 log = structlog.getLogger(__name__)
 
@@ -18,7 +20,9 @@ def get_repo_path():
     """
     Get the path for the repository cache.
     """
-    return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
+    return os.path.join(
+        settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml"
+    )
 
 
 class HelmError(APIException):
@@ -64,9 +68,7 @@ def _execute(*args, **kwargs):
     if "timeout" in kwargs:
         wait = True
         timeout = kwargs.pop("timeout")
-        log.info(
-            "Blocking helm command. Timeout after {} seconds.".format(timeout)
-        )
+        log.info("Blocking helm command. Timeout after {} seconds.".format(timeout))
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
     if "DEBUG" in env:
@@ -139,8 +141,9 @@ def get_default_image_tag_from_helm_chart(chart_url, chart_name):
         output = proc.stdout.read()
         values = yaml.safe_load(output) or {}
         tool_name = chart_name.split("-")[0]
-        return values.get(tool_name, {}).get("tag") or \
-               values.get(tool_name, {}).get("image", {}).get("tag")
+        return values.get(tool_name, {}).get("tag") or values.get(tool_name, {}).get(
+            "image", {}
+        ).get("tag")
     else:
         return None
 
@@ -216,16 +219,14 @@ def delete(namespace, *args, dry_run=False):
     Logs the stdout result of the command.
     """
     if not namespace:
-        raise ValueError(
-            "Cannot proceed: a namespace needed for removal of release."
-        )
+        raise ValueError("Cannot proceed: a namespace needed for removal of release.")
     proc = _execute(
         "uninstall",
         *args,
         "--namespace",
         namespace,
         timeout=settings.HELM_DELETE_TIMEOUT,
-        dry_run=dry_run
+        dry_run=dry_run,
     )
     if proc:
         stdout = proc.stdout.read()

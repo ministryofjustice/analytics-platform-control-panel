@@ -1,10 +1,12 @@
-import boto3
+# Standard library
 import uuid
+
+# Third-party
+import boto3
 import structlog
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
 from django.conf import settings
-
 
 log = structlog.getLogger(__name__)
 
@@ -19,10 +21,16 @@ class BotoSessionException(Exception):
 
 class BotoSession:
     """
-    Boto Helper class which lets us create refreshable session, so that we can cache the client or resource.
+    Boto Helper class which lets us create refreshable session, so that we can
+    cache the client or resource.
     """
 
-    def __init__(self, region_name: str = None, profile_name: str = None, assume_role_name: str = None):
+    def __init__(
+        self,
+        region_name: str = None,
+        profile_name: str = None,
+        assume_role_name: str = None,
+    ):
         self.assume_role_name = assume_role_name
 
         self.session_name = "{}_session".format(uuid.uuid4().hex)
@@ -30,7 +38,9 @@ class BotoSession:
         self.profile_name = profile_name
 
     def _get_credential_by_default(self):
-        boto3_ini_session = boto3.Session(region_name=self.region_name, profile_name=self.profile_name)
+        boto3_ini_session = boto3.Session(
+            region_name=self.region_name, profile_name=self.profile_name
+        )
         session_credentials = boto3_ini_session.get_credentials()
         return session_credentials
 
@@ -77,7 +87,11 @@ class BotoSession:
 
             return auto_refresh_session
         except Exception as ex:
-            log.error("Failed to establish the refreshable token due to reason ({})".format(str(ex)))
+            log.error(
+                "Failed to establish the refreshable token due to reason ({})".format(
+                    str(ex)
+                )
+            )
             return boto3.Session()
 
 
@@ -96,15 +110,18 @@ class SingletonMeta(type):
 
 
 class AWSCredentialSessionSet(metaclass=SingletonMeta):
-
     def __init__(self):
         self.credential_sessions = {}
 
     def get_session(self, profile_name: str = None, assume_role_name: str = None):
         credential_session_key = "{}_{}".format(profile_name, assume_role_name)
         if credential_session_key not in self.credential_sessions:
-            log.warn("(for monitoring purpose) Initialising the session ({})".format(credential_session_key))
+            log.warn(
+                "(for monitoring purpose) Initialising the session ({})".format(
+                    credential_session_key
+                )
+            )
             self.credential_sessions[credential_session_key] = BotoSession(
-                profile_name=profile_name, assume_role_name=assume_role_name).refreshable_session()
+                profile_name=profile_name, assume_role_name=assume_role_name
+            ).refreshable_session()
         return self.credential_sessions[credential_session_key]
-

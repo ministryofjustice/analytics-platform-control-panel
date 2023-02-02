@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse, reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -32,7 +32,7 @@ from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
     GrantAppAccessForm,
-    UpdateAppAuth0ConnectionsForm
+    UpdateAppAuth0ConnectionsForm,
 )
 from controlpanel.frontend.views import secrets
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -89,7 +89,9 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # app hosting story figured out, we should do this properly.
         context["apps_on_eks"] = settings.features.apps_on_eks.enabled
         context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
-        context["app_ip_allowlists_names"] = ", ".join(list(app.ip_allowlists.values_list("name", flat=True)))
+        context["app_ip_allowlists_names"] = ", ".join(
+            list(app.ip_allowlists.values_list("name", flat=True))
+        )
 
         if settings.features.apps_on_eks.enabled:
             context["app_url"] = cluster.App(app).url
@@ -143,10 +145,11 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
-        kwargs.update(request=self.request,
-                      all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
-                      custom_connections=auth0.ExtendedConnections.custom_connections(),
-                      )
+        kwargs.update(
+            request=self.request,
+            all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),  # noqa: E501
+            custom_connections=auth0.ExtendedConnections.custom_connections(),
+        )
         return kwargs
 
     def get_success_url(self):
@@ -220,11 +223,13 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return FormMixin.form_valid(self, form)
 
 
-class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class UpdateAppAuth0Connections(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
+):
 
     form_class = UpdateAppAuth0ConnectionsForm
     model = App
-    permission_required = 'api.create_app'
+    permission_required = "api.create_app"
     template_name = "webapp-auth0-connections-update.html"
     success_url = "manage-app"
 
@@ -235,14 +240,19 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         app = self.get_object()
-        kwargs.update(request=self.request,
-                      all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),
-                      custom_connections=auth0.ExtendedConnections.custom_connections(),
-                      auth0_connections=app.auth0_connections)
+        kwargs.update(
+            request=self.request,
+            all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),  # noqa: E501
+            custom_connections=auth0.ExtendedConnections.custom_connections(),
+            auth0_connections=app.auth0_connections,
+        )
         return kwargs
 
     def get_success_url(self):
-        messages.success(self.request,  f"Successfully updated {self.object.name} webapp's auth0 connections")
+        messages.success(
+            self.request,
+            f"Successfully updated {self.object.name} webapp's auth0 connections",
+        )
         return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
 
     def form_valid(self, form):
@@ -250,7 +260,7 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
             auth0.ExtendedAuth0().update_client_auth_connections(
                 self.object.slug,
                 new_conns=form.cleaned_data.get("auth0_connections"),
-                existing_conns=form.auth0_connections
+                existing_conns=form.auth0_connections,
             )
         except Exception as ex:
             form.add_error("connections", str(ex))
@@ -258,7 +268,9 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
         return FormMixin.form_valid(self, form)
 
 
-class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class UpdateAppIPAllowlists(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
+):
 
     model = App
     template_name = "webapp-update-ip-allowlists.html"
@@ -269,12 +281,14 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
 
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
-        context["app_migration_feature_enabled"] = settings.features.app_migration.enabled
+        context[
+            "app_migration_feature_enabled"
+        ] = settings.features.app_migration.enabled
         context["app_ip_allowlists"] = [
             {
                 "text": ip_allowlist.name,
                 "value": ip_allowlist.pk,
-                "checked": ip_allowlist in self.get_object().ip_allowlists.all()
+                "checked": ip_allowlist in self.get_object().ip_allowlists.all(),
             }
             for ip_allowlist in IPAllowlist.objects.all()
         ]
@@ -294,7 +308,10 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        messages.success(self.request, f"Successfully updated the IP allowlists associated with app {self.get_object().name}")
+        messages.success(
+            self.request,
+            f"Successfully updated the IP allowlists associated with app {self.get_object().name}",  # noqa:E501
+        )
         return reverse_lazy("manage-app", kwargs={"pk": self.get_object().id})
 
 
@@ -455,7 +472,9 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
-        return reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+        return reverse_lazy(
+            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        )
 
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -490,7 +509,9 @@ class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+        return reverse(
+            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        )
 
     def perform_update(self, **kwargs):
         app = self.get_object()
