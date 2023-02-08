@@ -1,6 +1,9 @@
+# Third-party
 from django.conf import settings
 from django.views.generic.base import TemplateView
-from controlpanel.api.models.user import User
+
+# First-party/Local
+from controlpanel.api.models.user import User  # noqa: F401
 
 
 class LoginFail(TemplateView):
@@ -8,7 +11,7 @@ class LoginFail(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["environment"] = settings.ENV 
+        context["environment"] = settings.ENV
         context["auth0_logout_url"] = settings.AUTH0["logout_url"]
 
         return context

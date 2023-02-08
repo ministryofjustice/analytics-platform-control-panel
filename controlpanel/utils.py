@@ -1,12 +1,14 @@
-import re
+# Standard library
 import os
-import yaml
-import structlog
+import re
 
+# Third-party
+import structlog
+import yaml
 from channels.exceptions import StopConsumer
 from channels.generic.http import AsyncHttpConsumer
-from django.template.defaultfilters import slugify
 from django.conf import settings
+from django.template.defaultfilters import slugify
 
 log = structlog.getLogger(__name__)
 
@@ -15,7 +17,7 @@ INVALID_CHARS = re.compile(r"[^-a-z0-9]")
 SURROUNDING_HYPHENS = re.compile(r"^-*|-*$")
 
 _ENV_PREFIX_ = "_HOST"
-_ENV_DEFAULT_ = '_DEFAULT'
+_ENV_DEFAULT_ = "_DEFAULT"
 _DEFAULT_APP_CONFIG_FILE_ = "./settings.yaml"
 
 
@@ -87,9 +89,9 @@ class PatchedAsyncHttpConsumer(AsyncHttpConsumer):
     async def http_request(self, message):
         if "body" in message:
             self.body.append(message["body"])
-        if not message.get('more_body'):
+        if not message.get("more_body"):
             try:
-                await self.handle(b''.join(self.body))
+                await self.handle(b"".join(self.body))
             finally:
                 if not self.keepalive:
                     await self.disconnect()
@@ -97,7 +99,6 @@ class PatchedAsyncHttpConsumer(AsyncHttpConsumer):
 
 
 class FeatureFlag:
-
     def __init__(self, enabled=False):
         self.enabled = enabled
 
@@ -119,13 +120,18 @@ class FeatureSet:
             enabled = False
             if feature_settings.get(_ENV_DEFAULT_) is not None:
                 enabled = feature_settings.get(_ENV_DEFAULT_)
-            if feature_settings.get('{}_{}'.format(_ENV_PREFIX_, current_env)) is not None:
-                enabled = feature_settings.get('{}_{}'.format(_ENV_PREFIX_, current_env))
+            if (
+                feature_settings.get("{}_{}".format(_ENV_PREFIX_, current_env))
+                is not None
+            ):
+                enabled = feature_settings.get(
+                    "{}_{}".format(_ENV_PREFIX_, current_env)
+                )
             setattr(self, feature_flag, FeatureFlag(enabled))
 
 
 class SettingLoader:
-    """ This function is to load the settings from yaml file,
+    """This function is to load the settings from yaml file,
     then will add those keys as variables into the global setting object
     it will check whether a key has existed in the setting file or not,
     if not, then it will load the value for this key from yaml file.
@@ -146,9 +152,10 @@ class SettingLoader:
         self._import_conf_into_settings()
 
     def _has_env_related_value(self, original_value, current_env):
-        return (type(original_value) is dict) and \
-               (original_value.get(_ENV_DEFAULT_) is not None or
-                original_value.get('{}_{}'.format(_ENV_PREFIX_, current_env)) is not None)
+        return (type(original_value) is dict) and (
+            original_value.get(_ENV_DEFAULT_) is not None
+            or original_value.get("{}_{}".format(_ENV_PREFIX_, current_env)) is not None
+        )
 
     def _decide_value_for_key(self, setting_key, original_value):
         actual_value = original_value
@@ -157,8 +164,13 @@ class SettingLoader:
             actual_value = os.environ.get(setting_key)
         else:
             if self._has_env_related_value(original_value, current_env):
-                if original_value.get('{}_{}'.format(_ENV_PREFIX_, current_env)) is not None:
-                    actual_value = original_value.get('{}_{}'.format(_ENV_PREFIX_, current_env))
+                if (
+                    original_value.get("{}_{}".format(_ENV_PREFIX_, current_env))
+                    is not None
+                ):
+                    actual_value = original_value.get(
+                        "{}_{}".format(_ENV_PREFIX_, current_env)
+                    )
                 else:
                     actual_value = original_value.get(_ENV_DEFAULT_)
         return actual_value
@@ -191,5 +203,3 @@ def load_app_conf_from_file(yaml_file=None):
         log.error("Failed to load the {} due to error ({})".format(yaml_file, str(ex)))
     except ValueError as ex1:
         log.error("Failed to load the {} due to error ({})".format(yaml_file, str(ex1)))
-
-

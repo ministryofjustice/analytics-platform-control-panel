@@ -1,3 +1,4 @@
+# Third-party
 from django.db.transaction import atomic
 from django.http import HttpResponseRedirect
 from django_filters.rest_framework import DjangoFilterBackend
@@ -5,11 +6,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from controlpanel.api import (
-    filters,
-    permissions,
-    serializers,
-)
+# First-party/Local
+from controlpanel.api import filters, permissions, serializers
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     App,
@@ -17,7 +15,7 @@ from controlpanel.api.models import (
     S3Bucket,
     User,
     UserApp,
-    UserS3Bucket
+    UserS3Bucket,
 )
 
 
@@ -34,7 +32,7 @@ class AppViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.AppSerializer
     filter_backends = (DjangoFilterBackend,)
     permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
-    filterset_fields = ('name', 'repo_url', 'slug')
+    filterset_fields = ("name", "repo_url", "slug")
     lookup_field = "res_id"
 
     def _skip_queryset_restriction(self):
@@ -50,14 +48,14 @@ class AppViewSet(viewsets.ModelViewSet):
 
     @atomic
     def perform_create(self, serializer):
-        app = serializer.save(created_by=self.request.user)
+        serializer.save(created_by=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
-        if 'redirect_to' in request.query_params:
+        if "redirect_to" in request.query_params:
             return HttpResponseRedirect(
-                redirect_to=request.query_params['redirect_to'],
+                redirect_to=request.query_params["redirect_to"],
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -81,15 +79,15 @@ class S3BucketViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.S3BucketSerializer
     filter_backends = (filters.S3BucketFilter,)
     permission_classes = (permissions.S3BucketPermissions,)
-    filterset_fields = ('is_data_warehouse',)
+    filterset_fields = ("is_data_warehouse",)
 
     @atomic
     def perform_create(self, serializer):
-        instance = serializer.save(created_by=self.request.user)
+        serializer.save(created_by=self.request.user)
 
     @action(detail=True)
     def access_logs(self, request, pk=None):
-        num_days = request.query_params.get('num_days')
+        num_days = request.query_params.get("num_days")
         if num_days:
             num_days = int(num_days)
 

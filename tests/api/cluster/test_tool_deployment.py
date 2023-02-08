@@ -1,13 +1,13 @@
-from unittest.mock import Mock, patch
-
+# Third-party
 from django.conf import settings
-from controlpanel.api.cluster import ToolDeployment
+
+# First-party/Local
 from controlpanel.api.models import Tool, User
 
 
 def test_url():
     """
-    Ensures the URL for the tool release is properly constructed either from 
+    Ensures the URL for the tool release is properly constructed either from
     the chart_name or, if present, the tool_domain.
     """
     user = User(username="test-user")

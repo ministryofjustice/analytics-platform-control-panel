@@ -1,10 +1,13 @@
-from copy import deepcopy
+# Standard library
 import inspect
-import kubernetes
 import os
+from copy import deepcopy
 
+# Third-party
+import kubernetes
 from django.conf import settings
 
+# First-party/Local
 # This patch fixes incorrect base64 padding in the Kubernetes Python client.
 # Hopefully it will be fixed in the next release.
 from controlpanel.kubeapi import oidc_patch
@@ -20,7 +23,7 @@ def get_config():
     else:
         kubernetes.config.load_kube_config()
 
-    config = kubernetes.client.Configuration()
+    config = kubernetes.client.Configuration().get_default_copy()
 
     # A deepcopy of the configuration is used to avoid a race condition
     # caused by subsequent calls to Configuration() reusing a singleton
@@ -66,7 +69,7 @@ class KubernetesClient:
             config.api_key_prefix["authorization"] = "Bearer"
             config.api_key["authorization"] = id_token
 
-        self.api_client = kubernetes.client.ApiClient(config)
+        self.api_client = kubernetes.client.ApiClient(configuration=config)
 
     def __getattr__(self, name):
         api_class = kubernetes.client.api.__dict__.get(name)

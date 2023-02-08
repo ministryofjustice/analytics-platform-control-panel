@@ -1,7 +1,9 @@
+# Third-party
 from functools import wraps
 from django.http import JsonResponse
 from rest_framework import authentication, exceptions
 
+# First-party/Local
 from controlpanel.api.models import User
 from controlpanel.jwt import JWT, JWTDecodeError
 

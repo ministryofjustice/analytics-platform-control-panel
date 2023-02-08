@@ -1,14 +1,12 @@
+# Standard library
 import re
 
+# Third-party
 from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel
-
-from controlpanel.api import cluster
-from controlpanel.api.models.iam_managed_policy import IAMManagedPolicy
-
 
 S3BUCKET_PATH_PATTERN = r"[a-zA-Z0-9_/\*-]"
 S3BUCKET_PATH_REGEX = re.compile(S3BUCKET_PATH_PATTERN)
@@ -21,8 +19,9 @@ class AccessToS3Bucket(TimeStampedModel):
     These models will be associated with an s3bucket and have
     an access level (`readonly` or `readwrite`)
     """
-    READONLY = 'readonly'
-    READWRITE = 'readwrite'
+
+    READONLY = "readonly"
+    READWRITE = "readwrite"
 
     ACCESS_LEVELS = (
         (READONLY, "Read-only"),
@@ -30,9 +29,11 @@ class AccessToS3Bucket(TimeStampedModel):
     )
 
     s3bucket = models.ForeignKey(
-        "S3Bucket", related_name='%(class)ss', on_delete=models.CASCADE)
+        "S3Bucket", related_name="%(class)ss", on_delete=models.CASCADE
+    )
     access_level = models.CharField(
-        max_length=9, choices=ACCESS_LEVELS, default=READONLY)
+        max_length=9, choices=ACCESS_LEVELS, default=READONLY
+    )
     paths = ArrayField(
         models.CharField(
             max_length=255,
@@ -76,6 +77,5 @@ class AccessToS3Bucket(TimeStampedModel):
 @receiver(models.signals.pre_delete)
 def revoke_access(sender, **kwargs):
     if issubclass(sender, AccessToS3Bucket):
-        obj = kwargs['instance']
+        obj = kwargs["instance"]
         obj.revoke_bucket_access()
-

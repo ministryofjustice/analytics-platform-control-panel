@@ -1,5 +1,6 @@
-from model_mommy import mommy
+# Third-party
 import pytest
+from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -21,17 +22,17 @@ def buckets(db):
 def users3bucket(db, buckets, users):
     return mommy.make(
         "api.UserS3Bucket",
-        user=users['normal_user'],
+        user=users["normal_user"],
         s3bucket=buckets[1],
-        access_level='readonly',
+        access_level="readonly",
         is_admin=False,
     )
 
 
 def test_superuser_sees_everything(client, buckets, users):
-    client.force_login(users['superuser'])
+    client.force_login(users["superuser"])
 
-    response = client.get(reverse('s3bucket-list'))
+    response = client.get(reverse("s3bucket-list"))
 
     s3_bucket_ids = [b["id"] for b in response.data["results"]]
     assert len(s3_bucket_ids) == 2
@@ -40,7 +41,7 @@ def test_superuser_sees_everything(client, buckets, users):
 
 
 def test_normal_user_sees_only_buckets_has_access_to(client, buckets, users):
-    client.force_login(users['normal_user'])
+    client.force_login(users["normal_user"])
 
     response = client.get(reverse("s3bucket-list"))
     assert response.status_code == status.HTTP_200_OK
@@ -48,4 +49,3 @@ def test_normal_user_sees_only_buckets_has_access_to(client, buckets, users):
     s3_bucket_ids = [b["id"] for b in response.data["results"]]
     assert buckets[1].id in s3_bucket_ids
     assert buckets[2].id not in s3_bucket_ids
-

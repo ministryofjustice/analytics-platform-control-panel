@@ -1,11 +1,14 @@
-import time
-import pytest
+# Standard library
 import subprocess
-
+import time
 from unittest.mock import MagicMock, patch
-from controlpanel.api import helm
+
+# Third-party
+import pytest
 from django.conf import settings
 
+# First-party/Local
+from controlpanel.api import helm
 
 # ------ Original unit tests
 
@@ -17,7 +20,7 @@ def test_chart_app_version():
         "RStudio with Auth0 authentication proxy",
         "2.2.5",
         app_version,
-        "https://testing/rstudio.tgz"
+        "https://testing/rstudio.tgz",
     )
 
     assert chart.app_version == app_version
@@ -27,7 +30,7 @@ def test_helm_repository(helm_repository_index):
     with patch("builtins.open", helm_repository_index):
         # See tests/api/fixtures/helm_mojanalytics_index.py
         entries = helm.get_helm_entries()
-        rstudio_info = entries.get('rstudio')
+        rstudio_info = entries.get("rstudio")
 
         rstudio_2_2_5_app_version = (
             "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
@@ -41,7 +44,7 @@ def test_helm_repository(helm_repository_index):
         # Helm added `appVersion` field in metadata only
         # "recently" so for testing that for old chart
         # version this returns `None`
-        assert rstudio_info[1].get("appVersion") == None
+        assert rstudio_info[1].get("appVersion") is None
 
 
 @pytest.mark.parametrize(
@@ -145,13 +148,11 @@ def test_execute_with_failing_process():
     mock_stderr = MagicMock()
     mock_stderr.read.return_value = "boom"
     mock_Popen = MagicMock(
-        side_effect=subprocess.CalledProcessError(
-            1, "boom", stderr=mock_stderr
-        )
+        side_effect=subprocess.CalledProcessError(1, "boom", stderr=mock_stderr)
     )
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            result = helm._execute("delete", "foo")
+            helm._execute("delete", "foo")
 
 
 def test_execute_with_unforeseen_exception():
@@ -161,7 +162,7 @@ def test_execute_with_unforeseen_exception():
     mock_Popen = MagicMock(side_effect=ValueError("Boom"))
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            result = helm._execute("delete", "foo")
+            helm._execute("delete", "foo")
 
 
 def test_execute_with_failing_helm_command():
@@ -173,7 +174,7 @@ def test_execute_with_failing_helm_command():
     mock_Popen = MagicMock(return_value=mock_proc)
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            result = helm._execute("delete", "foo")
+            helm._execute("delete", "foo")
 
 
 def test_update_helm_repository_non_existent_cache(helm_repository_index):
@@ -225,7 +226,7 @@ def test_delete():
             "--namespace",
             "my_namespace",
             timeout=settings.HELM_DELETE_TIMEOUT,
-            dry_run=False
+            dry_run=False,
         )
 
 
@@ -244,9 +245,7 @@ def test_list_releases_with_release():
             "baz",
             "qux",
         ]
-        mock_execute.assert_called_once_with(
-            "list", "-aq", "--filter", "rstudio"
-        )
+        mock_execute.assert_called_once_with("list", "-aq", "--filter", "rstudio")
 
 
 def test_list_releases_with_namespace():
@@ -264,6 +263,4 @@ def test_list_releases_with_namespace():
             "baz",
             "qux",
         ]
-        mock_execute.assert_called_once_with(
-            "list", "-aq", "--namespace", "some-ns"
-        )
+        mock_execute.assert_called_once_with("list", "-aq", "--namespace", "some-ns")

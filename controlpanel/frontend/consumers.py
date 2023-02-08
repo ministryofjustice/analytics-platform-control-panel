@@ -1,27 +1,26 @@
+# Standard library
 import asyncio
-from datetime import datetime
 import json
-import structlog
+from datetime import datetime
 from pathlib import Path
 from time import sleep
 
+# Third-party
+import structlog
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.layers import get_channel_layer
 
-
-from controlpanel.api.cluster import (
-    TOOL_DEPLOYING,
-    TOOL_DEPLOY_FAILED,
-    TOOL_IDLED,
-    TOOL_READY,
-    TOOL_RESTARTING,
-    HOME_RESETTING,
+# First-party/Local
+from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     HOME_RESET_FAILED,
+    HOME_RESETTING,
+    TOOL_DEPLOY_FAILED,
+    TOOL_DEPLOYING,
+    TOOL_RESTARTING,
 )
-from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
+from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
-
 
 WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
 
@@ -77,7 +76,10 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         """
         while self.streaming:
             await self.sse_event(
-                {"event": "keepalive", "data": datetime.now().isoformat(),}
+                {
+                    "event": "keepalive",
+                    "data": datetime.now().isoformat(),
+                }
             )
             await asyncio.sleep(60)
 
@@ -89,7 +91,8 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         payload = "\n".join(f"{key}: {value}" for key, value in event.items())
 
         await self.send_body(
-            f"{payload}\n\n".encode("utf-8"), more_body=self.streaming,
+            f"{payload}\n\n".encode("utf-8"),
+            more_body=self.streaming,
         )
 
     async def disconnect(self):
@@ -106,7 +109,6 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
 
 
 class BackgroundTaskConsumer(SyncConsumer):
-
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
@@ -122,6 +124,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         try:
             tool_deployment.save()
         except ToolDeployment.Error as err:
+            self._send_to_sentry(err)
             update_tool_status(tool_deployment, id_token, TOOL_DEPLOY_FAILED)
             log.error(err)
             return
@@ -132,6 +135,11 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.warning(f"Failed deploying {tool.name} for {user}")
         else:
             log.debug(f"Deployed {tool.name} for {user}")
+
+    def _send_to_sentry(self, error):
+        if os.environ.get("SENTRY_DSN"):
+            import sentry_sdk
+            sentry_sdk.capture_exception(error)
 
     def tool_restart(self, message):
         """
@@ -179,7 +187,7 @@ class BackgroundTaskConsumer(SyncConsumer):
     def workers_health(self, message):
         Path(WORKER_HEALTH_FILENAME).touch()
 
-        log.debug(f"Worker health ping task executed")
+        log.debug("Worker health ping task executed")
 
 
 def send_sse(user_id, event):
@@ -187,7 +195,8 @@ def send_sse(user_id, event):
     Tell the SSEConsumer to send an event to the specified user
     """
     async_to_sync(channel_layer.group_send)(
-        sanitize_dns_label(user_id), {"type": "sse.event", **event},
+        sanitize_dns_label(user_id),
+        {"type": "sse.event", **event},
     )
 
 
@@ -201,7 +210,13 @@ def update_tool_status(tool_deployment, id_token, status):
         "tool_id": tool.id,
         "status": status,
     }
-    send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})
+    send_sse(
+        user.auth0_id,
+        {
+            "event": "toolStatus",
+            "data": json.dumps(payload),
+        },
+    )
 
 
 def update_home_status(home_directory, status):
@@ -213,16 +228,18 @@ def update_home_status(home_directory, status):
         user.auth0_id,
         {
             "event": "homeStatus",
-            "data": json.dumps({
-                "status": status
-            }),
-        }
+            "data": json.dumps({"status": status}),
+        },
     )
 
 
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
-        "background_tasks", {"type": task, **message,},
+        "background_tasks",
+        {
+            "type": task,
+            **message,
+        },
     )
 
 

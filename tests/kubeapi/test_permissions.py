@@ -1,14 +1,15 @@
+# Standard library
 from unittest.mock import MagicMock, patch
 
-from model_mommy import mommy
+# Third-party
 import pytest
+from model_mommy import mommy
 from rest_framework import status
-
 
 
 @pytest.yield_fixture(autouse=True)
 def k8s_get_config():
-    with patch('controlpanel.kubeapi.views.api.kubernetes.get_config') as get_config:
+    with patch("controlpanel.kubeapi.views.api.kubernetes.get_config") as get_config:
         config = MagicMock("k8s config")
 
         config.host = "http://api.k8s.localhost"
@@ -23,7 +24,7 @@ def k8s_get_config():
 
 @pytest.yield_fixture(autouse=True)
 def k8s_api():
-    with patch('djproxy.views.request') as request:
+    with patch("djproxy.views.request") as request:
         request.return_value.status_code = 200
         yield request
 
@@ -32,49 +33,49 @@ def k8s_api():
 def users():
     return {
         "superuser": mommy.make(
-            'api.User',
-            auth0_id='github|0',
+            "api.User",
+            auth0_id="github|0",
             is_superuser=True,
-            username='alice',
+            username="alice",
         ),
         "normal_user": mommy.make(
-            'api.User',
-            username='bob',
-            auth0_id='github|1',
+            "api.User",
+            username="bob",
+            auth0_id="github|1",
             is_superuser=False,
         ),
     }
 
 
 def anything(client, user):
-    return client.get('/api/k8s/anything')
+    return client.get("/api/k8s/anything")
 
 
 def outside_own_namespace(client, user):
-    return client.get('/api/k8s/api/v1/namespaces/user-other/')
+    return client.get("/api/k8s/api/v1/namespaces/user-other/")
 
 
 def inside_own_namespace(client, user):
-    return client.get(f'/api/k8s/api/v1/namespaces/user-{user.username.lower()}/')
+    return client.get(f"/api/k8s/api/v1/namespaces/user-{user.username.lower()}/")
 
 
 def disallowed_api(client, user):
-    disallowed_api = 'apis/disallowed/v1alpha0'
+    disallowed_api = "apis/disallowed/v1alpha0"
     username = user.username.lower()
-    return client.get(f'/api/k8s/{disallowed_api}/namespaces/user-{username}/')
+    return client.get(f"/api/k8s/{disallowed_api}/namespaces/user-{username}/")
 
 
 def namespace_with_same_prefix(client, user):
     username = user.username.lower()
-    other_username = f'{username}other'
-    return client.get(f'/api/k8s/api/v1/namespaces/user-{other_username}/anything')
+    other_username = f"{username}other"
+    return client.get(f"/api/k8s/api/v1/namespaces/user-{other_username}/anything")
 
 
 not_authenticated = None
 
 
 @pytest.mark.parametrize(
-    'view,user,expected_status',
+    "view,user,expected_status",
     [
         (anything, not_authenticated, status.HTTP_403_FORBIDDEN),
         (anything, "superuser", status.HTTP_200_OK),

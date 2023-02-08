@@ -94,7 +94,7 @@ class IPAllowlistSimpleSerializer(serializers.ModelSerializer):
             "description",
             "contact",
             "allowed_ip_ranges",
-            "is_recommended"
+            "is_recommended",
         )
 
 
@@ -174,7 +174,7 @@ class AppSerializer(serializers.ModelSerializer):
             "app_aws_secret_auth",
             "app_aws_secret_param",
             "ip_allowlists",
-            "app_allowed_ip_ranges"
+            "app_allowed_ip_ranges",
         )
 
     def validate_repo_url(self, value):
@@ -304,8 +304,10 @@ class ToolDeploymentSerializer(serializers.Serializer):
         try:
             _, _, _ = value.split("__")
         except ValueError:
-            raise serializers.ValidationError('This field include chart name, version and tool.id,'
-                                              ' they are joined by "__".')
+            raise serializers.ValidationError(
+                "This field include chart name, version and tool.id,"
+                ' they are joined by "__".'
+            )
 
 
 class ESBucketHitsSerializer(serializers.BaseSerializer):

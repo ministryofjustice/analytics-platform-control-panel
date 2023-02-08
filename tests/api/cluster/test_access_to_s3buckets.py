@@ -1,23 +1,27 @@
-from model_mommy import mommy
-import pytest
+# Standard library
 from unittest.mock import patch
 
-from controlpanel.api.cluster import (
-    App,
-    RoleGroup,
-    User,
-)
+# Third-party
+import pytest
+from model_mommy import mommy
+
+# First-party/Local
+from controlpanel.api.cluster import App, RoleGroup, User
 
 
 @pytest.yield_fixture
 def grant_bucket_access():
-    with patch('controlpanel.api.cluster.AWSRole.grant_bucket_access') as grant_bucket_access_action:
+    with patch(
+        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
+    ) as grant_bucket_access_action:
         yield grant_bucket_access_action
 
 
 @pytest.yield_fixture
 def grant_policy_bucket_access():
-    with patch('controlpanel.api.cluster.AWSPolicy.grant_policy_bucket_access') as grant_policy_bucket_access_action:
+    with patch(
+        "controlpanel.api.cluster.AWSPolicy.grant_policy_bucket_access"
+    ) as grant_policy_bucket_access_action:
         yield grant_policy_bucket_access_action
 
 
@@ -28,63 +32,63 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def bucket():
-    return mommy.prepare('api.S3Bucket')
+    return mommy.prepare("api.S3Bucket")
 
 
 @pytest.fixture
 def entities(bucket, users):
     return {
-        'app': App(mommy.prepare('api.App')),
-        'group': RoleGroup(mommy.prepare('api.IAMManagedPolicy')),
-        'user': User(users['normal_user']),
+        "app": App(mommy.prepare("api.App")),
+        "group": RoleGroup(mommy.prepare("api.IAMManagedPolicy")),
+        "user": User(users["normal_user"]),
     }
 
 
 @pytest.mark.parametrize(
-    'entity_type, resources',
+    "entity_type, resources",
     [
-        ('app', []),
-        ('app', ['/foo/bar', '/foo/baz']),
-        ('user', []),
-        ('user', ['/foo/bar', '/foo/baz']),
+        ("app", []),
+        ("app", ["/foo/bar", "/foo/baz"]),
+        ("user", []),
+        ("user", ["/foo/bar", "/foo/baz"]),
     ],
     ids=[
-        'app',
-        'app-paths',
-        'user',
-        'user-paths',
+        "app",
+        "app-paths",
+        "user",
+        "user-paths",
     ],
 )
 def test_grant_access(grant_bucket_access, bucket, entities, entity_type, resources):
     entity = entities[entity_type]
-    entity.grant_bucket_access(bucket.arn, 'readonly', resources)
+    entity.grant_bucket_access(bucket.arn, "readonly", resources)
 
     grant_bucket_access.assert_called_with(
         entity.iam_role_name,
         bucket.arn,
-        'readonly',
+        "readonly",
         resources,
     )
 
 
 @pytest.mark.parametrize(
-    'resources',
+    "resources",
     [
         ([]),
-        (['/foo/bar', '/foo/baz']),
+        (["/foo/bar", "/foo/baz"]),
     ],
     ids=[
-        'group',
-        'group-paths',
+        "group",
+        "group-paths",
     ],
 )
 def test_grant_group_access(grant_policy_bucket_access, bucket, entities, resources):
-    entity = entities['group']
-    entity.grant_bucket_access(bucket.arn, 'readonly', resources)
+    entity = entities["group"]
+    entity.grant_bucket_access(bucket.arn, "readonly", resources)
 
     grant_policy_bucket_access.assert_called_with(
         entity.arn,
         bucket.arn,
-        'readonly',
+        "readonly",
         resources,
     )

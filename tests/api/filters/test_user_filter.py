@@ -1,13 +1,14 @@
+# Third-party
 from rest_framework import status
 from rest_framework.reverse import reverse
 
 
 def user_list(client):
-    return client.get(reverse('user-list'))
+    return client.get(reverse("user-list"))
 
 
 def test_superuser_sees_everything(client, users):
-    client.force_login(users['superuser'])
+    client.force_login(users["superuser"])
     response = user_list(client)
     assert response.status_code == status.HTTP_200_OK
 
@@ -18,6 +19,6 @@ def test_superuser_sees_everything(client, users):
 
 
 def test_normal_user_sees_nothing(client, users):
-    client.force_login(users['normal_user'])
+    client.force_login(users["normal_user"])
     response = user_list(client)
     assert response.status_code == status.HTTP_403_FORBIDDEN

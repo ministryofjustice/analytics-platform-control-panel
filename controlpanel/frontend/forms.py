@@ -9,13 +9,12 @@ from django.core.validators import RegexValidator, validate_email
 
 # First-party/Local
 from controlpanel.api import validators
+from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.github import GithubAPI
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
-from controlpanel.api.cluster import AWSRoleCategory
-
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -30,7 +29,6 @@ class DatasourceChoiceField(forms.ModelChoiceField):
 
 
 class AppAuth0Form(forms.Form):
-
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
         self.auth0_connections = kwargs.pop("auth0_connections", ["email"])
@@ -44,26 +42,28 @@ class AppAuth0Form(forms.Form):
         self.fields["connections"] = forms.MultipleChoiceField(
             required=False,
             initial=self.auth0_connections,
-            choices=list(zip(self.all_connections_names, self.all_connections_names))
+            choices=list(zip(self.all_connections_names, self.all_connections_names)),
         )
         for connection in self.custom_connections:
             self.fields["{}_auth0_client_id".format(connection)] = forms.CharField(
                 max_length=128,
                 required=False,
-                validators=[validators.validate_auth0_client_id])
+                validators=[validators.validate_auth0_client_id],
+            )
             self.fields["{}_auth0_client_secret".format(connection)] = forms.CharField(
-                widget=forms.PasswordInput,
-                required=False)
+                widget=forms.PasswordInput, required=False
+            )
             self.fields["{}_auth0_conn_name".format(connection)] = forms.CharField(
                 max_length=128,
                 required=False,
-                validators=[validators.validate_auth0_conn_name])
+                validators=[validators.validate_auth0_conn_name],
+            )
 
     def _chosen_custom_connections(self, connections):
         return list(set(self.custom_connections) & set(connections))
 
     def _check_inputs_for_custom_connection(self, cleaned_data):
-        auth0_connections = cleaned_data.get('connections')
+        auth0_connections = cleaned_data.get("connections")
         auth0_conn_data = {}
         chosen_custom_connections = self._chosen_custom_connections(auth0_connections)
         for connection in auth0_connections:
@@ -71,22 +71,33 @@ class AppAuth0Form(forms.Form):
             if connection not in chosen_custom_connections:
                 continue
 
-            if cleaned_data.get("{}_auth0_client_id".format(connection), '') == '':
-                self.add_error("{}_auth0_client_id".format(connection), "This field is required.")
+            if cleaned_data.get("{}_auth0_client_id".format(connection), "") == "":
+                self.add_error(
+                    "{}_auth0_client_id".format(connection), "This field is required."
+                )
 
-            if cleaned_data.get("{}_auth0_client_secret".format(connection), '') == '':
-                self.add_error("{}_auth0_client_secret".format(connection), "This field is required.")
+            if cleaned_data.get("{}_auth0_client_secret".format(connection), "") == "":
+                self.add_error(
+                    "{}_auth0_client_secret".format(connection),
+                    "This field is required.",
+                )
 
-            conn_name = cleaned_data.get("{}_auth0_conn_name".format(connection), '')
-            if conn_name == '':
-                self.add_error("{}_auth0_conn_name".format(connection), "This field is required.")
+            conn_name = cleaned_data.get("{}_auth0_conn_name".format(connection), "")
+            if conn_name == "":
+                self.add_error(
+                    "{}_auth0_conn_name".format(connection), "This field is required."
+                )
             elif (conn_name, conn_name) in self.fields["connections"].choices:
-                self.add_error("{}_auth0_conn_name".format(connection),
-                               "This name has been existed in the connections.")
+                self.add_error(
+                    "{}_auth0_conn_name".format(connection),
+                    "This name has been existed in the connections.",
+                )
 
             auth0_conn_data[connection] = {
                 "client_id": cleaned_data.get("{}_auth0_client_id".format(connection)),
-                "client_secret": cleaned_data.get("{}_auth0_client_secret".format(connection)),
+                "client_secret": cleaned_data.get(
+                    "{}_auth0_client_secret".format(connection)
+                ),
                 "name": cleaned_data.get("{}_auth0_conn_name".format(connection)),
             }
         return auth0_conn_data
@@ -114,7 +125,7 @@ class CreateAppForm(AppAuth0Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
-            validators.ValidatorS3Bucket(AWSRoleCategory.app)
+            validators.ValidatorS3Bucket(AWSRoleCategory.app),
         ],
         required=False,
     )
@@ -127,13 +138,14 @@ class CreateAppForm(AppAuth0Form):
     disable_authentication = forms.BooleanField(required=False)
 
     app_ip_allowlists = forms.ModelMultipleChoiceField(
-        required=False,
-        queryset=IPAllowlist.objects.all()
+        required=False, queryset=IPAllowlist.objects.all()
     )
 
     def __init__(self, *args, **kwargs):
         super(CreateAppForm, self).__init__(*args, **kwargs)
-        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(is_recommended=True)
+        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
+            is_recommended=True
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -158,7 +170,9 @@ class CreateAppForm(AppAuth0Form):
         if connect_data_source == "existing" and not existing_datasource:
             self.add_error("existing_datasource_id", "This field is required.")
 
-        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(cleaned_data)
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
+            cleaned_data
+        )
 
         return cleaned_data
 
@@ -178,10 +192,11 @@ class CreateAppForm(AppAuth0Form):
 
 
 class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
-
     def clean(self):
         cleaned_data = super(UpdateAppAuth0ConnectionsForm, self).clean()
-        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(cleaned_data)
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
+            cleaned_data
+        )
         return cleaned_data
 
 
@@ -192,7 +207,7 @@ class CreateDatasourceForm(forms.Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
-            validators.ValidatorS3Bucket(AWSRoleCategory.user)
+            validators.ValidatorS3Bucket(AWSRoleCategory.user),
         ],
     )
 
@@ -280,15 +295,13 @@ class CreateParameterForm(forms.Form):
         validators=[
             RegexValidator(
                 r"[a-zA-Z0-9_]",
-                message=(
-                    "Must contain only alphanumeric characters and underscores"
-                ),
+                message=("Must contain only alphanumeric characters and underscores"),
             ),
         ],
     )
     value = forms.CharField(
         max_length=65536,
-        widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"})
+        widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
     )
 
 
@@ -413,7 +426,7 @@ class ToolReleaseForm(forms.ModelForm):
             "values",
             "is_restricted",
             "tool_domain",
-            "description"
+            "description",
         ]
 
 
@@ -435,4 +448,10 @@ class DisableAuthForm(SecretsForm):
 class IPAllowlistForm(forms.ModelForm):
     class Meta:
         model = IPAllowlist
-        fields = ["name", "description", "contact", "allowed_ip_ranges", "is_recommended"]
+        fields = [
+            "name",
+            "description",
+            "contact",
+            "allowed_ip_ranges",
+            "is_recommended",
+        ]

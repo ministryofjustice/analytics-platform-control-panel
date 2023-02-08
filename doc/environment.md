@@ -93,3 +93,4 @@ in django settings.
 | `SENTRY_DSN` | Sentry credentials | |
 | `SLACK_API_TOKEN` | Slack token ([more information)](https://slack.dev/python-slackclient/auth.html) | Only required when you're working with Slack |
 | `ENABLE_DB_SSL` | Optional: When set to True ensures the database connection requires SSL. If set to False, allow unencrypted connections | Default is False for local env but True for production |
+| `BROADCAST_MESSAGE` | Optional: The public message for Control app users, it can be switched off by setting up the value as empty string |  |

@@ -1,11 +1,13 @@
+# Third-party
 from crequest.middleware import CrequestMiddleware
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.signals import user_logged_in
 from django.db import models
 
+# First-party/Local
 from controlpanel.api import auth0, cluster, slack
 from controlpanel.api.signals import prometheus_login_event
 from controlpanel.utils import sanitize_dns_label
-from django.contrib.auth.signals import user_logged_in
 
 
 class User(AbstractUser):
@@ -32,14 +34,14 @@ class User(AbstractUser):
         help_text="The state of the user's migration to new infrastructure.",
         max_length=1,
         choices=MIGRATION_STATES,
-        default=VOID
+        default=VOID,
     )
 
-    REQUIRED_FIELDS = ['email', 'auth0_id']
+    REQUIRED_FIELDS = ["email", "auth0_id"]
 
     class Meta:
-        db_table = 'control_panel_api_user'
-        ordering = ('username',)
+        db_table = "control_panel_api_user"
+        ordering = ("username",)
 
     def __repr__(self):
         return f"<User: {self.username} ({self.auth0_id})>"
@@ -63,7 +65,7 @@ class User(AbstractUser):
             )
 
         if request.user == self:
-            return request.session.get('oidc_id_token')
+            return request.session.get("oidc_id_token")
 
     @property
     def iam_role_name(self):
@@ -75,11 +77,11 @@ class User(AbstractUser):
 
     @property
     def github_api_token(self):
-        if not getattr(self, '_github_api_token', None):
+        if not getattr(self, "_github_api_token", None):
             auth0_user = auth0.ExtendedAuth0().users.get(self.auth0_id)
             for identity in auth0_user["identities"]:
-                if identity['provider'] == 'github':
-                    self._github_api_token = identity.get('access_token')
+                if identity["provider"] == "github":
+                    self._github_api_token = identity.get("access_token")
         return self._github_api_token
 
     @github_api_token.setter
@@ -91,16 +93,22 @@ class User(AbstractUser):
         return sanitize_dns_label(self.username)
 
     def is_app_admin(self, app_id):
-        return self.userapps.filter(
-            app_id=app_id,
-            is_admin=True,
-        ).count() != 0
+        return (
+            self.userapps.filter(
+                app_id=app_id,
+                is_admin=True,
+            ).count()
+            != 0
+        )
 
     def is_bucket_admin(self, bucket_id):
-        return self.users3buckets.filter(
-            s3bucket__id=bucket_id,
-            is_admin=True,
-        ).count() != 0
+        return (
+            self.users3buckets.filter(
+                s3bucket__id=bucket_id,
+                is_admin=True,
+            ).count()
+            != 0
+        )
 
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
@@ -131,14 +139,19 @@ class User(AbstractUser):
     @classmethod
     def bulk_migration_update(cls, usernames, new_state):
         """
-        Given a list of usernames, will bulk update matching users to the new 
+        Given a list of usernames, will bulk update matching users to the new
         migration state.
         """
         if usernames:
             users = cls.objects.filter(username__in=usernames)
             for user in users:
                 user.migration_state = new_state
-            cls.objects.bulk_update(users, ["migration_state", ])
+            cls.objects.bulk_update(
+                users,
+                [
+                    "migration_state",
+                ],
+            )
 
 
 user_logged_in.connect(prometheus_login_event)

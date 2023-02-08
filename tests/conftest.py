@@ -10,7 +10,7 @@ from model_mommy import mommy
 # First-party/Local
 from controlpanel.api import auth0
 from controlpanel.utils import load_app_conf_from_file
-from tests.api.fixtures.aws import *  # noqa F403,F401
+from tests.api.fixtures.aws import *
 from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
 
 

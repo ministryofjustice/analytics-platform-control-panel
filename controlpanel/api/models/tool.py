@@ -1,14 +1,13 @@
-import structlog
-
-from django.conf import settings
-from django.db.models import JSONField
+# Third-party
 import django.core.exceptions
+import structlog
+from django.conf import settings
 from django.db import models
+from django.db.models import JSONField
 from django_extensions.db.models import TimeStampedModel
 
-from controlpanel.api import cluster
-from controlpanel.api import helm
-
+# First-party/Local
+from controlpanel.api import cluster, helm
 
 log = structlog.getLogger(__name__)
 
@@ -29,17 +28,12 @@ class Tool(TimeStampedModel):
         (EKS, "Amazon EKS infrastructure."),
     )
 
-    INFRASTRUCTURE_STATES_ALLOWED = (
-        (EKS, "Amazon EKS infrastructure."),
-    )
+    INFRASTRUCTURE_STATES_ALLOWED = ((EKS, "Amazon EKS infrastructure."),)
 
     # Defines how a matching chart name is put into a named tool bucket.
     # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
     # chart name match: tool bucket
-    TOOL_BOX_CHART_LOOKUP = {
-        "jupyter": "jupyter-lab",
-        "rstudio": "rstudio"
-    }
+    TOOL_BOX_CHART_LOOKUP = {"jupyter": "jupyter-lab", "rstudio": "rstudio"}
 
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
@@ -55,14 +49,14 @@ class Tool(TimeStampedModel):
         help_text="The infrastructure this tool targets.",
         max_length=1,
         choices=INFRASTRUCTURE_STATES,
-        default=EKS
+        default=EKS,
     )
     # If set, the bespoke name for the tool to be used in the domain name
     # (rather than the default chart name).
     tool_domain = models.SlugField(
         help_text=(
             "Name to use in the tool's domain instead of chart name. E.g. "
-            "use the standard \"jupyter-lab\" instead of a custom chart name."
+            'use the standard "jupyter-lab" instead of a custom chart name.'
         ),
         max_length=100,
         blank=True,
@@ -79,18 +73,15 @@ class Tool(TimeStampedModel):
 
     def url(self, user):
         tool = self.tool_domain or self.chart_name
-        return (
-            f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
-        )
+        return f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
 
     def save(self, *args, **kwargs):
-        is_create = not self.pk
-
-        if is_create:
-            helm.update_helm_repository(force=True)
+        helm.update_helm_repository(force=True)
 
         if not self.description:
-            self.description = helm.get_chart_app_version(self.chart_name, self.version) or ''
+            self.description = (
+                helm.get_chart_app_version(self.chart_name, self.version) or ""
+            )
 
         super().save(*args, **kwargs)
         return self
@@ -99,8 +90,9 @@ class Tool(TimeStampedModel):
     def image_tag(self):
         chart_image_key_name = self.chart_name.split("-")[0]
         values = self.values or {}
-        return values.get("{}.tag".format(chart_image_key_name)) or \
-               values.get("{}.image.tag".format(chart_image_key_name))
+        return values.get("{}.tag".format(chart_image_key_name)) or values.get(
+            "{}.image.tag".format(chart_image_key_name)
+        )
 
 
 class ToolDeploymentManager:
@@ -142,9 +134,7 @@ class ToolDeployment:
 
     @property
     def host(self):
-        return (
-            f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
-        )
+        return f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
 
     def save(self, *args, **kwargs):
         """

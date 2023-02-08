@@ -6,7 +6,7 @@ import pytest
 from rest_framework.reverse import reverse
 
 # First-party/Local
-from tests.frontend.views.test_app import github_api_token, users  # noqa: F401, F811
+from tests.frontend.views.test_app import github_api_token, users  # noqa: F811
 
 BASIC_GOOD_DATA = [
     dict(html_url="http://example.com", full_name="my-repo"),
@@ -48,8 +48,6 @@ def test_github_repo_get(
     with patch("controlpanel.api.github.requests.get") as request_fixture:
         request_fixture.return_value = Mock(**input)
         response = client.get(reverse("github-repos"))
-        # data = [dict(item) for item in response.data]
-        # print('\n\n expected_result >>> ', data, '\n\n\n', expected_result, '\n\n\n')
         assert response.status_code == expected_status
         if response.status_code != 400:
             assert response.data == expected_result
