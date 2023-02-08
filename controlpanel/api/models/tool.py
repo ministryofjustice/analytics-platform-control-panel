@@ -76,10 +76,7 @@ class Tool(TimeStampedModel):
         return f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
 
     def save(self, *args, **kwargs):
-        is_create = not self.pk
-
-        if is_create:
-            helm.update_helm_repository(force=True)
+        helm.update_helm_repository(force=True)
 
         if not self.description:
             self.description = (

@@ -91,6 +91,11 @@ def logout(request):
 class OIDCLoginRequiredMixin(LoginRequiredMixin):
     """Verify that the current user is (still) authenticated."""
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["broadcast_messages"] = settings.BROADCAST_MESSAGE.split("|")
+        return context
+
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()

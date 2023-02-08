@@ -136,15 +136,16 @@
   {% endif %}
 
   {{ alerts() }}
-  {% if not hide_nav and request.user.is_authenticated and request.user.migration_state == request.user.PENDING %}
+  {% if not hide_nav and request.user.is_authenticated and broadcast_messages %}
   <br/>
   <div class="govuk-width-container">
     <div class="govuk-warning-text">
       <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
       <strong class="govuk-warning-text__text">
         <span class="govuk-warning-text__assistive">Warning</span>
-        Migrate to our new infrastructure. This cannot be reversed.
-        <a href="https://controlpanel.services.analytical-platform.service.justice.gov.uk/">Click here to begin</a>.
+        {% for message in broadcast_messages %}
+        {{ message }} <br/>
+        {% endfor %}
       </strong>
     </div>
     <hr class="govuk-section-break govuk-section-break--visible">
