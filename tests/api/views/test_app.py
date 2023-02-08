@@ -83,7 +83,7 @@ def test_detail(client, app):
     }
     assert set(apps3bucket["s3bucket"]) == expected_fields
 
-    userapp = response.data["userapp"][0]
+    userapp = response.data["userapps"][0]
     expected_fields = {"id", "user", "is_admin"}
     assert set(userapp) == expected_fields
 
