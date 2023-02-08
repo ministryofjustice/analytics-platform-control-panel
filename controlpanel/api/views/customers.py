@@ -20,6 +20,7 @@ class AppCustomersAPIView(GenericAPIView):
     queryset = App.objects.all()
     serializer_class = serializers.AppCustomerSerializer
     permission_classes = (permissions.IsSuperuser,)
+    lookup_field = "res_id"
 
     def get(self, request, *args, **kwargs):
         app = self.get_object()
@@ -60,6 +61,8 @@ class AppCustomersAPIView(GenericAPIView):
 class AppCustomersDetailAPIView(GenericAPIView):
     queryset = App.objects.all()
     permission_classes = (permissions.IsSuperuser,)
+    http_method_names = ['delete']
+    lookup_field = "res_id"
 
     def delete(self, request, *args, **kwargs):
         app = self.get_object()

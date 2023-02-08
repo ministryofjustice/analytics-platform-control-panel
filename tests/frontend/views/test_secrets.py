@@ -206,7 +206,7 @@ def test_view_add_update_secret_page(
     assert response.status_code == expected_status
     assert response.get("Location") == reverse("manage-app", kwargs={"pk": app.id})
     fixture_create_update_secret.assert_called_with(
-        secret_name=app.app_aws_secret_name, secret_data=set_secrets
+        secret_name=app.app_aws_secret_auth_name, secret_data=set_secrets
     )
 
 
@@ -242,5 +242,5 @@ def test_secret_delete(
     fixture_get_secret.return_value = set_secrets
 
     response = delete_secret_post(client, app, key=secret_key)
-    fixture_delete_secret.assert_called_with(keys_to_delete=[secret_key])
+    fixture_delete_secret.assert_called_with(secret_name=app.app_aws_secret_auth_name, keys_to_delete=[secret_key])
     response.status_code == 302

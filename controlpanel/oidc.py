@@ -53,15 +53,6 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         """
         authenticated_user = super().authenticate(request, **kwargs)
         if authenticated_user:
-            # User states that are allowed on non-EKS infra platforms. See the
-            # api.models.user.User model for details of what these mean.
-            valid_old_infra_states = [  # noqa: F841
-                authenticated_user.VOID,
-                authenticated_user.PENDING,
-                authenticated_user.REVERTED,
-            ]
-            # TODO: valid_old_infra_states variable is instantiated but never user.
-
             # Calling the authentication event will ensure the user is
             # correctly set up for the current infrastructure (including the
             # process of migrating the user from the old infra -> EKS).

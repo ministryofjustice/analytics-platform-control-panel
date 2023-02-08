@@ -6,9 +6,9 @@ from rest_framework import routers
 from controlpanel.api import views
 
 router = routers.DefaultRouter()
-router.register("apps", views.AppViewSet)
+router.register("apps", views.AppViewSet, basename='app')
+router.register("apps/app_name", views.AppByNameViewSet, basename="apps-by-name")
 router.register("apps3buckets", views.AppS3BucketViewSet)
-router.register("parameters", views.ParameterViewSet)
 router.register("s3buckets", views.S3BucketViewSet)
 router.register("tools", views.ToolViewSet, basename="tool")
 router.register("userapps", views.UserAppViewSet)
@@ -19,12 +19,12 @@ urlpatterns = [
     path("", include(router.urls)),
     path("repos/", views.tools.RepoApi.as_view(), name="github-repos"),
     path(
-        "apps/<int:pk>/customers/",
+        "apps/<uuid:res_id>/customers/",
         views.AppCustomersAPIView.as_view(),
         name="appcustomers-list",
     ),
     path(
-        "apps/<int:pk>/customers/<str:user_id>/",
+        "apps/<uuid:res_id>/customers/<str:user_id>/",
         views.AppCustomersDetailAPIView.as_view(),
         name="appcustomers-detail",
     ),
