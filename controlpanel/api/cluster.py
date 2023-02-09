@@ -393,14 +393,6 @@ class App(EntityResource):
         self.aws_role_service = self.create_aws_service(AWSRole)
         self.aws_secret_service = self.create_aws_service(AWSSecretManager)
 
-    def set_secret_type(self, type_key: str) -> "App":
-        self.secret_type = type_key
-        return self
-
-    @property
-    def _get_secret_uri(self) -> str:
-        return self.app.get_secret_key(self.secret_type)
-
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
@@ -418,7 +410,8 @@ class App(EntityResource):
 
     def delete(self):
         self.aws_role_service.delete_role(self.iam_role_name)
-        self.delete_secret()
+        self.delete_secret(secret_name=self.app.app_aws_secret_auth_name)
+        self.delete_secret(secret_name=self.app.app_aws_secret_param_name)
 
     @property
     def url(self):
@@ -438,21 +431,24 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
-    def create_or_update_secret(self, secret_data):
+    def create_or_update_secret(self, secret_data, secret_name=None):
         self.aws_secret_service.create_or_update(
-            secret_name=self._get_secret_uri, secret_data=secret_data
+            secret_name=secret_name or self.app.app_aws_secret_auth_name,
+            secret_data=secret_data
         )
 
-    def delete_secret(self):
-        self.aws_secret_service.delete_secret(secret_name=self._get_secret_uri)
+    def delete_secret(self, secret_name=None):
+        self.aws_secret_service.delete_secret(
+            secret_name=secret_name or self.app.app_aws_secret_auth_name)
 
-    def delete_entries_in_secret(self, keys_to_delete: List[str]) -> bool:
+    def delete_entries_in_secret(self, keys_to_delete: List[str], secret_name=None) -> bool:
         return self.aws_secret_service.delete_keys_in_secret(
-            secret_name=self._get_secret_uri, keys_to_delete=keys_to_delete
+            secret_name=secret_name or self.app.app_aws_secret_auth_name,
+            keys_to_delete=keys_to_delete
         )
 
-    def get_secret_if_found(self):
-        return self.aws_secret_service.get_secret_if_found(self._get_secret_uri)
+    def get_secret_if_found(self, secret_name=None):
+        return self.aws_secret_service.get_secret_if_found(secret_name or self.app.app_aws_secret_auth_name)
 
 
 class S3Bucket(EntityResource):

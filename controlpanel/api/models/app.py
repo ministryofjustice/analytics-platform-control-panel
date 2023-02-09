@@ -1,4 +1,5 @@
 # Third-party
+import uuid
 from django.conf import settings
 from django.db import models
 from django.dispatch import receiver
@@ -20,6 +21,7 @@ class App(TimeStampedModel):
     ip_allowlists = models.ManyToManyField(
         IPAllowlist, related_name="apps", related_query_name="app", blank=True
     )
+    res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -69,12 +71,24 @@ class App(TimeStampedModel):
         return auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
 
     @property
-    def app_aws_secret_name(self):
+    def app_aws_secret_auth_name(self):
         return f"{settings.ENV}/apps/{self.slug}/auth"
 
     @property
-    def app_aws_secret_param(self):
+    def app_aws_secret_auth(self):
+        return {
+            "name": self.app_aws_secret_auth_name
+        }
+
+    @property
+    def app_aws_secret_param_name(self):
         return f"{settings.ENV}/apps/{self.slug}/parameters"
+
+    @property
+    def app_aws_secret_param(self):
+        return {
+            "name": self.app_aws_secret_param_name
+        }
 
     @property
     def app_allowed_ip_ranges(self):
@@ -82,11 +96,6 @@ class App(TimeStampedModel):
             "allowed_ip_ranges", flat=True
         ).order_by("pk")
         return ", ".join(list(allowed_ip_ranges))
-
-    def get_secret_key(self, name):
-        if name == "parameters":
-            return self.app_aws_secret_param
-        return self.app_aws_secret_name
 
     def construct_secret_data(self, client):
         """The assumption is per app per callback url"""

@@ -30,7 +30,6 @@ The full list of settings are documented here: [Control Panel settings and envir
 OIDC_*
 # To interact with AWS account IAM config
 AWS_DATA_ACCOUNT_ID
-AWS_COMPUTE_ACCOUNT_ID
 ```
 
 Unless you're testing the Slack feature, just disable it by adding this line:

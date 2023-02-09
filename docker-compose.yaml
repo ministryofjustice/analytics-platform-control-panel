@@ -84,7 +84,6 @@ services:
     environment:
       ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_COMPUTE_ACCOUNT_ID: ${AWS_COMPUTE_ACCOUNT_ID}
       AWS_DATA_ACCOUNT_ID: ${AWS_DATA_ACCOUNT_ID}
       AWS_DEFAULT_REGION:
       AWS_REGION: ${AWS_REGION:-eu-west-1}

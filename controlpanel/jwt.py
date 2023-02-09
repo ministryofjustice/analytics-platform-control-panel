@@ -23,11 +23,9 @@ class JWT:
         self.jwks_url = settings.OIDC_OP_JWKS_ENDPOINT
         self.decode_options = {
             "algorithms": [settings.OIDC_RP_SIGN_ALGO],
-            "audience": settings.OIDC_RP_CLIENT_ID,
+            "audience": settings.OIDC_CPANEL_API_AUDIENCE,
             "options": {
-                "verify_aud": False,
-                "verify_claims": False,
-                "verify_signature": False,
+                "require_sub": True,
             },
         }
 
@@ -39,7 +37,7 @@ class JWT:
         if not self._header:
             try:
                 self._header = jwt.get_unverified_header(self._raw_token)
-            except jwt.JWTError as jwt_error:  # noqa: F841
+            except jwt.JWTError:
                 return None
         return self._header
 
@@ -78,6 +76,16 @@ class JWT:
             except (JWTError, KeyError) as error:
                 raise JWTDecodeError(f"Failed decoding JWT: {error}")
         return self._payload
+
+    def validate(self):
+        try:
+            self._payload = jwt.decode(
+                self._raw_token,
+                key=self.jwk,
+                **self.decode_options,
+            )
+        except (JWTError, KeyError) as error:
+            raise JWTDecodeError(f'Failed decoding JWT: {error}')
 
     @classmethod
     def from_auth_header(cls, request):

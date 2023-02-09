@@ -12,7 +12,6 @@ from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
-    Parameter,
     S3Bucket,
     User,
     UserApp,
@@ -28,11 +27,24 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class AppViewSet(viewsets.ModelViewSet):
-    queryset = App.objects.all()
+    resource = "app"
+
     serializer_class = serializers.AppSerializer
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = (permissions.AppPermissions,)
+    permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
     filterset_fields = ("name", "repo_url", "slug")
+    lookup_field = "res_id"
+
+    def _skip_queryset_restriction(self):
+        return self.request.user.is_superuser or \
+               (hasattr(self.request.user, "is_client") and self.request.user.is_client)
+
+    def get_queryset(self):
+        if self._skip_queryset_restriction():
+            return App.objects.all()
+        else:
+            qs = App.objects.all().prefetch_related("userapps")
+            return qs.filter(userapps__user=self.request.user)
 
     @atomic
     def perform_create(self, serializer):
@@ -87,14 +99,3 @@ class S3BucketViewSet(viewsets.ModelViewSet):
 class UserAppViewSet(viewsets.ModelViewSet):
     queryset = UserApp.objects.all()
     serializer_class = serializers.UserAppSerializer
-
-
-class ParameterViewSet(viewsets.ModelViewSet):
-    queryset = Parameter.objects.all()
-    serializer_class = serializers.ParameterSerializer
-    filter_backends = (filters.ParameterFilter,)
-    permission_classes = (permissions.ParameterPermissions,)
-
-    @atomic
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)

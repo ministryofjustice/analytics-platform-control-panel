@@ -207,6 +207,8 @@ AUTH0 = {
 
 OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
 
+# The audience for Control Panel RESTful APIs
+OIDC_CPANEL_API_AUDIENCE = os.environ.get("OIDC_CPANEL_API_AUDIENCE")
 
 # -- Security
 
@@ -303,13 +305,17 @@ TIME_ZONE = "UTC"
 
 # -- Django REST Framework
 
+# questions: the list of authentication methods, as long as one of them is met, it will be passed.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # Token authentication
+        # need to check why a user can be created automatically during a process of authentication flow for our cases
         "controlpanel.api.jwt_auth.JWTAuthentication",
+        # save question as above
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
-        # required for browsable API
-        "rest_framework.authentication.BasicAuthentication",
+        # REMOVE basic auth from the authentication methods
+        # 'rest_framework.authentication.BasicAuthentication',
+        # Require browsable api and also allow frontend to call api via session
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": ["controlpanel.api.filters.SuperusersOnlyFilter"],
@@ -457,7 +463,6 @@ ELASTICSEARCH = {
 
 
 # -- AWS
-AWS_COMPUTE_ACCOUNT_ID = os.environ.get("AWS_COMPUTE_ACCOUNT_ID")
 AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
 
 # The EKS OIDC provider, referenced in user policies to allow service accounts
