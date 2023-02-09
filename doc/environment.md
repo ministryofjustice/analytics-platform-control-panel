@@ -78,7 +78,7 @@ in django settings.
 | `OIDC_CLIENT_ID` | Client ID from Auth0 | |
 | `OIDC_CLIENT_SECRET` | Client secret from Auth0 | |
 | `OIDC_DOMAIN` | Domain of Auth0 tenant | |
-| `OIDC_EKS_PROVIDER` | Equivalent of SAML_PROVIDER but for the app running on EKS infrastructure | |
+| `OIDC_EKS_PROVIDER` | The name of the SAML provider within AWS, which Auth0 integrates with, e.g. `dev-auth0`. This is referenced in user policies to allow them to log in via SAML federation. | |
 | `OIDC_OP_AUTHORIZATION_ENDPOINT` | URL of OIDC Provider authorization endpoint | |
 | `OIDC_OP_JWKS_ENDPOINT` | URL of OIDC Provider JWKS endpoint | |
 | `OIDC_OP_TOKEN_ENDPOINT` | URL of OIDC Provider token endpoint | |
