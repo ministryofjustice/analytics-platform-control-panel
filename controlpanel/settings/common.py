@@ -463,12 +463,7 @@ ELASTICSEARCH = {
 
 
 # -- AWS
-AWS_COMPUTE_ACCOUNT_ID = os.environ.get("AWS_COMPUTE_ACCOUNT_ID")
 AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
-
-# Auth0 integrated SAML provider, referenced in user policies to allow login via
-# SAML federation
-SAML_PROVIDER = os.environ.get("SAML_PROVIDER")
 
 # The EKS OIDC provider, referenced in user policies to allow service accounts
 # to grant AWS permissions.

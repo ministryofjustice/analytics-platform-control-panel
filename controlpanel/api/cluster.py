@@ -19,7 +19,6 @@ from controlpanel.api.aws import (
     AWSRole,
     AWSSecretManager,
     iam_arn,
-    iam_assume_role_principal,
     s3_arn,
 )
 from controlpanel.api.kubernetes import KubernetesClient
@@ -49,14 +48,7 @@ BASE_ASSUME_ROLE_POLICY = {
                 "Service": "ec2.amazonaws.com",
             },
             "Action": "sts:AssumeRole",
-        },
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": iam_assume_role_principal(),
-            },
-            "Action": "sts:AssumeRole",
-        },
+        }
     ],
 }
 
@@ -195,19 +187,6 @@ class User(EntityResource):
         "Action": "sts:AssumeRoleWithWebIdentity",
     }
 
-    SAML_STATEMENT = {
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
-        },
-        "Action": "sts:AssumeRoleWithSAML",
-        "Condition": {
-            "StringEquals": {
-                "SAML:aud": "https://signin.aws.amazon.com/saml",
-            },
-        },
-    }
-
     EKS_STATEMENT = {
         "Effect": "Allow",
         "Principal": {
@@ -292,7 +271,6 @@ class User(EntityResource):
     @staticmethod
     def aws_user_policy(user_auth0_id, user_name):
         policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-        policy["Statement"].append(User.SAML_STATEMENT)
         oidc_statement = deepcopy(User.OIDC_STATEMENT)
         oidc_statement["Condition"] = {
             "StringEquals": {
