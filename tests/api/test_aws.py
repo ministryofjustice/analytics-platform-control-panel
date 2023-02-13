@@ -227,6 +227,17 @@ def test_create_bucket(logs_bucket, s3):
         s3.meta.client.get_bucket_location(Bucket=bucket_name)
 
     aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    
+    @pytest.mark.parametrize("bucket_name, principal, expected_result", [
+        ("test-bucket-1", "123456789012", "Access Denied"),
+        ("test-bucket-2", "000000000000", "Access Denied")
+    ]
+    )
+    def test_s3_bucket_policy_deny_trust(bucket_name, principal, expected_result):
+        bucket_policy = s3.BucketPolicy(bucket_name)
+        policy_document = bucket_policy.policy
+        assert f'"Principal": "{principal}"' not in policy_document
+        assert expected_result in policy_document
 
     # Check versioning.
     assert bucket.Versioning().status == "Enabled"
