@@ -318,6 +318,29 @@ class AWSBucket(AWSService):
                 },
             )
             
+            s3_client.put_bucket_policy(
+                Bucket=bucket_name,
+                Policy = {
+                    "Version": "2012-10-17",
+                    "Id": "S3PolicyId1",
+                    "Statement": [
+                        {
+                            "Sid": "DenyInsecureTransport",
+                            "Effect": "Deny",
+                            "Principal": "*",
+                            "Action": "s3:*",
+                            "Resource": "arn:aws:s3:::{}/*".format(bucket_name),
+                            "Condition": {
+                                "Bool": {
+                                    "aws:SecureTransport": "false"
+                                }
+                            }
+                        }
+                    ]
+                }
+            )
+
+
             # Enable versioning by default.
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning  # noqa: E501
             versioning = bucket.Versioning()
