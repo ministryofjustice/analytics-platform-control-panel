@@ -67,6 +67,11 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
 
 
 class AppSimpleSerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(
+        view_name='app-detail',
+        lookup_field='res_id'
+    )
+
     class Meta:
         model = App
         fields = (
@@ -147,11 +152,16 @@ class AppSerializer(serializers.ModelSerializer):
     userapps = UserAppNestedInAppSerializer(many=True, read_only=True)
     apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
     ip_allowlists = IPAllowlistSimpleSerializer(many=True, read_only=True)
+    url = serializers.HyperlinkedIdentityField(
+        view_name='app-detail',
+        lookup_field='res_id'
+    )
 
     class Meta:
         model = App
+        # lookup_field = "id"
         fields = (
-            "id",
+            "res_id",
             "url",
             "name",
             "description",
@@ -161,6 +171,8 @@ class AppSerializer(serializers.ModelSerializer):
             "created_by",
             "apps3buckets",
             "userapps",
+            "app_aws_secret_auth",
+            "app_aws_secret_param",
             "ip_allowlists",
             "app_allowed_ip_ranges",
         )
@@ -323,15 +335,6 @@ class ESBucketHitsSerializer(serializers.BaseSerializer):
             return match.group(1), match.group(2)
 
         return "unknown", key
-
-
-class ParameterSerializer(serializers.ModelSerializer):
-    value = serializers.CharField(write_only=True)
-
-    class Meta:
-        model = Parameter
-        fields = ("id", "name", "role_name", "value", "key")
-        read_only_fields = ("name",)
 
 
 class ToolSerializer(serializers.Serializer):

@@ -43,15 +43,15 @@ def test_list_filter_by_repo_url(client, app):
     assert response.status_code == status.HTTP_200_OK
     results = response.data["results"]
     assert len(results) == 1
-    assert results[0]["id"] == app.id
+    assert results[0]["res_id"] == str(app.res_id)
 
 
 def test_detail(client, app):
-    response = client.get(reverse("app-detail", (app.id,)))
+    response = client.get(reverse("app-detail", (app.res_id,)))
     assert response.status_code == status.HTTP_200_OK
 
     expected_fields = {
-        "id",
+        "res_id",
         "url",
         "name",
         "description",
@@ -61,6 +61,60 @@ def test_detail(client, app):
         "created_by",
         "apps3buckets",
         "userapps",
+        "app_aws_secret_param",
+        "app_aws_secret_auth",
+        "ip_allowlists",
+        "app_allowed_ip_ranges",
+    }
+    assert expected_fields == set(response.data)
+    assert response.data["iam_role_name"] == app.iam_role_name
+
+    apps3bucket = response.data["apps3buckets"][0]
+    expected_fields = {"id", "url", "s3bucket", "access_level"}
+    assert set(apps3bucket) == expected_fields
+
+    expected_fields = {
+        "id",
+        "url",
+        "name",
+        "arn",
+        "created_by",
+        "is_data_warehouse",
+    }
+    assert set(apps3bucket["s3bucket"]) == expected_fields
+
+    userapp = response.data["userapps"][0]
+    expected_fields = {"id", "user", "is_admin"}
+    assert set(userapp) == expected_fields
+
+    expected_fields = {
+        "auth0_id",
+        "url",
+        "username",
+        "name",
+        "email",
+    }
+    assert set(userapp["user"]) == expected_fields
+
+
+
+def test_app_detail_by_name(client, app):
+    response = client.get(reverse("apps-by-name-detail", (app.name,)))
+    assert response.status_code == status.HTTP_200_OK
+
+    expected_fields = {
+        "res_id",
+        "url",
+        "name",
+        "description",
+        "slug",
+        "repo_url",
+        "iam_role_name",
+        "created_by",
+        "apps3buckets",
+        "userapps",
+        "app_aws_secret_param",
+        "app_aws_secret_auth",
         "ip_allowlists",
         "app_allowed_ip_ranges",
     }
@@ -103,13 +157,13 @@ def authz():
 
 def test_delete(client, app, authz, secretsmanager):
     with patch("controlpanel.api.aws.AWSRole.delete_role") as delete_role:
-        response = client.delete(reverse("app-detail", (app.id,)))
+        response = client.delete(reverse("app-detail", (app.res_id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
         delete_role.assert_called_with(app.iam_role_name)
 
-        response = client.get(reverse("app-detail", (app.id,)))
+        response = client.get(reverse("app-detail", (app.res_id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -128,7 +182,7 @@ def test_create(client, users):
 def test_update(client, app):
     data = {"name": "foo", "repo_url": "http://foo.com.git"}
     response = client.put(
-        reverse("app-detail", (app.id,)),
+        reverse("app-detail", (app.res_id,)),
         data,
         content_type="application/json",
     )

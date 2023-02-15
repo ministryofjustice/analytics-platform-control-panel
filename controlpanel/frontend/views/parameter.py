@@ -51,8 +51,10 @@ class ParameterCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView)
         key, value = data.get("key"), data.get("value")
 
         app = App.objects.get(pk=app_id)
-        manager = cluster.App(app).set_secret_type("parameters")
-        manager.create_or_update_secret({key: value})
+        manager = cluster.App(app)
+        manager.create_or_update_secret(
+            secret_name=app.app_aws_secret_param_name,
+            secret_data={key: value})
 
         messages.success(
             self.request,
@@ -91,8 +93,10 @@ class ParameterDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         app_id = data.get("app_id")
         key = data.get("key")
         app = App.objects.get(pk=app_id)
-        manager = cluster.App(app).set_secret_type("parameters")
-        manager.delete_entries_in_secret([key])
+        manager = cluster.App(app)
+        manager.delete_entries_in_secret(
+            secret_name=app.app_aws_secret_param_name,
+            keys_to_delete=[key])
 
         messages.success(
             self.request,

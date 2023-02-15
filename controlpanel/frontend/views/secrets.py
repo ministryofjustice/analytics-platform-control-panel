@@ -75,7 +75,7 @@ class SecretAddUpdate(
         if form.is_valid():
             secret_value = form.cleaned_data.get("secret_value")
             app = self._get_app(pk)
-            cluster.App(app).create_or_update_secret({secret_key: secret_value})
+            cluster.App(app).create_or_update_secret(secret_data={secret_key: secret_value})
         else:
             # currently, boolean values cannot fail, however will need to test
             # this for non-bool values
@@ -108,5 +108,7 @@ class SecretDelete(
                 reverse_lazy(self.success_url, kwargs={"pk": self.kwargs.get("pk")})
             )
 
-        cluster.App(app).delete_entries_in_secret(keys_to_delete=[secret_key])
+        cluster.App(app).delete_entries_in_secret(
+            secret_name=app.app_aws_secret_auth_name,
+            keys_to_delete=[secret_key])
         return HttpResponseRedirect(self.get_success_url(message_type="deleted"))

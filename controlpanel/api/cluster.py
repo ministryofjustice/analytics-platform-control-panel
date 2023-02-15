@@ -19,7 +19,6 @@ from controlpanel.api.aws import (
     AWSRole,
     AWSSecretManager,
     iam_arn,
-    iam_assume_role_principal,
     s3_arn,
 )
 from controlpanel.api.kubernetes import KubernetesClient
@@ -49,14 +48,7 @@ BASE_ASSUME_ROLE_POLICY = {
                 "Service": "ec2.amazonaws.com",
             },
             "Action": "sts:AssumeRole",
-        },
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "AWS": iam_assume_role_principal(),
-            },
-            "Action": "sts:AssumeRole",
-        },
+        }
     ],
 }
 
@@ -195,19 +187,6 @@ class User(EntityResource):
         "Action": "sts:AssumeRoleWithWebIdentity",
     }
 
-    SAML_STATEMENT = {
-        "Effect": "Allow",
-        "Principal": {
-            "Federated": iam_arn(f"saml-provider/{settings.SAML_PROVIDER}"),
-        },
-        "Action": "sts:AssumeRoleWithSAML",
-        "Condition": {
-            "StringEquals": {
-                "SAML:aud": "https://signin.aws.amazon.com/saml",
-            },
-        },
-    }
-
     EKS_STATEMENT = {
         "Effect": "Allow",
         "Principal": {
@@ -292,7 +271,6 @@ class User(EntityResource):
     @staticmethod
     def aws_user_policy(user_auth0_id, user_name):
         policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-        policy["Statement"].append(User.SAML_STATEMENT)
         oidc_statement = deepcopy(User.OIDC_STATEMENT)
         oidc_statement["Condition"] = {
             "StringEquals": {
@@ -415,14 +393,6 @@ class App(EntityResource):
         self.aws_role_service = self.create_aws_service(AWSRole)
         self.aws_secret_service = self.create_aws_service(AWSSecretManager)
 
-    def set_secret_type(self, type_key: str) -> "App":
-        self.secret_type = type_key
-        return self
-
-    @property
-    def _get_secret_uri(self) -> str:
-        return self.app.get_secret_key(self.secret_type)
-
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
@@ -440,7 +410,8 @@ class App(EntityResource):
 
     def delete(self):
         self.aws_role_service.delete_role(self.iam_role_name)
-        self.delete_secret()
+        self.delete_secret(secret_name=self.app.app_aws_secret_auth_name)
+        self.delete_secret(secret_name=self.app.app_aws_secret_param_name)
 
     @property
     def url(self):
@@ -460,21 +431,24 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
-    def create_or_update_secret(self, secret_data):
+    def create_or_update_secret(self, secret_data, secret_name=None):
         self.aws_secret_service.create_or_update(
-            secret_name=self._get_secret_uri, secret_data=secret_data
+            secret_name=secret_name or self.app.app_aws_secret_auth_name,
+            secret_data=secret_data
         )
 
-    def delete_secret(self):
-        self.aws_secret_service.delete_secret(secret_name=self._get_secret_uri)
+    def delete_secret(self, secret_name=None):
+        self.aws_secret_service.delete_secret(
+            secret_name=secret_name or self.app.app_aws_secret_auth_name)
 
-    def delete_entries_in_secret(self, keys_to_delete: List[str]) -> bool:
+    def delete_entries_in_secret(self, keys_to_delete: List[str], secret_name=None) -> bool:
         return self.aws_secret_service.delete_keys_in_secret(
-            secret_name=self._get_secret_uri, keys_to_delete=keys_to_delete
+            secret_name=secret_name or self.app.app_aws_secret_auth_name,
+            keys_to_delete=keys_to_delete
         )
 
-    def get_secret_if_found(self):
-        return self.aws_secret_service.get_secret_if_found(self._get_secret_uri)
+    def get_secret_if_found(self, secret_name=None):
+        return self.aws_secret_service.get_secret_if_found(secret_name or self.app.app_aws_secret_auth_name)
 
 
 class S3Bucket(EntityResource):
