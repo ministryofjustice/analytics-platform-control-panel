@@ -171,8 +171,6 @@ class AppSerializer(serializers.ModelSerializer):
             "created_by",
             "apps3buckets",
             "userapps",
-            "app_aws_secret_auth",
-            "app_aws_secret_param",
             "ip_allowlists",
             "app_allowed_ip_ranges",
         )

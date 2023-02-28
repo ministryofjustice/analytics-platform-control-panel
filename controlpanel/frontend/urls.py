@@ -3,7 +3,7 @@ from django.urls import path
 
 # First-party/Local
 from controlpanel.frontend import views
-from controlpanel.frontend.views import secrets
+from controlpanel.frontend.views import secrets, app_variables
 
 urlpatterns = [
     path("", views.IndexView.as_view(), name="index"),
@@ -70,25 +70,6 @@ urlpatterns = [
         views.GrantPolicyAccess.as_view(),
         name="grant-datasource-policy-access",
     ),
-    path("parameters/", views.ParameterList.as_view(), name="list-parameters"),
-    path(
-        "parameters/all/",
-        views.AdminParameterList.as_view(),
-        name="list-all-parameters",
-    ),
-    path(
-        "parameters/form/role-list.js",
-        views.ParameterFormRoleList.as_view(),
-        name="parameters-list-roles",
-    ),
-    path(
-        "parameters/new/<int:app_id>/",
-        views.ParameterCreate.as_view(),
-        name="create-parameter",
-    ),
-    path(
-        "parameters/delete/", views.ParameterDelete.as_view(), name="delete-parameter"
-    ),
     path("tools/", views.ToolList.as_view(), name="list-tools"),
     path(
         "tools/<str:name>/restart/<str:tool_id>",
@@ -112,19 +93,19 @@ urlpatterns = [
     path("webapps/<int:pk>/", views.AppDetail.as_view(), name="manage-app"),
     path("webapps/<int:pk>/delete/", views.DeleteApp.as_view(), name="delete-app"),
     path(
-        "webapps/<int:pk>/setup_app_auth0/",
+        "webapps/<int:pk>/create_auth0_client/",
         views.SetupAppAuth0.as_view(),
-        name="setup-app-auth0",
+        name="create-auth0-client",
+    ),
+    path(
+        "webapps/<int:pk>/remove_auth0_client/",
+        views.RemoveAppAuth0.as_view(),
+        name="remove-auth0-client",
     ),
     path(
         "webapps/<int:pk>/update_auth0_connections/",
         views.UpdateAppAuth0Connections.as_view(),
         name="update-auth0-connections",
-    ),
-    path(
-        "webapps/<int:pk>/reset_app_secret/",
-        views.ResetAppSecret.as_view(),
-        name="reset-app-secret",
     ),
     path(
         "webapps/<int:pk>/customers/add/",
@@ -137,7 +118,7 @@ urlpatterns = [
         name="remove-app-customer",
     ),
     path(
-        "apps/<int:pk>/customers/paginate/<int:page_no>/",
+        "apps/<int:pk>/envs/<str:env_name>/customers/paginate/<int:page_no>/",
         views.app.AppCustomersPageView.as_view(),
         name="appcustomers-page",
     ),
@@ -153,14 +134,34 @@ urlpatterns = [
         name="grant-app-access",
     ),
     path(
-        "webapps/<int:pk>/secrets/add/<str:secret_key>/",
-        secrets.SecretAddUpdate.as_view(),
-        name="add-secret",
+        "webapps/<int:pk>/secrets/add",
+        secrets.AppSecretCreate.as_view(),
+        name="create-app-secret",
     ),
     path(
-        "webapps/<int:pk>/secrets/delete/<str:secret_key>/",
-        secrets.SecretDelete.as_view(),
-        name="delete-secret",
+        "webapps/<int:pk>/secrets/<str:secret_name>/update/",
+        secrets.AppSecretUpdate.as_view(),
+        name="update-app-secret",
+    ),
+    path(
+        "webapps/<int:pk>/secrets/<str:secret_name>/delete/",
+        secrets.AppSecretDelete.as_view(),
+        name="delete-app-secret",
+    ),
+    path(
+        "webapps/<int:pk>/vars/add",
+        app_variables.AppVariableCreate.as_view(),
+        name="create-app-var",
+    ),
+    path(
+        "webapps/<int:pk>/vars/<str:var_name>/update/",
+        app_variables.AppVariableUpdate.as_view(),
+        name="update-app-var",
+    ),
+    path(
+        "webapps/<int:pk>/vars/<str:var_name>/delete/",
+        app_variables.AppVariableDelete.as_view(),
+        name="delete-app-var",
     ),
     path(
         "webapps/<int:pk>/update-ip-allowlists/",

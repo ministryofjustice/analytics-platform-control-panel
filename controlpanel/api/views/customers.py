@@ -53,7 +53,7 @@ class AppCustomersAPIView(GenericAPIView):
         if errors:
             raise ValidationError(errors)
 
-        app.add_customers(emails)
+        app.add_customers(kwargs["env_name"], emails)
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

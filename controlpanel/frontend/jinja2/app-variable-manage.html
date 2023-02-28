@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
+
+{% set page_title = "Add/Update Variable" %}
+{% set page_name = "webapps" %}
+
+{% block content %}
+
+  {% if form.key.value() %}
+    <h3 class="govuk-heading-m">Update the variable: {{ form.key.value() }} - [{{ form.env_name.value() }}]</h3>
+  {% else %}
+    <h3 class="govuk-heading-m">Add deployment an variable for the app - [{{ form.env_name.value() }}]</h3>
+  {% endif %}
+  <section class="cpanel-section form-section" >
+    <div>
+      {% if form.errors %}
+        {{ govukErrorMessage({"text": form.errors}) }}
+      {% endif %}
+    </div>
+    <form action="" method="post">
+      {{ csrf_input }}
+      {% for field in form %}
+        {% if field not in form.hidden_fields()  %}
+          {% if field.field.__class__.__name__ == 'BooleanField' %}
+            {{ govukCheckboxes({
+              "fieldset": {
+                "legend": {
+                  "text": field.label,
+                  "classes": "govuk-fieldset__legend--m",
+                },
+              },
+              "errorMessage": {"html": field.errors|join(". ")} if field.errors else {},
+              "classes": "govuk-checkboxes--error",
+              "name": field.name,
+              "items": [
+                {
+                  "value": 1,
+                  "text": field.help_text,
+                  "checked": field.value(),
+                },
+              ],
+            }) }}
+
+          {% else %}
+
+          {{ govukInput({
+            "label": {
+              "text": field.label|capitalize,
+              "classes": "govuk-label--m",
+            },
+            "classes": "govuk-!-width-two-thirds",
+            "hint": {
+              "text": field.help_text | default('Not sensitive data.')
+            },
+            "name": field.name,
+            "attributes": {
+              "maxlength": "65536",
+            },
+            "errorMessage": { "html": field.errors|join(". ") } if field.errors else {},
+            "value": field.value()
+          }) }}
+        {% endif %}
+
+        {% else %}
+          <!-- hidden fields -->
+          {{field}}
+        {% endif %}
+
+      {% endfor %}
+
+      <div class="govuk-form-group">
+        {% if form.key.value() %}
+          <button class="govuk-button">Update variable</button>
+        {% else %}
+          <button class="govuk-button">Create variable</button>
+        {% endif %}
+      </div>
+
+    </form>
+</section>
+
+{% endblock %}

@@ -17,9 +17,12 @@ router.register("users3buckets", views.UserS3BucketViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("repos/", views.tools.RepoApi.as_view(), name="github-repos"),
+    path("repos/<str:org_name>/", views.repos.RepoApi.as_view(), name="github-repos"),
+    path("repos/<str:org_name>/<str:repo_name>/environments",
+         views.repos.RepoEnvironmentAPI.as_view(),
+         name="github-repo-env"),
     path(
-        "apps/<uuid:res_id>/customers/",
+        "apps/<uuid:res_id>/envs/<str:env_name>/customers/",
         views.AppCustomersAPIView.as_view(),
         name="appcustomers-list",
     ),

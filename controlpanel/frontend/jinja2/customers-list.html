@@ -13,13 +13,37 @@
 {% endset %}
 
 {% block content %}
+
+  <section>
+   <h2 class="govuk-heading-m">
+      Switch to different deployment environment from the following links:
+    </h2>
+    <ul class="govuk-list govuk-list--bullet">
+      {% for env_item_name in app.deployment_envs(request.user.github_api_token) %}
+        <li>
+            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1", "env_name": env_item_name }) }}" >
+              {% if env_name == env_item_name %}
+                <strong>Manage customers - {{ env_item_name }}</strong>
+              {% else %}
+                Manage customers - {{ env_item_name }}
+              {% endif %}
+            </a>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+{% if env_name == "EMPTY" %}
+  <div><p>The deployment environments haven't been setup yet!</p></div>
+{% else %}
   <h2 class="govuk-heading-m">
-    App customers
+    App customers under {{ env_name }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
 
-  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id}) }}">
+  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id }) }}">
     {{ csrf_input }}
+    <input type="hidden" name="env_name" value="{{ env_name }}">
     <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
             type="submit"
             name="submit"
@@ -59,11 +83,11 @@
   {{ displayCustomerMenu(
       reverse = {
         "url": "appcustomers-page",
-        "kwargs": {"pk": app.id },
-        "first_kw": {"pk": app.id, "page_no": paginator.page_range[0]},
-        "previous_kw": {"pk": app.id, "page_no": page_no-1},
-        "next_kw": {"pk": app.id, "page_no": page_no+1},
-        "last_kw": {"pk": app.id, "page_no": paginator.page_range[-1]}
+        "kwargs": {"pk": app.id, "env_name": env_name },
+        "first_kw": {"pk": app.id, "page_no": paginator.page_range[0], "env_name": env_name},
+        "previous_kw": {"pk": app.id, "page_no": page_no-1, "env_name": env_name},
+        "next_kw": {"pk": app.id, "page_no": page_no+1, "env_name": env_name},
+        "last_kw": {"pk": app.id, "page_no": paginator.page_range[-1], "env_name": env_name}
       },
       paginator = paginator,
       elided = elided,
@@ -77,6 +101,7 @@
 {% if request.user.has_perm('api.add_app_customer', app) %}
   <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
+    <input type="hidden" name="env_name" value="{{ env_name }}">
     <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
       <label class="govuk-label" for="customer_email">
         Add app customers by entering their email addresses (separated by spaces)
@@ -94,6 +119,8 @@
       <button class="govuk-button">Add customer</button>
     </div>
   </form>
+{% endif %}
+
 {% endif %}
 
 {% endblock %}

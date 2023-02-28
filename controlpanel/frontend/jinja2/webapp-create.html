@@ -51,12 +51,32 @@
   sensitive data in S3.
 </p>
 
-<form method="post" action="{{ url("create-app") }}">
+<form method="post" id="register_app" action="{{ url("create-app") }}">
   {{ csrf_input }}
 
   <div class="govuk-form-group" id="container-element">
-    <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
 
+    <label class="govuk-label govuk-label--m" for="org_names_list">Github organisation
+      <br/>
+      <br/>
+      <div class="govuk-radios" id="org_names_list">
+      {% set checked_item = form.org_names.value() if form.org_names.value() else form.fields.org_names.choices[0][0] %}
+      {% for key, value  in form.fields.org_names.choices %}
+        <div class="govuk-radios__item">
+        <input class="govuk-radios__input" id="{{ key }}_id" name="org_names" type="radio" value="{{ value }}"
+        {{-" checked" if checked_item == value else "" }}>
+        {{ govukLabel({
+          "text": key,
+          "classes": 'govuk-radios__label',
+          "for": key + "_id"
+        }) }}
+        </div>
+      {% endfor %}
+      </div>
+    </label>
+
+    <br/>
+    <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
       <div style="float: right;">
         <div style="float: left;" >
           <input type="hidden" value="1" id="current_index" />
@@ -96,6 +116,32 @@
     {% endif %}
 
     <input type="text" class="govuk-input" id="display_result_repo" name="repo_url" />
+
+    <br/>
+    <br/>
+    <label class="govuk-label govuk-label--m" for="deployment_envs_list">Available Deployment Environments
+      {% if form.deployment_envs.errors -%}
+        {{ govukErrorMessage({"text": form.deployment_envs.errors|join(". ")}) }}
+      {% endif %}
+      <p>Choose the environment you want to initialise the settings for deployment. If there is no environment available, you need to raise
+        request to Data platform to setup your project's deployment pipeline first.
+      </p>
+      <div class="govuk-checkboxes" id="deployment_envs_list">
+      {% set checked_items = form.deployment_envs.value() if form.deployment_envs.value() else form.fields.org_names.choices[0][0] %}
+      {% for env_key, value  in form.fields.deployment_envs.choices %}
+        <div class="govuk-checkboxes__item">
+        <input class="govuk-checkboxes__input" id="{{ env_key }}_id" name="deployment_envs" type="checkbox" value="{{ value }}"
+        {{-" checked" if value in checked_item else "" }}>
+        {{ govukLabel({
+          "text": env_key,
+          "classes": 'govuk-checkboxes__label ',
+          "for": env_key + "_id"
+        }) }}
+        </div>
+      {% endfor %}
+      </div>
+    </label>
+
   </div>
 
   {{ govukRadios({

@@ -14,7 +14,7 @@
 
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
-
+<h2>This ip_range are used by <b>{{ ip_allowlist.apps.count() }}</b> different deployment environments from all the apps</h2>
   {% if form.errors %}
       {{ govukErrorMessage({"text": form.errors}) }}
   {% endif %}

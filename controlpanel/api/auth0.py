@@ -124,8 +124,6 @@ class ExtendedAuth0(Auth0):
         for connection in connections:
             if connection["name"] in chosen_connections:
                 self.connections.enable_client(connection, client_id)
-            else:
-                self.connections.disable_client(connection, client_id)
 
     def _create_custom_connection(self, app_name, connections):
         new_connections = []
@@ -231,18 +229,13 @@ class ExtendedAuth0(Auth0):
             self.groups.delete_group_members(user_ids=[user_id], group_id=group["_id"])
         self.users.delete(user_id)
 
-    def clear_up_app(self, app_name, group_name):
+    def clear_up_app(self, app_name, group_name=None):
+        if not group_name:
+            group_name = app_name
         self.clear_up_group(group_name=group_name)
         client = self.clients.search_first_match(dict(name=app_name))
         if client:
             self.clients.delete(client["client_id"])
-
-    def has_setup_completed_for_client(self, app_name):
-        client = self.clients.search_first_match(dict(name=app_name))
-        if not client:
-            return False
-
-        return len(self.groups.get_group_roles(app_name)) > 0
 
     def get_client_enabled_connections(self, app_name):
         """
@@ -252,7 +245,7 @@ class ExtendedAuth0(Auth0):
         """
         client = self.clients.search_first_match(dict(name=app_name))
         if not client:
-            return []
+            return None
         connections = self.connections.get_all()
         enabled_connections = []
         for connection in connections:

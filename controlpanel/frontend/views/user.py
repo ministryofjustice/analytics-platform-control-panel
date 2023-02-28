@@ -11,7 +11,6 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.api import auth0
 from controlpanel.api.models import User
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
