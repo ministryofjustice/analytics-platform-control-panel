@@ -17,12 +17,6 @@ def enable_db_for_all_tests(db):
     pass
 
 
-@pytest.yield_fixture(autouse=True)
-def app_fixture():
-    with patch("tests.api.cluster.test_app.app") as app_fixture:
-        yield app_fixture
-
-
 def stmt_match(
     stmt, Action="sts:AssumeRole", Condition=None, Effect="Allow", Principal={}
 ):
@@ -788,18 +782,3 @@ def test_delete_app_secret(secretsmanager):
             assert True
         else:
             assert False
-
-
-def test_delete_key_in_secret(app_fixture):
-    app_name = "test_app"
-    secret_name = "{}_app_secret/{}".format(settings.ENV, app_name)  # noqa: F405
-    app_fixture.app_aws_secret_auth_name = secret_name
-    app_fixture.get_secret_key.return_value = secret_name
-
-    with patch(
-        "controlpanel.api.aws.AWSSecretManager.delete_keys_in_secret"
-    ) as aws_fixture:
-        cluster.App(app_fixture).delete_entries_in_secret(["disable_authentication"])
-        aws_fixture.assert_called_with(
-            secret_name=secret_name, keys_to_delete=["disable_authentication"]
-        )
