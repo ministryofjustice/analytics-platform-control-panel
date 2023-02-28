@@ -61,13 +61,13 @@ def elasticsearch():
         yield es.return_value
 
 
-# @pytest.yield_fixture(autouse=True)
-# def github():
-#     """
-#     Mock calls to Github
-#     """
-#     with patch("controlpanel.api.github.Github") as Github:
-#         yield Github.return_value
+@pytest.yield_fixture(autouse=True)
+def githubapi():
+    """
+    Mock calls to Github
+    """
+    with patch("controlpanel.frontend.forms.GithubAPI"), patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
+        yield GithubAPI.return_value
 
 
 @pytest.yield_fixture(autouse=True)

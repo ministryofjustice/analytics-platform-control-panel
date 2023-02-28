@@ -21,9 +21,9 @@ def bucket():
 
 
 def test_delete_revokes_permissions(bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.revoke_bucket_access"
-    ) as revoke_bucket_access_action:
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
+            patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
+                    as revoke_bucket_access_action:
         users3bucket = mommy.make("api.UserS3Bucket", s3bucket=bucket)
         apps3bucket = mommy.make("api.AppS3Bucket", s3bucket=bucket)
 

@@ -47,7 +47,7 @@ def test_github_repo_get(
 
     with patch("controlpanel.api.github.requests.get") as request_fixture:
         request_fixture.return_value = Mock(**input)
-        response = client.get(reverse("github-repos"))
+        response = client.get(reverse("github-repos", ("testing_github_org",)))
         assert response.status_code == expected_status
         if response.status_code != 400:
             assert response.data == expected_result

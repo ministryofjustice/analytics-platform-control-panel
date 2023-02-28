@@ -31,16 +31,17 @@ def buckets():
 
 @pytest.fixture
 def apps3buckets(apps, buckets):
-    return {
-        1: apps[1].apps3buckets.create(
-            s3bucket=buckets[1],
-            access_level=AppS3Bucket.READONLY,
-        ),
-        2: apps[2].apps3buckets.create(
-            s3bucket=buckets[2],
-            access_level=AppS3Bucket.READONLY,
-        ),
-    }
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
+        return {
+            1: apps[1].apps3buckets.create(
+                s3bucket=buckets[1],
+                access_level=AppS3Bucket.READONLY,
+            ),
+            2: apps[2].apps3buckets.create(
+                s3bucket=buckets[2],
+                access_level=AppS3Bucket.READONLY,
+            ),
+        }
 
 
 def test_list(client, apps3buckets):
@@ -147,7 +148,8 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets):
 
 
 def test_create_with_s3_data_warehouse_not_allowed(client, apps):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
+            patch("controlpanel.api.aws.AWSBucket.create_bucket"):
         s3_bucket_app = mommy.make(
             "api.S3Bucket",
             is_data_warehouse=False,

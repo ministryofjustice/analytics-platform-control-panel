@@ -10,9 +10,7 @@ from rest_framework import status
 
 @pytest.fixture(autouse=True)
 def auth0():
-    with patch("controlpanel.frontend.views.user.auth0"), patch(
-        "controlpanel.api.models.user.auth0"
-    ):
+    with patch("controlpanel.api.models.user.auth0"):
         yield auth0
 
 

@@ -54,6 +54,11 @@ class App(TimeStampedModel):
     def get_group_id(self, env_name):
         return auth0.ExtendedAuth0().groups.get_group_id(self.auth0_client_name(env_name))
 
+    def customers(self, env_name=None):
+        return (
+            auth0.ExtendedAuth0().groups.get_group_members(group_name=self.auth0_client_name(env_name)) or []
+        )
+
     def customer_paginated(self, page, group_id, per_page=25):
         return (
             auth0.ExtendedAuth0().groups.get_group_members_paginated(
@@ -125,7 +130,7 @@ class App(TimeStampedModel):
         super().delete(*args, **kwargs)
 
     def auth0_client_name(self, env_name):
-        return f"{self.slug}_{env_name}"
+        return f"{self.slug}_{env_name}" if env_name else self.slug
 
 
 class AddCustomerError(Exception):

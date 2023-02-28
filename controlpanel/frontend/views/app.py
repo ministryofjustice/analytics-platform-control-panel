@@ -287,7 +287,7 @@ class UpdateAppIPAllowlists(
         AppIPAllowList.objects.update_ip_allowlist(
             app=self.get_object(),
             github_api_token=self.request.user.github_api_token,
-            env_name=form.data["env_name"],
+            env_name=form.data.get("env_name"),
             ip_allowlists=form.cleaned_data["ip_allowlists"]
         )
         return HttpResponseRedirect(self.get_success_url(app))
@@ -456,10 +456,10 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def form_valid(self, form):
         self.get_object().add_customers(
-            form.cleaned_data["env_name"],
+            form.cleaned_data.get("env_name"),
             form.cleaned_data["customer_email"])
         return HttpResponseRedirect(
-            self.get_success_url(env_name=form.cleaned_data["env_name"]))
+            self.get_success_url(env_name=form.cleaned_data.get("env_name")))
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
@@ -524,7 +524,8 @@ class RemoveCustomer(UpdateApp):
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
-        env_name = self.request.POST.getlist("env_name")[0]
+        env_names = self.request.POST.getlist("env_name")
+        env_name = env_names[0] if env_names else ""
         try:
             app.delete_customers(env_name, user_ids)
         except App.DeleteCustomerError as e:

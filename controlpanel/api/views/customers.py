@@ -24,11 +24,7 @@ class AppCustomersAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         app = self.get_object()
-        customers = app.customers
-
-        if customers is None:
-            raise Http404
-
+        customers = app.customers(kwargs.get('env_name'))
         serializer = self.get_serializer(data=customers, many=True)
         serializer.is_valid()
 

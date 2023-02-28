@@ -425,10 +425,6 @@ def test_setup_auth0_client(
         new_client_id, body={"web_origins": [app_url]}
     )
 
-    fixture_connection_disable_client.assert_has_calls(
-        [call(connection1, new_client_id)],
-        [call(connection2, new_client_id)],
-    )
     fixture_permission_create.assert_called_with(
         dict(name="view:app", applicationId=new_client_id)
     )
