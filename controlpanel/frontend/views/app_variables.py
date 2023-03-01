@@ -23,7 +23,7 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     model = App
     allowed_methods = ["POST"]
     template_name = "app-variable-manage.html"
-    permission_required = "api.update_app"
+    permission_required = "api.update_app_settings"
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
@@ -86,7 +86,8 @@ class AppVariableDelete(AppVariableMixin, SingleObjectMixin, RedirectView):
 
     def post(self, request, *args, **kwargs):
         app = self.get_object()
-        env_name = dict(self.request.POST).get('env_name')[0]
+        env_names = dict(self.request.POST).get('env_name')
+        env_name = env_names[0] if env_names else None
         cluster.App(app).delete_env_var(
             self.request.user.github_api_token,
             env_name=env_name,

@@ -30,12 +30,38 @@ def aws_delete_role():
         yield aws_delete_role_action
 
 
+@pytest.yield_fixture(autouse=True)
+def githubapi():
+    """
+    Mock calls to Github
+    """
+    with patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
+        yield GithubAPI.return_value
+
+
+@pytest.yield_fixture(autouse=True)
+def repos(githubapi):
+    test_repo = {
+        "full_name": "Test App",
+        "html_url": "https://github.com/moj-analytical-services/test_app",
+    }
+    githubapi.get_repository.return_value = test_repo
+    githubapi.get_repo_envs.return_value = ["test"]
+    yield githubapi
+
+
 def test_app_create_iam_role(aws_create_role, app):
     cluster.App(app).create_iam_role()
     aws_create_role.assert_called_with(app.iam_role_name, BASE_ASSUME_ROLE_POLICY)
 
 
-def test_app_delete(aws_delete_role, app):
+@pytest.yield_fixture  # noqa: F405
+def authz():
+    with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
+        yield authz()
+
+
+def test_app_delete(aws_delete_role, app, authz):
     app.repo_url = "https://github.com/moj-analytical-services/my_repo"
     cluster.App(app).delete(github_api_token="testing")
     aws_delete_role.assert_called_with(app.iam_role_name)

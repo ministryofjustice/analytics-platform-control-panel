@@ -20,7 +20,7 @@ log = structlog.getLogger(__name__)
 
 class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     model = App
-    permission_required = "api.update_app"
+    permission_required = "api.update_app_settings"
     allowed_methods = ["POST"]
 
     def form_valid(self, form):
@@ -44,7 +44,7 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         return reverse_lazy("manage-app", kwargs={"pk": app_id})
 
 
-class AppSecretCreate(AppSecretMixin, CreateView):
+class AppSecretCreate(AppSecretMixin, UpdateView):
     form_class = AppSecretForm
     template_name = "app-secret-create.html"
 
@@ -57,7 +57,8 @@ class AppSecretUpdate(AppSecretMixin, UpdateView):
 class AppSecretDelete(AppSecretMixin, SingleObjectMixin, RedirectView):
     def post(self, request, *args, **kwargs):
         app = self.get_object()
-        env_name = dict(self.request.POST).get('env_name')[0]
+        env_names = dict(self.request.POST).get('env_name')
+        env_name = env_names[0] if env_names else None
         cluster.App(app).delete_secret(
             self.request.user.github_api_token,
             env_name=env_name,

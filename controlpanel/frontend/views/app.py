@@ -73,7 +73,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     DEFAULT_REMOVE_SECRET_LINK = "delete-app-secret"
     DEFAULT_EDIT_ENV_LINK = "update-app-var"
     DEFAULT_REMOVE_ENV_LINK = "delete-app-var"
-    DEFAULT_PERMISSION_FLAG = "api.update_app_secret"
+    DEFAULT_PERMISSION_FLAG = "api.update_app_settings"
     APP_SETTINGS = {
         cluster.App.IP_RANGES: {
             "permission_flag": "api.update_app_ip_allowlists",
@@ -404,7 +404,7 @@ class SetupAppAuth0(
     RedirectView,
 ):
     http_method_names = ["post"]
-    permission_required = "api.setup_app_auth0"
+    permission_required = "api.update_app_settings"
     model = App
 
     def get_redirect_url(self, *args, **kwargs):
@@ -426,7 +426,7 @@ class RemoveAppAuth0(
     SingleObjectMixin,
     RedirectView
 ):
-    permission_required = "api.update_app"
+    permission_required = "api.update_app_settings"
     allowed_methods = ["POST"]
     model = App
 

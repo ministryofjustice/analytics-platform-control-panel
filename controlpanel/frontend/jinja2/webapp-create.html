@@ -174,19 +174,6 @@
     ]
   }) }}
 
-  {{ auth0_connections_form({
-      "fieldset": {
-        "legend": {
-        "text": "Oauth0 client - connections",
-        "classes": "govuk-fieldset__legend--m",
-        },
-      },
-      "errors": form.errors,
-      "field": form.fields['connections'],
-      "selected_values": form.connections.value()
-    } )
-  }}
-
   {% set permissions_link %}
     <div>For more information on permissions, please have a look at this <a href="https://user-guidance.services.alpha.mojanalytics.xyz/rshiny-app.html#set-access-permissions"  >document.</a></div>
   {% endset %}
@@ -238,6 +225,19 @@
     {% endfor %}
     </div>
   </div>
+
+  {{ auth0_connections_form({
+      "fieldset": {
+        "legend": {
+        "text": "Oauth0 client - connections",
+        "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "errors": form.errors,
+      "field": form.fields['connections'],
+      "selected_values": form.connections.value()
+    } )
+  }}
 
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
