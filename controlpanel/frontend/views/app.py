@@ -458,10 +458,7 @@ class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
 
     def get_redirect_url(self, *args, **kwargs):
-        env_name, group_id = self._get_env_group_info()
-        return "{}?env_name={}&&group_id{}".format(reverse_lazy(
-            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
-        ), env_name, group_id)
+        return reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
 
     def _get_env_group_info(self):
         env_names = self.request.POST.getlist("env_name")
