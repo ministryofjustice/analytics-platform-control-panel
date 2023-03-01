@@ -22,7 +22,7 @@ urlpatterns = [
          views.repos.RepoEnvironmentAPI.as_view(),
          name="github-repo-env"),
     path(
-        "apps/<uuid:res_id>/envs/<str:env_name>/customers/",
+        "apps/<uuid:res_id>/customers/",
         views.AppCustomersAPIView.as_view(),
         name="appcustomers-list",
     ),

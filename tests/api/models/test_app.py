@@ -77,6 +77,7 @@ def test_add_customers(auth0):
         group_name=app.slug,
         emails=emails,
         user_options={"connection": "email"},
+        group_id=None
     )
 
 
@@ -90,6 +91,7 @@ def test_delete_customers(auth0):
     authz.groups.delete_group_members.assert_called_with(
         group_name=app.slug,
         user_ids=["email|123"],
+        group_id=None
     )
 
 

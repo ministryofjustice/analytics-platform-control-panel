@@ -84,7 +84,7 @@ def test_get(client, app, ExtendedAuth0):
         }
     ]
 
-    response = client.get(reverse("appcustomers-list", (app.res_id, "test_env")))
+    response = client.get(reverse("appcustomers-list", (app.res_id,)))
 
     assert response.status_code == status.HTTP_200_OK
     assert len(response.data) == 1
@@ -102,7 +102,9 @@ def test_post(client, app, ExtendedAuth0):
     emails = ["test1@example.com", "test2@example.com"]
     data = {"email": ", ".join(emails)}
     env_name = "test_env"
-    response = client.post(reverse("appcustomers-list", (app.res_id, env_name)), data)
+    response = client.post(
+        reverse("appcustomers-list", (app.res_id,)) + f"?env_name={env_name}",
+        data)
     assert response.status_code == status.HTTP_201_CREATED
 
     ExtendedAuth0.add_group_members_by_emails.assert_called_with(
