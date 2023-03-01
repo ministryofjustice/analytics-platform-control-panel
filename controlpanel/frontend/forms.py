@@ -156,7 +156,7 @@ class CreateAppForm(AppAuth0Form):
         required=False, queryset=IPAllowlist.objects.filter(deleted=False)
     )
 
-    deployment_envs = DynamicMultiChoiceField(required=True)
+    deployment_envs = DynamicMultiChoiceField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(CreateAppForm, self).__init__(*args, **kwargs)
@@ -352,7 +352,8 @@ class AppCustomersField(forms.Field):
 
 class AddAppCustomersForm(forms.Form):
     customer_email = AppCustomersField()
-    env_name = forms.CharField(widget=forms.HiddenInput)
+    env_name = forms.CharField(required=False, widget=forms.HiddenInput)
+    group_id = forms.CharField(required=False, widget=forms.HiddenInput)
 
 
 class ResetHomeDirectoryForm(forms.Form):

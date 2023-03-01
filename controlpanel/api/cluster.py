@@ -552,35 +552,61 @@ class App(EntityResource):
             })
         return app_env_vars
 
-    def _create_secrets(self, client, env_name, github_api_token):
-        secret_data: dict = {
-            App.AUTH0_CLIENT_ID: client["client_id"],
-            App.AUTH0_CLIENT_SECRET: client["client_secret"],
-            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)
-        }
+    def _create_secrets(
+            self,
+            env_name,
+            github_api_token,
+            client=None
+    ):
+        secret_data: dict = {App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)}
+        if client:
+            secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
+            secret_data[App.AUTH0_CLIENT_SECRET] = client["client_secret"]
+
         self._create_or_update_secrets(
             env_name=env_name,
             github_token=github_api_token,
             secret_data=secret_data)
 
-    def _create_env_vars(self, client, env_name, github_api_token, disable_authentication, connections):
-        env_data: dict = {
-            App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
-            App.AUTH0_PASSWORDLESS: "email" in connections,
-            App.AUTH0_CALLBACK_URL: client["callbacks"][0]
-            if len(client["callbacks"]) >= 1
-            else "",
-            App.AUTHENTICATION_REQUIRED: not disable_authentication,
-        }
+    def _create_env_vars(
+            self,
+            env_name,
+            github_api_token,
+            disable_authentication,
+            connections,
+            client=None
+    ):
+        if client:
+            env_data: dict = {
+                App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
+                App.AUTH0_PASSWORDLESS: "email" in connections,
+                App.AUTH0_CALLBACK_URL: client["callbacks"][0]
+                if len(client["callbacks"]) >= 1
+                else "",
+                App.AUTHENTICATION_REQUIRED: not disable_authentication}
+        else:
+            env_data: dict = {App.AUTHENTICATION_REQUIRED: not disable_authentication}
+
         self._create_envs(
             env_name=env_name,
             github_token=github_api_token,
             env_data=env_data)
 
     def create_auth_settings(self, env_name, github_api_token, disable_authentication=False, connections=None):
-        client = auth0.ExtendedAuth0().setup_auth0_client(app_name=self.app.auth0_client_name(env_name))
-        self._create_secrets(client, env_name, github_api_token)
-        self._create_env_vars(client, env_name, github_api_token, disable_authentication, connections or [])
+        client = None
+        if not disable_authentication:
+            client = auth0.ExtendedAuth0().setup_auth0_client(
+                app_name=self.app.auth0_client_name(env_name))
+        self._create_secrets(
+            env_name,
+            github_api_token,
+            client=client)
+        self._create_env_vars(
+            env_name,
+            github_api_token,
+            disable_authentication,
+            connections or [],
+            client=client)
 
     def remove_auth_settings(self, env_name, github_api_token):
         auth_client_name = self.app.auth0_client_name(env_name)

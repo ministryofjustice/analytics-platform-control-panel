@@ -33,6 +33,7 @@ from controlpanel.frontend.forms import (
     GrantAppAccessForm,
     UpdateAppAuth0ConnectionsForm,
 )
+from controlpanel.api.serializers import AppAuthSettingsSerializer
 from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -68,75 +69,16 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     permission_required = "api.retrieve_app"
     template_name = "webapp-detail.html"
 
-    # Some UI settings for app's secrets and variables
-    DEFAULT_EDIT_SECRET_LINK = "update-app-secret"
-    DEFAULT_REMOVE_SECRET_LINK = "delete-app-secret"
-    DEFAULT_EDIT_ENV_LINK = "update-app-var"
-    DEFAULT_REMOVE_ENV_LINK = "delete-app-var"
-    DEFAULT_PERMISSION_FLAG = "api.update_app_settings"
-    APP_SETTINGS = {
-        cluster.App.IP_RANGES: {
-            "permission_flag": "api.update_app_ip_allowlists",
-            "edit_link": "update-app-ip-allowlists"
-        },
-        cluster.App.AUTH0_CONNECTIONS: {
-            "permission_flag": "api.create_app",
-            "edit_link": "update-auth0-connections"
-        }
-    }
-
-    def _auth_required(self, auth_flag):
-        return str(auth_flag.get('value') or 'true').lower() == 'true'
-
     def _get_all_app_settings(self, app):
         app_manager_ins = cluster.App(app)
         deployment_env_names = app_manager_ins.get_deployment_envs(self.request.user.github_api_token)
         deployments_settings = {}
         for env_name in deployment_env_names:
-            if env_name not in deployments_settings:
-                deployments_settings[env_name] = {
-                    "secrets": [],
-                    "variables":[]
-                }
-
-            # Preparing secret data
-            secret_data = self._process_secret_with_ui_info(app_manager_ins.get_env_secrets(
-                self.request.user.github_api_token, env_name=env_name))
-            # Preparing env data
-            env_data = self._process_env_with_ui_info(app_manager_ins.get_env_vars(
-                self.request.user.github_api_token, env_name=env_name))
-
-            auth_required = self._auth_required(env_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
-            created = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"] or \
-                      secret_data[cluster.App.AUTH0_CONNECTIONS]["created"]
-            deployments_settings[env_name]["secrets"] = secret_data.values()
-            deployments_settings[env_name]["can_create_client"] = auth_required and not created
-            deployments_settings[env_name]["can_remove_client"] = not auth_required and created
-            deployments_settings[env_name]["variables"] = env_data.values()
-            deployments_settings[env_name]["auth_required"] = auth_required
+            deployments_settings[env_name] = {
+                "secrets": app_manager_ins.get_env_secrets(self.request.user.github_api_token, env_name=env_name),
+                "variables": app_manager_ins.get_env_vars(self.request.user.github_api_token, env_name=env_name)
+            }
         return deployments_settings
-
-    def _process_secret_with_ui_info(self, secret_data):
-        restructure_data = {}
-        for item in secret_data:
-            item_key = item['name']
-            item["permission_flag"] = self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or \
-                                      self.DEFAULT_PERMISSION_FLAG
-            item["edit_link"] = self.APP_SETTINGS.get(item_key, {}).get('edit_link') or \
-                                self.DEFAULT_EDIT_SECRET_LINK
-            item["remove_link"] = self.APP_SETTINGS.get(item_key, {}).get('remove_link') or \
-                                  self.DEFAULT_REMOVE_SECRET_LINK
-            restructure_data[item_key] = item
-        return restructure_data
-
-    def _process_env_with_ui_info(self, env_data):
-        restructure_data = {}
-        for item in env_data:
-            item["permission_flag"] = self.DEFAULT_PERMISSION_FLAG
-            item["edit_link"] = self.DEFAULT_EDIT_ENV_LINK
-            item["remove_link"] = self.DEFAULT_REMOVE_ENV_LINK
-            restructure_data[item['name']] = item
-        return restructure_data
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -174,7 +116,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         )
 
         context["kibana_base_url"] = settings.KIBANA_BASE_URL
-        context["deployments_settings"]= self._get_all_app_settings(app)
+        context["deployments_settings"]= AppAuthSettingsSerializer(self._get_all_app_settings(app)).data
         return context
 
 
@@ -455,8 +397,9 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         self.get_object().add_customers(
-            form.cleaned_data.get("env_name"),
-            form.cleaned_data["customer_email"])
+            form.cleaned_data["customer_email"],
+            env_name=form.cleaned_data.get("env_name"),
+            group_id=form.cleaned_data.get("group_id"))
         return HttpResponseRedirect(
             self.get_success_url(env_name=form.cleaned_data.get("env_name")))
 
@@ -466,9 +409,9 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
-        return reverse_lazy(
-            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1, "env_name": kwargs["env_name"]}
-        )
+        return "{}?env_name={}".format(reverse_lazy(
+            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        ), kwargs.get("env_name", ""))
 
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -476,15 +419,12 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
     permission_required = "api.retrieve_app"
     template_name = "customers-list.html"
 
-    NOT_SETUP_ENVIRONMENT = "EMPTY"
-
     def _retrieve_and_confirm_env_info(self, app, context):
+        env_name = self.request.GET.get("env_name") or ""
         context["deployment_envs"] = app.deployment_envs(self.request.user.github_api_token)
-        if self.kwargs.get("env_name") == "None":
-            context["env_name"] = context["deployment_envs"][0] \
-                if len(context["deployment_envs"]) >=1 else self.NOT_SETUP_ENVIRONMENT
-        else:
-            context["env_name"] = self.kwargs.get("env_name")
+        if not env_name and len(context["deployment_envs"]) >=1:
+            env_name = context["deployment_envs"][0]
+        context["env_name"] = env_name
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -495,11 +435,14 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         context["group_id"] = group_id
         context["page_no"] = page_no = self.kwargs.get("page_no")
 
-        if context["env_name"] != self.NOT_SETUP_ENVIRONMENT:
+        if group_id:
             customers = app.customer_paginated(page_no, group_id)
             context["customers"] = customers.get("users", [])
-            context["paginator"] = paginator = self._paginate_customers(customers)
-            context["elided"] = paginator.get_elided_page_range(page_no)
+        else:
+            customers = {}
+            context["customers"] = []
+        context["paginator"] = paginator = self._paginate_customers(customers)
+        context["elided"] = paginator.get_elided_page_range(page_no)
         return context
 
     def _paginate_customers(self, auth_results: List[dict], per_page=25):
@@ -515,18 +458,27 @@ class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse(
-            "appcustomers-page",
-            kwargs={"pk": self.kwargs["pk"], "page_no": 1, "env_name": kwargs.get("env_name")}
-        )
+        env_name, group_id = self._get_env_group_info()
+        return "{}?env_name={}&&group_id{}".format(reverse_lazy(
+            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        ), env_name, group_id)
+
+    def _get_env_group_info(self):
+        env_names = self.request.POST.getlist("env_name")
+        env_name = env_names[0] if env_names else ""
+        group_ids = self.request.POST.getlist("group_id")
+        group_id = group_ids[0] if group_ids else ""
+        return env_name, group_id
 
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
-        env_names = self.request.POST.getlist("env_name")
-        env_name = env_names[0] if env_names else ""
+        env_name, group_id = self._get_env_group_info()
         try:
-            app.delete_customers(env_name, user_ids)
+            app.delete_customers(
+                user_ids,
+                env_name=env_name,
+                group_id=group_id)
         except App.DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             messages.error(

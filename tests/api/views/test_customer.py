@@ -109,6 +109,7 @@ def test_post(client, app, ExtendedAuth0):
         group_name=app.auth0_client_name(env_name),
         emails=emails,
         user_options={"connection": "email"},
+        group_id=None
     )
 
 
@@ -136,7 +137,7 @@ def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
         env_name = "test_env"
 
         response = client.get(
-            reverse("appcustomers-page", args=(app.id, env_name, page_no)), url_dict
+            reverse("appcustomers-page", args=(app.id, page_no)), url_dict
         )
         fixture_customers_mocked.assert_called_with(
             str(group_id), page=page_no, per_page=25
@@ -154,7 +155,7 @@ def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
             assert expect in btn_texts
 
         response = client.get(
-            reverse("appcustomers-page", args=(app.id, env_name, page_no + 1)), url_dict
+            reverse("appcustomers-page", args=(app.id, page_no + 1)), url_dict
         )
         assert response.status_code == 200
         assert len(response.context_data.get("customers")) == 25

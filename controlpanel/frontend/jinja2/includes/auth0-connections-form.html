@@ -16,6 +16,7 @@
   {% endif %}
 
   <div class="govuk-checkboxes">
+    <p>This optional is only for the app which require authentication flow.</p>
     {% for item in params.field.choices %}
     {% set id = "connections-" + loop.index|string %}
     {% set name = "connections" %}

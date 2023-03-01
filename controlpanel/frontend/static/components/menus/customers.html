@@ -20,7 +20,8 @@
     paginator = [],
     elided = [],
     show_dots = False,
-    page_no= 1
+    page_no= 1,
+    env_name=""
   )
 -%}
 
@@ -37,7 +38,8 @@
           "kwargs": reverse.previous_kw
         },
         group_id= group_id,
-        button_text= prev_btn
+        button_text= prev_btn,
+        env_name = env_name
         )
       }}
     {% endif %}
@@ -55,7 +57,8 @@
             },
             group_id= group_id,
             button_text= page_number,
-            active= (page_number == page_no)
+            active= (page_number == page_no),
+            env_name = env_name
           )
         }}
       {% endif %}
@@ -69,7 +72,8 @@
           "kwargs": reverse.next_kw
         },
         group_id= group_id,
-        button_text= next_btn
+        button_text= next_btn,
+        env_name = env_name
       )
     }}
     {% endif %}

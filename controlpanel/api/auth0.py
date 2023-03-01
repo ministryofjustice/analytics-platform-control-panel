@@ -176,9 +176,13 @@ class ExtendedAuth0(Auth0):
         )
         return client
 
-    def add_group_members_by_emails(self, group_name, emails, user_options={}):
+    def add_group_members_by_emails(
+            self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
-        self.groups.add_group_members(group_name, user_ids=user_ids)
+        self.groups.add_group_members(
+            user_ids=user_ids,
+            group_id=group_id,
+            group_name=group_name)
         return user_ids
 
     def clear_up_group(self, group_name):
@@ -688,8 +692,8 @@ class Groups(Auth0API, ExtendedAPIMethods):
         else:
             return []
 
-    def add_group_members(self, group_name, user_ids):
-        group_id = self.get_group_id(group_name)
+    def add_group_members(self, user_ids, group_id=None, group_name=None):
+        group_id = group_id or self.get_group_id(group_name)
         if not group_id:
             raise Auth0Error("Group for the app not found, was the app released?")
         response = self.client.patch(self._url(group_id, "members"), data=user_ids)

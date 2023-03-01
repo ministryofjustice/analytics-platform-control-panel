@@ -96,7 +96,7 @@ class App(TimeStampedModel):
             deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
         return list(related_item_ids)
 
-    def add_customers(self, env_name, emails):
+    def add_customers(self, emails, env_name=None, group_id=None):
         emails = list(filter(None, emails))
         if emails:
             try:
@@ -104,15 +104,17 @@ class App(TimeStampedModel):
                     group_name=self.auth0_client_name(env_name),
                     emails=emails,
                     user_options={"connection": "email"},
+                    group_id=group_id
                 )
             except auth0.Auth0Error as e:
                 raise AddCustomerError from e
 
-    def delete_customers(self, env_name, user_ids):
+    def delete_customers(self, user_ids, env_name=None, group_id=None):
         try:
             auth0.ExtendedAuth0().groups.delete_group_members(
                 group_name=self.auth0_client_name(env_name),
                 user_ids=user_ids,
+                group_id=group_id
             )
         except auth0.Auth0Error as e:
             raise DeleteCustomerError from e

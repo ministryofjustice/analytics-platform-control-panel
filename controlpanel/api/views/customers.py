@@ -49,7 +49,7 @@ class AppCustomersAPIView(GenericAPIView):
         if errors:
             raise ValidationError(errors)
 
-        app.add_customers(kwargs["env_name"], emails)
+        app.add_customers(emails, env_name=kwargs.get("env_name"))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -62,6 +62,8 @@ class AppCustomersDetailAPIView(GenericAPIView):
 
     def delete(self, request, *args, **kwargs):
         app = self.get_object()
-        app.delete_customers([kwargs["user_id"]])
+        app.delete_customers(
+            [kwargs["user_id"]],
+            env_name=kwargs.get("env_name"))
 
         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -71,7 +71,7 @@ def test_add_customers(auth0):
     authz = auth0.ExtendedAuth0.return_value
     emails = ["test1@example.com", "test2@example.com"]
 
-    app.add_customers(None, emails)
+    app.add_customers(emails, env_name=None)
 
     authz.add_group_members_by_emails.assert_called_with(
         group_name=app.slug,
@@ -85,7 +85,7 @@ def test_delete_customers(auth0):
     app = App.objects.create(repo_url="https://example.com/repo_name")
     authz = auth0.ExtendedAuth0.return_value
 
-    app.delete_customers(None, ["email|123"])
+    app.delete_customers(["email|123"])
 
     authz.groups.delete_group_members.assert_called_with(
         group_name=app.slug,
