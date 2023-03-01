@@ -42,6 +42,12 @@ def app(users):
     return app
 
 
+@pytest.yield_fixture  # noqa: F405
+def authz():
+    with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
+        yield authz()
+
+
 def app_list(client, *args):
     return client.get(reverse("app-list"))
 
@@ -103,7 +109,7 @@ def test_authenticated_user_has_basic_perms(client, users):
     ],
 )
 @pytest.mark.django_db
-def test_permission(client, app, users, view, user, expected_status):
+def test_permission(client, app, users, view, user, expected_status, authz):
     u = users[user]
     client.force_login(u)
 
