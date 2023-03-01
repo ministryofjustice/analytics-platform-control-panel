@@ -62,15 +62,6 @@ def elasticsearch():
 
 
 @pytest.yield_fixture(autouse=True)
-def githubapi():
-    """
-    Mock calls to Github
-    """
-    with patch("controlpanel.frontend.forms.GithubAPI"), patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
-        yield GithubAPI.return_value
-
-
-@pytest.yield_fixture(autouse=True)
 def helm():
     """
     Mock calls to Helm

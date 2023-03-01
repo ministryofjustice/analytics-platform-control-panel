@@ -125,7 +125,9 @@ class App(TimeStampedModel):
         return cluster.App(self).get_deployment_envs(github_token)
 
     def delete(self, *args, **kwargs):
-        github_api_token = kwargs.pop("github_api_token")
+        github_api_token = None
+        if "github_api_token" in kwargs:
+            github_api_token = kwargs.pop("github_api_token")
         cluster.App(self).delete(github_api_token)
         super().delete(*args, **kwargs)
 

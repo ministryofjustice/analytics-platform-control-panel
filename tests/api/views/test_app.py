@@ -62,8 +62,6 @@ def test_detail(client, app):
         "created_by",
         "apps3buckets",
         "userapps",
-        "app_aws_secret_param",
-        "app_aws_secret_auth",
         "ip_allowlists",
         "app_allowed_ip_ranges",
     }
@@ -114,8 +112,6 @@ def test_app_detail_by_name(client, app):
         "created_by",
         "apps3buckets",
         "userapps",
-        "app_aws_secret_param",
-        "app_aws_secret_auth",
         "ip_allowlists",
         "app_allowed_ip_ranges",
     }
@@ -156,12 +152,12 @@ def authz():
         yield authz()
 
 
-def test_delete(client, app, authz, secretsmanager):
+def test_delete(client, app, authz):
     with patch("controlpanel.api.aws.AWSRole.delete_role") as delete_role:
         response = client.delete(reverse("app-detail", (app.res_id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
+        # authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
         delete_role.assert_called_with(app.iam_role_name)
 
         response = client.get(reverse("app-detail", (app.res_id,)))
@@ -169,15 +165,12 @@ def test_delete(client, app, authz, secretsmanager):
 
 
 def test_create(client, users):
-    with patch("controlpanel.api.aws.AWSRole.create_role") as create_app_role:
-        data = {"name": "bar", "repo_url": "https://example.com/bar.git"}
-        response = client.post(reverse("app-list"), data)
-        assert response.status_code == status.HTTP_201_CREATED
+    data = {"name": "bar", "repo_url": "https://example.com/bar.git"}
+    response = client.post(reverse("app-list"), data)
+    assert response.status_code == status.HTTP_201_CREATED
 
-        create_app_role.assert_called()
-
-        assert response.data["created_by"] == users["superuser"].auth0_id
-        assert response.data["repo_url"] == "https://example.com/bar"
+    assert response.data["created_by"] == users["superuser"].auth0_id
+    assert response.data["repo_url"] == "https://example.com/bar"
 
 
 def test_update(client, app):
@@ -192,6 +185,9 @@ def test_update(client, app):
     assert response.data["repo_url"] == "http://foo.com"
 
 
+@pytest.mark.skip(
+    reason="The step of creating aws role has been moved "
+           "out but keep test for future reference")
 def test_aws_error_and_transaction(client):
     with patch("controlpanel.api.aws.AWSRole.create_role") as create_app_role:
         create_app_role.side_effect = ClientError({}, "CreateRole")

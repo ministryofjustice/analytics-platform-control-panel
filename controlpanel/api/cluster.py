@@ -413,10 +413,11 @@ class App(EntityResource):
     def revoke_bucket_access(self, bucket_arn):
         self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
-    def delete(self, github_api_token):
+    def delete(self, github_api_token=None):
         self.aws_role_service.delete_role(self.iam_role_name)
-        for env_name in self.get_deployment_envs(github_token=github_api_token):
-            self.remove_auth_settings(env_name, github_api_token)
+        if github_api_token:
+            for env_name in self.get_deployment_envs(github_token=github_api_token):
+                self.remove_auth_settings(env_name, github_api_token)
 
     def list_role_names(self):
         return self.aws_role_service.list_role_names()

@@ -26,7 +26,6 @@ from controlpanel.api.models import (
     UserApp,
     AppIPAllowList,
 )
-from controlpanel.api.models.apps_mng import AppManager
 from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.frontend.forms import (
     AddAppCustomersForm,
@@ -34,7 +33,7 @@ from controlpanel.frontend.forms import (
     GrantAppAccessForm,
     UpdateAppAuth0ConnectionsForm,
 )
-from controlpanel.frontend.views import secrets
+from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -443,7 +442,7 @@ class RemoveAppAuth0(
         return super().post(request, *args, **kwargs)
 
 
-class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = App
     form_class = AddAppCustomersForm
     permission_required = "api.add_app_customer"

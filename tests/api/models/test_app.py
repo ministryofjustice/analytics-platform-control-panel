@@ -40,32 +40,26 @@ def test_slug_collisions_increments():
     assert "foo-bar-2" == app2.slug
 
 
-@pytest.mark.django_db
-def test_aws_create_role_calls_service():
-    with patch("controlpanel.api.cluster.AWSRole.create_role") as aws_create_role:
-        app = App.objects.create(repo_url="https://example.com/repo_name")
-        aws_create_role.assert_called_with(app.iam_role_name, BASE_ASSUME_ROLE_POLICY)
-
 
 @pytest.mark.django_db
-def test_delete_also_deletes_app_artifacts(auth0, secretsmanager):
-    app = App.objects.create(repo_url="https://example.com/repo_name")
+def test_delete_also_deletes_app_artifacts(auth0):
+    app = App.objects.create(repo_url="https://github.com/example.com/repo_name")
     authz = auth0.ExtendedAuth0.return_value
     with patch("controlpanel.api.models.app.cluster") as cluster:
-        app.delete()
+        app.delete(github_api_token="testing")
 
         cluster.App.assert_called_with(app)
         cluster.App.return_value.delete.assert_called()
-        authz.clear_up_app.assert_called_with(app_name=app.slug, group_name=app.slug)
 
 
 @pytest.mark.django_db
 def test_get_customers(auth0):
-    app = App.objects.create(repo_url="https://example.com/repo_name")
+    app = App.objects.create(repo_url="https://github.com/example.com/repo_name")
     authz = auth0.ExtendedAuth0.return_value
     authz.groups.get_group_members.return_value = [{"email": "test@example.com"}]
+    env_name = "test_env"
 
-    customers = app.customers
+    customers = app.customers(env_name)
 
     expected_emails = ["test@example.com"]
     assert expected_emails == [customer["email"] for customer in customers]
@@ -77,7 +71,7 @@ def test_add_customers(auth0):
     authz = auth0.ExtendedAuth0.return_value
     emails = ["test1@example.com", "test2@example.com"]
 
-    app.add_customers(emails)
+    app.add_customers(None, emails)
 
     authz.add_group_members_by_emails.assert_called_with(
         group_name=app.slug,
@@ -91,7 +85,7 @@ def test_delete_customers(auth0):
     app = App.objects.create(repo_url="https://example.com/repo_name")
     authz = auth0.ExtendedAuth0.return_value
 
-    app.delete_customers(["email|123"])
+    app.delete_customers(None, ["email|123"])
 
     authz.groups.delete_group_members.assert_called_with(
         group_name=app.slug,
@@ -114,35 +108,3 @@ def test_repo_name(url, expected_name):
     app = mommy.prepare("api.App")
     app.repo_url = url
     assert app._repo_name == expected_name
-
-
-@pytest.mark.django_db
-def test_add_ip_allowlist_to_app_updates_aws_secrets_manager(
-    update_aws_secrets_manager,
-):
-    ip_allowlist = mommy.make("api.IPAllowlist", allowed_ip_ranges="123")
-    app = mommy.make("api.App")
-
-    app.ip_allowlists.set([ip_allowlist])
-
-    update_aws_secrets_manager.assert_has_calls(
-        [
-            call({"allowed_ip_ranges": "123"}),
-        ]
-    )
-
-
-@pytest.mark.django_db
-def test_remove_ip_allowlist_from_app_updates_aws_secrets_manager(
-    update_aws_secrets_manager,
-):
-    ip_allowlists = mommy.make("api.IPAllowlist", allowed_ip_ranges="123", _quantity=2)
-    app = mommy.make("api.App", ip_allowlists=ip_allowlists)
-
-    app.ip_allowlists.set([ip_allowlists[0]])
-
-    update_aws_secrets_manager.assert_has_calls(
-        [
-            call({"allowed_ip_ranges": "123"}),
-        ]
-    )

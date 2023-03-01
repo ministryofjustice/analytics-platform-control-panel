@@ -55,6 +55,14 @@ def app(users):
 
 
 @pytest.yield_fixture(autouse=True)
+def githubapi():
+    """
+    Mock calls to Github
+    """
+    with patch("controlpanel.frontend.forms.GithubAPI"), patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
+        yield GithubAPI.return_value
+
+@pytest.yield_fixture(autouse=True)
 def repos(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -205,6 +213,8 @@ def test_permissions(
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.cluster.App.create_or_update_secret"):
         client.force_login(users[user])
+        print(users[user])
+        print(users[user].has_perm('api.add_app_customer', app))
         response = view(client, app, users, s3buckets)
         assert response.status_code == expected_status
 

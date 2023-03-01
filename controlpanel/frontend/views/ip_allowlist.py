@@ -2,14 +2,14 @@
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
-from django.views.generic.edit import CreateView, DeleteView, UpdateView, FormMixin
+from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api.models import IPAllowlist
-from controlpanel.api.models.apps_mng import AppManager
 from controlpanel.frontend.forms import IPAllowlistForm
+from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
