@@ -12,6 +12,7 @@ from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.layers import get_channel_layer
 from controlpanel.api import cluster
+from django.db import transaction
 
 # First-party/Local
 from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
@@ -131,16 +132,17 @@ class BackgroundTaskConsumer(SyncConsumer):
         app = App.objects.get(pk=message["app_id"])
         ip_range = IPAllowlist.objects.get(pk=message["ip_range_id"])
 
-        app.ip_allowlists.remove(ip_range)
+        with transaction.atomic():
+            app.ip_allowlists.remove(ip_range)
 
-        app_manager_ins = cluster.App(app)
-        deployment_env_names = app_manager_ins.get_deployment_envs(user.github_api_token)
-        for env_name in deployment_env_names:
-            app_manager_ins.create_or_update_secret(
-                github_token=user.github_api_token,
-                env_name=env_name,
-                secret_key=cluster.App.IP_RANGES,
-                secret_value=app.env_allowed_ip_ranges(env_name=env_name))
+            app_manager_ins = cluster.App(app)
+            deployment_env_names = app_manager_ins.get_deployment_envs(user.github_api_token)
+            for env_name in deployment_env_names:
+                app_manager_ins.create_or_update_secret(
+                    github_token=user.github_api_token,
+                    env_name=env_name,
+                    secret_key=cluster.App.IP_RANGES,
+                    secret_value=app.env_allowed_ip_ranges(env_name=env_name))
 
         # Check whether the ip_range has been used by anywhere, then remove it permanently
         # race condition?

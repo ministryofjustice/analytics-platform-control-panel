@@ -79,8 +79,11 @@ class IPAllowlistDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteV
 
     def form_valid(self, form):
         ip_allowlist = self.get_object()
-        ip_allowlist.deleted=True
-        ip_allowlist.save()
-        # Trigger the task for updating the related apps' ip_ranges
-        AppManager().trigger_tasks_for_ip_range_removal(self.request.user, ip_allowlist)
+        if ip_allowlist.apps.count() == 0:
+            ip_allowlist.delete()
+        else:
+            ip_allowlist.deleted=True
+            ip_allowlist.save()
+            # Trigger the task for updating the related apps' ip_ranges
+            AppManager().trigger_tasks_for_ip_range_removal(self.request.user, ip_allowlist)
         return HttpResponseRedirect(self.get_success_url())
