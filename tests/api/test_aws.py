@@ -219,6 +219,21 @@ def logs_bucket(s3):
     )
 
 
+def test_bucket_policy_on_creation(logs_bucket, s3):
+    bucket_name = f"bucket-{id(MagicMock())}"
+    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+
+    policy = json.loads(
+        s3.meta.client.get_bucket_policy(Bucket=bucket_name).get("Policy")
+    )
+    statement = policy.get("Statement", [])
+    assert len(statement) == 1
+    assert statement[0].get("Resource") == f"arn:aws:s3:::{bucket_name}"
+    assert (
+        statement[0].get("Condition").get("Bool").get("aws:SecureTransport") == "false"
+    )
+
+
 def test_create_bucket(logs_bucket, s3):
     bucket_name = f"bucket-{id(MagicMock())}"
     bucket = s3.Bucket(bucket_name)

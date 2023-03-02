@@ -81,6 +81,15 @@ BASE_S3_ACCESS_STATEMENT = {
     },
 }
 
+BUCKET_TLS_STATEMENT = {
+    "Sid": "DenyInsecureTransport",
+    "Action": "s3:*",
+    "Effect": "Deny",
+    "Principal": "*",
+    "Resource": "arn:aws:s3:::{bucket_arn}",
+    "Condition": {"Bool": {"aws:SecureTransport": "false"}},
+}
+
 BASE_S3_ACCESS_POLICY = {
     "Version": "2012-10-17",
     "Statement": [
@@ -379,7 +388,17 @@ class AWSBucket(AWSService):
                 "RestrictPublicBuckets": True,
             },
         )
+
+        self._apply_tls_restrictions(s3_client, bucket_name)
         return bucket
+
+    def _apply_tls_restrictions(self, client, bucket_name):
+        """it assumes that this is a new bucket with no policies & creates it"""
+        tls_statement = deepcopy(BUCKET_TLS_STATEMENT)
+        arn: str = tls_statement["Resource"].format(bucket_arn=bucket_name)
+        tls_statement["Resource"] = arn
+        bucket_policy = dict(Version="2012-10-17", Statement=[tls_statement])
+        client.put_bucket_policy(Bucket=bucket_name, Policy=json.dumps(bucket_policy))
 
     def _tag_bucket(self, boto_bucket, tags):
         """
