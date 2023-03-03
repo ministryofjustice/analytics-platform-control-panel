@@ -228,7 +228,10 @@ def test_bucket_policy_on_creation(logs_bucket, s3):
     )
     statement = policy.get("Statement", [])
     assert len(statement) == 1
-    assert statement[0].get("Resource") == f"arn:aws:s3:::{bucket_name}"
+    assert statement[0].get("Resource") == [
+        f"arn:aws:s3:::{bucket_name}",
+        f"arn:aws:s3:::{bucket_name}/*",
+    ]
     assert (
         statement[0].get("Condition").get("Bool").get("aws:SecureTransport") == "false"
     )

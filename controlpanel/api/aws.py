@@ -86,7 +86,7 @@ BUCKET_TLS_STATEMENT = {
     "Action": "s3:*",
     "Effect": "Deny",
     "Principal": "*",
-    "Resource": "arn:aws:s3:::{bucket_arn}",
+    "Resource": ["arn:aws:s3:::{bucket_arn}", "arn:aws:s3:::{bucket_arn}/*"],
     "Condition": {"Bool": {"aws:SecureTransport": "false"}},
 }
 
@@ -395,8 +395,10 @@ class AWSBucket(AWSService):
     def _apply_tls_restrictions(self, client, bucket_name):
         """it assumes that this is a new bucket with no policies & creates it"""
         tls_statement = deepcopy(BUCKET_TLS_STATEMENT)
-        arn: str = tls_statement["Resource"].format(bucket_arn=bucket_name)
-        tls_statement["Resource"] = arn
+        arns: list(str) = [
+            arn.format(bucket_arn=bucket_name) for arn in tls_statement["Resource"]
+        ]
+        tls_statement["Resource"] = arns
         bucket_policy = dict(Version="2012-10-17", Statement=[tls_statement])
         client.put_bucket_policy(Bucket=bucket_name, Policy=json.dumps(bucket_policy))
 
