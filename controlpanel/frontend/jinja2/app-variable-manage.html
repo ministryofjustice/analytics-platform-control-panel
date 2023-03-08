@@ -14,7 +14,8 @@
     <h3 class="govuk-heading-m">Add deployment an variable for the app - [{{ form.env_name.value() }}]</h3>
   {% endif %}
   <section class="cpanel-section form-section" >
-    <div>
+   <p>Adding suffix as part of key is encourage.</p>
+   <div>
       {% if form.errors %}
         {{ govukErrorMessage({"text": form.errors}) }}
       {% endif %}

@@ -1,5 +1,4 @@
 var repos = [];
-//var search_tag = "#display_result_repo";
 
 moj.Modules.registerAppFromRepo = {
   $repoListSelector: $("#display_result_repo"),

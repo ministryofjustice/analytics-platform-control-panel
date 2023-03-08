@@ -375,10 +375,10 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             auth_required = self._auth_required(env_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
             created = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"] or \
                       secret_data[cluster.App.AUTH0_CONNECTIONS]["created"]
-            app_auth_settings[env_name]["secrets"] = secret_data.values()
+            app_auth_settings[env_name]["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
             app_auth_settings[env_name]["can_create_client"] = auth_required and not created
             app_auth_settings[env_name]["can_remove_client"] = not auth_required and created
-            app_auth_settings[env_name]["variables"] = env_data.values()
+            app_auth_settings[env_name]["variables"] = sorted(env_data.values(), key=lambda  x: x["name"])
             app_auth_settings[env_name]["auth_required"] = auth_required
         return app_auth_settings
 

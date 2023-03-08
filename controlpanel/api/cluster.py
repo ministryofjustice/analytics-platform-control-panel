@@ -485,12 +485,20 @@ class App(EntityResource):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         return GithubAPI(github_token, github_org=org_name).get_repo_envs(repo_name=repo_name)
 
+    def _is_hidden_secret(self, name):
+        for item in settings.OTHER_SYSTEM_SECRETS or []:
+            if name.startswith(item):
+                return True
+        return False
+
     def get_env_secrets(self, github_token, env_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_secrets = []
         created_secret_names = []
         for item in GithubAPI(github_token, github_org=org_name).get_repo_env_secrets(
                 repo_name=repo_name, env_name=env_name):
+            if self._is_hidden_secret(item["name"]):
+                continue
             value = settings.SECRET_DISPLAY_VALUE
             if item["name"] == App.IP_RANGES:
                 value = self.app.env_allowed_ip_ranges_names(env_name=env_name)
