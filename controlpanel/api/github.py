@@ -60,8 +60,11 @@ class GithubAPI:
         return self._process_response(response)
 
     def read_app_deploy_info(self, repo_name: str, deploy_file="deploy.json"):
-        response = requests.get(self._get_repo_api_url(repo_name=repo_name, api_call=f"contents/{deploy_file}"),
-                                headers=self.headers)
+        url = self._get_repo_api_url(
+            repo_name=repo_name,
+            api_call=f"contents/{deploy_file}"
+        )
+        response = requests.get(url, headers=self.headers)
         result_content = self._process_response(response)
         if result_content:
             content = base64.b64decode(bytearray(result_content.get("content", "{}"), "utf-8"))
@@ -83,15 +86,15 @@ class GithubAPI:
         return f"{settings.GITHUB_BASE_URL}/orgs/{self.github_org}/{api_call}"
 
     def _get_repo_api_url(self, repo_name: str, api_call: str) -> str:
+        url = f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}"
         if api_call:
-            return f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}/{api_call}"
-        else:
-            return f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}"
+            return f"{url}/{api_call}"
+        return url
 
     def _get_repo_env_api_url(self, repo_name: str, env_name: str, api_call: str, repo_id=None) -> str:
         if not repo_id:
             repo_info = self.get_repository(repo_name)
-            repo_id = repo_info.get('id','')
+            repo_id = repo_info.get('id', '')
         return f"{settings.GITHUB_BASE_URL}/repositories/{repo_id}/environments/{env_name}/{api_call}"
 
     def _encrypt_secret(self, public_key: str, secret_value: str) -> str:
@@ -132,12 +135,14 @@ class GithubAPI:
                 repo_name,
                 env_name,
                 api_call=f"secrets/public-key"),
-            headers=self.headers)
+            headers=self.headers
+        )
         return self._process_response(response)
 
     def create_or_update_repo_env_secret(
             self, repo_name: str, env_name: str, secret_name: str,
-            secret_value: str, repo_id=None, public_key=None):
+            secret_value: str, repo_id=None, public_key=None
+        ):
         if not public_key:
             public_key = self.get_repo_env_public_key(repo_name, env_name)
         secret_data = {

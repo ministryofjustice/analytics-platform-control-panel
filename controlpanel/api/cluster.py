@@ -495,32 +495,39 @@ class App(EntityResource):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_secrets = []
         created_secret_names = []
-        for item in GithubAPI(github_token, github_org=org_name).get_repo_env_secrets(
-                repo_name=repo_name, env_name=env_name):
-            if self._is_hidden_secret(item["name"]):
-                continue
+        api = GithubAPI(github_token, github_org=org_name)
+        result = api.get_repo_env_secrets(repo_name=repo_name, env_name=env_name)
+
+        defaults = dict(env_name = env_name, created = True)
+
+        for item in result:
+            name = item["name"]
             value = settings.SECRET_DISPLAY_VALUE
-            if item["name"] == App.IP_RANGES:
+            if self._is_hidden_secret(name):
+                continue
+            
+            if name == App.IP_RANGES:
                 value = self.app.env_allowed_ip_ranges_names(env_name=env_name)
-            app_secrets.append({
-                "name": item["name"],
-                "env_name": env_name,
-                "value": value,
-                "created": True,
-                "removable": item["name"] not in settings.AUTH_SETTINGS_SECRETS,
-                "editable": item["name"] not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT
-            })
-            created_secret_names.append(item["name"])
+
+            app_secrets.append(dict(
+                **defaults,
+                value = value,
+                name = name,
+                removable = name not in settings.AUTH_SETTINGS_SECRETS,
+                editable = name not in settings.AUTH_SETTINGS_SECRETS
+            ))
+            created_secret_names.append(name)
         not_created_ones = list(set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names))
+
+        defaults = dict(
+            value= None, created= False, removable= False, env_name=env_name
+        )
         for item_name in not_created_ones:
-            app_secrets.append({
-                "name": item_name,
-                "env_name": env_name,
-                "value": None,
-                "created": False,
-                "removable": False,
-                "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT
-            })
+            app_secrets.append(dict(
+                **defaults,
+                name=item_name,
+                editable=item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT
+            ))
         # Add the auth0's connections into this category
         connections = self.app.auth0_connections(env_name=env_name)
         app_secrets.append({
@@ -537,34 +544,32 @@ class App(EntityResource):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_env_vars = []
         created_env_var_name = []
-        for item in GithubAPI(github_token, github_org=org_name).get_repo_env_vars(
-                repo_name, env_name=env_name):
-            app_env_vars.append({
-                "name": item["name"],
-                "value": item["value"],
-                "created": True,
-                "env_name": env_name,
-                "removable": item["name"] not in settings.AUTH_SETTINGS_ENVS,
-                "editable": True
-            })
-            created_env_var_name.append(item["name"])
+        result = GithubAPI(github_token, github_org=org_name).get_repo_env_vars(
+                repo_name, env_name=env_name)
+
+        defaults = dict(created = True, env_name=env_name, editable=True)
+
+        for item in result:
+            name, value = item["name"], item["value"]
+            app_env_vars.append(dict(
+                **defaults,
+                name=name,
+                value=value,
+                removable=name not in settings.AUTH_SETTINGS_ENVS
+            ))
+            created_env_var_name.append(name)
         not_created_ones = list(set(settings.AUTH_SETTINGS_ENVS) - set(created_env_var_name))
+
+        defaults = dict(created=False, env_name=env_name, editable=True, removable=False, value=None)
         for item_name in not_created_ones:
-            app_env_vars.append({
-                "name": item_name,
-                "value": None,
-                "env_name": env_name,
-                "created": False,
-                "removable": False,
-                "editable": True
-            })
+            app_env_vars.append(dict(**defaults, name=item_name))
         return app_env_vars
 
     def _create_secrets(
-            self,
-            env_name,
-            github_api_token,
-            client=None
+        self,
+        env_name,
+        github_api_token,
+        client=None
     ):
         secret_data: dict = {App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)}
         if client:
