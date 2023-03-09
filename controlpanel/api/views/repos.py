@@ -38,10 +38,11 @@ class RepoApi(GenericAPIView):
 
 
 class RepoEnvironmentAPI(GenericAPIView):
-
     def get(self, request, *args, **kwargs):
         org_name = kwargs.get("org_name", settings.GITHUB_ORGS[0])
         repo_name = kwargs["repo_name"]
 
-        repo_envs = GithubAPI(request.user.github_api_token, github_org=org_name).get_repo_envs(repo_name)
+        repo_envs = GithubAPI(
+            request.user.github_api_token, github_org=org_name
+        ).get_repo_envs(repo_name)
         return Response(repo_envs)
