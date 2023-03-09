@@ -1,8 +1,7 @@
 # Standard library
-import json
 import base64
+import json
 from base64 import b64encode
-from nacl import encoding, public
 
 # from dataclasses import dataclass, fields
 from typing import List
@@ -11,6 +10,7 @@ from typing import List
 import requests
 import structlog
 from django.conf import settings
+from nacl import encoding, public
 
 log = structlog.getLogger(__name__)
 
@@ -35,14 +35,16 @@ class GithubAPI:
         self.github_org = github_org or settings.GITHUB_ORGS[0]
 
         self.headers = {
-            "Authorization": 'Bearer {}'.format(self.api_token),
-            "Content-Type": 'application/vnd.github+json',
-            "X-GitHub-Api-Version": settings.GITHUB_VERSION
+            "Authorization": "Bearer {}".format(self.api_token),
+            "Content-Type": "application/vnd.github+json",
+            "X-GitHub-Api-Version": settings.GITHUB_VERSION,
         }
 
     def get_repos(self, page: int) -> List[dict]:
         params = dict(page=page, per_page=100, sort="created", direction="desc")
-        response = requests.get(self._get_org_api_url(api_call="repos"), params, headers=self.headers)
+        response = requests.get(
+            self._get_org_api_url(api_call="repos"), params, headers=self.headers
+        )
         return self._process_response(response)
 
     def get_all_repositories(self):
@@ -56,15 +58,24 @@ class GithubAPI:
         return repos
 
     def get_repository(self, repo_name: str):
-        response = requests.get(self._get_repo_api_url(repo_name=repo_name, api_call=None), headers=self.headers)
+        response = requests.get(
+            self._get_repo_api_url(repo_name=repo_name, api_call=None),
+            headers=self.headers,
+        )
         return self._process_response(response)
 
     def read_app_deploy_info(self, repo_name: str, deploy_file="deploy.json"):
-        response = requests.get(self._get_repo_api_url(repo_name=repo_name, api_call=f"contents/{deploy_file}"),
-                                headers=self.headers)
+        response = requests.get(
+            self._get_repo_api_url(
+                repo_name=repo_name, api_call=f"contents/{deploy_file}"
+            ),
+            headers=self.headers,
+        )
         result_content = self._process_response(response)
         if result_content:
-            content = base64.b64decode(bytearray(result_content.get("content", "{}"), "utf-8"))
+            content = base64.b64decode(
+                bytearray(result_content.get("content", "{}"), "utf-8")
+            )
             return json.loads(content)
         else:
             return {}
@@ -84,30 +95,42 @@ class GithubAPI:
 
     def _get_repo_api_url(self, repo_name: str, api_call: str) -> str:
         if api_call:
-            return f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}/{api_call}"
+            return (
+                f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/"
+                f"{repo_name}/{api_call}"
+            )
         else:
             return f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}"
 
-    def _get_repo_env_api_url(self, repo_name: str, env_name: str, api_call: str, repo_id=None) -> str:
+    def _get_repo_env_api_url(
+        self, repo_name: str, env_name: str, api_call: str, repo_id=None
+    ) -> str:
         if not repo_id:
             repo_info = self.get_repository(repo_name)
-            repo_id = repo_info.get('id','')
-        return f"{settings.GITHUB_BASE_URL}/repositories/{repo_id}/environments/{env_name}/{api_call}"
+            repo_id = repo_info.get("id", "")
+        return (
+            f"{settings.GITHUB_BASE_URL}/repositories/{repo_id}/"
+            f"environments/{env_name}/{api_call}"
+        )
 
     def _encrypt_secret(self, public_key: str, secret_value: str) -> str:
         """Encrypt a Unicode string using the public key."""
-        public_key = public.PublicKey(public_key.encode("utf-8"), encoding.Base64Encoder())
+        public_key = public.PublicKey(
+            public_key.encode("utf-8"), encoding.Base64Encoder()
+        )
         sealed_box = public.SealedBox(public_key)
         encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
         return b64encode(encrypted).decode("utf-8")
 
     def get_repo_envs(self, repo_name: str) -> list:
         response = requests.get(
-            self._get_repo_api_url(
-                repo_name,
-                api_call="environments"),
-            headers=self.headers)
-        return [item["name"] for item in self._process_response(response).get("environments", [])]
+            self._get_repo_api_url(repo_name, api_call="environments"),
+            headers=self.headers,
+        )
+        return [
+            item["name"]
+            for item in self._process_response(response).get("environments", [])
+        ]
 
     def get_repo_all_env_secrets(self, repo_name: str):
         secrets = []
@@ -119,42 +142,48 @@ class GithubAPI:
 
     def get_repo_env_secrets(self, repo_name: str, env_name: str):
         response = requests.get(
-            self._get_repo_env_api_url(
-                repo_name,
-                env_name,
-                api_call="secrets"),
-            headers=self.headers)
+            self._get_repo_env_api_url(repo_name, env_name, api_call="secrets"),
+            headers=self.headers,
+        )
         return self._process_response(response).get("secrets", [])
 
     def get_repo_env_public_key(self, repo_name: str, env_name: str):
         response = requests.get(
             self._get_repo_env_api_url(
-                repo_name,
-                env_name,
-                api_call=f"secrets/public-key"),
-            headers=self.headers)
+                repo_name, env_name, api_call="secrets/public-key"
+            ),
+            headers=self.headers,
+        )
         return self._process_response(response)
 
     def create_or_update_repo_env_secret(
-            self, repo_name: str, env_name: str, secret_name: str,
-            secret_value: str, repo_id=None, public_key=None):
+        self,
+        repo_name: str,
+        env_name: str,
+        secret_name: str,
+        secret_value: str,
+        repo_id=None,
+        public_key=None,
+    ):
         if not public_key:
             public_key = self.get_repo_env_public_key(repo_name, env_name)
         secret_data = {
             "encrypted_value": self._encrypt_secret(public_key["key"], secret_value),
-            "key_id": public_key["key_id"]
+            "key_id": public_key["key_id"],
         }
         repo_secret_url = self._get_repo_env_api_url(
-            repo_name,
-            env_name,
-            api_call=f"secrets/{secret_name}",
-            repo_id=repo_id)
-        response = requests.put(repo_secret_url, data=json.dumps(secret_data), headers=self.headers)
+            repo_name, env_name, api_call=f"secrets/{secret_name}", repo_id=repo_id
+        )
+        response = requests.put(
+            repo_secret_url, data=json.dumps(secret_data), headers=self.headers
+        )
         return self._process_response(response)
 
-    def create_or_update_repo_env_secrets(self, repo_name: str, env_name: str, secret_data: dict):
+    def create_or_update_repo_env_secrets(
+        self, repo_name: str, env_name: str, secret_data: dict
+    ):
         repo_info = self.get_repository(repo_name)
-        repo_id = repo_info.get('id', '')
+        repo_id = repo_info.get("id", "")
         public_key = self.get_repo_env_public_key(repo_name, env_name)
         for secret_key, secret_value in secret_data.items():
             self.create_or_update_repo_env_secret(
@@ -163,15 +192,16 @@ class GithubAPI:
                 secret_key,
                 secret_value,
                 repo_id=repo_id,
-                public_key=public_key)
+                public_key=public_key,
+            )
 
     def delete_repo_env_secret(self, repo_name, env_name, secret_name):
         response = requests.delete(
             self._get_repo_env_api_url(
-                repo_name,
-                env_name,
-                api_call=f"secrets/{secret_name}"),
-            headers=self.headers)
+                repo_name, env_name, api_call=f"secrets/{secret_name}"
+            ),
+            headers=self.headers,
+        )
         return self._process_response(response)
 
     def get_repo_all_env_vars(self, repo_name: str):
@@ -185,92 +215,77 @@ class GithubAPI:
     def get_repo_env_var(self, repo_name: str, env_name: str, var_name: str):
         response = requests.get(
             self._get_repo_env_api_url(
-                repo_name,
-                env_name,
-                api_call=f"variables/{var_name}"),
-            headers=self.headers)
+                repo_name, env_name, api_call=f"variables/{var_name}"
+            ),
+            headers=self.headers,
+        )
         return self._process_response(response)
 
     def get_repo_env_vars(self, repo_name: str, env_name: str):
         response = requests.get(
-            self._get_repo_env_api_url(
-                repo_name,
-                env_name,
-                api_call="variables"),
-            headers=self.headers)
+            self._get_repo_env_api_url(repo_name, env_name, api_call="variables"),
+            headers=self.headers,
+        )
         return self._process_response(response).get("variables", [])
 
-    def create_repo_env_var(self, repo_name: str, env_name: str, key_name: str, key_value:str, repo_id=None):
-        data = {
-            "name": key_name,
-            "value": str(key_value)
-        }
+    def create_repo_env_var(
+        self, repo_name: str, env_name: str, key_name: str, key_value: str, repo_id=None
+    ):
+        data = {"name": key_name, "value": str(key_value)}
         repo_var_url = self._get_repo_env_api_url(
-            repo_name,
-            env_name,
-            api_call=f"variables",
-            repo_id=repo_id)
-        response = requests.post(repo_var_url, data=json.dumps(data), headers=self.headers)
+            repo_name, env_name, api_call="variables", repo_id=repo_id
+        )
+        response = requests.post(
+            repo_var_url, data=json.dumps(data), headers=self.headers
+        )
         return self._process_response(response)
 
-    def update_repo_env_var(self, repo_name: str, env_name: str, key_name: str, key_value: str, repo_id=None):
-        data = {
-            "name": key_name,
-            "value": str(key_value)
-        }
+    def update_repo_env_var(
+        self, repo_name: str, env_name: str, key_name: str, key_value: str, repo_id=None
+    ):
+        data = {"name": key_name, "value": str(key_value)}
         repo_var_url = self._get_repo_env_api_url(
-            repo_name,
-            env_name,
-            api_call=f"variables/{key_name}",
-            repo_id=repo_id)
-        response = requests.patch(repo_var_url, data=json.dumps(data), headers=self.headers)
+            repo_name, env_name, api_call=f"variables/{key_name}", repo_id=repo_id
+        )
+        response = requests.patch(
+            repo_var_url, data=json.dumps(data), headers=self.headers
+        )
         return self._process_response(response)
 
-    def delete_repo_env_var(self, repo_name: str, env_name: str, key_name: str, repo_id=None):
+    def delete_repo_env_var(
+        self, repo_name: str, env_name: str, key_name: str, repo_id=None
+    ):
         repo_var_url = self._get_repo_env_api_url(
-            repo_name,
-            env_name,
-            api_call=f"variables/{key_name}",
-            repo_id=repo_id)
+            repo_name, env_name, api_call=f"variables/{key_name}", repo_id=repo_id
+        )
         response = requests.delete(repo_var_url, headers=self.headers)
         return self._process_response(response)
 
     def create_repo_env_vars(self, repo_name: str, env_name: str, env_data: dict):
         repo_info = self.get_repository(repo_name)
-        repo_id = repo_info.get('id', '')
+        repo_id = repo_info.get("id", "")
         for env_key, env_value in env_data.items():
             try:
                 self.create_repo_env_var(
-                    repo_name,
-                    env_name,
-                    env_key,
-                    env_value,
-                    repo_id=repo_id)
+                    repo_name, env_name, env_key, env_value, repo_id=repo_id
+                )
             except Exception as error:
                 log.warn("Error from creating variable: {}".format(str(error)))
                 self.update_repo_env_var(
-                    repo_name,
-                    env_name,
-                    env_key,
-                    env_value,
-                    repo_id=repo_id)
+                    repo_name, env_name, env_key, env_value, repo_id=repo_id
+                )
 
-    def create_or_update_env_var(self, repo_name: str, env_name: str, key_name: str, key_value:str):
+    def create_or_update_env_var(
+        self, repo_name: str, env_name: str, key_name: str, key_value: str
+    ):
         repo_info = self.get_repository(repo_name)
-        repo_id = repo_info.get('id', '')
+        repo_id = repo_info.get("id", "")
         try:
             self.create_repo_env_var(
-                repo_name,
-                env_name,
-                key_name,
-                key_value,
-                repo_id=repo_id)
+                repo_name, env_name, key_name, key_value, repo_id=repo_id
+            )
         except Exception as error:
             log.warn("Error from creating variable: {}".format(str(error)))
             self.update_repo_env_var(
-                repo_name,
-                env_name,
-                key_name,
-                key_value,
-                repo_id=repo_id)
-
+                repo_name, env_name, key_name, key_value, repo_id=repo_id
+            )
