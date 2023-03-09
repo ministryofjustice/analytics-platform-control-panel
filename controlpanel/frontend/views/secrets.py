@@ -2,18 +2,17 @@
 import structlog
 from django.contrib import messages
 from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import SingleObjectMixin
-from django.views.generic.edit import CreateView, UpdateView, FormMixin
-from django.urls import reverse_lazy
+from django.views.generic.edit import CreateView, FormMixin, UpdateView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import App
-from controlpanel.oidc import OIDCLoginRequiredMixin
 from controlpanel.frontend.forms import AppSecretForm, AppSecretUpdateForm
-
+from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
 
@@ -29,14 +28,15 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
             github_token=self.request.user.github_api_token,
             env_name=form.cleaned_data.get("env_name"),
             secret_key=form.cleaned_data["key"],
-            secret_value=form.cleaned_data.get("value"))
+            secret_value=form.cleaned_data.get("value"),
+        )
         return HttpResponseRedirect(self.get_success_url(app_id=app.id))
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         data = self.request.GET.dict()
         kwargs["initial"]["env_name"] = data.get("env_name")
-        kwargs["initial"]["key"] = self.kwargs.get('secret_name')
+        kwargs["initial"]["key"] = self.kwargs.get("secret_name")
         return kwargs
 
     def get_success_url(self, app_id):
@@ -57,10 +57,11 @@ class AppSecretUpdate(AppSecretMixin, UpdateView):
 class AppSecretDelete(AppSecretMixin, SingleObjectMixin, RedirectView):
     def post(self, request, *args, **kwargs):
         app = self.get_object()
-        env_names = dict(self.request.POST).get('env_name')
+        env_names = dict(self.request.POST).get("env_name")
         env_name = env_names[0] if env_names else None
         cluster.App(app).delete_secret(
             self.request.user.github_api_token,
             env_name=env_name,
-            secret_name=self.kwargs["secret_name"])
+            secret_name=self.kwargs["secret_name"],
+        )
         return HttpResponseRedirect(self.get_success_url(app.id))

@@ -1,7 +1,7 @@
 # Third-party
 from django.contrib import messages
-from django.urls import reverse_lazy
 from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
@@ -61,7 +61,9 @@ class IPAllowlistDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateV
         pre_update_object = self.get_object()
         updated_object = form.save()
         # Trigger the task for updating the related apps' ip_ranges
-        AppManager().trigger_tasks_for_ip_range_update(self.request.user, pre_update_object, updated_object)
+        AppManager().trigger_tasks_for_ip_range_update(
+            self.request.user, pre_update_object, updated_object
+        )
         return HttpResponseRedirect(self.get_success_url())
 
 
@@ -82,8 +84,10 @@ class IPAllowlistDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteV
         if ip_allowlist.apps.count() == 0:
             ip_allowlist.delete()
         else:
-            ip_allowlist.deleted=True
+            ip_allowlist.deleted = True
             ip_allowlist.save()
             # Trigger the task for updating the related apps' ip_ranges
-            AppManager().trigger_tasks_for_ip_range_removal(self.request.user, ip_allowlist)
+            AppManager().trigger_tasks_for_ip_range_removal(
+                self.request.user, ip_allowlist
+            )
         return HttpResponseRedirect(self.get_success_url())
