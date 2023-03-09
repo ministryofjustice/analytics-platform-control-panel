@@ -361,21 +361,6 @@ class User(EntityResource):
                 return False
         return True
 
-    def on_authenticate(self):
-        """
-        Run on each authenticated login on the control panel.
-        This function also checks whether the users has all those charts
-        installed or not
-        """
-        if not self.has_required_installation_charts():
-            # For some reason, user does not have all the charts required so we
-            # should re-init them.
-            log.info(
-                f"User {self.user.slug} already migrated but has no charts, initialising"  # noqa : E501
-            )
-            self.delete_user_helm_charts()
-            self._init_user()
-
 
 class App(EntityResource):
     """
