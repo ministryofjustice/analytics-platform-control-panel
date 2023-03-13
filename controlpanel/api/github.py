@@ -1,7 +1,6 @@
 # Standard library
 import base64
 import json
-from base64 import b64encode
 
 # from dataclasses import dataclass, fields
 from typing import List
@@ -10,7 +9,10 @@ from typing import List
 import requests
 import structlog
 from django.conf import settings
-from nacl import encoding, public
+
+# First-party/Local
+from controlpanel.utils import encrypt_data_by_using_public_key
+
 
 log = structlog.getLogger(__name__)
 
@@ -94,13 +96,10 @@ class GithubAPI:
         return f"{settings.GITHUB_BASE_URL}/orgs/{self.github_org}/{api_call}"
 
     def _get_repo_api_url(self, repo_name: str, api_call: str) -> str:
+        api_url = f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}"
         if api_call:
-            return (
-                f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/"
-                f"{repo_name}/{api_call}"
-            )
-        else:
-            return f"{settings.GITHUB_BASE_URL}/repos/{self.github_org}/{repo_name}"
+            api_url = f"{api_url}/{api_call}"
+        return api_url
 
     def _get_repo_env_api_url(
         self, repo_name: str, env_name: str, api_call: str, repo_id=None
@@ -112,15 +111,6 @@ class GithubAPI:
             f"{settings.GITHUB_BASE_URL}/repositories/{repo_id}/"
             f"environments/{env_name}/{api_call}"
         )
-
-    def _encrypt_secret(self, public_key: str, secret_value: str) -> str:
-        """Encrypt a Unicode string using the public key."""
-        public_key = public.PublicKey(
-            public_key.encode("utf-8"), encoding.Base64Encoder()
-        )
-        sealed_box = public.SealedBox(public_key)
-        encrypted = sealed_box.encrypt(secret_value.encode("utf-8"))
-        return b64encode(encrypted).decode("utf-8")
 
     def get_repo_envs(self, repo_name: str) -> list:
         response = requests.get(
@@ -168,7 +158,7 @@ class GithubAPI:
         if not public_key:
             public_key = self.get_repo_env_public_key(repo_name, env_name)
         secret_data = {
-            "encrypted_value": self._encrypt_secret(public_key["key"], secret_value),
+            "encrypted_value": encrypt_data_by_using_public_key(public_key["key"], secret_value),
             "key_id": public_key["key_id"],
         }
         repo_secret_url = self._get_repo_env_api_url(

@@ -370,40 +370,43 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             # Preparing secret data
             secret_data = self._process_secret_with_ui_info(env_data["secrets"])
             # Preparing env data
-            env_data = self._process_env_with_ui_info(env_data["variables"])
+            var_data = self._process_env_with_ui_info(env_data["variables"])
 
-            auth_required = self._auth_required(env_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
+            auth_required = self._auth_required(var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
             created = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"] or \
                       secret_data[cluster.App.AUTH0_CONNECTIONS]["created"]
-            app_auth_settings[env_name]["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
-            app_auth_settings[env_name]["can_create_client"] = auth_required and not created
-            app_auth_settings[env_name]["can_remove_client"] = not auth_required and created
-            app_auth_settings[env_name]["variables"] = sorted(env_data.values(), key=lambda  x: x["name"])
-            app_auth_settings[env_name]["auth_required"] = auth_required
+            env_data["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
+            env_data["can_create_client"] = auth_required and not created
+            env_data["can_remove_client"] = not auth_required and created
+            env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
+            env_data["auth_required"] = auth_required
         return app_auth_settings
 
     def _process_secret_with_ui_info(self, secret_data):
         restructure_data = {}
         for item in secret_data:
             item_key = item['name']
-            item["permission_flag"] = self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or \
-                                      self.DEFAULT_PERMISSION_FLAG
-            item["edit_link"] = self.APP_SETTINGS.get(item_key, {}).get('edit_link') or \
-                                self.DEFAULT_EDIT_SECRET_LINK
-            item["remove_link"] = self.APP_SETTINGS.get(item_key, {}).get('remove_link') or \
-                                  self.DEFAULT_REMOVE_SECRET_LINK
+            item.update(dict(
+                permission_flag=self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or
+                                self.DEFAULT_PERMISSION_FLAG,
+                edit_link=self.APP_SETTINGS.get(item_key, {}).get('edit_link') or
+                          self.DEFAULT_EDIT_SECRET_LINK,
+                remove_link=self.APP_SETTINGS.get(item_key, {}).get('remove_link') or
+                            self.DEFAULT_REMOVE_SECRET_LINK
+            ))
             restructure_data[item_key] = item
         return restructure_data
 
     def _process_env_with_ui_info(self, env_data):
         restructure_data = {}
         for item in env_data:
-            item["permission_flag"] = self.DEFAULT_PERMISSION_FLAG
-            item["edit_link"] = self.DEFAULT_EDIT_ENV_LINK
-            item["remove_link"] = self.DEFAULT_REMOVE_ENV_LINK
+            item.update(dict(
+                permission_flag=self.DEFAULT_PERMISSION_FLAG,
+                edit_link=self.DEFAULT_EDIT_ENV_LINK,
+                remove_link=self.DEFAULT_REMOVE_ENV_LINK
+            ))
             restructure_data[item['name']] = item
         return restructure_data
 
     def to_representation(self, app_auth_settings):
         return self._process_auth_settings(app_auth_settings)
-
