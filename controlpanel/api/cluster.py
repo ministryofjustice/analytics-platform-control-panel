@@ -483,6 +483,36 @@ class App(EntityResource):
                 return True
         return False
 
+    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
+        # Add the auth0's connections into this category
+        connections = self.app.auth0_connections(env_name=env_name)
+        app_secrets.append(
+            {
+                "name": App.AUTH0_CONNECTIONS,
+                "env_name": env_name,
+                "value": connections or [],
+                "created": connections is not None,
+                "removable": False,
+                "editable": True,
+            }
+        )
+
+    def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
+        not_created_ones = list(
+            set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
+        )
+        for item_name in not_created_ones:
+            app_secrets.append(
+                {
+                    "name": item_name,
+                    "env_name": env_name,
+                    "value": None,
+                    "created": False,
+                    "removable": False,
+                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                }
+            )
+
     def get_env_secrets(self, github_token, env_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_secrets = []
@@ -507,38 +537,30 @@ class App(EntityResource):
                 }
             )
             created_secret_names.append(item["name"])
+        self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
+        self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
+        return app_secrets
+
+    def _add_missing_mandatory_vars(self, env_name, app_env_vars, created_var_names):
         not_created_ones = list(
-            set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
+            set(settings.AUTH_SETTINGS_ENVS) - set(created_var_names)
         )
         for item_name in not_created_ones:
-            app_secrets.append(
+            app_env_vars.append(
                 {
                     "name": item_name,
-                    "env_name": env_name,
                     "value": None,
+                    "env_name": env_name,
                     "created": False,
                     "removable": False,
-                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                    "editable": True,
                 }
             )
-        # Add the auth0's connections into this category
-        connections = self.app.auth0_connections(env_name=env_name)
-        app_secrets.append(
-            {
-                "name": App.AUTH0_CONNECTIONS,
-                "env_name": env_name,
-                "value": connections or [],
-                "created": connections is not None,
-                "removable": False,
-                "editable": True,
-            }
-        )
-        return app_secrets
 
     def get_env_vars(self, github_token, env_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_env_vars = []
-        created_env_var_name = []
+        created_var_names = []
         for item in GithubAPI(github_token, github_org=org_name).get_repo_env_vars(
             repo_name, env_name=env_name
         ):
@@ -552,21 +574,8 @@ class App(EntityResource):
                     "editable": True,
                 }
             )
-            created_env_var_name.append(item["name"])
-        not_created_ones = list(
-            set(settings.AUTH_SETTINGS_ENVS) - set(created_env_var_name)
-        )
-        for item_name in not_created_ones:
-            app_env_vars.append(
-                {
-                    "name": item_name,
-                    "value": None,
-                    "env_name": env_name,
-                    "created": False,
-                    "removable": False,
-                    "editable": True,
-                }
-            )
+            created_var_names.append(item["name"])
+        self._add_missing_mandatory_vars(env_name, app_env_vars, created_var_names)
         return app_env_vars
 
     def _create_secrets(self, env_name, github_api_token, client=None):
