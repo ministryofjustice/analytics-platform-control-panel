@@ -92,6 +92,10 @@ AWS_ROLES_MAP:
   category name and aws service name, if couldn't find, then go up to the category level, if found then use the default
   role for this category, if even category name cannot be found, then the root default role will be applied.
   
-- Right now most resources like IAM roles and secrets can be managed under different accounts.
-S3 buckets are an exception as
- there are some dependencies in both the current implementation and the infrastructure.
+- Right now most resources like IAM roles and secrets can be managed under different accounts. 
+  S3 buckets are an exception as there are some dependencies in both the current implementation 
+  and the infrastructure.
+  
+- The feature of supporting the multi AWS accounts was required by the app migration, since we changed
+  cluster to Cloud-Platoform team, the feature is not required any more but we are not going to revert
+  the code back as the current code support single account too
