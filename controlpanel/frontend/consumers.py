@@ -1,6 +1,7 @@
 # Standard library
 import asyncio
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from time import sleep
@@ -138,6 +139,7 @@ class BackgroundTaskConsumer(SyncConsumer):
 
     def _send_to_sentry(self, error):
         if os.environ.get("SENTRY_DSN"):
+            # Third-party
             import sentry_sdk
             sentry_sdk.capture_exception(error)
 
