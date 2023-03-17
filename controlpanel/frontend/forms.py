@@ -3,6 +3,7 @@ import re
 
 # Third-party
 from django import forms
+from django.conf import settings
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
@@ -10,7 +11,7 @@ from django.core.validators import RegexValidator, validate_email
 # First-party/Local
 from controlpanel.api import validators
 from controlpanel.api.cluster import AWSRoleCategory
-from controlpanel.api.github import GithubAPI
+from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
@@ -26,6 +27,14 @@ class DatasourceChoiceField(forms.ModelChoiceField):
 
     def label_from_instance(self, instance):
         return instance.name
+
+
+class DynamicMultiChoiceField(forms.MultipleChoiceField):
+
+    def validate(self, value):
+        """Only validate whether required feature, nothing else"""
+        if self.required and not value:
+            raise ValidationError(self.error_messages["required"], code="required")
 
 
 class AppAuth0Form(forms.Form):
@@ -104,6 +113,12 @@ class AppAuth0Form(forms.Form):
 
 
 class CreateAppForm(AppAuth0Form):
+
+    org_names = forms.ChoiceField(
+        required=True,
+        choices=list(zip(settings.GITHUB_ORGS, settings.GITHUB_ORGS)),
+    )
+
     repo_url = forms.CharField(
         max_length=512,
         validators=[
@@ -138,14 +153,14 @@ class CreateAppForm(AppAuth0Form):
     disable_authentication = forms.BooleanField(required=False)
 
     app_ip_allowlists = forms.ModelMultipleChoiceField(
-        required=False, queryset=IPAllowlist.objects.all()
+        required=False, queryset=IPAllowlist.objects.filter(deleted=False)
     )
+
+    deployment_envs = DynamicMultiChoiceField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(CreateAppForm, self).__init__(*args, **kwargs)
-        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
-            is_recommended=True
-        )
+        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(is_recommended=True)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -177,21 +192,31 @@ class CreateAppForm(AppAuth0Form):
         return cleaned_data
 
     def clean_repo_url(self):
-        value = self.cleaned_data["repo_url"]
-        repo_name = value.replace("https://github.com/", "", 1)
-        repo = GithubAPI(self.request.user.github_api_token).get_repository(repo_name)
+        repo_url = self.cleaned_data["repo_url"]
+        org_name, repo_name = extract_repo_info_from_url(repo_url)
+        repo = GithubAPI(self.request.user.github_api_token, github_org=org_name).get_repository(repo_name)
         if repo is None:
             raise ValidationError(
                 "Github repository not found - it may be private",
             )
 
-        if App.objects.filter(repo_url=value).exists():
+        if App.objects.filter(repo_url=repo_url).exists():
             raise ValidationError("App already exists for this repository URL")
 
-        return value
+        return repo_url
+
 
 
 class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
+    env_name = forms.CharField(widget=forms.HiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        self.env_name = kwargs.pop("env_name", '')
+        super(UpdateAppAuth0ConnectionsForm, self).__init__(*args, **kwargs)
+
+        self._create_inputs_for_custom_connections()
+        self.fields["env_name"].initial = self.env_name
+
     def clean(self):
         cleaned_data = super(UpdateAppAuth0ConnectionsForm, self).clean()
         cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
@@ -289,22 +314,6 @@ class GrantAppAccessForm(forms.Form):
             self.fields["datasource"].queryset = S3Bucket.objects.all()
 
 
-class CreateParameterForm(forms.Form):
-    app_id = forms.CharField(widget=forms.HiddenInput)
-    key = forms.CharField(
-        validators=[
-            RegexValidator(
-                r"[a-zA-Z0-9_]",
-                message=("Must contain only alphanumeric characters and underscores"),
-            ),
-        ],
-    )
-    value = forms.CharField(
-        max_length=65536,
-        widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
-    )
-
-
 class CreateIAMManagedPolicyForm(forms.Form):
     name = forms.CharField(
         # TODO restrict allowed characters in group policy name
@@ -343,6 +352,8 @@ class AppCustomersField(forms.Field):
 
 class AddAppCustomersForm(forms.Form):
     customer_email = AppCustomersField()
+    env_name = forms.CharField(required=False, widget=forms.HiddenInput)
+    group_id = forms.CharField(required=False, widget=forms.HiddenInput)
 
 
 class ResetHomeDirectoryForm(forms.Form):
@@ -430,19 +441,45 @@ class ToolReleaseForm(forms.ModelForm):
         ]
 
 
-class SecretsForm(forms.Form):
-    secret_value = forms.CharField(
-        required=True,
+class AppSecretForm(forms.Form):
+    key = forms.CharField(
+        validators=[
+            RegexValidator(
+                r"[a-zA-Z0-9_]",
+                message=("Must contain only alphanumeric characters and underscores"),
+            ),
+        ],
+    )
+    env_name = forms.CharField(widget=forms.HiddenInput)
+    value = forms.CharField(
+        max_length=65536,
         widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
     )
 
 
-class DisableAuthForm(SecretsForm):
-    secret_value = forms.BooleanField(
+class AppSecretUpdateForm(AppSecretForm):
+    key = forms.CharField(widget=forms.HiddenInput)
+
+
+class AppVariableForm(AppSecretForm):
+    value = forms.CharField(max_length=65536)
+
+
+class AppVariableUpdateForm(AppVariableForm):
+    key = forms.CharField(widget=forms.HiddenInput)
+
+
+class DisableAuthForm(AppVariableUpdateForm):
+    value = forms.BooleanField(
         required=False,
         widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"}),
-        help_text="Disable Authentication for you webapp",
+        help_text="Require authentication for your app",
     )
+
+    def __init__(self, *args, **kwargs):
+        init_for_value = kwargs.get('initial', {}).get('value')
+        kwargs["initial"]["value"] = str(init_for_value or 'true').lower() == 'true'
+        super(DisableAuthForm, self).__init__(*args, **kwargs)
 
 
 class IPAllowlistForm(forms.ModelForm):

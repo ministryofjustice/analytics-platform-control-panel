@@ -5,8 +5,6 @@ enabled_features:
     _HOST_prod: false
   redirect_legacy_api_urls:
     _DEFAULT: true
-  apps_on_eks:
-    _DEFAULT: false
 
 
 AWS_SERVICE_URL:
@@ -86,3 +84,27 @@ BROADCAST_MESSAGE: >
   We are on the edge of hitting the limit of AWS S3 bucket (1000). | Before we implement the long term solution,
   could you make sure you remove the buckets you do not need any more? also make sure not create more buckets than your need,
   try to use sub-folders to manage different datasets rather than multiple buckets.
+
+GITHUB_VERSION: "2022-11-28"
+
+
+OTHER_SYSTEM_SECRETS:
+  - ECR_
+  - KUBE_
+
+AUTH_SETTINGS_SECRETS:
+  - AUTH0_CLIENT_ID
+  - AUTH0_CLIENT_SECRET
+  - IP_RANGES
+
+AUTH_SETTINGS_SECRETS_NO_EDIT:
+  - AUTH0_CLIENT_ID
+  - AUTH0_CLIENT_SECRET
+
+AUTH_SETTINGS_ENVS:
+  - AUTH0_DOMAIN
+  - AUTHENTICATION_REQUIRED
+  - AUTH0_CALLBACK_URL
+  - AUTH0_PASSWORDLESS
+
+SECRET_DISPLAY_VALUE: "*******"

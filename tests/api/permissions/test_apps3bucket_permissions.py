@@ -78,10 +78,11 @@ def buckets(users):
 
 @pytest.fixture
 def apps3bucket(app, buckets):
-    return app.apps3buckets.create(
-        s3bucket=buckets["first"],
-        access_level=AppS3Bucket.READONLY,
-    )
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
+        return app.apps3buckets.create(
+            s3bucket=buckets["first"],
+            access_level=AppS3Bucket.READONLY,
+        )
 
 
 def list(client, *args):
@@ -155,6 +156,7 @@ def update(client, apps3bucket, app, buckets, *args):
 def test_permission(
     client, app, apps3bucket, buckets, users, view, user, expected_status
 ):
-    client.force_login(users[user])
-    response = view(client, apps3bucket, app, buckets)
-    assert response.status_code == expected_status
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
+        client.force_login(users[user])
+        response = view(client, apps3bucket, app, buckets)
+        assert response.status_code == expected_status

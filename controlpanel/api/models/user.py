@@ -77,6 +77,8 @@ class User(AbstractUser):
 
     @property
     def github_api_token(self):
+        if not hasattr(self, "_github_api_token"):
+            self._github_api_token = None
         if not getattr(self, "_github_api_token", None):
             auth0_user = auth0.ExtendedAuth0().users.get(self.auth0_id)
             for identity in auth0_user["identities"]:

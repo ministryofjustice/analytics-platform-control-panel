@@ -24,11 +24,7 @@ class AppCustomersAPIView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         app = self.get_object()
-        customers = app.customers
-
-        if customers is None:
-            raise Http404
-
+        customers = app.customers(request.GET.get("env_name", ""))
         serializer = self.get_serializer(data=customers, many=True)
         serializer.is_valid()
 
@@ -53,7 +49,9 @@ class AppCustomersAPIView(GenericAPIView):
         if errors:
             raise ValidationError(errors)
 
-        app.add_customers(emails)
+        app.add_customers(
+            emails,
+            env_name=request.GET.get("env_name", ""))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -66,6 +64,8 @@ class AppCustomersDetailAPIView(GenericAPIView):
 
     def delete(self, request, *args, **kwargs):
         app = self.get_object()
-        app.delete_customers([kwargs["user_id"]])
+        app.delete_customers(
+            [kwargs["user_id"]],
+            env_name=request.GET.get("env_name", ""))
 
         return Response(status=status.HTTP_204_NO_CONTENT)

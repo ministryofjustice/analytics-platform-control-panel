@@ -8,6 +8,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 # First-party/Local
+from controlpanel.api import cluster
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -171,8 +172,6 @@ class AppSerializer(serializers.ModelSerializer):
             "created_by",
             "apps3buckets",
             "userapps",
-            "app_aws_secret_auth",
-            "app_aws_secret_param",
             "ip_allowlists",
             "app_allowed_ip_ranges",
         )
@@ -344,3 +343,70 @@ class ToolSerializer(serializers.Serializer):
 class GithubItemSerializer(serializers.Serializer):
     html_url = serializers.CharField()
     full_name = serializers.CharField()
+
+
+class AppAuthSettingsSerializer(serializers.BaseSerializer):
+    DEFAULT_EDIT_SECRET_LINK = "update-app-secret"
+    DEFAULT_REMOVE_SECRET_LINK = "delete-app-secret"
+    DEFAULT_EDIT_ENV_LINK = "update-app-var"
+    DEFAULT_REMOVE_ENV_LINK = "delete-app-var"
+    DEFAULT_PERMISSION_FLAG = "api.update_app_settings"
+    APP_SETTINGS = {
+        cluster.App.IP_RANGES: {
+            "permission_flag": "api.update_app_ip_allowlists",
+            "edit_link": "update-app-ip-allowlists"
+        },
+        cluster.App.AUTH0_CONNECTIONS: {
+            "permission_flag": "api.create_app",
+            "edit_link": "update-auth0-connections"
+        }
+    }
+
+    def _auth_required(self, auth_flag):
+        return str(auth_flag.get('value') or 'true').lower() == 'true'
+
+    def _process_auth_settings(self, app_auth_settings):
+        for env_name, env_data in app_auth_settings.items():
+            # Preparing secret data
+            secret_data = self._process_secret_with_ui_info(env_data["secrets"])
+            # Preparing env data
+            var_data = self._process_env_with_ui_info(env_data["variables"])
+
+            auth_required = self._auth_required(var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
+            created = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"] or \
+                      secret_data[cluster.App.AUTH0_CONNECTIONS]["created"]
+            env_data["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
+            env_data["can_create_client"] = auth_required and not created
+            env_data["can_remove_client"] = not auth_required and created
+            env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
+            env_data["auth_required"] = auth_required
+        return app_auth_settings
+
+    def _process_secret_with_ui_info(self, secret_data):
+        restructure_data = {}
+        for item in secret_data:
+            item_key = item['name']
+            item.update(dict(
+                permission_flag=self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or
+                                self.DEFAULT_PERMISSION_FLAG,
+                edit_link=self.APP_SETTINGS.get(item_key, {}).get('edit_link') or
+                          self.DEFAULT_EDIT_SECRET_LINK,
+                remove_link=self.APP_SETTINGS.get(item_key, {}).get('remove_link') or
+                            self.DEFAULT_REMOVE_SECRET_LINK
+            ))
+            restructure_data[item_key] = item
+        return restructure_data
+
+    def _process_env_with_ui_info(self, env_data):
+        restructure_data = {}
+        for item in env_data:
+            item.update(dict(
+                permission_flag=self.DEFAULT_PERMISSION_FLAG,
+                edit_link=self.DEFAULT_EDIT_ENV_LINK,
+                remove_link=self.DEFAULT_REMOVE_ENV_LINK
+            ))
+            restructure_data[item['name']] = item
+        return restructure_data
+
+    def to_representation(self, app_auth_settings):
+        return self._process_auth_settings(app_auth_settings)

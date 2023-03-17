@@ -131,6 +131,8 @@ def test_create_app_form_clean_new_datasource():
     """
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
@@ -147,6 +149,8 @@ def test_create_app_form_clean_new_datasource():
     # A new datasource name is required if the connection is new.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "disable_authentication": True,
@@ -158,6 +162,8 @@ def test_create_app_form_clean_new_datasource():
     # If a datasource already exists, report the duplication.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
@@ -228,6 +234,8 @@ def test_create_app_form_clean_repo_url():
     # The good case.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
@@ -251,6 +259,8 @@ def test_create_app_form_clean_repo_url():
     # Repo not found.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
@@ -274,6 +284,8 @@ def test_create_app_form_clean_repo_url():
     # App already exists.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
@@ -299,6 +311,8 @@ def test_create_app_with_custom_connection():
     # Good case.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
@@ -359,6 +373,7 @@ def test_update_app_with_custom_connection():
     # Good case.
     f = forms.UpdateAppAuth0ConnectionsForm(
         data={
+            "env_name": "test",
             "connections": ["email", "auth0_nomis"],
             "auth0_nomis_auth0_client_id": "nomis-client-id",
             "auth0_nomis_auth0_client_secret": "nomis-client-secret",
@@ -377,6 +392,7 @@ def test_update_app_with_custom_connection():
     # Bad case: missing client credential for nomis login + not valid connection name
     f = forms.UpdateAppAuth0ConnectionsForm(
         data={
+            "env_name": "test",
             "connections": ["email", "auth0_nomis"],
             "auth0_nomis_auth0_client_id": "nomis-client-id",
             "auth0_nomis_auth0_client_secret": "",

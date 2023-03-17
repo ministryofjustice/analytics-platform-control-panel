@@ -22,7 +22,7 @@
 
     <form action="" method="post">
         {{ csrf_input }}
-
+        <input type="hidden" name="env_name" value="{{ request.GET.get('env_name') }}">
         {{ auth0_connections_form({
             "fieldset": {
               "legend": {

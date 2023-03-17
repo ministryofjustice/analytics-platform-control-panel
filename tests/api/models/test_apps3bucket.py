@@ -23,16 +23,17 @@ def bucket():
 @pytest.mark.django_db
 def test_one_record_per_app_per_s3bucket(app, bucket):
     # Give app access to bucket (read-only)
-    app.apps3buckets.create(
-        s3bucket=bucket,
-        access_level=AppS3Bucket.READONLY,
-    )
-
-    with pytest.raises(IntegrityError):
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
         app.apps3buckets.create(
             s3bucket=bucket,
-            access_level=AppS3Bucket.READWRITE,
+            access_level=AppS3Bucket.READONLY,
         )
+
+        with pytest.raises(IntegrityError):
+            app.apps3buckets.create(
+                s3bucket=bucket,
+                access_level=AppS3Bucket.READWRITE,
+            )
 
 
 @pytest.mark.django_db
@@ -81,9 +82,9 @@ def test_aws_create(app, bucket):
 
 @pytest.mark.django_db
 def test_delete_revoke_permissions(app, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.revoke_bucket_access"
-    ) as revoke_bucket_access_action:
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
+            patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
+                    as revoke_bucket_access_action:
         apps3bucket = mommy.make(
             "api.AppS3Bucket",
             app=app,

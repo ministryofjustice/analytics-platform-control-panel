@@ -3,26 +3,25 @@ import os
 import secrets
 from copy import deepcopy
 from enum import Enum
-from typing import List
 
 # Third-party
+import requests
 import structlog
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 
 # First-party/Local
-from controlpanel.api import helm
+from controlpanel.api import auth0, helm
 from controlpanel.api.aws import (
     AWSBucket,
     AWSParameterStore,
     AWSPolicy,
     AWSRole,
-    AWSSecretManager,
     iam_arn,
     s3_arn,
 )
+from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.kubernetes import KubernetesClient
-from controlpanel.utils import github_repository_name
 
 log = structlog.getLogger(__name__)
 
@@ -367,16 +366,117 @@ class App(EntityResource):
     Responsible for the apps-related interactions with the k8s cluster and AWS
     """
 
-    APPS_NS = "apps-prod"
-    secret_type = "auth"
+    IP_RANGES = "IP_RANGES"
+    AUTH0_CLIENT_ID = "AUTH0_CLIENT_ID"
+    AUTH0_CLIENT_SECRET = "AUTH0_CLIENT_SECRET"
+    AUTH0_CALLBACK_URL = "AUTH0_CALLBACK_URL"
+    AUTH0_DOMAIN = "AUTH0_DOMAIN"
+    AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
+    AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
+    AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
 
-    def __init__(self, app):
+    def __init__(self, app, github_api_token=None):
         super(App, self).__init__()
         self.app = app
+        self.github_api_token = github_api_token
 
     def _init_aws_services(self):
         self.aws_role_service = self.create_aws_service(AWSRole)
-        self.aws_secret_service = self.create_aws_service(AWSSecretManager)
+
+    def _create_or_update_secrets(self, env_name, secret_data):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secrets(
+            repo_name, env_name, secret_data
+        )
+
+    def _create_secrets(self, env_name, client=None):
+        secret_data: dict = {
+            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)
+        }
+        if client:
+            secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
+            secret_data[App.AUTH0_CLIENT_SECRET] = client["client_secret"]
+
+        self._create_or_update_secrets(env_name=env_name, secret_data=secret_data)
+
+    def _create_env_vars(
+        self,
+        env_name,
+        disable_authentication,
+        connections,
+        client=None,
+    ):
+        if client:
+            env_data: dict = {
+                App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
+                App.AUTH0_PASSWORDLESS: "email" in connections,
+                App.AUTH0_CALLBACK_URL: client["callbacks"][0]
+                if len(client["callbacks"]) >= 1
+                else "",
+                App.AUTHENTICATION_REQUIRED: not disable_authentication,
+            }
+        else:
+            env_data: dict = {App.AUTHENTICATION_REQUIRED: not disable_authentication}
+
+        self._create_envs(env_name=env_name, env_data=env_data)
+
+    def _create_envs(self, env_name, env_data):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_repo_env_vars(
+            repo_name, env_name, env_data
+        )
+
+    def _is_hidden_secret(self, name):
+        for item in settings.OTHER_SYSTEM_SECRETS or []:
+            if name.startswith(item):
+                return True
+        return False
+
+    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
+        # Add the auth0's connections into this category
+        connections = self.app.auth0_connections(env_name=env_name)
+        app_secrets.append(
+            {
+                "name": App.AUTH0_CONNECTIONS,
+                "env_name": env_name,
+                "value": connections or [],
+                "created": connections is not None,
+                "removable": False,
+                "editable": True,
+            }
+        )
+
+    def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
+        not_created_ones = list(
+            set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
+        )
+        for item_name in not_created_ones:
+            app_secrets.append(
+                {
+                    "name": item_name,
+                    "env_name": env_name,
+                    "value": None,
+                    "created": False,
+                    "removable": False,
+                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                }
+            )
+
+    def _add_missing_mandatory_vars(self, env_name, app_env_vars, created_var_names):
+        not_created_ones = list(
+            set(settings.AUTH_SETTINGS_ENVS) - set(created_var_names)
+        )
+        for item_name in not_created_ones:
+            app_env_vars.append(
+                {
+                    "name": item_name,
+                    "value": None,
+                    "env_name": env_name,
+                    "created": False,
+                    "removable": False,
+                    "editable": True,
+                }
+            )
 
     @property
     def iam_role_name(self):
@@ -395,45 +495,131 @@ class App(EntityResource):
 
     def delete(self):
         self.aws_role_service.delete_role(self.iam_role_name)
-        self.delete_secret(secret_name=self.app.app_aws_secret_auth_name)
-        self.delete_secret(secret_name=self.app.app_aws_secret_param_name)
-
-    @property
-    def url(self):
-        k8s = KubernetesClient(use_cpanel_creds=True)
-
-        repo_name = github_repository_name(self.app.repo_url)
-        ingresses = k8s.NetworkingV1Api.list_namespaced_ingress(
-            self.APPS_NS,
-            label_selector=f"repo={repo_name}",
-        ).items
-
-        if len(ingresses) != 1:
-            return None
-
-        return f"https://{ingresses[0].spec.rules[0].host}"
+        if self.github_api_token:
+            for env_name in self.get_deployment_envs():
+                self.remove_auth_settings(env_name)
 
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
-    def create_or_update_secret(self, secret_data, secret_name=None):
-        self.aws_secret_service.create_or_update(
-            secret_name=secret_name or self.app.app_aws_secret_auth_name,
-            secret_data=secret_data
+    def create_or_update_secret(self, env_name, secret_key, secret_value):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secret(
+            repo_name, env_name, secret_key, secret_value
         )
 
-    def delete_secret(self, secret_name=None):
-        self.aws_secret_service.delete_secret(
-            secret_name=secret_name or self.app.app_aws_secret_auth_name)
+    def delete_secret(self, env_name, secret_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        try:
+            GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_secret(
+                repo_name, env_name=env_name, secret_name=secret_name
+            )
+        except requests.exceptions.HTTPError as error:
+            if error.response.status_code != 404:
+                raise Exception(str(error))
 
-    def delete_entries_in_secret(self, keys_to_delete: List[str], secret_name=None) -> bool:
-        return self.aws_secret_service.delete_keys_in_secret(
-            secret_name=secret_name or self.app.app_aws_secret_auth_name,
-            keys_to_delete=keys_to_delete
+    def get_env_var(self, env_name, key_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        return GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_var(
+            repo_name, env_name, key_name
         )
 
-    def get_secret_if_found(self, secret_name=None):
-        return self.aws_secret_service.get_secret_if_found(secret_name or self.app.app_aws_secret_auth_name)
+    def create_or_update_env_var(self, env_name, key_name, key_value):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_or_update_env_var(
+            repo_name, env_name, key_name, key_value
+        )
+
+    def delete_env_var(self, env_name, key_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        try:
+            GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_var(
+                repo_name, env_name, key_name
+            )
+        except requests.exceptions.HTTPError as error:
+            if error.response.status_code != 404:
+                raise Exception(str(error))
+
+    def get_deployment_envs(self):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        return GithubAPI(self.github_api_token, github_org=org_name).get_repo_envs(
+            repo_name=repo_name
+        )
+
+    def get_env_secrets(self, env_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        app_secrets = []
+        created_secret_names = []
+        for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_secrets(
+            repo_name=repo_name, env_name=env_name
+        ):
+            if self._is_hidden_secret(item["name"]):
+                continue
+            value = settings.SECRET_DISPLAY_VALUE
+            if item["name"] == App.IP_RANGES:
+                value = self.app.env_allowed_ip_ranges_names(env_name=env_name)
+            app_secrets.append(
+                {
+                    "name": item["name"],
+                    "env_name": env_name,
+                    "value": value,
+                    "created": True,
+                    "removable": item["name"] not in settings.AUTH_SETTINGS_SECRETS,
+                    "editable": item["name"]
+                    not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                }
+            )
+            created_secret_names.append(item["name"])
+        self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
+        self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
+        return app_secrets
+
+    def get_env_vars(self, env_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        app_env_vars = []
+        created_var_names = []
+        for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_vars(
+            repo_name, env_name=env_name
+        ):
+            app_env_vars.append(
+                {
+                    "name": item["name"],
+                    "value": item["value"],
+                    "created": True,
+                    "env_name": env_name,
+                    "removable": item["name"] not in settings.AUTH_SETTINGS_ENVS,
+                    "editable": True,
+                }
+            )
+            created_var_names.append(item["name"])
+        self._add_missing_mandatory_vars(env_name, app_env_vars, created_var_names)
+        return app_env_vars
+
+    def create_auth_settings(
+        self, env_name, disable_authentication=False, connections=None
+    ):
+        client = None
+        if not disable_authentication:
+            client = auth0.ExtendedAuth0().setup_auth0_client(
+                app_name=self.app.auth0_client_name(env_name)
+            )
+        self._create_secrets(env_name, client=client)
+        self._create_env_vars(
+            env_name,
+            disable_authentication,
+            connections or [],
+            client=client,
+        )
+
+    def remove_auth_settings(self, env_name):
+        auth_client_name = self.app.auth0_client_name(env_name)
+        secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
+        for secret_name in secrets_require_remove:
+            self.delete_secret(env_name, secret_name)
+        envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
+        for app_env_name in envs_require_remove:
+            self.delete_env_var(env_name, app_env_name)
+        auth0.ExtendedAuth0().clear_up_app(app_name=auth_client_name)
 
 
 class S3Bucket(EntityResource):
@@ -573,12 +759,10 @@ class ToolDeployment:
 
     @property
     def release_name(self):
-        return self.escape_namespace_len(
-            f"{self.chart_name}-{self.user.slug}"
-        )
+        return self.escape_namespace_len(f"{self.chart_name}-{self.user.slug}")
 
     def escape_namespace_len(self, name: str) -> str:
-        return name[:settings.MAX_RELEASE_NAME_LEN]
+        return name[: settings.MAX_RELEASE_NAME_LEN]
 
     def _delete_legacy_release(self):
         """

@@ -51,8 +51,7 @@ class AppViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
     def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
+        self.get_object().delete(github_api_token=self.request.user.github_api_token)
         if "redirect_to" in request.query_params:
             return HttpResponseRedirect(
                 redirect_to=request.query_params["redirect_to"],

@@ -33,11 +33,7 @@
 
   {% if app_url %}
   <h2 class="govuk-heading-m">Deployed URL</h2>
-      {% if not apps_on_eks %}
-      <p>For the foreseeable future, apps will remain hosted on the old
-      infrastructure. If the app is successfully built, it will be deployed
-      here:</p>
-      {% endif %}
+      <p> If the app is successfully built, it will be deployed here:</p>
   <p class="govuk-body">
       <a href="{{ app_url }}">{{ app_url }}</a>
   </p>
@@ -61,118 +57,143 @@
 </header>
 
 <section class="cpanel-section">
-  {% if request.user.has_perm('api.setup_app_auth0', app) and not has_setup_completed_for_client %}
-  <h2 class="govuk-heading-m">The Auth0 client setup has not been completed for this app</h2>
-  <section class="cpanel-section">
-    <form action="{{ url('setup-app-auth0', kwargs={ "pk": app.id }) }}" method="post">
-      {{ csrf_input }}
-      <button class="govuk-button cpanel-button--destructive js-confirm"
-              data-confirm-message="Are you sure you want to setup it for this app?">
-        Set up auth0 client
-      </button>
-    </form>
-  </section>
-  {% endif %}
-
-  {% if request.user.has_perm('api.reset_app_secret', app) %}
-  <h2 class="govuk-heading-m">Reset the app's deployment parameters</h2>
-  <p>The app's deployment parameters are stored in AWS Secrets Manager and contain settings relating to Auth0 used during deployment of the app.
-    The secret name is <strong>{{ app.app_aws_secret_name }}</strong> on AWS Secrets Manager.
-    Resetting the secret action will set its value back to its original value.</p>
-  <section class="cpanel-section">
-    <form action="{{ url('reset-app-secret', kwargs={ "pk": app.id }) }}" method="post">
-      {{ csrf_input }}
-      <button class="govuk-button cpanel-button--destructive js-confirm"
-              data-confirm-message="Are you sure you want to reset the secret?">
-        Reset the secret
-      </button>
-    </form>
-  </section>
-  {% endif %}
 
   {% if feature_enabled %}
-  <section>
-  <h2 class="govuk-heading-m" >Authentication Settings</h2>
-  <table class="govuk-table app-data-sources form-group">
-    <thead class="govuk-table__head">
-      <tr class="govuk-table__row">
-        <th class="govuk-table__header">key</th>
-        <th class="govuk-table__header">current value</th>
-        <th class="govuk-table__header"></th>
-      </tr>
-    </thead>
-    <tbody class="govuk-table__body">
-      {% for key, is_set in allowed_secret_keys.items() %}
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell">
-          {{ key }}
-        </td>
-        <td class="govuk-table__cell">{{is_set}}</td>
-        <td class="govuk-table__cell">
-          {% if request.user.has_perm('api.update_app_secret', app) %}
-            <a href="{{ url('add-secret', kwargs={'pk': app.id, 'secret_key': key }) }}" class="govuk-button govuk-button--secondary right">Edit</a>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell">Allowed IP networks</td>
-        <td class="govuk-table__cell">{{ app_ip_allowlists_names }}</td>
-        <td class="govuk-table__cell">
-          {% if request.user.has_perm('api.update_app_ip_allowlists', app) %}
-            <a href="{{ url('update-app-ip-allowlists', kwargs={'pk': app.id}) }}" class="govuk-button govuk-button--secondary right">Edit</a>
-          {% endif %}
-        </td>
-      </tr>
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell">Auth0 Connections</td>
-        <td class="govuk-table__cell">{{ app.auth0_connections }}</td>
-        <td class="govuk-table__cell">
-          {% if request.user.has_perm('api.create_app') %}
-            <a href="{{ url('update-auth0-connections', kwargs={'pk': app.id }) }}" class="govuk-button govuk-button--secondary right">Edit</a>
-          {% endif %}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-  </section>
+    {% for env_name, deployment_setting in deployments_settings.items() %}
+      <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
+      <p>The settings required for deploying the app into the cluster</p>
+      <hr style="height:5px;border:none;color:#333;background-color:#333;"/>
+      <section>
+        <h3 class="govuk-heading-s">App Secrets</h3>
+        <p>the settings on this category are all sensitive, the actual value won't be revealed except IP_RANGES.</p>
+        <table class="govuk-table app-data-sources form-group">
+          <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+              <th class="govuk-table__header">Key</th>
+              <th class="govuk-table__header">Values</th>
+              <th class="govuk-table__header"></th>
+              <th class="govuk-table__header"></th>
+            </tr>
+          </thead>
+          <tbody class="govuk-table__body">
+            {% for app_secret in deployment_setting["secrets"] %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell">{{ app_secret["name"] }}</td>
+              <td class="govuk-table__cell">{{ app_secret["value"] }} {% if app_secret["value"] == None %}<b style="color:red">[Missing] {% endif %}</b></td>
+              <td class="govuk-table__cell">
+                {% if request.user.has_perm(app_secret["permission_flg"], app) and app_secret["editable"] %}
+                  {% if "app-secret" not in app_secret['edit_link'] %}
+                    <a href="{{ url(app_secret['edit_link'], kwargs={'pk': app.id }) }}?env_name={{ env_name }}" class="govuk-button govuk-button--secondary right">Edit</a>
+                  {% else %}
+                    <a href="{{ url(app_secret['edit_link'], kwargs={'pk': app.id, 'secret_name': app_secret['name']}) }}?env_name={{ env_name }}" class="govuk-button govuk-button--secondary right">Edit</a>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td class="govuk-table__cell">
+                {% if request.user.has_perm(app_secret["permission_flg"], app) and app_secret["removable"] %}
+                  <form action="{{ url(app_secret['remove_link'], kwargs={'pk': app.id, 'secret_name': app_secret['name']}) }}" method="post">
+                    {{ csrf_input }}
+                    <input type="hidden" name="env_name" value="{{ env_name }}">
+                    <button class="govuk-button cpanel-button--destructive js-confirm"
+                          data-confirm-message="Are you sure you want to delete this secret?">
+                      Delete
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            <tr class="govuk-table__row">
+              <td><a href="{{ url('create-app-secret', kwargs={'pk': app.id} ) }}?env_name={{ env_name }}" class="govuk-button" >Add new Secret</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
+      {% if request.user.has_perm('api.update_app', app) and deployment_setting['can_create_client'] %}
+        <section class="cpanel-section">
+          <p style="color:red">As the authentication flag is on,
+            the auth0-client needs to be created and related settings need to be stored in github</p>
+          <form action="{{ url('create-auth0-client', kwargs={ 'pk': app.id }) }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="env_name" value="{{ env_name }}">
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+                    data-confirm-message="Are you sure you want to create auth0 a client for this app?">
+              Create auth0 client
+            </button>
+          </form>
+        </section>
+      {% endif %}
 
-  <section>
-    <h2 class="govuk-heading-m" >Stored Parameters</h2>
-    <table class="govuk-table app-data-sources form-group">
-      <thead class="govuk-table__head">
-        <tr class="govuk-table__row">
-          <th class="govuk-table__header" colspan="3">key</th>
+      {% if request.user.has_perm('api.update_app', app) and deployment_setting['can_remove_client'] %}
+        <section class="cpanel-section">
+          <p style="color:red">As the authentication flag is off, the auth0-client and related settings in github can be removed</p>
+          <form action="{{ url('remove-auth0-client', kwargs={'pk': app.id }) }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="env_name" value="{{ env_name }}">
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+                    data-confirm-message="Are you sure you want to delete the auth0 client for this app?">
+              Remove auth0 client
+            </button>
+          </form>
+        </section>
+      {% endif %}
 
+      <section>
+        <h3 class="govuk-heading-s" >App environment variables</h3>
+        <p>The settings on this category are not sensitive data.</p>
 
-        </tr>
-      </thead>
+        <table class="govuk-table app-data-sources form-group">
+          <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+              <th class="govuk-table__header">Name</th>
+              <th class="govuk-table__header">Value</th>
+              <th class="govuk-table__header"></th>
+              <th class="govuk-table__header"></th>
+            </tr>
+          </thead>
+          <tbody class="govuk-table__body">
+            {% for env_var in deployment_setting["variables"] %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell">{{ env_var['name'] }}</td>
+              <td class="govuk-table__cell">{{ env_var['value'] }} {% if env_var["value"] == None %}<b style="color:red">[Missing]</b>{% endif %} </td>
+              <td class="govuk-table__cell">
+                {% if request.user.has_perm(env_var["permission_flg"], app) and env_var["editable"] %}
+                  {% if "app-var" not in env_var['edit_link'] %}
+                    <a class="govuk-button govuk-button--secondary right" href="{{ url(env_var['edit_link'], kwargs={'pk': app.id}) }}?env_name={{ env_name }}" >Edit</a>
+                  {% else %}
+                    <a class="govuk-button govuk-button--secondary right" href="{{ url(env_var['edit_link'], kwargs={'pk': app.id, 'var_name':env_var['name'] }) }}?env_name={{ env_name }}" >Edit</a>
+                  {% endif %}
+                {% endif %}
+              </td>
+              <td class="govuk-table__cell">
+                {% if request.user.has_perm(env_var["permission_flg"], app) and env_var["removable"] %}
+                  <form action="{{ url(env_var['remove_link'], kwargs={'pk': app.id, 'var_name':env_var['name']}) }} " method="post">
+                    {{ csrf_input }}
+                    <input type="hidden" name="env_name" value="{{ env_name }}">
+                    <button class="govuk-button cpanel-button--destructive js-confirm"
+                          data-confirm-message="Are you sure you want to delete this variable?">
+                      Delete
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            <tr class="govuk-table__row">
+              <td><a href="{{ url('create-app-var', kwargs={'pk': app.id} ) }}?env_name={{ env_name }}" class="govuk-button" >Add new Variable</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-      <tbody class="govuk-table__body">
-        {% for parameter in parameters %}
-        <tr class="govuk-table__row">
-          <td class="govuk-table__cell">{{ parameter }}</td>
-          <td class="govuk-table__cell">
-            <a class="govuk-button govuk-button--secondary right" href="{{ url('create-parameter', kwargs={"app_id": app.id }) }}?key={{ parameter }}" >Update</a>
-          </td>
-          <td class="govuk-table__cell">
-            <form action="{{ url('delete-parameter') }}" onsubmit="return confirm('Do you really want to delete this parameter?');" >
-              {{ csrf_input }}
-              <input type="hidden" name="key"  value="{{parameter}}" />
-              <input type="hidden" name="app_id" value="{{app.id}}" />
-              <button class="govuk-button govuk-button--secondary right" id="delete_parameter" >Delete</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-        <tr class="govuk-table__row">
-          <td><a href="{{ url('create-parameter', kwargs={"app_id": app.id} ) }}" class="govuk-button" >Add new Parameter</a></td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
-{% endif %}
+      {% if not deployment_setting["auth_required"] %}
+      <div>
+        <p style="color:red">As the authentication flag is off, authentication related missing-warnings can be ignored.</p>
+      </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
 
 </section>
 
@@ -198,7 +219,7 @@
         <td class="govuk-table__cell">
         {% if user.auth0_id %}
           <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
-              href="{{ url('manage-user', kwargs={ "pk": user.auth0_id }) }}">
+              href="{{ url('manage-user', kwargs={ 'pk': user.auth0_id }) }}">
             {{ user_name(user) }}
           </a>
         {% else %}
@@ -231,7 +252,7 @@
 
 {% if request.user.has_perm('api.add_app_admin', app) %}
   {% if admin_options|length %}
-  <form action="{{ url('add-app-admin', kwargs={ "pk": app.id }) }}" method="post" class="govuk-form-group">
+  <form action="{{ url('add-app-admin', kwargs={ 'pk': app.id }) }}" method="post" class="govuk-form-group">
     {{ csrf_input }}
 
     {% call(user) autocomplete({
