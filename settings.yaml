@@ -5,8 +5,6 @@ enabled_features:
     _HOST_prod: false
   redirect_legacy_api_urls:
     _DEFAULT: true
-  apps_on_eks:
-    _DEFAULT: false
 
 
 AWS_SERVICE_URL:

@@ -21,8 +21,7 @@ class AppIPAllowListManager(models.Manager):
         ip_allowlists = kwargs.get("ip_allowlists")
         self.update_records(app, env_name, ip_allowlists)
 
-        cluster.App(app).create_or_update_secret(
-            github_token=github_api_token,
+        cluster.App(app, github_api_token).create_or_update_secret(
             env_name=env_name,
             secret_key=cluster.App.IP_RANGES,
             secret_value=app.env_allowed_ip_ranges(env_name=env_name),

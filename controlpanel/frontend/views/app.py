@@ -70,19 +70,13 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     template_name = "webapp-detail.html"
 
     def _get_all_app_settings(self, app):
-        app_manager_ins = cluster.App(app)
-        deployment_env_names = app_manager_ins.get_deployment_envs(
-            self.request.user.github_api_token
-        )
+        app_manager_ins = cluster.App(app, self.request.user.github_api_token)
+        deployment_env_names = app_manager_ins.get_deployment_envs()
         deployments_settings = {}
         for env_name in deployment_env_names:
             deployments_settings[env_name] = {
-                "secrets": app_manager_ins.get_env_secrets(
-                    self.request.user.github_api_token, env_name=env_name
-                ),
-                "variables": app_manager_ins.get_env_vars(
-                    self.request.user.github_api_token, env_name=env_name
-                ),
+                "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
+                "variables": app_manager_ins.get_env_vars(env_name=env_name),
             }
         return deployments_settings
 
@@ -349,9 +343,8 @@ class SetupAppAuth0(
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         env_name = dict(self.request.POST).get("env_name")[0]
-        cluster.App(app).create_auth_settings(
-            env_name=env_name,
-            github_api_token=self.request.user.github_api_token,
+        cluster.App(app, self.request.user.github_api_token).create_auth_settings(
+            env_name=env_name
         )
         return super().post(request, *args, **kwargs)
 
@@ -368,10 +361,9 @@ class RemoveAppAuth0(
 
     def post(self, request, *args, **kwargs):
         env_name = dict(self.request.POST).get("env_name")[0]
-        cluster.App(self.get_object()).remove_auth_settings(
-            env_name=env_name,
-            github_api_token=self.request.user.github_api_token,
-        )
+        cluster.App(self.get_object(),
+                    github_api_token=self.request.user.github_api_token).\
+            remove_auth_settings(env_name=env_name)
         return super().post(request, *args, **kwargs)
 
 

@@ -94,9 +94,8 @@ class AppManager:
         self, app, envs, github_api_token, disable_authentication, connections
     ):
         for env in envs:
-            cluster.App(app).create_auth_settings(
+            cluster.App(app, github_api_token).create_auth_settings(
                 env_name=env,
-                github_api_token=github_api_token,
                 disable_authentication=disable_authentication,
                 connections=connections,
             )

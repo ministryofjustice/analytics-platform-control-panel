@@ -123,14 +123,11 @@ class BackgroundTaskConsumer(SyncConsumer):
         user = User.objects.get(auth0_id=message["user_id"])
         app = App.objects.get(pk=message["app_id"])
 
-        app_manager_ins = cluster.App(app)
-        deployment_env_names = app_manager_ins.get_deployment_envs(
-            github_token=user.github_api_token
-        )
+        app_manager_ins = cluster.App(app, user.github_api_token)
+        deployment_env_names = app_manager_ins.get_deployment_envs()
 
         for env_name in deployment_env_names:
             app_manager_ins.create_or_update_secret(
-                github_token=user.github_api_token,
                 env_name=env_name,
                 secret_key=cluster.App.IP_RANGES,
                 secret_value=app.env_allowed_ip_ranges(env_name=env_name),
@@ -144,13 +141,10 @@ class BackgroundTaskConsumer(SyncConsumer):
         with transaction.atomic():
             app.ip_allowlists.remove(ip_range)
 
-            app_manager_ins = cluster.App(app)
-            deployment_env_names = app_manager_ins.get_deployment_envs(
-                user.github_api_token
-            )
+            app_manager_ins = cluster.App(app, user.github_api_token)
+            deployment_env_names = app_manager_ins.get_deployment_envs()
             for env_name in deployment_env_names:
                 app_manager_ins.create_or_update_secret(
-                    github_token=user.github_api_token,
                     env_name=env_name,
                     secret_key=cluster.App.IP_RANGES,
                     secret_value=app.env_allowed_ip_ranges(env_name=env_name),

@@ -124,13 +124,13 @@ class App(TimeStampedModel):
         return "Deployed"
 
     def deployment_envs(self, github_token):
-        return cluster.App(self).get_deployment_envs(github_token)
+        return cluster.App(self, github_token).get_deployment_envs()
 
     def delete(self, *args, **kwargs):
         github_api_token = None
         if "github_api_token" in kwargs:
             github_api_token = kwargs.pop("github_api_token")
-        cluster.App(self).delete(github_api_token)
+        cluster.App(self, github_api_token).delete()
         super().delete(*args, **kwargs)
 
     def auth0_client_name(self, env_name):

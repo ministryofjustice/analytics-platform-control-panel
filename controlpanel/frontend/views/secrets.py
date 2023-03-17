@@ -24,8 +24,7 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
 
     def form_valid(self, form):
         app = self.get_object()
-        cluster.App(app).create_or_update_secret(
-            github_token=self.request.user.github_api_token,
+        cluster.App(app, self.request.user.github_api_token).create_or_update_secret(
             env_name=form.cleaned_data.get("env_name"),
             secret_key=form.cleaned_data["key"],
             secret_value=form.cleaned_data.get("value"),
@@ -59,8 +58,7 @@ class AppSecretDelete(AppSecretMixin, SingleObjectMixin, RedirectView):
         app = self.get_object()
         env_names = dict(self.request.POST).get("env_name")
         env_name = env_names[0] if env_names else None
-        cluster.App(app).delete_secret(
-            self.request.user.github_api_token,
+        cluster.App(app, self.request.user.github_api_token).delete_secret(
             env_name=env_name,
             secret_name=self.kwargs["secret_name"],
         )

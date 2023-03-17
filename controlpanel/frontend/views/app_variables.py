@@ -35,8 +35,9 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         kwargs["initial"]["key"] = self.kwargs.get("var_name")
         if kwargs["initial"]["key"]:
             try:
-                var_info = cluster.App(self.get_object()).get_env_var(
-                    github_token=self.request.user.github_api_token,
+                var_info = cluster.App(
+                    self.get_object(),
+                    self.request.user.github_api_token).get_env_var(
                     env_name=kwargs["initial"]["env_name"],
                     key_name=kwargs["initial"]["key"],
                 )
@@ -58,8 +59,7 @@ class AppVariableCreate(AppVariableMixin, CreateView):
 
     def form_valid(self, form):
         app = self.get_object()
-        cluster.App(app).create_or_update_env_var(
-            github_token=self.request.user.github_api_token,
+        cluster.App(app, self.request.user.github_api_token).create_or_update_env_var(
             env_name=form.cleaned_data.get("env_name"),
             key_name=form.cleaned_data["key"],
             key_value=form.cleaned_data.get("value"),
@@ -79,8 +79,7 @@ class AppVariableUpdate(AppVariableMixin, UpdateView):
 
     def form_valid(self, form):
         app = self.get_object()
-        cluster.App(app).create_or_update_env_var(
-            github_token=self.request.user.github_api_token,
+        cluster.App(app, self.request.user.github_api_token).create_or_update_env_var(
             env_name=form.cleaned_data.get("env_name"),
             key_name=form.cleaned_data["key"],
             key_value=form.cleaned_data.get("value"),
@@ -93,8 +92,7 @@ class AppVariableDelete(AppVariableMixin, SingleObjectMixin, RedirectView):
         app = self.get_object()
         env_names = dict(self.request.POST).get("env_name")
         env_name = env_names[0] if env_names else None
-        cluster.App(app).delete_env_var(
-            self.request.user.github_api_token,
+        cluster.App(app, self.request.user.github_api_token).delete_env_var(
             env_name=env_name,
             key_name=self.kwargs["var_name"],
         )
