@@ -251,36 +251,45 @@ and then ask a colleague for help.
 
 ## Run the app
 
-**Assumption**: You have completed your local env setup by following the above sections.
+**Assumption**: 
+- You have completed your local env setup by following the above sections.
+- we use aws with sso login, the name of profile for our aws dev account is `admin-dev-sso`
 
 ### Local AWS profile setup (on first run only)
-This app needs to interact with multiple AWS accounts in order to support the users' needs.
+This app needs to interact with AWS account.
 The AWS resources like IAM, s3 buckets are under our dev account and will be managed by
-app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
-The following steps will show how to create it.
+app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). 
+In order to make sure the boto3 can obtain the right profile for local env.
 
-Assume that the name of profile for our aws dev account is ```admin-dev```
+#### using aws-cli directly
 
-#### Add the AWS credential into .aws/credentials
-it should look like below
-```
-[admin-dev]
-aws_access_key_id = <your aws_access_key_id>
-aws_secret_access_key = <your aws_secret_access_key>
+Check your `.aws/config`, the profile `admin-dev-sso` should look like below 
 
-```
-As you need your AWS access keys above, you can find them out via the following link if you use aws-vault to manage your keys
-https://github.com/99designs/aws-vault/blob/master/USAGE.md#keychain
+```ini
+    [profile admin-dev-sso]
+    sso_account_id=<admin-dev account id>
+    sso_start_url=https://moj.awsapps.com/start
+    sso_region=eu-west-2
+    sso_role_name=AdministratorAccess
+ ```
+__NOTES__ boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
+`.aws/sso/cache` folder if you mix above setting with `sso_session` together.
 
-Once the aws-vault is added, you can choose to show the value of the keys.
+#### using aws-vault
+If you use aws-vault to manage your aws credential, then the profile should look like 
 
-#### Add the AWS assume role or other settings into .aws/config
+```ini
+    [profile sso-default]
+    sso_start_url=https://moj.awsapps.com/start
+    sso_region=eu-west-2
+    sso_role_name=AdministratorAccess
+    output=json
 
-```
-[profile admin-dev]
-role_arn=arn:aws:iam::<dev account id>:role/restricted-admin
-source_profile=default
-```
+    [profile admin-dev-sso]
+    sso_account_id=<admin-dev account id>
+    include_profile=sso-default
+ ```
+
 ### Check Kubernetes current context
 
 Please check the current context and make sure it is pointing to the `dev` cluster
