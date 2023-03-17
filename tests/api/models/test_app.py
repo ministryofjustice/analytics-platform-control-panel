@@ -48,7 +48,7 @@ def test_delete_also_deletes_app_artifacts(auth0):
     with patch("controlpanel.api.models.app.cluster") as cluster:
         app.delete(github_api_token="testing")
 
-        cluster.App.assert_called_with(app)
+        cluster.App.assert_called_with(app, "testing")
         cluster.App.return_value.delete.assert_called()
 
 

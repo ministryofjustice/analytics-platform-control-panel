@@ -63,7 +63,7 @@ def authz():
 
 def test_app_delete(aws_delete_role, app, authz):
     app.repo_url = "https://github.com/moj-analytical-services/my_repo"
-    cluster.App(app).delete(github_api_token="testing")
+    cluster.App(app, github_api_token="testing").delete()
     aws_delete_role.assert_called_with(app.iam_role_name)
 
 
