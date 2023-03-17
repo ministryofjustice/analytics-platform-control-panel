@@ -15,3 +15,4 @@ from controlpanel.api.views.models import (
 from controlpanel.api.views.tool_deployments import ToolDeploymentAPIView
 from controlpanel.api.views.tools import ToolViewSet
 from controlpanel.api.views.apps import AppByNameViewSet
+from controlpanel.api.views.repos import RepoApi, RepoEnvironmentAPI

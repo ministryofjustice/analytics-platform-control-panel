@@ -124,8 +124,6 @@ class ExtendedAuth0(Auth0):
         for connection in connections:
             if connection["name"] in chosen_connections:
                 self.connections.enable_client(connection, client_id)
-            else:
-                self.connections.disable_client(connection, client_id)
 
     def _create_custom_connection(self, app_name, connections):
         new_connections = []
@@ -178,9 +176,13 @@ class ExtendedAuth0(Auth0):
         )
         return client
 
-    def add_group_members_by_emails(self, group_name, emails, user_options={}):
+    def add_group_members_by_emails(
+            self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
-        self.groups.add_group_members(group_name, user_ids=user_ids)
+        self.groups.add_group_members(
+            user_ids=user_ids,
+            group_id=group_id,
+            group_name=group_name)
         return user_ids
 
     def clear_up_group(self, group_name):
@@ -231,18 +233,13 @@ class ExtendedAuth0(Auth0):
             self.groups.delete_group_members(user_ids=[user_id], group_id=group["_id"])
         self.users.delete(user_id)
 
-    def clear_up_app(self, app_name, group_name):
+    def clear_up_app(self, app_name, group_name=None):
+        if not group_name:
+            group_name = app_name
         self.clear_up_group(group_name=group_name)
         client = self.clients.search_first_match(dict(name=app_name))
         if client:
             self.clients.delete(client["client_id"])
-
-    def has_setup_completed_for_client(self, app_name):
-        client = self.clients.search_first_match(dict(name=app_name))
-        if not client:
-            return False
-
-        return len(self.groups.get_group_roles(app_name)) > 0
 
     def get_client_enabled_connections(self, app_name):
         """
@@ -252,7 +249,7 @@ class ExtendedAuth0(Auth0):
         """
         client = self.clients.search_first_match(dict(name=app_name))
         if not client:
-            return []
+            return None
         connections = self.connections.get_all()
         enabled_connections = []
         for connection in connections:
@@ -695,8 +692,8 @@ class Groups(Auth0API, ExtendedAPIMethods):
         else:
             return []
 
-    def add_group_members(self, group_name, user_ids):
-        group_id = self.get_group_id(group_name)
+    def add_group_members(self, user_ids, group_id=None, group_name=None):
+        group_id = group_id or self.get_group_id(group_name)
         if not group_id:
             raise Auth0Error("Group for the app not found, was the app released?")
         response = self.client.patch(self._url(group_id, "members"), data=user_ids)

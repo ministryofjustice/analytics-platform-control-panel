@@ -20,21 +20,21 @@ from rules.contrib.views import PermissionRequiredMixin
 from controlpanel.api import auth0, cluster
 from controlpanel.api.models import (
     App,
+    AppIPAllowList,
     AppS3Bucket,
     IPAllowlist,
-    S3Bucket,
     User,
     UserApp,
-    UserS3Bucket,
 )
 from controlpanel.api.pagination import Auth0Paginator
+from controlpanel.api.serializers import AppAuthSettingsSerializer
 from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
     GrantAppAccessForm,
     UpdateAppAuth0ConnectionsForm,
 )
-from controlpanel.frontend.views import secrets
+from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -69,43 +69,25 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     permission_required = "api.retrieve_app"
     template_name = "webapp-detail.html"
 
+    def _get_all_app_settings(self, app):
+        app_manager_ins = cluster.App(app, self.request.user.github_api_token)
+        deployment_env_names = app_manager_ins.get_deployment_envs()
+        deployments_settings = {}
+        for env_name in deployment_env_names:
+            deployments_settings[env_name] = {
+                "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
+                "variables": app_manager_ins.get_env_vars(env_name=env_name),
+            }
+        return deployments_settings
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
 
-        # Log data consistency warnings. (Missing Auth0 ID).
-        for user in app.admins:
-            if not user.auth0_id:
-                log.warning(
-                    "User without Auth0 ID, {}, is admin for app: {}.".format(user, app)
-                )
-
-        # TODO: Fix this.
-        # THIS IS A TEMPORARY STICKING PLASTER
-        # During migration to EKS, just use the hard coded domain with the
-        # app's SLUG as the bottom subdomain.
-        # The reason for this change is apps will be hosted on our
-        # old infrastructure while users migrate to EKS. Once we have our
-        # app hosting story figured out, we should do this properly.
-        context["apps_on_eks"] = settings.features.apps_on_eks.enabled
+        context["feature_enabled"] = settings.features.app_migration.enabled
         context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
-        context["app_ip_allowlists_names"] = ", ".join(
-            list(app.ip_allowlists.values_list("name", flat=True))
-        )
-
-        if settings.features.apps_on_eks.enabled:
-            context["app_url"] = cluster.App(app).url
-
-        context["admin_options"] = (
-            User.objects.filter(
-                auth0_id__isnull=False,
-            )
-            .exclude(
-                auth0_id="",
-            )
-            .exclude(
-                auth0_id__in=[user.auth0_id for user in app.admins],
-            )
+        context["admin_options"] = User.objects.exclude(auth0_id="",).exclude(
+            auth0_id__in=[user.auth0_id for user in app.admins],
         )
 
         context["grant_access_form"] = GrantAppAccessForm(
@@ -113,27 +95,10 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             exclude_connected=True,
         )
 
-        add_customer_form_errors = self.request.session.pop(
-            "add_customer_form_errors", None
-        )
-        if add_customer_form_errors:
-            errors = context.setdefault("errors", {})
-            errors["customer_email"] = add_customer_form_errors["customer_email"]
-
-        set_secrets = cluster.App(self.object).get_secret_if_found()
-
         context["kibana_base_url"] = settings.KIBANA_BASE_URL
-        context[
-            "has_setup_completed_for_client"
-        ] = auth0.ExtendedAuth0().has_setup_completed_for_client(app.slug)
-        context["allowed_secret_keys"] = {
-            key: set_secrets.get(key) for key, _ in secrets.ALLOWED_SECRETS.items()
-        }
-
-        context["feature_enabled"] = settings.features.app_migration.enabled
-        context["parameters"] = (
-            cluster.App(app).get_secret_if_found(secret_name=app.app_aws_secret_param_name)
-        )
+        context["deployments_settings"] = AppAuthSettingsSerializer(
+            self._get_all_app_settings(app)
+        ).data
         return context
 
 
@@ -159,64 +124,11 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         )
         return reverse_lazy("list-apps")
 
-    def _create_or_link_datasource(self, form):
-        if form.cleaned_data.get("new_datasource_name"):
-            bucket = S3Bucket.objects.create(
-                name=form.cleaned_data["new_datasource_name"], bucket_owner="APP"
-            )
-            AppS3Bucket.objects.create(
-                app=self.object,
-                s3bucket=bucket,
-                access_level="readonly",
-            )
-            UserS3Bucket.objects.create(
-                user=self.request.user,
-                s3bucket=bucket,
-                access_level="readwrite",
-                is_admin=True,
-            )
-        elif form.cleaned_data.get("existing_datasource_id"):
-            AppS3Bucket.objects.create(
-                app=self.object,
-                s3bucket=form.cleaned_data["existing_datasource_id"],
-                access_level="readonly",
-            )
-
-    def _register_app(self, form, name, repo_url, ip_allowlists):
-        self.object = App.objects.create(
-            name=name,
-            repo_url=repo_url,
-        )
-
-        self.object.ip_allowlists.add(*ip_allowlists)
-
-        self._create_or_link_datasource(form)
-
-        UserApp.objects.create(
-            app=self.object,
-            user=self.request.user,
-            is_admin=True,
-        )
-
-        client = auth0.ExtendedAuth0().setup_auth0_client(
-            self.object.slug, connections=form.cleaned_data.get("auth0_connections")
-        )
-
-        secret_data: dict = {
-            **self.object.construct_secret_data(client),
-            "disable_authentication": form.cleaned_data.pop(
-                "disable_authentication", False
-            ),
-        }
-        cluster.App(self.object).create_or_update_secret(secret_data=secret_data)
-
     def form_valid(self, form):
-        repo_url = form.cleaned_data["repo_url"]
-        ip_allowlists = form.cleaned_data["app_ip_allowlists"]
-
-        _, name = repo_url.rsplit("/", 1)
         try:
-            self._register_app(form, name, repo_url, ip_allowlists)
+            self.object = AppManager().register_app(
+                self.request.user, form.cleaned_data
+            )
         except Exception as ex:
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
@@ -233,18 +145,15 @@ class UpdateAppAuth0Connections(
     template_name = "webapp-auth0-connections-update.html"
     success_url = "manage-app"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
-
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
+        env_name = self.request.GET.get("env_name")
         app = self.get_object()
         kwargs.update(
             request=self.request,
             all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),  # noqa: E501
             custom_connections=auth0.ExtendedConnections.custom_connections(),
-            auth0_connections=app.auth0_connections,
+            auth0_connections=app.auth0_connections(env_name=env_name),
         )
         return kwargs
 
@@ -258,7 +167,9 @@ class UpdateAppAuth0Connections(
     def form_valid(self, form):
         try:
             auth0.ExtendedAuth0().update_client_auth_connections(
-                self.object.slug,
+                self.object.auth0_client_name(
+                    env_name=form.cleaned_data.get("env_name")
+                ),
                 new_conns=form.cleaned_data.get("auth0_connections"),
                 existing_conns=form.auth0_connections,
             )
@@ -278,21 +189,21 @@ class UpdateAppIPAllowlists(
     fields = ["ip_allowlists"]
 
     def get_context_data(self, *args, **kwargs):
-
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
         context[
             "app_migration_feature_enabled"
         ] = settings.features.app_migration.enabled
+        context["env_name"] = self.request.GET.get("env_name")
         context["app_ip_allowlists"] = [
             {
                 "text": ip_allowlist.name,
                 "value": ip_allowlist.pk,
-                "checked": ip_allowlist in self.get_object().ip_allowlists.all(),
+                "checked": ip_allowlist.pk
+                in context["app"].env_allow_ip_ranges_ids(context["env_name"]),
             }
-            for ip_allowlist in IPAllowlist.objects.all()
+            for ip_allowlist in IPAllowlist.objects.filter(deleted=False)
         ]
-
         return context
 
     def form_valid(self, form):
@@ -301,18 +212,21 @@ class UpdateAppIPAllowlists(
         AWS Secrets Manager to be updated (see signal app_ip_allowlists_changed() in
         App model).
         """
-
         app = self.get_object()
-        app.ip_allowlists.set(form.cleaned_data["ip_allowlists"])
+        AppIPAllowList.objects.update_ip_allowlist(
+            app=self.get_object(),
+            github_api_token=self.request.user.github_api_token,
+            env_name=form.data.get("env_name"),
+            ip_allowlists=form.cleaned_data["ip_allowlists"],
+        )
+        return HttpResponseRedirect(self.get_success_url(app))
 
-        return HttpResponseRedirect(self.get_success_url())
-
-    def get_success_url(self):
+    def get_success_url(self, app):
         messages.success(
             self.request,
-            f"Successfully updated the IP allowlists associated with app {self.get_object().name}",  # noqa:E501
+            f"Successfully updated the IP allowlists associated with app {app.name}",  # noqa:E501
         )
-        return reverse_lazy("manage-app", kwargs={"pk": self.get_object().id})
+        return reverse_lazy("manage-app", kwargs={"pk": app.id})
 
 
 class GrantAppAccess(
@@ -387,11 +301,13 @@ class DeleteApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = App
     permission_required = "api.destroy_app"
     success_url = reverse_lazy("list-apps")
+    allowed_methods = ["POST"]
 
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, form):
         app = self.get_object()
+        app.delete(github_api_token=self.request.user.github_api_token)
         messages.success(self.request, f"Successfully deleted {app.name} app")
-        return super().delete(request, *args, **kwargs)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class UpdateApp(
@@ -418,7 +334,7 @@ class SetupAppAuth0(
     RedirectView,
 ):
     http_method_names = ["post"]
-    permission_required = "api.setup_app_auth0"
+    permission_required = "api.update_app_settings"
     model = App
 
     def get_redirect_url(self, *args, **kwargs):
@@ -426,35 +342,34 @@ class SetupAppAuth0(
 
     def post(self, request, *args, **kwargs):
         app = self.get_object()
-        auth0.ExtendedAuth0().setup_auth0_client(app_name=app.slug)
+        env_name = dict(self.request.POST).get("env_name")[0]
+        cluster.App(app, self.request.user.github_api_token).create_auth_settings(
+            env_name=env_name
+        )
         return super().post(request, *args, **kwargs)
 
 
-class ResetAppSecret(
-    OIDCLoginRequiredMixin,
-    PermissionRequiredMixin,
-    SingleObjectMixin,
-    RedirectView,
+class RemoveAppAuth0(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, RedirectView
 ):
-    http_method_names = ["post"]
-    permission_required = "api.setup_app_auth0"
+    permission_required = "api.update_app_settings"
+    allowed_methods = ["POST"]
     model = App
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
 
     def post(self, request, *args, **kwargs):
-        app = self.get_object()
-        client = auth0.ExtendedAuth0().clients.search_first_match(dict(name=app.slug))
-        if client:
-            cluster.App(app).create_or_update_secret(
-                secret_data=app.construct_secret_data(client))
+        env_name = dict(self.request.POST).get("env_name")[0]
+        cluster.App(self.get_object(),
+                    github_api_token=self.request.user.github_api_token).\
+            remove_auth_settings(env_name=env_name)
         return super().post(request, *args, **kwargs)
 
 
 class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    form_class = AddAppCustomersForm
     model = App
+    form_class = AddAppCustomersForm
     permission_required = "api.add_app_customer"
 
     def form_invalid(self, form):
@@ -464,8 +379,14 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         )
 
     def form_valid(self, form):
-        self.get_object().add_customers(form.cleaned_data["customer_email"])
-        return HttpResponseRedirect(self.get_success_url())
+        self.get_object().add_customers(
+            form.cleaned_data["customer_email"],
+            env_name=form.cleaned_data.get("env_name"),
+            group_id=form.cleaned_data.get("group_id"),
+        )
+        return HttpResponseRedirect(
+            self.get_success_url(env_name=form.cleaned_data.get("env_name"))
+        )
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
@@ -473,8 +394,11 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
-        return reverse_lazy(
-            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        return "{}?env_name={}".format(
+            reverse_lazy(
+                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+            ),
+            kwargs.get("env_name", ""),
         )
 
 
@@ -483,16 +407,32 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
     permission_required = "api.retrieve_app"
     template_name = "customers-list.html"
 
+    def _retrieve_and_confirm_env_info(self, app, context):
+        env_name = self.request.GET.get("env_name") or ""
+        context["deployment_envs"] = app.deployment_envs(
+            self.request.user.github_api_token
+        )
+        if not env_name and len(context["deployment_envs"]) >= 1:
+            env_name = context["deployment_envs"][0]
+        context["env_name"] = env_name
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app: App = context.get("app")
 
-        group_id = self.request.GET.get("group_id") or app.get_group_id()
+        self._retrieve_and_confirm_env_info(app, context)
+        group_id = self.request.GET.get("group_id") or app.get_group_id(
+            context["env_name"]
+        )
         context["group_id"] = group_id
         context["page_no"] = page_no = self.kwargs.get("page_no")
-        customers = app.customer_paginated(page_no, group_id)
 
-        context["customers"] = customers.get("users", [])
+        if group_id:
+            customers = app.customer_paginated(page_no, group_id)
+            context["customers"] = customers.get("users", [])
+        else:
+            customers = {}
+            context["customers"] = []
         context["paginator"] = paginator = self._paginate_customers(customers)
         context["elided"] = paginator.get_elided_page_range(page_no)
         return context
@@ -510,15 +450,23 @@ class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse(
+        return reverse_lazy(
             "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
         )
+
+    def _get_env_group_info(self):
+        env_names = self.request.POST.getlist("env_name")
+        env_name = env_names[0] if env_names else ""
+        group_ids = self.request.POST.getlist("group_id")
+        group_id = group_ids[0] if group_ids else ""
+        return env_name, group_id
 
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
+        env_name, group_id = self._get_env_group_info()
         try:
-            app.delete_customers(user_ids)
+            app.delete_customers(user_ids, env_name=env_name, group_id=group_id)
         except App.DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             messages.error(

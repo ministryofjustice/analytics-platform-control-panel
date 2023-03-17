@@ -1,6 +1,8 @@
 # Standard library
+from base64 import b64encode
 import os
 import re
+
 
 # Third-party
 import structlog
@@ -9,6 +11,7 @@ from channels.exceptions import StopConsumer
 from channels.generic.http import AsyncHttpConsumer
 from django.conf import settings
 from django.template.defaultfilters import slugify
+from nacl import encoding, public
 
 log = structlog.getLogger(__name__)
 
@@ -203,3 +206,13 @@ def load_app_conf_from_file(yaml_file=None):
         log.error("Failed to load the {} due to error ({})".format(yaml_file, str(ex)))
     except ValueError as ex1:
         log.error("Failed to load the {} due to error ({})".format(yaml_file, str(ex1)))
+
+
+def encrypt_data_by_using_public_key(public_key: str, data: str) -> str:
+    """Encrypt a Unicode string using the public key."""
+    public_key = public.PublicKey(
+        public_key.encode("utf-8"), encoding.Base64Encoder()
+    )
+    sealed_box = public.SealedBox(public_key)
+    encrypted = sealed_box.encrypt(data.encode("utf-8"))
+    return b64encode(encrypted).decode("utf-8")

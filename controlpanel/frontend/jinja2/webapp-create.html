@@ -51,12 +51,32 @@
   sensitive data in S3.
 </p>
 
-<form method="post" action="{{ url("create-app") }}">
+<form method="post" id="register_app" action="{{ url("create-app") }}">
   {{ csrf_input }}
 
   <div class="govuk-form-group" id="container-element">
-    <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
 
+    <label class="govuk-label govuk-label--m" for="org_names_list">Github organisation
+      <br/>
+      <br/>
+      <div class="govuk-radios" id="org_names_list">
+      {% set checked_item = form.org_names.value() if form.org_names.value() else form.fields.org_names.choices[0][0] %}
+      {% for key, value  in form.fields.org_names.choices %}
+        <div class="govuk-radios__item">
+        <input class="govuk-radios__input" id="{{ key }}_id" name="org_names" type="radio" value="{{ value }}"
+        {{-" checked" if checked_item == value else "" }}>
+        {{ govukLabel({
+          "text": key,
+          "classes": 'govuk-radios__label',
+          "for": key + "_id"
+        }) }}
+        </div>
+      {% endfor %}
+      </div>
+    </label>
+
+    <br/>
+    <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
       <div style="float: right;">
         <div style="float: left;" >
           <input type="hidden" value="1" id="current_index" />
@@ -96,6 +116,34 @@
     {% endif %}
 
     <input type="text" class="govuk-input" id="display_result_repo" name="repo_url" />
+
+    <br/>
+    <br/>
+    <label class="govuk-label govuk-label--m" for="deployment_envs_list">Available Deployment Environments
+      {% if form.deployment_envs.errors -%}
+        {{ govukErrorMessage({"text": form.deployment_envs.errors|join(". ")}) }}
+      {% endif %}
+      <p>Choose the environment you want to initialise the settings for deployment. If there is no environment available,
+        you need to raise request to Data platform to setup your project's deployment pipeline first,
+        alternatively you can still proceed to register the app here but no auth0 clients will be created even you require
+        auth for this app.
+      </p>
+      <div class="govuk-checkboxes" id="deployment_envs_list">
+      {% set checked_items = form.deployment_envs.value() if form.deployment_envs.value() else form.fields.org_names.choices[0][0] %}
+      {% for env_key, value  in form.fields.deployment_envs.choices %}
+        <div class="govuk-checkboxes__item">
+        <input class="govuk-checkboxes__input" id="{{ env_key }}_id" name="deployment_envs" type="checkbox" value="{{ value }}"
+        {{-" checked" if value in checked_item else "" }}>
+        {{ govukLabel({
+          "text": env_key,
+          "classes": 'govuk-checkboxes__label ',
+          "for": env_key + "_id"
+        }) }}
+        </div>
+      {% endfor %}
+      </div>
+    </label>
+
   </div>
 
   {{ govukRadios({
@@ -128,19 +176,6 @@
     ]
   }) }}
 
-  {{ auth0_connections_form({
-      "fieldset": {
-        "legend": {
-        "text": "Oauth0 client - connections",
-        "classes": "govuk-fieldset__legend--m",
-        },
-      },
-      "errors": form.errors,
-      "field": form.fields['connections'],
-      "selected_values": form.connections.value()
-    } )
-  }}
-
   {% set permissions_link %}
     <div>For more information on permissions, please have a look at this <a href="https://user-guidance.services.alpha.mojanalytics.xyz/rshiny-app.html#set-access-permissions"  >document.</a></div>
   {% endset %}
@@ -155,7 +190,7 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'A flag to indicate if the app disables authentication. ' + permissions_link
+        "text": 'A flag to indicate if the app disables authentication. ' + permissions_link + " The auth0 won't be created if the option is ticked"
       },
       "name": "disable_authentication",
       "items": [
@@ -192,6 +227,19 @@
     {% endfor %}
     </div>
   </div>
+
+  {{ auth0_connections_form({
+      "fieldset": {
+        "legend": {
+        "text": "Oauth0 client - connections",
+        "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "errors": form.errors,
+      "field": form.fields['connections'],
+      "selected_values": form.connections.value()
+    } )
+  }}
 
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>

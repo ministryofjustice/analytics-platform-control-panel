@@ -18,10 +18,10 @@ from controlpanel.frontend.views.app import (
     DeleteApp,
     GrantAppAccess,
     RemoveCustomer,
-    ResetAppSecret,
     RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
+    RemoveAppAuth0,
     UpdateAppAccess,
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
@@ -51,13 +51,6 @@ from controlpanel.frontend.views.ip_allowlist import (
     IPAllowlistList,
 )
 from controlpanel.frontend.views.login_fail import LoginFail
-from controlpanel.frontend.views.parameter import (
-    AdminParameterList,
-    ParameterCreate,
-    ParameterDelete,
-    ParameterFormRoleList,
-    ParameterList,
-)
 from controlpanel.frontend.views.policy import (
     AdminIAMManagedPolicyList,
     IAMManagedPolicyCreate,

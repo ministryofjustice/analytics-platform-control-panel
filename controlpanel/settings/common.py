@@ -427,7 +427,7 @@ GITHUB_ORGS = list(
         set(
             os.environ.get("GITHUB_ORGS", "").split(",")
             + [
-                # 'ministryofjustice',
+                'ministryofjustice',
                 "moj-analytical-services",
             ]
         ),

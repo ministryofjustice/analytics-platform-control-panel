@@ -48,20 +48,31 @@ def users(users):
 def app(users):
     mommy.make("api.App", NUM_APPS - 1)
     app = mommy.make("api.App")
+    app.repo_url = "https://github.com/github_org/testing_repo"
+    app.save()
     mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
     return app
 
 
 @pytest.yield_fixture(autouse=True)
-def repos(github):
+def githubapi():
+    """
+    Mock calls to Github
+    """
+    with patch("controlpanel.frontend.forms.GithubAPI"), \
+            patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
+        yield GithubAPI.return_value
+
+
+@pytest.yield_fixture(autouse=True)
+def repos(githubapi):
     test_repo = {
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
-    org = github.get_organization.return_value
-    org.get_repos.return_value = [test_repo]
-    github.get_repo.return_value = test_repo
-    yield github
+    githubapi.get_repository.return_value = test_repo
+    githubapi.get_repo_envs.return_value = ["test"]
+    yield githubapi
 
 
 @pytest.fixture(autouse=True)
@@ -76,7 +87,8 @@ def s3buckets(app):
 
 @pytest.fixture
 def apps3bucket(app, s3buckets):
-    return mommy.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
+        return mommy.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
 
 
 def list_apps(client, *args):
@@ -198,12 +210,15 @@ def test_permissions(
     view,
     user,
     expected_status,
-    secretsmanager,
-    fixture_get_group_id,
+    fixture_get_group_id
 ):
-    client.force_login(users[user])
-    response = view(client, app, users, s3buckets)
-    assert response.status_code == expected_status
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
+            patch("controlpanel.api.cluster.App.create_or_update_secret"):
+        client.force_login(users[user])
+        print(users[user])
+        print(users[user].has_perm('api.add_app_customer', app))
+        response = view(client, app, users, s3buckets)
+        assert response.status_code == expected_status
 
 
 def disconnect_bucket(client, apps3bucket, *args, **kwargs):
@@ -266,7 +281,7 @@ def add_customer_form_error(client, response):
 )
 def test_add_customers(client, app, users, emails, expected_response):
     client.force_login(users["superuser"])
-    data = {"customer_email": emails}
+    data = {"customer_email": emails, "env_name": "test_env"}
     response = client.post(reverse("add-app-customers", kwargs={"pk": app.id}), data)
     assert expected_response(client, response)
 

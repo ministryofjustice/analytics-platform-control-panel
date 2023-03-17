@@ -22,7 +22,8 @@ def bucket():
 
 @pytest.fixture(autouse=True)
 def models(bucket):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
+            patch("controlpanel.api.aws.AWSBucket.create_bucket"):
         mommy.make("api.S3Bucket")
         mommy.make("api.S3Bucket", is_data_warehouse=True)
         mommy.make("api.AppS3Bucket", s3bucket=bucket)

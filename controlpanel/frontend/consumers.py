@@ -1,6 +1,7 @@
 # Standard library
 import asyncio
 import json
+import os
 from datetime import datetime
 import os
 from pathlib import Path
@@ -11,8 +12,10 @@ import structlog
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.layers import get_channel_layer
+from django.db import transaction
 
 # First-party/Local
+from controlpanel.api import cluster
 from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     HOME_RESET_FAILED,
     HOME_RESETTING,
@@ -20,7 +23,14 @@ from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     TOOL_DEPLOYING,
     TOOL_RESTARTING,
 )
-from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
+from controlpanel.api.models import (
+    App,
+    HomeDirectory,
+    IPAllowlist,
+    Tool,
+    ToolDeployment,
+    User,
+)
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
 
 WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
@@ -110,6 +120,42 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
 
 
 class BackgroundTaskConsumer(SyncConsumer):
+    def app_ip_ranges_update(self, message):
+        user = User.objects.get(auth0_id=message["user_id"])
+        app = App.objects.get(pk=message["app_id"])
+
+        app_manager_ins = cluster.App(app, user.github_api_token)
+        deployment_env_names = app_manager_ins.get_deployment_envs()
+
+        for env_name in deployment_env_names:
+            app_manager_ins.create_or_update_secret(
+                env_name=env_name,
+                secret_key=cluster.App.IP_RANGES,
+                secret_value=app.env_allowed_ip_ranges(env_name=env_name),
+            )
+
+    def app_ip_ranges_delete(self, message):
+        user = User.objects.get(auth0_id=message["user_id"])
+        app = App.objects.get(pk=message["app_id"])
+        ip_range = IPAllowlist.objects.get(pk=message["ip_range_id"])
+
+        with transaction.atomic():
+            app.ip_allowlists.remove(ip_range)
+
+            app_manager_ins = cluster.App(app, user.github_api_token)
+            deployment_env_names = app_manager_ins.get_deployment_envs()
+            for env_name in deployment_env_names:
+                app_manager_ins.create_or_update_secret(
+                    env_name=env_name,
+                    secret_key=cluster.App.IP_RANGES,
+                    secret_value=app.env_allowed_ip_ranges(env_name=env_name),
+                )
+
+        # Check whether the ip_range has been used by anywhere,
+        # then remove it permanently, race condition?
+        if ip_range.apps.count() == 0:
+            ip_range.delete()
+
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
@@ -139,7 +185,9 @@ class BackgroundTaskConsumer(SyncConsumer):
 
     def _send_to_sentry(self, error):
         if os.environ.get("SENTRY_DSN"):
+            # Third-party
             import sentry_sdk
+
             sentry_sdk.capture_exception(error)
 
     def tool_restart(self, message):

@@ -11,6 +11,7 @@
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">Marked as delete?</th>
       <th class="govuk-table__header">Description</th>
       <th class="govuk-table__header">Allowed IP ranges</th>
       <th class="govuk-table__header">
@@ -23,6 +24,9 @@
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         {{ ip_allowlist.name }}
+      </td>
+      <td class="govuk-table__cell">
+        {{ 'Yes' if ip_allowlist.deleted else 'No' }}
       </td>
       <td class="govuk-table__cell">
         {{ ip_allowlist.description }}

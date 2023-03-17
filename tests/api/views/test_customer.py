@@ -101,13 +101,17 @@ def test_get(client, app, ExtendedAuth0):
 def test_post(client, app, ExtendedAuth0):
     emails = ["test1@example.com", "test2@example.com"]
     data = {"email": ", ".join(emails)}
-    response = client.post(reverse("appcustomers-list", (app.res_id,)), data)
+    env_name = "test_env"
+    response = client.post(
+        reverse("appcustomers-list", (app.res_id,)) + f"?env_name={env_name}",
+        data)
     assert response.status_code == status.HTTP_201_CREATED
 
     ExtendedAuth0.add_group_members_by_emails.assert_called_with(
-        group_name=app.slug,
+        group_name=app.auth0_client_name(env_name),
         emails=emails,
         user_options={"connection": "email"},
+        group_id=None
     )
 
 
@@ -128,37 +132,39 @@ def get_buttons(content: str) -> list:
 
 
 def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
-    group_id = 1
-    url_dict = {"group_id": group_id}
-    page_no = 1
+    with patch("controlpanel.api.cluster.App.get_deployment_envs"):
+        group_id = 1
+        url_dict = {"group_id": group_id}
+        page_no = 1
+        env_name = "test_env"
 
-    response = client.get(
-        reverse("appcustomers-page", args=(app.id, page_no)), url_dict
-    )
-    fixture_customers_mocked.assert_called_with(
-        str(group_id), page=page_no, per_page=25
-    )
+        response = client.get(
+            reverse("appcustomers-page", args=(app.id, page_no)), url_dict
+        )
+        fixture_customers_mocked.assert_called_with(
+            str(group_id), page=page_no, per_page=25
+        )
 
-    assert response.status_code == 200
-    assert len(response.context_data.get("customers")) == 25
+        assert response.status_code == 200
+        assert len(response.context_data.get("customers")) == 25
 
-    buttons = get_buttons(response.content)
-    btn_texts = [btn.text for btn in buttons]
-    callback = remove_chars([(" ", ""), ("\n", "")])
-    btn_texts = list(map(callback, btn_texts))
-    expected = [str(i) for i in range(1, 11)] + ["Next"]
-    for expect in expected:
-        assert expect in btn_texts
+        buttons = get_buttons(response.content)
+        btn_texts = [btn.text for btn in buttons]
+        callback = remove_chars([(" ", ""), ("\n", "")])
+        btn_texts = list(map(callback, btn_texts))
+        expected = [str(i) for i in range(1, 11)] + ["Next"]
+        for expect in expected:
+            assert expect in btn_texts
 
-    response = client.get(
-        reverse("appcustomers-page", args=(app.id, page_no + 1)), url_dict
-    )
-    assert response.status_code == 200
-    assert len(response.context_data.get("customers")) == 25
-    buttons = get_buttons(response.content)
+        response = client.get(
+            reverse("appcustomers-page", args=(app.id, page_no + 1)), url_dict
+        )
+        assert response.status_code == 200
+        assert len(response.context_data.get("customers")) == 25
+        buttons = get_buttons(response.content)
 
-    btn_texts = [btn.text for btn in buttons]
-    btn_texts = list(map(callback, btn_texts))
-    expected = ["Previous"] + [str(i) for i in range(2, 11)] + ["Next"]
-    for expect in expected:
-        assert expect in btn_texts
+        btn_texts = [btn.text for btn in buttons]
+        btn_texts = list(map(callback, btn_texts))
+        expected = ["Previous"] + [str(i) for i in range(2, 11)] + ["Next"]
+        for expect in expected:
+            assert expect in btn_texts

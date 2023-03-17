@@ -1,8 +1,6 @@
 # Third-party
 import uuid
-from django.conf import settings
 from django.db import models
-from django.dispatch import receiver
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -19,7 +17,11 @@ class App(TimeStampedModel):
     repo_url = models.URLField(max_length=512, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
     ip_allowlists = models.ManyToManyField(
-        IPAllowlist, related_name="apps", related_query_name="app", blank=True
+        IPAllowlist,
+        through='AppIPAllowList',
+        related_name="apps",
+        related_query_name="app",
+        blank=True
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
@@ -49,8 +51,13 @@ class App(TimeStampedModel):
     def get_logs(self, num_hours=None):
         return elasticsearch.app_logs(self, num_hours=num_hours)
 
-    def get_group_id(self):
-        return auth0.ExtendedAuth0().groups.get_group_id(self.slug)
+    def get_group_id(self, env_name):
+        return auth0.ExtendedAuth0().groups.get_group_id(self.auth0_client_name(env_name))
+
+    def customers(self, env_name=None):
+        return (
+            auth0.ExtendedAuth0().groups.get_group_members(group_name=self.auth0_client_name(env_name)) or []
+        )
 
     def customer_paginated(self, page, group_id, per_page=25):
         return (
@@ -60,70 +67,54 @@ class App(TimeStampedModel):
             or []
         )
 
-    @property
-    def customers(self):
-        return (
-            auth0.ExtendedAuth0().groups.get_group_members(group_name=self.slug) or []
-        )
-
-    @property
-    def auth0_connections(self):
-        return auth0.ExtendedAuth0().get_client_enabled_connections(self.slug)
-
-    @property
-    def app_aws_secret_auth_name(self):
-        return f"{settings.ENV}/apps/{self.slug}/auth"
-
-    @property
-    def app_aws_secret_auth(self):
-        return {
-            "name": self.app_aws_secret_auth_name
-        }
-
-    @property
-    def app_aws_secret_param_name(self):
-        return f"{settings.ENV}/apps/{self.slug}/parameters"
-
-    @property
-    def app_aws_secret_param(self):
-        return {
-            "name": self.app_aws_secret_param_name
-        }
+    def auth0_connections(self, env_name):
+        return auth0.ExtendedAuth0().get_client_enabled_connections(self.auth0_client_name(env_name))
 
     @property
     def app_allowed_ip_ranges(self):
         allowed_ip_ranges = self.ip_allowlists.values_list(
             "allowed_ip_ranges", flat=True
         ).order_by("pk")
+        return ", ".join(list(set(allowed_ip_ranges)))
+
+    def env_allowed_ip_ranges(self, env_name):
+        related_item_ids = self.appipallowlists.filter(
+            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
+        allowed_ip_ranges = IPAllowlist.objects.filter(pk__in=list(related_item_ids)).\
+            values_list("allowed_ip_ranges", flat=True).order_by("pk")
         return ", ".join(list(allowed_ip_ranges))
 
-    def construct_secret_data(self, client):
-        """The assumption is per app per callback url"""
-        return {
-            "client_id": client["client_id"],
-            "client_secret": client["client_secret"],
-            "callbacks": client["callbacks"][0]
-            if len(client["callbacks"]) >= 1
-            else "",
-        }
+    def env_allowed_ip_ranges_names(self, env_name):
+        related_item_ids = self.appipallowlists.filter(
+            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
+        allowed_ip_ranges = IPAllowlist.objects.filter(pk__in=list(related_item_ids)). \
+            values_list("name", flat=True).order_by("pk")
+        return ", ".join(list(allowed_ip_ranges))
 
-    def add_customers(self, emails):
+    def env_allow_ip_ranges_ids(self, env_name):
+        related_item_ids = self.appipallowlists.filter(
+            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
+        return list(related_item_ids)
+
+    def add_customers(self, emails, env_name=None, group_id=None):
         emails = list(filter(None, emails))
         if emails:
             try:
                 auth0.ExtendedAuth0().add_group_members_by_emails(
-                    group_name=self.slug,
+                    group_name=self.auth0_client_name(env_name),
                     emails=emails,
                     user_options={"connection": "email"},
+                    group_id=group_id
                 )
             except auth0.Auth0Error as e:
                 raise AddCustomerError from e
 
-    def delete_customers(self, user_ids):
+    def delete_customers(self, user_ids, env_name=None, group_id=None):
         try:
             auth0.ExtendedAuth0().groups.delete_group_members(
-                group_name=self.slug,
+                group_name=self.auth0_client_name(env_name),
                 user_ids=user_ids,
+                group_id=group_id
             )
         except auth0.Auth0Error as e:
             raise DeleteCustomerError from e
@@ -132,37 +123,18 @@ class App(TimeStampedModel):
     def status(self):
         return "Deployed"
 
-    def save(self, *args, **kwargs):
-        is_create = not self.pk
-
-        super().save(*args, **kwargs)
-
-        if is_create:
-            cluster.App(self).create_iam_role()
-            cluster.App(self).create_or_update_secret(
-                {"allowed_ip_ranges": self.app_allowed_ip_ranges}
-            )
-
-        return self
+    def deployment_envs(self, github_token):
+        return cluster.App(self, github_token).get_deployment_envs()
 
     def delete(self, *args, **kwargs):
-        cluster.App(self).delete()
-        auth0.ExtendedAuth0().clear_up_app(app_name=self.slug, group_name=self.slug)
-
+        github_api_token = None
+        if "github_api_token" in kwargs:
+            github_api_token = kwargs.pop("github_api_token")
+        cluster.App(self, github_api_token).delete()
         super().delete(*args, **kwargs)
 
-
-@receiver(models.signals.m2m_changed, sender=App.ip_allowlists.through)
-def app_ip_allowlists_changed(sender, instance, action, **kwargs):
-    """
-    Trigger an update of an App's entry in AWS Secrets Manager whenever its list of
-    allowed IP ranges changes (via IPAllowlists in the App's ip_allowlists attribute).
-    """
-
-    if isinstance(instance, App) and action in ["post_add", "post_remove"]:
-        cluster.App(instance).create_or_update_secret(
-            {"allowed_ip_ranges": instance.app_allowed_ip_ranges}
-        )
+    def auth0_client_name(self, env_name):
+        return f"{self.slug}_{env_name}" if env_name else self.slug
 
 
 class AddCustomerError(Exception):
