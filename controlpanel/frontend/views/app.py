@@ -1,4 +1,6 @@
 # Standard library
+import json
+import requests
 from typing import List
 
 # Third-party
@@ -9,7 +11,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -71,14 +73,25 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
     def _get_all_app_settings(self, app):
         app_manager_ins = cluster.App(app, self.request.user.github_api_token)
-        deployment_env_names = app_manager_ins.get_deployment_envs()
+        error_msg = None
+        try:
+            deployment_env_names = app_manager_ins.get_deployment_envs()
+        except requests.exceptions.HTTPError as ex:
+            error_msg = ex.__str__()
+            deployment_env_names = []
         deployments_settings = {}
         for env_name in deployment_env_names:
             deployments_settings[env_name] = {
                 "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
                 "variables": app_manager_ins.get_env_vars(env_name=env_name),
             }
-        return deployments_settings
+        return deployments_settings, error_msg
+
+    def _load_app_description(self, app):
+        try:
+            return json.loads(app.description)
+        except ValueError:
+            return {}
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -96,9 +109,13 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         )
 
         context["kibana_base_url"] = settings.KIBANA_BASE_URL
-        context["deployments_settings"] = AppAuthSettingsSerializer(
-            self._get_all_app_settings(app)
-        ).data
+        auth_settings, error_msg = self._get_all_app_settings(app)
+        context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings).data
+        context["repo_error_msg"] = error_msg
+
+        # TODO: using app.description for temporary place for storing old app info,
+        #  should be removed after app migration is completed.
+        context["app_description"] = self._load_app_description(app)
         return context
 
 
@@ -412,8 +429,8 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         context["deployment_envs"] = app.deployment_envs(
             self.request.user.github_api_token
         )
-        if not env_name and len(context["deployment_envs"]) >= 1:
-            env_name = context["deployment_envs"][0]
+        # if not env_name and len(context["deployment_envs"]) >= 1:
+        #     env_name = context["deployment_envs"][0]
         context["env_name"] = env_name
 
     def get_context_data(self, **kwargs):

@@ -13,7 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 # First-party/Local
 from controlpanel.api.auth0 import ExtendedAuth0
 from controlpanel.api.aws import AWSParameterStore
-from controlpanel.api.github import GithubAPI
+from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.models import App, Parameter
 
 
@@ -47,6 +47,21 @@ class Command(BaseCommand):
         "from AWS data account"
     )
 
+    AUDIT_DATA_KEYS = [
+        "app_name",
+        "registered_in_cpanel",
+        "deployed_on_alpha",
+        "can_be_migrated",
+        "has_auth0",
+        "has_parameters",
+        "has_repo",
+        "has_deployment",
+        "client_id",
+        "callbacks",
+        "grant_types",
+        "auth_connections",
+    ]
+
     def add_arguments(self, parser):
         parser.add_argument(
             "-t",
@@ -61,6 +76,12 @@ class Command(BaseCommand):
             "--app_conf",
             type=str,
             help="input: The path of the configuration file(JSON)",
+        )
+        parser.add_argument(
+            "-a",
+            "--chosen_apps",
+            type=str,
+            help="input: The list of apps for migration",
         )
         parser.add_argument(
             "-p",
@@ -99,14 +120,24 @@ class Command(BaseCommand):
                 "has_repo": False,
                 "auth0_client": {},
                 "parameters": {},
-                "auth": {},
+                "migration": {"envs":{}, "connections":[]},
             }
 
-    def _init_app_info(self, app_info):
-        applications = App.objects.all()
+    def _init_app_info(self, app_scope):
+        app_info = {}
+        if app_scope:
+            applications = App.objects.filter(name__in=list(app_scope.keys()))
+        else:
+            applications = App.objects.all()
         for app in applications:
             self._add_new_app(app_info, app.name)
+            if app.name in app_scope:
+                app_info[app.name]["repo_url"] = app.repo_url
+                app_info[app.name]["migration"]["app_name"] = app_scope[app.name]["new_app_name"]
+                app_info[app.name]["migration"]["repo_url"] =  app_scope[app.name]["repo_url"]
+                app_info[app.name]["migration"]["envs"] = app_scope[app.name]["envs"]
             app_info[app.name]["registered_in_cpanel"] = True
+        return app_info
 
     def _log_error(self, info):
         with open(self._error_log_file_name, "a") as f:
@@ -138,9 +169,6 @@ class Command(BaseCommand):
                         app_name, ",".join(not_found)
                     )
                 )
-            if not ip_ranges:
-                ip_ranges = [lookup["DOM1"]]
-
             app_item["normalised_allowed_ip_ranges"] = ",".join(ip_ranges)
 
     def _collect_apps_deploy_info(
@@ -191,6 +219,38 @@ class Command(BaseCommand):
             except Exception as ex:
                 self._log_error(
                     f"{repo.name}: Failed to load deploy.json due to the error: {str(ex)}"  # noqa: E501
+                )
+                self.stdout.write(
+                    f"Failed to load deploy.json due to the error: {str(ex)}"
+                )
+
+    def _collect_apps_deployment_info(
+        self, github_token, apps_info, audit_data_keys
+    ):
+        github_api = GithubAPI(github_token, "moj-analytical-services")
+        for app_name, app_info in apps_info.items():
+            self.stdout.write("Reading repo {}....".format(app_info["repo_url"]))
+            _, repo_name = extract_repo_info_from_url(app_info["repo_url"])
+            try:
+                deployment_json = github_api.read_app_deploy_info(repo_name=repo_name)
+                if not deployment_json:
+                    continue
+
+                app_info["has_repo"] = True
+                app_info["deployment"] = deployment_json
+                app_info["migration"]["ip_ranges"] = deployment_json.get("allowed_ip_ranges")
+                app_info["migration"]["disable_authentication"] = \
+                    deployment_json.get("disable_authentication") or False
+                audit_data_keys.extend(
+                    [
+                        key
+                        for key in deployment_json.keys()
+                        if key not in audit_data_keys
+                    ]
+                )
+            except Exception as ex:
+                self._log_error(
+                    f"{repo_name}: Failed to load deploy.json due to the error: {str(ex)}"  # noqa: E501
                 )
                 self.stdout.write(
                     f"Failed to load deploy.json due to the error: {str(ex)}"
@@ -266,42 +326,12 @@ class Command(BaseCommand):
             app_name_key = self._locate_app_name(client["name"], apps_names)
 
             if app_name_key is None:
-                self._log_error(
-                    "{} is not recognised as an app managed on our AP platform.".format(
-                        client["name"]
-                    )
-                )
-                self.stdout.write(
-                    "{} is not recognised as an app managed on our AP platform.".format(
-                        client["name"]
-                    )
-                )
                 continue
-
             self.stdout.write(
                 "Reading app({})'s auth0 information....".format(client["name"])
             )
             self._remove_sensitive_fields(client)
             apps_info[app_name_key]["auth0_client"] = client
-
-            # Construct the information required for aws secret
-            apps_info[app_name_key]["new_app_name"] = self._process_application_name(
-                client["name"], app_conf.get("app_name_pattern")
-            )
-            allowed_logout_urls = client.get(
-                "allowed_logout_urls"
-            ) or self._construct_logout_urls(client.get("callbacks", []))
-            apps_info[app_name_key]["auth"].update(
-                client_id=client["client_id"],
-                callbacks=self._process_urls(
-                    client.get("callbacks", []), app_conf.get("domains_mapping") or {}
-                ),
-                allowed_origins=self._process_urls(
-                    client.get("allowed_origins", []),
-                    app_conf.get("domains_mapping") or {},
-                ),
-                allowed_logout_urls=allowed_logout_urls,
-            )
             clients_id_name_map[client["client_id"]] = app_name_key
         return clients_id_name_map
 
@@ -320,25 +350,11 @@ class Command(BaseCommand):
                 apps_info[client_name]["auth0_client"]["connections"].append(
                     connection["name"]
                 )
-                if not connection.get("enabled_app_names"):
-                    connection["enabled_app_names"] = []
-                connection["enabled_app_names"].append(client_name)
-        return connections
+                apps_info[client_name]["migration"]["connections"].append(
+                    connection["name"]
+                )
 
-    def _collection_app_refresh_tokens(self, auth0_instance, app_auth0_info):
-        """
-        Retrieving refresh token needs to use device_credential api. This api has
-        mandatory parameter: user_id and strangely ignore the client_id and
-        include_total fields which cause the trouble for using this api,
-        we need to go through each user by user which is huge base to
-        find fount which client does generate refresh_token, rather than
-        through clients, also because it doesn't return total info, we couldn't
-        know the exact number of the token at the moment, so will raise the
-        issue to auth0 and wait.
-        """
-        pass
-
-    def _collection_app_parameters_store_info(self, apps_info):
+    def _collection_app_parameters_store_info(self, apps_info, apps_conf):
         """
         Read all the existing parameters for an app from aws parameter store
         control panel database has the apps' parameters in the database.
@@ -347,22 +363,26 @@ class Command(BaseCommand):
         aws_param_service = AWSParameterStore()
         for parameter in parameters:
             # derive the application name from the role_name
-            app_name = parameter.role_name.replace("{}_app_".format(settings.ENV), "")
+            app_name_in_role = parameter.role_name.replace("{}_app_".format(settings.ENV), "")
+            app_name_key = self._locate_app_name(app_name_in_role, apps_info.keys())
+
+            if not app_name_key:
+                continue
 
             self.stdout.write(
                 "Reading parameter, {}, for the app - {}".format(
-                    parameter.name, app_name
+                    parameter.name, app_name_key
                 )
             )
 
-            self._add_new_app(apps_info, app_name)
             para_response = aws_param_service.get_parameter(parameter.name)
             if para_response and para_response.get("Parameter"):
-                apps_info[app_name]["parameters"][parameter.key] = para_response[
-                    "Parameter"
-                ]["Value"]
+                param_value = para_response["Parameter"]["Value"]
+                apps_info[app_name_key]["parameters"][parameter.key] = param_value
+                new_param_key = apps_conf["params"]["name_pattern"].format(param_name=parameter.key)
+                apps_info[app_name_key]["migration"]["parameters"][new_param_key] = param_value
             else:
-                self._log_error(f"{app_name}: Couldn't find {parameter.name} from aws")
+                self._log_error(f"{app_name_key}: Couldn't find {parameter.name} from aws")
 
     def _gather_apps_full_info(
         self, github_token, app_conf, apps_info, audit_data_keys
@@ -371,6 +391,9 @@ class Command(BaseCommand):
 
         # self.stdout.write("1. Collecting the deployment information of each app from github")  # noqa: E501
         # self._collect_apps_deploy_info(github_token, apps_info, audit_data_keys, app_conf)  # noqa: E501
+
+        self.stdout.write("1. Collecting the deployment information of each app from github")
+        self._collect_apps_deployment_info(github_token, apps_info, audit_data_keys)
 
         self.stdout.write("2. Collecting the auth0 client information of each app.")
         clients_id_name_map = self._collect_app_auth0_basic_info(
@@ -470,7 +493,7 @@ class Command(BaseCommand):
 
                 writer.writerow(data_row)
 
-    def _check_migration_date_of_app(self, apps_info):
+    def _check_migration_state_of_app(self, apps_info):
         for app_name, app_item in apps_info.items():
             if (
                 app_item.get("registered_in_cpanel")
@@ -492,33 +515,37 @@ class Command(BaseCommand):
                 f"auth0 and repos having deploy.json"
             )
 
+    def _default_log_file(self):
+        return "./migration_script_errors_{}.log".format(int(time()))
+
+    def _get_pre_defined_app_list(self, chosen_apps_file):
+        """ assumption the csv include app_name and list of envs we want to initialise"""
+        apps_scope = {}
+        with open(chosen_apps_file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=",")
+            for row in csv_reader:
+                app_name = row[0].strip()
+                apps_scope[app_name] = {
+                    "repo_url": row[1],
+                    "envs": ["dev", "prod"],
+                    "new_app_name": app_name
+                }
+                if len(row)>=3 and row[2]:
+                    apps_scope[app_name]["envs"] = row[2].split("|")
+                if len(row)>=4 and row[3]:
+                    apps_scope[app_name]["new_app_name"] = row[3].strip()
+        return apps_scope
+
     def handle(self, *args, **options):
         app_conf = self._load_json_file(options.get("app_conf"))
-        apps_info = {}
-        audit_data_keys = [
-            "app_name",
-            "registered_in_cpanel",
-            "deployed_on_alpha",
-            "can_be_migrated",
-            "has_auth0",
-            "has_parameters",
-            "has_repo",
-            "has_deployment",
-            "client_id",
-            "callbacks",
-            "grant_types",
-            "auth_connections",
-        ]
-        self._error_log_file_name = options.get(
-            "log"
-        ) or "./migration_script_errors_{}.log".format(int(time()))
-        self._init_app_info(apps_info)
+        apps_scope = self._get_pre_defined_app_list(options.get("chosen_apps"))
+        self._error_log_file_name = options.get("log") or self._default_log_file()
+        apps_info = self._init_app_info(apps_scope)
         self._gather_apps_full_info(
-            options["token"], app_conf, apps_info, audit_data_keys
+            options["token"], app_conf, apps_info, self.AUDIT_DATA_KEYS
         )
         self._save_to_file(list(apps_info.values()), options["file"])
-
-        self._check_migration_date_of_app(apps_info)
+        self._check_migration_state_of_app(apps_info)
 
         # Process the pod csv to extract the list of apps which has been
         # deployed on alpha cluster
@@ -529,5 +556,5 @@ class Command(BaseCommand):
 
         if options.get("oaudit"):
             self._save_app_info_as_csv(
-                options.get("oaudit"), deployed_pods_list, apps_info, audit_data_keys
+                options.get("oaudit"), deployed_pods_list, apps_info, self.AUDIT_DATA_KEYS
             )

@@ -394,11 +394,17 @@ class App(EntityResource):
         super(App, self).__init__()
         self.app = app
         self.github_api_token = github_api_token
+        self.auth0_instance = None
+
+    def _get_auth0_instance(self):
+        if not self.auth0_instance:
+            self.auth0_instance = auth0.ExtendedAuth0()
+        return self.auth0_instance
 
     def _init_aws_services(self):
         self.aws_role_service = self.create_aws_service(AWSRole)
 
-    def _create_or_update_secrets(self, env_name, secret_data):
+    def create_or_update_secrets(self, env_name, secret_data):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secrets(
             repo_name, env_name, secret_data
@@ -412,7 +418,7 @@ class App(EntityResource):
             secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
             secret_data[App.AUTH0_CLIENT_SECRET] = client["client_secret"]
 
-        self._create_or_update_secrets(env_name=env_name, secret_data=secret_data)
+        self.create_or_update_secrets(env_name=env_name, secret_data=secret_data)
 
     def _create_env_vars(
         self,
@@ -610,13 +616,25 @@ class App(EntityResource):
         self._add_missing_mandatory_vars(env_name, app_env_vars, created_var_names)
         return app_env_vars
 
+    def _contruct_full_client_name(self, env_name, client_name=None):
+        if client_name:
+            return f'{client_name}-{env_name}'
+        else:
+            return self.app.auth0_client_name(env_name)
+
     def create_auth_settings(
-        self, env_name, disable_authentication=False, connections=None
+            self, env_name, disable_authentication=False, connections=None,
+            client_name=None, app_domain=None
     ):
         client = None
         if not disable_authentication:
-            client = auth0.ExtendedAuth0().setup_auth0_client(
-                app_name=self.app.auth0_client_name(env_name)
+            client, group = self._get_auth0_instance().setup_auth0_client(
+                app_name=self._contruct_full_client_name(
+                    env_name,
+                    client_name=client_name
+                ),
+                connections=connections,
+                app_domain=app_domain
             )
         self._create_secrets(env_name, client=client)
         self._create_env_vars(
@@ -625,6 +643,7 @@ class App(EntityResource):
             connections or [],
             client=client,
         )
+        return client, group
 
     def remove_auth_settings(self, env_name):
         auth_client_name = self.app.auth0_client_name(env_name)
@@ -634,7 +653,7 @@ class App(EntityResource):
         envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
-        auth0.ExtendedAuth0().clear_up_app(app_name=auth_client_name)
+        self._get_auth0_instance().clear_up_app(app_name=auth_client_name)
 
 
 class S3Bucket(EntityResource):

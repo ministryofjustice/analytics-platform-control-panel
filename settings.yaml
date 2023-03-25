@@ -2,7 +2,8 @@ enabled_features:
   app_migration:
     _DEFAULT: false
     _HOST_dev: true
-    _HOST_prod: false
+    _HOST_prod: true
+    _HOST_alpha: true
   redirect_legacy_api_urls:
     _DEFAULT: true
 
@@ -108,3 +109,5 @@ AUTH_SETTINGS_ENVS:
   - AUTH0_PASSWORDLESS
 
 SECRET_DISPLAY_VALUE: "*******"
+
+AUTH0_CLIENT_NAME_PATTERN: "data-platform-app-{app_name}-{env}"

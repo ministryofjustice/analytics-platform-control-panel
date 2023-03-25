@@ -1,5 +1,7 @@
 # Third-party
+import json
 import uuid
+from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
@@ -133,8 +135,21 @@ class App(TimeStampedModel):
         cluster.App(self, github_api_token).delete()
         super().delete(*args, **kwargs)
 
+    def _get_alternative_client_name(self):
+        """TODO This function needs to be adjusted once the migration is over"""
+        try:
+            app_conf = json.loads(self.description)
+        except ValueError:
+            app_conf = {}
+        return app_conf.get('app_name') or self.slug
+
+
     def auth0_client_name(self, env_name):
-        return f"{self.slug}_{env_name}" if env_name else self.slug
+        if env_name:
+            return settings.AUTH0_CLIENT_NAME_PATTERN.format(
+                app_name=self.slug, env=env_name)
+        else:
+            return self._get_alternative_client_name()
 
 
 class AddCustomerError(Exception):
