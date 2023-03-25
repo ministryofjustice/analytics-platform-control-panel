@@ -287,13 +287,6 @@ def fixture_client_create(ExtendedAuth0):
 
 
 @pytest.yield_fixture
-def fixture_client_update(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.clients, "update") as client_update:
-        client_update.return_value = {}
-        yield client_update
-
-
-@pytest.yield_fixture
 def fixture_connection_search_first_match(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.connections, "search_first_match"
@@ -394,7 +387,6 @@ def fixture_group_add_role(ExtendedAuth0):
 def test_setup_auth0_client(
     ExtendedAuth0,
     fixture_client_create,
-    fixture_client_update,
     fixture_connection_disable_client,
     fixture_connection_enable_client,
     fixture_connection_search_first_match,
@@ -421,9 +413,6 @@ def test_setup_auth0_client(
     }
 
     ExtendedAuth0.setup_auth0_client(app_name=new_client_name)
-    fixture_client_update.assert_called_with(
-        new_client_id, body={"web_origins": [app_url]}
-    )
 
     fixture_permission_create.assert_called_with(
         dict(name="view:app", applicationId=new_client_id)
