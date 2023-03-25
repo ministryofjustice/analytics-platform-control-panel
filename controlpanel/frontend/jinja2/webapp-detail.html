@@ -45,6 +45,9 @@
 
   {% if app_description %}
     <h2 class="govuk-heading-m">The key information on old cluster</h2>
+    <p class="govuk-body" >
+      <b style="color:red">The information below will be removed or archived after migration, won't be available here.</b>
+    </p>
     <ul class="govuk-body">
       <li>Old Repo: <a href="{{ app_description["repo_url"] }}">{{ app_description["repo_url"] }}</a></li>
       <li>Old app_name: <strong>{{ app_description["app_name"] }}</strong></li>
