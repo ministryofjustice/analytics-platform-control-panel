@@ -143,8 +143,7 @@ class App(TimeStampedModel):
             app_conf = {}
         return app_conf.get('app_name') or self.slug
 
-
-    def auth0_client_name(self, env_name):
+    def auth0_client_name(self, env_name=None):
         if env_name:
             return settings.AUTH0_CLIENT_NAME_PATTERN.format(
                 app_name=self.slug, env=env_name)

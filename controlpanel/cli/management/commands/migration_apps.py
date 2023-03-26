@@ -109,7 +109,7 @@ class Command(BaseCommand):
 
     def _migration_apps(self, apps_info, github_token, app_conf):
         for cnt, app_item in enumerate(apps_info):
-            self.stdout.write(f"{cnt}: start to process app {app_item['app_name']}")
+            self.stdout.write(f"{cnt+1}: start to process app {app_item['app_name']}")
             app = App.objects.filter(name=app_item["app_name"]).first()
             if not app:
                 self.stdout.write(f"App: {app_item['app_name']} failed to be found in the cpanel DB")
