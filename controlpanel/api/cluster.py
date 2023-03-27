@@ -22,6 +22,7 @@ from controlpanel.api.aws import (
 )
 from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.kubernetes import KubernetesClient
+from controlpanel.api import auth0
 
 log = structlog.getLogger(__name__)
 
@@ -339,7 +340,7 @@ class User(EntityResource):
         self.aws_role_service.delete_role(self.user.iam_role_name)
         self.delete_user_helm_charts()
 
-    def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
+    def grant_bucket_access(self, bucket_arn: str, access_level: str, path_arns: List[str]=[]):
         self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )

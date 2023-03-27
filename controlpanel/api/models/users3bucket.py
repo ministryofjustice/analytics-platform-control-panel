@@ -4,6 +4,7 @@ from django.db import models
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
+from django.dispatch import receiver
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -37,11 +38,20 @@ class UserS3Bucket(AccessToS3Bucket):
         )
 
     def grant_bucket_access(self):
+        folder_arn = f'{self.s3bucket.arn}/{self.s3bucket.location_url}'
         cluster.User(self.user).grant_bucket_access(
-            self.s3bucket.arn,
+            folder_arn,
             self.access_level,
-            self.resources,
+            self.resources
         )
 
     def revoke_bucket_access(self):
         cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)
+
+
+# MUST use signals because cascade deletes do not call delete()
+@receiver(models.signals.post_save)
+def grant_access(sender, **kwargs):
+    if isinstance(sender, UserS3Bucket):
+        obj = kwargs["instance"]
+        obj.grant_bucket_access()

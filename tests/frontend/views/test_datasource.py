@@ -109,7 +109,8 @@ def create(client, *args):
     data = {
         "name": "test-new-bucket",
     }
-    return client.post(reverse("create-datasource") + "?type=warehouse", data)
+    return client.post(reverse("create-folder-datasource") + "?type=warehouse", data)
+    # return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
 
 def delete(client, buckets, *args):

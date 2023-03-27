@@ -8,9 +8,12 @@ from controlpanel.frontend.views import secrets, app_variables
 urlpatterns = [
     path("", views.IndexView.as_view(), name="index"),
     path("oidc/logout/", views.LogoutView.as_view(), name="oidc_logout"),
-    path("datasources/", views.AdminBucketList.as_view(), name="list-all-datasources"),
+    # path("datasources/", views.AdminBucketList.as_view(), name="list-all-datasources2"),
+
+    path("datasources/", views.datasource.BucketFolderList.as_view(), name="list-all-datasources"),
+
     path(
-        "datasources/<int:pk>/", views.BucketDetail.as_view(), name="manage-datasource"
+        "datasources/<int:pk>/", views.datasource.BucketFolderDetail.as_view(), name="manage-datasource"
     ),
     path(
         "datasources/<int:pk>/access/",
@@ -22,9 +25,14 @@ urlpatterns = [
         views.DeleteDatasource.as_view(),
         name="delete-datasource",
     ),
+
     path(
-        "datasources/new/", views.CreateDatasource.as_view(), name="create-datasource"
+        "datasources/new/", views.CreateDatasource.as_view(), name="create-folder-datasource"
+        # name="create-datasource"
     ),
+    # path(
+    #     "datasources/new/", views.datasource.CreateDatasourceFolder.as_view(), name="create-folder-datasource"
+    # ),
     path(
         "datasource-access/<int:pk>/",
         views.UpdateAccessLevel.as_view(),

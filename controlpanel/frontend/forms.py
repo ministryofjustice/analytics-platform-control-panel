@@ -236,6 +236,14 @@ class CreateDatasourceForm(forms.Form):
         ],
     )
 
+class CreateDatasourceFolderForm(forms.Form):
+    name = forms.CharField(
+        max_length=63,
+        validators=[
+            validators.validate_s3_bucket_labels,
+            validators.validate_s3_bucket_length,
+        ],
+    )
 
 class GrantAccessForm(forms.Form):
     access_level = forms.ChoiceField(

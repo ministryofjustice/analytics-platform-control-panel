@@ -16,6 +16,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
+from controlpanel.api.aws import S3AccessPolicy
 from controlpanel.api.models import (
     IAMManagedPolicy,
     PolicyS3Bucket,
@@ -23,8 +24,15 @@ from controlpanel.api.models import (
     User,
     UserS3Bucket,
 )
+# from controlpanel.api.models.s3bucket import S3Folder
+from django.conf import settings
+
 from controlpanel.api.serializers import ESBucketHitsSerializer
-from controlpanel.frontend.forms import CreateDatasourceForm, GrantAccessForm
+from controlpanel.frontend.forms import (
+    CreateDatasourceForm,
+    GrantAccessForm,
+    CreateDatasourceFolderForm
+)
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 DATASOURCE_TYPES = [
@@ -100,9 +108,68 @@ class AdminBucketList(BucketList):
     def get_queryset(self):
         return S3Bucket.objects.prefetch_related("users3buckets").all()
 
+from django.db.models import QuerySet
+
+class BucketFolderList(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    DatasourceMixin,
+    ListView,
+):
+    # /datasources/
+    all_datasources = False
+    context_object_name = "buckets"
+    datasource_type = "warehouse"
+    model = S3Bucket
+    permission_required = "api.list_s3bucket"
+    template_name = "datasource-folder-list.html"
+
+    def get_queryset(self) -> QuerySet[S3Bucket]:
+        buckets = S3Bucket.objects.filter(
+            name=settings.MAIN_BUCKET_FOLDER,
+            location_url__isnull=False
+        )
+        return buckets
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        return context
 
 class WebappBucketList(BucketList):
     datasource_type = "webapp"
+
+
+class BucketFolderDetail(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    DatasourceMixin,
+    DetailView,
+):
+    context_object_name = "bucket"
+    model = S3Bucket
+    permission_required = "api.retrieve_s3bucket"
+    template_name = "datasource-detail.html"
+
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        bucket = kwargs["object"]
+
+        access_users = bucket.users3buckets.all().select_related("user")
+        member_ids = [member.user.auth0_id for member in access_users]
+        context["access_logs"] = ESBucketHitsSerializer(
+            bucket_hits_aggregation(bucket.name)
+        ).data
+        context["users_options"] = User.objects.exclude(auth0_id__isnull=True).exclude(
+            auth0_id__in=member_ids
+        )
+        access_policies = bucket.policys3buckets.all().select_related("policy")
+        policy_ids = [access.policy.id for access in access_policies]
+        context["policies_options"] = IAMManagedPolicy.objects.exclude(
+            pk__in=policy_ids
+        )
+        context["access_list"] = list(chain(access_users, access_policies))
+        return context
 
 
 class BucketDetail(
@@ -142,7 +209,8 @@ class CreateDatasource(
     DatasourceMixin,
     CreateView,
 ):
-    form_class = CreateDatasourceForm
+    # form_class = CreateDatasourceForm
+    form_class = CreateDatasourceFolderForm
     model = S3Bucket
     permission_required = "api.create_s3bucket"
     template_name = "datasource-create.html"
@@ -164,10 +232,12 @@ class CreateDatasource(
         try:
             with transaction.atomic():
                 self.object = S3Bucket.objects.create(
-                    name=name,
+                    name = settings.MAIN_BUCKET_FOLDER,
                     created_by=self.request.user,
                     is_data_warehouse=datasource_type == "warehouse",
+                    location_url = name,
                 )
+                self._grant_folder_permission(name, self.object)
                 messages.success(
                     self.request,
                     f"Successfully created {name} {datasource_type} data source",
@@ -176,6 +246,32 @@ class CreateDatasource(
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
+
+    def _create_folder(self, service, folder_name: str):
+        s3_client = service.boto3_session.client('s3')
+        s3_client.put_object(
+            Bucket=self.object.name,
+            Key=f'{folder_name}/'
+        )
+
+    def _grant_folder_permission(self, folder_name: str, bucket: S3Bucket):
+        # get service using bucket
+        cluster_inst = cluster.S3Bucket(bucket)
+        service = cluster_inst.aws_bucket_service
+
+        # create folder in s3 bucket before allowing permission
+        self._create_folder(service, folder_name)
+
+        # get iam resource & role for user
+        role = service.boto3_session.resource("iam").Role(self.request.user.iam_role_name)
+        s3_user_policy = S3AccessPolicy(role.Policy("s3-access"))
+
+        # s3_user_policy.add_resource(arn, sid)
+        s3_user_policy.add_resource(
+            f'{cluster_inst.arn}/{folder_name}/',
+            'readwrite'
+        )
+        s3_user_policy.put()
 
 
 class DeleteDatasource(

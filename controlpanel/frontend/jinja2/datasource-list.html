@@ -24,7 +24,7 @@
 
   {% if request.user.has_perm('api.create_s3bucket') %}
   <p class="govuk-body">
-  <a class="govuk-button" href="{{ url('create-datasource') }}?type={{ datasource_type|urlencode }}">
+    <a class="govuk-button" href="{{ url('create-folder-datasource') }}?type={{ datasource_type|urlencode }}">
       Create new {{ datasource_type }} data source
     </a>
   </p>

@@ -538,3 +538,6 @@ structlog.configure(
 # volume name for the EFS directory for user homes
 EFS_VOLUME = os.environ.get("EFS_VOLUME")
 MAX_RELEASE_NAME_LEN = 53
+
+# bucket where folders will live
+MAIN_BUCKET_FOLDER = "dev-to-delete-abdel"
