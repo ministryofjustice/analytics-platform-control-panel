@@ -9,7 +9,7 @@
 {% extends "base.html" %}
 
 {% set page_name = datasource_type + "-datasource-list" %}
-{% set page_title = bucket.name %}
+{% set page_title = bucket.location_url %}
 
 {% set access_levels_html %}
 {% include "modals/user_data_access_levels.html" %}

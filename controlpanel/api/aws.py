@@ -12,6 +12,7 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
+from controlpanel.api.dtos.folders import FolderCheck, get_folder
 
 log = structlog.getLogger(__name__)
 
@@ -161,13 +162,16 @@ class S3AccessPolicy:
         convention rules
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
         """
-        if resource.startswith(arn):
-            if len(resource) > len(arn):
-                end_char = resource[len(arn)]
-                return not re.match("^[a-z0-9-.]$", end_char)
-            else:
-                return True
-        return False
+        existing = get_folder(resource, f'arn:aws:s3:::{settings.MAIN_BUCKET_FOLDER}')
+        existing_check = FolderCheck(existing)
+
+        to_insert = get_folder(arn, f'arn:aws:s3:::{settings.MAIN_BUCKET_FOLDER}')
+        if existing == '':
+            return True
+
+        insert_check = FolderCheck(to_insert)
+        return insert_check.is_child(existing_check)
+
 
     def remove_resource(self, arn, sid):
         statement = self.statement(sid)

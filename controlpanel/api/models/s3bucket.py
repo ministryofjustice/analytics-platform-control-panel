@@ -38,8 +38,10 @@ class S3BucketQuerySet(models.QuerySet):
 
 
 class S3Bucket(TimeStampedModel):
+    class Meta:
+        unique_together = ('name', 'location_url',)
+
     name = models.CharField(
-        unique=True,
         max_length=63,
         validators=[
             validators.validate_env_prefix,
@@ -82,7 +84,7 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def aws_url(self):
-        return s3bucket_console_url(self.name)
+        return s3bucket_console_url(f"{self.name}/{self.location_url}")
 
     @property
     def is_used_for_app(self):

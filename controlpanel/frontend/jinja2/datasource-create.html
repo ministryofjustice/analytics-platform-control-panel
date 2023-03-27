@@ -20,7 +20,7 @@
     <div class="error">{{ form.error }}</div>
   {% endif %}
 
-  <form action="{{ url('create-datasource') }}?type={{ datasource_type }}" method="post">
+  <form action="{{ url('create-folder-datasource') }}?type={{ datasource_type }}" method="post">
     {{ csrf_input }}
     {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
     {{ govukInput({
@@ -34,7 +34,7 @@
       },
       "name": "name",
       "attributes": {
-        "data-bucket-prefix": env + "-",
+        "data-bucket-prefix": "",
         "pattern": "[a-z0-9.-]{1,60}",
         "maxlength": "60",
       },
