@@ -23,7 +23,7 @@ from controlpanel.api.aws import (
 from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.kubernetes import KubernetesClient
 from controlpanel.api import auth0
-
+from typing import List
 log = structlog.getLogger(__name__)
 
 
