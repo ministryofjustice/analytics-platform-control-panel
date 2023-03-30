@@ -31,7 +31,7 @@ class Command(BaseCommand):
 
     def _get_group_id_for_prod_env(self, app):
         """Assumption: the client_ids have been stored in the app.description
-        if the app has been migrated by running the migration_apps.py
+        if the app has been migrated by running the db_migration_update.py
         """
         try:
             app_migration_info = json.loads(app.description)

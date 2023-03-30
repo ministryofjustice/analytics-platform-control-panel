@@ -125,18 +125,12 @@ class Command(BaseCommand):
 
     def _init_app_info(self, app_scope):
         app_info = {}
-        if app_scope:
-            applications = App.objects.filter(name__in=list(app_scope.keys()))
-        else:
-            applications = App.objects.all()
-        for app in applications:
-            self._add_new_app(app_info, app.name)
-            if app.name in app_scope:
-                app_info[app.name]["repo_url"] = app.repo_url
-                app_info[app.name]["migration"]["app_name"] = app_scope[app.name]["new_app_name"]
-                app_info[app.name]["migration"]["repo_url"] =  app_scope[app.name]["repo_url"]
-                app_info[app.name]["migration"]["envs"] = app_scope[app.name]["envs"]
-            app_info[app.name]["registered_in_cpanel"] = True
+        for app_name, app_detail in app_scope.items():
+            self._add_new_app(app_info, app_name)
+            app_info[app_name]["repo_url"] = app_detail["source_repo_url"]
+            app_info[app_name]["migration"]["app_name"] = app_detail["new_app_name"]
+            app_info[app_name]["migration"]["repo_url"] = app_detail["repo_url"]
+            app_info[app_name]["migration"]["envs"] = app_detail["envs"]
         return app_info
 
     def _log_error(self, info):
@@ -145,18 +139,18 @@ class Command(BaseCommand):
             f.write("\n")
 
     def _normalize_ip_ranges(self, app_name, app_item, app_conf):
-        if app_item.get("allowed_ip_ranges") and app_conf.get("ip_range_lookup_table"):
+        if app_item.get("ip_ranges") and app_conf.get("ip_range_lookup_table"):
             lookup = app_conf["ip_range_lookup_table"]
-            if "Any" in app_item.get("allowed_ip_ranges"):
+            if "Any" in app_item.get("ip_ranges"):
                 ip_ranges = [""]
             else:
                 ip_ranges = [
                     lookup[item]
-                    for item in app_item["allowed_ip_ranges"]
+                    for item in app_item["ip_ranges"]
                     if item in lookup
                 ]
             not_found = [
-                item for item in app_item.get("allowed_ip_ranges") if item not in lookup
+                item for item in app_item.get("ip_ranges") if item not in lookup
             ]
             if not_found:
                 self._log_error(
@@ -169,7 +163,7 @@ class Command(BaseCommand):
                         app_name, ",".join(not_found)
                     )
                 )
-            app_item["normalised_allowed_ip_ranges"] = ",".join(ip_ranges)
+            app_item["normalised_ip_ranges"] = ",".join(ip_ranges)
 
     def _collect_apps_deploy_info(
         self, github_token, apps_info, audit_data_keys, app_conf
@@ -225,13 +219,14 @@ class Command(BaseCommand):
                 )
 
     def _collect_apps_deployment_info(
-        self, github_token, apps_info, audit_data_keys
+        self, github_token, apps_info, audit_data_keys, app_conf
     ):
-        github_api = GithubAPI(github_token, "moj-analytical-services")
+        github_api = GithubAPI(github_token, None)
         for app_name, app_info in apps_info.items():
             self.stdout.write("Reading repo {}....".format(app_info["repo_url"]))
-            _, repo_name = extract_repo_info_from_url(app_info["repo_url"])
+            org_name, repo_name = extract_repo_info_from_url(app_info["repo_url"])
             try:
+                github_api.github_org = org_name
                 deployment_json = github_api.read_app_deploy_info(repo_name=repo_name)
                 if not deployment_json:
                     continue
@@ -241,6 +236,7 @@ class Command(BaseCommand):
                 app_info["migration"]["ip_ranges"] = deployment_json.get("allowed_ip_ranges")
                 app_info["migration"]["disable_authentication"] = \
                     deployment_json.get("disable_authentication") or False
+                self._normalize_ip_ranges(app_name, app_info["migration"], app_conf)
                 audit_data_keys.extend(
                     [
                         key
@@ -393,7 +389,7 @@ class Command(BaseCommand):
         # self._collect_apps_deploy_info(github_token, apps_info, audit_data_keys, app_conf)  # noqa: E501
 
         self.stdout.write("1. Collecting the deployment information of each app from github")
-        self._collect_apps_deployment_info(github_token, apps_info, audit_data_keys)
+        self._collect_apps_deployment_info(github_token, apps_info, audit_data_keys, app_conf)
 
         self.stdout.write("2. Collecting the auth0 client information of each app.")
         clients_id_name_map = self._collect_app_auth0_basic_info(
@@ -410,7 +406,7 @@ class Command(BaseCommand):
         self.stdout.write(
             "4. Collecting the parameters of each from AWS parameter store"
         )
-        self._collection_app_parameters_store_info(apps_info)
+        self._collection_app_parameters_store_info(apps_info, app_conf)
 
     def _load_json_file(self, file_name):
         if not file_name:
@@ -493,15 +489,6 @@ class Command(BaseCommand):
 
                 writer.writerow(data_row)
 
-    def _check_migration_state_of_app(self, apps_info):
-        for app_name, app_item in apps_info.items():
-            if (
-                app_item.get("registered_in_cpanel")
-                and app_item.get("deployment")
-                and app_item.get("auth0_client")
-            ):
-                app_item["can_be_migrated"] = True
-
     def _sanity_check_for_deployed_apps(self, apps_info, deployed_pods_list):
         app_names = list(apps_info.keys())
         app_names.extend([app_name.lower() for app_name in apps_info.keys()])
@@ -526,14 +513,11 @@ class Command(BaseCommand):
             for row in csv_reader:
                 app_name = row[0].strip()
                 apps_scope[app_name] = {
-                    "repo_url": row[1],
-                    "envs": ["dev", "prod"],
-                    "new_app_name": app_name
+                    "new_app_name": row[1].strip() or app_name,
+                    "source_repo_url": row[2],
+                    "repo_url": row[3],
+                    "envs": row[4].split("|") or ["dev", "prod"],
                 }
-                if len(row)>=3 and row[2]:
-                    apps_scope[app_name]["envs"] = row[2].split("|")
-                if len(row)>=4 and row[3]:
-                    apps_scope[app_name]["new_app_name"] = row[3].strip()
         return apps_scope
 
     def handle(self, *args, **options):
@@ -545,7 +529,6 @@ class Command(BaseCommand):
             options["token"], app_conf, apps_info, self.AUDIT_DATA_KEYS
         )
         self._save_to_file(list(apps_info.values()), options["file"])
-        self._check_migration_state_of_app(apps_info)
 
         # Process the pod csv to extract the list of apps which has been
         # deployed on alpha cluster

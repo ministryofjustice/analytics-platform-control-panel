@@ -390,11 +390,14 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
 
-    def __init__(self, app, github_api_token=None):
+    # TODO: need to remove once the workflow issue is fixed
+    DEFAULT_VALUE_FOR_BLANK = "NONE"
+
+    def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
         self.app = app
         self.github_api_token = github_api_token
-        self.auth0_instance = None
+        self.auth0_instance = auth0_instance
 
     def _get_auth0_instance(self):
         if not self.auth0_instance:
@@ -411,8 +414,12 @@ class App(EntityResource):
         )
 
     def _create_secrets(self, env_name, client=None):
+        # TODO: need to remove auth client
+        #  once the workflow issue is fixed
         secret_data: dict = {
-            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)
+            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name),
+            App.AUTH0_CLIENT_ID: self.DEFAULT_VALUE_FOR_BLANK,
+            App.AUTH0_CLIENT_SECRET: self.DEFAULT_VALUE_FOR_BLANK
         }
         if client:
             secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
@@ -437,7 +444,13 @@ class App(EntityResource):
                 App.AUTHENTICATION_REQUIRED: not disable_authentication,
             }
         else:
-            env_data: dict = {App.AUTHENTICATION_REQUIRED: not disable_authentication}
+            # TODO: need to remove auth related parts
+            #  once the workflow issue is fixed
+            env_data: dict = {
+                App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
+                App.AUTH0_PASSWORDLESS: "true",
+                App.AUTH0_CALLBACK_URL: self.DEFAULT_VALUE_FOR_BLANK,
+                App.AUTHENTICATION_REQUIRED: not disable_authentication}
 
         self._create_envs(env_name=env_name, env_data=env_data)
 
@@ -618,15 +631,15 @@ class App(EntityResource):
 
     def _contruct_full_client_name(self, env_name, client_name=None):
         if client_name:
-            return f'{client_name}-{env_name}'
-        else:
-            return self.app.auth0_client_name(env_name)
+            return client_name
+        return self.app.auth0_client_name(env_name)
 
     def create_auth_settings(
             self, env_name, disable_authentication=False, connections=None,
             client_name=None, app_domain=None
     ):
         client = None
+        group = None
         if not disable_authentication:
             client, group = self._get_auth0_instance().setup_auth0_client(
                 app_name=self._contruct_full_client_name(
