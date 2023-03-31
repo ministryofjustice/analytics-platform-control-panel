@@ -338,15 +338,11 @@ def test_github_error1_on_app_detail(client, app, users,):
 
 def test_github_error2_on_app_detail(client, app, users,):
     with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
-            patch("controlpanel.api.cluster.App.get_deployment_envs") as get_envs, \
             patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets:
         feature_flag.return_value = True
         error_msg = "Testing github secret error"
-        env_return = "test_env"
-        get_envs.side_effect = ["test_env"]
         get_secrets.side_effect = requests.exceptions.HTTPError(error_msg)
         client.force_login(users["superuser"])
         response = detail(client, app)
         assert response.status_code == 200
-        assert env_return in str(response.content)
         assert error_msg in str(response.content)
