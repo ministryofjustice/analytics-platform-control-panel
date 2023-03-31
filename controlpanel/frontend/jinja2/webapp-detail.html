@@ -25,10 +25,29 @@
   <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if app.description %}
+  {% if feature_enabled and app.description %}
   <p class="govuk-body">
     {{ app.description }}
   </p>
+  {% endif %}
+
+  {% if feature_enabled and repo_access_error_msg %}
+  <div class="govuk-grid-row">
+    <div class="govuk-column-two-thirds">
+
+      <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
+        <h2 class="govuk-heading-m govuk-error-summary-heading">
+        Webapp repo setting
+        </h2>
+        <p>
+          <strong>Couldn't find/read the app's information from github repo based on the repo url, please
+            check whether the repo_url exists or whether you have enough permission to access this repo
+          </strong>
+        </p>
+        <p>Raw error message: {{ repo_access_error_msg }}</p>
+      </div>
+    </div>
+  </div>
   {% endif %}
 
   {% if app_url %}
@@ -57,8 +76,16 @@
 </header>
 
 <section class="cpanel-section">
-
   {% if feature_enabled %}
+    <p><strong>You are required to be member of admin team for this app repo in order to be able to maintain the settings</strong></p>
+
+    {% if github_settings_access_error_msg %}
+      <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
+        <p style="color:red">Couldn't load the github settings</p>
+        <p style="color:red">Raw error message: {{ github_settings_access_error_msg }}</p>
+      </div>
+    {% endif %}
+
     {% for env_name, deployment_setting in deployments_settings.items() %}
       <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
       <p>The settings required for deploying the app into the cluster</p>
