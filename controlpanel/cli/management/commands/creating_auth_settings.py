@@ -22,7 +22,7 @@ class DummyApp:
 
 
 class Command(BaseCommand):
-    help = "Update the application's auth0 client information"
+    help = "Create the application's auth0 clients per environment and generate github secrets"
 
     def add_arguments(self, parser):
         parser.add_argument(

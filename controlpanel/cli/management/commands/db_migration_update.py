@@ -11,7 +11,7 @@ from controlpanel.api.models import App, AppIPAllowList, IPAllowlist
 
 
 class Command(BaseCommand):
-    help = "Update the application's auth0 client information"
+    help = "Update cpanel database with new application information and the auth settings"
 
     def add_arguments(self, parser):
         parser.add_argument(

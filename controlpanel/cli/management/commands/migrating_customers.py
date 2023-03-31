@@ -11,7 +11,7 @@ from controlpanel.api.models import App
 
 
 class Command(BaseCommand):
-    help = "Update the application's auth0 client information"
+    help = "Copy the customers of an application from old auth client to new auth clients"
 
     def add_arguments(self, parser):
         parser.add_argument(
