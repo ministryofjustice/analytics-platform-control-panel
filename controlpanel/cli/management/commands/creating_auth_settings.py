@@ -71,21 +71,42 @@ class Command(BaseCommand):
         cluster_instance.auth0_instance.groups.add_group_members(
             group_id=group["_id"], user_ids=initial_user_ids)
 
+    def _is_client_created(self, env_name, app_detail):
+        return app_detail["auth0_clients"].get(env_name, {}).get("client_id")
+
+    def _inject_auth_settings_to_github(self, env_name, cluster_instance, app_detail):
+        # calling the internal function of a class is only for app migration
+        # will be removed after app migration is done.
+        client = None
+        if not app_detail["disable_authentication"]:
+            client_id = app_detail["auth0_clients"][env_name]["client_id"]
+            client = cluster_instance.auth0_instance.clients.get(client_id)
+        cluster_instance._create_secrets(env_name, client=client)
+        cluster_instance._create_env_vars(
+            env_name,
+            app_detail["disable_authentication"],
+            app_detail["connections"] or [],
+            client=client,
+        )
+
     def _create_auth_settings(
             self, env_name, cluster_instance, app_detail, app_conf, initial_user_ids):
         """
         Only the application which has been registered in control panel will be
         migrated over into new EKS cluster
         """
-        client, group = cluster_instance.create_auth_settings(
-            client_name=self._get_auth0_client_name(app_detail["app_name"], env_name),
-            env_name=env_name,
-            disable_authentication=app_detail["disable_authentication"],
-            connections=app_detail["connections"],
-            app_domain=app_conf['auth0'].get(env_name, {}).get("app_domain")
-        )
-        self._store_client_id_of_app_env(env_name, client, group, app_detail)
-        self._create_initial_users(cluster_instance, group, initial_user_ids)
+        if self._is_client_created(env_name, app_detail):
+            self._inject_auth_settings_to_github(env_name, cluster_instance, app_detail)
+        else:
+            client, group = cluster_instance.create_auth_settings(
+                client_name=self._get_auth0_client_name(app_detail["app_name"], env_name),
+                env_name=env_name,
+                disable_authentication=app_detail["disable_authentication"],
+                connections=app_detail["connections"],
+                app_domain=app_conf['auth0'].get(env_name, {}).get("app_domain")
+            )
+            self._store_client_id_of_app_env(env_name, client, group, app_detail)
+            self._create_initial_users(cluster_instance, group, initial_user_ids)
 
     def _create_self_defined_secrets(self, env_name, cluster_instance, app_detail):
         params = app_detail.get("parameters")
