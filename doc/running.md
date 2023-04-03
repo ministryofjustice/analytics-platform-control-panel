@@ -142,13 +142,7 @@ For easy switching between Kubernetes contexts (to connect to dev/prod clusters)
 
 ### Helm
 
-You will need to initialise Helm:
-
-```sh
-helm init
-```
-
-Tell Helm to use the Analytical Platform chart repository:
+You will need to tell Helm to use the Analytical Platform chart repository:
 
 ```sh
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
