@@ -72,7 +72,7 @@ class Command(BaseCommand):
             group_id=group["_id"], user_ids=initial_user_ids)
 
     def _is_client_created(self, env_name, app_detail):
-        return app_detail["auth0_clients"].get(env_name, {}).get("client_id")
+        return app_detail.get("auth0_clients", {}).get(env_name, {}).get("client_id")
 
     def _inject_auth_settings_to_github(self, env_name, cluster_instance, app_detail):
         # calling the internal function of a class is only for app migration
