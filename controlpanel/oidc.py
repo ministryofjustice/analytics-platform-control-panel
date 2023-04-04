@@ -45,20 +45,6 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
     def verify_claims(self, claims):
         return True
 
-    def authenticate(self, request, **kwargs):
-        """
-        To avoid cloning and re-implementing the OIDC Backend authenticate
-        method, this checks the output of that method, and calls the
-        authentication_event hook if a user has been sucessfully implemented.
-        """
-        authenticated_user = super().authenticate(request, **kwargs)
-        if authenticated_user:
-            # Calling the authentication event will ensure the user is
-            # correctly set up for the current infrastructure (including the
-            # process of migrating the user from the old infra -> EKS).
-            authenticated_user.authentication_event()
-        return authenticated_user
-
 
 class StateMismatchHandler(OIDCAuthenticationCallbackView):
     def get(self, *args, **kwargs):
