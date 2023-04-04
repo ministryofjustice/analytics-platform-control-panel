@@ -379,7 +379,7 @@ Open another terminal to run the following line
 python manage.py runworker background_tasks
 ```
 
-Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
+Go to http://localhost:8000/, sign in via github through Auth0 and marvel at your locally
 running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
