@@ -166,7 +166,7 @@ class ExtendedAuth0(Auth0):
                 app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
                 web_origins=[app_url],
                 grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
-                allowed_logout_urls=[f"{app_url}/logout"]
+                allowed_logout_urls=[app_url]
             )
         )
         client_id = client["client_id"]
