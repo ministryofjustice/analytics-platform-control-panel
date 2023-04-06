@@ -511,6 +511,12 @@ class Command(BaseCommand):
         with open(chosen_apps_file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
             for row in csv_reader:
+                has_done = False
+                if len(row) >= 6:
+                    has_done = row[5].strip().lower() == "done"
+                if has_done:
+                    continue
+
                 app_name = row[0].strip()
                 apps_scope[app_name] = {
                     "new_app_name": row[1].strip() or app_name,
