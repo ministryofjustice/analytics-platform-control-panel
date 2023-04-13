@@ -22,43 +22,45 @@
 
 {% block content %}
 <header>
-    {% if repo_error_msg %}
-    <div class="govuk-grid-row">
-      <div class="govuk-column-two-thirds">
-
-        <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
-
-          <h2 class="govuk-heading-m govuk-error-summary-heading">
-          Webapp configuration error
-          </h2>
-
-          <p>
-            <strong>Couldn't find the app from github repo based on the repo url</strong>
-          </p>
-        </div>
-    </div>
-    {% endif %}
-
   <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 
   {% if app_description %}
-    <h2 class="govuk-heading-m">The key information on old cluster</h2>
-    <p class="govuk-body" >
-      <b style="color:red">The information below will be removed or archived after migration, won't be available here.</b>
-    </p>
-    <ul class="govuk-body">
-      <li>Old Repo: <a href="{{ app_description["repo_url"] }}">{{ app_description["repo_url"] }}</a></li>
-      <li>Old app_name: <strong>{{ app_description["app_name"] }}</strong></li>
-      <li>Old app URL: <a href="{{ app_description["app_url"] }}">{{ app_description["app_url"] }}</a></li>
-    </ul>
-  {% else %}
-    {% if app.description %}
-    <p class="govuk-body">
-      {{ app.description }}
-    </p>
+    {% if feature_enabled %}
+      <h2 class="govuk-heading-m">The key information on old cluster</h2>
+      <p class="govuk-body" >
+        <b style="color:red">The information below will be removed or archived after migration, won't be available here.</b>
+      </p>
+      <ul class="govuk-body">
+        <li>Old Repo: <a href="{{ app_description["repo_url"] }}">{{ app_description["repo_url"] }}</a></li>
+        <li>Old app_name: <strong>{{ app_description["app_name"] }}</strong></li>
+        <li>Old app URL: <a href="{{ app_description["app_url"] }}">{{ app_description["app_url"] }}</a></li>
+      </ul>
+    {% else %}
+      <p class="govuk-body">
+        {{ app.description }}
+      </p>
     {% endif %}
+  {% endif %}
+
+  {% if feature_enabled and repo_access_error_msg %}
+  <div class="govuk-grid-row">
+    <div class="govuk-column-two-thirds">
+
+      <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
+        <h2 class="govuk-heading-m govuk-error-summary-heading">
+        Webapp repo setting
+        </h2>
+        <p>
+          <strong>Couldn't find/read the app's information from github repo based on the repo url, please
+            check whether the repo_url exists or whether you have enough permission to access this repo
+          </strong>
+        </p>
+        <p>Raw error message: {{ repo_access_error_msg }}</p>
+      </div>
+    </div>
+  </div>
   {% endif %}
 
   {% if app_url %}
@@ -87,8 +89,16 @@
 </header>
 
 <section class="cpanel-section">
-
   {% if feature_enabled %}
+    <p><strong>You are required to be member of admin team for this app repo in order to be able to maintain the settings</strong></p>
+
+    {% if github_settings_access_error_msg %}
+      <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
+        <p style="color:red">Couldn't load the github settings</p>
+        <p style="color:red">Raw error message: {{ github_settings_access_error_msg }}</p>
+      </div>
+    {% endif %}
+
     {% for env_name, deployment_setting in deployments_settings.items() %}
       <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
       <p>The settings required for deploying the app into the cluster</p>

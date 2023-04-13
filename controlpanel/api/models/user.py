@@ -135,9 +135,6 @@ class User(AbstractUser):
         auth0.ExtendedAuth0().clear_up_user(user_id=self.auth0_id)
         return super().delete(*args, **kwargs)
 
-    def authentication_event(self):
-        cluster.User(self).on_authenticate()
-
     @classmethod
     def bulk_migration_update(cls, usernames, new_state):
         """

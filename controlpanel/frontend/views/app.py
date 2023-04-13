@@ -73,19 +73,25 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
     def _get_all_app_settings(self, app):
         app_manager_ins = cluster.App(app, self.request.user.github_api_token)
-        error_msg = None
+        access_repo_error_msg = None
+        github_settings_access_error_msg = None
         try:
             deployment_env_names = app_manager_ins.get_deployment_envs()
         except requests.exceptions.HTTPError as ex:
-            error_msg = ex.__str__()
+            access_repo_error_msg = ex.__str__()
             deployment_env_names = []
         deployments_settings = {}
-        for env_name in deployment_env_names:
-            deployments_settings[env_name] = {
-                "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
-                "variables": app_manager_ins.get_env_vars(env_name=env_name),
-            }
-        return deployments_settings, error_msg
+        try:
+            for env_name in deployment_env_names:
+                deployments_settings[env_name] = {
+                    "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
+                    "variables": app_manager_ins.get_env_vars(env_name=env_name),
+                }
+        except requests.exceptions.HTTPError as ex:
+            github_settings_access_error_msg = ex.__str__()
+
+        return deployments_settings, access_repo_error_msg, \
+               github_settings_access_error_msg
 
     def _load_app_description(self, app):
         try:
@@ -109,9 +115,11 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         )
 
         context["kibana_base_url"] = settings.KIBANA_BASE_URL
-        auth_settings, error_msg = self._get_all_app_settings(app)
+        auth_settings, access_repo_error_msg, github_settings_access_error_msg \
+            = self._get_all_app_settings(app)
         context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings).data
-        context["repo_error_msg"] = error_msg
+        context["repo_access_error_msg"] = access_repo_error_msg
+        context["github_settings_access_error_msg"] = github_settings_access_error_msg
 
         # TODO: using app.description for temporary place for storing old app info,
         #  should be removed after app migration is completed.
@@ -429,8 +437,6 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         context["deployment_envs"] = app.deployment_envs(
             self.request.user.github_api_token
         )
-        # if not env_name and len(context["deployment_envs"]) >= 1:
-        #     env_name = context["deployment_envs"][0]
         context["env_name"] = env_name
 
     def get_context_data(self, **kwargs):
