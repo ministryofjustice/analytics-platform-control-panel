@@ -390,9 +390,6 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
 
-    # TODO: need to remove once the workflow issue is fixed
-    DEFAULT_VALUE_FOR_BLANK = "NONE"
-
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
         self.app = app
@@ -414,12 +411,8 @@ class App(EntityResource):
         )
 
     def _create_secrets(self, env_name, client=None):
-        # TODO: need to remove auth client
-        #  once the workflow issue is fixed
         secret_data: dict = {
-            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name),
-            App.AUTH0_CLIENT_ID: self.DEFAULT_VALUE_FOR_BLANK,
-            App.AUTH0_CLIENT_SECRET: self.DEFAULT_VALUE_FOR_BLANK
+            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)
         }
         if client:
             secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
@@ -444,13 +437,7 @@ class App(EntityResource):
                 App.AUTHENTICATION_REQUIRED: not disable_authentication,
             }
         else:
-            # TODO: need to remove auth related parts
-            #  once the workflow issue is fixed
-            env_data: dict = {
-                App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
-                App.AUTH0_PASSWORDLESS: "true",
-                App.AUTH0_CALLBACK_URL: self.DEFAULT_VALUE_FOR_BLANK,
-                App.AUTHENTICATION_REQUIRED: not disable_authentication}
+            env_data: dict = {App.AUTHENTICATION_REQUIRED: not disable_authentication}
 
         self._create_envs(env_name=env_name, env_data=env_data)
 
