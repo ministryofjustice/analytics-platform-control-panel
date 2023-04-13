@@ -614,8 +614,9 @@ class App(EntityResource):
         self, env_name, disable_authentication=False, connections=None
     ):
         client = None
+        group = None
         if not disable_authentication:
-            client = auth0.ExtendedAuth0().setup_auth0_client(
+            client, group = auth0.ExtendedAuth0().setup_auth0_client(
                 app_name=self.app.auth0_client_name(env_name)
             )
         self._create_secrets(env_name, client=client)
@@ -625,16 +626,16 @@ class App(EntityResource):
             connections or [],
             client=client,
         )
+        return client, group
 
     def remove_auth_settings(self, env_name):
-        auth_client_name = self.app.auth0_client_name(env_name)
         secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
         for secret_name in secrets_require_remove:
             self.delete_secret(env_name, secret_name)
         envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
-        auth0.ExtendedAuth0().clear_up_app(app_name=auth_client_name)
+        auth0.ExtendedAuth0().clear_up_app(self.app.get_auth_client(env_name))
 
 
 class S3Bucket(EntityResource):

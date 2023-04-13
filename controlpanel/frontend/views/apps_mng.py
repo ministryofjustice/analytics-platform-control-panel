@@ -94,11 +94,12 @@ class AppManager:
         self, app, envs, github_api_token, disable_authentication, connections
     ):
         for env in envs:
-            cluster.App(app, github_api_token).create_auth_settings(
+            client, group = cluster.App(app, github_api_token).create_auth_settings(
                 env_name=env,
                 disable_authentication=disable_authentication,
                 connections=connections,
             )
+            app.save_auth_settings(env_name=env, client=client, group=group)
 
     def _create_or_link_datasource(self, bucket_data):
         if bucket_data.get("new_datasource_name"):

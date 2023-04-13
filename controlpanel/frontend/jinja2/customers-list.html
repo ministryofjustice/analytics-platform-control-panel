@@ -14,16 +14,16 @@
 
 {% block content %}
 
-{% if env_name %}
+{% if group_dict %}
   <section>
    <h2 class="govuk-heading-m">
       Switch to different deployment environment from the following links:
     </h2>
     <ul class="govuk-list govuk-list--bullet">
-      {% for env_item_name in app.deployment_envs(request.user.github_api_token) %}
+      {% for env_item_name, env_group_id in group_dict.items() %}
         <li>
-            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?env_name={{ env_item_name }}" >
-              {% if env_name == env_item_name %}
+            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?group_id={{ group_id }}" >
+              {% if group_id == env_group_id %}
                 <strong>Manage customers - {{ env_item_name }}</strong>
               {% else %}
                 Manage customers - {{ env_item_name }}
@@ -38,12 +38,16 @@
     App customers under {{ env_name }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
+{% else %}
+   <h2 class="govuk-heading-m">
+      No need to manage the customers of app on Control panel
+   </h2>
 {% endif %}
+
 
 
   <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id }) }}">
     {{ csrf_input }}
-    <input type="hidden" name="env_name" value="{{ env_name or '' }}">
     <input type="hidden" name="group_id" value="{{ group_id or '' }}">
     <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
             type="submit"
@@ -94,8 +98,7 @@
       elided = elided,
       show_dots = False,
       page_no = page_no,
-      group_id = group_id,
-      env_name = env_name
+      group_id = group_id
     )
   }}
 
@@ -103,7 +106,6 @@
 {% if request.user.has_perm('api.add_app_customer', app) %}
   <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
-    <input type="hidden" name="env_name" value="{{ env_name or '' }}">
     <input type="hidden" name="group_id" value="{{ group_id or '' }}">
     <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
       <label class="govuk-label" for="customer_email">

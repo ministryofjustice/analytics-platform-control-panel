@@ -25,6 +25,12 @@ class App(TimeStampedModel):
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
+    # The app_conf mainly for storing the auth settings related and those information
+    # are not within the fields which will be searched frequently
+    app_conf = models.JSONField(null=True)
+
+    DEFAULT_AUTH_CATEGORY = "primary"
+
     class Meta:
         db_table = "control_panel_api_app"
         ordering = ("name",)
@@ -52,11 +58,11 @@ class App(TimeStampedModel):
         return elasticsearch.app_logs(self, num_hours=num_hours)
 
     def get_group_id(self, env_name):
-        return auth0.ExtendedAuth0().groups.get_group_id(self.auth0_client_name(env_name))
+        return self.get_auth_client(env_name).get("group_id")
 
     def customers(self, env_name=None):
         return (
-            auth0.ExtendedAuth0().groups.get_group_members(group_name=self.auth0_client_name(env_name)) or []
+            auth0.ExtendedAuth0().groups.get_group_members(group_id=self.get_group_id(env_name)) or []
         )
 
     def customer_paginated(self, page, group_id, per_page=25):
@@ -68,7 +74,8 @@ class App(TimeStampedModel):
         )
 
     def auth0_connections(self, env_name):
-        return auth0.ExtendedAuth0().get_client_enabled_connections(self.auth0_client_name(env_name))
+        client_id = self.get_auth_client(env_name).get("client_id")
+        return auth0.ExtendedAuth0().get_client_enabled_connections(client_id)
 
     @property
     def app_allowed_ip_ranges(self):
@@ -99,9 +106,10 @@ class App(TimeStampedModel):
     def add_customers(self, emails, env_name=None, group_id=None):
         emails = list(filter(None, emails))
         if emails:
+            if not group_id:
+                group_id = self.get_group_id(env_name)
             try:
                 auth0.ExtendedAuth0().add_group_members_by_emails(
-                    group_name=self.auth0_client_name(env_name),
                     emails=emails,
                     user_options={"connection": "email"},
                     group_id=group_id
@@ -111,8 +119,9 @@ class App(TimeStampedModel):
 
     def delete_customers(self, user_ids, env_name=None, group_id=None):
         try:
+            if not group_id:
+                group_id = self.get_auth_client(env_name).get("group_id")
             auth0.ExtendedAuth0().groups.delete_group_members(
-                group_name=self.auth0_client_name(env_name),
                 user_ids=user_ids,
                 group_id=group_id
             )
@@ -135,6 +144,30 @@ class App(TimeStampedModel):
 
     def auth0_client_name(self, env_name):
         return f"{self.slug}_{env_name}" if env_name else self.slug
+
+    def get_auth_client(self, env_name):
+        env_name = env_name or self.DEFAULT_AUTH_CATEGORY
+        return self.app_conf.get(env_name, {})
+
+    def save_auth_settings(self, env_name, client, group):
+        auth_client_info = {}
+        if client:
+            auth_client_info.update(dict(client_id=client.get("client_id")))
+        if group:
+            auth_client_info.update(dict(group_id = group.get("_id")))
+        if auth_client_info:
+            if env_name not in self.app_conf:
+                self.app_conf[env_name] = {}
+            self.app_conf[env_name].update()
+            self.save()
+
+    def get_auth0_group_list(self):
+        groups_dict = {}
+        for env_name, auth_info in (self.app_conf or {}).items():
+            if not auth_info.get('group_id'):
+                continue
+            groups_dict[env_name] = auth_info.get('group_id')
+        return groups_dict
 
 
 class AddCustomerError(Exception):

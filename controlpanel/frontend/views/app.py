@@ -166,10 +166,11 @@ class UpdateAppAuth0Connections(
 
     def form_valid(self, form):
         try:
+            env_name = form.cleaned_data.get("env_name")
+            auth0_client_id = self.object.get_auth_client(env_name).get("client_id")
             auth0.ExtendedAuth0().update_client_auth_connections(
-                self.object.auth0_client_name(
-                    env_name=form.cleaned_data.get("env_name")
-                ),
+                app_name=self.object.auth0_client_name(env_name),
+                client_id=auth0_client_id,
                 new_conns=form.cleaned_data.get("auth0_connections"),
                 existing_conns=form.auth0_connections,
             )
@@ -381,7 +382,6 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def form_valid(self, form):
         self.get_object().add_customers(
             form.cleaned_data["customer_email"],
-            env_name=form.cleaned_data.get("env_name"),
             group_id=form.cleaned_data.get("group_id"),
         )
         return HttpResponseRedirect(
@@ -394,11 +394,11 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         messages.success(self.request, "Successfully added customers")
-        return "{}?env_name={}".format(
+        return "{}?group_id={}".format(
             reverse_lazy(
                 "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
             ),
-            kwargs.get("env_name", ""),
+            kwargs.get("group_id", ""),
         )
 
 
@@ -407,23 +407,14 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
     permission_required = "api.retrieve_app"
     template_name = "customers-list.html"
 
-    def _retrieve_and_confirm_env_info(self, app, context):
-        env_name = self.request.GET.get("env_name") or ""
-        context["deployment_envs"] = app.deployment_envs(
-            self.request.user.github_api_token
-        )
-        if not env_name and len(context["deployment_envs"]) >= 1:
-            env_name = context["deployment_envs"][0]
-        context["env_name"] = env_name
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app: App = context.get("app")
 
-        self._retrieve_and_confirm_env_info(app, context)
-        group_id = self.request.GET.get("group_id") or app.get_group_id(
-            context["env_name"]
-        )
+        context["groups_dict"] = app.get_auth0_group_list()
+        group_id = self.request.GET.get("group_id")
+        if not group_id and context["group_id"]:
+            group_id = list(context["groups_dict"].values())[0]
         context["group_id"] = group_id
         context["page_no"] = page_no = self.kwargs.get("page_no")
 
