@@ -150,6 +150,15 @@ class App(TimeStampedModel):
         else:
             return self._get_alternative_client_name()
 
+    @property
+    def migration_info(self):
+        # TODO: using app.description for temporary place for storing old app info,
+        #  should be removed after app migration is completed.
+        try:
+            return json.loads(self.description).get("migration", {})
+        except ValueError:
+            return {}
+
 
 class AddCustomerError(Exception):
     pass

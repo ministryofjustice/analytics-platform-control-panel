@@ -360,3 +360,34 @@ def test_github_error3_on_app_detail(client, app, users,):
         response = detail(client, app)
         assert response.status_code == 200
         assert error_msg in str(response.content)
+
+
+@pytest.fixture
+def app_being_migrated(users):
+    app = mommy.make("api.App")
+    app.repo_url = "https://github.com/new_github_org/testing_repo"
+    app_old_repo_url = "https://github.com/github_org/testing_repo"
+    migration_json = dict(
+        app_name="testing_app",
+        repo_url=app_old_repo_url,
+        app_url=f"https://{app.slug}.{settings.APP_DOMAIN}",
+        state="in_process"
+    )
+    app_info = dict(
+        migration=migration_json
+    )
+    app.description = json.dumps(app_info)
+    app.save()
+    mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
+    return app
+
+
+def test_app_description_display_old_app_info(client, app_being_migrated, users):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users["superuser"])
+        response = detail(client, app_being_migrated)
+        assert response.status_code == 200
+        assert app_being_migrated.migration_info["app_name"] in str(response.content)
+        assert app_being_migrated.migration_info["repo_url"] in str(response.content)
+        assert app_being_migrated.migration_info["app_url"] in str(response.content)

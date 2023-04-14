@@ -26,16 +26,16 @@
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 
-  {% if app_description %}
-    {% if feature_enabled %}
+  {% if app.description %}
+    {% if app_migration_info and feature_enabled %}
       <h2 class="govuk-heading-m">The key information on old cluster</h2>
       <p class="govuk-body" >
         <b style="color:red">The information below will be removed or archived after migration, won't be available here.</b>
       </p>
       <ul class="govuk-body">
-        <li>Old Repo: <a href="{{ app_description["repo_url"] }}">{{ app_description["repo_url"] }}</a></li>
-        <li>Old app_name: <strong>{{ app_description["app_name"] }}</strong></li>
-        <li>Old app URL: <a href="{{ app_description["app_url"] }}">{{ app_description["app_url"] }}</a></li>
+        <li>Old Repo: <a href="{{ app_migration_info["repo_url"] }}">{{ app_migration_info["repo_url"] }}</a></li>
+        <li>Old app_name: <strong>{{ app_migration_info["app_name"] }}</strong></li>
+        <li>Old app URL: <a href="{{ app_migration_info["app_url"] }}">{{ app_migration_info["app_url"] }}</a></li>
       </ul>
     {% else %}
       <p class="govuk-body">

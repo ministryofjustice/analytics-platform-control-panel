@@ -32,14 +32,17 @@ class Command(BaseCommand):
         return data
 
     def _update_app_data_records(self, app, app_item):
-        backup_json = dict(
+        migration_json = dict(
             app_name=app_item["app_name"],
             repo_url=app_item["repo_url"],
             app_url=f"https://{ app.slug }.{settings.APP_DOMAIN}",
-            state="in_process",
+            state="in_process"
+        )
+        app_info = dict(
+            migration=migration_json,
             auth0_clients=app_item["migration"].get("auth0_clients") or {}
         )
-        app.description = json.dumps(backup_json)
+        app.description = json.dumps(app_info)
         app.name = app_item["migration"]["app_name"]
         app.repo_url = app_item["migration"]["repo_url"]
         app.save()

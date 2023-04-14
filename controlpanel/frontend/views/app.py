@@ -93,12 +93,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return deployments_settings, access_repo_error_msg, \
                github_settings_access_error_msg
 
-    def _load_app_description(self, app):
-        try:
-            return json.loads(app.description)
-        except ValueError:
-            return {}
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
@@ -121,9 +115,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
 
-        # TODO: using app.description for temporary place for storing old app info,
-        #  should be removed after app migration is completed.
-        context["app_description"] = self._load_app_description(app)
+        # TODO: The following field should be removed after app migration
+        context["app_migration_info"] = app.migration_info
         return context
 
 
