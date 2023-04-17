@@ -30,6 +30,7 @@ class App(TimeStampedModel):
     app_conf = models.JSONField(null=True)
 
     DEFAULT_AUTH_CATEGORY = "primary"
+    KEY_WORD_FOR_AUTH_SETTINGS = "auth_settings"
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -73,9 +74,16 @@ class App(TimeStampedModel):
             or []
         )
 
-    def auth0_connections(self, env_name):
-        client_id = self.get_auth_client(env_name).get("client_id")
-        return auth0.ExtendedAuth0().get_client_enabled_connections(client_id)
+    def auth0_connections(self, env_name=None):
+        client_ids = []
+        if env_name:
+            client_ids = [self.get_auth_client(env_name).get("client_id")]
+        else:
+            for env_name, client_info in (self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+                if client_info.get('client_id'):
+                    client_ids.append(client_info.get('client_id'))
+        connections = auth0.ExtendedAuth0().get_client_enabled_connections(client_ids)
+        return connections
 
     @property
     def app_allowed_ip_ranges(self):
@@ -154,19 +162,23 @@ class App(TimeStampedModel):
         if client:
             auth_client_info.update(dict(client_id=client.get("client_id")))
         if group:
-            auth_client_info.update(dict(group_id = group.get("_id")))
+            auth_client_info.update(dict(group_id=group.get("_id")))
         if auth_client_info:
+            if self.KEY_WORD_FOR_AUTH_SETTINGS not in self.app_conf:
+                self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS] = {}
             if env_name not in self.app_conf:
-                self.app_conf[env_name] = {}
-            self.app_conf[env_name].update()
+                self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = {}
+            self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name].update(
+                auth_client_info)
             self.save()
 
     def get_auth0_group_list(self):
         groups_dict = {}
-        for env_name, auth_info in (self.app_conf or {}).items():
+        auth_settings = (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS, {})
+        for env_name, auth_info in auth_settings.items():
             if not auth_info.get('group_id'):
                 continue
-            groups_dict[env_name] = auth_info.get('group_id')
+            groups_dict[auth_info.get('group_id')] = env_name
         return groups_dict
 
 

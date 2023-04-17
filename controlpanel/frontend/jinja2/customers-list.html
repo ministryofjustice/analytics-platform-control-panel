@@ -14,32 +14,42 @@
 
 {% block content %}
 
-{% if group_dict %}
+<h2 class="govuk-heading-m">
+    Customer management for {{ app.name }}
+</h2>
+
+{% if groups_dict %}
   <section>
-   <h2 class="govuk-heading-m">
+   <h2 class="govuk-heading-s">
       Switch to different deployment environment from the following links:
     </h2>
     <ul class="govuk-list govuk-list--bullet">
-      {% for env_item_name, env_group_id in group_dict.items() %}
+      {% for env_group_id, env_item_name in groups_dict.items() %}
         <li>
-            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?group_id={{ group_id }}" >
+            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?group_id={{ env_group_id }}" >
               {% if group_id == env_group_id %}
                 <strong>Manage customers - {{ env_item_name }}</strong>
               {% else %}
                 Manage customers - {{ env_item_name }}
               {% endif %}
             </a>
+            {% if  auth_errors.get(env_group_id) %}
+            <span id="read_customer_error_msg-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>{{ auth_errors.get(env_group_id) }}
+                <span class="govuk-visually-hidden"></span>if the related group does not exist, please reset the app group on app's detail page
+            </span>
+            {% endif %}
         </li>
       {% endfor %}
     </ul>
   </section>
 
-  <h2 class="govuk-heading-m">
-    App customers under {{ env_name }} environment
+  <h2 class="govuk-heading-s">
+    App customers under {{ groups_dict.get(group_id) }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
 {% else %}
-   <h2 class="govuk-heading-m">
+   <h2 class="govuk-heading-s">
       No need to manage the customers of app on Control panel
    </h2>
 {% endif %}

@@ -9,12 +9,13 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
+from auth0.v3.management.rest import Auth0Error
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
@@ -385,7 +386,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             group_id=form.cleaned_data.get("group_id"),
         )
         return HttpResponseRedirect(
-            self.get_success_url(env_name=form.cleaned_data.get("env_name"))
+            self.get_success_url(group_id=form.cleaned_data.get("group_id"))
         )
 
     def get_form_kwargs(self):
@@ -407,23 +408,37 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
     permission_required = "api.retrieve_app"
     template_name = "customers-list.html"
 
+    def _confirm_group_id(self, context):
+        group_id = self.request.GET.get("group_id")
+        if not group_id and context.get("groups_dict"):
+            group_id = list(context["groups_dict"].keys())[0]
+        return group_id
+
+    def _get_customer_list(self, context, page_no, app):
+        read_customer_error_msg = None
+        group_id = context["group_id"]
+        if group_id:
+            try:
+                customers = app.customer_paginated(page_no, group_id)
+            except Auth0Error as error:
+                customers = {}
+                read_customer_error_msg = error.__str__()
+        else:
+            customers = {}
+        return customers, read_customer_error_msg
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app: App = context.get("app")
 
         context["groups_dict"] = app.get_auth0_group_list()
-        group_id = self.request.GET.get("group_id")
-        if not group_id and context["group_id"]:
-            group_id = list(context["groups_dict"].values())[0]
-        context["group_id"] = group_id
+        context["group_id"] = self._confirm_group_id(context)
         context["page_no"] = page_no = self.kwargs.get("page_no")
-
-        if group_id:
-            customers = app.customer_paginated(page_no, group_id)
-            context["customers"] = customers.get("users", [])
-        else:
-            customers = {}
-            context["customers"] = []
+        customers, read_customer_error_msg = self._get_customer_list(context, page_no, app)
+        context["auth_errors"] = {
+            context["group_id"]: read_customer_error_msg
+        }
+        context["customers"] = customers.get("users", [])
         context["paginator"] = paginator = self._paginate_customers(customers)
         context["elided"] = paginator.get_elided_page_range(page_no)
         return context
@@ -441,23 +456,24 @@ class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy(
-            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        return "{}?group_id={}".format(
+            reverse_lazy(
+                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+            ),
+            self._get_env_group_info(),
         )
 
     def _get_env_group_info(self):
-        env_names = self.request.POST.getlist("env_name")
-        env_name = env_names[0] if env_names else ""
         group_ids = self.request.POST.getlist("group_id")
         group_id = group_ids[0] if group_ids else ""
-        return env_name, group_id
+        return group_id
 
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
-        env_name, group_id = self._get_env_group_info()
+        group_id = self._get_env_group_info()
         try:
-            app.delete_customers(user_ids, env_name=env_name, group_id=group_id)
+            app.delete_customers(user_ids, group_id=group_id)
         except App.DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             messages.error(

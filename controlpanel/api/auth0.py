@@ -239,17 +239,23 @@ class ExtendedAuth0(Auth0):
         if client_id:
             self.clients.delete(client_id)
 
-    def get_client_enabled_connections(self, client_id):
+    def get_client_enabled_connections(self, client_ids):
         """
         There is no Auth0 API to get the list of enabled connection for a client,
         so we have to get all social connections, then check whether the client
         (client_id) is in the list of enabled_clients
         """
+        if not client_ids:
+            return {}
         connections = self.connections.get_all()
-        enabled_connections = []
+        enabled_connections = {}
         for connection in connections:
-            if client_id in connection["enabled_clients"]:
-                enabled_connections.append(connection["name"])
+            for client_id in client_ids:
+                if client_id not in connection["enabled_clients"]:
+                    continue
+                if client_id not in enabled_connections:
+                    enabled_connections[client_id] = []
+                enabled_connections[client_id].append(connection["name"])
         return enabled_connections
 
     def update_client_auth_connections(

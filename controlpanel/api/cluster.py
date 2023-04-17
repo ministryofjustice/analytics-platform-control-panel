@@ -447,19 +447,19 @@ class App(EntityResource):
                 return True
         return False
 
-    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
-        # Add the auth0's connections into this category
-        connections = self.app.auth0_connections(env_name=env_name)
-        app_secrets.append(
-            {
-                "name": App.AUTH0_CONNECTIONS,
-                "env_name": env_name,
-                "value": connections or [],
-                "created": connections is not None,
-                "removable": False,
-                "editable": True,
-            }
-        )
+    # def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
+    #     # Add the auth0's connections into this category
+    #     connections = self.app.auth0_connections(env_name=env_name)
+    #     app_secrets.append(
+    #         {
+    #             "name": App.AUTH0_CONNECTIONS,
+    #             "env_name": env_name,
+    #             "value": connections or [],
+    #             "created": connections is not None,
+    #             "removable": False,
+    #             "editable": True,
+    #         }
+    #     )
 
     def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
         not_created_ones = list(
@@ -586,7 +586,7 @@ class App(EntityResource):
             )
             created_secret_names.append(item["name"])
         self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
-        self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
+        # self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
         return app_secrets
 
     def get_env_vars(self, env_name):

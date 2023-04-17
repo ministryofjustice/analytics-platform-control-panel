@@ -362,6 +362,20 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         }
     }
 
+    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
+        # Add the auth0's connections into this category
+        connections = self.app.auth0_connections(env_name=env_name)
+        app_secrets.append(
+            {
+                "name": App.AUTH0_CONNECTIONS,
+                "env_name": env_name,
+                "value": connections or [],
+                "created": connections is not None,
+                "removable": False,
+                "editable": True,
+            }
+        )
+
     def _auth_required(self, auth_flag):
         return str(auth_flag.get('value') or 'true').lower() == 'true'
 
