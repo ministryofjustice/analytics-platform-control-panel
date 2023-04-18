@@ -1,6 +1,8 @@
-# Third-party
+# Standard library
 import json
 import uuid
+
+# Third-party
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
@@ -20,10 +22,10 @@ class App(TimeStampedModel):
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
     ip_allowlists = models.ManyToManyField(
         IPAllowlist,
-        through='AppIPAllowList',
+        through="AppIPAllowList",
         related_name="apps",
         related_query_name="app",
-        blank=True
+        blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
@@ -56,11 +58,16 @@ class App(TimeStampedModel):
         return elasticsearch.app_logs(self, num_hours=num_hours)
 
     def get_group_id(self, env_name):
-        return auth0.ExtendedAuth0().groups.get_group_id(self.auth0_client_name(env_name))
+        return auth0.ExtendedAuth0().groups.get_group_id(
+            self.auth0_client_name(env_name)
+        )
 
     def customers(self, env_name=None):
         return (
-            auth0.ExtendedAuth0().groups.get_group_members(group_name=self.auth0_client_name(env_name)) or []
+            auth0.ExtendedAuth0().groups.get_group_members(
+                group_name=self.auth0_client_name(env_name)
+            )
+            or []
         )
 
     def customer_paginated(self, page, group_id, per_page=25):
@@ -72,7 +79,9 @@ class App(TimeStampedModel):
         )
 
     def auth0_connections(self, env_name):
-        return auth0.ExtendedAuth0().get_client_enabled_connections(self.auth0_client_name(env_name))
+        return auth0.ExtendedAuth0().get_client_enabled_connections(
+            self.auth0_client_name(env_name)
+        )
 
     @property
     def app_allowed_ip_ranges(self):
@@ -83,21 +92,30 @@ class App(TimeStampedModel):
 
     def env_allowed_ip_ranges(self, env_name):
         related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
-        allowed_ip_ranges = IPAllowlist.objects.filter(pk__in=list(related_item_ids)).\
-            values_list("allowed_ip_ranges", flat=True).order_by("pk")
+            deployment_env=env_name
+        ).values_list("ip_allowlist_id", flat=True)
+        allowed_ip_ranges = (
+            IPAllowlist.objects.filter(pk__in=list(related_item_ids))
+            .values_list("allowed_ip_ranges", flat=True)
+            .order_by("pk")
+        )
         return ", ".join(list(allowed_ip_ranges))
 
     def env_allowed_ip_ranges_names(self, env_name):
         related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
-        allowed_ip_ranges = IPAllowlist.objects.filter(pk__in=list(related_item_ids)). \
-            values_list("name", flat=True).order_by("pk")
+            deployment_env=env_name
+        ).values_list("ip_allowlist_id", flat=True)
+        allowed_ip_ranges = (
+            IPAllowlist.objects.filter(pk__in=list(related_item_ids))
+            .values_list("name", flat=True)
+            .order_by("pk")
+        )
         return ", ".join(list(allowed_ip_ranges))
 
     def env_allow_ip_ranges_ids(self, env_name):
         related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
+            deployment_env=env_name
+        ).values_list("ip_allowlist_id", flat=True)
         return list(related_item_ids)
 
     def add_customers(self, emails, env_name=None, group_id=None):
@@ -108,7 +126,7 @@ class App(TimeStampedModel):
                     group_name=self.auth0_client_name(env_name),
                     emails=emails,
                     user_options={"connection": "email"},
-                    group_id=group_id
+                    group_id=group_id,
                 )
             except auth0.Auth0Error as e:
                 raise AddCustomerError from e
@@ -118,10 +136,33 @@ class App(TimeStampedModel):
             auth0.ExtendedAuth0().groups.delete_group_members(
                 group_name=self.auth0_client_name(env_name),
                 user_ids=user_ids,
-                group_id=group_id
+                group_id=group_id,
             )
         except auth0.Auth0Error as e:
             raise DeleteCustomerError from e
+
+    def delete_customer_by_email(self, email, group_id):
+        """
+        Attempt to find a customer by email and delete them from the group.
+        If the user is not found, or the user does not belong to the given group, raise
+        an error.
+        """
+        auth0_client = auth0.ExtendedAuth0()
+        try:
+            user = auth0_client.users.get_users_email_search(
+                email=email,
+                connection="email",
+            )[0]
+        except (auth0.Auth0Error, IndexError) as e:
+            raise DeleteCustomerError from e
+
+        for group in auth0_client.users.get_user_groups(user_id=user["user_id"]):
+            if group_id == group["_id"]:
+                return self.delete_customers(
+                    user_ids=[user["user_id"]], group_id=group_id
+                )
+
+        raise DeleteCustomerError
 
     @property
     def status(self):
