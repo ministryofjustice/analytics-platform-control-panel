@@ -412,7 +412,7 @@ def test_setup_auth0_client(
         "enabled_clients": ["new_client_id"],
     }
 
-    ExtendedAuth0.setup_auth0_client(app_name=new_client_name)
+    ExtendedAuth0.setup_auth0_client(client_name=new_client_name)
 
     fixture_permission_create.assert_called_with(
         dict(name="view:app", applicationId=new_client_id)

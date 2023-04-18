@@ -147,7 +147,7 @@ class ExtendedAuth0(Auth0):
         return new_connections
 
     def setup_auth0_client(
-            self, client_name, app_url_name, connections=None, app_domain=None):
+            self, client_name, app_url_name=None, connections=None, app_domain=None):
         """
         parameters:
             connections:
@@ -158,7 +158,8 @@ class ExtendedAuth0(Auth0):
         if connections is None:
             connections = {"email": {}}
         new_connections = self._create_custom_connection(client_name, connections)
-        app_url = "https://{}.{}".format(app_url_name, app_domain or self.app_domain)
+        app_url = "https://{}.{}".format(
+            app_url_name or client_name, app_domain or self.app_domain)
         client = self.clients.create(
             dict(
                 name=client_name,
