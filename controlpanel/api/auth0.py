@@ -146,7 +146,8 @@ class ExtendedAuth0(Auth0):
             new_connections.append(new_connection_name)
         return new_connections
 
-    def setup_auth0_client(self, app_name, connections=None, app_domain=None):
+    def setup_auth0_client(
+            self, client_name, app_url_name, connections=None, app_domain=None):
         """
         parameters:
             connections:
@@ -156,11 +157,11 @@ class ExtendedAuth0(Auth0):
         """
         if connections is None:
             connections = {"email": {}}
-        new_connections = self._create_custom_connection(app_name, connections)
-        app_url = "https://{}.{}".format(app_name, app_domain or self.app_domain)
+        new_connections = self._create_custom_connection(client_name, connections)
+        app_url = "https://{}.{}".format(app_url_name, app_domain or self.app_domain)
         client = self.clients.create(
             dict(
-                name=app_name,
+                name=client_name,
                 callbacks=[f"{app_url}/callback"],
                 allowed_origins=[app_url],
                 app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
@@ -176,7 +177,7 @@ class ExtendedAuth0(Auth0):
         )
         role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
-        group = self.groups.create(dict(name=app_name))
+        group = self.groups.create(dict(name=client_name))
         self.groups.add_role(group["_id"], role["_id"])
 
         self._enable_connections_for_new_client(

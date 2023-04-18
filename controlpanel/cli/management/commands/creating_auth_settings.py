@@ -20,6 +20,23 @@ class DummyApp:
     def env_allowed_ip_ranges(self, env_name):
         return self.app_detail["normalised_ip_ranges"]
 
+    @property
+    def slug(self):
+        return self.app_detail["app_name"]
+
+    def auth0_client_name(self, env_name=None):
+        return settings.AUTH0_CLIENT_NAME_PATTERN.format(
+            app_name=self.slug, env=env_name)
+
+    def app_url_name(self, env_name):
+        format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
+        if not format_pattern:
+            format_pattern = settings.APP_URL_NAME_PATTERN.get("DEFAULT")
+        if format_pattern:
+            return format_pattern.format(app_name=self.slug, env=env_name)
+        else:
+            return self.slug
+
 
 class Command(BaseCommand):
     help = "Create the application's auth0 clients per environment and generate github secrets"
@@ -99,7 +116,6 @@ class Command(BaseCommand):
             self._inject_auth_settings_to_github(env_name, cluster_instance, app_detail)
         else:
             client, group = cluster_instance.create_auth_settings(
-                client_name=self._get_auth0_client_name(app_detail["app_name"], env_name),
                 env_name=env_name,
                 disable_authentication=app_detail["disable_authentication"],
                 connections=app_detail["connections"],

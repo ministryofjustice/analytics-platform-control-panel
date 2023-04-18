@@ -601,23 +601,15 @@ class App(EntityResource):
         self._add_missing_mandatory_vars(env_name, app_env_vars, created_var_names)
         return app_env_vars
 
-    def _contruct_full_client_name(self, env_name, client_name=None):
-        if client_name:
-            return client_name
-        return self.app.auth0_client_name(env_name)
-
     def create_auth_settings(
-            self, env_name, disable_authentication=False, connections=None,
-            client_name=None, app_domain=None
+            self, env_name, disable_authentication=False, connections=None, app_domain=None
     ):
         client = None
         group = None
         if not disable_authentication:
             client, group = self._get_auth0_instance().setup_auth0_client(
-                app_name=self._contruct_full_client_name(
-                    env_name,
-                    client_name=client_name
-                ),
+                client_name=self.app.auth0_client_name(env_name),
+                app_url_name=self.app.app_url_name(env_name),
                 connections=connections,
                 app_domain=app_domain
             )

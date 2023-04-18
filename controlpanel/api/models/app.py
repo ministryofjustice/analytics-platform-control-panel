@@ -27,6 +27,8 @@ class App(TimeStampedModel):
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
+    DEFAULT_KEY_WORD = "DEFAULT"
+
     class Meta:
         db_table = "control_panel_api_app"
         ordering = ("name",)
@@ -158,6 +160,15 @@ class App(TimeStampedModel):
             return json.loads(self.description).get("migration", {})
         except ValueError:
             return {}
+
+    def app_url_name(self, env_name):
+        format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
+        if not format_pattern:
+            format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_KEY_WORD)
+        if format_pattern:
+            return format_pattern.format(app_name=self.slug, env=env_name)
+        else:
+            return self.slug
 
 
 class AddCustomerError(Exception):

@@ -52,9 +52,8 @@ AIRFLOW_REGION: "eu-west-1"
 
 AWS_DEFAULT_REGION: "eu-west-1"
 
-APP_DOMAIN:
-  _DEFAULT: apps.dev.mojanalytics.xyz
-  _HOST_alpha: apps.alpha.mojanalytics.xyz
+APP_DOMAIN_BEFORE_MIGRATION: apps.alpha.mojanalytics.xyz
+APP_DOMAIN: apps.live.cloud-platform.service.justice.gov.uk
 
 SLACK_CHANNEL: "#analytical-platform"
 
@@ -111,3 +110,7 @@ AUTH_SETTINGS_ENVS:
 SECRET_DISPLAY_VALUE: "*******"
 
 AUTH0_CLIENT_NAME_PATTERN: "data-platform-app-{app_name}-{env}"
+
+APP_URL_NAME_PATTERN:
+  DEFAULT: "{app_name}-{env}"
+  PROD: "{app_name}"

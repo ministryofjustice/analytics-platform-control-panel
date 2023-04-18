@@ -6,7 +6,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
 # First-party/Local
-from controlpanel.api import cluster
 from controlpanel.api.models import App, AppIPAllowList, IPAllowlist
 
 
@@ -80,8 +79,9 @@ class Command(BaseCommand):
 
             existing_ip_item = IPAllowlist.objects.filter(name=name).first()
             if existing_ip_item:
-                existing_ip_item.allowed_ip_ranges = ip_ranges
-                existing_ip_item.save()
+                if existing_ip_item.allowed_ip_ranges.strip() != ip_ranges.strip():
+                    existing_ip_item.allowed_ip_ranges = ip_ranges
+                    existing_ip_item.save()
             else:
                 IPAllowlist.objects.create(
                     name=name,
