@@ -110,7 +110,7 @@
     {% for env_name, deployment_setting in deployments_settings.items() %}
       <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
       {% set app_full_url = "https://" + app.app_url_name(env_name)+ "." + app_domain %}
-      <p><b>APP URL (if being deployed successfully): </b><a href="{{ app_full_url }}">{{ app_full_url }}</a></p>
+      <p><b>If the app has been successfully deployed onto Cloud Platform, it can be accessed here:</b><a href="{{ app_full_url }}">{{ app_full_url }}</a></p>
       <p>The settings required for deploying the app into the cluster</p>
       <hr style="height:5px;border:none;color:#333;background-color:#333;"/>
       <section>
