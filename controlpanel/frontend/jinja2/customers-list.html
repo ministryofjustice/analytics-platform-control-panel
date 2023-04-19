@@ -33,9 +33,9 @@
       <li>
           <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?env_name=" >
             {% if not env_name  %}
-              <strong>Manage customers - for old cluster</strong>
+              <strong>Manage customers - for app running on old cluster</strong>
             {% else %}
-              Manage customers - for old cluster
+              Manage customers - for app running on old cluster
             {% endif %}
           </a>
       </li>

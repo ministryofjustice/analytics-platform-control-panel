@@ -176,7 +176,7 @@ def test_available_auth0_clients_on_customers_page(
         group_id = 1
         url_dict = {"group_id": group_id}
         testing_app_envs = ["dev_env", "prod_env"]
-        keyword_for_old_app_env = "for old cluster"
+        keyword_for_old_app_env = "for app running on old cluster"
         get_deployment_envs.return_value = testing_app_envs
         client.force_login(users["superuser"])
         response = client.get(reverse("appcustomers-page", args=(app.id, 1)), url_dict)
