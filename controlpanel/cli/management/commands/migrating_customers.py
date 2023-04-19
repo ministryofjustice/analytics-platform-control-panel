@@ -36,8 +36,7 @@ class Command(BaseCommand):
                 new_app_name = row[1].strip()
                 list_apps.append(dict(
                     old_app_name=old_app_name,
-                    app_names=[self._get_auth0_client_name(new_app_name, "dev"),
-                               self._get_auth0_client_name(new_app_name, "prod")]
+                    app_names=[self._get_auth0_client_name(new_app_name, "prod")]
                 ))
         return list_apps
 
