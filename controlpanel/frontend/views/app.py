@@ -502,6 +502,7 @@ class RemoveCustomer(UpdateApp):
 
 class RemoveCustomerByEmail(UpdateApp):
     permission_required = "api.remove_app_customer"
+    form = None
 
     def get_redirect_url(self, *args, **kwargs):
         url = reverse_lazy(
@@ -511,18 +512,18 @@ class RemoveCustomerByEmail(UpdateApp):
 
     def perform_update(self, **kwargs):
         """
-        Attempts to remove a customer for an email address
+        Attempts to remove a user from a group, based on their email address
         """
-        app = self.get_object()
         self.form = RemoveCustomerByEmailForm(data=self.request.POST)
         if not self.form.is_valid():
             return messages.error(self.request, "Invalid email address entered")
 
+        app = self.get_object()
         email = self.form.cleaned_data["email"]
         try:
             app.delete_customer_by_email(
                 email=email,
-                group_id=self.form.cleaned_data["group_id"]
+                group_id=self.form.cleaned_data["group_id"],
             )
         except App.DeleteCustomerError:
             return messages.error(

@@ -141,12 +141,13 @@ class App(TimeStampedModel):
         except auth0.Auth0Error as e:
             raise DeleteCustomerError from e
 
-    def delete_customer_by_email(self, email, group_id):
+    def delete_customer_by_email(self, email, group_id=None, env_name=None):
         """
         Attempt to find a customer by email and delete them from the group.
         If the user is not found, or the user does not belong to the given group, raise
         an error.
         """
+        group_id = group_id or self.get_group_id(env_name=env_name)
         auth0_client = auth0.ExtendedAuth0()
         try:
             user = auth0_client.users.get_users_email_search(

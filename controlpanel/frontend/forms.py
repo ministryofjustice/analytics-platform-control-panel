@@ -365,8 +365,8 @@ class RemoveCustomerByEmailForm(forms.Form):
     email = forms.EmailField(widget=forms.EmailInput(
         attrs={"class": "govuk-input cpanel-input"})
     )
-    env_name = forms.CharField(required=False, widget=forms.HiddenInput)
-    group_id = forms.CharField(required=False, widget=forms.HiddenInput)
+    env_name = forms.CharField(widget=forms.HiddenInput)
+    group_id = forms.CharField(widget=forms.HiddenInput)
 
 
 class ResetHomeDirectoryForm(forms.Form):
