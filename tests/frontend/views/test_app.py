@@ -371,7 +371,7 @@ def app_being_migrated(users):
         app_name="testing_app",
         repo_url=app_old_repo_url,
         app_url=f"https://{app.slug}.{settings.APP_DOMAIN}",
-        state="in_process"
+        status="in_progress"
     )
     app_info = dict(
         migration=migration_json
