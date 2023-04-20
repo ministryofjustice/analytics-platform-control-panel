@@ -31,6 +31,7 @@ class Command(BaseCommand):
         list_apps = []
         with open(chosen_apps_file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
+            next(csv_reader)
             for row in csv_reader:
                 old_app_name = row[0].strip()
                 new_app_name = row[1].strip()

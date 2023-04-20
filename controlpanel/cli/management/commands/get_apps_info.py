@@ -510,6 +510,7 @@ class Command(BaseCommand):
         apps_scope = {}
         with open(chosen_apps_file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
+            next(csv_reader)
             for row in csv_reader:
                 has_done = False
                 if len(row) >= 6:

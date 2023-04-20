@@ -35,7 +35,7 @@ class Command(BaseCommand):
             app_name=app_item["app_name"],
             repo_url=app_item["repo_url"],
             app_url=f"https://{ app.slug }.{settings.APP_DOMAIN}",
-            state="in_process"
+            status="in_progress"
         )
         app_info = dict(
             migration=migration_json,
@@ -45,7 +45,6 @@ class Command(BaseCommand):
         app.name = app_item["migration"]["app_name"]
         app.repo_url = app_item["migration"]["repo_url"]
         app.save()
-
 
     def _update_app_ip_allow_list(self, app, app_detail):
         # update the ip allow list

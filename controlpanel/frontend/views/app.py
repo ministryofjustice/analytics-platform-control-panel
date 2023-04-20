@@ -117,6 +117,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
         # TODO: The following field should be removed after app migration
         context["app_migration_info"] = app.migration_info
+        context["app_migration_status"] = context["app_migration_info"].get('status', "")
         context["app_old_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN_BEFORE_MIGRATION}"
         return context
 

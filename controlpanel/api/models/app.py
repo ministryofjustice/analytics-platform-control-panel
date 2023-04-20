@@ -137,7 +137,7 @@ class App(TimeStampedModel):
         cluster.App(self, github_api_token).delete()
         super().delete(*args, **kwargs)
 
-    def _get_alternative_client_name(self):
+    def _get_old_auth0_client_name(self):
         """TODO This function needs to be adjusted once the migration is over"""
         try:
             app_conf = json.loads(self.description)
@@ -150,12 +150,12 @@ class App(TimeStampedModel):
             return settings.AUTH0_CLIENT_NAME_PATTERN.format(
                 app_name=self.slug, env=env_name)
         else:
-            return self._get_alternative_client_name()
+            return self._get_old_auth0_client_name()
 
     @property
     def migration_info(self):
         # TODO: using app.description for temporary place for storing old app info,
-        #  should be removed after app migration is completed.
+        #  The content of this field should be removed after app migration is completed.
         try:
             return json.loads(self.description).get("migration", {})
         except ValueError:

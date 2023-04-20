@@ -21,22 +21,40 @@
 {% endset %}
 
 {% block content %}
+
 <header>
+  {% if feature_enabled %}
+  <div class="govuk-width-container">
+    <div class="govuk-warning-text">
+      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+      <strong class="govuk-warning-text__text">
+        <span class="govuk-warning-text__assistive">Warning</span>
+        More information and user guide about webapp deployment pipeline and related settings will be provided soon.
+      </strong>
+    </div>
+    <hr class="govuk-section-break govuk-section-break--visible">
+  </div>
+  <br/>
+  {% endif %}
+
   <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-
   {% if feature_enabled %}
       <h2 class="govuk-heading-m">Migration status:</h2>
-      {% if app_migration_info %}
+      {% if app_migration_status == "in_progress" %}
         <p class="govuk-body" ><b>The app is under the migration process and has not been completed yet.</b></p>
         <ul class="govuk-body">
-          <li>Old Repo: <a href="{{ app_migration_info["repo_url"] }}">{{ app_migration_info["repo_url"] }}</a></li>
-          <li>Old app_name: <strong>{{ app_migration_info["app_name"] }}</strong></li>
+          <li>Old repository: <a href="{{ app_migration_info["repo_url"] }}">{{ app_migration_info["repo_url"] }}</a></li>
+          <li>Old app name: <strong>{{ app_migration_info["app_name"] }}</strong></li>
           <li>Old app URL: <a href="{{ app_migration_info["app_url"] }}">{{ app_migration_info["app_url"] }}</a></li>
         </ul>
         <p class="govuk-body" >
-          <b style="color:red">The information below will be removed after the app is migrated into new cluster.</b>
+          <b style="color:red">The above information about old app will be removed once the migration process is completed.</b>
+        </p>
+      {% elif app_migration_status == "done" %}
+        <p class="govuk-body">
+          <b style="color:red">The migration for this app has been completed</b>
         </p>
       {% else %}
         <p class="govuk-body">
@@ -77,9 +95,6 @@
     <p class="govuk-body">
       <a href="{{ app_old_url }}">{{ app_old_url }}</a>
     </p>
-    <p class="govuk-body">
-      <b style="color:red">The url will be changed after the app is migrated into new cluster.</b>
-    </p>
   {% endif %}
 
   <h2 class="govuk-heading-m">Source Code Repository</h2>
@@ -94,7 +109,7 @@
   {% if feature_enabled %}
     <h2 class="govuk-heading-m">Deployment Pipeline</h2>
     <p class="govuk-body"> Github workflows on app's repo are used for deploying the app.</p>
-    <p><strong>You are required to be member of admin team for this app repo in order to be able to maintain the deployments settings</strong></p>
+    <p class="govuk-body"><strong>You are required to be member of admin team for this app repo in order to be able to maintain the deployments settings</strong></p>
   {% endif %}
 </header>
 
@@ -111,7 +126,6 @@
       <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
       {% set app_full_url = "https://" + app.app_url_name(env_name)+ "." + app_domain %}
       <p><b>If the app has been successfully deployed onto Cloud Platform, it can be accessed here:</b><a href="{{ app_full_url }}">{{ app_full_url }}</a></p>
-      <p>The settings required for deploying the app into the cluster</p>
       <hr style="height:5px;border:none;color:#333;background-color:#333;"/>
       <section>
         <h3 class="govuk-heading-s">App Secrets</h3>
