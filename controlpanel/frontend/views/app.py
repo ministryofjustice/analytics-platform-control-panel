@@ -508,7 +508,7 @@ class RemoveCustomerByEmail(UpdateApp):
         url = reverse_lazy(
             "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
         )
-        return f"{url}?env_name={self.form.cleaned_data['env_name']}"
+        return f"{url}?env_name={self.form.cleaned_data.get('env_name')}"
 
     def perform_update(self, **kwargs):
         """
