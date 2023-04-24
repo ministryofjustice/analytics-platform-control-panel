@@ -43,7 +43,7 @@
   {% if feature_enabled %}
       <h2 class="govuk-heading-m">Migration status:</h2>
       {% if app_migration_status == "in_progress" %}
-        <p class="govuk-body" ><b>The app is under the migration process and has not been completed yet.</b></p>
+        <p class="govuk-body" ><b>This app is currently being migrated. It has been deployed onto Cloud Platform for testing, and the original version is still available on the Alpha cluster.</b></p>
         <ul class="govuk-body">
           <li>Old repository: <a href="{{ app_migration_info["repo_url"] }}">{{ app_migration_info["repo_url"] }}</a></li>
           <li>Old app name: <strong>{{ app_migration_info["app_name"] }}</strong></li>
