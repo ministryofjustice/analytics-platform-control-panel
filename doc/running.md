@@ -6,7 +6,6 @@
 ---
 
 This guide describes how to run Control Panel locally without Docker, and so that it can interact with the following remote AWS resources:
- - AWS Data account
  - AWS Dev account
  - AWS EKS cluster on Dev account
 
@@ -48,7 +47,7 @@ In addition, you must have:
 * [npm](https://www.npmjs.com/)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos) (v1.23.4)
 * [helm](https://helm.sh/docs/intro/install/) (v3.6.3, v3.8.0)
-* [direnv](https://direnv.net/)
+* [direnv](https://direnv.net/) - Optional
 
 We recommend installing these tools via Homebrew.
 
@@ -66,7 +65,7 @@ Otherwise, make sure you have started both manually before attempting to run Con
 To interact with AWS, you should also set up the [`aws` command
 line interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
-In order to use `direnv` for managing your environment variables, you should
+If you choose to use `direnv`, in order to use it for managing your environment variables, you should
 make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 
 
@@ -97,10 +96,10 @@ your details to AWS. Remember to follow the remaining instructions in the
 README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
 for which you'll need to ask someone to create an initial password for you.
 
-`aws-vault` is recommended to manage different AWS accounts
-
 See [here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
 for details of information about how to setup configuration and how to use `aws-vault`.
+
+`aws-vault` with sso login is recommended to manage different AWS accounts
 
 ### Kubernetes Configuration
 
@@ -127,33 +126,23 @@ To refresh the token automatically, the following lines can be added into your ~
     exec:
       apiVersion: client.authentication.k8s.io/v1alpha1
       args:
-      - exec
-      - admin-dev
-      - --
-      - aws
       - --region
       - eu-west-1
+      - --profile
+      - <profile_name for dev account, e.g. admin-dev-sso>
       - eks
       - get-token
       - --cluster-name
       - <dev_cluster_name>
-      command: /usr/local/bin/aws-vault
+      command: aws
       env: null
       provideClusterInfo: false
 ```
-admin-dev is the profile name for dev AWS account in your AWS configuration file.
-
 For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
 ### Helm
 
-You will need to initialise Helm:
-
-```sh
-helm init
-```
-
-Tell Helm to use the Analytical Platform chart repository:
+You will need to tell Helm to use the Analytical Platform chart repository:
 
 ```sh
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
@@ -256,36 +245,45 @@ and then ask a colleague for help.
 
 ## Run the app
 
-**Assumption**: You have completed your local env setup by following the above sections.
+**Assumption**: 
+- You have completed your local env setup by following the above sections.
+- we use aws with sso login, the name of profile for our aws dev account is `admin-dev-sso`
 
 ### Local AWS profile setup (on first run only)
-This app needs to interact with multiple AWS accounts in order to support the users' needs.
+This app needs to interact with AWS account.
 The AWS resources like IAM, s3 buckets are under our dev account and will be managed by
-app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
-The following steps will show how to create it.
+app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). 
+In order to make sure the boto3 can obtain the right profile for local env.
 
-Assume that the name of profile for our aws dev account is ```admin-dev```
+#### using aws-cli directly
 
-#### Add the AWS credential into .aws/credentials
-it should look like below
-```
-[admin-dev]
-aws_access_key_id = <your aws_access_key_id>
-aws_secret_access_key = <your aws_secret_access_key>
+Check your `.aws/config`, the profile `admin-dev-sso` should look like below 
 
-```
-As you need your AWS access keys above, you can find them out via the following link if you use aws-vault to manage your keys
-https://github.com/99designs/aws-vault/blob/master/USAGE.md#keychain
+```ini
+    [profile admin-dev-sso]
+    sso_account_id=<admin-dev account id>
+    sso_start_url=https://moj.awsapps.com/start
+    sso_region=eu-west-2
+    sso_role_name=AdministratorAccess
+ ```
+__NOTES__ boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
+`.aws/sso/cache` folder if you mix above setting with `sso_session` together.
 
-Once the aws-vault is added, you can choose to show the value of the keys.
+#### using aws-vault
+If you use aws-vault to manage your aws credential, then the profile should look like 
 
-#### Add the AWS assume role or other settings into .aws/config
+```ini
+    [profile sso-default]
+    sso_start_url=https://moj.awsapps.com/start
+    sso_region=eu-west-2
+    sso_role_name=AdministratorAccess
+    output=json
 
-```
-[profile admin-dev]
-role_arn=arn:aws:iam::<dev account id>:role/restricted-admin
-source_profile=default
-```
+    [profile admin-dev-sso]
+    sso_account_id=<admin-dev account id>
+    include_profile=sso-default
+ ```
+
 ### Check Kubernetes current context
 
 Please check the current context and make sure it is pointing to the `dev` cluster
@@ -319,7 +317,7 @@ Note that even if the variable is set correctly in the output of the above comma
 If you want to run the control panel app to manage AWS resources under single role, you can use
 following environment variable to define the profile you want to use
 - ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
-export AWS_PROFILE = "admin-dev"
+export AWS_PROFILE = "admin-dev-sso"
 - Make sure there is NO other AWS boto3 environment variables defined.
 
 #### AWS credential setting for multiple AWS roles
@@ -361,6 +359,18 @@ Or with Gunicorn WSGI server:
 ```sh
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
+if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- ` 
+before the above command e.g. 
+```sh
+aws-vault exec admin-dev-sso -- python3 manage.py runserver
+```
+If the AWS session token is expired,  you will be redirected to auth-flow to refresh the session token automatically
+
+if you choose not using `aws-vault`, then in order to reduce the chance of getting sesion_token expiration during 
+debugging, make sure you run the following command in advance 
+```sh
+aws sso login --profile <profile_name e.g. admin-dev-sso>
+```
 
 ### Run the worker of the app
 Open another terminal to run the following line
@@ -369,7 +379,7 @@ Open another terminal to run the following line
 python manage.py runworker background_tasks
 ```
 
-Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
+Go to http://localhost:8000/, sign in via github through Auth0 and marvel at your locally
 running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,

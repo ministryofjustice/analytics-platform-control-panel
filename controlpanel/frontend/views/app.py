@@ -1,4 +1,5 @@
 # Standard library
+import requests
 from typing import List
 
 # Third-party
@@ -72,18 +73,29 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
     def _get_all_app_settings(self, app):
         app_manager_ins = cluster.App(app, self.request.user.github_api_token)
-        deployment_env_names = app_manager_ins.get_deployment_envs()
+        access_repo_error_msg = None
+        github_settings_access_error_msg = None
+        try:
+            deployment_env_names = app_manager_ins.get_deployment_envs()
+        except requests.exceptions.HTTPError as ex:
+            access_repo_error_msg = ex.__str__()
+            deployment_env_names = []
         deployments_settings = {}
         auth0_connections = app.auth0_connections_by_env()
         auth0_clients_status = app.auth0_clients_status()
-        for env_name in deployment_env_names:
-            deployments_settings[env_name] = {
-                "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
-                "variables": app_manager_ins.get_env_vars(env_name=env_name),
-                "connections": auth0_connections.get(env_name, {}).get("connections") or [],
-                "auth0_clients_status": auth0_clients_status.get(env_name)
-            }
-        return deployments_settings
+        try:
+            for env_name in deployment_env_names:
+                deployments_settings[env_name] = {
+                    "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
+                    "variables": app_manager_ins.get_env_vars(env_name=env_name),
+                    "connections": auth0_connections.get(env_name, {}).get("connections") or [],
+                    "auth0_clients_status": auth0_clients_status.get(env_name)
+                }
+        except requests.exceptions.HTTPError as ex:
+            github_settings_access_error_msg = ex.__str__()
+
+        return deployments_settings, access_repo_error_msg, \
+               github_settings_access_error_msg
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -101,9 +113,11 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         )
 
         context["kibana_base_url"] = settings.KIBANA_BASE_URL
-        context["deployments_settings"] = AppAuthSettingsSerializer(
-            self._get_all_app_settings(app)
-        ).data
+        auth_settings, access_repo_error_msg, github_settings_access_error_msg \
+            = self._get_all_app_settings(app)
+        context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings).data
+        context["repo_access_error_msg"] = access_repo_error_msg
+        context["github_settings_access_error_msg"] = github_settings_access_error_msg
         return context
 
 
