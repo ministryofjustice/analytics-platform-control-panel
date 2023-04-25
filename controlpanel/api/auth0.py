@@ -200,7 +200,8 @@ class ExtendedAuth0(Auth0):
         each role has 1 permission (`view:app`) so it's
         safe to delete all the associated roles/permissions.
         """
-
+        if not self.groups.has_group_existed(group_id):
+            return
         role_ids = []
         permission_ids = []
 
@@ -313,10 +314,11 @@ class Auth0API(object):
         return self.client.post(self._url(), data=body)
 
     def get(self, id, fields=None, include_fields=True):
-        params = {
-            "fields": fields and ",".join(fields) or None,
-            "include_fields": str(include_fields).lower(),
-        }
+        params = {"fields": fields and ",".join(fields) or None}
+        if include_fields:
+            params.update(dict(
+                include_fields=str(include_fields).lower()
+            ))
 
         return self.client.get(self._url(id), params=params)
 
@@ -694,3 +696,13 @@ class Groups(Auth0API, ExtendedAPIMethods):
         )
         if "error" in response:
             raise Auth0Error("delete_group_members", response)
+
+    def has_group_existed(self, group_id):
+        try:
+            self.get(group_id, include_fields=False)
+            return True
+        except exceptions.Auth0Error as error:
+            if "does not exist" in error.__str__():
+                return False
+            else:
+                raise error

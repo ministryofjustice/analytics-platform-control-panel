@@ -447,20 +447,6 @@ class App(EntityResource):
                 return True
         return False
 
-    # def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
-    #     # Add the auth0's connections into this category
-    #     connections = self.app.auth0_connections(env_name=env_name)
-    #     app_secrets.append(
-    #         {
-    #             "name": App.AUTH0_CONNECTIONS,
-    #             "env_name": env_name,
-    #             "value": connections or [],
-    #             "created": connections is not None,
-    #             "removable": False,
-    #             "editable": True,
-    #         }
-    #     )
-
     def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
         not_created_ones = list(
             set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
@@ -586,7 +572,6 @@ class App(EntityResource):
             )
             created_secret_names.append(item["name"])
         self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
-        # self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
         return app_secrets
 
     def get_env_vars(self, env_name):
@@ -619,6 +604,8 @@ class App(EntityResource):
             client, group = auth0.ExtendedAuth0().setup_auth0_client(
                 app_name=self.app.auth0_client_name(env_name)
             )
+            self.app.save_auth_settings(
+                env_name=env_name, client=client, group=group)
         self._create_secrets(env_name, client=client)
         self._create_env_vars(
             env_name,
@@ -636,6 +623,7 @@ class App(EntityResource):
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
         auth0.ExtendedAuth0().clear_up_app(self.app.get_auth_client(env_name))
+        self.app.clear_auth_settings(env_name)
 
 
 class S3Bucket(EntityResource):

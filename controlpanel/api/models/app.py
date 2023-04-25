@@ -74,16 +74,47 @@ class App(TimeStampedModel):
             or []
         )
 
-    def auth0_connections(self, env_name=None):
-        client_ids = []
-        if env_name:
-            client_ids = [self.get_auth_client(env_name).get("client_id")]
-        else:
-            for env_name, client_info in (self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
-                if client_info.get('client_id'):
-                    client_ids.append(client_info.get('client_id'))
+    def auth0_connections(self, env_name):
+        client_ids = [self.get_auth_client(env_name).get("client_id")]
         connections = auth0.ExtendedAuth0().get_client_enabled_connections(client_ids)
+        return connections.get(env_name) or []
+
+    def auth0_connections_by_env(self):
+        connections = {}
+        client_ids = []
+        client_env_mapping = {}
+        for env_name, client_info in (self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+            connections[env_name] = dict(client_id=client_info.get('client_id'))
+            if client_info.get('client_id'):
+                client_env_mapping[client_info["client_id"]] = env_name
+                client_ids.append(client_info.get('client_id'))
+        returned_connections = auth0.ExtendedAuth0().get_client_enabled_connections(client_ids)
+        for client_id, client_connections in returned_connections.items():
+            env_name = client_env_mapping.get(client_id)
+            if env_name:
+                connections[env_name].update(dict(
+                    connections=returned_connections
+                ))
         return connections
+
+    def auth0_clients_status(self):
+        """ Check the status of the auth0-clients stored in the app_conf field"""
+        status = {}
+        for env_name, client_info in (self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+            if client_info.get('client_id'):
+                try:
+                    auth0.ExtendedAuth0().clients.get(client_info.get('client_id'))
+                    status[env_name] ={
+                        "client_id": client_info.get('client_id'),
+                        "ok": True
+                    }
+                except Exception as error:
+                    status[env_name] ={
+                        "client_id": client_info.get('client_id'),
+                        "ok": False,
+                        "error_msg": error.__str__()
+                    }
+        return status
 
     @property
     def app_allowed_ip_ranges(self):
@@ -155,7 +186,8 @@ class App(TimeStampedModel):
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY
-        return self.app_conf.get(env_name, {})
+        return self.app_conf.get(
+            self.KEY_WORD_FOR_AUTH_SETTINGS, {}).get(env_name, {})
 
     def save_auth_settings(self, env_name, client, group):
         auth_client_info = {}
@@ -166,10 +198,17 @@ class App(TimeStampedModel):
         if auth_client_info:
             if self.KEY_WORD_FOR_AUTH_SETTINGS not in self.app_conf:
                 self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS] = {}
-            if env_name not in self.app_conf:
+            if env_name not in self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS]:
                 self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = {}
             self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name].update(
                 auth_client_info)
+            self.save()
+
+    def clear_auth_settings(self, env_name):
+        has_auth_related = self.app_conf.get(
+            self.KEY_WORD_FOR_AUTH_SETTINGS, {}).get(env_name)
+        if has_auth_related:
+            del self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name]
             self.save()
 
     def get_auth0_group_list(self):

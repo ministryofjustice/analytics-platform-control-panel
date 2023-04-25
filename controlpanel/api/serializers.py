@@ -362,12 +362,10 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         }
     }
 
-    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
-        # Add the auth0's connections into this category
-        connections = self.app.auth0_connections(env_name=env_name)
+    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets, connections):
         app_secrets.append(
             {
-                "name": App.AUTH0_CONNECTIONS,
+                "name": cluster.App.AUTH0_CONNECTIONS,
                 "env_name": env_name,
                 "value": connections or [],
                 "created": connections is not None,
@@ -382,16 +380,18 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
     def _process_auth_settings(self, app_auth_settings):
         for env_name, env_data in app_auth_settings.items():
             # Preparing secret data
+            self._add_auth0_connection_as_part_secrets(
+                env_name, env_data["secrets"], env_data["connections"])
             secret_data = self._process_secret_with_ui_info(env_data["secrets"])
             # Preparing env data
             var_data = self._process_env_with_ui_info(env_data["variables"])
 
             auth_required = self._auth_required(var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
-            created = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"] or \
-                      secret_data[cluster.App.AUTH0_CONNECTIONS]["created"]
+            created = (env_data.get("auth0_clients_status") or {}).get('ok') or False
+            existed = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"]
             env_data["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
             env_data["can_create_client"] = auth_required and not created
-            env_data["can_remove_client"] = not auth_required and created
+            env_data["can_remove_client"] = not auth_required and (created or existed)
             env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
             env_data["auth_required"] = auth_required
         return app_auth_settings
