@@ -112,18 +112,18 @@ def test_repo_name(url, expected_name):
 
 
 @pytest.mark.parametrize(
-    "side_effect",
+    "side_effect, error_message",
     [
-        Auth0Error,
-        lambda email, connection: [],
+        (Auth0Error, Auth0Error.default_detail),
+        (lambda email, connection: [], "Couldn't find user with email foo@email.com"),
     ],
 )
-def test_delete_customer_by_email_error_getting_user(auth0, side_effect):
+def test_delete_customer_by_email_error_getting_user(auth0, side_effect, error_message):
     authz = auth0.ExtendedAuth0.return_value
     authz.users.get_users_email_search.side_effect = side_effect
     app = mommy.prepare("api.App")
-    with pytest.raises(app.DeleteCustomerError):
-        app.delete_customer_by_email("foo@email.com")
+    with pytest.raises(app.DeleteCustomerError, match=error_message):
+        app.delete_customer_by_email("foo@email.com", group_id="123")
 
 
 def test_delete_customer_by_email_user_missing_group(auth0):
@@ -135,7 +135,10 @@ def test_delete_customer_by_email_user_missing_group(auth0):
     authz.users.get_user_groups.return_value = [user_groups]
 
     app = mommy.prepare("api.App")
-    with pytest.raises(app.DeleteCustomerError):
+    with pytest.raises(
+            app.DeleteCustomerError,
+            match="User foo@email.com cannot be found in this application group"
+    ):
         app.delete_customer_by_email("foo@email.com", group_id="123")
 
 

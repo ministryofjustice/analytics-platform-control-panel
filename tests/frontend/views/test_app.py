@@ -1,9 +1,9 @@
 # Standard library
 from unittest.mock import patch
-import requests
 
 # Third-party
 import pytest
+import requests
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_mommy import mommy
@@ -352,7 +352,7 @@ def test_delete_cutomer_by_email_invalid_email(client, app, users):
     "side_effect, expected_message",
     [
         (None, "Successfully removed customer email@example.com"),
-        (DeleteCustomerError, "Couldn't find a customer with email email@example.com")
+        (DeleteCustomerError(), "Couldn't remove customer with email email@example.com")
     ],
     ids=[
         "success",

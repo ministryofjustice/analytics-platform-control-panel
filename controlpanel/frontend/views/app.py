@@ -525,9 +525,9 @@ class RemoveCustomerByEmail(UpdateApp):
                 email=email,
                 group_id=self.form.cleaned_data["group_id"],
             )
-        except App.DeleteCustomerError:
+        except App.DeleteCustomerError as e:
             return messages.error(
-                self.request, f"Couldn't find a customer with email {email}"
+                self.request, str(e) or f"Couldn't remove customer with email {email}"
             )
 
         messages.success(
