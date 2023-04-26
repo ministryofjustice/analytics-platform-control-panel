@@ -352,12 +352,11 @@ def test_delete_cutomer_by_email_invalid_email(client, app, users):
     "side_effect, expected_message",
     [
         (None, "Successfully removed customer email@example.com"),
-        (DeleteCustomerError(), "Couldn't remove customer with email email@example.com")
-    ],
-    ids=[
-        "success",
-        "failure",
-    ],
+        # fallback to display generic message if raised without one
+        (DeleteCustomerError(), "Couldn't remove customer with email email@example.com"),
+        # specific error message displayed
+        (DeleteCustomerError("API error"), "API error")
+    ]
 )
 def test_delete_customer_by_email(client, app, users, side_effect, expected_message):
     client.force_login(users["superuser"])
