@@ -186,7 +186,7 @@ class App(TimeStampedModel):
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY
-        return self.app_conf.get(
+        return (self.app_conf or {}).get(
             self.KEY_WORD_FOR_AUTH_SETTINGS, {}).get(env_name, {})
 
     def save_auth_settings(self, env_name, client, group):
@@ -205,7 +205,7 @@ class App(TimeStampedModel):
             self.save()
 
     def clear_auth_settings(self, env_name):
-        has_auth_related = self.app_conf.get(
+        has_auth_related = (self.app_conf or {}).get(
             self.KEY_WORD_FOR_AUTH_SETTINGS, {}).get(env_name)
         if has_auth_related:
             del self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name]
