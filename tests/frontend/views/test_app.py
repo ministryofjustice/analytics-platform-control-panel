@@ -3,15 +3,17 @@ from unittest.mock import patch
 import requests
 
 # Third-party
-import pytest
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_mommy import mommy
+import pytest
 from rest_framework import status
 
 # First-party/Local
+from controlpanel.api import cluster
 from controlpanel.api import auth0
 from tests.api.fixtures.aws import *
+from controlpanel.api.models import App
 
 NUM_APPS = 3
 
@@ -35,7 +37,7 @@ def github_api_token():
         yield ExtendedAuth0.return_value
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def users(users):
     users.update(
         {
@@ -45,11 +47,26 @@ def users(users):
     return users
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def app(users):
     mommy.make("api.App", NUM_APPS - 1)
     app = mommy.make("api.App")
     app.repo_url = "https://github.com/github_org/testing_repo"
+    dev_auth_settings = dict(
+        client_id="dev_client_id",
+        group_id="dev_group_id"
+    )
+    prod_auth_settings = dict(
+        client_id="prod_client_id",
+        group_id="prod_group_id"
+    )
+    env_app_settings = dict(
+        dev_env=dev_auth_settings,
+        prod_env=prod_auth_settings,
+    )
+    app.app_conf = {
+        App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings
+    }
     app.save()
     mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
     return app
@@ -65,14 +82,46 @@ def githubapi():
         yield GithubAPI.return_value
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.yield_fixture
 def repos(githubapi):
     test_repo = {
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
     githubapi.get_repository.return_value = test_repo
-    githubapi.get_repo_envs.return_value = ["test"]
+    githubapi.get_repo_envs.return_value = ["dev_env", "prod_env"]
+    yield githubapi
+
+
+@pytest.yield_fixture
+def repos_for_requiring_auth(githubapi):
+    test_repo = {
+        "full_name": "Test App",
+        "html_url": "https://github.com/moj-analytical-services/test_app",
+    }
+    githubapi.get_repository.return_value = test_repo
+    githubapi.get_repo_envs.return_value = ["dev_env"]
+    githubapi.get_repo_env_vars.return_value = [
+        {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"}
+    ]
+    yield githubapi
+
+
+@pytest.yield_fixture
+def repos_for_no_auth(githubapi):
+    test_repo = {
+        "full_name": "Test App",
+        "html_url": "https://github.com/moj-analytical-services/test_app",
+    }
+    githubapi.get_repository.return_value = test_repo
+    githubapi.get_repo_envs.return_value = ["dev_env"]
+    githubapi.get_repo_env_vars.return_value = [
+        {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "False"}
+    ]
+    githubapi.get_repo_env_secrets.return_value = [
+        {"name": cluster.App.AUTH0_CLIENT_ID},
+        {"name": cluster.App.AUTH0_CLIENT_SECRET},
+    ]
     yield githubapi
 
 
@@ -324,7 +373,7 @@ def test_delete_customers(
     assert expected_response(client, response)
 
 
-def test_github_error1_on_app_detail(client, app, users,):
+def test_github_error1_on_app_detail(client, app, users):
     with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
             patch("controlpanel.api.cluster.App.get_deployment_envs") as get_envs:
         feature_flag.return_value = True
@@ -336,7 +385,7 @@ def test_github_error1_on_app_detail(client, app, users,):
         assert error_msg in str(response.content)
 
 
-def test_github_error2_on_app_detail(client, app, users,):
+def test_github_error2_on_app_detail(client, app, users, repos):
     with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
             patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets:
         feature_flag.return_value = True
@@ -348,7 +397,7 @@ def test_github_error2_on_app_detail(client, app, users,):
         assert error_msg in str(response.content)
 
 
-def test_github_error3_on_app_detail(client, app, users,):
+def test_github_error3_on_app_detail(client, app, users, repos):
     with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
             patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets, \
             patch("controlpanel.api.cluster.App.get_env_vars") as get_env_vars:
@@ -360,3 +409,50 @@ def test_github_error3_on_app_detail(client, app, users,):
         response = detail(client, app)
         assert response.status_code == 200
         assert error_msg in str(response.content)
+
+
+def test_app_detail_display_all_envs(client, app, users, repos):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users["superuser"])
+        response = detail(client, app)
+        assert response.status_code == 200
+
+        key_words_for_checks = [
+            "Deployment settings under dev_env",
+            "Deployment settings under prod_env",
+            cluster.App.IP_RANGES,
+            cluster.App.AUTH0_CLIENT_ID,
+            cluster.App.AUTH0_CLIENT_SECRET,
+            cluster.App.AUTH0_CALLBACK_URL,
+            cluster.App.AUTH0_DOMAIN,
+            cluster.App.AUTH0_CONNECTIONS,
+            cluster.App.AUTHENTICATION_REQUIRED,
+            cluster.App.AUTH0_PASSWORDLESS,
+        ]
+        for key_word in key_words_for_checks:
+            assert key_word in str(response.content)
+
+
+def test_app_detail_with_missing_auth_client(client, users, repos_for_requiring_auth):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        app = mommy.make("api.App")
+        app.repo_url = "https://github.com/github_org/testing_repo_with_auth"
+        app.save()
+
+        client.force_login(users["superuser"])
+        response = detail(client, app)
+        btn_text = "Create auth0 client"
+        assert response.status_code == 200
+        assert btn_text in str(response.content)
+
+
+def test_app_detail_with_auth_client_redundant(client, users, app, repos_for_no_auth):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users["superuser"])
+        response = detail(client, app)
+        btn_text = "Remove auth0 client"
+        assert response.status_code == 200
+        assert btn_text in str(response.content)
