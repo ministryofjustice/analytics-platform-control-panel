@@ -10,7 +10,7 @@ from controlpanel.api.models import App
 
 
 class Command(BaseCommand):
-    help = "Update the application's auth0 client information"
+    help = "Initialise app.app_conf field for existing dashboard apps"
 
     def add_arguments(self, parser):
         pass
