@@ -83,7 +83,8 @@ class App(TimeStampedModel):
         connections = {}
         client_ids = []
         client_env_mapping = {}
-        for env_name, client_info in (self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+        for env_name, client_info in ((self.app_conf or {}).get(
+                self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
             connections[env_name] = dict(client_id=client_info.get('client_id'))
             if client_info.get('client_id'):
                 client_env_mapping[client_info["client_id"]] = env_name
@@ -100,7 +101,8 @@ class App(TimeStampedModel):
     def auth0_clients_status(self):
         """ Check the status of the auth0-clients stored in the app_conf field"""
         status = {}
-        for env_name, client_info in (self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+        for env_name, client_info in ((self.app_conf or {}).get(
+                self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
             if client_info.get('client_id'):
                 try:
                     auth0.ExtendedAuth0().clients.get(client_info.get('client_id'))
@@ -108,7 +110,7 @@ class App(TimeStampedModel):
                         "client_id": client_info.get('client_id'),
                         "ok": True
                     }
-                except Exception as error:
+                except auth0.Auth0Error as error:
                     status[env_name] ={
                         "client_id": client_info.get('client_id'),
                         "ok": False,

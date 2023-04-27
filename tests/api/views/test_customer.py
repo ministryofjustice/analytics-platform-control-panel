@@ -8,10 +8,23 @@ from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
 
+# First-party/Local
+from controlpanel.api.models import App
+
 
 @pytest.fixture
 def app():
-    return mommy.make("api.App")
+    app = mommy.make("api.App")
+    auth_settings = dict(
+        client_id="testing_client_id",
+        group_id="testing_group_id"
+    )
+    env_app_settings = dict(test_env=auth_settings)
+    app.app_conf = {
+        App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings
+    }
+    app.save()
+    return app
 
 
 @pytest.yield_fixture
@@ -108,10 +121,9 @@ def test_post(client, app, ExtendedAuth0):
     assert response.status_code == status.HTTP_201_CREATED
 
     ExtendedAuth0.add_group_members_by_emails.assert_called_with(
-        group_name=app.auth0_client_name(env_name),
         emails=emails,
         user_options={"connection": "email"},
-        group_id=None
+        group_id="testing_group_id"
     )
 
 
