@@ -43,6 +43,10 @@ class Auth0Error(APIException):
 
 
 class ExtendedAuth0(Auth0):
+
+    DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
+    DEFAULT_APP_TYPE = "regular_web"
+
     def __init__(self, **kwargs):
         self.client_id = kwargs.get("client_id", settings.AUTH0["client_id"])
         self.client_secret = kwargs.get(
@@ -127,6 +131,8 @@ class ExtendedAuth0(Auth0):
 
     def _create_custom_connection(self, app_name, connections):
         new_connections = []
+        if type(connections) == list:
+            connections = {item: {} for item in connections}
         for connection_name, user_inputs in connections.items():
             if connection_name not in ExtendedConnections.custom_connections():
                 new_connections.append(connection_name)
@@ -140,7 +146,8 @@ class ExtendedAuth0(Auth0):
             new_connections.append(new_connection_name)
         return new_connections
 
-    def setup_auth0_client(self, app_name, connections=None):
+    def setup_auth0_client(
+            self, client_name, app_url_name=None, connections=None, app_domain=None):
         """
         parameters:
             connections:
@@ -150,25 +157,28 @@ class ExtendedAuth0(Auth0):
         """
         if connections is None:
             connections = {"email": {}}
-        new_connections = self._create_custom_connection(app_name, connections)
-        app_url = "https://{}.{}".format(app_name, self.app_domain)
+        new_connections = self._create_custom_connection(client_name, connections)
+        app_url = "https://{}.{}".format(
+            app_url_name or client_name, app_domain or self.app_domain)
         client = self.clients.create(
             dict(
-                name=app_name,
+                name=client_name,
                 callbacks=[f"{app_url}/callback"],
                 allowed_origins=[app_url],
-                app_type="regular_web",
+                app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
+                web_origins=[app_url],
+                grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
+                allowed_logout_urls=[app_url]
             )
         )
         client_id = client["client_id"]
-        self.clients.update(client_id, body={"web_origins": [app_url]})
 
         view_app = self.permissions.create(
             dict(name="view:app", applicationId=client_id)
         )
         role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
-        group = self.groups.create(dict(name=app_name))
+        group = self.groups.create(dict(name=client_name))
         self.groups.add_role(group["_id"], role["_id"])
 
         self._enable_connections_for_new_client(

@@ -1,8 +1,17 @@
 [
   {
     "app_name": "example-app",
-    "registered_in_cpanel": true,
-    "can_be_migrated": true,
+    "repo_url": "",
+    "deployment": {
+      "mojanalytics-deploy": "v1.0.0",
+      "disable_authentication": true,
+      "allowed_ip_ranges": [
+        "102PF Wifi",
+        "DOM1",
+        "QUANTUM",
+        "Digital Wifi and VPN"
+      ]
+    },
     "auth0_client": {
       "tenant": "testing-analytics-moj",
       "global": false,
@@ -48,37 +57,24 @@
         "test-github"
       ]
     },
-    "parameters": {},
-    "auth": {
-      "mojanalytics-deploy": "v1.0.0",
-      "disable_authentication": true,
-      "allowed_ip_ranges": [
+    "parameters": {"param1": "<value>"},
+    "registered_in_cpanel": true,
+    "can_be_migrated": true,
+    "migration": {
+      "app_name": "example-app",
+      "app_repo_url": "https://github.com/ministryofjustice/example-app",
+      "ip_ranges": [
         "Wifi",
         "Wifi1",
         "Wifi2",
         "Wifi3"
       ],
-      "normalised_allowed_ip_ranges": "111.222.333.444/28,222.333.444.555/31, 666.777.888.999/32,777.666.55.777/32, 66.22.111.111/32,222.333.444.555/31, 666.777.888.999/32",
-      "client_id": "xxxxx_client_id",
-      "callbacks": [
-        "https://example-app.apps.dev.mojanalytics.xyz/callback",
-        "https://example-app.apps.eks.dev.mojanalytics.xyz/callback"
-      ],
-      "allowed_origins": [
-        "https://example-app.apps.eks.dev.mojanalytics.xyz",
-        "https://example-app.apps.dev.mojanalytics.xyz"
-      ]
-    },
-    "deployment": {
-      "mojanalytics-deploy": "v1.0.0",
-      "disable_authentication": true,
-      "allowed_ip_ranges": [
-        "102PF Wifi",
-        "DOM1",
-        "QUANTUM",
-        "Digital Wifi and VPN"
-      ]
-    },
-    "new_app_name": " dev-APP: example-app"
+      "connections": ["email"],
+      "parameters": {
+        "param1": "<value>"
+      },
+      "disable_authentication": false,
+      "envs": ["dev", "prod"]
+    }
   }
 ]
