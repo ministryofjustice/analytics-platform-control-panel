@@ -1,4 +1,5 @@
 # Standard library
+import json
 import requests
 from typing import List
 
@@ -10,7 +11,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -97,7 +98,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         app = self.get_object()
 
         context["feature_enabled"] = settings.features.app_migration.enabled
-        context["app_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN}"
         context["admin_options"] = User.objects.exclude(auth0_id="",).exclude(
             auth0_id__in=[user.auth0_id for user in app.admins],
         )
@@ -113,6 +113,12 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings).data
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
+        context["app_domain"] = settings.APP_DOMAIN
+
+        # TODO: The following field should be removed after app migration
+        context["app_migration_info"] = app.migration_info
+        context["app_migration_status"] = context["app_migration_info"].get('status', "")
+        context["app_old_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN_BEFORE_MIGRATION}"
         return context
 
 
@@ -426,8 +432,6 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         context["deployment_envs"] = app.deployment_envs(
             self.request.user.github_api_token
         )
-        if not env_name and len(context["deployment_envs"]) >= 1:
-            env_name = context["deployment_envs"][0]
         context["env_name"] = env_name
 
     def get_context_data(self, **kwargs):

@@ -168,3 +168,20 @@ def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
         expected = ["Previous"] + [str(i) for i in range(2, 11)] + ["Next"]
         for expect in expected:
             assert expect in btn_texts
+
+
+def test_available_auth0_clients_on_customers_page(
+        client, app, users, ExtendedAuth0, fixture_customers_mocked):
+    with patch("controlpanel.api.cluster.App.get_deployment_envs") as get_deployment_envs:
+        group_id = 1
+        url_dict = {"group_id": group_id}
+        testing_app_envs = ["dev_env", "prod_env"]
+        keyword_for_old_app_env = "for app running on old cluster"
+        get_deployment_envs.return_value = testing_app_envs
+        client.force_login(users["superuser"])
+        response = client.get(reverse("appcustomers-page", args=(app.id, 1)), url_dict)
+
+        assert response.status_code == 200
+        for env_name in testing_app_envs:
+            assert env_name in str(response.content)
+        assert keyword_for_old_app_env in str(response.content)

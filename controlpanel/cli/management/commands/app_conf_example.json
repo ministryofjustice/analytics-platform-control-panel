@@ -1,7 +1,13 @@
 {
-  "app_name_pattern": " {ENV}-APP: {app_name}",
-  "domains_mapping": {
-    "apps.dev.mojanalytics.xyz": "apps.eks.dev.mojanalytics.xyz"
+  "auth0": {
+    "dev": {
+      "app_name_pattern": "data-platform-app-{APP_NAME}-{ENV}",
+      "app_domain":  "apps.live.cloud-platform.service.justice.gov.uk"
+    },
+    "prod": {
+      "app_name_pattern": "data-platform-app-{APP_NAME}-{ENV}",
+      "app_domain":  "apps.live.cloud-platform.service.justice.gov.uk"
+    }
   },
   "ip_range_lookup_table": {
     "Wifi": "111.222.333.444/28",
@@ -11,5 +17,8 @@
     "Wifi4": "777.666.55.777/32, 66.22.111.111/32",
     "Wifi5": "777.666.55.777/32, 66.22.111.111/32",
     "Any": ""
-  }
+  },
+  "initial_users": [
+    "user@test.com"
+  ]
 }

@@ -14,7 +14,6 @@
 
 {% block content %}
 
-{% if env_name %}
   <section>
    <h2 class="govuk-heading-m">
       Switch to different deployment environment from the following links:
@@ -31,6 +30,15 @@
             </a>
         </li>
       {% endfor %}
+      <li>
+          <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?env_name=" >
+            {% if not env_name  %}
+              <strong>Manage customers - for app running on old cluster</strong>
+            {% else %}
+              Manage customers - for app running on old cluster
+            {% endif %}
+          </a>
+      </li>
     </ul>
   </section>
 
@@ -38,7 +46,6 @@
     App customers under {{ env_name }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
-{% endif %}
 
 
   <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id }) }}">

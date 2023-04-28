@@ -1,5 +1,7 @@
 # Third-party
+import json
 import uuid
+from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
@@ -24,6 +26,8 @@ class App(TimeStampedModel):
         blank=True
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+
+    DEFAULT_KEY_WORD = "DEFAULT"
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -133,8 +137,38 @@ class App(TimeStampedModel):
         cluster.App(self, github_api_token).delete()
         super().delete(*args, **kwargs)
 
-    def auth0_client_name(self, env_name):
-        return f"{self.slug}_{env_name}" if env_name else self.slug
+    def _get_old_auth0_client_name(self):
+        """TODO This function needs to be adjusted once the migration is over"""
+        try:
+            app_conf = json.loads(self.description)
+        except ValueError:
+            app_conf = {}
+        return app_conf.get('app_name') or self.slug
+
+    def auth0_client_name(self, env_name=None):
+        if env_name:
+            return settings.AUTH0_CLIENT_NAME_PATTERN.format(
+                app_name=self.slug, env=env_name)
+        else:
+            return self._get_old_auth0_client_name()
+
+    @property
+    def migration_info(self):
+        # TODO: using app.description for temporary place for storing old app info,
+        #  The content of this field should be removed after app migration is completed.
+        try:
+            return json.loads(self.description).get("migration", {})
+        except ValueError:
+            return {}
+
+    def app_url_name(self, env_name):
+        format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
+        if not format_pattern:
+            format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_KEY_WORD)
+        if format_pattern:
+            return format_pattern.format(app_name=self.slug, env=env_name)
+        else:
+            return self.slug
 
 
 class AddCustomerError(Exception):
