@@ -32,7 +32,7 @@ class Command(BaseCommand):
 
     def _update_app_data_records(self, app, app_item):
         migration_json = dict(
-            app_name=app_item["app_name"],
+            app_name=app.slug,
             repo_url=app_item["repo_url"],
             app_url=f"https://{ app.slug }.{settings.APP_DOMAIN}",
             status="in_progress"
