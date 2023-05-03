@@ -1,9 +1,9 @@
 # Standard library
 from unittest.mock import patch
-import requests
 
 # Third-party
 import pytest
+import requests
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_mommy import mommy
@@ -11,6 +11,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api import auth0
+from controlpanel.api.models.app import DeleteCustomerError
 from tests.api.fixtures.aws import *
 
 NUM_APPS = 3
@@ -150,6 +151,13 @@ def remove_customers(client, app, *args):
     return client.post(reverse("remove-app-customer", kwargs={"pk": app.id}), data)
 
 
+def remove_customer_by_email(client, app, *args):
+    return client.post(
+        reverse("remove-app-customer-by-email", kwargs={"pk": app.id}),
+        data={}
+    )
+
+
 def connect_bucket(client, app, _, s3buckets, *args):
     data = {
         "datasource": s3buckets["not_connected"].id,
@@ -195,6 +203,9 @@ def update_ip_allowlists(client, app, *args):
         (remove_customers, "superuser", status.HTTP_302_FOUND),
         (remove_customers, "app_admin", status.HTTP_302_FOUND),
         (remove_customers, "normal_user", status.HTTP_403_FORBIDDEN),
+        (remove_customer_by_email, "superuser", status.HTTP_302_FOUND),
+        (remove_customer_by_email, "app_admin", status.HTTP_302_FOUND),
+        (remove_customer_by_email, "normal_user", status.HTTP_403_FORBIDDEN),
         (connect_bucket, "superuser", status.HTTP_302_FOUND),
         (connect_bucket, "app_admin", status.HTTP_403_FORBIDDEN),
         (connect_bucket, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -322,6 +333,47 @@ def test_delete_customers(
     data = {"customer": ["email|1234"]}
     response = client.post(reverse("remove-app-customer", kwargs={"pk": app.id}), data)
     assert expected_response(client, response)
+
+
+def test_delete_cutomer_by_email_invalid_email(client, app, users):
+    client.force_login(users["superuser"])
+    url = reverse("remove-app-customer-by-email", kwargs={"pk": app.id})
+    response = client.post(url, data={
+        "remove-email": "notanemail",
+        "remove-env_name": "test",
+        "remove-group_id": "123",
+    })
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert response.status_code == 302
+    assert "Invalid email address entered" in messages
+
+
+@pytest.mark.parametrize(
+    "side_effect, expected_message",
+    [
+        (None, "Successfully removed customer email@example.com"),
+        # fallback to display generic message if raised without one
+        (DeleteCustomerError(), "Couldn't remove customer with email email@example.com"),
+        # specific error message displayed
+        (DeleteCustomerError("API error"), "API error")
+    ]
+)
+def test_delete_customer_by_email(client, app, users, side_effect, expected_message):
+    client.force_login(users["superuser"])
+    url = reverse("remove-app-customer-by-email", kwargs={"pk": app.id})
+    with patch(
+            "controlpanel.frontend.views.app.App.delete_customer_by_email"
+    ) as delete_by_email:
+        delete_by_email.side_effect = side_effect
+        response = client.post(url, data={
+            "remove-email": "email@example.com",
+            "remove-env_name": "test",
+            "remove-group_id": "123",
+        })
+        delete_by_email.assert_called_once()
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        assert response.status_code == 302
+        assert expected_message in messages
 
 
 def test_github_error1_on_app_detail(client, app, users,):

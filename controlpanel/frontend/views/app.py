@@ -1,9 +1,8 @@
 # Standard library
-import json
-import requests
 from typing import List
 
 # Third-party
+import requests
 import sentry_sdk
 import structlog
 from django.conf import settings
@@ -34,6 +33,7 @@ from controlpanel.frontend.forms import (
     AddAppCustomersForm,
     CreateAppForm,
     GrantAppAccessForm,
+    RemoveCustomerByEmailForm,
     UpdateAppAuth0ConnectionsForm,
 )
 from controlpanel.frontend.views.apps_mng import AppManager
@@ -91,7 +91,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             github_settings_access_error_msg = ex.__str__()
 
         return deployments_settings, access_repo_error_msg, \
-               github_settings_access_error_msg
+            github_settings_access_error_msg
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -453,6 +453,10 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
             context["customers"] = []
         context["paginator"] = paginator = self._paginate_customers(customers)
         context["elided"] = paginator.get_elided_page_range(page_no)
+        context["remove_customer_form"] = RemoveCustomerByEmailForm(initial={
+            "group_id": group_id,
+            "env_name": context["env_name"],
+        })
         return context
 
     def _paginate_customers(self, auth_results: List[dict], per_page=25):
@@ -494,6 +498,41 @@ class RemoveCustomer(UpdateApp):
             messages.success(
                 self.request, f"Successfully removed customer{pluralize(user_ids)}"
             )
+
+
+class RemoveCustomerByEmail(UpdateApp):
+    permission_required = "api.remove_app_customer"
+    form = None
+
+    def get_redirect_url(self, *args, **kwargs):
+        url = reverse_lazy(
+            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        )
+        return f"{url}?env_name={self.form.cleaned_data.get('env_name')}"
+
+    def perform_update(self, **kwargs):
+        """
+        Attempts to remove a user from a group, based on their email address
+        """
+        self.form = RemoveCustomerByEmailForm(data=self.request.POST)
+        if not self.form.is_valid():
+            return messages.error(self.request, "Invalid email address entered")
+
+        app = self.get_object()
+        email = self.form.cleaned_data["email"]
+        try:
+            app.delete_customer_by_email(
+                email=email,
+                group_id=self.form.cleaned_data["group_id"],
+            )
+        except App.DeleteCustomerError as e:
+            return messages.error(
+                self.request, str(e) or f"Couldn't remove customer with email {email}"
+            )
+
+        messages.success(
+            self.request, f"Successfully removed customer {email}"
+        )
 
 
 class AddAdmin(UpdateApp):
