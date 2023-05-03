@@ -29,6 +29,14 @@ class Command(BaseCommand):
             clients_info[client.get('name')] = client
         return clients_info
 
+    def _get_auth0_name(self, app):
+        app_name = None
+        if app.migration_info:
+            app_name = app.migration_info.get("app_name")
+        if not app_name:
+            app_name = app.slug
+        return app_name
+
     def _initialise_auth_info_to_new_field(self):
         auth0_instance = auth0.ExtendedAuth0()
         groups_info = self._get_full_groups(auth0_instance)
@@ -36,14 +44,23 @@ class Command(BaseCommand):
         apps_list = App.objects.all()
         for cnt, app in enumerate(apps_list):
             self.stdout.write(f"{cnt+1}: start to process app {app.slug}")
-            client = clients_info.get(app.slug)
+            client = clients_info.get(self._get_auth0_name(app))
             auth_settings = dict()
             if client:
                 auth_settings.update(dict(client_id=client["client_id"]))
             group = groups_info.get(app.slug)
             if group:
                 auth_settings.update(dict(group_id=group["_id"]))
-            app.app_info={App.KEY_WORD_FOR_AUTH_SETTINGS: auth_settings}
+
+            if not auth_settings:
+                self.stdout.write(f"{cnt + 1}: No clients is found for app {app.slug}!")
+                continue
+
+            if not app.app_conf:
+                app.app_conf = dict()
+            if App.KEY_WORD_FOR_AUTH_SETTINGS not in app.app_conf:
+                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS] = {}
+            app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY] = auth_settings
             app.save()
             self.stdout.write(f"{cnt+1}: app {app.slug} done!")
 
