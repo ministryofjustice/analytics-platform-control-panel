@@ -1,6 +1,8 @@
-# Third-party
+# Standard library
 import json
 import uuid
+
+# Third-party
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
@@ -20,10 +22,10 @@ class App(TimeStampedModel):
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
     ip_allowlists = models.ManyToManyField(
         IPAllowlist,
-        through='AppIPAllowList',
+        through="AppIPAllowList",
         related_name="apps",
         related_query_name="app",
-        blank=True
+        blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
@@ -131,21 +133,30 @@ class App(TimeStampedModel):
 
     def env_allowed_ip_ranges(self, env_name):
         related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
-        allowed_ip_ranges = IPAllowlist.objects.filter(pk__in=list(related_item_ids)).\
-            values_list("allowed_ip_ranges", flat=True).order_by("pk")
+            deployment_env=env_name
+        ).values_list("ip_allowlist_id", flat=True)
+        allowed_ip_ranges = (
+            IPAllowlist.objects.filter(pk__in=list(related_item_ids))
+            .values_list("allowed_ip_ranges", flat=True)
+            .order_by("pk")
+        )
         return ", ".join(list(allowed_ip_ranges))
 
     def env_allowed_ip_ranges_names(self, env_name):
         related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
-        allowed_ip_ranges = IPAllowlist.objects.filter(pk__in=list(related_item_ids)). \
-            values_list("name", flat=True).order_by("pk")
+            deployment_env=env_name
+        ).values_list("ip_allowlist_id", flat=True)
+        allowed_ip_ranges = (
+            IPAllowlist.objects.filter(pk__in=list(related_item_ids))
+            .values_list("name", flat=True)
+            .order_by("pk")
+        )
         return ", ".join(list(allowed_ip_ranges))
 
     def env_allow_ip_ranges_ids(self, env_name):
         related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name).values_list("ip_allowlist_id", flat=True)
+            deployment_env=env_name
+        ).values_list("ip_allowlist_id", flat=True)
         return list(related_item_ids)
 
     def add_customers(self, emails, env_name=None, group_id=None):
@@ -157,7 +168,7 @@ class App(TimeStampedModel):
                 auth0.ExtendedAuth0().add_group_members_by_emails(
                     emails=emails,
                     user_options={"connection": "email"},
-                    group_id=group_id
+                    group_id=group_id,
                 )
             except auth0.Auth0Error as e:
                 raise AddCustomerError from e
@@ -168,10 +179,37 @@ class App(TimeStampedModel):
                 group_id = self.get_auth_client(env_name).get("group_id")
             auth0.ExtendedAuth0().groups.delete_group_members(
                 user_ids=user_ids,
-                group_id=group_id
+                group_id=group_id,
             )
         except auth0.Auth0Error as e:
             raise DeleteCustomerError from e
+
+    def delete_customer_by_email(self, email, group_id):
+        """
+        Attempt to find a customer by email and delete them from the group.
+        If the user is not found, or the user does not belong to the given group, raise
+        an error.
+        """
+        auth0_client = auth0.ExtendedAuth0()
+        try:
+            user = auth0_client.users.get_users_email_search(
+                email=email,
+                connection="email",
+            )[0]
+        except auth0.Auth0Error as e:
+            raise DeleteCustomerError(str(e)) from e
+        except IndexError:
+            raise DeleteCustomerError(f"Couldn't find user with email {email}")
+
+        for group in auth0_client.users.get_user_groups(user_id=user["user_id"]):
+            if group_id == group["_id"]:
+                return self.delete_customers(
+                    user_ids=[user["user_id"]], group_id=group_id
+                )
+
+        raise DeleteCustomerError(
+            f"User {email} cannot be found in this application group"
+        )
 
     @property
     def status(self):
@@ -210,7 +248,7 @@ class App(TimeStampedModel):
         return (self.app_conf or {}).get(
             self.KEY_WORD_FOR_AUTH_SETTINGS, {}).get(env_name, {})
 
-    def save_auth_settings(self, env_name, client, group):
+    def save_auth_settings(self, env_name, client=None, group=None):
         auth_client_info = {}
         if client:
             auth_client_info.update(dict(client_id=client.get("client_id")))

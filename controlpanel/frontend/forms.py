@@ -160,7 +160,9 @@ class CreateAppForm(AppAuth0Form):
 
     def __init__(self, *args, **kwargs):
         super(CreateAppForm, self).__init__(*args, **kwargs)
-        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(is_recommended=True)
+        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
+            is_recommended=True
+        )
 
     def clean(self):
         cleaned_data = super().clean()
@@ -194,7 +196,9 @@ class CreateAppForm(AppAuth0Form):
     def clean_repo_url(self):
         repo_url = self.cleaned_data["repo_url"]
         org_name, repo_name = extract_repo_info_from_url(repo_url)
-        repo = GithubAPI(self.request.user.github_api_token, github_org=org_name).get_repository(repo_name)
+        repo = GithubAPI(
+            self.request.user.github_api_token, github_org=org_name
+        ).get_repository(repo_name)
         if repo is None:
             raise ValidationError(
                 "Github repository not found - it may be private",
@@ -204,7 +208,6 @@ class CreateAppForm(AppAuth0Form):
             raise ValidationError("App already exists for this repository URL")
 
         return repo_url
-
 
 
 class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
@@ -354,6 +357,15 @@ class AddAppCustomersForm(forms.Form):
     customer_email = AppCustomersField()
     env_name = forms.CharField(required=False, widget=forms.HiddenInput)
     group_id = forms.CharField(required=False, widget=forms.HiddenInput)
+
+
+class RemoveCustomerByEmailForm(forms.Form):
+    prefix = "remove"
+
+    email = forms.EmailField(widget=forms.EmailInput(
+        attrs={"class": "govuk-input cpanel-input"})
+    )
+    group_id = forms.CharField(widget=forms.HiddenInput)
 
 
 class ResetHomeDirectoryForm(forms.Form):

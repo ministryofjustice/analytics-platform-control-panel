@@ -3,7 +3,7 @@ from django.urls import path
 
 # First-party/Local
 from controlpanel.frontend import views
-from controlpanel.frontend.views import secrets, app_variables
+from controlpanel.frontend.views import app_variables, secrets
 
 urlpatterns = [
     path("", views.IndexView.as_view(), name="index"),
@@ -116,6 +116,11 @@ urlpatterns = [
         "webapps/<int:pk>/customers/remove/",
         views.RemoveCustomer.as_view(),
         name="remove-app-customer",
+    ),
+    path(
+        "webapps/<int:pk>/customers/remove/email/",
+        views.RemoveCustomerByEmail.as_view(),
+        name="remove-app-customer-by-email",
     ),
     path(
         "apps/<int:pk>/customers/paginate/<int:page_no>/",

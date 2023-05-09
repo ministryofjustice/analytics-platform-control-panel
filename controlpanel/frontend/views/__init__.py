@@ -18,6 +18,7 @@ from controlpanel.frontend.views.app import (
     DeleteApp,
     GrantAppAccess,
     RemoveCustomer,
+    RemoveCustomerByEmail,
     RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,

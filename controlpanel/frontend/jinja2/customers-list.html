@@ -33,7 +33,7 @@
                 Manage customers - {{ env_item_name }}
               {% endif %}
             </a>
-            {% if  auth_errors.get(env_group_id) %}
+            {% if auth_errors.get(env_group_id) %}
             <span id="read_customer_error_msg-error" class="govuk-error-message">
                 <span class="govuk-visually-hidden">Error:</span>{{ auth_errors.get(env_group_id) }}
                 <span class="govuk-visually-hidden"></span>if the related group does not exist, please reset the app group on app's detail page
@@ -112,7 +112,6 @@
     )
   }}
 
-
 {% if request.user.has_perm('api.add_app_customer', app) %}
   <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
@@ -136,5 +135,21 @@
   </form>
 {% endif %}
 
+{% if remove_perm %}
+  <form action="{{ url('remove-app-customer-by-email', kwargs={ "pk": app.id }) }}" method="post">
+    {{ csrf_input }}
+    {{ remove_customer_form.env_name }}
+    {{ remove_customer_form.group_id }}
+    <div class="govuk-form-group">
+      <label class="govuk-label" for="{{ remove_customer_form.email.id_for_label }}">
+        Remove a customer by entering their email address
+      </label>
+      {{ remove_customer_form.email }}
+    </div>
+    <div class="govuk-form-group">
+      <button class="govuk-button" {% if not group_id %} disabled {% endif %}>Remove customer</button>
+    </div>
+  </form>
+{% endif %}
 
 {% endblock %}

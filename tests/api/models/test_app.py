@@ -6,13 +6,14 @@ import pytest
 from model_mommy import mommy
 
 # First-party/Local
-from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
+from controlpanel.api.auth0 import Auth0Error
 from controlpanel.api.models import App
 
 
 @pytest.yield_fixture
 def auth0():
     with patch("controlpanel.api.models.app.auth0") as auth0:
+        auth0.Auth0Error = Auth0Error
         yield auth0
 
 
@@ -56,11 +57,10 @@ def test_slug_collisions_increments():
     assert "foo-bar-2" == app2.slug
 
 
-
 @pytest.mark.django_db
 def test_delete_also_deletes_app_artifacts(auth0):
     app = App.objects.create(repo_url="https://github.com/example.com/repo_name")
-    authz = auth0.ExtendedAuth0.return_value
+
     with patch("controlpanel.api.models.app.cluster") as cluster:
         app.delete(github_api_token="testing")
 
@@ -92,7 +92,7 @@ def test_add_customers(auth0, app):
     authz.add_group_members_by_emails.assert_called_with(
         emails=emails,
         user_options={"connection": "email"},
-        group_id="testing_group_id"
+        group_id="testing_group_id",
     )
 
 
@@ -102,7 +102,7 @@ def test_delete_customers(auth0, app):
     app.delete_customers(["email|123"], env_name="test_env")
     authz.groups.delete_group_members.assert_called_with(
         user_ids=["email|123"],
-        group_id="testing_group_id"
+        group_id="testing_group_id",
     )
 
 
@@ -121,3 +121,52 @@ def test_repo_name(url, expected_name):
     app = mommy.prepare("api.App")
     app.repo_url = url
     assert app._repo_name == expected_name
+
+
+@pytest.mark.parametrize(
+    "side_effect, error_message",
+    [
+        (Auth0Error, Auth0Error.default_detail),
+        (lambda email, connection: [], "Couldn't find user with email foo@email.com"),
+    ],
+)
+def test_delete_customer_by_email_error_getting_user(auth0, side_effect, error_message):
+    authz = auth0.ExtendedAuth0.return_value
+    authz.users.get_users_email_search.side_effect = side_effect
+    app = mommy.prepare("api.App")
+    with pytest.raises(app.DeleteCustomerError, match=error_message):
+        app.delete_customer_by_email("foo@email.com", group_id="123")
+
+
+def test_delete_customer_by_email_user_missing_group(auth0):
+    user = {"user_id": "1"}
+    user_groups = {"_id": "wrong_group"}
+
+    authz = auth0.ExtendedAuth0.return_value
+    authz.users.get_users_email_search.return_value = [user]
+    authz.users.get_user_groups.return_value = [user_groups]
+
+    app = mommy.prepare("api.App")
+    with pytest.raises(
+            app.DeleteCustomerError,
+            match="User foo@email.com cannot be found in this application group"
+    ):
+        app.delete_customer_by_email("foo@email.com", group_id="123")
+
+
+def test_delete_customer_by_email_success(auth0):
+    user = {"user_id": "1"}
+    user_groups = {"_id": "123"}
+
+    authz = auth0.ExtendedAuth0.return_value
+    authz.users.get_users_email_search.return_value = [user]
+    authz.users.get_user_groups.return_value = [user_groups]
+
+    app = mommy.prepare("api.App")
+
+    with patch.object(app, "delete_customers") as delete_customers:
+        app.delete_customer_by_email("foo@email.com", group_id="123")
+        delete_customers.assert_called_once_with(
+            user_ids=[user["user_id"]],
+            group_id=user_groups["_id"],
+        )
