@@ -419,12 +419,9 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return kwargs
 
     def get_success_url(self, *args, **kwargs):
-        return "{}?group_id={}".format(
-            reverse_lazy(
-                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
-            ),
-            self.kwargs.get("group_id"),
-        )
+        from django.utils.http import urlencode
+        url = reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+        return url + '?' + urlencode({'group_id': self.kwargs.get("group_id") })
 
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
