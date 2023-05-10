@@ -1,4 +1,5 @@
 # Standard library
+import uuid
 from unittest.mock import patch
 
 # Third-party
@@ -18,11 +19,11 @@ def app():
     app = mommy.make("api.App")
     dev_auth_settings = dict(
         client_id="dev_client_id",
-        group_id="dev_group_id"
+        group_id=str(uuid.uuid4())
     )
     prod_auth_settings = dict(
         client_id="prod_client_id",
-        group_id="prod_group_id"
+        group_id=str(uuid.uuid4())
     )
     env_app_settings = dict(
         dev_env=dev_auth_settings,
@@ -152,7 +153,7 @@ def get_buttons(content: str) -> list:
 
 
 def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
-    group_id = 1
+    group_id = app.get_group_id("dev_env")
     url_dict = {"group_id": group_id}
     page_no = 1
 
@@ -202,7 +203,7 @@ def test_available_auth0_clients_on_customers_page(
 def test_no_exist_auth0_clients_on_customers_page(client, app, users, ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "get_group_members_paginated") as \
             get_group_members_paginated:
-        group_id = "dev_group_id"
+        group_id = app.get_group_id("dev_env")
         url_dict = {"group_id": group_id}
         error_msg = "Testing auth0 client call"
         get_group_members_paginated.side_effect = Auth0Error(
