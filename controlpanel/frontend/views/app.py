@@ -401,16 +401,17 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors
         return HttpResponseRedirect(
-            reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]}),
+            self.get_success_url()
         )
 
     def form_valid(self, form):
         self.get_object().add_customers(
             form.cleaned_data["customer_email"],
-            group_id=form.cleaned_data.get("group_id"),
+            group_id=self.kwargs.get("group_id"),
         )
+        messages.success(self.request, "Successfully added customers")
         return HttpResponseRedirect(
-            self.get_success_url(group_id=form.cleaned_data.get("group_id"))
+            self.get_success_url()
         )
 
     def get_form_kwargs(self):
@@ -418,12 +419,11 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return kwargs
 
     def get_success_url(self, *args, **kwargs):
-        messages.success(self.request, "Successfully added customers")
         return "{}?group_id={}".format(
             reverse_lazy(
                 "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
             ),
-            kwargs.get("group_id", ""),
+            self.kwargs.get("group_id"),
         )
 
 
@@ -487,20 +487,14 @@ class RemoveCustomer(UpdateApp):
             reverse_lazy(
                 "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
             ),
-            self._get_env_group_info(),
+            kwargs.get("group_id"),
         )
-
-    def _get_env_group_info(self):
-        group_ids = self.request.POST.getlist("group_id")
-        group_id = group_ids[0] if group_ids else ""
-        return group_id
 
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
-        group_id = self._get_env_group_info()
         try:
-            app.delete_customers(user_ids, group_id=group_id)
+            app.delete_customers(user_ids, group_id=kwargs.get('group_id'))
         except App.DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             messages.error(
@@ -517,12 +511,11 @@ class RemoveCustomerByEmail(UpdateApp):
     form = None
 
     def get_redirect_url(self, *args, **kwargs):
-        group_id = self.form.cleaned_data["group_id"]
         return "{}?group_id={}".format(
             reverse_lazy(
                 "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
             ),
-            group_id,
+            kwargs.get("group_id"),
         )
 
     def perform_update(self, **kwargs):
@@ -538,7 +531,7 @@ class RemoveCustomerByEmail(UpdateApp):
         try:
             app.delete_customer_by_email(
                 email=email,
-                group_id=self.form.cleaned_data["group_id"],
+                group_id=str(kwargs.get("group_id"))
             )
         except App.DeleteCustomerError as e:
             return messages.error(

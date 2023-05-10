@@ -108,17 +108,17 @@ urlpatterns = [
         name="update-auth0-connections",
     ),
     path(
-        "webapps/<int:pk>/customers/add/",
+        "webapps/<int:pk>/groups/<uuid:group_id>/customers/add/",
         views.AddCustomers.as_view(),
         name="add-app-customers",
     ),
     path(
-        "webapps/<int:pk>/customers/remove/",
+        "webapps/<int:pk>/groups/<uuid:group_id>/customers/remove/",
         views.RemoveCustomer.as_view(),
         name="remove-app-customer",
     ),
     path(
-        "webapps/<int:pk>/customers/remove/email/",
+        "webapps/<int:pk>/groups/<uuid:group_id>/customers/remove/email/",
         views.RemoveCustomerByEmail.as_view(),
         name="remove-app-customer-by-email",
     ),

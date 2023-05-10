@@ -1,4 +1,5 @@
 # Standard library
+import uuid
 from unittest.mock import patch
 
 # Third-party
@@ -55,11 +56,11 @@ def app(users):
     app.repo_url = "https://github.com/github_org/testing_repo"
     dev_auth_settings = dict(
         client_id="dev_client_id",
-        group_id="dev_group_id"
+        group_id=str(uuid.uuid4())
     )
     prod_auth_settings = dict(
         client_id="prod_client_id",
-        group_id="prod_group_id"
+        group_id=str(uuid.uuid4())
     )
     env_app_settings = dict(
         dev_env=dev_auth_settings,
@@ -190,19 +191,21 @@ def add_customers(client, app, *args):
     data = {
         "customer_email": "test@example.com",
     }
-    return client.post(reverse("add-app-customers", kwargs={"pk": app.id}), data)
+    return client.post(reverse("add-app-customers", args=(app.id,  app.get_group_id("dev_env"))), data)
 
 
 def remove_customers(client, app, *args):
     data = {
         "customer": "email|user_1",
     }
-    return client.post(reverse("remove-app-customer", kwargs={"pk": app.id}), data)
+    return client.post(
+        reverse("remove-app-customer", args=(app.id,  app.get_group_id("dev_env"))),
+        data)
 
 
 def remove_customer_by_email(client, app, *args):
     return client.post(
-        reverse("remove-app-customer-by-email", kwargs={"pk": app.id}),
+        reverse("remove-app-customer-by-email", args=(app.id,  app.get_group_id("dev_env"))),
         data={}
     )
 
@@ -276,8 +279,6 @@ def test_permissions(
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.cluster.App.create_or_update_secret"):
         client.force_login(users[user])
-        print(users[user])
-        print(users[user].has_perm('api.add_app_customer', app))
         response = view(client, app, users, s3buckets)
         assert response.status_code == expected_status
 
@@ -342,8 +343,10 @@ def add_customer_form_error(client, response):
 )
 def test_add_customers(client, app, users, emails, expected_response):
     client.force_login(users["superuser"])
-    data = {"customer_email": emails, "env_name": "test_env"}
-    response = client.post(reverse("add-app-customers", kwargs={"pk": app.id}), data)
+    data = {"customer_email": emails, "env_name": "dev_env"}
+    response = client.post(
+        reverse("add-app-customers",
+                kwargs={"pk": app.id, "group_id": app.get_group_id("dev_env")}), data)
     assert expected_response(client, response)
 
 
@@ -380,13 +383,16 @@ def test_delete_customers(
     fixture_delete_group_members.side_effect = side_effect
     client.force_login(users["superuser"])
     data = {"customer": ["email|1234"]}
-    response = client.post(reverse("remove-app-customer", kwargs={"pk": app.id}), data)
+
+    response = client.post(
+        reverse("remove-app-customer", args=(app.id,  app.get_group_id("dev_env"))),
+        data)
     assert expected_response(client, response)
 
 
 def test_delete_cutomer_by_email_invalid_email(client, app, users):
     client.force_login(users["superuser"])
-    url = reverse("remove-app-customer-by-email", kwargs={"pk": app.id})
+    url = reverse("remove-app-customer-by-email", args=(app.id,  app.get_group_id("dev_env")))
     response = client.post(url, data={
         "remove-email": "notanemail",
         "remove-env_name": "test",
@@ -409,7 +415,7 @@ def test_delete_cutomer_by_email_invalid_email(client, app, users):
 )
 def test_delete_customer_by_email(client, app, users, side_effect, expected_message):
     client.force_login(users["superuser"])
-    url = reverse("remove-app-customer-by-email", kwargs={"pk": app.id})
+    url =  reverse("remove-app-customer-by-email", args=(app.id,  app.get_group_id("dev_env")))
     with patch(
             "controlpanel.frontend.views.app.App.delete_customer_by_email"
     ) as delete_by_email:
