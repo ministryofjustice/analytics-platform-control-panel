@@ -112,11 +112,7 @@
         "href": url("list-apps"),
         "active": page_name == "webapps",
       },
-      {
-        "text": "Parameters",
-        "href": url("list-parameters"),
-        "active": page_name == "parameters",
-      },
+
       {
         "hide": not request.user.is_superuser,
         "text": "Groups",
@@ -140,15 +136,16 @@
   {% endif %}
 
   {{ alerts() }}
-  {% if not hide_nav and request.user.is_authenticated and request.user.migration_state == request.user.PENDING %}
+  {% if not hide_nav and request.user.is_authenticated and broadcast_messages %}
   <br/>
   <div class="govuk-width-container">
     <div class="govuk-warning-text">
       <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
       <strong class="govuk-warning-text__text">
         <span class="govuk-warning-text__assistive">Warning</span>
-        Migrate to our new infrastructure. This cannot be reversed.
-        <a href="https://controlpanel.services.analytical-platform.service.justice.gov.uk/">Click here to begin</a>.
+        {% for message in broadcast_messages %}
+        {{ message }} <br/>
+        {% endfor %}
       </strong>
     </div>
     <hr class="govuk-section-break govuk-section-break--visible">
@@ -198,8 +195,10 @@
     <script>window.GOVUKFrontend.initAll()</script>
     <script src="{{ static('accessible-autocomplete/accessible-autocomplete.min.js') }}"></script>
     <script src="{{ static('jquery/jquery.min.js') }}"></script>
+    <script src="{{ static('jquery-ui/jquery-ui.min.js') }}"></script>
+    <link href="{{ static('jquery-ui/themes/base/jquery-ui.min.css') }}" rel="stylesheet" />
 
-    <script src="{{ static('app.js') }}"></script>
+    <script src="{{ static('app.js') }}?version=v0.29.35"></script>
     <script>window.moj.init();</script>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ google_analytics_id }}"></script>

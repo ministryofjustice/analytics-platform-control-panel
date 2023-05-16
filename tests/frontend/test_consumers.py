@@ -1,15 +1,18 @@
+# Standard library
 import json
+from unittest.mock import Mock, patch
 
+# Third-party
 import pytest
-from unittest.mock import patch, Mock
 
-from controlpanel.api.models import Tool, ToolDeployment, User
+# First-party/Local
 from controlpanel.api.cluster import (
+    HOME_RESETTING,
     TOOL_DEPLOYING,
     TOOL_READY,
     TOOL_RESTARTING,
-    HOME_RESETTING,
 )
+from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.frontend import consumers
 
 
@@ -23,8 +26,10 @@ def users(db):
 @pytest.fixture
 def tools(db):
     print("Setting up tools...")
-    Tool(chart_name="a_tool", target_infrastructure="e").save()
-    Tool(chart_name="another_tool", target_infrastructure="e").save()
+    Tool(chart_name="a_tool", target_infrastructure="e", description="testing").save()
+    Tool(
+        chart_name="another_tool", target_infrastructure="e", description="testing"
+    ).save()
 
 
 @pytest.yield_fixture
@@ -37,7 +42,9 @@ def update_tool_status():
 
 @pytest.yield_fixture
 def update_home_status():
-    with patch("controlpanel.frontend.consumers.update_home_status") as update_home_status:
+    with patch(
+        "controlpanel.frontend.consumers.update_home_status"
+    ) as update_home_status:
         yield update_home_status
 
 
@@ -51,7 +58,9 @@ def wait_for_deployment():
 
 @pytest.yield_fixture
 def wait_for_home_reset():
-    with patch("controlpanel.frontend.consumers.wait_for_home_reset") as wait_for_home_reset:
+    with patch(
+        "controlpanel.frontend.consumers.wait_for_home_reset"
+    ) as wait_for_home_reset:
         yield wait_for_home_reset
 
 
@@ -60,24 +69,27 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
     tool = Tool.objects.first()
     id_token = "secret user id_token"
 
-    with patch("controlpanel.frontend.consumers.ToolDeployment") as ToolDeployment:
+    with patch("controlpanel.frontend.consumers.ToolDeployment") as tool_deploy_fix:
         tool_deployment = Mock()
-        ToolDeployment.return_value = tool_deployment
+        tool_deploy_fix.return_value = tool_deployment
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_deploy(
             message={
                 "user_id": user.auth0_id,
                 "tool_name": tool.chart_name,
                 "id_token": id_token,
+                "tool_id": tool.id,
             }
         )
 
         # 1. Instanciate `ToolDeployment` correctly
-        ToolDeployment.assert_called_with(tool, user, None)
+        tool_deploy_fix.assert_called_with(tool, user, None)
         # 2. Send status update
         update_tool_status.assert_called_with(
-            tool_deployment, id_token, TOOL_DEPLOYING,
+            tool_deployment,
+            id_token,
+            TOOL_DEPLOYING,
         )
         # 3. Call save() on ToolDeployment (trigger deployment)
         tool_deployment.save.assert_called()
@@ -85,31 +97,38 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
         wait_for_deployment.assert_called_with(tool_deployment, id_token)
 
 
-def test_tool_deploy_with_old_chart_name(users, tools, update_tool_status, wait_for_deployment):
+def test_tool_deploy_with_old_chart_name(
+    users, tools, update_tool_status, wait_for_deployment
+):
     user = User.objects.first()
     tool = Tool.objects.first()
     id_token = "secret user id_token"
     old_chart_name = "old-chart"
 
-    with patch("controlpanel.frontend.consumers.ToolDeployment") as ToolDeployment:
+    with patch("controlpanel.frontend.consumers.ToolDeployment") as tool_deploy_mock:
         tool_deployment = Mock()
-        ToolDeployment.return_value = tool_deployment
+        tool_deploy_mock.return_value = tool_deployment
+        # recevier = Mock()
+        # sender = Mock()
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_deploy(
             message={
                 "user_id": user.auth0_id,
                 "tool_name": tool.chart_name,
                 "id_token": id_token,
-                "old_chart_name": old_chart_name
+                "old_chart_name": old_chart_name,
+                "tool_id": tool.id,
             }
         )
 
         # 1. Instanciate `ToolDeployment` correctly
-        ToolDeployment.assert_called_with(tool, user, old_chart_name)
+        tool_deploy_mock.assert_called_with(tool, user, old_chart_name)
         # 2. Send status update
         update_tool_status.assert_called_with(
-            tool_deployment, id_token, TOOL_DEPLOYING,
+            tool_deployment,
+            id_token,
+            TOOL_DEPLOYING,
         )
         # 3. Call save() on ToolDeployment (trigger deployment)
         tool_deployment.save.assert_called()
@@ -122,24 +141,27 @@ def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
     tool = Tool.objects.first()
     id_token = "secret user id_token"
 
-    with patch("controlpanel.frontend.consumers.ToolDeployment") as ToolDeployment:
+    with patch("controlpanel.frontend.consumers.ToolDeployment") as tool_deploy_mock:
         tool_deployment = Mock()
-        ToolDeployment.return_value = tool_deployment
+        tool_deploy_mock.return_value = tool_deployment
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_restart(
             message={
                 "user_id": user.auth0_id,
                 "tool_name": tool.chart_name,
                 "id_token": id_token,
+                "tool_id": tool.id,
             }
         )
 
         # 1. Instanciate `ToolDeployment` correctly
-        ToolDeployment.assert_called_with(tool, user)
+        tool_deploy_mock.assert_called_with(tool, user)
         # 2. Send status update
         update_tool_status.assert_called_with(
-            tool_deployment, id_token, TOOL_RESTARTING,
+            tool_deployment,
+            id_token,
+            TOOL_RESTARTING,
         )
         # 3. Call restart() on ToolDeployment (trigger deployment)
         tool_deployment.restart.assert_called_with(id_token=id_token)
@@ -154,9 +176,10 @@ def test_get_tool_and_user(users, tools):
         "user_id": expected_user.auth0_id,
         "tool_name": expected_tool.chart_name,
         "id_token": "not used by this method",
+        "tool_id": expected_tool.id,
     }
 
-    consumer = consumers.BackgroundTaskConsumer("test")
+    consumer = consumers.BackgroundTaskConsumer()
     tool, user = consumer.get_tool_and_user(message)
     assert expected_user == user
     assert expected_tool == tool
@@ -165,13 +188,11 @@ def test_get_tool_and_user(users, tools):
 def test_get_home_reset(users, update_home_status, wait_for_home_reset):
     user = User.objects.first()
 
-    with patch(
-        "controlpanel.frontend.consumers.HomeDirectory"
-    ) as HomeDirectory:
+    with patch("controlpanel.frontend.consumers.HomeDirectory") as HomeDirectory:
         mock_hd = Mock()  # Mock home directory instance.
         HomeDirectory.return_value = mock_hd
 
-        consumer = consumers.BackgroundTaskConsumer("test")
+        consumer = consumers.BackgroundTaskConsumer()
         consumer.home_reset(
             message={
                 "user_id": user.auth0_id,
@@ -196,12 +217,10 @@ def test_update_tool_status():
     user = User(auth0_id="github|123")
     id_token = "user id_token"
     status = TOOL_READY
-    app_version = "R: 42, Python: 2.0.0"
 
     tool_deployment = Mock()
     tool_deployment.tool = tool
     tool_deployment.user = user
-    tool_deployment.get_installed_app_version.return_value = app_version
 
     expected_sse_event = {
         "event": "toolStatus",
@@ -209,7 +228,7 @@ def test_update_tool_status():
             {
                 "toolName": tool.chart_name,
                 "version": tool.version,
-                "appVersion": app_version,
+                "tool_id": tool.id,
                 "status": status,
             }
         ),
@@ -217,7 +236,8 @@ def test_update_tool_status():
 
     with patch("controlpanel.frontend.consumers.send_sse") as send_sse:
         consumers.update_tool_status(
-            tool_deployment, id_token, status,
+            tool_deployment,
+            id_token,
+            status,
         )
-        tool_deployment.get_installed_app_version.assert_called_with(id_token)
         send_sse.assert_called_with(user.auth0_id, expected_sse_event)

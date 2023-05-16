@@ -1,15 +1,27 @@
-import structlog
+# Standard library
+import os
 import secrets
+from copy import deepcopy
+from enum import Enum
 
+# Third-party
+import requests
+import structlog
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
-from github import Github, GithubException
 
-from controlpanel.api import aws
-from controlpanel.api.aws import iam_arn, s3_arn  # keep for tests
-from controlpanel.api import helm
+# First-party/Local
+from controlpanel.api import auth0, helm
+from controlpanel.api.aws import (
+    AWSBucket,
+    AWSParameterStore,
+    AWSPolicy,
+    AWSRole,
+    iam_arn,
+    s3_arn,
+)
+from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.kubernetes import KubernetesClient
-from controlpanel.utils import github_repository_name
 
 log = structlog.getLogger(__name__)
 
@@ -26,6 +38,25 @@ HOME_RESET_FAILED = "Failed"
 HOME_RESET = "Reset"
 
 
+BASE_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "ec2.amazonaws.com",
+            },
+            "Action": "sts:AssumeRole",
+        }
+    ],
+}
+
+
+class AWSRoleCategory(str, Enum):
+    app = "APP"
+    user = "USER"
+
+
 class HomeDirectoryResetError(Exception):
     """
     Raised if a home directory cannot be reset.
@@ -34,49 +65,187 @@ class HomeDirectoryResetError(Exception):
     pass
 
 
-class User:
+class AWSServiceCredentialSettings:
+    """This class is responsible for defining the mapping between coding object
+    (class[.func] or function) for creating AWS resource or using AWS service
+    for achieving something. The setting may be imported through external source
+    e.g. config yaml file or db in the future, such process will be outside this
+    class for now, only the json object will be pass in. The assumed json
+    structure is 2 level dictionary as below:
+    AWS_ROLES_MAP:
+        DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
+        <Entity category>
+            DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
+            <AWS service name>: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
+    Entity category: by default, it will be same as the entity class name, but each entity class can define their own # noqa : E501
+    DEFAULT: is the default role which will be used if an lower level config couldn't be found # noqa : E501
+    AWS service name: by default, it will be same as the class name of AWS service but aws service can define their own # noqa : E501
+    one example would be
+    AWS_ROLES_MAP:
+      DEFAULT_ROLE: AWS_DATA_ACCOUNT_ROLE
+      USER:
+        DEFAULT: AWS_DATA_ACCOUNT_ROLE
+        AWSROLE: AWS_DATA_ACCOUNT_ROLE
+      APP:
+        DEFAULT: AWS_DATA_ACCOUNT_ROLE
+    """
+
+    _DEFAULT_SETTING_ROLE_KEY_ = "DEFAULT"
+
+    def __init__(self, aws_rols_map=None):
+        self.mapping = aws_rols_map
+
+    def _locate_setting(self, setting_key):
+        """
+        Check a few places, the priorities are below (highest first)
+        - environment variable
+        - settings
+        - None
+        """
+        if os.getenv(setting_key):
+            return os.getenv(setting_key)
+        if hasattr(settings, setting_key):
+            return getattr(settings, setting_key)
+        return None
+
+    def get_credential_setting(self, category_name, aws_service_name):
+        category_name = category_name or self._DEFAULT_SETTING_ROLE_KEY_
+        found_role_name = self.mapping.get(category_name.upper(), {}).get(
+            aws_service_name.upper(), None
+        )
+        if not found_role_name:
+            found_role_name = self.mapping.get(category_name.upper(), {}).get(
+                self._DEFAULT_SETTING_ROLE_KEY_
+            )
+
+        if not found_role_name:
+            found_role_name = self.mapping.get(self._DEFAULT_SETTING_ROLE_KEY_)
+        return self._locate_setting(found_role_name)
+
+
+class EntityResource:
+
+    ENTITY_ASSUME_ROLE_CATEGORY = None
+
+    def __init__(self):
+        self.aws_credential_settings = AWSServiceCredentialSettings(
+            settings.AWS_ROLES_MAP
+        )
+        self._init_aws_services()
+
+    def _init_aws_services(self):
+        pass
+
+    @property
+    def entity_category_key(self):
+        return self.ENTITY_ASSUME_ROLE_CATEGORY or (self.__class__.__name__).upper()
+
+    def get_aws_service_name(self, aws_service_class):
+        try:
+            aws_service_name = aws_service_class.ASSUME_ROLE_NAME
+        except Exception:
+            aws_service_name = aws_service_class.__name__
+        return aws_service_name
+
+    def get_assume_role(
+        self, aws_service_class, aws_role_category=None, aws_service_name=None
+    ):
+        aws_role_category = aws_role_category or self.entity_category_key
+        aws_service_name = aws_service_name or self.get_aws_service_name(
+            aws_service_class
+        )
+        assume_role_name = self.aws_credential_settings.get_credential_setting(
+            category_name=aws_role_category, aws_service_name=aws_service_name
+        )
+        return assume_role_name
+
+    def create_aws_service(
+        self, aws_service_class, aws_role_category=None, aws_service_name=None
+    ):
+        return aws_service_class(
+            assume_role_name=self.get_assume_role(
+                aws_service_class=aws_service_class,
+                aws_role_category=aws_role_category,
+                aws_service_name=aws_service_name,
+            )
+        )
+
+
+class User(EntityResource):
     """
     Wraps User model to provide convenience methods to access K8S and AWS
 
     A user is represented by an IAM role, which is assumed by their tools.
     """
 
+    OIDC_STATEMENT = {
+        "Effect": "Allow",
+        "Principal": {
+            "Federated": iam_arn(f"oidc-provider/{settings.OIDC_DOMAIN}/"),
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+    }
+
+    EKS_STATEMENT = {
+        "Effect": "Allow",
+        "Principal": {
+            "Federated": iam_arn(f"oidc-provider/{settings.OIDC_EKS_PROVIDER}"),
+        },
+        "Action": "sts:AssumeRoleWithWebIdentity",
+        "Condition": {"StringLike": {}},
+    }
+
+    READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
+
+    ATTACH_POLICIES = [
+        READ_INLINE_POLICIES,
+        "airflow-dev-ui-access",
+        "airflow-prod-ui-access",
+    ]
+
     def __init__(self, user):
         self.user = user
         self.k8s_namespace = f"user-{self.user.slug}"
         self.eks_cpanel_namespace = "cpanel"
+        super(User, self).__init__()
 
-        self.user_helm_charts = []
-        self.helm_charts_required()
+    def _init_aws_services(self):
+        self.aws_role_service = self.create_aws_service(AWSRole)
 
-    def helm_charts_required(self):
+    @property
+    def user_helm_charts(self):
         # The full list of the charts required for a user under different situations
         # TODO this helm charts should be stored somewhere rather than hard coding here
         # The order defined in the follow list is important
-        self.user_helm_charts = {
+        return {
             "installation": [
-                {"namespace": self.eks_cpanel_namespace,
-                 "release": f"bootstrap-user-{self.user.slug}",
-                 "chart": f"{settings.HELM_REPO}/bootstrap-user",
-                 "values": {"Username": self.user.slug}},
-                {"namespace": self.k8s_namespace,
-                 "release": f"provision-user-{self.user.slug}",
-                 "chart": f"{settings.HELM_REPO}/provision-user",
-                 "values": {
-                     "Username": self.user.slug,
-                     "Efsvolume": settings.EFS_VOLUME,
-                     "OidcDomain": settings.OIDC_DOMAIN,
-                     "Email": self.user.email,
-                     "Fullname": self.user.name
-                 }}],
+                {
+                    "namespace": self.eks_cpanel_namespace,
+                    "release": f"bootstrap-user-{self.user.slug}",
+                    "chart": f"{settings.HELM_REPO}/bootstrap-user",
+                    "values": {"Username": self.user.slug},
+                },
+                {
+                    "namespace": self.k8s_namespace,
+                    "release": f"provision-user-{self.user.slug}",
+                    "chart": f"{settings.HELM_REPO}/provision-user",
+                    "values": {
+                        "Username": self.user.slug,
+                        "Efsvolume": settings.EFS_VOLUME,
+                        "OidcDomain": settings.OIDC_DOMAIN,
+                        "Email": self.user.email,
+                        "Fullname": self.user.name,
+                    },
+                },
+            ],
             "reset_home": [
-                {"namespace": self.k8s_namespace,
-                 "release": f"reset-user-efs-home-{self.user.slug}",
-                 "chart": f"{settings.HELM_REPO}/reset-user-efs-home",
-                 "values": {
-                     "Username": self.user.slug
-                 }}
-            ]
+                {
+                    "namespace": self.k8s_namespace,
+                    "release": f"reset-user-efs-home-{self.user.slug}",
+                    "chart": f"{settings.HELM_REPO}/reset-user-efs-home",
+                    "values": {"Username": self.user.slug},
+                }
+            ],
         }
 
     @property
@@ -88,21 +257,40 @@ class User:
         for key, value in helm_chart_item["values"].items():
             values.append("{}={}".format(key, value))
         helm.upgrade_release(
-            helm_chart_item['release'],  # release
-            helm_chart_item['chart'],  # chart
+            helm_chart_item["release"],  # release
+            helm_chart_item["chart"],  # chart
             f"--namespace={helm_chart_item['namespace']}",
-            f"--set="
-            + (
-                ",".join(values)
-            ),
+            "--set=" + (",".join(values)),
         )
 
     def _init_user(self):
         for helm_chart_item in self.user_helm_charts["installation"]:
             self._run_helm_install_command(helm_chart_item)
 
+    @staticmethod
+    def aws_user_policy(user_auth0_id, user_name):
+        policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
+        oidc_statement = deepcopy(User.OIDC_STATEMENT)
+        oidc_statement["Condition"] = {
+            "StringEquals": {
+                f"{settings.OIDC_DOMAIN}/:sub": user_auth0_id,
+            }
+        }
+        policy["Statement"].append(oidc_statement)
+        eks_statement = deepcopy(User.EKS_STATEMENT)
+        match = f"system:serviceaccount:user-{user_name}:{user_name}-*"
+        eks_statement["Condition"]["StringLike"] = {
+            f"{settings.OIDC_EKS_PROVIDER}:sub": match
+        }
+        policy["Statement"].append(eks_statement)
+        return policy
+
     def create(self):
-        aws.create_user_role(self.user)
+        self.aws_role_service.create_role(
+            self.iam_role_name,
+            User.aws_user_policy(self.user.auth0_id, self.user.slug),
+            User.ATTACH_POLICIES,
+        )
         self._init_user()
 
     def reset_home(self):
@@ -112,159 +300,381 @@ class User:
         for helm_chart_item in self.user_helm_charts["reset_home"]:
             self._run_helm_install_command(helm_chart_item)
 
-    def _uninstall_helm_charts(self, related_namespace, hel_charts):
+    def _uninstall_helm_charts(self, related_namespace, hel_charts, dry_run=False):
         if not hel_charts:
             return
 
-        helm.delete_eks(related_namespace, *hel_charts)
+        helm.delete(related_namespace, *hel_charts, dry_run=dry_run)
 
     def _filter_out_installation_charts(self, helm_charts):
         init_installed_charts = []
         for helm_chart_item in self.user_helm_charts["installation"]:
-            if helm_chart_item['release'] in helm_charts:
-                init_installed_charts.append(helm_chart_item['release'])
-        # Removed those initially installed charts from the charts which are retrieved from the namespace
+            if helm_chart_item["release"] in helm_charts:
+                init_installed_charts.append(helm_chart_item["release"])
+        # Removed those initially installed charts from the charts which are
+        # retrieved from the namespace
         for helm_chart_item in init_installed_charts:
             helm_charts.remove(helm_chart_item)
         return init_installed_charts
 
-    def _delete_user_helm_charts(self):
+    def delete_user_helm_charts(self, dry_run=False):
         user_releases = helm.list_releases(namespace=self.k8s_namespace)
-        cpanel_releases = helm.list_releases(namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}")
+        cpanel_releases = helm.list_releases(
+            namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"
+        )
 
         init_installed_charts = self._filter_out_installation_charts(user_releases)
-        self._uninstall_helm_charts(self.k8s_namespace, user_releases)
-        self._uninstall_helm_charts(self.k8s_namespace, init_installed_charts)
+        self._uninstall_helm_charts(self.k8s_namespace, user_releases, dry_run=dry_run)
+        self._uninstall_helm_charts(
+            self.k8s_namespace, init_installed_charts, dry_run=dry_run
+        )
 
         # Only remove the installed charts from cpanel namespace
         init_installed_charts = self._filter_out_installation_charts(cpanel_releases)
-        self._uninstall_helm_charts(self.eks_cpanel_namespace, init_installed_charts)
+        self._uninstall_helm_charts(
+            self.eks_cpanel_namespace, init_installed_charts, dry_run=dry_run
+        )
 
     def delete(self):
-        aws.delete_role(self.user.iam_role_name)
-        self._delete_user_helm_charts()
+        self.aws_role_service.delete_role(self.user.iam_role_name)
+        self.delete_user_helm_charts()
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
-        aws.grant_bucket_access(
+        self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
     def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+        self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
-    def _has_required_installation_charts(self):
-        """ Checks if the expected helm charts exist for the user.
-        """
+    def has_required_installation_charts(self):
+        """Checks if the expected helm charts exist for the user."""
         installed_helm_charts = helm.list_releases(namespace=self.k8s_namespace)
-        installed_helm_charts.extend(helm.list_releases(namespace=self.eks_cpanel_namespace,
-                                                        release=f"user-{self.user.slug}"))
+        installed_helm_charts.extend(
+            helm.list_releases(
+                namespace=self.eks_cpanel_namespace, release=f"user-{self.user.slug}"
+            )
+        )
         for helm_chart_item in self.user_helm_charts["installation"]:
-            if helm_chart_item['release'] not in installed_helm_charts:
+            if helm_chart_item["release"] not in installed_helm_charts:
                 return False
         return True
 
-    def _migrate_user_to_eks(self):
-        # TODO This function should be removed.
-        # User's migration state is not yet marked as complete, and so we
-        # need to migrate their AWS role before running the init-user
-        # helm charts before marked it as such
-        log.info(f"Starting to migrate user {self.user.slug} from {self.user.migration_state}")
 
-        self.user.migration_state = self.user.MIGRATING
-        self.user.save()
-
-        # Migrate the AWS roles for the user.
-        aws.migrate_user_role(self.user)
-
-        # Run the new charts to configure the user for EKS infra.
-        self._init_user()
-
-        # Update the user's state in the database.
-        self.user.migration_state = self.user.COMPLETE
-        self.user.save()
-
-        log.info(f"Completed migration of user {self.user.slug}")
-
-    def on_authenticate(self):
-        """
-        Run on each authenticated login on the control panel.
-        This function also checks whether the users has all those charts installed or not
-        """
-        if self.user.migration_state == self.user.PENDING:
-            # TODO keep the following part for short term, should be removed soon
-            self._migrate_user_to_eks()
-        else:
-            if not self._has_required_installation_charts():
-                # For some reason, user does not have all the charts required so we should re-init them.
-                log.info(f"User {self.user.slug} already migrated but has no charts, initialising")
-                self._delete_user_helm_charts()
-                self._init_user()
-
-
-class App:
+class App(EntityResource):
     """
     Responsible for the apps-related interactions with the k8s cluster and AWS
     """
 
-    APPS_NS = "apps-prod"
+    IP_RANGES = "IP_RANGES"
+    AUTH0_CLIENT_ID = "AUTH0_CLIENT_ID"
+    AUTH0_CLIENT_SECRET = "AUTH0_CLIENT_SECRET"
+    AUTH0_CALLBACK_URL = "AUTH0_CALLBACK_URL"
+    AUTH0_DOMAIN = "AUTH0_DOMAIN"
+    AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
+    AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
+    AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
 
-    def __init__(self, app):
+    def __init__(self, app, github_api_token=None, auth0_instance=None):
+        super(App, self).__init__()
         self.app = app
+        self.github_api_token = github_api_token
+        self.auth0_instance = auth0_instance
+
+    def _get_auth0_instance(self):
+        if not self.auth0_instance:
+            self.auth0_instance = auth0.ExtendedAuth0()
+        return self.auth0_instance
+
+    def _init_aws_services(self):
+        self.aws_role_service = self.create_aws_service(AWSRole)
+
+    def create_or_update_secrets(self, env_name, secret_data):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secrets(
+            repo_name, env_name, secret_data
+        )
+
+    def _create_secrets(self, env_name, client=None):
+        secret_data: dict = {
+            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)
+        }
+        if client:
+            secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
+            secret_data[App.AUTH0_CLIENT_SECRET] = client["client_secret"]
+
+        self.create_or_update_secrets(env_name=env_name, secret_data=secret_data)
+
+    def _create_env_vars(
+        self,
+        env_name,
+        disable_authentication,
+        connections,
+        client=None,
+    ):
+        if client:
+            env_data: dict = {
+                App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
+                App.AUTH0_PASSWORDLESS: "email" in connections,
+                App.AUTH0_CALLBACK_URL: client["callbacks"][0]
+                if len(client["callbacks"]) >= 1
+                else "",
+                App.AUTHENTICATION_REQUIRED: not disable_authentication,
+            }
+        else:
+            env_data: dict = {App.AUTHENTICATION_REQUIRED: not disable_authentication}
+
+        self._create_envs(env_name=env_name, env_data=env_data)
+
+    def _create_envs(self, env_name, env_data):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_repo_env_vars(
+            repo_name, env_name, env_data
+        )
+
+    def _is_hidden_secret(self, name):
+        for item in settings.OTHER_SYSTEM_SECRETS or []:
+            if name.startswith(item):
+                return True
+        return False
+
+    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
+        # Add the auth0's connections into this category
+        connections = self.app.auth0_connections(env_name=env_name)
+        app_secrets.append(
+            {
+                "name": App.AUTH0_CONNECTIONS,
+                "env_name": env_name,
+                "value": connections or [],
+                "created": connections is not None,
+                "removable": False,
+                "editable": True,
+            }
+        )
+
+    def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
+        not_created_ones = list(
+            set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
+        )
+        for item_name in not_created_ones:
+            app_secrets.append(
+                {
+                    "name": item_name,
+                    "env_name": env_name,
+                    "value": None,
+                    "created": False,
+                    "removable": False,
+                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                }
+            )
+
+    def _add_missing_mandatory_vars(self, env_name, app_env_vars, created_var_names):
+        not_created_ones = list(
+            set(settings.AUTH_SETTINGS_ENVS) - set(created_var_names)
+        )
+        for item_name in not_created_ones:
+            app_env_vars.append(
+                {
+                    "name": item_name,
+                    "value": None,
+                    "env_name": env_name,
+                    "created": False,
+                    "removable": False,
+                    "editable": True,
+                }
+            )
 
     @property
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
 
     def create_iam_role(self):
-        aws.create_app_role(self.app)
+        self.aws_role_service.create_role(self.iam_role_name, BASE_ASSUME_ROLE_POLICY)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_bucket_access(
+        self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
     def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_bucket_access(self.iam_role_name, bucket_arn)
+        self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
     def delete(self):
-        aws.delete_role(self.iam_role_name)
+        self.aws_role_service.delete_role(self.iam_role_name)
+        if self.github_api_token:
+            for env_name in self.get_deployment_envs():
+                self.remove_auth_settings(env_name)
 
-    @property
-    def url(self):
-        k8s = KubernetesClient(use_cpanel_creds=True)
+    def list_role_names(self):
+        return self.aws_role_service.list_role_names()
 
-        repo_name = github_repository_name(self.app.repo_url)
-        ingresses = k8s.ExtensionsV1beta1Api.list_namespaced_ingress(
-            self.APPS_NS,
-            label_selector=f"repo={repo_name}",
-        ).items
+    def create_or_update_secret(self, env_name, secret_key, secret_value):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secret(
+            repo_name, env_name, secret_key, secret_value
+        )
 
-        if len(ingresses) != 1:
-            return None
+    def delete_secret(self, env_name, secret_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        try:
+            GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_secret(
+                repo_name, env_name=env_name, secret_name=secret_name
+            )
+        except requests.exceptions.HTTPError as error:
+            if error.response.status_code != 404:
+                raise Exception(str(error))
 
-        return f"https://{ingresses[0].spec.rules[0].host}"
+    def get_env_var(self, env_name, key_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        return GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_var(
+            repo_name, env_name, key_name
+        )
+
+    def create_or_update_env_var(self, env_name, key_name, key_value):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        GithubAPI(self.github_api_token, github_org=org_name).create_or_update_env_var(
+            repo_name, env_name, key_name, key_value
+        )
+
+    def delete_env_var(self, env_name, key_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        try:
+            GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_var(
+                repo_name, env_name, key_name
+            )
+        except requests.exceptions.HTTPError as error:
+            if error.response.status_code != 404:
+                raise Exception(str(error))
+
+    def get_deployment_envs(self):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        return GithubAPI(self.github_api_token, github_org=org_name).get_repo_envs(
+            repo_name=repo_name
+        )
+
+    def get_env_secrets(self, env_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        app_secrets = []
+        created_secret_names = []
+        for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_secrets(
+            repo_name=repo_name, env_name=env_name
+        ):
+            if self._is_hidden_secret(item["name"]):
+                continue
+            value = settings.SECRET_DISPLAY_VALUE
+            if item["name"] == App.IP_RANGES:
+                value = self.app.env_allowed_ip_ranges_names(env_name=env_name)
+            app_secrets.append(
+                {
+                    "name": item["name"],
+                    "env_name": env_name,
+                    "value": value,
+                    "created": True,
+                    "removable": item["name"] not in settings.AUTH_SETTINGS_SECRETS,
+                    "editable": item["name"]
+                    not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                }
+            )
+            created_secret_names.append(item["name"])
+        self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
+        self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
+        return app_secrets
+
+    def get_env_vars(self, env_name):
+        org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
+        app_env_vars = []
+        created_var_names = []
+        for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_vars(
+            repo_name, env_name=env_name
+        ):
+            app_env_vars.append(
+                {
+                    "name": item["name"],
+                    "value": item["value"],
+                    "created": True,
+                    "env_name": env_name,
+                    "removable": item["name"] not in settings.AUTH_SETTINGS_ENVS,
+                    "editable": True,
+                }
+            )
+            created_var_names.append(item["name"])
+        self._add_missing_mandatory_vars(env_name, app_env_vars, created_var_names)
+        return app_env_vars
+
+    def create_auth_settings(
+            self, env_name, disable_authentication=False, connections=None, app_domain=None
+    ):
+        client = None
+        group = None
+        if not disable_authentication:
+            client, group = self._get_auth0_instance().setup_auth0_client(
+                client_name=self.app.auth0_client_name(env_name),
+                app_url_name=self.app.app_url_name(env_name),
+                connections=connections,
+                app_domain=app_domain
+            )
+        self._create_secrets(env_name, client=client)
+        self._create_env_vars(
+            env_name,
+            disable_authentication,
+            connections or [],
+            client=client,
+        )
+        return client, group
+
+    def remove_auth_settings(self, env_name):
+        auth_client_name = self.app.auth0_client_name(env_name)
+        secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
+        for secret_name in secrets_require_remove:
+            self.delete_secret(env_name, secret_name)
+        envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
+        for app_env_name in envs_require_remove:
+            self.delete_env_var(env_name, app_env_name)
+        self._get_auth0_instance().clear_up_app(app_name=auth_client_name)
 
 
-class S3Bucket:
+class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
 
     def __init__(self, bucket):
+        super(S3Bucket, self).__init__()
         self.bucket = bucket
+
+    def _init_aws_services(self):
+        self.aws_bucket_service = self.create_aws_service(AWSBucket)
 
     @property
     def arn(self):
         return s3_arn(self.bucket.name)
 
-    def create(self):
-        return aws.create_bucket(
+    def _get_assume_role_category(self):
+        if self.bucket.is_used_for_app:
+            return AWSRoleCategory.app
+        else:
+            return AWSRoleCategory.user
+
+    def create(self, owner=AWSRoleCategory.user):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket, aws_role_category=owner
+        )
+        return self.aws_bucket_service.create_bucket(
             self.bucket.name, self.bucket.is_data_warehouse
         )
 
     def mark_for_archival(self):
-        aws.tag_bucket(self.bucket.name, {"to-archive": "true"})
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket, aws_role_category=self._get_assume_role_category()
+        )
+        self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
+
+    def exists(self, bucket_name, bucket_owner):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            AWSBucket, aws_role_category=bucket_owner
+        )
+        return self.aws_bucket_service.exists(bucket_name)
 
 
-class RoleGroup:
+class RoleGroup(EntityResource):
     """
     Uses a managed policy as a way to group IAM roles that have access to same
     resources.
@@ -273,8 +683,14 @@ class RoleGroup:
     See https://stackoverflow.com/a/48087433/455642
     """
 
+    ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.user
+
     def __init__(self, iam_managed_policy):
+        super(RoleGroup, self).__init__()
         self.policy = iam_managed_policy
+
+    def _init_aws_services(self):
+        self.aws_policy_service = self.create_aws_service(AWSPolicy)
 
     @property
     def arn(self):
@@ -285,65 +701,50 @@ class RoleGroup:
         return f"/{settings.ENV}/group/"
 
     def create(self):
-        aws.create_group(
+        self.aws_policy_service.create_policy(
             self.policy.name,
             self.policy.path,
         )
 
     def update_members(self):
-        aws.update_group_members(
+        self.aws_policy_service.update_policy_members(
             self.arn,
             {user.iam_role_name for user in self.policy.users.all()},
         )
 
     def delete(self):
-        aws.delete_group(self.arn)
+        self.aws_policy_service.delete_policy(self.arn)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
-        aws.grant_group_bucket_access(
+        self.aws_policy_service.grant_policy_bucket_access(
             self.arn, bucket_arn, access_level, path_arns
         )
 
     def revoke_bucket_access(self, bucket_arn):
-        aws.revoke_group_bucket_access(self.arn, bucket_arn)
+        self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
 
 
-def create_parameter(name, value, role, description):
-    return aws.create_parameter(name, value, role, description)
+class AppParameter(EntityResource):
 
+    ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
 
-def delete_parameter(name):
-    aws.delete_parameter(name)
+    def __init__(self, parameter):
+        super(AppParameter, self).__init__()
+        self.parameter = parameter
 
+    def _init_aws_services(self):
+        self.aws_param_service = self.create_aws_service(AWSParameterStore)
 
-def list_role_names():
-    return aws.list_role_names()
-
-
-def get_repositories(user):
-    repos = []
-    github = Github(user.github_api_token)
-    for name in settings.GITHUB_ORGS:
-        try:
-            org = github.get_organization(name)
-            repos.extend(org.get_repos())
-        except GithubException as err:
-            log.warning(
-                f"Failed getting {name} Github org repos for {user}: {err}"
-            )
-            raise err
-    return repos
-
-
-def get_repository(user, repo_name):
-    github = Github(user.github_api_token)
-    try:
-        return github.get_repo(repo_name)
-    except GithubException.UnknownObjectException as err:
-        log.warning(
-            f"Failed getting {repo_name} Github repo for {user}: {err}"
+    def create_parameter(self):
+        return self.aws_param_service.create_parameter(
+            self.parameter.name,
+            self.parameter.value,
+            self.parameter.role_name,
+            self.parameter.description,
         )
-        return None
+
+    def delete_parameter(self):
+        self.aws_param_service.delete_parameter(self.parameter.name)
 
 
 class ToolDeploymentError(Exception):
@@ -369,7 +770,10 @@ class ToolDeployment:
 
     @property
     def release_name(self):
-        return f"{self.chart_name}-{self.user.slug}"
+        return self.escape_namespace_len(f"{self.chart_name}-{self.user.slug}")
+
+    def escape_namespace_len(self, name: str) -> str:
+        return name[: settings.MAX_RELEASE_NAME_LEN]
 
     def _delete_legacy_release(self):
         """
@@ -386,6 +790,8 @@ class ToolDeployment:
         scheme for RStudio.
         """
         old_release_name = f"{self.chart_name}-{self.user.slug}"
+        old_release_name = self.escape_namespace_len(old_release_name)
+
         if self.old_chart_name:
             # If an old_chart_name has been passed into the deployment, it
             # means the currently deployed instance of the tool is from a
@@ -393,8 +799,10 @@ class ToolDeployment:
             # the old_chart_name that we should use for the old release
             # that needs deleting.
             old_release_name = f"{self.old_chart_name}-{self.user.slug}"
+            old_release_name = self.escape_namespace_len(old_release_name)
+
         if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-            helm.delete_eks(self.k8s_namespace, old_release_name)
+            helm.delete(self.k8s_namespace, old_release_name)
 
     def _set_values(self, **kwargs):
         """
@@ -419,11 +827,15 @@ class ToolDeployment:
         values.update(kwargs)
         set_values = []
         for key, val in values.items():
-            if val: # Helpful for debugging configs: ignore parameters with missing values and log that the value is missing.
-                escaped_val = val.replace(",", "\,")
+            if val:
+                # Helpful for debugging configs: ignore parameters with missing
+                # values and log that the value is missing.
+                escaped_val = val.replace(",", "\,")  # noqa : W605
                 set_values.extend(["--set", f"{key}={escaped_val}"])
             else:
-                log.warning(f"Missing value for helm chart param release - {self.release_name} version - {self.tool.version} namespace - {self.k8s_namespace}, key name - {key}")
+                log.warning(
+                    f"Missing value for helm chart param release - {self.release_name} version - {self.tool.version} namespace - {self.k8s_namespace}, key name - {key}"  # noqa : E501
+                )
         return set_values
 
     def install(self, **kwargs):
@@ -436,9 +848,9 @@ class ToolDeployment:
                 self.release_name,  # release
                 # XXX assumes repo name
                 f"{settings.HELM_REPO}/{self.chart_name}",  # chart
-                f"--version",
+                "--version",
                 self.tool.version,
-                f"--namespace",
+                "--namespace",
                 self.k8s_namespace,
                 *set_values,
             )
@@ -448,13 +860,7 @@ class ToolDeployment:
 
     def uninstall(self, id_token):
         deployment = self.get_deployment(id_token)
-        if settings.EKS:
-            helm.delete_eks(self.k8s_namespace, deployment.metadata.name)
-        else:
-            helm.delete(
-                deployment.metadata.name,
-                f"--namespace={self.k8s_namespace}"
-            )
+        helm.delete(self.k8s_namespace, deployment.metadata.name)
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
@@ -464,13 +870,30 @@ class ToolDeployment:
         )
 
     @classmethod
-    def get_deployments(
-        cls, user, id_token, search_name=None, search_version=None
-    ):
+    def is_tool_deployment(cls, metadata):
+        """
+        Currently the logic for checking whether a deployment is for tool is
+        based on the information we put in the deployment yaml, the common info
+        cross tools' helm chart is the unidler-key or unide (somehow typo in
+        the helm chart :(), we have other alternative field for such check,
+        e.g. whether name contains some key words, but IMO, it is too specific.
+
+        We may change this part if we want to refactor how the tool is released
+        and managed.
+        """
+        return metadata.labels.get("unidler-key") is not None or metadata.labels.get(
+            "unidle-key"
+        )
+
+    @classmethod
+    def get_deployments(cls, user, id_token, search_name=None, search_version=None):
         deployments = []
         k8s = KubernetesClient(id_token=id_token)
         results = k8s.AppsV1Api.list_namespaced_deployment(user.k8s_namespace)
         for deployment in results.items:
+            if not cls.is_tool_deployment(deployment.metadata):
+                continue
+
             app_name = deployment.metadata.labels["app"]
             _, version = deployment.metadata.labels["chart"].rsplit("-", 1)
             if search_name and search_name not in app_name:
@@ -497,26 +920,10 @@ class ToolDeployment:
 
         return deployments[0]
 
-    def get_installed_chart_version(self, id_token):
-        """
-        Returns the installed helm chart version of the tool
-
-        This is extracted from the `chart` label in the corresponding
-        `Deployment`.
-        """
-
+    def get_status(self, id_token, deployment=None):
         try:
-            deployment = self.get_deployment(id_token)
-            _, chart_version = deployment.metadata.labels["chart"].rsplit(
-                "-", 1
-            )
-            return chart_version
-        except ObjectDoesNotExist:
-            return None
-
-    def get_status(self, id_token):
-        try:
-            deployment = self.get_deployment(id_token)
+            if deployment is None:
+                deployment = self.get_deployment(id_token)
 
         except ObjectDoesNotExist:
             log.warning(f"{self} not found")
@@ -527,8 +934,7 @@ class ToolDeployment:
             return TOOL_STATUS_UNKNOWN
 
         conditions = {
-            condition.type: condition
-            for condition in deployment.status.conditions
+            condition.type: condition for condition in deployment.status.conditions
         }
 
         if "Available" in conditions:
@@ -544,7 +950,5 @@ class ToolDeployment:
             elif progressing_status == "False":
                 return TOOL_DEPLOY_FAILED
 
-        log.warning(
-            f"Unknown status for {self}: {deployment.status.conditions}"
-        )
+        log.warning(f"Unknown status for {self}: {deployment.status.conditions}")
         return TOOL_STATUS_UNKNOWN

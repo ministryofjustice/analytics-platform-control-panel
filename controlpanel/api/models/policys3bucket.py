@@ -1,5 +1,7 @@
+# Third-party
 from django.db import models
 
+# First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
@@ -9,10 +11,9 @@ class PolicyS3Bucket(AccessToS3Bucket):
     """
     Similar to UserS3Bucket but with groups
     """
+
     policy = models.ForeignKey(
-        "IAMManagedPolicy",
-        related_name="policys3buckets",
-        on_delete=models.CASCADE
+        "IAMManagedPolicy", related_name="policys3buckets", on_delete=models.CASCADE
     )
 
     class Meta:

@@ -1,7 +1,13 @@
-import pytest
+# Standard library
 from unittest import mock
-from controlpanel.frontend import forms
+
+# Third-party
+import pytest
+
+# First-party/Local
+from controlpanel.api import aws
 from controlpanel.api.models import S3Bucket
+from controlpanel.frontend import forms
 
 
 def test_tool_release_form_check_release_name():
@@ -15,7 +21,7 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -25,7 +31,7 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -35,7 +41,7 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -45,7 +51,7 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -55,7 +61,7 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid() is False
@@ -72,7 +78,7 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
         "tool_domain": "jupyter-lab",
     }
     f = forms.ToolReleaseForm(data)
@@ -83,7 +89,7 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
         "tool_domain": "jupyter-lab",
     }
     f = forms.ToolReleaseForm(data)
@@ -94,7 +100,7 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "o",
+        "target_infrastructure": "e",
         "tool_domain": "invalid-tool-domain",
     }
     f = forms.ToolReleaseForm(data)
@@ -125,10 +131,13 @@ def test_create_app_form_clean_new_datasource():
     """
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"]
+            "connections": ["email"],
+            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -140,8 +149,11 @@ def test_create_app_form_clean_new_datasource():
     # A new datasource name is required if the connection is new.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
+            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -150,10 +162,13 @@ def test_create_app_form_clean_new_datasource():
     # If a datasource already exists, report the duplication.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"]
+            "connections": ["email"],
+            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -172,13 +187,43 @@ def test_create_app_form_clean_existing_datasource():
         data={
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "existing",
-            "connections": ["email"]
+            "connections": ["email"],
         }
     )
     f.clean_repo_url = mock.MagicMock()
     # A valid form returns True.
     assert f.is_valid() is False
     assert "existing_datasource_id" in f.errors
+
+
+def test_create_app_form_new_datasource_but_bucket_existed():
+    bucket_name = "test-bucketname"
+    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+
+    f = forms.CreateAppForm(
+        data={
+            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "connect_bucket": "new",
+            "new_datasource_name": bucket_name,
+            "connections": ["email"],
+        }
+    )
+    f.clean_repo_url = mock.MagicMock()
+    assert f.is_valid() is False
+    assert "already exists" in ".".join(f.errors["new_datasource_name"])
+
+
+def test_create_new_datasource_but_bucket_existed():
+    bucket_name = "test-bucketname"
+    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+
+    f = forms.CreateDatasourceForm(
+        data={
+            "name": bucket_name,
+        }
+    )
+    assert f.is_valid() is False
+    assert "already exists" in ".".join(f.errors["name"])
 
 
 def test_create_app_form_clean_repo_url():
@@ -189,10 +234,13 @@ def test_create_app_form_clean_repo_url():
     # The good case.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"]
+            "connections": ["email"],
+            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -202,17 +250,21 @@ def test_create_app_form_clean_repo_url():
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
     with mock.patch(
-        "controlpanel.frontend.forms.get_repository", mock_get_repo
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
     ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
         assert f.is_valid() is True
+
     # Repo not found.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -222,18 +274,22 @@ def test_create_app_form_clean_repo_url():
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
     with mock.patch(
-        "controlpanel.frontend.forms.get_repository", mock_get_repo
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
     ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
         assert f.is_valid() is False
         assert "repo_url" in f.errors
+
     # App already exists.
     f = forms.CreateAppForm(
         data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -243,9 +299,149 @@ def test_create_app_form_clean_repo_url():
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
     with mock.patch(
-        "controlpanel.frontend.forms.get_repository", mock_get_repo
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
     ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
         assert f.is_valid() is False
         assert "repo_url" in f.errors
+
+
+def test_create_app_with_custom_connection():
+    # Good case.
+    f = forms.CreateAppForm(
+        data={
+            "org_names": "moj-analytical-services",
+            "deployment_envs": ["test"],
+            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "connect_bucket": "new",
+            "new_datasource_name": "test-bucketname",
+            "connections": ["email", "auth0_nomis"],
+            "disable_authentication": True,
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "nomis-client-secret",
+            "auth0_nomis_auth0_conn_name": "nomis-conn-name",
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"],
+    )
+    f.request = mock.MagicMock()
+    mock_get_repo = mock.MagicMock(return_value=True)
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    mock_s3 = mock.MagicMock()
+    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
+    with mock.patch(
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
+    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
+        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    ):
+        assert f.is_valid() is True
+
+    # Bad case: missing client credential for nomis login + not valid connection name
+    f = forms.CreateAppForm(
+        data={
+            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "connect_bucket": "new",
+            "new_datasource_name": "test-bucketname",
+            "connections": ["email", "auth0_nomis"],
+            "disable_authentication": True,
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "",
+            "auth0_nomis_auth0_conn_name": "nomis_conn_name",
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"],
+    )
+    f.request = mock.MagicMock()
+    mock_get_repo = mock.MagicMock(return_value=True)
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    mock_s3 = mock.MagicMock()
+    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
+    with mock.patch(
+        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
+    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
+        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    ):
+        assert f.is_valid() is False
+        assert "auth0_nomis_auth0_client_secret" in f.errors
+        assert "auth0_nomis_auth0_conn_name" in f.errors
+
+
+def test_update_app_with_custom_connection():
+    # Good case.
+    f = forms.UpdateAppAuth0ConnectionsForm(
+        data={
+            "env_name": "test",
+            "connections": ["email", "auth0_nomis"],
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "nomis-client-secret",
+            "auth0_nomis_auth0_conn_name": "nomis-conn-name",
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"],
+        auth0_connections=["github"],
+    )
+    f.request = mock.MagicMock()
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    with mock.patch("controlpanel.frontend.forms.App", mock_app):
+        assert f.is_valid() is True
+
+    # Bad case: missing client credential for nomis login + not valid connection name
+    f = forms.UpdateAppAuth0ConnectionsForm(
+        data={
+            "env_name": "test",
+            "connections": ["email", "auth0_nomis"],
+            "auth0_nomis_auth0_client_id": "nomis-client-id",
+            "auth0_nomis_auth0_client_secret": "",
+            "auth0_nomis_auth0_conn_name": "nomis_conn_name",
+        },
+        all_connections_names=["github", "email", "auth0_nomis"],
+        custom_connections=["auth0_nomis"],
+        auth0_connections=["github"],
+    )
+    f.request = mock.MagicMock()
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    with mock.patch("controlpanel.frontend.forms.App", mock_app):
+        assert f.is_valid() is False
+        assert "auth0_nomis_auth0_client_secret" in f.errors
+        assert "auth0_nomis_auth0_conn_name" in f.errors
+
+
+@pytest.mark.django_db
+def test_ip_allowlist_form_invalid_ip():
+    """
+    Make sure invalid IP allowlist configurations throw errors as expected
+    (See also validation tests in ../test_validators.py)
+    """
+    data = {
+        "name": "An IP allowlist",
+        "allowed_ip_ranges": "123, 456",
+    }
+    f = forms.IPAllowlistForm(data)
+    assert f.errors["allowed_ip_ranges"] == [
+        "123 should be an IPv4 or IPv6 address (in a comma-separated list if several IP addresses are provided)."  # noqa: E501
+    ]
+
+
+@pytest.mark.django_db
+def test_ip_allowlist_form_missing_ip():
+    data = {
+        "name": "An IP allowlist",
+        "allowed_ip_ranges": "",
+    }
+    f = forms.IPAllowlistForm(data)
+    assert f.errors["allowed_ip_ranges"] == ["This field is required."]
+
+
+@pytest.mark.django_db
+def test_ip_allowlist_form_missing_name():
+    data = {
+        "name": "",
+        "allowed_ip_ranges": "192.168.0.0/28",
+    }
+    f = forms.IPAllowlistForm(data)
+    assert f.errors["name"] == ["This field is required."]

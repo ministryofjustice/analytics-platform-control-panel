@@ -5,45 +5,30 @@
 
 ---
 
-There are essentially three aspects to getting the control panel in a state for
+This guide describes how to run Control Panel locally without Docker, and so that it can interact with the following remote AWS resources:
+ - AWS Dev account
+ - AWS EKS cluster on Dev account
+
+There are essentially three aspects to getting the Control Panel in a state for
 development on your local machine:
 
 1. Ensuring you have all the required dependencies installed, and these are all
    correctly configured.
-2. Getting hold of the source code for the project and creating a local
-   environment in which to be able to work.
-3. Acquiring the credentials and permissions needed for the various third-party
+2. Acquiring the credentials and permissions needed for the various third-party
    aspects of the project (AWS, Auth0, k8s).
+3. Getting hold of the source code for the project and creating a local
+   environment in which to be able to work.
+
 
 The third party services used by the application are labelled as either `dev`
 (for use as part of the development / testing process) and `alpha` (which is
 what our users use). Obviously, you should avoid using the `alpha` labelled
 versions of the services.
 
-## Required Dependencies
+## 1. Required Dependencies
 
-You must have:
-
-* [Redis](https://redis.io/)
-* [PostgreSQL](https://www.postgresql.org/)
-* [npm](https://www.npmjs.com/)
-* [direnv](https://direnv.net/)
-* [docker](https://www.docker.com/)
-
-These should be installed using your own OS's package manager (`brew`, `apt`
-etc...).
-
-For [Kubernetes](https://kubernetes.io/) (k8s) related work you'll need to have
-`kubectl`
-[installed too](https://kubernetes.io/docs/tasks/tools/install-kubectl/), and
-possibly [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/)
-(for running a local k8s cluster).
-
-It may also be useful for when interacting with AWS to have the `aws` command
-line tool [installed on your system](https://aws.amazon.com/cli/).
-
-The Control Panel app requires Python 3.6.5+. It has been confirmed to work
-with Python 3.8.2.
+The Control Panel app requires Python 3.8+ It has been confirmed to work
+with Python 3.8.12.
 
 Install python dependencies with the following command:
 ```sh
@@ -51,132 +36,54 @@ python3 -m venv venv
 source venv/bin/activate
 pip3 install -r requirements.txt
 pip3 install -r requirements.dev.txt
-pip3 uninstall python-dotenv
+pre-commit install --hook-type commit-msg
+pre-commit install
 ```
 
-In order to use `direnv` for managing your environment variables, you should
-make sure it is [configured for you shell](https://direnv.net/docs/hook.html).
-You'll be able to get a copy of folks `.envrc` file from colleagues.
+In addition, you must have:
 
-## Local Environment
+* [Redis](https://redis.io/) (confirmed to work with v7.0.0)
+* [PostgreSQL](https://www.postgresql.org/) (v14.3)
+* [npm](https://www.npmjs.com/)
+* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos) (v1.23.4)
+* [helm](https://helm.sh/docs/intro/install/) (v3.6.3, v3.8.0)
+* [direnv](https://direnv.net/) - Optional
 
-### <a name="env"></a>Environment variables
+We recommend installing these tools via Homebrew.
 
-The simplest solution is to ask for a copy of a working `.env` or `.envrc` file
-from one of the other developers with the environment variables set for development.
-
-If this isn't immediately possible and at a minimum, you need to set the
-following environment variables:
-
-```sh
-export DJANGO_SETTINGS_MODULE=controlpanel.settings.development
+You may want to set Postgres and Redis to start up automatically, in which case run
 ```
-
-See [Environment Variables Reference](environment.md) for details of other
-environment variable settings.
-
-Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
-
-### Database
-
-The Control Panel app connects to a PostgreSQL database called `controlpanel`,
-which should be accessible with the `controlpanel` user.
-
-Assuming you've got PostreSQL set up properly, the following commands should
-get you to this state:
-
-```sh
-createuser -d controlpanel
-createdb -U controlpanel controlpanel
+brew services start postgres
+brew services start redis
 ```
-
-Alternatively, if you prefer to use `psql` the following should work:
-
+and you can check their status with
 ```
-sudo -u postgres psql
-postgres=# create database controlpanel;
-postgres=# create user controlpanel with encrypted password 'password';
-postgres=# grant all privileges on database controlpanel to controlpanel;
-postgres=# ALTER USER controlpanel CREATEDB;
+brew services list
 ```
+Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
 
-The last command in the sequence above ensures the `controlpanel` user has the
-required privileges to create and delete throw away databases while running the
-unit tests.
+To interact with AWS, you should also set up the [`aws` command
+line interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
-You must make sure the following environment variables are set:
-
-```sh
-export DB_USER=controlpanel
-export DB_PASSWORD=password
-```
-
-Then you can run migrations:
-
-```sh
-python3 manage.py migrate
-```
+If you choose to use `direnv`, in order to use it for managing your environment variables, you should
+make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
 
 
-### Compile Sass and Javascript
-
-Before the first run (or after changes to static assets), you need to compile
-and collate the static assets.
-
-Static assets are compiled with Node.JS 8.16.0+
-
-```sh
-npm install
-mkdir static
-cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
-cp -R node_modules/govuk-frontend/ static/govuk-frontend
-cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
-cp -R node_modules/html5shiv/dist/ static/html5-shiv
-cp -R node_modules/jquery/dist/ static/jquery
-./node_modules/.bin/babel \
-  controlpanel/frontend/static/module-loader.js \
-  controlpanel/frontend/static/components \
-  controlpanel/frontend/static/javascripts \
-  -o static/app.js -s
-./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
-```
-
-Then run collectstatic:
-```sh
-python3 manage.py collectstatic
-```
-
-
-### Run the tests
-
-Run the tests using `pytest`:
-
-```sh
-DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
-```
-
-**NOTE** Set the `DJANGO_SETTINGS_MODULE` is important or otherwise you
-may accidentally run the tests with the `development` settings with
-unpredictable results.
-
-By this step, all the tests should pass. If not, re-check all the steps above
-and then ask a colleague for help.
-
-
-## Third Party Requirements
+## 2. Third Party Requirements
 
 Put simply, if you've completed all the steps in the
-[new joiners process](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process)
+[Technical Setup](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#technical-setup) section of our New Joiners' Guide
 then you should be good to go.
 
-In particular, you'll need to make sure you're [set up with Auth0](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#auth0),
-[added to AWS](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#aws)
-and have [cluster admin access to Kubernetes](https://github.com/ministryofjustice/analytics-platform/wiki/Admin-joiners-and-leavers-process#kubernetes).
+In particular, you'll need to make sure you're [set up with Auth0](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#auth0),
+[added to AWS](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#aws)
+and have [cluster admin access to Kubernetes](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#kubernetes).
 
-A colleague will need to set you with Auth0, and you should ensure you're using
-an account linked to your `@digital.justice.gov.uk` account.
 
 ### AWS Configuration
+
+In order to run the app you'll need various permissions set up for you in the
+wider infrastructure of the project, mainly for AWS platform.
 
 As the docs for AWS (linked above) mention, you'll need to add yourself an AWS
 user account linked to your MoJ email address via the
@@ -189,91 +96,10 @@ your details to AWS. Remember to follow the remaining instructions in the
 README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
 for which you'll need to ask someone to create an initial password for you.
 
-Once you're logged you should visit your "security credentials" page (click on
-your username in the top right corner) and follow the steps to create an access key for CLI, SDK and API access.
+See [here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
+for details of information about how to setup configuration and how to use `aws-vault`.
 
-You should also set up a local profile for using MoJ AWS things from your local
-machine anyway. Assuming you have the `aws` command installed for your
-operating system ([see here](https://aws.amazon.com/cli/)), you can do this
-automatically with the following command / dialog. In the example below, I use
-the profile name `moj`, but this could be something arbitrary and more
-meaningful for you. Then, simply replace the `?????` with your own details. The
-`region` and `output format` values should be as shown below.
-
-```
-$ aws configure --profile moj
-AWS Access Key ID [None]: ?????
-AWS Secret Access Key [None]: ?????
-Default region name [None]: eu-west-1
-Default output format [None]: json
-```
-
-Next, you need to assume particular role within AWS in order for the control
-panel to have the correct permissions to work with the resources it needs. This
-is documented
-[here](https://github.com/ministryofjustice/analytical-platform-iam#authenticating),
-but the short version is that you need to assume the [restricted-admin@data](https://signin.aws.amazon.com/switchrole?account=mojanalytics&roleName=restricted-admin-data&displayName=restricted-admin@data)
-role (clicking on the link, if you're signed into your AWS dashboard, should do
-this for you). Once you've assumed this role you need to request temporary
-credentials for working with AWS under this role. To do this type the following
-command and read the resulting JSON payload:
-
-```
-aws sts assume-role --role-arn "arn:aws:iam::593291632749:role/restricted-admin-data" --role-session-name data-session
-```
-
-Finally, you need to set the following environment variables, based upon the
-values in the returned JSON payload:
-
-```
-export AWS_ACCESS_KEY_ID=ASIAX........
-export AWS_SECRET_ACCESS_KEY=0vwDrU5..........
-export AWS_SESSION_TOKEN="FQoGZXIvYXdzEHQaDHBH......."
-```
-
-The last step is to check it worked with the following command (which will
-return a JSON payload containing session details):
-
-```
-aws sts get-caller-identity
-```
-
-If you see an error, ask a colleague!
-
-**You probably notice that the session expires after an hour. If you're getting
-AWS errors, ensure you've not timed out.**
-
-### Local AWS Configuration
-This app needs to interact with multiple AWS accounts in order to support the users' needs.
-The AWS resources like IAM, s3 buckets are under our data account and will be managed by 
-app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). In order to make sure the boto3 can obtain the right profile for local env.
-The following steps will show how to create it.
-
-Assume that the name of profile for our aws data account is ```admin-data```
-
-NOTES: using ```aws-vault exec <profile>``` to inject the aws keys as envs when launching the app 
-will cause the failure of connecting cluster on dev. 
-
-#### Add the AWS credential into .aws/credentials
-it should look like below 
-```
-[admin-data]
-aws_access_key_id = <your aws_access_key_id>
-aws_secret_access_key = <your aws_secret_access_key>
-
-```
-As you need your AWS access keys above, you can find them out via the following link if you use aws-vault to manage your keys
-https://github.com/99designs/aws-vault/blob/master/USAGE.md#keychain
-
-Once the aws-vault is added, you can choose to show the value of the keys.
-
-#### Add the AWS assume role or other settings into .aws/config
-
-```
-[profile admin-data]
-role_arn=arn:aws:iam::<data account id>:role/restricted-admin
-source_profile=default
-```
+`aws-vault` with sso login is recommended to manage different AWS accounts
 
 ### Kubernetes Configuration
 
@@ -291,57 +117,188 @@ information about the k8s master and KubeDNS:
 ```sh
 kubectl cluster-info
 ```
+The token for accessing the cluser will expire periodically.
+To refresh the token automatically, the following lines can be added into your ~/.kube/config:
 
-#### Helm
-
-Install Helm (the K8s package manager) by following
-[these instructions for your OS](https://helm.sh/docs/intro/install/).
-
-You'll need to initialise Helm too:
-
-```sh
-helm init
+```shell
+- name: arn:aws:eks:eu-west-1:<AWS_DEV_ACCOUNT>:cluster/<dev_cluster_name>
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - --region
+      - eu-west-1
+      - --profile
+      - <profile_name for dev account, e.g. admin-dev-sso>
+      - eks
+      - get-token
+      - --cluster-name
+      - <dev_cluster_name>
+      command: aws
+      env: null
+      provideClusterInfo: false
 ```
+For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
-Tell Helm to use the Analytical Platform chart repository:
+### Helm
+
+You will need to tell Helm to use the Analytical Platform chart repository:
 
 ```sh
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 helm repo update
 ```
 
-## Create superuser (on first run only)
+## 3. Local Environment
 
-This isn't strictly required, so feel free to skip this step.
+### Environment variables
+
+The simplest solution is to download the copy of the working `.env` or `.envrc` file from [LastPass](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#lastpass).
+Check each value whether it is relevant to your local env.
+
+Check that the environment variable `DB_HOST` is set to `localhost` - this is a recent revision to the `.env` file and may not be captured in your copy.
+
+See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
+
+### Database
+
+The Control Panel app connects to a PostgreSQL database called `controlpanel`,
+which should be accessible with the `controlpanel` user.
+
+Assuming you've got PostreSQL set up properly, the following commands should
+get you to this state:
 
 ```sh
-python3 manage.py createsuperuser
+createuser -d controlpanel
+createdb -U controlpanel controlpanel
 ```
 
-Your `Username` needs to be your GitHub username.
-Your `Auth0 id` needs to be the number associated with you in auth0.com and
-labelled `user_id` (not working for me yet).
-
-### Run the app
-
-In order to run the app you'll need various permissions set up for you in the
-wider infrastructure of the project. This is usually achieved via the
-`aws-vault` command (please
-[see here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)).
-
-Also please follow the previous section of ```Local AWS Configuration``` to setup your local AWS data profile
-
-#### Create the local environment files 
-
-Download the copy of the file from LastPass (Ask the Delivery Manage to apply it if you cannot access the file).
-
-- ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
-- ```EKS```: True, indicating EKS cluster will be used in the app.
-
+Alternatively, if you prefer to use `psql` the following should work:
 ```
-export AWS_PROFILE = "admin-data"
-export EKS=True
+sudo -u postgres psql
+postgres=# create database controlpanel;
+postgres=# create user controlpanel with encrypted password 'password';
+postgres=# grant all privileges on database controlpanel to controlpanel;
+postgres=# ALTER USER controlpanel CREATEDB;
 ```
+
+The last command in the sequence above ensures the `controlpanel` user has the
+required privileges to create and delete throw away databases while running the
+unit tests.
+
+You must make sure the following environment variables are set:
+```sh
+export DB_USER=controlpanel
+export DB_PASSWORD=password
+```
+
+Then you can run migrations:
+```sh
+python3 manage.py migrate
+```
+
+
+### Compile Sass and Javascript
+
+Before the first run (or after changes to static assets), you need to compile
+and collate the static assets.
+
+Static assets are compiled with Node.JS v18.12.0+
+
+```sh
+npm install
+mkdir static
+cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
+cp -R node_modules/govuk-frontend/ static/govuk-frontend
+cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
+cp -R node_modules/html5shiv/dist/ static/html5-shiv
+cp -R node_modules/jquery/dist/ static/jquery
+cp -R node_modules/jquery-ui/dist/ static/jquery-ui
+./node_modules/.bin/babel \
+  controlpanel/frontend/static/module-loader.js \
+  controlpanel/frontend/static/components \
+  controlpanel/frontend/static/javascripts \
+  -o static/app.js -s
+./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
+```
+
+Then run collectstatic:
+```sh
+python3 manage.py collectstatic
+```
+
+### Run the tests
+
+Run the tests using `pytest`:
+
+```sh
+DJANGO_SETTINGS_MODULE=controlpanel.settings.test pytest
+```
+
+**NOTE** Setting `DJANGO_SETTINGS_MODULE` is important or otherwise you
+may accidentally run the tests with the `development` settings with
+unpredictable results.
+
+By this step, all the tests should pass. If not, re-check all the steps above
+and then ask a colleague for help.
+
+
+## Run the app
+
+**Assumption**: 
+- You have completed your local env setup by following the above sections.
+- we use aws with sso login, the name of profile for our aws dev account is `admin-dev-sso`
+
+### Local AWS profile setup (on first run only)
+This app needs to interact with AWS account.
+The AWS resources like IAM, s3 buckets are under our dev account and will be managed by
+app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). 
+In order to make sure the boto3 can obtain the right profile for local env.
+
+#### using aws-cli directly
+
+Check your `.aws/config`, the profile `admin-dev-sso` should look like below 
+
+```ini
+    [profile admin-dev-sso]
+    sso_account_id=<admin-dev account id>
+    sso_start_url=https://moj.awsapps.com/start
+    sso_region=eu-west-2
+    sso_role_name=AdministratorAccess
+ ```
+__NOTES__ boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
+`.aws/sso/cache` folder if you mix above setting with `sso_session` together.
+
+#### using aws-vault
+If you use aws-vault to manage your aws credential, then the profile should look like 
+
+```ini
+    [profile sso-default]
+    sso_start_url=https://moj.awsapps.com/start
+    sso_region=eu-west-2
+    sso_role_name=AdministratorAccess
+    output=json
+
+    [profile admin-dev-sso]
+    sso_account_id=<admin-dev account id>
+    include_profile=sso-default
+ ```
+
+### Check Kubernetes current context
+
+Please check the current context and make sure it is pointing to the `dev` cluster
+
+```sh
+kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/config file
+```
+
+### Check the environment file
+
+#### General checks
+
+Check whether you have the following 2 in the env file and make sure they are correct
+- ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
+
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
 the default value is ```/tmp/helm/cache/repository```
@@ -356,7 +313,41 @@ helm env
 ```
 Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
 
-#### Run the frontend of the app
+#### AWS credential setting for single AWS role
+If you want to run the control panel app to manage AWS resources under single role, you can use
+following environment variable to define the profile you want to use
+- ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
+export AWS_PROFILE = "admin-dev-sso"
+- Make sure there is NO other AWS boto3 environment variables defined.
+
+#### AWS credential setting for multiple AWS roles
+If you want to run the app to manage the AWS resources cross different AWS accounts by assuming
+different roles, then
+- Check whether following 2 more environment variables have been setup in the env file or not
+  - `AWS_DATA_ACCOUNT_ROLE`: The role_arn of admin-data account
+  - `AWS_DEV_ACCOUNT_ROLE` : The role_arn of admin-dev account
+
+if you are not sure what the value of role_arn of those two accounts is, you can find them out by
+  checking the aws config file.
+
+More detail about the settings for mult-account is [here](architecture.md) (last section)
+- Make sure other AWS boto3 settings e.g. ```AWS_PROFILE``` are NOT defined in your env, otherwise the app will
+end up with root level session under a role, and you may get exception like `couldn't assume this role`
+
+### Create superuser (on first run only)
+
+This isn't strictly required, so feel free to skip this step.
+
+```sh
+python3 manage.py createsuperuser
+```
+
+Your `Username` needs to be your GitHub username.
+Your `Auth0 id` needs to be the number associated with you in auth0.com and
+labelled `user_id` (not working for me yet).
+
+
+### Run the frontend of the app
 
 You can run the app with the Django development server with
 
@@ -368,24 +359,78 @@ Or with Gunicorn WSGI server:
 ```sh
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
+if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- ` 
+before the above command e.g. 
+```sh
+aws-vault exec admin-dev-sso -- python3 manage.py runserver
+```
+If the AWS session token is expired,  you will be redirected to auth-flow to refresh the session token automatically
 
-#### Run the worker of the app
+if you choose not using `aws-vault`, then in order to reduce the chance of getting sesion_token expiration during 
+debugging, make sure you run the following command in advance 
+```sh
+aws sso login --profile <profile_name e.g. admin-dev-sso>
+```
+
+### Run the worker of the app
 Open another terminal to run the following line
 
 ```sh
 python manage.py runworker background_tasks
 ```
 
-Go to http://localhost:8000/, sign in via Auth0 and marvel at your locally
-runing control panel.
+Go to http://localhost:8000/, sign in via github through Auth0 and marvel at your locally
+running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
-you may encounter a popup window for asking you to provide key-chain password from time to time, 
+you may encounter a popup window for asking you to provide key-chain password from time to time,
 which is normal.
 
-#### Important notes
-The app even running on local env, it will still talk to the remote AWS data account and 
-dev cluster directly which is shared with our dev environment, especially the data account,
-it is shared not only dev environment also prod environment, all those important
-live IAM roles/groups, S3 buckets are there, so please be careful until we complete the task
-of constructing local infrastructure.
+### Loading tools
+
+When you load up your local Control Panel for the first time, there will be no tools available on the Tools page.
+To pre-populate the database, run the following management command:
+```
+python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
+```
+You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
+
+Note that you will need to have the RStudio and JupyterLab Auth0 environment variables present in your `.env` file in order for the missing values in the `tools.yaml` fixture file to be filled in.
+Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<TOOL>_AUTH_CLIENT_SECRET` for both RStudio and JupyterLab before running `loaddevtools`.
+
+### Important notes
+
+Even though your instance of Control Panel is running locally, it will still interact with the remote AWS dev account and development Kubernetes cluster.
+The dev account is also used by our development cloud environment, so take care when interacting with our AWS resources directly.
+
+
+## Development Practices
+
+### pre-commit
+
+`pre-commit` is a package manager for git hooks that we use during local development.
+
+Current checks are:-
+- requirements.txt library sort and check
+- yaml file check
+- end-of-file must have white line
+- trailing white spaces check
+- `black` library (formats Python code)
+- `isort` library (standardises the order of Python imports)
+- `flake8` library (formats Python code and also improves code style)
+- Jira ticket reference (commits must reference the ticket number)
+
+To override the above for whatever reason (maybe you don't have a ticket number and because you are working on hotfix) you can use the following command.
+
+`PRE_COMMIT_ALLOW_NO_CONFIG=1 git push ...`
+
+### Git commit message
+
+Commit messages should follow the appropriate format.
+All commits must begin with the Jira ticket they are associated with.
+
+format: `ANPL-[int]`
+
+e.g.
+
+`git commit -m "ANPL-1234 insert message here"`

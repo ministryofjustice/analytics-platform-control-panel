@@ -1,32 +1,124 @@
+# Standard library
 import re
 
+# Third-party
 from django import forms
+from django.conf import settings
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
 
+# First-party/Local
 from controlpanel.api import validators
-from controlpanel.api.cluster import get_repository
+from controlpanel.api.cluster import AWSRoleCategory
+from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
-from controlpanel.api.models.parameter import APP_TYPE_CHOICES
+from controlpanel.api.models.ip_allowlist import IPAllowlist
 
-
-APP_CUSTOMERS_DELIMITERS = re.compile(r'[,; ]+')
+APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
 
 class DatasourceChoiceField(forms.ModelChoiceField):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.widget.attrs['class'] = 'govuk-select govuk-!-width-one-half'
+        self.widget.attrs["class"] = "govuk-select govuk-!-width-one-half"
 
     def label_from_instance(self, instance):
         return instance.name
 
 
-class CreateAppForm(forms.Form):
+class DynamicMultiChoiceField(forms.MultipleChoiceField):
+
+    def validate(self, value):
+        """Only validate whether required feature, nothing else"""
+        if self.required and not value:
+            raise ValidationError(self.error_messages["required"], code="required")
+
+
+class AppAuth0Form(forms.Form):
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
+        self.auth0_connections = kwargs.pop("auth0_connections", ["email"])
+        self.all_connections_names = kwargs.pop("all_connections_names", ["email"])
+        self.custom_connections = kwargs.pop("custom_connections", [])
+        super(AppAuth0Form, self).__init__(*args, **kwargs)
+
+        self._create_inputs_for_custom_connections()
+
+    def _create_inputs_for_custom_connections(self):
+        self.fields["connections"] = forms.MultipleChoiceField(
+            required=False,
+            initial=self.auth0_connections,
+            choices=list(zip(self.all_connections_names, self.all_connections_names)),
+        )
+        for connection in self.custom_connections:
+            self.fields["{}_auth0_client_id".format(connection)] = forms.CharField(
+                max_length=128,
+                required=False,
+                validators=[validators.validate_auth0_client_id],
+            )
+            self.fields["{}_auth0_client_secret".format(connection)] = forms.CharField(
+                widget=forms.PasswordInput, required=False
+            )
+            self.fields["{}_auth0_conn_name".format(connection)] = forms.CharField(
+                max_length=128,
+                required=False,
+                validators=[validators.validate_auth0_conn_name],
+            )
+
+    def _chosen_custom_connections(self, connections):
+        return list(set(self.custom_connections) & set(connections))
+
+    def _check_inputs_for_custom_connection(self, cleaned_data):
+        auth0_connections = cleaned_data.get("connections")
+        auth0_conn_data = {}
+        chosen_custom_connections = self._chosen_custom_connections(auth0_connections)
+        for connection in auth0_connections:
+            auth0_conn_data[connection] = {}
+            if connection not in chosen_custom_connections:
+                continue
+
+            if cleaned_data.get("{}_auth0_client_id".format(connection), "") == "":
+                self.add_error(
+                    "{}_auth0_client_id".format(connection), "This field is required."
+                )
+
+            if cleaned_data.get("{}_auth0_client_secret".format(connection), "") == "":
+                self.add_error(
+                    "{}_auth0_client_secret".format(connection),
+                    "This field is required.",
+                )
+
+            conn_name = cleaned_data.get("{}_auth0_conn_name".format(connection), "")
+            if conn_name == "":
+                self.add_error(
+                    "{}_auth0_conn_name".format(connection), "This field is required."
+                )
+            elif (conn_name, conn_name) in self.fields["connections"].choices:
+                self.add_error(
+                    "{}_auth0_conn_name".format(connection),
+                    "This name has been existed in the connections.",
+                )
+
+            auth0_conn_data[connection] = {
+                "client_id": cleaned_data.get("{}_auth0_client_id".format(connection)),
+                "client_secret": cleaned_data.get(
+                    "{}_auth0_client_secret".format(connection)
+                ),
+                "name": cleaned_data.get("{}_auth0_conn_name".format(connection)),
+            }
+        return auth0_conn_data
+
+
+class CreateAppForm(AppAuth0Form):
+
+    org_names = forms.ChoiceField(
+        required=True,
+        choices=list(zip(settings.GITHUB_ORGS, settings.GITHUB_ORGS)),
+    )
+
     repo_url = forms.CharField(
         max_length=512,
         validators=[
@@ -48,6 +140,7 @@ class CreateAppForm(forms.Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
+            validators.ValidatorS3Bucket(AWSRoleCategory.app),
         ],
         required=False,
     )
@@ -57,56 +150,82 @@ class CreateAppForm(forms.Form):
         required=False,
     )
 
-    connections = forms.MultipleChoiceField(
-        required=True,
-        initial="email",
-        choices=[
-            ("email", "email")
-        ],
+    disable_authentication = forms.BooleanField(required=False)
+
+    app_ip_allowlists = forms.ModelMultipleChoiceField(
+        required=False, queryset=IPAllowlist.objects.filter(deleted=False)
     )
 
+    deployment_envs = DynamicMultiChoiceField(required=False)
+
     def __init__(self, *args, **kwargs):
-        self.request = kwargs.pop('request', None)
-        super().__init__(*args, **kwargs)
+        super(CreateAppForm, self).__init__(*args, **kwargs)
+        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
+            is_recommended=True
+        )
 
     def clean(self):
         cleaned_data = super().clean()
-        connect = cleaned_data['connect_bucket']
-        new_datasource = cleaned_data.get('new_datasource_name')
-        existing_datasource = cleaned_data.get('existing_datasource_id')
+        connect_data_source = cleaned_data["connect_bucket"]
+        new_datasource = cleaned_data.get("new_datasource_name")
+        existing_datasource = cleaned_data.get("existing_datasource_id")
 
-        if connect == "new":
+        if connect_data_source == "new":
             if new_datasource:
                 try:
                     S3Bucket.objects.get(name=new_datasource)
                     self.add_error(
                         "new_datasource_name",
-                        f"Datasource named {new_datasource} already exists"
+                        f"Datasource named {new_datasource} already exists",
                     )
                 except S3Bucket.DoesNotExist:
                     pass
 
             else:
-                self.add_error('new_datasource_name', "This field is required.")
+                self.add_error("new_datasource_name", "This field is required.")
 
-        if connect == "existing" and not existing_datasource:
-            self.add_error('existing_datasource_id', "This field is required.")
+        if connect_data_source == "existing" and not existing_datasource:
+            self.add_error("existing_datasource_id", "This field is required.")
+
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
+            cleaned_data
+        )
 
         return cleaned_data
 
     def clean_repo_url(self):
-        value = self.cleaned_data['repo_url']
-        repo_name = value.replace("https://github.com/", "", 1)
-        repo = get_repository(self.request.user, repo_name)
+        repo_url = self.cleaned_data["repo_url"]
+        org_name, repo_name = extract_repo_info_from_url(repo_url)
+        repo = GithubAPI(
+            self.request.user.github_api_token, github_org=org_name
+        ).get_repository(repo_name)
         if repo is None:
             raise ValidationError(
-                f"Github repository not found - it may be private",
+                "Github repository not found - it may be private",
             )
 
-        if App.objects.filter(repo_url=value).exists():
-            raise ValidationError(f"App already exists for this repository URL")
+        if App.objects.filter(repo_url=repo_url).exists():
+            raise ValidationError("App already exists for this repository URL")
 
-        return value
+        return repo_url
+
+
+class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
+    env_name = forms.CharField(widget=forms.HiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        self.env_name = kwargs.pop("env_name", '')
+        super(UpdateAppAuth0ConnectionsForm, self).__init__(*args, **kwargs)
+
+        self._create_inputs_for_custom_connections()
+        self.fields["env_name"].initial = self.env_name
+
+    def clean(self):
+        cleaned_data = super(UpdateAppAuth0ConnectionsForm, self).clean()
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
+            cleaned_data
+        )
+        return cleaned_data
 
 
 class CreateDatasourceForm(forms.Form):
@@ -116,6 +235,7 @@ class CreateDatasourceForm(forms.Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
+            validators.ValidatorS3Bucket(AWSRoleCategory.user),
         ],
     )
 
@@ -127,7 +247,7 @@ class GrantAccessForm(forms.Form):
             ("readwrite", "Read/write"),
             ("admin", "Admin"),
         ],
-        required=True
+        required=True,
     )
     paths = SimpleArrayField(
         forms.CharField(
@@ -158,15 +278,15 @@ class GrantAccessForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        access_level = cleaned_data.get('access_level')
-        if access_level == 'admin':
-            cleaned_data['access_level'] = 'readwrite'
-            cleaned_data['is_admin'] = True
+        access_level = cleaned_data.get("access_level")
+        if access_level == "admin":
+            cleaned_data["access_level"] = "readwrite"
+            cleaned_data["is_admin"] = True
 
         if cleaned_data["entity_type"] == "user":
-            cleaned_data['user_id'] = cleaned_data["entity_id"]
+            cleaned_data["user_id"] = cleaned_data["entity_id"]
         elif cleaned_data["entity_type"] == "group":
-            cleaned_data['policy_id'] = cleaned_data["entity_id"]
+            cleaned_data["policy_id"] = cleaned_data["entity_id"]
 
         return cleaned_data
 
@@ -184,46 +304,17 @@ class GrantAppAccessForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
-        self.app = kwargs.pop('app')
-        self.exclude_connected = kwargs.pop('exclude_connected', False)
+        self.app = kwargs.pop("app")
+        self.exclude_connected = kwargs.pop("exclude_connected", False)
 
         super().__init__(*args, **kwargs)
 
         if self.exclude_connected:
-            self.fields['datasource'].queryset = S3Bucket.objects.exclude(
+            self.fields["datasource"].queryset = S3Bucket.objects.exclude(
                 id__in=[a.s3bucket_id for a in self.app.apps3buckets.all()],
             )
         else:
-            self.fields['datasource'].queryset = S3Bucket.objects.all()
-
-
-class CreateParameterForm(forms.Form):
-    key = forms.CharField(
-        max_length=50,
-        validators=[
-            RegexValidator(
-                r'[a-zA-Z0-9_]{1,50}',
-                message=(
-                    "Must be 50 characters or fewer and contain only alphanumeric "
-                    "characters and underscores"
-                ),
-            ),
-        ],
-    )
-    role_name = forms.CharField(
-        max_length=60,
-        validators=[
-            RegexValidator(
-                r'[a-zA-Z0-9_-]{1,60}',
-                message=(
-                    "Must be 60 characters or fewer and contain only alphanumeric "
-                    "characters, underscores and hyphens"
-                ),
-            ),
-        ],
-    )
-    value = forms.CharField(widget=forms.PasswordInput)
-    app_type = forms.ChoiceField(choices=APP_TYPE_CHOICES)
+            self.fields["datasource"].queryset = S3Bucket.objects.all()
 
 
 class CreateIAMManagedPolicyForm(forms.Form):
@@ -238,7 +329,6 @@ class AddUserToIAMManagedPolicyForm(forms.Form):
 
 
 class AppCustomersField(forms.Field):
-
     def __init__(self, *, delimiters=APP_CUSTOMERS_DELIMITERS, strip=True, **kwargs):
         self.delimiters = delimiters
         self.strip = strip
@@ -258,26 +348,40 @@ class AppCustomersField(forms.Field):
             except ValidationError:
                 raise ValidationError(
                     '"%(value)s" is not a valid email address',
-                    params={'value': email},
+                    params={"value": email},
                 )
         return value
 
 
 class AddAppCustomersForm(forms.Form):
     customer_email = AppCustomersField()
+    env_name = forms.CharField(required=False, widget=forms.HiddenInput)
+    group_id = forms.CharField(required=False, widget=forms.HiddenInput)
 
+
+class RemoveCustomerByEmailForm(forms.Form):
+    prefix = "remove"
+
+    email = forms.EmailField(widget=forms.EmailInput(
+        attrs={"class": "govuk-input cpanel-input"})
+    )
+    env_name = forms.CharField(widget=forms.HiddenInput)
+    group_id = forms.CharField(widget=forms.HiddenInput)
 
 
 class ResetHomeDirectoryForm(forms.Form):
     confirm = forms.BooleanField(
         required=True,
         help_text="I confirm that I want to reset my home directory.",
-        widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"})
+        widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"}),
     )
 
 
 class ToolReleaseForm(forms.ModelForm):
     target_users_list = forms.CharField(required=False)
+    target_infrastructure = forms.ChoiceField(
+        required=True, initial=Tool.EKS, choices=Tool.INFRASTRUCTURE_STATES_ALLOWED
+    )
 
     def get_target_users(self):
         """
@@ -286,9 +390,7 @@ class ToolReleaseForm(forms.ModelForm):
         """
         target_list = self.data.get("target_users_list", "")
         if target_list:
-            usernames = set([
-                username.strip() for username in target_list.split(",")
-            ])
+            usernames = set([username.strip() for username in target_list.split(",")])
             return User.objects.filter(username__in=usernames)
         else:
             return []
@@ -305,8 +407,12 @@ class ToolReleaseForm(forms.ModelForm):
 
         Hence the path of least resistance with this custom form validation.
         """
-        valid_charts = ["airflow-sqlite", "jupyter-", "rstudio", ]
-        value = self.cleaned_data['chart_name']
+        valid_charts = [
+            "airflow-sqlite",
+            "jupyter-",
+            "rstudio",
+        ]
+        value = self.cleaned_data["chart_name"]
         is_valid = False
         for chart_name in valid_charts:
             if chart_name in value:
@@ -323,7 +429,11 @@ class ToolReleaseForm(forms.ModelForm):
         Ensures that if the bespoke tool_domain value is specified it is ONLY
         one of the acceptable names.
         """
-        valid_names = ["airflow-sqlite", "jupyter-lab", "rstudio", ]
+        valid_names = [
+            "airflow-sqlite",
+            "jupyter-lab",
+            "rstudio",
+        ]
         value = self.cleaned_data.get("tool_domain")
         if value and value not in valid_names:
             raise ValidationError(
@@ -339,6 +449,59 @@ class ToolReleaseForm(forms.ModelForm):
             "version",
             "values",
             "is_restricted",
-            "target_infrastructure",
             "tool_domain",
+            "description",
+        ]
+
+
+class AppSecretForm(forms.Form):
+    key = forms.CharField(
+        validators=[
+            RegexValidator(
+                r"[a-zA-Z0-9_]",
+                message=("Must contain only alphanumeric characters and underscores"),
+            ),
+        ],
+    )
+    env_name = forms.CharField(widget=forms.HiddenInput)
+    value = forms.CharField(
+        max_length=65536,
+        widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
+    )
+
+
+class AppSecretUpdateForm(AppSecretForm):
+    key = forms.CharField(widget=forms.HiddenInput)
+
+
+class AppVariableForm(AppSecretForm):
+    value = forms.CharField(max_length=65536)
+
+
+class AppVariableUpdateForm(AppVariableForm):
+    key = forms.CharField(widget=forms.HiddenInput)
+
+
+class DisableAuthForm(AppVariableUpdateForm):
+    value = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={"class": "govuk-checkboxes__input"}),
+        help_text="Require authentication for your app",
+    )
+
+    def __init__(self, *args, **kwargs):
+        init_for_value = kwargs.get('initial', {}).get('value')
+        kwargs["initial"]["value"] = str(init_for_value or 'true').lower() == 'true'
+        super(DisableAuthForm, self).__init__(*args, **kwargs)
+
+
+class IPAllowlistForm(forms.ModelForm):
+    class Meta:
+        model = IPAllowlist
+        fields = [
+            "name",
+            "description",
+            "contact",
+            "allowed_ip_ranges",
+            "is_recommended",
         ]

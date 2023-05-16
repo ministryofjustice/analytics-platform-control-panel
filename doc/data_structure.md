@@ -1,4 +1,14 @@
-# Data Structure
+# Data Structure 
+
+This section is to give some overview about the data structure designed in this app.
+
+## Data flows
+
+### The data flow when a user logs into Control Panel for the first time
+
+![Data flow for first-time login](./images/user-login-flow-first-time.png "Data flow for first-time login")
+
+## Key tables
 
 ![Data Model Structure](./images/data_structure.png "The data structure of the app")
 

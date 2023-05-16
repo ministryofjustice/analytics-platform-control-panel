@@ -1,6 +1,8 @@
+# Third-party
 import pytest
 from prometheus_client import REGISTRY
 
+# First-party/Local
 from controlpanel.api.models import User
 
 
@@ -14,9 +16,7 @@ def _get_counter_value(name):
 @pytest.mark.django_db
 def test_login_counters(client):
     """Ensure that custom metrics set on user is being triggered"""
-    user = User.objects.create(
-        username='test-user'
-    )
+    user = User.objects.create(username="test-user")
     client.force_login(user)
     before = _get_counter_value("django_control_panel_login_events")
     client.force_login(user)

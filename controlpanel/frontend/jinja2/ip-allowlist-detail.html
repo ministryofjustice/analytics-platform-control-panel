@@ -1,0 +1,101 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "input/macro.html" import govukInput %}
+{% from "radios/macro.html" import govukRadios %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "includes/yesno.html" import yes_no %}
+{% from "includes/list-field.html" import list_field_textarea %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+
+
+{% extends "base.html" %}
+
+{% set page_title = "IP Allowlist: " + ip_allowlist.name %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+<h2>This ip_range are used by <b>{{ ip_allowlist.apps.count() }}</b> different deployment environments from all the apps</h2>
+  {% if form.errors %}
+      {{ govukErrorMessage({"text": form.errors}) }}
+  {% endif %}
+
+  <form action="{{ url('manage-ip-allowlist', kwargs={ "pk": ip_allowlist.pk}) }}" method="post">
+    {{ csrf_input }}
+    {{ govukInput({
+      "label": {
+        "text": "Name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": '60 characters max'
+      },
+      "name": "name",
+      "value": form.name.value(),
+      "errorMessage": { "html": form.name.errors|join(". ") } if form.name.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Description",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Brief description of this allowlist (optional, 60 characters max)'
+      },
+      "name": "description",
+      "value": form.description.value(),
+      "errorMessage": { "html": form.description.errors|join(". ") } if form.description.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Contact",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Contact point for this allowlist (optional, 60 characters max)'
+      },
+      "name": "contact",
+      "value": form.contact.value(),
+      "errorMessage": { "html": form.contact.errors|join(". ") } if form.contact.errors else {}
+    }) }}
+    {{ list_field_textarea(
+        "allowed_ip_ranges",
+        "IP allowlist",
+        "A comma-separated list of allowed IP networks",
+        form.allowed_ip_ranges.value() or "",
+        form.allowed_ip_ranges.errors
+    ) }}
+    {{ govukCheckboxes({
+      "name": "is_recommended",
+      "fieldset": {
+        "legend": {
+          "text": "Recommended",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Recommended IP allowlists will be pre-selected when creating a new app"
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Recommended",
+          "checked": form.is_recommended.value()
+        },
+      ],
+      "errorMessage": { "html": form.is_recommended.errors|join(". ") } if form.is_recommended.errors else {}
+    }) }}
+    <button class="govuk-button">Update IP allowlist</button>
+  </form>
+
+  <form action="{{ url("delete-ip-allowlist", kwargs={ "pk": ip_allowlist.pk}) }}" method="post">
+    {{ csrf_input }}
+    <button class="govuk-button cpanel-button--destructive js-confirm"
+            data-confirm-message="Are you sure you want to delete this IP allowlist?">
+      Delete IP allowlist
+    </button>
+  </form>
+
+{% endblock %}

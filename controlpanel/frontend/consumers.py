@@ -1,29 +1,37 @@
+# Standard library
 import asyncio
-from datetime import datetime
 import json
-import structlog
+import os
+from datetime import datetime
+import os
 from pathlib import Path
 from time import sleep
-import uuid
 
+# Third-party
+import structlog
 from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
 from channels.layers import get_channel_layer
-from django.conf import settings
-from django.urls import reverse
+from django.db import transaction
 
-from controlpanel.api.cluster import (
-    TOOL_DEPLOYING,
-    TOOL_DEPLOY_FAILED,
-    TOOL_IDLED,
-    TOOL_READY,
-    TOOL_RESTARTING,
-    HOME_RESETTING,
+# First-party/Local
+from controlpanel.api import cluster
+from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     HOME_RESET_FAILED,
+    HOME_RESETTING,
+    TOOL_DEPLOY_FAILED,
+    TOOL_DEPLOYING,
+    TOOL_RESTARTING,
 )
-from controlpanel.api.models import Tool, ToolDeployment, User, HomeDirectory
+from controlpanel.api.models import (
+    App,
+    HomeDirectory,
+    IPAllowlist,
+    Tool,
+    ToolDeployment,
+    User,
+)
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
-
 
 WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
 
@@ -67,7 +75,7 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         await self.send_body(b"", more_body=True)
 
         # schedule a coroutine to send keepalive updates
-        asyncio.get_event_loop().create_task(self.stream())
+        asyncio.get_running_loop().create_task(self.stream())
 
         # listen for messages for the current request user only
         group = sanitize_dns_label(self.scope.get("user").auth0_id)
@@ -79,7 +87,10 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         """
         while self.streaming:
             await self.sse_event(
-                {"event": "keepalive", "data": datetime.now().isoformat(),}
+                {
+                    "event": "keepalive",
+                    "data": datetime.now().isoformat(),
+                }
             )
             await asyncio.sleep(60)
 
@@ -91,7 +102,8 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
         payload = "\n".join(f"{key}: {value}" for key, value in event.items())
 
         await self.send_body(
-            f"{payload}\n\n".encode("utf-8"), more_body=self.streaming,
+            f"{payload}\n\n".encode("utf-8"),
+            more_body=self.streaming,
         )
 
     async def disconnect(self):
@@ -108,6 +120,42 @@ class SSEConsumer(PatchedAsyncHttpConsumer):
 
 
 class BackgroundTaskConsumer(SyncConsumer):
+    def app_ip_ranges_update(self, message):
+        user = User.objects.get(auth0_id=message["user_id"])
+        app = App.objects.get(pk=message["app_id"])
+
+        app_manager_ins = cluster.App(app, user.github_api_token)
+        deployment_env_names = app_manager_ins.get_deployment_envs()
+
+        for env_name in deployment_env_names:
+            app_manager_ins.create_or_update_secret(
+                env_name=env_name,
+                secret_key=cluster.App.IP_RANGES,
+                secret_value=app.env_allowed_ip_ranges(env_name=env_name),
+            )
+
+    def app_ip_ranges_delete(self, message):
+        user = User.objects.get(auth0_id=message["user_id"])
+        app = App.objects.get(pk=message["app_id"])
+        ip_range = IPAllowlist.objects.get(pk=message["ip_range_id"])
+
+        with transaction.atomic():
+            app.ip_allowlists.remove(ip_range)
+
+            app_manager_ins = cluster.App(app, user.github_api_token)
+            deployment_env_names = app_manager_ins.get_deployment_envs()
+            for env_name in deployment_env_names:
+                app_manager_ins.create_or_update_secret(
+                    env_name=env_name,
+                    secret_key=cluster.App.IP_RANGES,
+                    secret_value=app.env_allowed_ip_ranges(env_name=env_name),
+                )
+
+        # Check whether the ip_range has been used by anywhere,
+        # then remove it permanently, race condition?
+        if ip_range.apps.count() == 0:
+            ip_range.delete()
+
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
@@ -123,6 +171,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         try:
             tool_deployment.save()
         except ToolDeployment.Error as err:
+            self._send_to_sentry(err)
             update_tool_status(tool_deployment, id_token, TOOL_DEPLOY_FAILED)
             log.error(err)
             return
@@ -133,6 +182,13 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.warning(f"Failed deploying {tool.name} for {user}")
         else:
             log.debug(f"Deployed {tool.name} for {user}")
+
+    def _send_to_sentry(self, error):
+        if os.environ.get("SENTRY_DSN"):
+            # Third-party
+            import sentry_sdk
+
+            sentry_sdk.capture_exception(error)
 
     def tool_restart(self, message):
         """
@@ -154,27 +210,9 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Restarted {tool.name} for {user}")
 
     def get_tool_and_user(self, message):
-        tool_args = {"chart_name": message["tool_name"]}
-        if "version" in message:
-            tool_args["version"] = message["version"]
-        # There may be two charts with the same name and version, but
-        # targetting different instances of our infrastructure. Ensure the
-        # filter args flag which infrastructure we're running on, to make sure
-        # the correct tool is the *first* one returned.
-        if settings.EKS:
-            tool_args["target_infrastructure"] = Tool.EKS
-        else:
-            tool_args["target_infrastructure"] = Tool.OLD
-
-        # On restart we don't specify the version as it doesn't make
-        # sense to do so. As we're now allowing more than one
-        # Tool instance for the same chart name this means we have to
-        # use `filter().first()` (instead of `.get()`) to avoid getting
-        # a Django exception when `get()` finds more than 1 Tool record
-        # with the same chart name
-        tool = Tool.objects.filter(**tool_args).first()
+        tool = Tool.objects.get(pk=message["tool_id"])
         if not tool:
-            raise Exception(f"no Tool record found for query {tool_args}")
+            raise Exception(f"no Tool record found for query {message['tool_id']}")
         user = User.objects.get(auth0_id=message["user_id"])
         return tool, user
 
@@ -198,7 +236,7 @@ class BackgroundTaskConsumer(SyncConsumer):
     def workers_health(self, message):
         Path(WORKER_HEALTH_FILENAME).touch()
 
-        log.debug(f"Worker health ping task executed")
+        log.debug("Worker health ping task executed")
 
 
 def send_sse(user_id, event):
@@ -206,7 +244,8 @@ def send_sse(user_id, event):
     Tell the SSEConsumer to send an event to the specified user
     """
     async_to_sync(channel_layer.group_send)(
-        sanitize_dns_label(user_id), {"type": "sse.event", **event},
+        sanitize_dns_label(user_id),
+        {"type": "sse.event", **event},
     )
 
 
@@ -214,15 +253,19 @@ def update_tool_status(tool_deployment, id_token, status):
     user = tool_deployment.user
     tool = tool_deployment.tool
 
-    app_version = tool_deployment.get_installed_app_version(id_token)
-
     payload = {
         "toolName": tool.chart_name,
         "version": tool.version,
-        "appVersion": app_version,
+        "tool_id": tool.id,
         "status": status,
     }
-    send_sse(user.auth0_id, {"event": "toolStatus", "data": json.dumps(payload),})
+    send_sse(
+        user.auth0_id,
+        {
+            "event": "toolStatus",
+            "data": json.dumps(payload),
+        },
+    )
 
 
 def update_home_status(home_directory, status):
@@ -234,16 +277,18 @@ def update_home_status(home_directory, status):
         user.auth0_id,
         {
             "event": "homeStatus",
-            "data": json.dumps({
-                "status": status
-            }),
-        }
+            "data": json.dumps({"status": status}),
+        },
     )
 
 
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
-        "background_tasks", {"type": task, **message,},
+        "background_tasks",
+        {
+            "type": task,
+            **message,
+        },
     )
 
 

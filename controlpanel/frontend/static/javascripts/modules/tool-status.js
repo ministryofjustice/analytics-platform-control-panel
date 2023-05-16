@@ -10,6 +10,8 @@ moj.Modules.toolStatus = {
   versionNotInstalledClass: "not-installed",
   versionInstalledClass: "installed",
   installedSuffix: " (installed)",
+  alertsClass: ".alerts",
+  mojPrimaryNavigationClass: ".moj-primary-navigation",
 
   init() {
     const toolStatusListeners = document.querySelectorAll(this.listenerClass);
@@ -37,7 +39,7 @@ moj.Modules.toolStatus = {
     const toolstatus = this;
     return event => {
       const data = JSON.parse(event.data);
-      if (data.toolName != listener.dataset.toolName) {
+      if (data.toolName.startsWith(listener.dataset.toolName) === false ) {
         return;
       }
       listener.querySelector(toolstatus.statusLabelClass).innerText = data.status;
@@ -47,12 +49,17 @@ moj.Modules.toolStatus = {
           break;
         case 'DEPLOYING':
           toolstatus.showActions(listener, []);
+          toolstatus.updateMessage("Deploying " + data.toolName + "... this may take several minutes")
           // maybe have a Cancel button? Report issue?
           break;
         case 'READY':
+          toolstatus.showActions(listener, ['open', 'restart']);
+          toolstatus.updateAppVersion(listener, data);
+          toolstatus.updateMessage("The tool has been deployed")
+          break;
         case 'IDLED':
           toolstatus.showActions(listener, ['deploy', 'open', 'restart', 'remove']);
-          toolstatus.updateAppVersion(listener, data.version);
+          toolstatus.updateAppVersion(listener, data);
           break;
         case 'FAILED':
           toolstatus.showActions(listener, ['deploy', 'restart', 'remove']);
@@ -62,10 +69,10 @@ moj.Modules.toolStatus = {
   },
 
   // Select the new version from the tool "version" select input
-  updateAppVersion(listener, newVersion) {
+  updateAppVersion(listener, newVersionData) {
     const selectElement = listener.querySelector(this.versionSelector);
 
-    if (newVersion) {
+    if (newVersionData) {
       // 1. remove "(not installed)" option
       let notInstalledOption = selectElement.querySelector("option." + this.versionNotInstalledClass);
 
@@ -82,16 +89,44 @@ moj.Modules.toolStatus = {
       }
 
       // 3. add "(installed)" suffix and class to new version
-      let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newVersion + "']");
-
+      let newValue = newVersionData.toolName + "__" + newVersionData.version + "__" + newVersionData.tool_id;
+      let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newValue + "']");
       if (newVersionOption) {
         newVersionOption.innerText = newVersionOption.innerText + this.installedSuffix;
         newVersionOption.classList.add(this.versionInstalledClass)
+
+        // set the new version as the current chosen item
+        const dropDownToolId = "tools-" + listener.dataset.toolName;
+        document.getElementById(dropDownToolId).selectedIndex = newVersionOption.index;
       }
     }
 
     // After deploy, update select/deploy button
     this.versionSelectChanged(selectElement);
+  },
+
+  updateMessage(newMessage) {
+    // 1. Remove the old messages
+    let existingAlerts = document.querySelector(this.alertsClass);
+    if (existingAlerts) {
+      existingAlerts.remove();
+    };
+
+    // 2. Added new message
+    let elementLocation = document.querySelector(this.mojPrimaryNavigationClass);
+    if (elementLocation) {
+      var newAlertsElement = document.createElement("div");
+      newAlertsElement.setAttribute("class", 'alerts govuk-width-container');
+      var newMessageTagElement = document.createElement("div");
+      newMessageTagElement.setAttribute("class", 'alerts--item success');
+      var newMessageElement = document.createElement("span");
+      newMessageElement.setAttribute("class", 'alerts--message');
+      newMessageElement.innerHTML = newMessage;
+
+      newMessageTagElement.appendChild(newMessageElement);
+      newAlertsElement.appendChild(newMessageTagElement);
+      elementLocation.after(newAlertsElement);
+    }
   },
 
   showActions(listener, actionNames) {

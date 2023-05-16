@@ -1,18 +1,24 @@
+# Standard library
+import os
+
+# First-party/Local
 from controlpanel.settings.common import *
 
 # Enable debugging
 DEBUG = True
 
 # Allow all hostnames to access the server
-ALLOWED_HOSTS = "*"
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 # Install the develop pages in development mode
-INSTALLED_APPS.append("controlpanel.develop")
+INSTALLED_APPS.append("controlpanel.develop")  # noqa: F405
 
 # Enable Django debug toolbar
 if os.environ.get("ENABLE_DJANGO_DEBUG_TOOLBAR"):
-    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
-    INSTALLED_APPS.extend(
+    MIDDLEWARE.insert(  # noqa: F405, E501
+        0, "debug_toolbar.middleware.DebugToolbarMiddleware"
+    )
+    INSTALLED_APPS.extend(  # noqa: F405, E501
         ["debug_toolbar", "requests_toolbar", "elastic_panel"]
     )
     DEBUG_TOOLBAR_PANELS = [
@@ -37,3 +43,6 @@ INTERNAL_IPS = ["127.0.0.1"]
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
+
+# -- Structured logging
+LOGGING["loggers"]["controlpanel"]["level"] = "INFO"  # noqa: F405

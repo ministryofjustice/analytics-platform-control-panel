@@ -1,14 +1,15 @@
+# Standard library
 from urllib.parse import urljoin
 
+# Third-party
 from django.core import exceptions
 from django.views.decorators.csrf import csrf_exempt
 from djproxy.views import HttpProxy
 
+# First-party/Local
 from controlpanel import api
 from controlpanel.jwt import JWT
-
 from controlpanel.kubeapi.permissions import K8sPermissions
-
 
 
 class KubeAPIAuthMiddleware(object):
@@ -18,7 +19,7 @@ class KubeAPIAuthMiddleware(object):
 
     def process_request(self, proxy, request, **kwargs):
         jwt = JWT.from_auth_header(request)
-        kwargs["headers"]["Authorization"] = f'Bearer {str(jwt)}'
+        kwargs["headers"]["Authorization"] = f"Bearer {str(jwt)}"
         return kwargs
 
 
@@ -38,7 +39,7 @@ class KubeAPIProxy(HttpProxy):
 
     @property
     def proxy_url(self):
-        return urljoin(self.base_url, self.kwargs.get('url', ''))
+        return urljoin(self.base_url, self.kwargs.get("url", ""))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,7 +71,7 @@ def strip_path_prefix(request):
 
 
 def fix_leading_space_headers(request):
-    # requests 2.11 raises InvalidHeader if the value has leading spaces
+    # requests 2.11 raises InvalidHeader if the value has leading spaces
     for key, value in request.META.items():
         if isinstance(value, str):
             request.META[key] = value.lstrip(" ")

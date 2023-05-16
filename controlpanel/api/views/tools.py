@@ -1,14 +1,10 @@
-from rest_framework import mixins, status, viewsets
-from rest_framework.response import Response
+# Third-party
+from rest_framework import mixins, viewsets
 
+# First-party/Local
 from controlpanel.api import permissions
-from controlpanel.api.serializers import (
-    ToolSerializer,
-)
-from controlpanel.api.models import (
-    Tool,
-    ToolDeployment,
-)
+from controlpanel.api.models import Tool
+from controlpanel.api.serializers import ToolSerializer
 
 
 class ToolViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):

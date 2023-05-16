@@ -1,0 +1,93 @@
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "includes/list-field.html" import list_field_textarea %}
+{% from "input/macro.html" import govukInput %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Create a new IP allowlist" %}
+{% set legend -%}
+  Apps can be associated with one or more IP allowlists so that they can be accessed without further authentication within those particular networks.
+{%- endset %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if form.errors %}
+      {{ govukErrorMessage({"text": form.errors}) }}
+  {% endif %}
+
+  <form action="{{ url('create-ip-allowlist') }}" method="post">
+    {{ csrf_input }}
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+    {{ govukInput({
+      "label": {
+        "text": "Name",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": '60 characters max'
+      },
+      "name": "name",
+      "value": form.name.value(),
+      "errorMessage": { "html": form.name.errors|join(". ") } if form.name.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Description",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Brief description of this allowlist (optional, 60 characters max)'
+      },
+      "name": "description",
+      "value": form.description.value(),
+      "errorMessage": { "html": form.description.errors|join(". ") } if form.description.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Contact",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Contact point for this allowlist (optional, 60 characters max)'
+      },
+      "name": "contact",
+      "value": form.contact.value(),
+      "errorMessage": { "html": form.contact.errors|join(". ") } if form.contact.errors else {}
+    }) }}
+    {{ list_field_textarea(
+        "allowed_ip_ranges",
+        "IP allowlist",
+        "A comma-separated list of allowed IP networks",
+        form.allowed_ip_ranges.value() or "",
+        form.allowed_ip_ranges.errors
+    ) }}
+    {{ govukCheckboxes({
+      "name": "is_recommended",
+      "fieldset": {
+        "legend": {
+          "text": "Recommended",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Recommended IP allowlists will be pre-selected when creating a new app"
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Recommended",
+          "checked": form.is_recommended.value()
+        },
+      ],
+      "errorMessage": { "html": form.is_recommended.errors|join(". ") } if form.is_recommended.errors else {}
+    }) }}
+    <button class="govuk-button">Create IP allowlist</button>
+  </form>
+  {% endcall %}
+{% endblock %}

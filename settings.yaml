@@ -1,0 +1,116 @@
+enabled_features:
+  app_migration:
+    _DEFAULT: false
+    _HOST_dev: true
+    _HOST_prod: true
+    _HOST_alpha: true
+  redirect_legacy_api_urls:
+    _DEFAULT: true
+
+
+AWS_SERVICE_URL:
+  _HOST_dev: "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
+  _HOST_alpha: "https://aws.services.analytical-platform.service.justice.gov.uk"
+  _HOST_prod: "https://aws.services.analytical-platform.service.justice.gov.uk"
+
+USER_GUIDANCE_BASE_URL: 'https://user-guidance.services.alpha.mojanalytics.xyz'
+
+GOOGLE_ANALYTICS_ID:
+  _HOST_dev: 'UA-151666116-4'
+  _HOST_prod: 'UA-151666116-3'
+  _HOST_alpha: 'UA-151666116-2'
+
+# Helm repo where tool charts are hosted
+HELM_REPO: 'mojanalytics'
+
+HELM_REPOSITORY_CACHE: "/tmp/helm/cache/repository"
+
+# The number of seconds helm should wait for helm delete to complete.
+HELM_DELETE_TIMEOUT: 10
+
+# domain where tools are deployed
+TOOLS_DOMAIN:
+  _DEFAULT: tools.dev.analytical-platform.service.justice.gov.uk
+  _HOST_alpha: tools.analytical-platform.service.justice.gov.uk
+
+# kibana url where the users can check the logs of their apps
+KIBANA_BASE_URL:
+  _DEFAULT: 'https://kibana.services.dev.analytical-platform.service.justice.gov.uk/app/kibana'
+  _HOST_prod: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
+  _HOST_alpha: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
+
+# Name of S3 bucket where logs are stored
+LOGS_BUCKET_NAME:
+  _DEFAULT: 'moj-analytics-s3-logs-dev'
+  _HOST_prod: 'moj-analytics-s3-logs'
+  _HOST_alpha: 'moj-analytics-s3-logs'
+
+BUCKET_REGION: 'eu-west-1'
+
+# -- Airflow
+AIRFLOW_REGION: "eu-west-1"
+
+AWS_DEFAULT_REGION: "eu-west-1"
+
+APP_DOMAIN_BEFORE_MIGRATION: apps.alpha.mojanalytics.xyz
+APP_DOMAIN: apps.live.cloud-platform.service.justice.gov.uk
+
+SLACK_CHANNEL: "#analytical-platform"
+
+
+AWS_ROLES_MAP:
+  DEFAULT: AWS_APP_ACCOUNT_ROLE
+  USER:
+    DEFAULT: AWS_APP_ACCOUNT_ROLE
+    AWSROLE: AWS_APP_ACCOUNT_ROLE
+    AWSBUCKET: AWS_APP_ACCOUNT_ROLE
+    AWSPOLICY: AWS_APP_ACCOUNT_ROLE
+    AWSSECRETMANAGER: AWS_APP_ACCOUNT_ROLE
+  APP:
+    DEFAULT: AWS_APP_ACCOUNT_ROLE
+    AWSROLE: AWS_APP_ACCOUNT_ROLE
+    AWSBUCKET: AWS_APP_ACCOUNT_ROLE
+    AWSPOLICY: AWS_APP_ACCOUNT_ROLE
+    AWSPARAMETERSTORE: AWS_APP_ACCOUNT_ROLE
+    AWSSECRETMANAGER: AWS_APP_ACCOUNT_ROLE
+
+
+CUSTOM_AUTH_CONNECTIONS: "auth0_nomis"
+
+AUTH0_NOMIS_GATEWAY_URL: "https://testing.com"
+
+
+BROADCAST_MESSAGE: >
+  We are on the edge of hitting the limit of AWS S3 bucket (1000). | Before we implement the long term solution,
+  could you make sure you remove the buckets you do not need any more? also make sure not create more buckets than your need,
+  try to use sub-folders to manage different datasets rather than multiple buckets.
+
+GITHUB_VERSION: "2022-11-28"
+
+
+OTHER_SYSTEM_SECRETS:
+  - ECR_
+  - KUBE_
+
+AUTH_SETTINGS_SECRETS:
+  - AUTH0_CLIENT_ID
+  - AUTH0_CLIENT_SECRET
+  - IP_RANGES
+
+AUTH_SETTINGS_SECRETS_NO_EDIT:
+  - AUTH0_CLIENT_ID
+  - AUTH0_CLIENT_SECRET
+
+AUTH_SETTINGS_ENVS:
+  - AUTH0_DOMAIN
+  - AUTHENTICATION_REQUIRED
+  - AUTH0_CALLBACK_URL
+  - AUTH0_PASSWORDLESS
+
+SECRET_DISPLAY_VALUE: "*******"
+
+AUTH0_CLIENT_NAME_PATTERN: "data-platform-app-{app_name}-{env}"
+
+APP_URL_NAME_PATTERN:
+  DEFAULT: "{app_name}-{env}"
+  PROD: "{app_name}"

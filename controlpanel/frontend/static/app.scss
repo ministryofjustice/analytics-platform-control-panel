@@ -21,6 +21,8 @@ $govuk-assets-path: "/static/govuk-frontend/govuk/assets/";
 @import "local/layout";
 @import "local/markdown";
 @import "local/utilities";
+@import "local/secrets";
+@import "local/pagination";
 
 body {
     margin: 0;

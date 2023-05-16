@@ -1,11 +1,13 @@
+# Standard library
 from unittest.mock import patch
 
-from jose import JWTError, jwk, jwt
+# Third-party
 import pytest
+from jose import JWTError, jwk, jwt
 from requests.exceptions import Timeout
 
+# First-party/Local
 from controlpanel.api.models import User
-
 
 TEST_CLIENT_ID = "test-client-id"
 TEST_KID = "test-key-id"
@@ -39,7 +41,7 @@ IFoHfA1uQMhlVFdiBwIDAQAB
 @pytest.fixture(autouse=True)
 def audience(settings):
     # override django settings
-    settings.OIDC_RP_CLIENT_ID = TEST_CLIENT_ID
+    settings.OIDC_CPANEL_API_AUDIENCE = TEST_CLIENT_ID
 
 
 @pytest.yield_fixture(autouse=True)
@@ -47,7 +49,7 @@ def jwks():
     key = jwk.construct(TEST_PUBLIC_KEY, "RS256")
     jwk_dict = key.to_dict()
     jwk_dict["kid"] = TEST_KID
-    with patch('controlpanel.jwt.requests') as requests:
+    with patch("controlpanel.jwt.requests") as requests:
         response = requests.get.return_value
         response.json.return_value = {"keys": [jwk_dict]}
         yield requests
@@ -70,6 +72,7 @@ def api_request(client):
             follow=True,
             **filtered,
         )
+
     return make_request
 
 
@@ -86,48 +89,43 @@ def token(claims={}, headers={}):
         "aud": TEST_CLIENT_ID,
         **claims,
     }
-    return jwt.encode(payload, TEST_PRIVATE_KEY, 'RS256', header)
+    return jwt.encode(payload, TEST_PRIVATE_KEY, "RS256", header)
 
 
 @pytest.mark.parametrize(
-    'auth_header, status',
+    "auth_header, status",
     [
         (None, 403),
-        (f'Bearer {token()}', 200),
-        (f'JWT {token()}', 200),
+        (f'Bearer {token()}', 403),
+        (f'Bearer {token(claims={"scope": "list:app"})}', 403),
+        (f'Bearer {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
+        (f'JWT {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
         (f'FOO {token()}', 403),
         (f'Bearer invalid_token', 403),
         (f'Bearer {token(headers={"kid": "no_match"})}', 403),
     ],
     ids=[
-        'No token',
-        'Valid token',
-        'Legacy auth header format',
-        'Malformed auth header',
-        'Invalid token',
-        'No matching JWKs',
+        "No token",
+        "Valid token but no scope",
+        "Valid token with list scope but no gty claim",
+        "Valid token with list scope and gty claim",
+        "Legacy auth header format",
+        "Malformed auth header",
+        "Invalid token",
+        "No matching JWKs",
     ],
 )
 def test_token_auth(api_request, auth_header, status):
     assert api_request(HTTP_AUTHORIZATION=auth_header).status_code == status
 
 
-def test_unknown_user_created(api_request):
-    with pytest.raises(User.DoesNotExist):
-        User.objects.get(pk=TEST_SUB)
-
-    assert api_request(HTTP_AUTHORIZATION=f'Bearer {token()}').status_code == 200
-
-    assert User.objects.get(pk=TEST_SUB)
-
-
 def test_bad_request_for_jwks(api_request, jwks):
     jwks.get.side_effect = Timeout("test_bad_request_for_jwks")
-    assert api_request(HTTP_AUTHORIZATION=f'Bearer {token()}').status_code == 403
+    assert api_request(HTTP_AUTHORIZATION=f"Bearer {token()}").status_code == 403
 
 
 def test_decode_jwt_error(api_request):
-    with patch('controlpanel.jwt.jwt') as jwt:
+    with patch("controlpanel.jwt.jwt") as jwt:
         jwt.decode.side_effect = JWTError("test_decode_jwt_error")
 
-        assert api_request(HTTP_AUTHORIZATION=f'Bearer {token()}').status_code == 403
+        assert api_request(HTTP_AUTHORIZATION=f"Bearer {token()}").status_code == 403

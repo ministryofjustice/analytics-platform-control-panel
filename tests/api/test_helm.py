@@ -1,12 +1,14 @@
-import os
-import time
-import pytest
+# Standard library
 import subprocess
-
+import time
 from unittest.mock import MagicMock, patch
-from controlpanel.api import helm
+
+# Third-party
+import pytest
 from django.conf import settings
 
+# First-party/Local
+from controlpanel.api import helm
 
 # ------ Original unit tests
 
@@ -18,37 +20,31 @@ def test_chart_app_version():
         "RStudio with Auth0 authentication proxy",
         "2.2.5",
         app_version,
+        "https://testing/rstudio.tgz",
     )
 
     assert chart.app_version == app_version
 
 
-def test_helm_repository_chart_info_when_chart_not_found(
-    helm_repository_index,
-):
-    with patch("builtins.open", helm_repository_index):
-        info = helm.get_chart_info("notfound")
-        assert info == {}
-
-
-def test_helm_repository_chart_info_when_chart_found(helm_repository_index):
+def test_helm_repository(helm_repository_index):
     with patch("builtins.open", helm_repository_index):
         # See tests/api/fixtures/helm_mojanalytics_index.py
-        rstudio_info = helm.get_chart_info("rstudio")
+        entries = helm.get_helm_entries()
+        rstudio_info = entries.get("rstudio")
 
         rstudio_2_2_5_app_version = (
             "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
         )
 
         assert len(rstudio_info) == 2
-        assert "2.2.5" in rstudio_info
-        assert "1.0.0" in rstudio_info
+        assert "2.2.5" in rstudio_info[0]["version"]
+        assert "1.0.0" in rstudio_info[1]["version"]
 
-        assert rstudio_info["2.2.5"].app_version == rstudio_2_2_5_app_version
+        assert rstudio_info[0].get("appVersion") == rstudio_2_2_5_app_version
         # Helm added `appVersion` field in metadata only
         # "recently" so for testing that for old chart
         # version this returns `None`
-        assert rstudio_info["1.0.0"].app_version == None
+        assert rstudio_info[1].get("appVersion") is None
 
 
 @pytest.mark.parametrize(
@@ -152,13 +148,11 @@ def test_execute_with_failing_process():
     mock_stderr = MagicMock()
     mock_stderr.read.return_value = "boom"
     mock_Popen = MagicMock(
-        side_effect=subprocess.CalledProcessError(
-            1, "boom", stderr=mock_stderr
-        )
+        side_effect=subprocess.CalledProcessError(1, "boom", stderr=mock_stderr)
     )
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            result = helm._execute("delete", "foo")
+            helm._execute("delete", "foo")
 
 
 def test_execute_with_unforeseen_exception():
@@ -168,7 +162,7 @@ def test_execute_with_unforeseen_exception():
     mock_Popen = MagicMock(side_effect=ValueError("Boom"))
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            result = helm._execute("delete", "foo")
+            helm._execute("delete", "foo")
 
 
 def test_execute_with_failing_helm_command():
@@ -180,7 +174,7 @@ def test_execute_with_failing_helm_command():
     mock_Popen = MagicMock(return_value=mock_proc)
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            result = helm._execute("delete", "foo")
+            helm._execute("delete", "foo")
 
 
 def test_update_helm_repository_non_existent_cache(helm_repository_index):
@@ -196,26 +190,8 @@ def test_update_helm_repository_non_existent_cache(helm_repository_index):
     ), patch(
         "controlpanel.api.helm.os.path.exists", return_value=False
     ):
-        result = helm.update_helm_repository()
+        helm.update_helm_repository()
         mock_execute.assert_called_once_with("repo", "update", timeout=None)
-        assert result["entries"]  # There's a dictionary with chart entries.
-
-
-def test_update_helm_repository_out_of_date_cache(helm_repository_index):
-    """
-    Ensure the function updates the helm repository, then returns the YAML
-    parsed helm repository cache.
-    """
-    with patch("builtins.open", helm_repository_index), patch(
-        "controlpanel.api.helm._execute"
-    ) as mock_execute, patch(
-        "controlpanel.api.helm.os.path.getmtime", return_value=12345.678
-    ), patch(
-        "controlpanel.api.helm.os.path.exists", return_value=True
-    ):
-        result = helm.update_helm_repository()
-        mock_execute.assert_called_once_with("repo", "update", timeout=None)
-        assert result["entries"]  # There's a dictionary with chart entries.
 
 
 def test_update_helm_repository_valid_cache(helm_repository_index):
@@ -231,34 +207,17 @@ def test_update_helm_repository_valid_cache(helm_repository_index):
     ), patch(
         "controlpanel.api.helm.os.path.exists", return_value=True
     ):
-        result = helm.update_helm_repository()
+        helm.update_helm_repository()
         assert mock_execute.call_count == 0
-        assert result["entries"]  # There's a dictionary with chart entries.
 
 
 def test_delete():
     """
-    The delete function (helm 2) results in the expected helm command to be
+    The delete function (helm 3)results in the expected helm command to be
     executed.
     """
     with patch("controlpanel.api.helm._execute") as mock_execute:
-        helm.delete("foo", "bar", "baz")
-        mock_execute.assert_called_once_with(
-            "delete",
-            "--purge",
-            "foo",
-            "bar",
-            "baz",
-        )
-
-
-def test_delete_eks():
-    """
-    The delete_eks function (helm 3)results in the expected helm command to be
-    executed.
-    """
-    with patch("controlpanel.api.helm._execute") as mock_execute:
-        helm.delete_eks("my_namespace", "foo", "bar", "baz")
+        helm.delete("my_namespace", "foo", "bar", "baz")
         mock_execute.assert_called_once_with(
             "uninstall",
             "foo",
@@ -267,6 +226,7 @@ def test_delete_eks():
             "--namespace",
             "my_namespace",
             timeout=settings.HELM_DELETE_TIMEOUT,
+            dry_run=False,
         )
 
 
@@ -285,9 +245,7 @@ def test_list_releases_with_release():
             "baz",
             "qux",
         ]
-        mock_execute.assert_called_once_with(
-            "list", "-aq", "--filter", "rstudio"
-        )
+        mock_execute.assert_called_once_with("list", "-aq", "--filter", "rstudio")
 
 
 def test_list_releases_with_namespace():
@@ -305,6 +263,4 @@ def test_list_releases_with_namespace():
             "baz",
             "qux",
         ]
-        mock_execute.assert_called_once_with(
-            "list", "-aq", "--namespace", "some-ns"
-        )
+        mock_execute.assert_called_once_with("list", "-aq", "--namespace", "some-ns")

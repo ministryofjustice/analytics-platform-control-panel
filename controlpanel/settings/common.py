@@ -1,26 +1,13 @@
+# Standard library
 import os
 import sys
 from os.path import abspath, dirname, join
 
-from controlpanel.frontend.jinja2 import environment
-from controlpanel.utils import is_truthy
-
+# Third-party
 import structlog
-
-
-# -- Feature flags
-
-ENABLED = {
-
-    # Enable redirecting legacy API URLs to new API app
-    "redirect_legacy_api_urls": is_truthy(os.environ.get("ENABLE_LEGACY_API_REDIRECT", True)),
-}
 
 # Name of the deployment environment (dev/alpha)
 ENV = os.environ.get("ENV", "dev")
-
-# Flag to indicate if running on an EKS cluster.
-EKS = bool(os.environ.get("EKS", False))
 
 # -- Paths
 
@@ -48,6 +35,7 @@ STATICFILES_DIRS = [
 # -- Application
 
 INSTALLED_APPS = [
+    "daphne",
     # Django channels for asynchronous support
     "channels",
     # Django Admin
@@ -78,6 +66,8 @@ INSTALLED_APPS = [
     "rest_framework",
     # Django Rules object permissions
     "rules",
+    # Logs changes to models
+    "simple_history",
     # Analytics Platform Control Panel API
     "controlpanel.api",
     # Analytics Platform Control Panel Kubernetes API proxy
@@ -108,6 +98,8 @@ MIDDLEWARE = [
     # Structured logging
     "django_structlog.middlewares.RequestMiddleware",
     "django_prometheus.middleware.PrometheusAfterMiddleware",
+    # Track which user made changes to models utilising django-simple-history
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 TEMPLATES = [
@@ -147,7 +139,7 @@ AUTHENTICATION_BACKENDS = [
     # Needed for Basic Auth
     "django.contrib.auth.backends.ModelBackend",
     # Needed for object permissions
-    'rules.permissions.ObjectPermissionBackend',
+    "rules.permissions.ObjectPermissionBackend",
 ]
 
 # List of validators used to check the strength of users' passwords
@@ -170,7 +162,7 @@ LOGIN_REDIRECT_URL_FAILURE = "/login-fail/"
 OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
 
 # Gracefully handle state mismatch
-OIDC_CALLBACK_CLASS = 'controlpanel.oidc.StateMismatchHandler'
+OIDC_CALLBACK_CLASS = "controlpanel.oidc.StateMismatchHandler"
 
 # Hostname of the OIDC provider
 OIDC_DOMAIN = os.environ.get("OIDC_DOMAIN")
@@ -191,7 +183,11 @@ OIDC_RP_CLIENT_SECRET = os.environ.get("OIDC_CLIENT_SECRET")
 # OIDC JWT signing algorithm
 OIDC_RP_SIGN_ALGO = os.environ.get("OIDC_RP_SIGN_ALGO", "RS256")
 
-OIDC_RP_SCOPES = "openid email profile offline-access"
+# Commented out the offline_access for refresh_token for now as we haven't
+# implemented the refresh_token flow yet.
+# OIDC_RP_SCOPES = "openid email profile offline_access"
+OIDC_RP_SCOPES = "openid email profile"
+
 
 # OIDC claims
 OIDC_FIELD_EMAIL = "email"
@@ -206,12 +202,13 @@ AUTH0 = {
     "domain": OIDC_DOMAIN,
     "authorization_extension_url": os.environ.get("OIDC_AUTH_EXTENSION_URL"),
     "logout_url": f"https://{OIDC_DOMAIN}/v2/logout",
-    "app_domain": os.environ.get("APP_DOMAIN"),
-    "authorization_extension_audience": "urn:auth0-authz-api"
+    "authorization_extension_audience": "urn:auth0-authz-api",
 }
 
 OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
 
+# The audience for Control Panel RESTful APIs
+OIDC_CPANEL_API_AUDIENCE = os.environ.get("OIDC_CPANEL_API_AUDIENCE")
 
 # -- Security
 
@@ -260,21 +257,29 @@ MEDIA_URL = ""
 # -- Debug
 
 # Activates debugging
-DEBUG = is_truthy(os.environ.get("DEBUG", False))
-
+DEBUG = str(os.environ.get("DEBUG", False)).lower() == "true"
 
 # -- Database
-
+DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
+ENABLE_DB_SSL = (
+    str(
+        os.environ.get("ENABLE_DB_SSL", DB_HOST not in ["127.0.0.1", "localhost"])
+    ).lower()
+    == "true"
+)
 DATABASES = {
     "default": {
         "ENGINE": "django_prometheus.db.backends.postgresql",
         "NAME": os.environ.get("DB_NAME", PROJECT_NAME),
         "USER": os.environ.get("DB_USER", ""),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-        "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+        "HOST": DB_HOST,
         "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
+
+if ENABLE_DB_SSL:
+    DATABASES["default"]["OPTIONS"] = {"sslmode": "require"}
 
 # Wrap each request in a transaction
 ATOMIC_REQUESTS = True
@@ -300,18 +305,22 @@ TIME_ZONE = "UTC"
 
 # -- Django REST Framework
 
+# questions: the list of authentication methods, as long as one of them is met, it will be passed.
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # Token authentication
+        # need to check why a user can be created automatically during a process of authentication flow for our cases
         "controlpanel.api.jwt_auth.JWTAuthentication",
+        # save question as above
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
-        # required for browsable API
-        'rest_framework.authentication.BasicAuthentication',
+        # REMOVE basic auth from the authentication methods
+        # 'rest_framework.authentication.BasicAuthentication',
+        # Require browsable api and also allow frontend to call api via session
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": ["controlpanel.api.filters.SuperusersOnlyFilter"],
     "DEFAULT_PERMISSION_CLASSES": ["controlpanel.api.permissions.IsSuperuser"],
-    "DEFAULT_PAGINATION_CLASS": "controlpanel.api.pagination.CustomPageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "controlpanel.api.pagination.CustomPageNumberPagination",  # noqa: E501
     "PAGE_SIZE": 100,
 }
 
@@ -320,16 +329,15 @@ REST_FRAMEWORK = {
 
 if os.environ.get("SENTRY_DSN"):
     SENTRY_ENVIRONMENT = ENV
-    if EKS:
-        KUBERNETES_ENV = "EKS"
-        if ENV == "alpha":
-            SENTRY_ENVIRONMENT = "prod"
-    else:
-        KUBERNETES_ENV = "NotKS"
+    KUBERNETES_ENV = "EKS"
+    if ENV == "alpha":
+        SENTRY_ENVIRONMENT = "prod"
+    # Third-party
     import sentry_sdk
+    from sentry_sdk import set_tag
     from sentry_sdk.integrations.django import DjangoIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
-    from sentry_sdk import set_tag
+
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"],
         environment=SENTRY_ENVIRONMENT,
@@ -352,56 +360,17 @@ STATICFILES_FINDERS = [
 ]
 
 
-# -- Tool deployments
-
-TOOLS = {
-    "rstudio": {
-        "domain": os.environ.get("RSTUDIO_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("RSTUDIO_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("RSTUDIO_AUTH_CLIENT_SECRET"),
-    },
-    "jupyter-lab": {
-        "domain": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("JUPYTER_LAB_AUTH_CLIENT_SECRET"),
-    },
-    "airflow-sqlite": {
-        "domain": os.environ.get("AIRFLOW_AUTH_CLIENT_DOMAIN", OIDC_DOMAIN),
-        "client_id": os.environ.get("AIRFLOW_AUTH_CLIENT_ID"),
-        "client_secret": os.environ.get("AIRFLOW_AUTH_CLIENT_SECRET"),
-    },
-}
-
-# Helm repo where tool charts are hosted
-HELM_REPO = os.environ.get('HELM_REPO', 'mojanalytics')
-
-HELM_REPOSITORY_CACHE = os.environ.get("HELM_REPOSITORY_CACHE", "/tmp/helm/cache/repository")
-
-
-# The number of seconds helm should wait for helm delete to complete.
-HELM_DELETE_TIMEOUT = int(os.environ.get("HELM_DELETE_TIMEOUT", 10))
-
-# domain where tools are deployed
-TOOLS_DOMAIN = os.environ.get('TOOLS_DOMAIN')
-
-# hostname of NFS server for user homes
-NFS_HOSTNAME = os.environ.get("NFS_HOSTNAME")
-
-# volume name for the EFS directory for user homes
-EFS_VOLUME = os.environ.get("EFS_VOLUME")
-
-# hostname of the EFS server for user homes
-EFS_HOSTNAME = os.environ.get("EFS_HOSTNAME")
-
 # -- Redis
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
+REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD", "")
 REDIS_PORT = "6379"
 REDIS_SCHEME = os.environ.get("REDIS_SCHEME", "redis")
 if REDIS_SCHEME not in ["redis", "rediss"]:
-    raise ValueError(f"Invalid value for 'REDIS_SCHEME' environment variable. Must be 'redis' or 'rediss' (to use SSL/TLS). It was '{REDIS_SCHEME}' which is invalid.")
+    raise ValueError(
+        f"Invalid value for 'REDIS_SCHEME' environment variable. Must be 'redis' or 'rediss' (to use SSL/TLS). It was '{REDIS_SCHEME}' which is invalid."  # noqa: E501
+    )
 
-REDIS_URI = f"{REDIS_SCHEME}://{REDIS_HOST}:{REDIS_PORT}/1"
+REDIS_URI = f"{REDIS_SCHEME}://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/1"
 
 # -- Prometheus
 
@@ -412,19 +381,20 @@ PROMETHEUS_EXPORT_MIGRATIONS = False
 ASGI_APPLICATION = f"{PROJECT_NAME}.routing.application"
 
 # See: https://pypi.org/project/channels-redis/
+# https://github.com/django/channels_redis/issues/332
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [{
-                "address": REDIS_URI,
-                "timeout": 30,
-            }],
+    "default": {
+        "BACKEND": "channels_redis.pubsub.RedisPubSubChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                {
+                    "address": REDIS_URI,
+                    "timeout": 30,
+                }
+            ],
         },
     },
 }
-if REDIS_PASSWORD:
-    CHANNEL_LAYERS['default']['CONFIG']['hosts'][0]['password'] = REDIS_PASSWORD
 
 # -- Cache
 if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:
@@ -434,108 +404,74 @@ if REDIS_HOST and REDIS_PORT and REDIS_PASSWORD:
             "LOCATION": REDIS_URI,
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                "PASSWORD": f"{REDIS_PASSWORD}"
-            }
+                "PASSWORD": f"{REDIS_PASSWORD}",
+            },
         }
     }
 else:
     CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'control-panel',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "control-panel",
         }
     }
 
 
 # -- Github
+GITHUB_BASE_URL = "https://api.github.com"
 
 # Allowed Github organizations
-GITHUB_ORGS = list(filter(
-    None,
-    set(os.environ.get("GITHUB_ORGS", "").split(",") + [
-        # 'ministryofjustice',
-        'moj-analytical-services',
-    ]),
-))
+GITHUB_ORGS = list(
+    filter(
+        None,
+        set(
+            os.environ.get("GITHUB_ORGS", "").split(",")
+            + [
+                'ministryofjustice',
+                "moj-analytical-services",
+            ]
+        ),
+    )
+)
 
 
 # -- Elasticsearch
 
 ELASTICSEARCH = {
-    'hosts': [
+    "hosts": [
         {
-            'host': os.environ.get('ELASTICSEARCH_HOST'),
-            'port': int(os.environ.get('ELASTICSEARCH_PORT', 9243)),
-            'use_ssl': True,
-            'http_auth': (
-                os.environ.get('ELASTICSEARCH_USERNAME'),
-                os.environ.get('ELASTICSEARCH_PASSWORD')
+            "host": os.environ.get("ELASTICSEARCH_HOST"),
+            "port": int(os.environ.get("ELASTICSEARCH_PORT", 9243)),
+            "use_ssl": True,
+            "http_auth": (
+                os.environ.get("ELASTICSEARCH_USERNAME"),
+                os.environ.get("ELASTICSEARCH_PASSWORD"),
             ),
         },
     ],
-    'indices': {
-        's3-logs': os.environ.get(
-            'ELASTICSEARCH_INDEX_S3LOGS',
-            's3logs-*',
+    "indices": {
+        "s3-logs": os.environ.get(
+            "ELASTICSEARCH_INDEX_S3LOGS",
+            "s3logs-*",
         ),
-        'app-logs': os.environ.get(
-            'ELASTICSEARCH_INDEX_APPLOGS',
-            f'{ENV}-node-*',
+        "app-logs": os.environ.get(
+            "ELASTICSEARCH_INDEX_APPLOGS",
+            f"{ENV}-node-*",
         ),
     },
 }
 
-KIBANA_BASE_URL = os.environ.get(
-    'KIBANA_BASE_URL',
-    f'https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana',
-)
-
 
 # -- AWS
-AWS_COMPUTE_ACCOUNT_ID = os.environ.get("AWS_COMPUTE_ACCOUNT_ID")
 AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
-K8S_WORKER_ROLE_NAME = os.environ.get('K8S_WORKER_ROLE_NAME')
-
-BUCKET_REGION = os.environ.get('BUCKET_REGION', 'eu-west-1')
-
-# Auth0 integrated SAML provider, referenced in user policies to allow login via
-# SAML federation
-SAML_PROVIDER = os.environ.get('SAML_PROVIDER')
 
 # The EKS OIDC provider, referenced in user policies to allow service accounts
 # to grant AWS permissions.
 OIDC_EKS_PROVIDER = os.environ.get("OIDC_EKS_PROVIDER")
 
-# Name of S3 bucket where logs are stored
-LOGS_BUCKET_NAME = os.environ.get('LOGS_BUCKET_NAME', 'moj-analytics-s3-logs')
-
-
-# -- Airflow
-AIRFLOW_SECRET_KEY = os.environ.get('AIRFLOW_SECRET_KEY')
-AIRFLOW_FERNET_KEY = os.environ.get('AIRFLOW_FERNET_KEY')
-
-
-# -- Google Analytics
-if ENV == 'alpha':
-    GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', 'UA-151666116-2')
-elif ENV == 'prod':
-    GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', 'UA-151666116-3')
-else:
-    GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', 'UA-151666116-4')
-
-
-# -- User Guidance
-USER_GUIDANCE_BASE_URL = os.environ.get(
-    'USER_GUIDANCE_BASE_URL',
-    'https://user-guidance.services.alpha.mojanalytics.xyz'
-)
-
 
 # -- Slack
-SLACK = {
-    "api_token": os.environ.get('SLACK_API_TOKEN'),
-    "channel": os.environ.get('SLACK_CHANNEL', "#analytical-platform"),
-}
+SLACK = {"api_token": os.environ.get("SLACK_API_TOKEN")}
 
 
 # -- Structured logging
@@ -553,7 +489,9 @@ LOGGING = {
         },
         "key_value": {
             "()": structlog.stdlib.ProcessorFormatter,
-            "processor": structlog.processors.KeyValueRenderer(key_order=['timestamp', 'level', 'event', 'logger']),
+            "processor": structlog.processors.KeyValueRenderer(
+                key_order=["timestamp", "level", "event", "logger"]
+            ),
         },
     },
     "handlers": {
@@ -564,15 +502,19 @@ LOGGING = {
     },
     "loggers": {
         "django_structlog": {
-            "handlers": ["console", ],
+            "handlers": [
+                "console",
+            ],
             "level": "INFO",
         },
         # Make sure to replace the following logger's name for yours
-        "control_panel": {
-            "handlers": ["console", ],
-            "level": "INFO",
+        "controlpanel": {
+            "handlers": [
+                "console",
+            ],
+            "level": "WARNING",
         },
-    }
+    },
 }
 
 structlog.configure(
@@ -592,3 +534,7 @@ structlog.configure(
     wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )
+
+# volume name for the EFS directory for user homes
+EFS_VOLUME = os.environ.get("EFS_VOLUME")
+MAX_RELEASE_NAME_LEN = 53

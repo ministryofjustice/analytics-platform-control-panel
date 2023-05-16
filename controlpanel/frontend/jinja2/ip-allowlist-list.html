@@ -1,0 +1,54 @@
+{% from "user/macro.html" import user_name %}
+
+{% extends "base.html" %}
+
+{% set page_title = "IP Allowlists" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">Marked as delete?</th>
+      <th class="govuk-table__header">Description</th>
+      <th class="govuk-table__header">Allowed IP ranges</th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {% for ip_allowlist in ip_allowlists %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        {{ ip_allowlist.name }}
+      </td>
+      <td class="govuk-table__cell">
+        {{ 'Yes' if ip_allowlist.deleted else 'No' }}
+      </td>
+      <td class="govuk-table__cell">
+        {{ ip_allowlist.description }}
+      </td>
+      <td class="govuk-table__cell">
+        {{ ip_allowlist.allowed_ip_ranges }}
+      </td>
+      <td class="govuk-table__cell align-right no-wrap">
+        <a href="{{ url('manage-ip-allowlist', kwargs={ "pk": ip_allowlist.pk }) }}"
+           class="govuk-button govuk-button--secondary">
+          Manage IP allowlist 
+        </a>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if request.user.has_perm('api.create_ip_allowlist') %}
+  <p class="govuk-body">
+  <a class="govuk-button" href="{{ url('create-ip-allowlist') }}">
+      Create new IP allowlist
+    </a>
+  </p>
+{% endif %}
+{% endblock %}

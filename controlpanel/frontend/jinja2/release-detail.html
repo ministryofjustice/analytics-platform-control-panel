@@ -60,6 +60,22 @@ Create a new release of a tool in the analytical platform.
     }) }}
     {{ govukInput({
       "label": {
+        "text": "Description",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'The description about this version, if leave blank, the info from helm repo will be pulled out'
+      },
+      "name": "description",
+      "attributes": {
+        "maxlength": "100",
+      },
+      "value": form.description.value(),
+      "errorMessage": { "html": form.description.errors|join(". ") } if form.description.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
         "text": "Version",
         "classes": "govuk-label--m",
       },

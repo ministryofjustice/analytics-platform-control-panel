@@ -1,0 +1,17 @@
+{% macro customerItem(
+  active = False,
+  reverse = dict(
+    url = None,
+    kwargs = {}
+  ),
+  group_id = None,
+  button_text = "",
+  env_name = ""
+) -%}
+
+  <a class="govuk-button {% if active %}current govuk-button--secondary{% endif %}" 
+    href="{{ url(reverse.url, kwargs=reverse.kwargs ) }}?group_id={{ group_id }}&&env_name={{env_name}}" >
+    {{ button_text }}
+  </a>
+
+{% endmacro -%}

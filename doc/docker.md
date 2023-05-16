@@ -1,4 +1,9 @@
 # Running with Docker
+---
+:warning: _Note that the process described in this file is **out of date** as it refers to setting up an instance of Control Panel which interacts with our old kOps cluster rather than our new EKS cluster.
+See [ANPL-839](https://dsdmoj.atlassian.net/browse/ANPL-839) for the current status of upgrade work, and **follow the instructions in [`running.md`](running.md) to set up your own instance of Control Panel for development work**._
+
+---
 
 The advantage of using docker-compose is that it is configured to run several services that the Control Panel relies on, such as the PostgreSQL database and Redis. It initializes these ready for local development purposes.
 
@@ -18,14 +23,13 @@ You need to create a `.env` file with the settings to enable it to connect to ex
 
 Lines in this file are simply of format `KEY=value`.
 
-The full list of settings are documented here: [Environment Variables Reference](environment.md). However you can simply get a lot of these values from the settings we use to run Control Panel on the dev cluster. This will connect your locally running Control Panel to AP's dev Auth0 OIDC API, dev Kubernetes cluster, etc. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml (in the [config repo](https://github.com/ministryofjustice/analytics-platform-config) and if you've not done so already, you'll need to [decrypt the files in that repo](https://github.com/ministryofjustice/analytics-platform-ops/tree/master/git-crypt#decrypting-the-secrets)) and just change the format of each line to `KEY=value`. These are the keys you need to copy to get your control panel started:
+The full list of settings are documented here: [Control Panel settings and environment variables](environment.md). However you can simply get a lot of these values from the settings we use to run Control Panel on the dev cluster. This will connect your locally running Control Panel to AP's dev Auth0 OIDC API, dev Kubernetes cluster, etc. To do this, for the keys listed below, copy the matching lines from chart-env-config/dev/cpanel.yml (in the [config repo](https://github.com/ministryofjustice/analytics-platform-config) and if you've not done so already, you'll need to [decrypt the files in that repo](https://github.com/ministryofjustice/analytics-platform-ops/tree/master/git-crypt#decrypting-the-secrets)) and just change the format of each line to `KEY=value`. These are the keys you need to copy to get your control panel started:
 
 ```shell
 # To log in with OIDC
 OIDC_*
 # To interact with AWS account IAM config
 AWS_DATA_ACCOUNT_ID
-AWS_COMPUTE_ACCOUNT_ID
 ```
 
 Unless you're testing the Slack feature, just disable it by adding this line:
@@ -34,7 +38,7 @@ Unless you're testing the Slack feature, just disable it by adding this line:
 SLACK_API_TOKEN=disabled
 ```
 
-For more details of environment variable settings, refer to: [Environment Variables Reference](environment.md).
+For more details of environment variable settings, refer to: [Control Panel settings and environment variables](environment.md).
 
 ## AWS setup
 
@@ -45,7 +49,7 @@ You can test what AWS Account is currently configured on your command-line, like
 ```shell
 $ pip install boto3
 $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
-arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
+arn:aws:sts::<aws dev account id>:assumed-role/restricted-admin-dev/botocore-session-1590188888
 ```
 
 As an AP developer, if you don't have a Landing AWS Account user account yet, follow the steps here:
@@ -53,19 +57,19 @@ As an AP developer, if you don't have a Landing AWS Account user account yet, fo
 1. [Create your AWS user](https://github.com/ministryofjustice/analytical-platform-iam#user-creation). Make sure you're added to the group that gives you access to the 'restricted-admin' role in the 'data' AWS account.
 2. Continue those instructions: 'Approve and apply an IAM change', and 'First login'.
 3. [Configure your AWS CLI](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli)
-4. [Add the special 'data' profile](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli-using-profile).
+4. [Add the special 'dev' profile](https://github.com/ministryofjustice/analytical-platform-iam#aws-cli-using-profile).
 5. Test it:
 
     ```sh
-    $ AWS_PROFILE=data
+    $ AWS_PROFILE=admin-dev
     $ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
-    arn:aws:sts::593291632749:assumed-role/restricted-admin-data/botocore-session-1590188888
+    arn:aws:sts::<aws dev account id>:assumed-role/restricted-admin-dev/botocore-session-1590188888
     ```
 
-Note: You'll have to remember to enable your 'data' AWS profile before running Control Panel, as you would to use the AWS cli:
+Note: You'll have to remember to enable your 'dev' AWS profile before running Control Panel, as you would to use the AWS cli:
 
 ```shell
-AWS_PROFILE=data
+AWS_PROFILE=dev
 ```
 
 With this profile activated, boto3 and awscli (`aws`) commands will access the 'data' AWS Account (by using your Landing Account creds and switching to the 'data' account).
@@ -176,3 +180,10 @@ This structure hopefully makes the best use of the Docker cache, in that more
 frequent updates to Javascript and Python dependencies happen later in the
 build, and less frequent, more cachable updates to OS packages and Helm are
 earlier.
+
+## Node base file
+Dockerfile uses Base image that has no Critical or High security vulnerabilities.
+
+amd64/node:18.12.1-slim
+- located on [dockerhub](https://hub.docker.com/r/amd64/node/)
+- source base image build: [github](https://github.com/nodejs/docker-node/blob/7bc9983852d4a0a8910f3865b199d78157d1440b/18/buster-slim/Dockerfile)

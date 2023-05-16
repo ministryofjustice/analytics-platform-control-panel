@@ -4,10 +4,14 @@ import sys
 
 import dotenv
 
+from controlpanel.utils import load_app_conf_from_file
+
 if __name__ == '__main__':
-    dotenv.read_dotenv()
+    dotenv.load_dotenv()
 
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'controlpanel.settings')
+
+    load_app_conf_from_file()
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

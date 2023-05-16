@@ -1,0 +1,43 @@
+{% from "input/macro.html" import govukInput %}
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "includes/auth0-connections-form.html" import auth0_connections_form with context %}
+
+{% extends "base.html" %}
+
+{% set legend -%}
+  Update auth0 connections - {{ app.name }}
+{%- endset %}
+
+{% set page_name = "Auth0 connections" %}
+
+{% block content %}
+    <h1 class="govuk-heading-xl">{{ legend }}</h1>
+
+    <div>
+      {% if form.errors %}
+        {{ govukErrorMessage({"text": form.errors}) }}
+      {% endif %}
+    </div>
+
+    <form action="" method="post">
+        {{ csrf_input }}
+        <input type="hidden" name="env_name" value="{{ request.GET.get('env_name') }}">
+        {{ auth0_connections_form({
+            "fieldset": {
+              "legend": {
+              "text": "Oauth0 client - connections",
+              "classes": "govuk-fieldset__legend--m",
+              },
+            },
+            "field": form.fields['connections'],
+            "errors": form.errors,
+            "selected_values": form.connections.value()
+          } )
+        }}
+
+        <button class="govuk-button cpanel-button--destructive js-confirm" data-confirm-message="Are you sure you want to change the connections?">Update</button>
+    </form>
+
+{% endblock %}
+</html>
