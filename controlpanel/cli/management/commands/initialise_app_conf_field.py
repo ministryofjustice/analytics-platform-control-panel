@@ -37,6 +37,12 @@ class Command(BaseCommand):
             app_name = app.slug
         return app_name
 
+    def _get_auth0_client_info(self, app):
+        try:
+            return json.loads(app.description).get("auth0_clients", {})
+        except ValueError:
+            return {}
+
     def _initialise_auth_info_to_new_field(self):
         auth0_instance = auth0.ExtendedAuth0()
         groups_info = self._get_full_groups(auth0_instance)
@@ -52,15 +58,22 @@ class Command(BaseCommand):
             if group:
                 auth_settings.update(dict(group_id=group["_id"]))
 
-            if not auth_settings:
+            new_auth0_clients = self._get_auth0_client_info(app)
+            if not auth_settings and not new_auth0_clients:
                 self.stdout.write(f"{cnt + 1}: No clients is found for app {app.slug}!")
                 continue
+            else:
+                if not app.app_conf:
+                    app.app_conf = dict()
+                if App.KEY_WORD_FOR_AUTH_SETTINGS not in app.app_conf:
+                    app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS] = {}
 
-            if not app.app_conf:
-                app.app_conf = dict()
-            if App.KEY_WORD_FOR_AUTH_SETTINGS not in app.app_conf:
-                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS] = {}
-            app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY] = auth_settings
+            if auth_settings:
+                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY] = auth_settings
+
+            for env_name, env_info in new_auth0_clients.items():
+                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = env_info
+
             app.save()
             self.stdout.write(f"{cnt+1}: app {app.slug} done!")
 
