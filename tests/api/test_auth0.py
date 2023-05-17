@@ -73,14 +73,10 @@ def test_get_or_create_existed(ExtendedAuth0, fixture_users_200, fixture_users_c
 
 
 @pytest.yield_fixture
-def fixture_get_group(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.groups, "search_first_match") as search_first_match:
-        search_first_match.return_value = {
-            "_id": "foo-id",
-            "name": "foo",
-            "roles": ["role_1", "role_2"],
-        }
-        yield search_first_match
+def fixture_has_group_existed(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.groups, "has_group_existed") as has_group_existed:
+        has_group_existed.return_value = True
+        yield has_group_existed
 
 
 @pytest.yield_fixture
@@ -116,14 +112,14 @@ def fixture_groups_delete(ExtendedAuth0):
 
 def test_clear_up_group(
     ExtendedAuth0,
-    fixture_get_group,
+    fixture_has_group_existed,
     fixture_get_group_roles,
     fixture_roles_delete,
     fixture_permission_delete,
     fixture_groups_delete,
 ):
 
-    ExtendedAuth0.clear_up_group(group_name="foo")
+    ExtendedAuth0.clear_up_group(group_id="foo-id")
 
     fixture_groups_delete.assert_called_with("foo-id")
     fixture_roles_delete.assert_has_calls([call("role1"), call("role2")])
@@ -226,13 +222,6 @@ def fixture_create_user(ExtendedAuth0):
 
 
 @pytest.yield_fixture
-def fixture_get_group_id(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.groups, "get_group_id") as get_group_id:
-        get_group_id.return_value = "foo-id-1"
-        yield get_group_id
-
-
-@pytest.yield_fixture
 def fixture_groups_update(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups.client, "patch") as group_update:
         group_update.return_value = {}
@@ -241,7 +230,6 @@ def fixture_groups_update(ExtendedAuth0):
 
 def test_new_user_add_to_group(
     ExtendedAuth0,
-    fixture_get_group_id,
     fixture_get_users_email_search_empty,
     fixture_create_user,
     fixture_groups_update,
@@ -249,7 +237,7 @@ def test_new_user_add_to_group(
     group_id = "foo-id-1"
     email = "new@test.com"
     ExtendedAuth0.add_group_members_by_emails(
-        emails=[email], group_name="foo", user_options={"connection": "email"}
+        emails=[email], group_id=group_id, user_options={"connection": "email"}
     )
     domain = settings.AUTH0["authorization_extension_url"]
     fixture_groups_update.assert_has_calls(
@@ -259,7 +247,6 @@ def test_new_user_add_to_group(
 
 def test_existing_user_add_to_group(
     ExtendedAuth0,
-    fixture_get_group_id,
     fixture_get_users_email_search,
     fixture_create_user,
     fixture_groups_update,
@@ -268,7 +255,7 @@ def test_existing_user_add_to_group(
     email = "New@test.com"
 
     ExtendedAuth0.add_group_members_by_emails(
-        emails=[email], group_name="foo", user_options={"connection": "email"}
+        emails=[email], group_id=group_id, user_options={"connection": "email"}
     )
     domain = settings.AUTH0["authorization_extension_url"]
     fixture_groups_update.assert_has_calls(
@@ -524,9 +511,9 @@ def fixture_group_members_200(ExtendedAuth0):
 
 
 def test_group_member_more_than_100(
-    ExtendedAuth0, fixture_get_group_id, fixture_group_members_200
+    ExtendedAuth0, fixture_group_members_200
 ):
-    members = ExtendedAuth0.groups.get_group_members(group_name="test group")
+    members = ExtendedAuth0.groups.get_group_members(group_id="foo-id-1")
     assert len(members) == 200
 
 
@@ -561,6 +548,7 @@ def test_update_client_auth_connections(
 
     ExtendedAuth0.update_client_auth_connections(
         app_name="test",
+        client_id=new_client_id,
         new_conns={"email": {}, "connection 1": {}},
         existing_conns=["email", "connection 2"],
     )

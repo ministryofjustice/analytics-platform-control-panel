@@ -29,7 +29,14 @@ class App(TimeStampedModel):
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
 
-    DEFAULT_KEY_WORD = "DEFAULT"
+    # The app_conf mainly for storing the auth settings related and those information
+    # are not within the fields which will be searched frequently
+    app_conf = models.JSONField(null=True)
+
+    DEFAULT_AUTH_CATEGORY = "primary"
+    KEY_WORD_FOR_AUTH_SETTINGS = "auth_settings"
+
+    DEFAULT_SETTING_KEY_WORD = "DEFAULT"
 
     class Meta:
         db_table = "control_panel_api_app"
@@ -58,16 +65,11 @@ class App(TimeStampedModel):
         return elasticsearch.app_logs(self, num_hours=num_hours)
 
     def get_group_id(self, env_name):
-        return auth0.ExtendedAuth0().groups.get_group_id(
-            self.auth0_client_name(env_name)
-        )
+        return self.get_auth_client(env_name).get("group_id")
 
     def customers(self, env_name=None):
         return (
-            auth0.ExtendedAuth0().groups.get_group_members(
-                group_name=self.auth0_client_name(env_name)
-            )
-            or []
+            auth0.ExtendedAuth0().groups.get_group_members(group_id=self.get_group_id(env_name)) or []
         )
 
     def customer_paginated(self, page, group_id, per_page=25):
@@ -79,9 +81,48 @@ class App(TimeStampedModel):
         )
 
     def auth0_connections(self, env_name):
-        return auth0.ExtendedAuth0().get_client_enabled_connections(
-            self.auth0_client_name(env_name)
-        )
+        client_id = self.get_auth_client(env_name).get("client_id")
+        connections = auth0.ExtendedAuth0().get_client_enabled_connections([client_id])
+        return connections.get(client_id) or []
+
+    def auth0_connections_by_env(self):
+        connections = {}
+        client_ids = []
+        client_env_mapping = {}
+        for env_name, client_info in ((self.app_conf or {}).get(
+                self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+            connections[env_name] = dict(client_id=client_info.get('client_id'))
+            if client_info.get('client_id'):
+                client_env_mapping[client_info["client_id"]] = env_name
+                client_ids.append(client_info.get('client_id'))
+        returned_connections = auth0.ExtendedAuth0().get_client_enabled_connections(client_ids)
+        for client_id, client_connections in returned_connections.items():
+            env_name = client_env_mapping.get(client_id)
+            if env_name:
+                connections[env_name].update(dict(
+                    connections=returned_connections.get(client_id)
+                ))
+        return connections
+
+    def auth0_clients_status(self):
+        """ Check the status of the auth0-clients stored in the app_conf field"""
+        status = {}
+        for env_name, client_info in ((self.app_conf or {}).get(
+                self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
+            if client_info.get('client_id'):
+                try:
+                    auth0.ExtendedAuth0().clients.get(client_info.get('client_id'))
+                    status[env_name] ={
+                        "client_id": client_info.get('client_id'),
+                        "ok": True
+                    }
+                except auth0.Auth0Error as error:
+                    status[env_name] ={
+                        "client_id": client_info.get('client_id'),
+                        "ok": False,
+                        "error_msg": error.__str__()
+                    }
+        return status
 
     @property
     def app_allowed_ip_ranges(self):
@@ -121,9 +162,10 @@ class App(TimeStampedModel):
     def add_customers(self, emails, env_name=None, group_id=None):
         emails = list(filter(None, emails))
         if emails:
+            if not group_id:
+                group_id = self.get_group_id(env_name)
             try:
                 auth0.ExtendedAuth0().add_group_members_by_emails(
-                    group_name=self.auth0_client_name(env_name),
                     emails=emails,
                     user_options={"connection": "email"},
                     group_id=group_id,
@@ -133,8 +175,9 @@ class App(TimeStampedModel):
 
     def delete_customers(self, user_ids, env_name=None, group_id=None):
         try:
+            if not group_id:
+                group_id = self.get_auth_client(env_name).get("group_id")
             auth0.ExtendedAuth0().groups.delete_group_members(
-                group_name=self.auth0_client_name(env_name),
                 user_ids=user_ids,
                 group_id=group_id,
             )
@@ -182,20 +225,9 @@ class App(TimeStampedModel):
         cluster.App(self, github_api_token).delete()
         super().delete(*args, **kwargs)
 
-    def _get_old_auth0_client_name(self):
-        """TODO This function needs to be adjusted once the migration is over"""
-        try:
-            app_conf = json.loads(self.description)
-        except ValueError:
-            app_conf = {}
-        return app_conf.get('app_name') or self.slug
-
     def auth0_client_name(self, env_name=None):
-        if env_name:
-            return settings.AUTH0_CLIENT_NAME_PATTERN.format(
-                app_name=self.slug, env=env_name)
-        else:
-            return self._get_old_auth0_client_name()
+        return settings.AUTH0_CLIENT_NAME_PATTERN.format(
+            app_name=self.slug, env=env_name)
 
     @property
     def migration_info(self):
@@ -209,11 +241,53 @@ class App(TimeStampedModel):
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
         if not format_pattern:
-            format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_KEY_WORD)
+            format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_SETTING_KEY_WORD)
         if format_pattern:
             return format_pattern.format(app_name=self.slug, env=env_name)
         else:
             return self.slug
+
+    def get_auth_client(self, env_name):
+        env_name = env_name or self.DEFAULT_AUTH_CATEGORY
+        return self.auth_settings.get(env_name, {})
+
+    def _init_app_conf(self, env_name):
+        if not self.app_conf:
+            self.app_conf = {}
+        if self.KEY_WORD_FOR_AUTH_SETTINGS not in self.app_conf:
+            self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS] = {}
+        if env_name not in self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS]:
+            self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = {}
+
+    def save_auth_settings(self, env_name, client=None, group=None):
+        auth_client_info = {}
+        if client:
+            auth_client_info.update(dict(client_id=client.get("client_id")))
+        if group:
+            auth_client_info.update(dict(group_id=group.get("_id")))
+        if auth_client_info:
+            self._init_app_conf(env_name)
+            self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name].update(
+                auth_client_info)
+            self.save()
+
+    def clear_auth_settings(self, env_name):
+        has_auth_related = self.auth_settings.get(env_name)
+        if has_auth_related:
+            del self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name]
+            self.save()
+
+    def get_auth0_group_list(self):
+        groups_dict = {}
+        for env_name, auth_info in self.auth_settings.items():
+            if not auth_info.get('group_id'):
+                continue
+            groups_dict[auth_info.get('group_id')] = env_name
+        return groups_dict
+
+    @property
+    def auth_settings(self):
+        return (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS, {})
 
 
 class AddCustomerError(Exception):

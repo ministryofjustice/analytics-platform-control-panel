@@ -1,8 +1,6 @@
 # Standard library
 import base64
 import json
-
-# from dataclasses import dataclass, fields
 from typing import List
 
 # Third-party

@@ -14,43 +14,50 @@
 
 {% block content %}
 
+<h2 class="govuk-heading-m">
+    Customer management for {{ app.name }}
+</h2>
+
+{% if groups_dict %}
   <section>
-   <h2 class="govuk-heading-m">
+   <h2 class="govuk-heading-s">
       Switch to different deployment environment from the following links:
     </h2>
     <ul class="govuk-list govuk-list--bullet">
-      {% for env_item_name in app.deployment_envs(request.user.github_api_token) %}
+      {% for env_group_id, env_item_name in groups_dict.items() %}
         <li>
-            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?env_name={{ env_item_name }}" >
-              {% if env_name == env_item_name %}
+            <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?group_id={{ env_group_id }}" >
+              {% if group_id == env_group_id %}
                 <strong>Manage customers - {{ env_item_name }}</strong>
               {% else %}
                 Manage customers - {{ env_item_name }}
               {% endif %}
             </a>
+            {% if auth_errors.get(env_group_id) %}
+            <span id="read_customer_error_msg-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>{{ auth_errors.get(env_group_id) }}
+                <span class="govuk-visually-hidden"></span>if the related group does not exist, please reset the app group on app's detail page
+            </span>
+            {% endif %}
         </li>
       {% endfor %}
-      <li>
-          <a href="{{ url("appcustomers-page", kwargs={"pk": app.id, "page_no": "1" }) }}?env_name=" >
-            {% if not env_name  %}
-              <strong>Manage customers - for app running on old cluster</strong>
-            {% else %}
-              Manage customers - for app running on old cluster
-            {% endif %}
-          </a>
-      </li>
     </ul>
   </section>
 
-  <h2 class="govuk-heading-m">
-    App customers under {{ env_name }} environment
+  <h2 class="govuk-heading-s">
+    App customers under {{ groups_dict.get(group_id) }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
+{% else %}
+   <h2 class="govuk-heading-s">
+      No need to manage the customers of app on Control panel
+   </h2>
+{% endif %}
 
 
-  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id }) }}">
+
+  <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id, "group_id": group_id }) }}">
     {{ csrf_input }}
-    <input type="hidden" name="env_name" value="{{ env_name or '' }}">
     <input type="hidden" name="group_id" value="{{ group_id or '' }}">
     <button class="govuk-button govuk-button--secondary right selectable-rows__enable-on-selections"
             type="submit"
@@ -101,16 +108,13 @@
       elided = elided,
       show_dots = False,
       page_no = page_no,
-      group_id = group_id,
-      env_name = env_name
+      group_id = group_id
     )
   }}
 
 {% if request.user.has_perm('api.add_app_customer', app) %}
-  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id }) }}" method="post">
+  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id, "group_id": group_id }) }}" method="post">
     {{ csrf_input }}
-    <input type="hidden" name="env_name" value="{{ env_name or '' }}">
-    <input type="hidden" name="group_id" value="{{ group_id or '' }}">
     <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
       <label class="govuk-label" for="customer_email">
         Add app customers by entering their email addresses (separated by spaces)
@@ -131,10 +135,8 @@
 {% endif %}
 
 {% if remove_perm %}
-  <form action="{{ url('remove-app-customer-by-email', kwargs={ "pk": app.id }) }}" method="post">
+  <form action="{{ url('remove-app-customer-by-email', kwargs={ "pk": app.id, "group_id": group_id}) }}" method="post">
     {{ csrf_input }}
-    {{ remove_customer_form.env_name }}
-    {{ remove_customer_form.group_id }}
     <div class="govuk-form-group">
       <label class="govuk-label" for="{{ remove_customer_form.email.id_for_label }}">
         Remove a customer by entering their email address

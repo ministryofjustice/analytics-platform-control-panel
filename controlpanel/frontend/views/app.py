@@ -11,11 +11,13 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
+from django.utils.http import urlencode
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
+from auth0.v3.management.rest import Auth0Error
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
@@ -81,11 +83,15 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             access_repo_error_msg = ex.__str__()
             deployment_env_names = []
         deployments_settings = {}
+        auth0_connections = app.auth0_connections_by_env()
+        auth0_clients_status = app.auth0_clients_status()
         try:
             for env_name in deployment_env_names:
                 deployments_settings[env_name] = {
                     "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
                     "variables": app_manager_ins.get_env_vars(env_name=env_name),
+                    "connections": auth0_connections.get(env_name, {}).get("connections") or [],
+                    "auth0_clients_status": auth0_clients_status.get(env_name)
                 }
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()
@@ -186,10 +192,11 @@ class UpdateAppAuth0Connections(
 
     def form_valid(self, form):
         try:
+            env_name = form.cleaned_data.get("env_name")
+            auth0_client_id = self.object.get_auth_client(env_name).get("client_id")
             auth0.ExtendedAuth0().update_client_auth_connections(
-                self.object.auth0_client_name(
-                    env_name=form.cleaned_data.get("env_name")
-                ),
+                app_name=self.object.auth0_client_name(env_name),
+                client_id=auth0_client_id,
                 new_conns=form.cleaned_data.get("auth0_connections"),
                 existing_conns=form.auth0_connections,
             )
@@ -395,17 +402,17 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors
         return HttpResponseRedirect(
-            reverse_lazy("manage-app", kwargs={"pk": self.kwargs["pk"]}),
+            self.get_success_url()
         )
 
     def form_valid(self, form):
         self.get_object().add_customers(
             form.cleaned_data["customer_email"],
-            env_name=form.cleaned_data.get("env_name"),
-            group_id=form.cleaned_data.get("group_id"),
+            group_id=self.kwargs.get("group_id"),
         )
+        messages.success(self.request, "Successfully added customers")
         return HttpResponseRedirect(
-            self.get_success_url(env_name=form.cleaned_data.get("env_name"))
+            self.get_success_url()
         )
 
     def get_form_kwargs(self):
@@ -413,13 +420,8 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
         return kwargs
 
     def get_success_url(self, *args, **kwargs):
-        messages.success(self.request, "Successfully added customers")
-        return "{}?env_name={}".format(
-            reverse_lazy(
-                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
-            ),
-            kwargs.get("env_name", ""),
-        )
+        url = reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+        return url + '?' + urlencode({'group_id': self.kwargs.get("group_id") })
 
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -427,35 +429,41 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
     permission_required = "api.retrieve_app"
     template_name = "customers-list.html"
 
-    def _retrieve_and_confirm_env_info(self, app, context):
-        env_name = self.request.GET.get("env_name") or ""
-        context["deployment_envs"] = app.deployment_envs(
-            self.request.user.github_api_token
-        )
-        context["env_name"] = env_name
+    def _confirm_group_id(self, context):
+        group_id = self.request.GET.get("group_id")
+        if not group_id and context.get("groups_dict"):
+            group_id = list(context["groups_dict"].keys())[0]
+        return group_id
+
+    def _get_customer_list(self, context, page_no, app):
+        read_customer_error_msg = None
+        group_id = context["group_id"]
+        if group_id:
+            try:
+                customers = app.customer_paginated(page_no, group_id)
+            except Auth0Error as error:
+                customers = {}
+                read_customer_error_msg = error.__str__()
+        else:
+            customers = {}
+        return customers, read_customer_error_msg
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app: App = context.get("app")
 
-        self._retrieve_and_confirm_env_info(app, context)
-        group_id = self.request.GET.get("group_id") or app.get_group_id(
-            context["env_name"]
-        )
-        context["group_id"] = group_id
+        context["groups_dict"] = app.get_auth0_group_list()
+        context["group_id"] = self._confirm_group_id(context)
         context["page_no"] = page_no = self.kwargs.get("page_no")
-
-        if group_id:
-            customers = app.customer_paginated(page_no, group_id)
-            context["customers"] = customers.get("users", [])
-        else:
-            customers = {}
-            context["customers"] = []
+        customers, read_customer_error_msg = self._get_customer_list(context, page_no, app)
+        context["auth_errors"] = {
+            context["group_id"]: read_customer_error_msg
+        }
+        context["customers"] = customers.get("users", [])
         context["paginator"] = paginator = self._paginate_customers(customers)
         context["elided"] = paginator.get_elided_page_range(page_no)
         context["remove_customer_form"] = RemoveCustomerByEmailForm(initial={
-            "group_id": group_id,
-            "env_name": context["env_name"],
+            "group_id": context["group_id"],
         })
         return context
 
@@ -472,23 +480,18 @@ class RemoveCustomer(UpdateApp):
     permission_required = "api.remove_app_customer"
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy(
-            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        return "{}?group_id={}".format(
+            reverse_lazy(
+                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+            ),
+            kwargs.get("group_id"),
         )
-
-    def _get_env_group_info(self):
-        env_names = self.request.POST.getlist("env_name")
-        env_name = env_names[0] if env_names else ""
-        group_ids = self.request.POST.getlist("group_id")
-        group_id = group_ids[0] if group_ids else ""
-        return env_name, group_id
 
     def perform_update(self, **kwargs):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
-        env_name, group_id = self._get_env_group_info()
         try:
-            app.delete_customers(user_ids, env_name=env_name, group_id=group_id)
+            app.delete_customers(user_ids, group_id=kwargs.get('group_id'))
         except App.DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             messages.error(
@@ -505,10 +508,12 @@ class RemoveCustomerByEmail(UpdateApp):
     form = None
 
     def get_redirect_url(self, *args, **kwargs):
-        url = reverse_lazy(
-            "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+        return "{}?group_id={}".format(
+            reverse_lazy(
+                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
+            ),
+            kwargs.get("group_id"),
         )
-        return f"{url}?env_name={self.form.cleaned_data.get('env_name')}"
 
     def perform_update(self, **kwargs):
         """
@@ -523,7 +528,7 @@ class RemoveCustomerByEmail(UpdateApp):
         try:
             app.delete_customer_by_email(
                 email=email,
-                group_id=self.form.cleaned_data["group_id"],
+                group_id=str(kwargs.get("group_id"))
             )
         except App.DeleteCustomerError as e:
             return messages.error(

@@ -37,13 +37,17 @@ class Command(BaseCommand):
             app_url=f"https://{ app.slug }.{settings.APP_DOMAIN}",
             status="in_progress"
         )
-        app_info = dict(
-            migration=migration_json,
-            auth0_clients=app_item["migration"].get("auth0_clients") or {}
-        )
+        app_info = dict(migration=migration_json)
         app.description = json.dumps(app_info)
         app.name = app_item["migration"]["app_name"]
         app.repo_url = app_item["migration"]["repo_url"]
+        if not app.app_conf:
+            app.app_conf = {}
+        if App.KEY_WORD_FOR_AUTH_SETTINGS not in app.app_conf:
+            app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS] = {}
+        auth0_clients = app_item["migration"].get("auth0_clients") or {}
+        for env_name, env_info in auth0_clients.items():
+            app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = env_info
         app.save()
 
     def _update_app_ip_allow_list(self, app, app_detail):

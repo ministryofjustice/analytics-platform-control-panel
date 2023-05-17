@@ -7,7 +7,6 @@ from model_mommy import mommy
 
 # First-party/Local
 from controlpanel.api.auth0 import Auth0Error
-from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 from controlpanel.api.models import App
 
 
@@ -24,6 +23,22 @@ def update_aws_secrets_manager():
         "controlpanel.api.cluster.App.create_or_update_secret"
     ) as update_aws_secrets_manager:
         yield update_aws_secrets_manager
+
+
+@pytest.fixture
+def app():
+    app = mommy.make("api.App")
+    app.repo_url="https://github.com/example.com/repo_name"
+    auth_settings = dict(
+        client_id="testing_client_id",
+        group_id="testing_group_id"
+    )
+    env_app_settings = dict(test_env=auth_settings)
+    app.app_conf = {
+        App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings
+    }
+    app.save()
+    return app
 
 
 @pytest.mark.django_db
@@ -67,30 +82,27 @@ def test_get_customers(auth0):
 
 
 @pytest.mark.django_db
-def test_add_customers(auth0):
-    app = App.objects.create(repo_url="https://example.com/repo_name")
+def test_add_customers(auth0, app):
     authz = auth0.ExtendedAuth0.return_value
+    testing_env = "test_env"
     emails = ["test1@example.com", "test2@example.com"]
 
-    app.add_customers(emails, env_name=None)
+    app.add_customers(emails, env_name=testing_env)
 
     authz.add_group_members_by_emails.assert_called_with(
-        group_name=app.slug,
         emails=emails,
         user_options={"connection": "email"},
-        group_id=None,
+        group_id="testing_group_id",
     )
 
 
 @pytest.mark.django_db
-def test_delete_customers(auth0):
-    app = App.objects.create(repo_url="https://example.com/repo_name")
+def test_delete_customers(auth0, app):
     authz = auth0.ExtendedAuth0.return_value
-
-    app.delete_customers(["email|123"])
-
+    app.delete_customers(["email|123"], env_name="test_env")
     authz.groups.delete_group_members.assert_called_with(
-        group_name=app.slug, user_ids=["email|123"], group_id=None
+        user_ids=["email|123"],
+        group_id="testing_group_id",
     )
 
 

@@ -438,20 +438,6 @@ class App(EntityResource):
                 return True
         return False
 
-    def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets):
-        # Add the auth0's connections into this category
-        connections = self.app.auth0_connections(env_name=env_name)
-        app_secrets.append(
-            {
-                "name": App.AUTH0_CONNECTIONS,
-                "env_name": env_name,
-                "value": connections or [],
-                "created": connections is not None,
-                "removable": False,
-                "editable": True,
-            }
-        )
-
     def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
         not_created_ones = list(
             set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
@@ -577,7 +563,6 @@ class App(EntityResource):
             )
             created_secret_names.append(item["name"])
         self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
-        self._add_auth0_connection_as_part_secrets(env_name, app_secrets)
         return app_secrets
 
     def get_env_vars(self, env_name):
@@ -613,6 +598,8 @@ class App(EntityResource):
                 connections=connections,
                 app_domain=app_domain
             )
+            self.app.save_auth_settings(
+                env_name=env_name, client=client, group=group)
         self._create_secrets(env_name, client=client)
         self._create_env_vars(
             env_name,
@@ -623,14 +610,14 @@ class App(EntityResource):
         return client, group
 
     def remove_auth_settings(self, env_name):
-        auth_client_name = self.app.auth0_client_name(env_name)
         secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
         for secret_name in secrets_require_remove:
             self.delete_secret(env_name, secret_name)
         envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
-        self._get_auth0_instance().clear_up_app(app_name=auth_client_name)
+        self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
+        self.app.clear_auth_settings(env_name)
 
 
 class S3Bucket(EntityResource):

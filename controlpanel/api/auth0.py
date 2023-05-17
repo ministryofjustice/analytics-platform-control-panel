@@ -195,7 +195,7 @@ class ExtendedAuth0(Auth0):
             group_name=group_name)
         return user_ids
 
-    def clear_up_group(self, group_name):
+    def clear_up_group(self, group_id):
         """
         Deletes a group from the authorization API
 
@@ -210,24 +210,23 @@ class ExtendedAuth0(Auth0):
         each role has 1 permission (`view:app`) so it's
         safe to delete all the associated roles/permissions.
         """
+        if not self.groups.has_group_existed(group_id):
+            return
+        role_ids = []
+        permission_ids = []
 
-        group_id = self.groups.get_group_id(group_name)
-        if group_id:
-            role_ids = []
-            permission_ids = []
+        roles = self.groups.get_group_roles(group_id=group_id)
+        for role in roles:
+            role_ids.append(role["_id"])
+            permission_ids.extend(role.get("permissions", []))
 
-            roles = self.groups.get_group_roles(group_id=group_id)
-            for role in roles:
-                role_ids.append(role["_id"])
-                permission_ids.extend(role.get("permissions", []))
-
-            # The group needs to be removed first in order to remove the roles
-            # and permissions
-            self.groups.delete(group_id)
-            for role_id in role_ids:
-                self.roles.delete(role_id)
-            for permission_id in permission_ids:
-                self.permissions.delete(permission_id)
+        # The group needs to be removed first in order to remove the roles
+        # and permissions
+        self.groups.delete(group_id)
+        for role_id in role_ids:
+            self.roles.delete(role_id)
+        for permission_id in permission_ids:
+            self.permissions.delete(permission_id)
 
     def clear_up_user(self, user_id):
         """
@@ -243,42 +242,41 @@ class ExtendedAuth0(Auth0):
             self.groups.delete_group_members(user_ids=[user_id], group_id=group["_id"])
         self.users.delete(user_id)
 
-    def clear_up_app(self, app_name, group_name=None):
-        if not group_name:
-            group_name = app_name
-        self.clear_up_group(group_name=group_name)
-        client = self.clients.search_first_match(dict(name=app_name))
-        if client:
-            self.clients.delete(client["client_id"])
+    def clear_up_app(self, auth_client):
+        client_id = auth_client.get('client_id')
+        group_id = auth_client.get('group_id')
+        if group_id:
+            self.clear_up_group(group_id)
+        if client_id:
+            self.clients.delete(client_id)
 
-    def get_client_enabled_connections(self, app_name):
+    def get_client_enabled_connections(self, client_ids):
         """
         There is no Auth0 API to get the list of enabled connection for a client,
         so we have to get all social connections, then check whether the client
         (client_id) is in the list of enabled_clients
         """
-        client = self.clients.search_first_match(dict(name=app_name))
-        if not client:
-            return None
+        if not client_ids:
+            return {}
         connections = self.connections.get_all()
-        enabled_connections = []
+        enabled_connections = {}
         for connection in connections:
-            if client["client_id"] in connection["enabled_clients"]:
-                enabled_connections.append(connection["name"])
+            for client_id in client_ids:
+                if client_id not in connection["enabled_clients"]:
+                    continue
+                if client_id not in enabled_connections:
+                    enabled_connections[client_id] = []
+                enabled_connections[client_id].append(connection["name"])
         return enabled_connections
 
     def update_client_auth_connections(
-        self, app_name: str, new_conns: dict, existing_conns: list
+        self, app_name: str, client_id: str, new_conns: dict, existing_conns: list
     ):
         """
         There is no Auth0 API to get the list of enabled connection for a client,
         so we have to get all social connections, then check whether the client
         (client_id) is in the list of enabled_clients
         """
-        client = self.clients.search_first_match(dict(name=app_name))
-        if not client:
-            return
-
         connections = {"email": {}} if new_conns is None else new_conns
         new_connections = self._create_custom_connection(app_name, connections)
 
@@ -286,21 +284,11 @@ class ExtendedAuth0(Auth0):
         removed_connections = list(set(existing_conns) - set(new_connections))
         real_new_connections = list(set(new_connections) - set(existing_conns))
 
-        # Remove the old connections
-        auth0_connections = [
-            self.connections.search_first_match(dict(name=connection))
-            for connection in removed_connections
-        ]
-        for connection in auth0_connections:
-            self.connections.disable_client(connection, client["client_id"])
-
-        # Enable the new connections
-        auth0_connections = [
-            self.connections.search_first_match(dict(name=connection))
-            for connection in real_new_connections
-        ]
-        for connection in auth0_connections:
-            self.connections.enable_client(connection, client["client_id"])
+        for connection in self.connections.get_all():
+            if connection["name"] in removed_connections:
+                self.connections.disable_client(connection, client_id)
+            if connection["name"] in real_new_connections:
+                self.connections.enable_client(connection, client_id)
 
 
 class Auth0API(object):
@@ -336,10 +324,11 @@ class Auth0API(object):
         return self.client.post(self._url(), data=body)
 
     def get(self, id, fields=None, include_fields=True):
-        params = {
-            "fields": fields and ",".join(fields) or None,
-            "include_fields": str(include_fields).lower(),
-        }
+        params = {"fields": fields and ",".join(fields) or None}
+        if include_fields:
+            params.update(dict(
+                include_fields=str(include_fields).lower()
+            ))
 
         return self.client.get(self._url(id), params=params)
 
@@ -678,8 +667,7 @@ class Groups(Auth0API, ExtendedAPIMethods):
         response = self.all(request_url=request_url, page=page, per_page=per_page)
         return response
 
-    def get_group_members(self, group_name):
-        group_id = self.get_group_id(group_name)
+    def get_group_members(self, group_id):
         if group_id:
             return self.get_all(
                 request_url=self._url(group_id, "members"),
@@ -711,18 +699,20 @@ class Groups(Auth0API, ExtendedAPIMethods):
         if "error" in response:
             raise Auth0Error("add_group_members", response)
 
-    def delete_group_members(self, user_ids, group_name=None, group_id=None):
-        if group_id is None and group_name is None:
-            raise Auth0Error(
-                "delete_group_members", "Please specify either group_id or group_name."
-            )
+    def delete_group_members(self, user_ids, group_id):
+        response = self.client.delete(
+            self._url(group_id, "members"),
+            data=user_ids,
+        )
+        if "error" in response:
+            raise Auth0Error("delete_group_members", response)
 
-        if group_id is None:
-            group_id = self.get_group_id(group_name)
-        if group_id:
-            response = self.client.delete(
-                self._url(group_id, "members"),
-                data=user_ids,
-            )
-            if "error" in response:
-                raise Auth0Error("delete_group_members", response)
+    def has_group_existed(self, group_id):
+        try:
+            self.get(group_id, include_fields=False)
+            return True
+        except exceptions.Auth0Error as error:
+            if "does not exist" in error.__str__():
+                return False
+            else:
+                raise error

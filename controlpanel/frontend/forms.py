@@ -355,8 +355,6 @@ class AppCustomersField(forms.Field):
 
 class AddAppCustomersForm(forms.Form):
     customer_email = AppCustomersField()
-    env_name = forms.CharField(required=False, widget=forms.HiddenInput)
-    group_id = forms.CharField(required=False, widget=forms.HiddenInput)
 
 
 class RemoveCustomerByEmailForm(forms.Form):
@@ -365,8 +363,6 @@ class RemoveCustomerByEmailForm(forms.Form):
     email = forms.EmailField(widget=forms.EmailInput(
         attrs={"class": "govuk-input cpanel-input"})
     )
-    env_name = forms.CharField(widget=forms.HiddenInput)
-    group_id = forms.CharField(widget=forms.HiddenInput)
 
 
 class ResetHomeDirectoryForm(forms.Form):
