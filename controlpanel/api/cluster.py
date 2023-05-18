@@ -446,7 +446,7 @@ class App(EntityResource):
                     "value": None,
                     "created": False,
                     "removable": False,
-                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                    "editable": item_name not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
 
@@ -462,7 +462,7 @@ class App(EntityResource):
                     "env_name": env_name,
                     "created": False,
                     "removable": False,
-                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                    "editable": item_name not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
 
@@ -553,8 +553,7 @@ class App(EntityResource):
                     "value": value,
                     "created": True,
                     "removable": item["name"] not in settings.AUTH_SETTINGS_SECRETS,
-                    "editable": item["name"]
-                    not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                    "editable": item["name"] not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
             created_secret_names.append(item["name"])
@@ -575,7 +574,7 @@ class App(EntityResource):
                     "created": True,
                     "env_name": env_name,
                     "removable": item["name"] not in settings.AUTH_SETTINGS_ENVS,
-                    "editable": True,
+                    "editable": item["name"] not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
             created_var_names.append(item["name"])
