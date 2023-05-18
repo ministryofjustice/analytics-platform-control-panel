@@ -434,7 +434,7 @@ class App(EntityResource):
 
     def _is_hidden_secret(self, name):
         for item in settings.OTHER_SYSTEM_SECRETS or []:
-            if name.startswith(item):
+            if name.startswith(item) or item in name:
                 return True
         return False
 
