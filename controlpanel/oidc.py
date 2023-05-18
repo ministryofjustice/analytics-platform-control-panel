@@ -31,6 +31,15 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             name=claims.get(settings.OIDC_FIELD_NAME),
         )
 
+    def update_user(self, user, claims):
+        # Update the non-key information to sync the user's info
+        # with user profile from idp
+        return User.objects.create(
+            email=claims.get(settings.OIDC_FIELD_EMAIL),
+            name=claims.get(settings.OIDC_FIELD_NAME),
+        )
+        return user
+
     def filter_users_by_claims(self, claims):
         sub = claims.get("sub")
         if not sub:
