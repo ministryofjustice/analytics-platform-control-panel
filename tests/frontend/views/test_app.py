@@ -482,7 +482,6 @@ def test_app_detail_display_all_envs(client, app, users, repos):
             cluster.App.IP_RANGES,
             cluster.App.AUTH0_CLIENT_ID,
             cluster.App.AUTH0_CLIENT_SECRET,
-            cluster.App.AUTH0_CALLBACK_URL,
             cluster.App.AUTH0_DOMAIN,
             cluster.App.AUTH0_CONNECTIONS,
             cluster.App.AUTHENTICATION_REQUIRED,

@@ -369,7 +369,6 @@ class App(EntityResource):
     IP_RANGES = "IP_RANGES"
     AUTH0_CLIENT_ID = "AUTH0_CLIENT_ID"
     AUTH0_CLIENT_SECRET = "AUTH0_CLIENT_SECRET"
-    AUTH0_CALLBACK_URL = "AUTH0_CALLBACK_URL"
     AUTH0_DOMAIN = "AUTH0_DOMAIN"
     AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
@@ -416,9 +415,6 @@ class App(EntityResource):
             env_data: dict = {
                 App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
                 App.AUTH0_PASSWORDLESS: "email" in connections,
-                App.AUTH0_CALLBACK_URL: client["callbacks"][0]
-                if len(client["callbacks"]) >= 1
-                else "",
                 App.AUTHENTICATION_REQUIRED: not disable_authentication,
             }
         else:
@@ -466,7 +462,7 @@ class App(EntityResource):
                     "env_name": env_name,
                     "created": False,
                     "removable": False,
-                    "editable": True,
+                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
                 }
             )
 
@@ -613,7 +609,7 @@ class App(EntityResource):
         secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
         for secret_name in secrets_require_remove:
             self.delete_secret(env_name, secret_name)
-        envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
+        envs_require_remove = [App.AUTH0_DOMAIN]
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
