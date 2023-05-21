@@ -84,14 +84,14 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             deployment_env_names = []
         deployments_settings = {}
         auth0_connections = app.auth0_connections_by_env()
-        auth0_clients_status = app.auth0_clients_status()
+        # auth0_clients_status = app.auth0_clients_status()
         try:
             for env_name in deployment_env_names:
                 deployments_settings[env_name] = {
                     "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
                     "variables": app_manager_ins.get_env_vars(env_name=env_name),
                     "connections": auth0_connections.get(env_name, {}).get("connections") or [],
-                    "auth0_clients_status": auth0_clients_status.get(env_name)
+                    # "auth0_clients_status": auth0_clients_status.get(env_name)
                 }
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()
@@ -116,7 +116,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["kibana_base_url"] = settings.KIBANA_BASE_URL
         auth_settings, access_repo_error_msg, github_settings_access_error_msg \
             = self._get_all_app_settings(app)
-        context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings).data
+        auth0_clients_status = app.auth0_clients_status()
+        context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings, auth0_clients_status).data
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
         context["app_domain"] = settings.APP_DOMAIN
@@ -391,6 +392,22 @@ class RemoveAppAuth0(
         cluster.App(self.get_object(),
                     github_api_token=self.request.user.github_api_token).\
             remove_auth_settings(env_name=env_name)
+        return super().post(request, *args, **kwargs)
+
+
+class RemoveAppDeloymentEnv(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, RedirectView
+):
+    permission_required = "api.update_app_settings"
+    allowed_methods = ["POST"]
+    model = App
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
+
+    def post(self, request, *args, **kwargs):
+        env_name = kwargs.get("env_name")
+        cluster.App(self.get_object()).remove_redundant_env(env_name=env_name)
         return super().post(request, *args, **kwargs)
 
 

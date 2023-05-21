@@ -490,17 +490,36 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
+    def _format_key_name(self, key_name):
+        """
+        Format the self-defined secret/variable by
+        - remove the prefix if reading it from github
+        - add the prefix if create/update value back to github
+        """
+        if key_name not in settings.AUTH_SETTINGS_ENVS \
+                and key_name not in settings.AUTH_SETTINGS_SECRETS:
+            if settings.APP_SELF_DEFINE_SETTING_PREFIX in key_name:
+                return key_name.repace(
+                    settings.APP_SELF_DEFINE_SETTING_PREFIX, "")
+            else:
+                return f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{key_name}"
+        return key_name
+
     def create_or_update_secret(self, env_name, secret_key, secret_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secret(
-            repo_name, env_name, secret_key, secret_value
+            repo_name, env_name,
+            self._format_key_name(secret_key),
+            secret_value
         )
 
     def delete_secret(self, env_name, secret_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         try:
             GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_secret(
-                repo_name, env_name=env_name, secret_name=secret_name
+                repo_name,
+                env_name=env_name,
+                secret_name=self._format_key_name(secret_name)
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
@@ -515,14 +534,19 @@ class App(EntityResource):
     def create_or_update_env_var(self, env_name, key_name, key_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_env_var(
-            repo_name, env_name, key_name, key_value
+            repo_name,
+            env_name,
+            self._format_key_name(key_name),
+            key_value
         )
 
     def delete_env_var(self, env_name, key_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         try:
             GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_var(
-                repo_name, env_name, key_name
+                repo_name,
+                env_name,
+                self._format_key_name(key_name)
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
@@ -548,7 +572,7 @@ class App(EntityResource):
                 value = self.app.env_allowed_ip_ranges_names(env_name=env_name)
             app_secrets.append(
                 {
-                    "name": item["name"],
+                    "name": self._format_key_name(item["name"]),
                     "env_name": env_name,
                     "value": value,
                     "created": True,
@@ -569,7 +593,7 @@ class App(EntityResource):
         ):
             app_env_vars.append(
                 {
-                    "name": item["name"],
+                    "name": self._format_key_name(item["name"]),
                     "value": item["value"],
                     "created": True,
                     "env_name": env_name,
@@ -611,6 +635,10 @@ class App(EntityResource):
         envs_require_remove = [App.AUTH0_DOMAIN]
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
+        self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
+        self.app.clear_auth_settings(env_name)
+
+    def remove_redundant_env(self, env_name):
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
         self.app.clear_auth_settings(env_name)
 

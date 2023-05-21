@@ -115,3 +115,5 @@ AUTH0_CLIENT_NAME_PATTERN: "data-platform-app-{app_name}-{env}"
 APP_URL_NAME_PATTERN:
   DEFAULT: "{app_name}-{env}"
   PROD: "{app_name}"
+
+APP_SELF_DEFINE_SETTING_PREFIX: "XXX_"

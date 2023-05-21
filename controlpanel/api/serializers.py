@@ -13,7 +13,6 @@ from controlpanel.api.models import (
     App,
     AppS3Bucket,
     IPAllowlist,
-    Parameter,
     S3Bucket,
     User,
     UserApp,
@@ -377,7 +376,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
     def _auth_required(self, auth_flag):
         return str(auth_flag.get('value') or 'true').lower() == 'true'
 
-    def _process_auth_settings(self, app_auth_settings):
+    def _process_existing_env_settings(self, app_auth_settings, auth_settings_status):
         for env_name, env_data in app_auth_settings.items():
             # Preparing secret data
             self._add_auth0_connection_as_part_secrets(
@@ -387,13 +386,43 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             var_data = self._process_env_with_ui_info(env_data["variables"])
 
             auth_required = self._auth_required(var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
-            created = (env_data.get("auth0_clients_status") or {}).get('ok') or False
+            created = auth_settings_status.get(env_name).get('ok') or False
             existed = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"]
             env_data["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
             env_data["can_create_client"] = auth_required and not created
             env_data["can_remove_client"] = not auth_required and (created or existed)
             env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
             env_data["auth_required"] = auth_required
+
+            # Clear up redundant settings
+            if not auth_required and not existed:
+                self._remove_redundant_settings(env_data)
+
+    def _process_redundant_envs(self, app_auth_settings, auth_settings_status):
+        redundant_envs = list(set(auth_settings_status.keys()) -
+                              set(app_auth_settings.keys()))
+        for env_name in redundant_envs:
+            app_auth_settings[env_name] = dict(is_redundant=True)
+
+    def _remove_redundant_settings(self, app_env_auth_settings):
+        removal_settings = [
+            cluster.App.AUTH0_CLIENT_ID,
+            cluster.App.AUTH0_CLIENT_SECRET,
+            cluster.App.AUTH0_CONNECTIONS,
+            cluster.App.AUTH0_PASSWORDLESS,
+            cluster.App.AUTH0_DOMAIN
+        ]
+        for item in removal_settings:
+            if item in app_env_auth_settings["secrets"] and \
+                    not app_env_auth_settings["secrets"][item]:
+                del app_env_auth_settings["secrets"][item]
+            if item in app_env_auth_settings["variables"] and \
+                    not app_env_auth_settings["variables"][item]:
+                del app_env_auth_settings["variables"][item]
+
+    def _process_auth_settings(self, app_auth_settings, auth_settings_status):
+        self._process_existing_env_settings(app_auth_settings, auth_settings_status)
+        self._process_redundant_envs(app_auth_settings, auth_settings_status)
         return app_auth_settings
 
     def _process_secret_with_ui_info(self, secret_data):
@@ -422,5 +451,5 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             restructure_data[item['name']] = item
         return restructure_data
 
-    def to_representation(self, app_auth_settings):
-        return self._process_auth_settings(app_auth_settings)
+    def to_representation(self, app_auth_settings, auth_settings_status):
+        return self._process_auth_settings(app_auth_settings, auth_settings_status)
