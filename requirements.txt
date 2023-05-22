@@ -15,7 +15,7 @@ django-simple-history==3.3.0
 django-structlog==2.2.0
 djangorestframework==3.14.0
 djproxy==2.3.6
-elasticsearch-dsl==7.2.1
+elasticsearch-dsl==7.4.1
 gunicorn==20.1.0
 Jinja2==2.11.3
 kubernetes==25.3.0
