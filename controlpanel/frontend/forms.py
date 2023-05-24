@@ -235,6 +235,7 @@ class CreateDatasourceForm(forms.Form):
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
             validators.validate_s3_bucket_length,
+            # TODO could be renamed? Or new class?
             validators.ValidatorS3Bucket(AWSRoleCategory.user),
         ],
     )

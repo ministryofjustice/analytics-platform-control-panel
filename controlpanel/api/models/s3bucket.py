@@ -37,6 +37,7 @@ class S3BucketQuerySet(models.QuerySet):
         )
 
 
+# TODO rename to Datasource?
 class S3Bucket(TimeStampedModel):
     name = models.CharField(
         unique=True,

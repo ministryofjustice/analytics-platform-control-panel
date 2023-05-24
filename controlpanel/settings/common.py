@@ -538,3 +538,7 @@ structlog.configure(
 # volume name for the EFS directory for user homes
 EFS_VOLUME = os.environ.get("EFS_VOLUME")
 MAX_RELEASE_NAME_LEN = 53
+
+
+# for S3 bucket migration
+S3_FOLDER_MIGRATION_BUCKET_NAME = "dev-folder-migration-spike"

@@ -4,6 +4,7 @@ from itertools import chain
 # Third-party
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
@@ -160,9 +161,12 @@ class CreateDatasource(
 
     def form_valid(self, form):
         name = form.cleaned_data["name"]
+        # remove this as part of removal of is_data_warehouse?
         datasource_type = self.request.GET.get("type")
         try:
             with transaction.atomic():
+                # TODO S3Bucket class to be renamed Datasource?
+                name = f"{settings.S3_FOLDER_MIGRATION_BUCKET_NAME}/{name}"
                 self.object = S3Bucket.objects.create(
                     name=name,
                     created_by=self.request.user,

@@ -10,6 +10,8 @@ from django.core.validators import RegexValidator
 from controlpanel.api import cluster
 
 
+# TODO this may not be required? As the bucket will already exist in the dev/prod environment
+# For now should still be valid as the created bucket has the correct prefix
 def validate_env_prefix(value):
     """Validate the name has env-prefix, check current set ENV value"""
     if not value.startswith(f"{settings.ENV}-"):
@@ -18,6 +20,7 @@ def validate_env_prefix(value):
         )
 
 
+# TODO this limitation could be removed/increased as folder length is not restricted
 # An S3 bucket name needs to be min 3 chars, max 63 chars long.
 validate_s3_bucket_length = RegexValidator(
     regex="^.{3,63}$",
@@ -47,9 +50,11 @@ class ValidatorS3Bucket(object):
 #
 # An S3 bucket name starts with a label, it can have more than one label
 # separated by a dot.
+
+# TODO review and update (probably want to keep as is)
 validate_s3_bucket_labels = RegexValidator(
     regex="^([a-z][a-z0-9-]*[a-z0-9])(.[a-z][a-z0-9-]*[a-z0-9])*$",
-    message="is invalid, check AWS S3 bucket names restrictions (for example, "
+    message="is invalid, check AWS S3 bucket names restrictions (for example, "  # point to folder naming conventions?
     "can only contains letters, digits, dots and hyphens)",
 )
 
