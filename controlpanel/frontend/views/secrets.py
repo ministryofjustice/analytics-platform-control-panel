@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import SingleObjectMixin
-from django.views.generic.edit import CreateView, FormMixin, UpdateView
+from django.views.generic.edit import FormMixin, UpdateView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
@@ -22,11 +22,14 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     permission_required = "api.update_app_settings"
     allowed_methods = ["POST"]
 
+    def _format_key_name(self, key):
+        return key
+
     def form_valid(self, form):
         app = self.get_object()
         cluster.App(app, self.request.user.github_api_token).create_or_update_secret(
             env_name=form.cleaned_data.get("env_name"),
-            secret_key=form.cleaned_data["key"],
+            secret_key=self._format_key_name(form.cleaned_data["key"]),
             secret_value=form.cleaned_data.get("value"),
         )
         return HttpResponseRedirect(self.get_success_url(app_id=app.id))
@@ -36,6 +39,8 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         data = self.request.GET.dict()
         kwargs["initial"]["env_name"] = data.get("env_name")
         kwargs["initial"]["key"] = self.kwargs.get("secret_name")
+        kwargs["initial"]["display_key"] = cluster.App.get_github_key_display_ame(
+            self.kwargs.get("secret_name"))
         return kwargs
 
     def get_success_url(self, app_id):
@@ -46,6 +51,9 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
 class AppSecretCreate(AppSecretMixin, UpdateView):
     form_class = AppSecretForm
     template_name = "app-secret-create.html"
+
+    def _format_key_name(self, key):
+        return cluster.App.format_github_key_name(key)
 
 
 class AppSecretUpdate(AppSecretMixin, UpdateView):

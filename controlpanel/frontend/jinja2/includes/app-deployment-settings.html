@@ -1,6 +1,6 @@
 
 
-{% macro app_deployment_settings(app, env_name, app_domain, deployment_setting) %}
+{% macro app_deployment_settings(app, env_name, app_domain, deployment_setting, request, csrf_input) %}
   {% set app_full_url = "https://" + app.app_url_name(env_name)+ "." + app_domain %}
   <p><b>If the app has been successfully deployed onto Cloud Platform, it can be accessed here:</b><a href="{{ app_full_url }}">{{ app_full_url }}</a></p>
   <hr style="height:5px;border:none;color:#333;background-color:#333;"/>
@@ -19,7 +19,7 @@
       <tbody class="govuk-table__body">
         {% for app_secret in deployment_setting["secrets"] %}
         <tr class="govuk-table__row">
-          <td class="govuk-table__cell">{{ app_secret["name"] }}</td>
+          <td class="govuk-table__cell">{{ app_secret["display_name"] }}</td>
           <td class="govuk-table__cell">{{ app_secret["value"] }} {% if app_secret["value"] == None %}<b style="color:red">[Missing] {% endif %}</b></td>
           <td class="govuk-table__cell">
             {% if request.user.has_perm(app_secret["permission_flg"], app) and app_secret["editable"] %}
@@ -96,7 +96,7 @@
       <tbody class="govuk-table__body">
         {% for env_var in deployment_setting["variables"] %}
         <tr class="govuk-table__row">
-          <td class="govuk-table__cell">{{ env_var['name'] }}</td>
+          <td class="govuk-table__cell">{{ env_var['display_name'] }}</td>
           <td class="govuk-table__cell">{{ env_var['value'] }} {% if env_var["value"] == None %}<b style="color:red">[Missing]</b>{% endif %} </td>
           <td class="govuk-table__cell">
             {% if request.user.has_perm(env_var["permission_flg"], app) and env_var["editable"] %}
@@ -128,9 +128,4 @@
     </table>
   </section>
 
-  {% if not deployment_setting["auth_required"] %}
-  <div>
-    <p style="color:red">As the authentication flag is off, authentication related missing-warnings can be ignored.</p>
-  </div>
-  {% endif %}
 {% endmacro %}

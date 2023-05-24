@@ -109,7 +109,7 @@ urlpatterns = [
     ),
     path(
         "webapps/<int:pk>/remove_app_deployment_env/<str:env_name>",
-        views.RemoveAppDeloymentEnv.as_view(),
+        views.RemoveAppDeploymentEnv.as_view(),
         name="remove-app-deployment-env",
     ),
     path(

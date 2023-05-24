@@ -6,12 +6,14 @@
 {% from "tag/macro.html" import tag %}
 {% from "selectable-rows/macro.html" import row_selector %}
 {% from "user/macro.html" import user_name %}
-{% from "app-logs/macro.html" import app_logs with context %}
 {% from "includes/yesno.html" import yes_no %}
 {% from "includes/app-deployment-settings.html" import app_deployment_settings %}
 
 {% set page_name = "webapps" %}
 {% set page_title = app.name %}
+{% set app_domain = settings.APP_DOMAIN %}
+{% set app_old_url = "https" + app.slug + "/" + settings.APP_DOMAIN_BEFORE_MIGRATION %}
+{% set feature_enabled = settings.features.app_migration.enabled %}
 
 {% set app_admins_html %}
 {% include "modals/app_admins.html" %}
@@ -108,10 +110,26 @@
   </p>
 
   {% if feature_enabled %}
+
+    <section class="cpanel-section">
+      <h2 class="govuk-heading-m">App logs</h2>
+      <p class="govuk-body">
+        <a href="{{ settings.KIBANA_BASE_URL }}">{{ settings.KIBANA_BASE_URL }}</a>
+      </p>
+    </section>
+
+    <section class="cpanel-section">
+      <h2 class="govuk-heading-m">App resources usage dashboard</h2>
+      <p class="govuk-body">
+        <a href="{{ settings.GRAFANA_BASE_URL }}">{{ settings.GRAFANA_BASE_URL }}</a>
+      </p>
+    </section>
+
     <h2 class="govuk-heading-m">Deployment Pipeline</h2>
     <p class="govuk-body"> Github workflows on app's repo are used for deploying the app.</p>
     <p class="govuk-body"><strong>You are required to be member of admin team for this app repo in order to be able to maintain the deployments settings</strong></p>
   {% endif %}
+
 </header>
 
 <section class="cpanel-section">
@@ -123,12 +141,12 @@
       </div>
     {% endif %}
 
-    {% for env_name, deployment_settingdeployment_setting in deployments_settings.items() %}
+    {% for env_name, deployment_setting in deployments_settings.items() %}
     <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
-      {% if app_deployment_settings.get('is_redundant') and request.user.has_perm('api.update_app', app) %}
+      {% if deployment_setting.get('is_redundant') and request.user.has_perm('api.update_app', app) %}
         <section class="cpanel-section">
           <p style="color:red">Sounds like this deployment environment has been redundant and can be removed</p>
-          <form action="{{ url('remove-app-deployment-env', kwargs={'pk': app.id }) }}" method="post">
+          <form action="{{ url('remove-app-deployment-env', kwargs={'pk': app.id, 'env_name': env_name}) }}" method="post">
             {{ csrf_input }}
             <button class="govuk-button cpanel-button--destructive js-confirm"
                     data-confirm-message="Are you sure you want to remove this deployment environment?">
@@ -137,7 +155,7 @@
           </form>
         </section>
       {% else %}
-        app_deployment_settings(app, env_name, app_domain, deployment_setting)
+        {{ app_deployment_settings(app, env_name, app_domain, deployment_setting, request, csrf_input) }}
       {% endif %}
     {% endfor %}
   {% endif %}
@@ -307,13 +325,6 @@
   {% endif %}
 {% endif %}
 </section>
-
-{% if request.user.has_perm('api.view_app_logs', app) %}
-<section class="cpanel-section">
-  <h2 class="govuk-heading-m">App logs</h2>
-  {{ app_logs(app, kibana_base_url) }}
-</section>
-{% endif %}
 
 {% if request.user.has_perm('api.destroy_app', app) %}
 <section class="cpanel-section">

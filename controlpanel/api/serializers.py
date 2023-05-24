@@ -386,17 +386,24 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             var_data = self._process_env_with_ui_info(env_data["variables"])
 
             auth_required = self._auth_required(var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
-            created = auth_settings_status.get(env_name).get('ok') or False
-            existed = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"]
+            # The client exists in app_conf field and auth0
+            created = auth_settings_status.get(env_name, {}).get('ok') or False
+            # The client_id secret exists in github repo
+            secret_existed = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"]
+            # The client_id exists in app_conf field
+            conf_existed = auth_settings_status.get(env_name, {}).get("client_id")
+
+            # Clear up redundant settings
+            if not auth_required and not secret_existed:
+                self._remove_redundant_settings(secret_data, var_data)
+
             env_data["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
             env_data["can_create_client"] = auth_required and not created
-            env_data["can_remove_client"] = not auth_required and (created or existed)
+            env_data["can_remove_client"] = not auth_required and \
+                                            (created or secret_existed or conf_existed)
             env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
             env_data["auth_required"] = auth_required
 
-            # Clear up redundant settings
-            if not auth_required and not existed:
-                self._remove_redundant_settings(env_data)
 
     def _process_redundant_envs(self, app_auth_settings, auth_settings_status):
         redundant_envs = list(set(auth_settings_status.keys()) -
@@ -404,7 +411,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         for env_name in redundant_envs:
             app_auth_settings[env_name] = dict(is_redundant=True)
 
-    def _remove_redundant_settings(self, app_env_auth_settings):
+    def _remove_redundant_settings(self, secret_data, var_data):
         removal_settings = [
             cluster.App.AUTH0_CLIENT_ID,
             cluster.App.AUTH0_CLIENT_SECRET,
@@ -413,12 +420,10 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             cluster.App.AUTH0_DOMAIN
         ]
         for item in removal_settings:
-            if item in app_env_auth_settings["secrets"] and \
-                    not app_env_auth_settings["secrets"][item]:
-                del app_env_auth_settings["secrets"][item]
-            if item in app_env_auth_settings["variables"] and \
-                    not app_env_auth_settings["variables"][item]:
-                del app_env_auth_settings["variables"][item]
+            if item in secret_data and not secret_data[item].get('value'):
+                del secret_data[item]
+            if item in var_data and not var_data[item].get('value'):
+                del var_data[item]
 
     def _process_auth_settings(self, app_auth_settings, auth_settings_status):
         self._process_existing_env_settings(app_auth_settings, auth_settings_status)
@@ -430,6 +435,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         for item in secret_data:
             item_key = item['name']
             item.update(dict(
+                display_name=cluster.App.get_github_key_display_ame(item_key),
                 permission_flag=self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or
                                 self.DEFAULT_PERMISSION_FLAG,
                 edit_link=self.APP_SETTINGS.get(item_key, {}).get('edit_link') or
@@ -444,6 +450,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         restructure_data = {}
         for item in env_data:
             item.update(dict(
+                display_name=cluster.App.get_github_key_display_ame(item['name']),
                 permission_flag=self.DEFAULT_PERMISSION_FLAG,
                 edit_link=self.DEFAULT_EDIT_ENV_LINK,
                 remove_link=self.DEFAULT_REMOVE_ENV_LINK
@@ -451,5 +458,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             restructure_data[item['name']] = item
         return restructure_data
 
-    def to_representation(self, app_auth_settings, auth_settings_status):
-        return self._process_auth_settings(app_auth_settings, auth_settings_status)
+    def to_representation(self, app_auth_data):
+        auth_settings = app_auth_data["auth_settings"]
+        auth_settings_status = app_auth_data["auth0_clients_status"]
+        return self._process_auth_settings(auth_settings, auth_settings_status)

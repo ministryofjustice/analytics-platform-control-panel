@@ -28,11 +28,16 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     template_name = "app-variable-manage.html"
     permission_required = "api.update_app_settings"
 
+    def _format_key_name(self, key):
+        return key
+
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         data = self.request.GET.dict()
         kwargs["initial"]["env_name"] = data.get("env_name")
         kwargs["initial"]["key"] = self.kwargs.get("var_name")
+        kwargs["initial"]["display_key"] = cluster.App.get_github_key_display_ame(
+            self.kwargs.get("var_name"))
         if kwargs["initial"]["key"]:
             try:
                 var_info = cluster.App(
@@ -53,18 +58,21 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         messages.success(self.request, "Successfully finished the action")
         return reverse_lazy("manage-app", kwargs={"pk": app_id})
 
-
-class AppVariableCreate(AppVariableMixin, CreateView):
-    form_class = AppVariableForm
-
     def form_valid(self, form):
         app = self.get_object()
         cluster.App(app, self.request.user.github_api_token).create_or_update_env_var(
             env_name=form.cleaned_data.get("env_name"),
-            key_name=form.cleaned_data["key"],
+            key_name=self._format_key_name(form.cleaned_data["key"]),
             key_value=form.cleaned_data.get("value"),
         )
         return HttpResponseRedirect(self.get_success_url(app_id=app.id))
+
+
+class AppVariableCreate(AppVariableMixin, CreateView):
+    form_class = AppVariableForm
+
+    def _format_key_name(self, key):
+        return cluster.App.format_github_key_name(key)
 
 
 class AppVariableUpdate(AppVariableMixin, UpdateView):
@@ -76,15 +84,6 @@ class AppVariableUpdate(AppVariableMixin, UpdateView):
             return DisableAuthForm
         else:
             return super().get_form_class()
-
-    def form_valid(self, form):
-        app = self.get_object()
-        cluster.App(app, self.request.user.github_api_token).create_or_update_env_var(
-            env_name=form.cleaned_data.get("env_name"),
-            key_name=form.cleaned_data["key"],
-            key_value=form.cleaned_data.get("value"),
-        )
-        return HttpResponseRedirect(self.get_success_url(app_id=app.id))
 
 
 class AppVariableDelete(AppVariableMixin, SingleObjectMixin, RedirectView):

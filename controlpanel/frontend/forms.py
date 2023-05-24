@@ -468,6 +468,7 @@ class AppSecretForm(forms.Form):
 
 class AppSecretUpdateForm(AppSecretForm):
     key = forms.CharField(widget=forms.HiddenInput)
+    display_key = forms.CharField(widget=forms.HiddenInput)
 
 
 class AppVariableForm(AppSecretForm):
@@ -476,6 +477,7 @@ class AppVariableForm(AppSecretForm):
 
 class AppVariableUpdateForm(AppVariableForm):
     key = forms.CharField(widget=forms.HiddenInput)
+    display_key = forms.CharField(widget=forms.HiddenInput)
 
 
 class DisableAuthForm(AppVariableUpdateForm):

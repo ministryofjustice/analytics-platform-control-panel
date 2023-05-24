@@ -103,7 +103,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
 
-        context["feature_enabled"] = settings.features.app_migration.enabled
         context["admin_options"] = User.objects.exclude(auth0_id="",).exclude(
             auth0_id__in=[user.auth0_id for user in app.admins],
         )
@@ -113,19 +112,19 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             exclude_connected=True,
         )
 
-        context["kibana_base_url"] = settings.KIBANA_BASE_URL
         auth_settings, access_repo_error_msg, github_settings_access_error_msg \
             = self._get_all_app_settings(app)
         auth0_clients_status = app.auth0_clients_status()
-        context["deployments_settings"] = AppAuthSettingsSerializer(auth_settings, auth0_clients_status).data
+        context["deployments_settings"] = AppAuthSettingsSerializer(dict(
+            auth_settings=auth_settings,
+            auth0_clients_status=auth0_clients_status)
+        ).data
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
-        context["app_domain"] = settings.APP_DOMAIN
 
         # TODO: The following field should be removed after app migration
         context["app_migration_info"] = app.migration_info
         context["app_migration_status"] = context["app_migration_info"].get('status', "")
-        context["app_old_url"] = f"https://{ app.slug }.{settings.APP_DOMAIN_BEFORE_MIGRATION}"
         return context
 
 
@@ -395,7 +394,7 @@ class RemoveAppAuth0(
         return super().post(request, *args, **kwargs)
 
 
-class RemoveAppDeloymentEnv(
+class RemoveAppDeploymentEnv(
     OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, RedirectView
 ):
     permission_required = "api.update_app_settings"
