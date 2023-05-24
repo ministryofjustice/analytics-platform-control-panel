@@ -399,12 +399,7 @@ class AWSBucket(AWSService):
         s3 = self.boto3_session.resource("s3")
         s3.Object(bucket_name=settings.S3_FOLDER_MIGRATION_BUCKET_NAME, key=folder_name).put()
 
-    # TODO rename to "create"? or add new class?
     def create_bucket(self, bucket_name, is_data_warehouse=False):
-
-        if "/" in bucket_name:
-            return self.create_folder(bucket_name)
-
         s3_resource = self.boto3_session.resource("s3")
         s3_client = self.boto3_session.client("s3")
         try:

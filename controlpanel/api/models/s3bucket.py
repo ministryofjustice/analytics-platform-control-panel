@@ -54,7 +54,7 @@ class S3Bucket(TimeStampedModel):
         null=True,
     )
     is_data_warehouse = models.BooleanField(default=False)
-    # TODO remove this field - it's unused
+    # TODO remove this field - or reuse to store path or arn and path?
     location_url = models.CharField(max_length=128, null=True)
 
     objects = S3BucketQuerySet.as_manager()
@@ -77,6 +77,10 @@ class S3Bucket(TimeStampedModel):
     @property
     def arn(self):
         return cluster.S3Bucket(self).arn
+
+    @property
+    def is_folder(self):
+        return "/" in self.name
 
     def arn_from_path(self, path):
         return f"{self.arn}{path}"
@@ -117,10 +121,12 @@ class S3Bucket(TimeStampedModel):
 
         if is_create:
             bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
+            # TODO could add new entity S3Folder to use here if datasource is a folder?
             cluster.S3Bucket(self).create(bucket_owner)
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:
+                # TODO continue to use and rename? Or add new model for user folders?
                 UserS3Bucket.objects.create(
                     user=self.created_by,
                     s3bucket=self,

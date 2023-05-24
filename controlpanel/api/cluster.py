@@ -644,6 +644,9 @@ class S3Bucket(EntityResource):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             AWSBucket, aws_role_category=owner
         )
+        if self.bucket.is_folder:
+            return self.aws_bucket_service.create_folder(self.bucket.name)
+
         return self.aws_bucket_service.create_bucket(
             self.bucket.name, self.bucket.is_data_warehouse
         )
