@@ -99,11 +99,11 @@ def repos(githubapi):
     githubapi.get_repo_envs.return_value = ["dev_env", "prod_env"]
     githubapi.get_repo_env_vars.return_value = [
         {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"},
-        {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}_PARAM_VAR", "value": "test_var"},
+        {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}PARAM_VAR", "value": "test_var"},
     ]
     githubapi.get_repo_env_secrets.return_value = [
         {"name": cluster.App.IP_RANGES},
-        {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}_PARAM_SECRET"},
+        {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}PARAM_SECRET"},
     ]
     yield githubapi
 
@@ -689,10 +689,10 @@ def test_app_detail_with_self_define_settings(client, app, users, repos):
             {"n": "PARAM_VAR", "v": "test_var"},
         ]
         for item in settings_for_checks:
-            assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in \
-                   str(response.content)
             auth_item_ui = locate_setting_ui(auth_settings, item['n'])
             if not auth_item_ui:
                 continue
+            setting_link = auth_item_ui.findAll("a")[0]["href"]
+            assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
             assert item['v'] in auth_item_ui.text
             assert 'Edit' in auth_item_ui.text

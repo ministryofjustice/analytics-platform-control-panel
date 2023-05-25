@@ -153,5 +153,5 @@ def test_add_secret(fixture_create_update_secret,
     assert response.status_code == 302
     fixture_create_update_secret.assert_called_with(
         env_name='dev',
-        secret_key='XXX_NEW_SECRET',
+        secret_key=f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}NEW_SECRET",
         secret_value='testing')
