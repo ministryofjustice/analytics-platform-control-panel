@@ -6,6 +6,11 @@ enabled_features:
     _HOST_alpha: true
   redirect_legacy_api_urls:
     _DEFAULT: true
+  s3_folders:
+    _DEFAULT: false
+    _HOST_dev: false
+    _HOST_prod: false
+    _HOST_alpha: false
 
 
 AWS_SERVICE_URL:

@@ -2,6 +2,7 @@
 from itertools import chain
 
 # Third-party
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
@@ -159,8 +160,12 @@ class CreateDatasource(
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
+        if settings.features.s3_folders.enabled:
+            raise NotImplementedError("S3 folders not yet implemented")
+
         name = form.cleaned_data["name"]
         datasource_type = self.request.GET.get("type")
+
         try:
             with transaction.atomic():
                 self.object = S3Bucket.objects.create(

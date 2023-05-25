@@ -10,6 +10,7 @@ import pytest
 from controlpanel.api import aws, cluster
 from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
 from tests.api.fixtures.aws import *
+from controlpanel.utils import load_app_conf_from_file
 
 
 @pytest.yield_fixture(autouse=True)
@@ -800,3 +801,19 @@ def test_delete_app_secret(secretsmanager):
             assert True
         else:
             assert False
+
+
+@pytest.mark.parametrize("env,enabled", [
+    ("dev", False),
+    ("prod", False),
+    ("alpha", False),
+    ("default", False),
+])
+def test_s3_folders_feature_disabled(env, enabled):
+    """
+    Smoke test to make sure S3 folders feature is not enabled in incorrect environment.
+    TODO update as necessary when feature is implemented and rolled out
+    """
+    settings.ENV = env
+    load_app_conf_from_file()
+    assert settings.features.s3_folders.enabled is enabled
