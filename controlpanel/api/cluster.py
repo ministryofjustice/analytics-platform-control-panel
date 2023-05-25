@@ -490,7 +490,6 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
-
     @staticmethod
     def format_github_key_name(key_name):
         """

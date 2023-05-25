@@ -4,7 +4,7 @@
   {% set app_full_url = "https://" + app.app_url_name(env_name)+ "." + app_domain %}
   <p><b>If the app has been successfully deployed onto Cloud Platform, it can be accessed here:</b><a href="{{ app_full_url }}">{{ app_full_url }}</a></p>
   <hr style="height:5px;border:none;color:#333;background-color:#333;"/>
-  <section>
+  <section class="{{ env_name }}-settings-panel">
     <h3 class="govuk-heading-s">App Secrets</h3>
     <p>the settings on this category are all sensitive, the actual value won't be revealed except IP_RANGES.</p>
     <table class="govuk-table app-data-sources form-group">
@@ -18,7 +18,7 @@
       </thead>
       <tbody class="govuk-table__body">
         {% for app_secret in deployment_setting["secrets"] %}
-        <tr class="govuk-table__row">
+        <tr class="govuk-table__row auth-setting-row">
           <td class="govuk-table__cell">{{ app_secret["display_name"] }}</td>
           <td class="govuk-table__cell">{{ app_secret["value"] }} {% if app_secret["value"] == None %}<b style="color:red">[Missing] {% endif %}</b></td>
           <td class="govuk-table__cell">
