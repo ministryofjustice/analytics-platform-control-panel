@@ -19,6 +19,7 @@
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+<!--#TODO look into this permission-->
 {% if request.user.has_perm('api.list_s3bucket') %}
   {{ datasource_list(buckets, datasource_type|default(""), request.user) }}
 

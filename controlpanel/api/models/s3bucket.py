@@ -82,6 +82,12 @@ class S3Bucket(TimeStampedModel):
     def is_folder(self):
         return "/" in self.name
 
+    @property
+    def display_name(self):
+        if not self.is_folder:
+            return self.name
+        return self.name.split("/")[-1]
+
     def arn_from_path(self, path):
         return f"{self.arn}{path}"
 

@@ -17,6 +17,7 @@
         {{ modal_dialog(access_levels_html|safe) }}
       {% endif %}
       </th>
+      <th class="govuk-table__header">Is Folder (temp field)</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -26,7 +27,7 @@
   {% for datasource in datasources %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
-        <a href="{{ url('manage-datasource', kwargs={ "pk": datasource.id }) }}">{{ datasource.name }}</a>
+        <a href="{{ url('manage-datasource', kwargs={ "pk": datasource.id }) }}">{{ datasource.display_name }}</a>
       </td>
       <td class="govuk-table__cell">
       {%- if all_datasources %}
@@ -47,6 +48,7 @@
         {%- endwith %}
       {%- endif -%}
       </td>
+      <td class="govuk-table__cell">{{ datasource.is_folder }}</td>
       <td class="govuk-table__cell align-right no-wrap">
         <a class="govuk-button govuk-button--secondary"
            href="{{ url('manage-datasource', kwargs={ "pk": datasource.pk }) }}">

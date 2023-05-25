@@ -602,6 +602,7 @@ class AWSPolicy(AWSService):
     def grant_policy_bucket_access(
         self, policy_arn, bucket_arn, access_level, path_arns=None
     ):
+        # TODO THIS WILL NEED UPDATING ALSO - allows access to a bucket via a group
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be 'readonly' or 'readwrite'")
 
