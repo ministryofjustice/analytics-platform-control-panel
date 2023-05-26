@@ -37,6 +37,9 @@ class DummyApp:
         else:
             return self.slug
 
+    def save_auth_settings(self, env_name, client=None, group=None):
+        pass
+
 
 class Command(BaseCommand):
     help = "Create the application's auth0 clients per environment and generate github secrets"
