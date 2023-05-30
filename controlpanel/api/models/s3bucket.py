@@ -88,6 +88,16 @@ class S3Bucket(TimeStampedModel):
     def is_used_for_app(self):
         return not (AppS3Bucket.objects.filter(s3bucket_id=self.id).first() is None)
 
+    @property
+    def is_folder(self):
+        """
+        Determines if the datasource is a folder or S3 bucket. We store the name of a
+        folder including the root bucket name, separated by a forward slash, and by
+        convention a bucket name cannot contain a '/'. So if one is present in the name
+        it must represent a folder.
+        """
+        return "/" in self.name
+
     def user_is_admin(self, user):
         return (
             self.users3buckets.filter(

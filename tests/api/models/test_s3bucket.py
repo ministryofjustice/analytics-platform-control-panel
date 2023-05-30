@@ -23,7 +23,7 @@ def bucket():
 def test_delete_revokes_permissions(bucket):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
-                    as revoke_bucket_access_action:
+            as revoke_bucket_access_action:
         users3bucket = mommy.make("api.UserS3Bucket", s3bucket=bucket)
         apps3bucket = mommy.make("api.AppS3Bucket", s3bucket=bucket)
 
@@ -69,3 +69,14 @@ def test_create_users3bucket(superuser):
         create_bucket.assert_called()
 
         assert UserS3Bucket.objects.get(user=superuser, s3bucket=bucket)
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("bucketname/foldername", True),
+        ("bucketname", False),
+    ],
+)
+def test_is_folder(name, expected):
+    assert S3Bucket(name=name).is_folder is expected
