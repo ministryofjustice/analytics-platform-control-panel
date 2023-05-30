@@ -278,3 +278,15 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
     ub = user.users3buckets.all()[0]
     assert ub.access_level == UserS3Bucket.READWRITE
     assert ub.is_admin
+
+
+@patch("django.conf.settings.features.s3_folders")
+def test_create_s3_folder(s3_folders, client, users):
+    # TODO this test will be updated to assert correct behaviour when S3 folders have
+    #  been implemented.
+    s3_folders.enabled = True
+    for user_type, user_obj in users.items():
+        client.force_login(user_obj)
+
+        with pytest.raises(NotImplementedError):
+            create(client)
