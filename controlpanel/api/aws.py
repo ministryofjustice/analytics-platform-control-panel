@@ -50,8 +50,7 @@ WRITE_ACTIONS = [
     "s3:RestoreObject",
 ]
 
-LIST_ACTIONS = [
-    "s3:ListBucket",
+LIST_BUCKET_META_ACTIONS = [
     "s3:GetBucketPublicAccessBlock",
     "s3:GetBucketPolicyStatus",
     "s3:GetBucketTagging",
@@ -62,6 +61,13 @@ LIST_ACTIONS = [
     "s3:GetBucketLocation",
     "s3:ListBucketVersions",
 ]
+
+LIST_BUCKET_CONTENTS_ACTIONS = [
+    "s3:ListBucket",
+]
+
+LIST_ACTIONS = LIST_BUCKET_META_ACTIONS + LIST_BUCKET_CONTENTS_ACTIONS
+
 
 BASE_S3_ACCESS_STATEMENT = {
     "list": {
@@ -79,6 +85,24 @@ BASE_S3_ACCESS_STATEMENT = {
         "Action": READ_ACTIONS + WRITE_ACTIONS,
         "Effect": "Allow",
     },
+    # additional permissions for folder based access
+    "listFolder": {
+        "Sid": "listFolder",
+        "Action": LIST_BUCKET_CONTENTS_ACTIONS,
+        "Effect": "Allow",
+    },
+    "listSubFolders": {
+        "Sid": "listSubFolders",
+        "Action": [
+            "s3:ListBucket",
+        ],
+        "Effect": "Allow"
+    },
+    "rootFolderBucketMeta": {
+        "Sid": "rootFolderBucketMeta",
+        "Action": LIST_BUCKET_META_ACTIONS,
+        "Effect": "Allow",
+    }
 }
 
 BUCKET_TLS_STATEMENT = {
