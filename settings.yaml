@@ -125,3 +125,7 @@ APP_URL_NAME_PATTERN:
 # This prefix should prevent overlap with other secret/parameter names stored in GitHub
 # It will be removed in the app deployment workflow so that users won't need to use it in their code
 APP_SELF_DEFINE_SETTING_PREFIX: "XXX_"
+
+S3_FOLDER_BUCKET_NAME:
+  # TODO temp folder - update when real bucket has been created
+  DEFAULT: "dev-folder-migration-spike"
