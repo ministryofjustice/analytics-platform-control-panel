@@ -128,4 +128,5 @@ APP_SELF_DEFINE_SETTING_PREFIX: "XXX_"
 
 S3_FOLDER_BUCKET_NAME:
   # TODO temp folder - update when real bucket has been created
-  DEFAULT: "dev-folder-migration-spike"
+  _DEFAULT: "dev-folder-migration-spike"
+  _HOST_dev: "dev-folder-migration-spike"
