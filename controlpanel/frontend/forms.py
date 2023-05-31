@@ -10,7 +10,7 @@ from django.core.validators import RegexValidator, validate_email
 
 # First-party/Local
 from controlpanel.api import validators
-from controlpanel.api.cluster import AWSRoleCategory
+from controlpanel.api.cluster import S3Bucket as ClusterS3Bucket, AWSRoleCategory
 from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
@@ -238,6 +238,25 @@ class CreateDatasourceForm(forms.Form):
             validators.ValidatorS3Bucket(AWSRoleCategory.user),
         ],
     )
+
+
+class CreateDatasourceFolderForm(forms.Form):
+
+    name = forms.CharField(max_length=63, validators=[
+        validators.validate_s3_bucket_labels,
+        validators.validate_s3_bucket_length,
+    ])
+
+    def clean_name(self):
+        name = self.cleaned_data["name"]
+        name = f"{settings.S3_FOLDER_BUCKET_NAME}/{name}"
+        bucket = S3Bucket(name=name)
+        if ClusterS3Bucket(bucket).exists(
+            name, bucket_owner=AWSRoleCategory.user
+        ):
+            raise ValidationError(f"Folder '{name}' already exists")
+
+        return name
 
 
 class GrantAccessForm(forms.Form):

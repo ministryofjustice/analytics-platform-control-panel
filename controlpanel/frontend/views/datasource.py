@@ -25,7 +25,11 @@ from controlpanel.api.models import (
     UserS3Bucket,
 )
 from controlpanel.api.serializers import ESBucketHitsSerializer
-from controlpanel.frontend.forms import CreateDatasourceForm, GrantAccessForm
+from controlpanel.frontend.forms import (
+    CreateDatasourceForm,
+    CreateDatasourceFolderForm,
+    GrantAccessForm,
+)
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 DATASOURCE_TYPES = [
@@ -143,7 +147,6 @@ class CreateDatasource(
     DatasourceMixin,
     CreateView,
 ):
-    form_class = CreateDatasourceForm
     model = S3Bucket
     permission_required = "api.create_s3bucket"
     template_name = "datasource-create.html"
@@ -158,6 +161,11 @@ class CreateDatasource(
 
     def get_success_url(self):
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.pk})
+
+    def get_form_class(self):
+        if settings.features.s3_folders.enabled:
+            return CreateDatasourceFolderForm
+        return CreateDatasourceForm
 
     def form_valid(self, form):
         if settings.features.s3_folders.enabled:
