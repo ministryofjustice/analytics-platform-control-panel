@@ -338,6 +338,33 @@ class AWSRole(AWSService):
         policy.put()
 
 
+class AWSFolder(AWSService):
+
+    def create_bucket(self, bucket_name, is_data_warehouse=False):
+        """
+        Method to mimic the method on AWSBucket service class but creates folder.
+        TODO should be removed as part of refactor to remove is_data_warehouse
+        """
+        self.create(bucket_name)
+
+    def create(self, bucket_name):
+        folder_name = bucket_name.split("/")[-1]
+        if not folder_name.endswith("/"):
+            folder_name = f"{folder_name}/"
+
+        s3 = self.boto3_session.resource("s3")
+        s3.Object(bucket_name=settings.S3_FOLDER_BUCKET_NAME, key=folder_name).put()
+
+    def exists(self, folder_name):
+        s3_client = self.boto3_session.client("s3")
+        bucket_name, folder_name = folder_name.split("/")
+        try:
+            s3_client.get_object(Bucket=bucket_name, Key=folder_name)
+            return True
+        except botocore.exceptions.ClientError:
+            return False
+
+
 class AWSBucket(AWSService):
     def create_bucket(self, bucket_name, is_data_warehouse=False):
         s3_resource = self.boto3_session.resource("s3")
