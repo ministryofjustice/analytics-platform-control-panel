@@ -37,6 +37,13 @@ class UserS3Bucket(AccessToS3Bucket):
         )
 
     def grant_bucket_access(self):
+        if self.s3bucket.is_folder:
+            # TODO update to include paths/resources
+            return cluster.User(self.user).grant_folder_access(
+                bucket_arn=self.s3bucket.arn,
+                access_level=self.access_level,
+            )
+
         cluster.User(self.user).grant_bucket_access(
             self.s3bucket.arn,
             self.access_level,

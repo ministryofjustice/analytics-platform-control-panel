@@ -168,9 +168,6 @@ class CreateDatasource(
         return CreateDatasourceForm
 
     def form_valid(self, form):
-        if settings.features.s3_folders.enabled:
-            raise NotImplementedError("S3 folders not yet implemented")
-
         name = form.cleaned_data["name"]
         datasource_type = self.request.GET.get("type")
 

@@ -162,7 +162,7 @@ class S3AccessPolicy:
         return self.policy.policy_document
 
     def statement(self, sid):
-        if sid in ("list", "readonly", "readwrite"):
+        if sid in BASE_S3_ACCESS_STATEMENT:
             if sid not in self.statements:
                 stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
                 self.statements[sid] = stmt
@@ -208,6 +208,45 @@ class S3AccessPolicy:
 
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
+
+    def grant_folder_list_access(self, arn):
+        arn, folder = arn.split("/")
+        root_permissions = self.statement("rootFolderBucketMeta")
+        root_permissions["Resource"] = arn
+
+        list_folder = self.statement("listFolder")
+        list_folder["Resource"] = arn
+
+        prefixes = list_folder.get("Condition", {}).get("StringEquals", {}).get("s3:prefix", [])
+
+        if "" not in prefixes:
+            prefixes.append("")
+        if folder not in prefixes:
+            prefixes.append(folder)
+            prefixes.append(f"{folder}/")
+
+        list_folder["Condition"] = {
+            "StringEquals": {
+                "s3:prefix": prefixes,
+                "s3:delimiter": [
+                    "/"
+                ]
+            }
+        }
+
+        list_sub_folders = self.statement("listSubFolders")
+        list_sub_folders["Resource"] = arn
+
+        wildcard_prefixes = list_sub_folders.get("Condition", {}).get("StringLike", {}).get("s3:prefix", [])
+        folder_wildcard = f"{folder}/*"
+        if folder_wildcard not in wildcard_prefixes:
+            wildcard_prefixes.append(folder_wildcard)
+
+        list_sub_folders["Condition"] = {
+            "StringLike": {
+                "s3:prefix": wildcard_prefixes,
+            }
+        }
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")
@@ -317,6 +356,17 @@ class AWSRole(AWSService):
         policy.grant_list_access(bucket_arn)
         for arn in path_arns:
             policy.grant_object_access(arn, access_level)
+        policy.put()
+
+    def grant_folder_access(self, role_name, bucket_arn, access_level):
+        # TODO refactor to method to DRY up
+        if access_level not in ("readonly", "readwrite"):
+            raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
+
+        role = self.boto3_session.resource("iam").Role(role_name)
+        policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.grant_folder_list_access(bucket_arn)
+        policy.grant_object_access(bucket_arn, access_level)
         policy.put()
 
     def revoke_bucket_access(self, role_name, bucket_arn=None):

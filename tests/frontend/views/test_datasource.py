@@ -3,12 +3,15 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.urls import reverse
 from model_mommy import mommy
 from rest_framework import status
 
 # First-party/Local
 from controlpanel.api.models import UserS3Bucket
+from controlpanel.frontend.forms import CreateDatasourceFolderForm, CreateDatasourceForm
+from controlpanel.frontend.views import CreateDatasource
 
 
 @pytest.fixture(autouse=True)
@@ -105,11 +108,13 @@ def detail(client, buckets, *args):
     )
 
 
-def create(client, *args):
+def create(client, *args, **kwargs):
+    name = kwargs.pop("name", "test-new-bucket")
     data = {
-        "name": "test-new-bucket",
+        "name": name,
     }
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
+
 
 
 def delete(client, buckets, *args):
@@ -280,13 +285,39 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
     assert ub.is_admin
 
 
-@patch("django.conf.settings.features.s3_folders")
-def test_create_s3_folder(s3_folders, client, users):
-    # TODO this test will be updated to assert correct behaviour when S3 folders have
-    #  been implemented.
-    s3_folders.enabled = True
-    for user_type, user_obj in users.items():
-        client.force_login(user_obj)
+@pytest.mark.parametrize(
+    "enabled, form_class",
+    [
+        (False, CreateDatasourceForm),
+        (True, CreateDatasourceFolderForm),
+    ]
+)
+def test_create_get_form_class(enabled, form_class):
+    with patch("django.conf.settings.features.s3_folders") as s3_folders:
+        s3_folders.enabled = enabled
+        view = CreateDatasource()
 
-        with pytest.raises(NotImplementedError):
-            create(client)
+        assert view.get_form_class() == form_class
+
+
+@pytest.fixture()
+def root_folder_bucket(s3):
+    # TODO move this somewhere where can be used in other tests
+    yield s3.create_bucket(Bucket=settings.S3_FOLDER_BUCKET_NAME)
+
+
+@patch("django.conf.settings.features.s3_folders")
+def test_create_folder(s3_folders, client, users, root_folder_bucket):
+    """
+    Check that all users can create a folder datasource
+    """
+    s3_folders.enabled = True
+    for _, user in users.items():
+        client.force_login(user)
+        folder_name = f"{user.username}-folder"
+        response = create(client, name=folder_name)
+
+        assert response.status_code == 302
+        assert user.users3buckets.filter(
+            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+        ).exists()
