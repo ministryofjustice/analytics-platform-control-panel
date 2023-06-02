@@ -33,7 +33,7 @@ class Command(BaseCommand):
             csv_reader = csv.reader(csv_file, delimiter=",")
             next(csv_reader)
             for row in csv_reader:
-                old_app_name = row[0].strip()
+                old_app_name = row[0].strip().lower().replace('_', '-')
                 new_app_name = row[1].strip()
                 list_apps.append(dict(
                     old_app_name=old_app_name,
