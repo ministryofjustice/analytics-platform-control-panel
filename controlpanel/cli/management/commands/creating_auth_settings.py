@@ -25,8 +25,10 @@ class DummyApp:
         return self.app_detail["app_name"]
 
     def auth0_client_name(self, env_name=None):
+        allowed_length = settings.AUTH0_CLIENT_NAME_LIMIT - len(env_name or "")
+        client_name = self.slug[0:allowed_length-1]
         return settings.AUTH0_CLIENT_NAME_PATTERN.format(
-            app_name=self.slug, env=env_name)
+            app_name=client_name, env=env_name)
 
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())

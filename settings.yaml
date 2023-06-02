@@ -116,6 +116,8 @@ SECRET_DISPLAY_VALUE: "*******"
 
 AUTH0_CLIENT_NAME_PATTERN: "data-platform-app-{app_name}-{env}"
 
+AUTH0_CLIENT_NAME_LIMIT: 31
+
 APP_URL_NAME_PATTERN:
   DEFAULT: "{app_name}-{env}"
   PROD: "{app_name}"
