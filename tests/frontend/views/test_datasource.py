@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.urls import reverse
 from model_mommy import mommy
 from rest_framework import status
@@ -113,6 +114,7 @@ def create(client, *args, **kwargs):
         "name": name,
     }
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
+
 
 
 def delete(client, buckets, *args):
