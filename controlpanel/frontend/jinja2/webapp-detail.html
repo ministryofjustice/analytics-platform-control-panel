@@ -145,7 +145,7 @@
     <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
       {% if deployment_setting.get('is_redundant') and request.user.has_perm('api.update_app', app) %}
         <section class="cpanel-section">
-          <p style="color:red">Sounds like this deployment environment has been redundant and can be removed</p>
+          <p style="color:red">It appears this deployment environment is redundant and can be removed</p>
           <form action="{{ url('remove-app-deployment-env', kwargs={'pk': app.id, 'env_name': env_name}) }}" method="post">
             {{ csrf_input }}
             <button class="govuk-button cpanel-button--destructive js-confirm"
