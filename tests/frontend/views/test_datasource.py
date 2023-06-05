@@ -116,7 +116,6 @@ def create(client, *args, **kwargs):
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
 
-
 def delete(client, buckets, *args):
     return client.delete(
         reverse("delete-datasource", kwargs={"pk": buckets["warehouse1"].id})
