@@ -518,7 +518,8 @@ class App(EntityResource):
     def create_or_update_secret(self, env_name, secret_key, secret_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secret(
-            repo_name, env_name,
+            repo_name,
+            env_name,
             secret_key,
             secret_value
         )
