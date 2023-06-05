@@ -1,6 +1,6 @@
 asgiref==3.6.0
 auth0-python==3.13.0
-beautifulsoup4==4.11.1
+beautifulsoup4==4.12.2
 boto3==1.20.13
 channels==4.0.0
 channels-redis==4.0.0
