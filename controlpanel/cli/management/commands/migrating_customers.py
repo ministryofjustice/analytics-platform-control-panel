@@ -1,5 +1,4 @@
 # Standard library
-import json
 import csv
 
 # Third-party
@@ -23,8 +22,10 @@ class Command(BaseCommand):
         )
 
     def _get_auth0_client_name(self, app_name, env_name):
+        allowed_length = settings.AUTH0_CLIENT_NAME_LIMIT - len(env_name or "")
+        client_name = app_name[0:allowed_length-1]
         return settings.AUTH0_CLIENT_NAME_PATTERN.format(
-                app_name=app_name, env=env_name)
+            app_name=client_name, env=env_name)
 
     def _get_pre_defined_app_list(self, chosen_apps_file):
         """The name of app must be the name on new cluster"""
@@ -68,7 +69,7 @@ class Command(BaseCommand):
             self.stdout.write(f"start to process the page {counter} of customers")
             is_finished = self._copy_page_customers_from_old_app(
                 auth0_instance, old_group_id, new_group_id, page=counter)
-            counter+=1
+            counter += 1
 
     def _migrating_customers(self, list_apps):
         """The assumption

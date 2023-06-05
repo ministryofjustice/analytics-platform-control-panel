@@ -226,8 +226,11 @@ class App(TimeStampedModel):
         super().delete(*args, **kwargs)
 
     def auth0_client_name(self, env_name=None):
+        """Truncate the length of the name to meet the group_name limit from auth0"""
+        allowed_length = settings.AUTH0_CLIENT_NAME_LIMIT - len(env_name or "")
+        client_name = self.slug[0:allowed_length-1]
         return settings.AUTH0_CLIENT_NAME_PATTERN.format(
-            app_name=self.slug, env=env_name)
+            app_name=client_name, env=env_name)
 
     @property
     def migration_info(self):

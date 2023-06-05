@@ -34,7 +34,7 @@ class Command(BaseCommand):
         migration_json = dict(
             app_name=app.slug,
             repo_url=app_item["repo_url"],
-            app_url=f"https://{ app.slug }.{settings.APP_DOMAIN}",
+            app_url=f"https://{ app.slug }.{settings.APP_DOMAIN_BEFORE_MIGRATION}",
             status="in_progress"
         )
         app_info = dict(migration=migration_json)
