@@ -498,7 +498,7 @@ class App(EntityResource):
         """
         if key_name not in settings.AUTH_SETTINGS_ENVS \
                 and key_name not in settings.AUTH_SETTINGS_SECRETS:
-            if settings.APP_SELF_DEFINE_SETTING_PREFIX not in key_name:
+            if not key_name.startswith(settings.APP_SELF_DEFINE_SETTING_PREFIX):
                 return f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{key_name}"
         return key_name
 
