@@ -57,8 +57,7 @@ class Command(BaseCommand):
                 collect_removable_groups.append(group)
             else:
                 if len(group["roles"]) > 1:
-                    self._log_info(f"{group['name']} have more than more roles linked")
-                    collect_removable_groups.append(group)
+                    self._log_info(f"Warning: {group['name']} have more than one roles linked")
                 else:
                     groups_info[group["roles"][0]] = group
         return groups_info, collect_removable_groups
