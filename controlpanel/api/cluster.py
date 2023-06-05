@@ -660,6 +660,7 @@ class App(EntityResource):
         self.app.clear_auth_settings(env_name)
 
 
+# TODO rename to S3Datasource
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
 
