@@ -248,15 +248,15 @@ class CreateDatasourceFolderForm(forms.Form):
     ])
 
     def clean_name(self):
-        name = self.cleaned_data["name"]
-        name = f"{settings.S3_FOLDER_BUCKET_NAME}/{name}"
-        bucket = S3Bucket(name=name)
+        folder_name = self.cleaned_data["name"]
+        folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
+        bucket = S3Bucket(name=folder_path)
         if ClusterS3Bucket(bucket).exists(
-            name, bucket_owner=AWSRoleCategory.user
+            folder_path, bucket_owner=AWSRoleCategory.user
         ):
-            raise ValidationError(f"Folder '{name}' already exists")
+            raise ValidationError(f"Folder '{folder_name}' already exists")
 
-        return name
+        return folder_path
 
 
 class GrantAccessForm(forms.Form):

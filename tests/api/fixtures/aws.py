@@ -147,3 +147,8 @@ def logs_bucket(s3):
             "Owner": bucket.Acl().owner,
         }
     )
+
+
+@pytest.fixture()
+def root_folder_bucket(s3):
+    yield s3.create_bucket(Bucket=settings.S3_FOLDER_BUCKET_NAME)

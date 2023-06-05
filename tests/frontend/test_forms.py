@@ -226,6 +226,16 @@ def test_create_new_datasource_but_bucket_existed():
     assert "already exists" in ".".join(f.errors["name"])
 
 
+def test_create_new_datasource_folder_exists(root_folder_bucket):
+    root_folder_bucket.put_object(Key='test-folder')
+    form = forms.CreateDatasourceFolderForm(
+        data={"name": "test-folder"}
+    )
+
+    assert form.is_valid() is False
+    assert "Folder 'test-folder' already exists" in form.errors["name"]
+
+
 def test_create_app_form_clean_repo_url():
     """
     Ensure the various states of a GitHub repository result in a valid form or

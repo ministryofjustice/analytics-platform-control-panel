@@ -116,7 +116,6 @@ def create(client, *args, **kwargs):
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
 
-
 def delete(client, buckets, *args):
     return client.delete(
         reverse("delete-datasource", kwargs={"pk": buckets["warehouse1"].id})
@@ -300,23 +299,17 @@ def test_create_get_form_class(enabled, form_class):
         assert view.get_form_class() == form_class
 
 
-@pytest.fixture()
-def root_folder_bucket(s3):
-    # TODO move this somewhere where can be used in other tests
-    yield s3.create_bucket(Bucket=settings.S3_FOLDER_BUCKET_NAME)
-
-
-@patch("django.conf.settings.features.s3_folders")
-def test_create_folder(s3_folders, client, users, root_folder_bucket):
+@patch("django.conf.settings.features.s3_folders.enabled", True)
+def test_create_folder(client, users, root_folder_bucket):
     """
     Check that all users can create a folder datasource
     """
-    s3_folders.enabled = True
     for _, user in users.items():
         client.force_login(user)
         folder_name = f"{user.username}-folder"
         response = create(client, name=folder_name)
 
+        # redirect expected on success
         assert response.status_code == 302
         assert user.users3buckets.filter(
             s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
