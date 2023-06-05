@@ -54,13 +54,13 @@ def test_delete_marks_bucket_for_archival_when_tag_bucket_fails(bucket):
 
 
 def test_bucket_create():
-    with patch("controlpanel.api.cluster.AWSBucket.create_bucket") as create_bucket:
+    with patch("controlpanel.api.aws.AWSBucket.create") as create_bucket:
         bucket = S3Bucket.objects.create(name="test-bucket-1")
         create_bucket.assert_called_with(bucket.name, False)
 
 
 def test_create_users3bucket(superuser):
-    with patch("controlpanel.api.cluster.AWSBucket.create_bucket") as create_bucket:
+    with patch("controlpanel.api.aws.AWSBucket.create") as create_bucket:
         bucket = S3Bucket.objects.create(
             name="test-bucket-1",
             created_by=superuser,

@@ -215,7 +215,7 @@ def logs_bucket(s3):
 
 def test_bucket_policy_on_creation(logs_bucket, s3):
     bucket_name = f"bucket-{id(MagicMock())}"
-    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
     policy = json.loads(
         s3.meta.client.get_bucket_policy(Bucket=bucket_name).get("Policy")
@@ -238,7 +238,7 @@ def test_create_bucket(logs_bucket, s3):
     with pytest.raises(s3.meta.client.exceptions.NoSuchBucket):
         s3.meta.client.get_bucket_location(Bucket=bucket_name)
 
-    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
     # Check versioning.
     assert bucket.Versioning().status == "Enabled"

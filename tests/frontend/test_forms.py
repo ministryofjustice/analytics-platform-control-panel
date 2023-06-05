@@ -198,7 +198,7 @@ def test_create_app_form_clean_existing_datasource():
 
 def test_create_app_form_new_datasource_but_bucket_existed():
     bucket_name = "test-bucketname"
-    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
     f = forms.CreateAppForm(
         data={
@@ -215,7 +215,7 @@ def test_create_app_form_new_datasource_but_bucket_existed():
 
 def test_create_new_datasource_but_bucket_existed():
     bucket_name = "test-bucketname"
-    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
     f = forms.CreateDatasourceForm(
         data={

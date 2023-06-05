@@ -660,6 +660,7 @@ class App(EntityResource):
         self.app.clear_auth_settings(env_name)
 
 
+# TODO rename to S3Datasource
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
 
@@ -688,7 +689,7 @@ class S3Bucket(EntityResource):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             self.aws_service_class, aws_role_category=owner
         )
-        return self.aws_bucket_service.create_bucket(
+        return self.aws_bucket_service.create(
             self.bucket.name, self.bucket.is_data_warehouse
         )
 

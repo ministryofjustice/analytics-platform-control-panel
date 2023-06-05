@@ -32,7 +32,7 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def buckets(db):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSBucket.create"):
         return {
             "app_data1": mommy.make("api.S3Bucket", is_data_warehouse=False),
             "app_data2": mommy.make("api.S3Bucket", is_data_warehouse=False),

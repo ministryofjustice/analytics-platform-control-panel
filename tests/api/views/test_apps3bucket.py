@@ -149,7 +149,7 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets):
 
 def test_create_with_s3_data_warehouse_not_allowed(client, apps):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+            patch("controlpanel.api.aws.AWSBucket.create"):
         s3_bucket_app = mommy.make(
             "api.S3Bucket",
             is_data_warehouse=False,

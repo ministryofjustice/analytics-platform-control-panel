@@ -28,7 +28,7 @@ def users(users):
 
 @pytest.fixture
 def bucket():
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSBucket.create"):
         return mommy.make("api.S3Bucket")
 
 

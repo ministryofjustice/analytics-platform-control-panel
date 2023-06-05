@@ -179,7 +179,7 @@ def repos_for_redundant_auth(githubapi):
 
 @pytest.fixture(autouse=True)
 def s3buckets(app):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket") as _:
+    with patch("controlpanel.api.aws.AWSBucket.create") as _:
         buckets = {
             "not_connected": mommy.make("api.S3Bucket"),
             "connected": mommy.make("api.S3Bucket"),

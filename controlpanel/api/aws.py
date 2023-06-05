@@ -390,14 +390,7 @@ class AWSRole(AWSService):
 
 class AWSFolder(AWSService):
 
-    def create_bucket(self, bucket_name, is_data_warehouse=False):
-        """
-        Method to mimic the method on AWSBucket service class but creates folder.
-        TODO should be removed as part of refactor to remove is_data_warehouse
-        """
-        self.create(bucket_name)
-
-    def create(self, bucket_name):
+    def create(self, bucket_name, *args):
         folder_name = bucket_name.split("/")[-1]
         if not folder_name.endswith("/"):
             folder_name = f"{folder_name}/"
@@ -416,7 +409,7 @@ class AWSFolder(AWSService):
 
 
 class AWSBucket(AWSService):
-    def create_bucket(self, bucket_name, is_data_warehouse=False):
+    def create(self, bucket_name, is_data_warehouse=False):
         s3_resource = self.boto3_session.resource("s3")
         s3_client = self.boto3_session.client("s3")
         try:
