@@ -111,19 +111,15 @@
 
   {% if feature_enabled %}
 
-    <section class="cpanel-section">
-      <h2 class="govuk-heading-m">App logs</h2>
-      <p class="govuk-body">
-        <a href="{{ settings.KIBANA_BASE_URL }}">{{ settings.KIBANA_BASE_URL }}</a>
-      </p>
-    </section>
+    <h2 class="govuk-heading-m">App logs</h2>
+    <p class="govuk-body">
+      <a href="{{ settings.KIBANA_BASE_URL }}">{{ settings.KIBANA_BASE_URL }}</a>
+    </p>
 
-    <section class="cpanel-section">
-      <h2 class="govuk-heading-m">App resources usage dashboard</h2>
-      <p class="govuk-body">
-        <a href="{{ settings.GRAFANA_BASE_URL }}">{{ settings.GRAFANA_BASE_URL }}</a>
-      </p>
-    </section>
+    <h2 class="govuk-heading-m">App resources usage dashboard</h2>
+    <p class="govuk-body">
+      <a href="{{ settings.GRAFANA_BASE_URL }}">{{ settings.GRAFANA_BASE_URL }}</a>
+    </p>
 
     <h2 class="govuk-heading-m">Deployment Pipeline</h2>
     <p class="govuk-body"> Github workflows on app's repo are used for deploying the app.</p>
