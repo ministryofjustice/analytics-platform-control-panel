@@ -389,18 +389,22 @@ class AWSRole(AWSService):
 
 
 class AWSFolder(AWSService):
-
-    def create(self, bucket_name, *args):
-        folder_name = bucket_name.split("/")[-1]
+    @staticmethod
+    def _ensure_trailing_slash(folder_name):
         if not folder_name.endswith("/"):
             folder_name = f"{folder_name}/"
+        return folder_name
 
+    def create(self, datasource_name, *args):
+        folder_name = datasource_name.split("/")[-1]
+        folder_name = self._ensure_trailing_slash(folder_name)
         s3 = self.boto3_session.resource("s3")
         s3.Object(bucket_name=settings.S3_FOLDER_BUCKET_NAME, key=folder_name).put()
 
     def exists(self, folder_name):
         s3_client = self.boto3_session.client("s3")
         bucket_name, folder_name = folder_name.split("/")
+        folder_name = self._ensure_trailing_slash(folder_name)
         try:
             s3_client.get_object(Bucket=bucket_name, Key=folder_name)
             return True

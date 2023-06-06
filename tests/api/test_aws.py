@@ -800,3 +800,27 @@ def test_delete_app_secret(secretsmanager):
             assert True
         else:
             assert False
+
+
+def test_aws_folder_create(root_folder_bucket, s3):
+    with pytest.raises(s3.meta.client.exceptions.NoSuchKey):
+        root_folder_bucket.Object(key="test-folder/").get()
+
+    aws.AWSFolder().create(f"{root_folder_bucket.name}/test-folder")
+
+    response = root_folder_bucket.Object(key="test-folder/").get()
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+@pytest.mark.parametrize(
+    "new_folder, existing_folder, expected",
+    [
+        ("my-folder", "my-folder/", True),
+        ("my-folder", None, False),
+    ]
+)
+def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bucket):
+    if existing_folder:
+        root_folder_bucket.Object(key=existing_folder).put()
+
+    assert aws.AWSFolder().exists(f"{root_folder_bucket.name}/{new_folder}") is expected
