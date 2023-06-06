@@ -227,7 +227,7 @@ def test_create_new_datasource_but_bucket_existed():
 
 
 def test_create_new_datasource_folder_exists(root_folder_bucket):
-    root_folder_bucket.put_object(Key='test-folder')
+    root_folder_bucket.put_object(Key='test-folder/')
     form = forms.CreateDatasourceFolderForm(
         data={"name": "test-folder"}
     )
