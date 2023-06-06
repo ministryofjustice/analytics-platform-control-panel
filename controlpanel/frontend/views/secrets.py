@@ -39,7 +39,7 @@ class AppSecretMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         data = self.request.GET.dict()
         kwargs["initial"]["env_name"] = data.get("env_name")
         kwargs["initial"]["key"] = self.kwargs.get("secret_name")
-        kwargs["initial"]["display_key"] = cluster.App.get_github_key_display_ame(
+        kwargs["initial"]["display_key"] = cluster.App.get_github_key_display_name(
             self.kwargs.get("secret_name"))
         return kwargs
 

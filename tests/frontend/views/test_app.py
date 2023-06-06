@@ -696,3 +696,43 @@ def test_app_detail_with_self_define_settings(client, app, users, repos):
             assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
             assert item['v'] in auth_item_ui.text
             assert 'Edit' in auth_item_ui.text
+
+
+@pytest.mark.parametrize(
+    "user,can_edit_connections",
+    [
+        ("superuser", True),
+        ("app_admin", False),
+    ],
+)
+def test_app_settings_permission(client, app, users, repos_with_auth, user, can_edit_connections):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users[user])
+        response = detail(client, app)
+        assert response.status_code == 200
+        auth_settings = get_auth_settings(response.content, 'dev_env')
+        settings_for_checks = [
+            {"n": cluster.App.IP_RANGES,
+             "v": app.env_allowed_ip_ranges_names('dev_env'),
+             "e": True},
+            {"n": cluster.App.AUTH0_CLIENT_ID,
+             "v": settings.SECRET_DISPLAY_VALUE,
+             "e": False},
+            {"n": cluster.App.AUTH0_CLIENT_SECRET,
+             "v": settings.SECRET_DISPLAY_VALUE,
+             "e": False},
+            {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": can_edit_connections},
+            {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
+            {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
+            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
+        ]
+        for item in settings_for_checks:
+            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+            if not auth_item_ui:
+                continue
+            assert item['v'] in auth_item_ui.text
+            if item['e']:
+                assert 'Edit' in auth_item_ui.text
+            else:
+                assert 'Edit' not in auth_item_ui.text

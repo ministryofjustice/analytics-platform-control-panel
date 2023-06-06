@@ -84,14 +84,12 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             deployment_env_names = []
         deployments_settings = {}
         auth0_connections = app.auth0_connections_by_env()
-        # auth0_clients_status = app.auth0_clients_status()
         try:
             for env_name in deployment_env_names:
                 deployments_settings[env_name] = {
                     "secrets": app_manager_ins.get_env_secrets(env_name=env_name),
                     "variables": app_manager_ins.get_env_vars(env_name=env_name),
                     "connections": auth0_connections.get(env_name, {}).get("connections") or [],
-                    # "auth0_clients_status": auth0_clients_status.get(env_name)
                 }
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()

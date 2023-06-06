@@ -435,7 +435,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         for item in secret_data:
             item_key = item['name']
             item.update(dict(
-                display_name=cluster.App.get_github_key_display_ame(item_key),
+                display_name=cluster.App.get_github_key_display_name(item_key),
                 permission_flag=self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or
                                 self.DEFAULT_PERMISSION_FLAG,
                 edit_link=self.APP_SETTINGS.get(item_key, {}).get('edit_link') or
@@ -450,7 +450,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         restructure_data = {}
         for item in env_data:
             item.update(dict(
-                display_name=cluster.App.get_github_key_display_ame(item['name']),
+                display_name=cluster.App.get_github_key_display_name(item['name']),
                 permission_flag=self.DEFAULT_PERMISSION_FLAG,
                 edit_link=self.DEFAULT_EDIT_ENV_LINK,
                 remove_link=self.DEFAULT_REMOVE_ENV_LINK

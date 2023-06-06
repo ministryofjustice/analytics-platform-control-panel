@@ -22,7 +22,7 @@
           <td class="govuk-table__cell">{{ app_secret["display_name"] }}</td>
           <td class="govuk-table__cell">{{ app_secret["value"] }} {% if app_secret["value"] == None %}<b style="color:red">[Missing] {% endif %}</b></td>
           <td class="govuk-table__cell">
-            {% if request.user.has_perm(app_secret["permission_flg"], app) and app_secret["editable"] %}
+            {% if request.user.has_perm(app_secret["permission_flag"], app) and app_secret["editable"] %}
               {% if "app-secret" not in app_secret['edit_link'] %}
                 <a href="{{ url(app_secret['edit_link'], kwargs={'pk': app.id }) }}?env_name={{ env_name }}" class="govuk-button govuk-button--secondary right">Edit</a>
               {% else %}
@@ -31,7 +31,7 @@
             {% endif %}
           </td>
           <td class="govuk-table__cell">
-            {% if request.user.has_perm(app_secret["permission_flg"], app) and app_secret["removable"] %}
+            {% if request.user.has_perm(app_secret["permission_flag"], app) and app_secret["removable"] %}
               <form action="{{ url(app_secret['remove_link'], kwargs={'pk': app.id, 'secret_name': app_secret['name']}) }}" method="post">
                 {{ csrf_input }}
                 <input type="hidden" name="env_name" value="{{ env_name }}">
@@ -99,7 +99,7 @@
           <td class="govuk-table__cell">{{ env_var['display_name'] }}</td>
           <td class="govuk-table__cell">{{ env_var['value'] }} {% if env_var["value"] == None %}<b style="color:red">[Missing]</b>{% endif %} </td>
           <td class="govuk-table__cell">
-            {% if request.user.has_perm(env_var["permission_flg"], app) and env_var["editable"] %}
+            {% if request.user.has_perm(env_var["permission_flag"], app) and env_var["editable"] %}
               {% if "app-var" not in env_var['edit_link'] %}
                 <a class="govuk-button govuk-button--secondary right" href="{{ url(env_var['edit_link'], kwargs={'pk': app.id}) }}?env_name={{ env_name }}" >Edit</a>
               {% else %}
@@ -108,7 +108,7 @@
             {% endif %}
           </td>
           <td class="govuk-table__cell">
-            {% if request.user.has_perm(env_var["permission_flg"], app) and env_var["removable"] %}
+            {% if request.user.has_perm(env_var["permission_flag"], app) and env_var["removable"] %}
               <form action="{{ url(env_var['remove_link'], kwargs={'pk': app.id, 'var_name':env_var['name']}) }} " method="post">
                 {{ csrf_input }}
                 <input type="hidden" name="env_name" value="{{ env_name }}">
