@@ -831,16 +831,40 @@ def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bu
     ["readwrite", "readonly"]
 )
 def test_grant_folder_access(access_level, roles):
-    mock_policy = MagicMock(autospec=aws.S3AccessPolicy)
     bucket_arn = "arn:aws:s3:::test-bucket/user-folder"
-    with patch("controlpanel.api.aws.S3AccessPolicy.__new__", return_value=mock_policy):
+    with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
+            patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access:
         aws.AWSRole().grant_folder_access(
             'test_user_normal-user',
             bucket_arn,
             access_level
         )
-        mock_policy.grant_folder_list_access.assert_called_once_with(bucket_arn)
-        mock_policy.grant_object_access.assert_called_once_with(
+        grant_folder_list_access.assert_called_once_with(bucket_arn)
+        grant_object_access.assert_called_once_with(
             bucket_arn, access_level
         )
-        mock_policy.put.assert_called_once()
+
+
+def test_grant_folder_list_access(roles):
+    mock_policy = MagicMock()
+    mock_policy.load_policy_document.return_value = {}
+    policy = aws.S3AccessPolicy(mock_policy)
+
+    bucket_name_arn = "arn:aws:s3:::test-bucket"
+    folder_name = "user-folder"
+    bucket_and_folder_arn = f"{bucket_name_arn}/{folder_name}"
+    policy.grant_folder_list_access(bucket_and_folder_arn)
+
+    assert policy.statements["rootFolderBucketMeta"]["Resource"] == bucket_name_arn
+    assert policy.statements["listFolder"]["Resource"] == bucket_name_arn
+    assert policy.statements["listFolder"]["Condition"] == {
+        "StringEquals": {
+            "s3:prefix": ["", folder_name, f"{folder_name}/"],
+            "s3:delimiter": ["/"]
+        }
+    }
+    assert policy.statements["listSubFolders"]["Condition"] == {
+        "StringLike": {
+            "s3:prefix": [f"{folder_name}/*"],
+        }
+    }

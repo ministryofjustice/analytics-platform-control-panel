@@ -209,15 +209,17 @@ class S3AccessPolicy:
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
 
-    def grant_folder_list_access(self, arn):
-        arn, folder = arn.split("/")
+    def _add_root_folder_bucket_permissions(self, arn):
         root_permissions = self.statement("rootFolderBucketMeta")
         root_permissions["Resource"] = arn
 
+    def _add_list_folder_permissions(self, arn, folder):
         list_folder = self.statement("listFolder")
         list_folder["Resource"] = arn
 
-        prefixes = list_folder.get("Condition", {}).get("StringEquals", {}).get("s3:prefix", [])
+        prefixes = list_folder.get(
+            "Condition", {}
+        ).get("StringEquals", {}).get("s3:prefix", [])
 
         if "" not in prefixes:
             prefixes.append("")
@@ -228,16 +230,18 @@ class S3AccessPolicy:
         list_folder["Condition"] = {
             "StringEquals": {
                 "s3:prefix": prefixes,
-                "s3:delimiter": [
-                    "/"
-                ]
+                "s3:delimiter": ["/"]
             }
         }
 
+    def _add_list_sub_folders_permissions(self, arn, folder):
         list_sub_folders = self.statement("listSubFolders")
         list_sub_folders["Resource"] = arn
 
-        wildcard_prefixes = list_sub_folders.get("Condition", {}).get("StringLike", {}).get("s3:prefix", [])
+        wildcard_prefixes = list_sub_folders.get(
+            "Condition", {}
+        ).get("StringLike", {}).get("s3:prefix", [])
+
         folder_wildcard = f"{folder}/*"
         if folder_wildcard not in wildcard_prefixes:
             wildcard_prefixes.append(folder_wildcard)
@@ -247,6 +251,12 @@ class S3AccessPolicy:
                 "s3:prefix": wildcard_prefixes,
             }
         }
+
+    def grant_folder_list_access(self, arn):
+        arn, folder = arn.split("/")
+        self._add_root_folder_bucket_permissions(arn)
+        self._add_list_folder_permissions(arn, folder)
+        self._add_list_sub_folders_permissions(arn, folder)
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")
