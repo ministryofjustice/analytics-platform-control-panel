@@ -53,8 +53,7 @@
 
   {% if request.user.has_perm('api.update_app', app) and deployment_setting['can_create_client'] %}
     <section class="cpanel-section">
-      <p style="color:red">As the authentication flag is on,
-        the auth0-client needs to be created and related settings need to be stored in github</p>
+      <p style="color:red">The Auth0 client needs to be created and the related settings stored in GitHub</p>
       <form action="{{ url('create-auth0-client', kwargs={ 'pk': app.id }) }}" method="post">
         {{ csrf_input }}
         <input type="hidden" name="env_name" value="{{ env_name }}">
