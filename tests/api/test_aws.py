@@ -824,3 +824,23 @@ def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bu
         root_folder_bucket.Object(key=existing_folder).put()
 
     assert aws.AWSFolder().exists(f"{root_folder_bucket.name}/{new_folder}") is expected
+
+
+@pytest.mark.parametrize(
+    "access_level",
+    ["readwrite", "readonly"]
+)
+def test_grant_folder_access(access_level, roles):
+    mock_policy = MagicMock(autospec=aws.S3AccessPolicy)
+    bucket_arn = "arn:aws:s3:::test-bucket/user-folder"
+    with patch("controlpanel.api.aws.S3AccessPolicy.__new__", return_value=mock_policy):
+        aws.AWSRole().grant_folder_access(
+            'test_user_normal-user',
+            bucket_arn,
+            access_level
+        )
+        mock_policy.grant_folder_list_access.assert_called_once_with(bucket_arn)
+        mock_policy.grant_object_access.assert_called_once_with(
+            bucket_arn, access_level
+        )
+        mock_policy.put.assert_called_once()

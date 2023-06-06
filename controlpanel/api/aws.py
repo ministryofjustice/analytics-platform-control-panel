@@ -359,7 +359,6 @@ class AWSRole(AWSService):
         policy.put()
 
     def grant_folder_access(self, role_name, bucket_arn, access_level):
-        # TODO refactor to method to DRY up
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
