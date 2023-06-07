@@ -225,25 +225,34 @@ class S3AccessPolicy:
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
 
-    def _add_list_folder_prefixes(self, folder):
+    def _add_folder_to_list_folder_prefixes(self, folder):
         prefixes = self.statement("listFolder")["Condition"]["StringEquals"]["s3:prefix"]
         if folder not in prefixes:
             prefixes.append(folder)
             prefixes.append(f"{folder}/")
 
-    def _add_list_sub_folders_prefixes(self, folder):
+    def _add_folder_to_list_sub_folders_prefixes(self, folder):
         prefixes = self.statement("listSubFolders")["Condition"]["StringLike"]["s3:prefix"]
         folder_wildcard = f"{folder}/*"
         if folder_wildcard not in prefixes:
             prefixes.append(folder_wildcard)
 
     def grant_folder_list_access(self, arn):
+        """
+        Splits the resource arn to get the bucket ARN and folder name, then for all
+        permissions required for folder list access makes sure the ARN is added as the
+        resource, and folder name is used in the statement condition prefixes so that
+        access if only granted to the specific folder and sub folders in the S3 bucket.
+        For a detailed breakdown of folder-level permissions see the docs:
+        https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
+        """
         arn, folder = arn.split("/")
+        # required to avoid warnings when accessing AWS console
         self.add_resource(arn, "rootFolderBucketMeta")
         self.add_resource(arn, "listFolder")
+        self._add_folder_to_list_folder_prefixes(folder)
         self.add_resource(arn, "listSubFolders")
-        self._add_list_folder_prefixes(folder)
-        self._add_list_sub_folders_prefixes(folder)
+        self._add_folder_to_list_sub_folders_prefixes(folder)
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")

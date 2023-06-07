@@ -10,7 +10,8 @@ from django.core.validators import RegexValidator, validate_email
 
 # First-party/Local
 from controlpanel.api import validators
-from controlpanel.api.cluster import S3Bucket as ClusterS3Bucket, AWSRoleCategory
+from controlpanel.api.cluster import AWSRoleCategory
+from controlpanel.api.cluster import S3Bucket as ClusterS3Bucket
 from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
@@ -248,6 +249,11 @@ class CreateDatasourceFolderForm(forms.Form):
     ])
 
     def clean_name(self):
+        """
+        Ensure that the name of the folder to be created does not already exist in the
+        S3 bucket. Then return the name with the bucket name prefixed, so that the full
+        path to the folder is stored against the object.
+        """
         folder_name = self.cleaned_data["name"]
         folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
         bucket = S3Bucket(name=folder_path)
