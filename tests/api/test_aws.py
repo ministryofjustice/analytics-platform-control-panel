@@ -845,22 +845,11 @@ def test_grant_folder_access(access_level, roles):
         )
 
 
-def test_grant_folder_list_access(iam, role_policy):
-    user = {
-        "auth0_id": "normal_user",
-        "user_name": "testing-bob",
-        "iam_role_name": "testing-bob",
-    }
-    aws.AWSRole().create_role(
-        user["iam_role_name"],
-        User.aws_user_policy(user["auth0_id"], user["user_name"]),
-        User.ATTACH_POLICIES,
-    )
+def test_grant_folder_list_access():
+    mock_policy = MagicMock()
+    mock_policy.policy_document = {}
 
-    role = iam.Role(user["iam_role_name"])
-    inline_policy = role_policy(role)
-
-    policy = aws.S3AccessPolicy(inline_policy)
+    policy = aws.S3AccessPolicy(mock_policy)
 
     bucket_name_arn = "arn:aws:s3:::test-bucket"
     folder_name = "user-folder"
@@ -882,8 +871,13 @@ def test_grant_folder_list_access(iam, role_policy):
         }
     }
 
-    # grant access to another folder
-    policy = aws.S3AccessPolicy(inline_policy)
+    # now test granting access to another folder
+
+    # create new object with old policy document
+    mock_policy = MagicMock()
+    mock_policy.policy_document = policy.policy_document
+    policy = aws.S3AccessPolicy(mock_policy)
+
     folder_name_2 = "user-folder-2"
     bucket_and_folder_arn = f"{bucket_name_arn}/{folder_name_2}"
     policy.grant_folder_list_access(bucket_and_folder_arn)
