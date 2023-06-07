@@ -855,14 +855,15 @@ def test_grant_folder_list_access(roles):
     bucket_and_folder_arn = f"{bucket_name_arn}/{folder_name}"
     policy.grant_folder_list_access(bucket_and_folder_arn)
 
-    assert policy.statements["rootFolderBucketMeta"]["Resource"] == bucket_name_arn
-    assert policy.statements["listFolder"]["Resource"] == bucket_name_arn
+    assert policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Resource"] == [bucket_name_arn]
     assert policy.statements["listFolder"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": ["", folder_name, f"{folder_name}/"],
             "s3:delimiter": ["/"]
         }
     }
+    assert policy.statements["listSubFolders"]["Resource"] == [bucket_name_arn]
     assert policy.statements["listSubFolders"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [f"{folder_name}/*"],

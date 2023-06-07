@@ -300,13 +300,23 @@ def test_create_get_form_class(enabled, form_class):
 
 
 @patch("django.conf.settings.features.s3_folders.enabled", True)
-def test_create_folder(client, users, root_folder_bucket):
+def test_create_folders(client, users, root_folder_bucket):
     """
     Check that all users can create a folder datasource
     """
     for _, user in users.items():
         client.force_login(user)
         folder_name = f"{user.username}-folder"
+        response = create(client, name=folder_name)
+
+        # redirect expected on success
+        assert response.status_code == 302
+        assert user.users3buckets.filter(
+            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+        ).exists()
+
+        # create another folder to catch any errors updating IAM policy
+        folder_name = f"{user.username}-folder-2"
         response = create(client, name=folder_name)
 
         # redirect expected on success

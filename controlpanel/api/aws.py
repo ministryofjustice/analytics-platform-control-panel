@@ -90,13 +90,29 @@ BASE_S3_ACCESS_STATEMENT = {
         "Sid": "listFolder",
         "Action": LIST_BUCKET_CONTENTS_ACTIONS,
         "Effect": "Allow",
+        "Condition": {
+            "StringEquals": {
+                "s3:prefix": [
+                    "",
+                ],
+                "s3:delimiter": [
+                    "/",
+                ]
+            }
+        }
     },
     "listSubFolders": {
         "Sid": "listSubFolders",
         "Action": [
             "s3:ListBucket",
         ],
-        "Effect": "Allow"
+        "Effect": "Allow",
+        "Condition": {
+            "StringLike": {
+                "s3:prefix": [
+                ],
+            }
+        }
     },
     "rootFolderBucketMeta": {
         "Sid": "rootFolderBucketMeta",
@@ -153,7 +169,7 @@ class S3AccessPolicy:
         self.policy_document.setdefault("Statement", [])
         for stmt in self.policy_document["Statement"]:
             sid = stmt.get("Sid")
-            if sid in ("list", "readonly", "readwrite"):
+            if sid in BASE_S3_ACCESS_STATEMENT:
                 stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
                 self.statements[sid] = stmt
 
@@ -209,54 +225,25 @@ class S3AccessPolicy:
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
 
-    def _add_root_folder_bucket_permissions(self, arn):
-        root_permissions = self.statement("rootFolderBucketMeta")
-        root_permissions["Resource"] = arn
-
-    def _add_list_folder_permissions(self, arn, folder):
-        list_folder = self.statement("listFolder")
-        list_folder["Resource"] = arn
-
-        prefixes = list_folder.get(
-            "Condition", {}
-        ).get("StringEquals", {}).get("s3:prefix", [])
-
-        if "" not in prefixes:
-            prefixes.append("")
+    def _add_list_folder_prefixes(self, folder):
+        prefixes = self.statement("listFolder")["Condition"]["StringEquals"]["s3:prefix"]
         if folder not in prefixes:
             prefixes.append(folder)
             prefixes.append(f"{folder}/")
 
-        list_folder["Condition"] = {
-            "StringEquals": {
-                "s3:prefix": prefixes,
-                "s3:delimiter": ["/"]
-            }
-        }
-
-    def _add_list_sub_folders_permissions(self, arn, folder):
-        list_sub_folders = self.statement("listSubFolders")
-        list_sub_folders["Resource"] = arn
-
-        wildcard_prefixes = list_sub_folders.get(
-            "Condition", {}
-        ).get("StringLike", {}).get("s3:prefix", [])
-
+    def _add_list_sub_folders_prefixes(self, folder):
+        prefixes = self.statement("listSubFolders")["Condition"]["StringLike"]["s3:prefix"]
         folder_wildcard = f"{folder}/*"
-        if folder_wildcard not in wildcard_prefixes:
-            wildcard_prefixes.append(folder_wildcard)
-
-        list_sub_folders["Condition"] = {
-            "StringLike": {
-                "s3:prefix": wildcard_prefixes,
-            }
-        }
+        if folder_wildcard not in prefixes:
+            prefixes.append(folder_wildcard)
 
     def grant_folder_list_access(self, arn):
         arn, folder = arn.split("/")
-        self._add_root_folder_bucket_permissions(arn)
-        self._add_list_folder_permissions(arn, folder)
-        self._add_list_sub_folders_permissions(arn, folder)
+        self.add_resource(arn, "rootFolderBucketMeta")
+        self.add_resource(arn, "listFolder")
+        self.add_resource(arn, "listSubFolders")
+        self._add_list_folder_prefixes(folder)
+        self._add_list_sub_folders_prefixes(folder)
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")
