@@ -90,6 +90,16 @@ BASE_S3_ACCESS_STATEMENT = {
         "Sid": "listFolder",
         "Action": LIST_BUCKET_CONTENTS_ACTIONS,
         "Effect": "Allow",
+        "Condition": {
+            "StringEquals": {
+                "s3:prefix": [
+                    "",
+                ],
+                "s3:delimiter": [
+                    "/",
+                ]
+            }
+        }
     },
     "listSubFolders": {
         "Sid": "listSubFolders",
