@@ -33,7 +33,10 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
 
     def update_user(self, user, claims):
         # Update the non-key information to sync the user's info
-        # with user profile from idp
+        # with user profile from idp when the user's username is not changed.
+        if user.username != claims.get(settings.OIDC_FIELD_USERNAME):
+            return user
+
         if user.email != claims.get(settings.OIDC_FIELD_EMAIL):
             user.update(email=claims.get(settings.OIDC_FIELD_EMAIL))
         if user.name != claims.get(settings.OIDC_FIELD_NAME):
