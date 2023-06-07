@@ -845,10 +845,22 @@ def test_grant_folder_access(access_level, roles):
         )
 
 
-def test_grant_folder_list_access(roles):
-    mock_policy = MagicMock()
-    mock_policy.load_policy_document.return_value = {}
-    policy = aws.S3AccessPolicy(mock_policy)
+def test_grant_folder_list_access(iam, role_policy):
+    user = {
+        "auth0_id": "normal_user",
+        "user_name": "testing-bob",
+        "iam_role_name": "testing-bob",
+    }
+    aws.AWSRole().create_role(
+        user["iam_role_name"],
+        User.aws_user_policy(user["auth0_id"], user["user_name"]),
+        User.ATTACH_POLICIES,
+    )
+
+    role = iam.Role(user["iam_role_name"])
+    inline_policy = role_policy(role)
+
+    policy = aws.S3AccessPolicy(inline_policy)
 
     bucket_name_arn = "arn:aws:s3:::test-bucket"
     folder_name = "user-folder"
@@ -867,5 +879,35 @@ def test_grant_folder_list_access(roles):
     assert policy.statements["listSubFolders"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [f"{folder_name}/*"],
+        }
+    }
+
+    # grant access to another folder
+    policy = aws.S3AccessPolicy(inline_policy)
+    folder_name_2 = "user-folder-2"
+    bucket_and_folder_arn = f"{bucket_name_arn}/{folder_name_2}"
+    policy.grant_folder_list_access(bucket_and_folder_arn)
+    # make sure that the policy has not been overwritten, and contains both folders
+    assert policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Condition"] == {
+        "StringEquals": {
+            "s3:prefix": [
+                "",
+                folder_name,
+                f"{folder_name}/",
+                folder_name_2,
+                f"{folder_name_2}/",
+            ],
+            "s3:delimiter": ["/"]
+        }
+    }
+    assert policy.statements["listSubFolders"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listSubFolders"]["Condition"] == {
+        "StringLike": {
+            "s3:prefix": [
+                f"{folder_name}/*",
+                f"{folder_name_2}/*"
+            ],
         }
     }

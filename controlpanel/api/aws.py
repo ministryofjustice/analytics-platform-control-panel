@@ -90,16 +90,6 @@ BASE_S3_ACCESS_STATEMENT = {
         "Sid": "listFolder",
         "Action": LIST_BUCKET_CONTENTS_ACTIONS,
         "Effect": "Allow",
-        "Condition": {
-            "StringEquals": {
-                "s3:prefix": [
-                    "",
-                ],
-                "s3:delimiter": [
-                    "/",
-                ]
-            }
-        }
     },
     "listSubFolders": {
         "Sid": "listSubFolders",
@@ -107,12 +97,6 @@ BASE_S3_ACCESS_STATEMENT = {
             "s3:ListBucket",
         ],
         "Effect": "Allow",
-        "Condition": {
-            "StringLike": {
-                "s3:prefix": [
-                ],
-            }
-        }
     },
     "rootFolderBucketMeta": {
         "Sid": "rootFolderBucketMeta",
@@ -226,16 +210,39 @@ class S3AccessPolicy:
         self.add_resource(arn, "list")
 
     def _add_folder_to_list_folder_prefixes(self, folder):
-        prefixes = self.statement("listFolder")["Condition"]["StringEquals"]["s3:prefix"]
+        statement = self.statement("listFolder")
+        try:
+            prefixes = statement["Condition"]["StringEquals"]["s3:prefix"]
+        except KeyError:
+            prefixes = [""]
+
         if folder not in prefixes:
             prefixes.append(folder)
             prefixes.append(f"{folder}/")
 
+        statement["Condition"] = {
+                "StringEquals": {
+                    "s3:prefix": prefixes,
+                    "s3:delimiter": ["/"]
+                }
+            }
+
     def _add_folder_to_list_sub_folders_prefixes(self, folder):
-        prefixes = self.statement("listSubFolders")["Condition"]["StringLike"]["s3:prefix"]
+        statement = self.statement("listSubFolders")
+        try:
+            prefixes = statement["Condition"]["StringLike"]["s3:prefix"]
+        except KeyError:
+            prefixes = []
+
         folder_wildcard = f"{folder}/*"
         if folder_wildcard not in prefixes:
             prefixes.append(folder_wildcard)
+
+        statement["Condition"] = {
+            "StringLike": {
+                "s3:prefix": prefixes
+            }
+        }
 
     def grant_folder_list_access(self, arn):
         """
