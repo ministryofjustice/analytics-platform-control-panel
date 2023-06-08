@@ -141,5 +141,7 @@ class S3Bucket(TimeStampedModel):
 
     @atomic
     def delete(self, *args, **kwargs):
-        cluster.S3Bucket(self).mark_for_archival()
+        # TODO update when deletion is enabled for folders
+        if not self.is_folder:
+            cluster.S3Bucket(self).mark_for_archival()
         super().delete(*args, **kwargs)
