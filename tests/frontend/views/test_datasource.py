@@ -305,7 +305,7 @@ def test_create_folders(client, users, root_folder_bucket):
     """
     for _, user in users.items():
         client.force_login(user)
-        folder_name = f"{user.username}-folder"
+        folder_name = f"test-{user.username}-folder"
         response = create(client, name=folder_name)
 
         # redirect expected on success
@@ -315,7 +315,7 @@ def test_create_folders(client, users, root_folder_bucket):
         ).exists()
 
         # create another folder to catch any errors updating IAM policy
-        folder_name = f"{user.username}-folder-2"
+        folder_name = f"test-{user.username}-folder-2"
         response = create(client, name=folder_name)
 
         # redirect expected on success
