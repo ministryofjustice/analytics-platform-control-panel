@@ -254,7 +254,7 @@ class CreateDatasourceFolderForm(forms.Form):
         path to the folder is stored against the object.
         """
         folder_name = self.cleaned_data["name"]
-        folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
+        folder_path = ClusterS3Bucket.build_folder_path(folder_name=folder_name)
         bucket = S3Bucket(name=folder_path)
         if ClusterS3Bucket(bucket).exists(
             folder_path, bucket_owner=AWSRoleCategory.user

@@ -675,6 +675,13 @@ class S3Bucket(EntityResource):
             self.aws_service_class = AWSBucket
         self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
 
+    @classmethod
+    def build_folder_path(cls, folder_name):
+        """
+        Prefix a folder name with the name of the S3 bucket defined in settings.
+        """
+        return f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
+
     @property
     def arn(self):
         return s3_arn(self.bucket.name)
