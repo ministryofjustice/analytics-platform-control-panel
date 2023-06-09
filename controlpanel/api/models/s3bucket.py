@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 # Third-party
 from django.conf import settings
+from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
 from django.db.transaction import atomic
@@ -40,11 +41,11 @@ class S3BucketQuerySet(models.QuerySet):
 class S3Bucket(TimeStampedModel):
     name = models.CharField(
         unique=True,
-        max_length=63,
+        max_length=100,
         validators=[
             validators.validate_env_prefix,
-            validators.validate_s3_bucket_length,
             validators.validate_s3_bucket_labels,
+            MinLengthValidator(limit_value=3)
         ],
     )
     created_by = models.ForeignKey(

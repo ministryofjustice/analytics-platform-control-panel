@@ -3,13 +3,12 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.conf import settings
 from django.urls import reverse
 from model_mommy import mommy
 from rest_framework import status
 
 # First-party/Local
-from controlpanel.api.models import UserS3Bucket
+from controlpanel.api.models import S3Bucket, UserS3Bucket
 from controlpanel.frontend.forms import CreateDatasourceFolderForm, CreateDatasourceForm
 from controlpanel.frontend.views import CreateDatasource
 
@@ -324,3 +323,30 @@ def test_create_folders(client, users, root_folder_bucket):
         assert user.users3buckets.filter(
             s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
         ).exists()
+
+
+@patch("django.conf.settings.features.s3_folders.enabled", False)
+def test_create_bucket_name_greater_than_63_fails(client, users):
+
+    name = "test-bucket-" + ("x" * 52)
+    assert len(name) == 64
+
+    client.force_login(users["superuser"])
+    response = create(client, name=name)
+
+    assert response.status_code == 200
+    assert S3Bucket.objects.filter(name=name).exists() is False
+
+
+@patch("django.conf.settings.features.s3_folders.enabled", True)
+def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_bucket):
+    name = "test-folder-" + ("x" * 52)
+    assert len(name) == 64
+
+    client.force_login(users["superuser"])
+    response = create(client, name=name)
+
+    assert response.status_code == 302
+    assert S3Bucket.objects.filter(
+        name=f"{root_folder_bucket.name}/{name}"
+    ).exists() is True

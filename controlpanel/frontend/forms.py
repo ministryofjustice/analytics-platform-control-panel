@@ -243,9 +243,8 @@ class CreateDatasourceForm(forms.Form):
 
 class CreateDatasourceFolderForm(forms.Form):
 
-    name = forms.CharField(max_length=63, validators=[
+    name = forms.CharField(max_length=100, min_length=3, validators=[
         validators.validate_s3_bucket_labels,
-        validators.validate_s3_bucket_length,
     ])
 
     def clean_name(self):
