@@ -153,16 +153,20 @@ class S3AccessPolicy:
         self.policy_document.setdefault("Statement", [])
         for stmt in self.policy_document["Statement"]:
             sid = stmt.get("Sid")
-            if sid in BASE_S3_ACCESS_STATEMENT:
+            if sid in self.base_s3_access_sids:
                 stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
                 self.statements[sid] = stmt
+
+    @property
+    def base_s3_access_sids(self):
+        return [statement["Sid"] for key, statement in BASE_S3_ACCESS_STATEMENT.items()]
 
     def load_policy_document(self):
         # triggers API call
         return self.policy.policy_document
 
     def statement(self, sid):
-        if sid in BASE_S3_ACCESS_STATEMENT:
+        if sid in self.base_s3_access_sids:
             if sid not in self.statements:
                 stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
                 self.statements[sid] = stmt
@@ -221,11 +225,11 @@ class S3AccessPolicy:
             prefixes.append(f"{folder}/")
 
         statement["Condition"] = {
-                "StringEquals": {
-                    "s3:prefix": prefixes,
-                    "s3:delimiter": ["/"]
-                }
+            "StringEquals": {
+                "s3:prefix": prefixes,
+                "s3:delimiter": ["/"]
             }
+        }
 
     def _add_folder_to_list_sub_folders_prefixes(self, folder):
         statement = self.statement("listSubFolders")

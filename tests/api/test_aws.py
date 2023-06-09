@@ -905,3 +905,15 @@ def test_grant_folder_list_access():
             ],
         }
     }
+
+
+def test_base_s3_access_sids():
+    expected = [
+        'list',
+        'readonly',
+        'readwrite',
+        'listFolder',
+        'listSubFolders',
+        'rootFolderBucketMeta',
+    ]
+    assert aws.S3AccessPolicy(MagicMock()).base_s3_access_sids == expected
