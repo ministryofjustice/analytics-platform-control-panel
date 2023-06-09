@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.conf import settings
 from django.urls import reverse
 from model_mommy import mommy
 from rest_framework import status
