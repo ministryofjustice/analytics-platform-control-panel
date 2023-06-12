@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import patch, PropertyMock, MagicMock
+from unittest.mock import patch
 
 # Third-party
 import pytest
