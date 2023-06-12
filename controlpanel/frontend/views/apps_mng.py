@@ -36,9 +36,9 @@ class AppManager:
         with transaction.atomic():
             new_app = self._create_app(name=name, repo_url=repo_url)
             self._add_ip_allowlists(new_app, envs, ip_allowlists)
-            self._create_or_link_datasource(app_data)
             self._add_app_to_users(new_app, user)
             self._create_app_role(new_app)
+            self._create_or_link_datasource(new_app, user, app_data)
         self._create_auth_settigs(
             new_app, envs, github_api_token, disable_authentication, connections
         )
@@ -100,25 +100,25 @@ class AppManager:
                 connections=connections,
             )
 
-    def _create_or_link_datasource(self, bucket_data):
+    def _create_or_link_datasource(self, app, user, bucket_data):
         if bucket_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
                 name=bucket_data["new_datasource_name"], bucket_owner="APP"
             )
             AppS3Bucket.objects.create(
-                app=self.object,
+                app=app,
                 s3bucket=bucket,
                 access_level="readonly",
             )
             UserS3Bucket.objects.create(
-                user=self.request.user,
+                user=user,
                 s3bucket=bucket,
                 access_level="readwrite",
                 is_admin=True,
             )
         elif bucket_data.get("existing_datasource_id"):
             AppS3Bucket.objects.create(
-                app=self.object,
+                app=app,
                 s3bucket=bucket_data["existing_datasource_id"],
                 access_level="readonly",
             )
