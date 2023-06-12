@@ -381,6 +381,7 @@ class AWSRole(AWSService):
 
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.revoke_access(bucket_arn)
         policy.grant_folder_list_access(bucket_arn)
         policy.grant_object_access(bucket_arn, access_level)
         policy.put()

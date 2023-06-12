@@ -833,12 +833,14 @@ def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bu
 def test_grant_folder_access(access_level, roles):
     bucket_arn = "arn:aws:s3:::test-bucket/user-folder"
     with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
-            patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access:
+            patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access, \
+            patch("controlpanel.api.aws.S3AccessPolicy.revoke_access") as revoke_access:
         aws.AWSRole().grant_folder_access(
             'test_user_normal-user',
             bucket_arn,
             access_level
         )
+        revoke_access.assert_called_once_with(bucket_arn)
         grant_folder_list_access.assert_called_once_with(bucket_arn)
         grant_object_access.assert_called_once_with(
             bucket_arn, access_level
