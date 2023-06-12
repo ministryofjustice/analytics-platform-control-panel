@@ -18,6 +18,14 @@ def grant_bucket_access():
 
 
 @pytest.fixture
+def grant_folder_access():
+    with patch(
+        "controlpanel.api.cluster.AWSRole.grant_folder_access"
+    ) as grant_bucket_access_action:
+        yield grant_bucket_access_action
+
+
+@pytest.fixture
 def grant_policy_bucket_access():
     with patch(
         "controlpanel.api.cluster.AWSPolicy.grant_policy_bucket_access"
@@ -68,6 +76,28 @@ def test_grant_access(grant_bucket_access, bucket, entities, entity_type, resour
         bucket.arn,
         "readonly",
         resources,
+    )
+
+
+@pytest.mark.parametrize(
+    "entity_type, resources",
+    [
+        ("user", []),
+        ("user", ["/foo/bar", "/foo/baz"]),
+    ],
+    ids=[
+        "user",
+        "user-paths",
+    ],
+)
+def test_grant_folder_access(grant_folder_access, bucket, entities, entity_type, resources):
+    entity = entities[entity_type]
+    entity.grant_folder_access(bucket.arn, "readonly")
+
+    grant_folder_access.assert_called_with(
+        entity.iam_role_name,
+        bucket.arn,
+        "readonly",
     )
 
 
