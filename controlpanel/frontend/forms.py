@@ -190,7 +190,7 @@ class CreateAppForm(AppAuth0Form):
         cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
             cleaned_data
         )
-        print("=====debug------", cleaned_data)
+
         return cleaned_data
 
     def clean_repo_url(self):
