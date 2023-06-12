@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from model_mommy import mommy
 
 # First-party/Local
+from controlpanel.api import cluster
 from controlpanel.api.models import S3Bucket, UserS3Bucket
 
 
@@ -80,3 +81,14 @@ def test_create_users3bucket(superuser):
 )
 def test_is_folder(name, expected):
     assert S3Bucket(name=name).is_folder is expected
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("bucketname/foldername", cluster.S3Folder),
+        ("bucketname", cluster.S3Bucket),
+    ],
+)
+def test_cluster(name, expected):
+    assert isinstance(S3Bucket(name=name).cluster, expected)

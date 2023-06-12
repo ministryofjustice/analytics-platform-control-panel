@@ -11,7 +11,7 @@ from django.core.validators import RegexValidator, validate_email
 # First-party/Local
 from controlpanel.api import validators
 from controlpanel.api.cluster import AWSRoleCategory
-from controlpanel.api.cluster import S3Bucket as ClusterS3Bucket
+from controlpanel.api.cluster import S3Folder as ClusterS3Folder
 from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
@@ -255,11 +255,10 @@ class CreateDatasourceFolderForm(forms.Form):
         path to the folder is stored against the object.
         """
         folder_name = self.cleaned_data["name"]
-        folder_path = ClusterS3Bucket.build_folder_path(folder_name=folder_name)
-        bucket = S3Bucket(name=folder_path)
-        if ClusterS3Bucket(bucket).exists(
-            folder_path, bucket_owner=AWSRoleCategory.user
-        ):
+        exists, folder_path = ClusterS3Folder(None).exists(
+            folder_name=folder_name, bucket_owner=AWSRoleCategory.user
+        )
+        if exists:
             raise ValidationError(f"Folder '{folder_name}' already exists")
 
         return folder_path

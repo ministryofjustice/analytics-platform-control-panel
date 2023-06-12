@@ -75,8 +75,14 @@ class S3Bucket(TimeStampedModel):
         return f"<{self.__class__.__name__}: {self.name}{warehouse}>"
 
     @property
+    def cluster(self):
+        if self.is_folder:
+            return cluster.S3Folder(self)
+        return cluster.S3Bucket(self)
+
+    @property
     def arn(self):
-        return cluster.S3Bucket(self).arn
+        return self.cluster.arn
 
     def arn_from_path(self, path):
         return f"{self.arn}{path}"
@@ -127,7 +133,7 @@ class S3Bucket(TimeStampedModel):
 
         if is_create:
             bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
-            cluster.S3Bucket(self).create(bucket_owner)
+            self.cluster.create(bucket_owner)
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:
@@ -144,5 +150,5 @@ class S3Bucket(TimeStampedModel):
     def delete(self, *args, **kwargs):
         # TODO update when deletion is enabled for folders
         if not self.is_folder:
-            cluster.S3Bucket(self).mark_for_archival()
+            self.cluster.mark_for_archival()
         super().delete(*args, **kwargs)

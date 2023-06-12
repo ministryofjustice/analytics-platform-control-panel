@@ -660,7 +660,6 @@ class App(EntityResource):
         self.app.clear_auth_settings(env_name)
 
 
-# TODO rename to S3Datasource
 class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
 
@@ -669,18 +668,8 @@ class S3Bucket(EntityResource):
         super(S3Bucket, self).__init__()
 
     def _init_aws_services(self):
-        try:
-            self.aws_service_class = AWSFolder if self.bucket.is_folder else AWSBucket
-        except AttributeError:
-            self.aws_service_class = AWSBucket
+        self.aws_service_class = AWSBucket
         self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
-
-    @classmethod
-    def build_folder_path(cls, folder_name):
-        """
-        Prefix a folder name with the name of the S3 bucket defined in settings.
-        """
-        return f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
 
     @property
     def arn(self):
@@ -711,6 +700,16 @@ class S3Bucket(EntityResource):
             self.aws_service_class, aws_role_category=bucket_owner
         )
         return self.aws_bucket_service.exists(bucket_name)
+
+
+class S3Folder(S3Bucket):
+    def _init_aws_services(self):
+        self.aws_service_class = AWSFolder
+        self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
+
+    def exists(self, folder_name, bucket_owner):
+        folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
+        return super().exists(folder_path, bucket_owner), folder_path
 
 
 class RoleGroup(EntityResource):

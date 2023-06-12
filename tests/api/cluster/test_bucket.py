@@ -1,12 +1,14 @@
 # Standard library
-from unittest.mock import patch, PropertyMock, MagicMock
+from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from model_mommy import mommy
 
 # First-party/Local
-from controlpanel.api import cluster, aws
+from controlpanel.api import cluster
+from controlpanel.api.cluster import AWSRoleCategory
 
 
 @pytest.fixture(autouse=True)
@@ -48,19 +50,16 @@ def aws_tag_bucket():
 
 
 @pytest.mark.parametrize(
-    "is_folder, aws_service_fixture",
+    "cluster_class, aws_service_fixture",
     [
-        (False, "aws_create_bucket"),
-        (True, "aws_create_folder"),
+        (cluster.S3Bucket, "aws_create_bucket"),
+        (cluster.S3Folder, "aws_create_folder"),
     ]
 )
-def test_aws_create(is_folder, aws_service_fixture, bucket, request):
-    with patch.object(
-        bucket.__class__, "is_folder", new_callable=PropertyMock(return_value=is_folder)
-    ):
-        aws_bucket_service = request.getfixturevalue(aws_service_fixture)
-        cluster.S3Bucket(bucket).create()
-        aws_bucket_service.assert_called_with(bucket.name, False)
+def test_aws_create(cluster_class, aws_service_fixture, bucket, request):
+    aws_bucket_service = request.getfixturevalue(aws_service_fixture)
+    cluster_class(bucket).create()
+    aws_bucket_service.assert_called_with(bucket.name, False)
 
 
 def test_mark_for_archival(aws_tag_bucket, bucket):
@@ -68,14 +67,10 @@ def test_mark_for_archival(aws_tag_bucket, bucket):
     aws_tag_bucket.assert_called_with(bucket.name, {"to-archive": "true"})
 
 
-@pytest.mark.parametrize(
-    "bucket, expected",
-    [
-        (MagicMock(spec=["is_folder"], is_folder=True), aws.AWSFolder),
-        (MagicMock(spec=["is_folder"], is_folder=False), aws.AWSBucket),
-        (None, aws.AWSBucket),
-    ]
-)
-def test_init_correct_service(bucket, expected):
-    obj = cluster.S3Bucket(bucket)
-    assert isinstance(obj.aws_bucket_service, expected)
+def test_aws_folder_exists(bucket):
+    with patch("controlpanel.api.aws.AWSFolder.exists") as mock_exists:
+        mock_exists.return_value = False
+        result = cluster.S3Folder(None).exists(bucket.name, AWSRoleCategory.user)
+        folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{bucket.name}"
+        mock_exists.assert_called_once_with(folder_path)
+        assert result == (False, folder_path)
