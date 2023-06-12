@@ -115,4 +115,6 @@ APP_URL_NAME_PATTERN:
   DEFAULT: "{app_name}-{env}"
   PROD: "{app_name}"
 
+# This prefix should prevent overlap with other secret/parameter names stored in GitHub
+# It will be removed in the app deployment workflow so that users won't need to use it in their code
 APP_SELF_DEFINE_SETTING_PREFIX: "XXX_"
