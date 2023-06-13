@@ -38,11 +38,10 @@ TOOLS_DOMAIN:
   _DEFAULT: tools.dev.analytical-platform.service.justice.gov.uk
   _HOST_alpha: tools.analytical-platform.service.justice.gov.uk
 
-# kibana url where the users can check the logs of their apps
-KIBANA_BASE_URL:
-  _DEFAULT: 'https://kibana.services.dev.analytical-platform.service.justice.gov.uk/app/kibana'
-  _HOST_prod: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
-  _HOST_alpha: 'https://kibana.services.analytical-platform.service.justice.gov.uk/app/kibana'
+KIBANA_BASE_URL: 'https://kibana.cloud-platform.service.justice.gov.uk/_plugin/kibana'
+
+GRAFANA_BASE_URL: 'https://grafana.live.cloud-platform.service.justice.gov.uk'
+
 
 # Name of S3 bucket where logs are stored
 LOGS_BUCKET_NAME:
@@ -102,14 +101,15 @@ AUTH_SETTINGS_SECRETS:
   - AUTH0_CLIENT_SECRET
   - IP_RANGES
 
-AUTH_SETTINGS_SECRETS_NO_EDIT:
+AUTH_SETTINGS_NO_EDIT:
   - AUTH0_CLIENT_ID
   - AUTH0_CLIENT_SECRET
+  - AUTH0_DOMAIN
+  - AUTH0_PASSWORDLESS
 
 AUTH_SETTINGS_ENVS:
   - AUTH0_DOMAIN
   - AUTHENTICATION_REQUIRED
-  - AUTH0_CALLBACK_URL
   - AUTH0_PASSWORDLESS
 
 SECRET_DISPLAY_VALUE: "*******"
@@ -121,3 +121,7 @@ AUTH0_CLIENT_NAME_LIMIT: 31
 APP_URL_NAME_PATTERN:
   DEFAULT: "{app_name}-{env}"
   PROD: "{app_name}"
+
+# This prefix should prevent overlap with other secret/parameter names stored in GitHub
+# It will be removed in the app deployment workflow so that users won't need to use it in their code
+APP_SELF_DEFINE_SETTING_PREFIX: "XXX_"

@@ -26,6 +26,7 @@ from controlpanel.frontend.views.app import (
     UpdateAppAccess,
     UpdateAppAuth0Connections,
     UpdateAppIPAllowlists,
+    RemoveAppDeploymentEnv,
 )
 
 # isort: on

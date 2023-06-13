@@ -9,7 +9,7 @@
 {% block content %}
 
   {% if form.key.value() %}
-    <h3 class="govuk-heading-m">Update the variable: {{ form.key.value() }} - [{{ form.env_name.value() }}]</h3>
+    <h3 class="govuk-heading-m">Update the variable: {{ form.display_key.value() }} - [{{ form.env_name.value() }}]</h3>
   {% else %}
     <h3 class="govuk-heading-m">Add deployment an variable for the app - [{{ form.env_name.value() }}]</h3>
   {% endif %}

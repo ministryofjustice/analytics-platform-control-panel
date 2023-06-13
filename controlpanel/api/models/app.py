@@ -3,13 +3,14 @@ import json
 import uuid
 
 # Third-party
+from auth0.v3.exceptions import Auth0Error
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
-from controlpanel.api import auth0, cluster, elasticsearch
+from controlpanel.api import auth0, cluster
 from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
 
@@ -60,9 +61,6 @@ class App(TimeStampedModel):
     @property
     def release_name(self):
         return webapp_release_name(self._repo_name)
-
-    def get_logs(self, num_hours=None):
-        return elasticsearch.app_logs(self, num_hours=num_hours)
 
     def get_group_id(self, env_name):
         return self.get_auth_client(env_name).get("group_id")
@@ -116,7 +114,7 @@ class App(TimeStampedModel):
                         "client_id": client_info.get('client_id'),
                         "ok": True
                     }
-                except auth0.Auth0Error as error:
+                except Auth0Error as error:
                     status[env_name] ={
                         "client_id": client_info.get('client_id'),
                         "ok": False,
