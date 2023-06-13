@@ -16,7 +16,7 @@ from controlpanel.api import cluster
 from controlpanel.api import auth0
 from controlpanel.api.models.app import DeleteCustomerError
 from tests.api.fixtures.aws import *
-from controlpanel.api.models import App, AppIPAllowList
+from controlpanel.api.models import App, AppIPAllowList, S3Bucket
 
 NUM_APPS = 3
 
@@ -736,3 +736,28 @@ def test_app_settings_permission(client, app, users, repos_with_auth, user, can_
                 assert 'Edit' in auth_item_ui.text
             else:
                 assert 'Edit' not in auth_item_ui.text
+
+
+def test_register_app_with_creating_datasource(client, users):
+    test_app_name = "test_app_with_creating_datasource"
+    test_bucket_name = "test-bucket"
+    assert App.objects.filter(name=test_app_name).count() == 0
+    client.force_login(users["superuser"])
+    data = dict(
+        org_names="moj-analytical-services",
+        repo_url=f"https://github.com/moj-analytical-services/{test_app_name}",
+        connect_bucket="new",
+        new_datasource_name=test_bucket_name,
+        connections=[]
+    )
+    response = client.post(reverse("create-app"), data)
+
+    assert response.status_code == 302
+    assert App.objects.filter(name=test_app_name).count() == 1
+    assert S3Bucket.objects.filter(name=test_bucket_name).count() == 1
+    created_app = App.objects.filter(name=test_app_name).first()
+    bucket = S3Bucket.objects.filter(name=test_bucket_name).first()
+    related_bucket_ids = [a.s3bucket_id for a in created_app.apps3buckets.all()]
+    assert len(related_bucket_ids) == 1
+    assert bucket.id in related_bucket_ids
+

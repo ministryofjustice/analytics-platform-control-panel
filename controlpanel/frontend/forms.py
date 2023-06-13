@@ -69,10 +69,10 @@ class AppAuth0Form(forms.Form):
             )
 
     def _chosen_custom_connections(self, connections):
-        return list(set(self.custom_connections) & set(connections))
+        return list(set(self.custom_connections) & set(connections or []))
 
     def _check_inputs_for_custom_connection(self, cleaned_data):
-        auth0_connections = cleaned_data.get("connections")
+        auth0_connections = cleaned_data.get("connections") or []
         auth0_conn_data = {}
         chosen_custom_connections = self._chosen_custom_connections(auth0_connections)
         for connection in auth0_connections:
