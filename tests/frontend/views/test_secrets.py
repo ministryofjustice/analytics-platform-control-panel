@@ -111,19 +111,20 @@ def delete_secret_post(client, app, key, data):
 
 
 @pytest.mark.parametrize(  # noqa: F405
-    "user,data,expected_status",
-    [["superuser", {"secret_name": "testing_secret","env_name":"test_env"}, 200],
-     ["app_admin", {"secret_name": "testing_secret","env_name":"test_env"}, 200],
-     ["normal_user", {}, 403]],
+    "user,expected_status",
+    [["superuser", 302],
+     ["app_admin", 302],
+     ["normal_user", 403]],
 )
-def test_add_secret(
-    client, app, users, fixture_create_update_secret, user, data, expected_status
+def test_add_secret_permissions(
+    client, app, users, fixture_create_update_secret, user, expected_status
 ):
+    data = {"env_name": ["dev"],
+            "key": ['NEW_SECRET'],
+            "value": ['testing']}
     client.force_login(users[user])
     response = add_update_secret(client, app, data=data)
-    print(response.content)
     assert response.status_code == expected_status
-    assert fixture_create_update_secret.called_once()
 
 
 @pytest.mark.parametrize(  # noqa: F405
@@ -137,6 +138,20 @@ def test_delete_secret(
 ):
     client.force_login(users[user])
     response = delete_secret_post(client, app, key, data)
-    print(response.content)
     assert response.status_code == expected_status
     assert fixture_delete_secret.called_once()
+
+
+def test_add_secret(fixture_create_update_secret,
+    client, app, users
+):
+    client.force_login(users['superuser'])
+    data = {"env_name": ["dev"],
+            "key": ['NEW_SECRET'],
+            "value": ['testing']}
+    response = add_update_secret(client, app, data=data)
+    assert response.status_code == 302
+    fixture_create_update_secret.assert_called_with(
+        env_name='dev',
+        secret_key=f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}NEW_SECRET",
+        secret_value='testing')

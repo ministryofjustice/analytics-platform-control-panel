@@ -108,6 +108,11 @@ urlpatterns = [
         name="update-auth0-connections",
     ),
     path(
+        "webapps/<int:pk>/remove_app_deployment_env/<str:env_name>",
+        views.RemoveAppDeploymentEnv.as_view(),
+        name="remove-app-deployment-env",
+    ),
+    path(
         "webapps/<int:pk>/groups/<uuid:group_id>/customers/add/",
         views.AddCustomers.as_view(),
         name="add-app-customers",

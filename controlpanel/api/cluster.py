@@ -369,7 +369,6 @@ class App(EntityResource):
     IP_RANGES = "IP_RANGES"
     AUTH0_CLIENT_ID = "AUTH0_CLIENT_ID"
     AUTH0_CLIENT_SECRET = "AUTH0_CLIENT_SECRET"
-    AUTH0_CALLBACK_URL = "AUTH0_CALLBACK_URL"
     AUTH0_DOMAIN = "AUTH0_DOMAIN"
     AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
@@ -416,9 +415,6 @@ class App(EntityResource):
             env_data: dict = {
                 App.AUTH0_DOMAIN: settings.OIDC_DOMAIN,
                 App.AUTH0_PASSWORDLESS: "email" in connections,
-                App.AUTH0_CALLBACK_URL: client["callbacks"][0]
-                if len(client["callbacks"]) >= 1
-                else "",
                 App.AUTHENTICATION_REQUIRED: not disable_authentication,
             }
         else:
@@ -434,7 +430,7 @@ class App(EntityResource):
 
     def _is_hidden_secret(self, name):
         for item in settings.OTHER_SYSTEM_SECRETS or []:
-            if name.startswith(item):
+            if name.startswith(item) or item in name:
                 return True
         return False
 
@@ -450,7 +446,7 @@ class App(EntityResource):
                     "value": None,
                     "created": False,
                     "removable": False,
-                    "editable": item_name not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                    "editable": item_name not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
 
@@ -466,7 +462,7 @@ class App(EntityResource):
                     "env_name": env_name,
                     "created": False,
                     "removable": False,
-                    "editable": True,
+                    "editable": item_name not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
 
@@ -494,17 +490,47 @@ class App(EntityResource):
     def list_role_names(self):
         return self.aws_role_service.list_role_names()
 
+    @staticmethod
+    def format_github_key_name(key_name):
+        """
+        Format the self-defined secret/variable by adding prefix if
+        create/update value back to github and there is no prefix in the name
+        """
+        if key_name not in settings.AUTH_SETTINGS_ENVS \
+                and key_name not in settings.AUTH_SETTINGS_SECRETS:
+            if not key_name.startswith(settings.APP_SELF_DEFINE_SETTING_PREFIX):
+                return f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{key_name}"
+        return key_name
+
+    @staticmethod
+    def get_github_key_display_name(key_name):
+        """
+        Format the self-defined secret/variable by removing the prefix
+        if reading it from github and there is prefix in the name
+        """
+        if key_name and key_name not in settings.AUTH_SETTINGS_ENVS \
+                and key_name not in settings.AUTH_SETTINGS_SECRETS:
+            if settings.APP_SELF_DEFINE_SETTING_PREFIX in key_name:
+                return key_name.replace(
+                    settings.APP_SELF_DEFINE_SETTING_PREFIX, "")
+        return key_name
+
     def create_or_update_secret(self, env_name, secret_key, secret_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secret(
-            repo_name, env_name, secret_key, secret_value
+            repo_name,
+            env_name,
+            secret_key,
+            secret_value
         )
 
     def delete_secret(self, env_name, secret_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         try:
             GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_secret(
-                repo_name, env_name=env_name, secret_name=secret_name
+                repo_name,
+                env_name=env_name,
+                secret_name=secret_name
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
@@ -519,14 +545,19 @@ class App(EntityResource):
     def create_or_update_env_var(self, env_name, key_name, key_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_env_var(
-            repo_name, env_name, key_name, key_value
+            repo_name,
+            env_name,
+            key_name,
+            key_value
         )
 
     def delete_env_var(self, env_name, key_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         try:
             GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_var(
-                repo_name, env_name, key_name
+                repo_name,
+                env_name,
+                key_name
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
@@ -557,8 +588,7 @@ class App(EntityResource):
                     "value": value,
                     "created": True,
                     "removable": item["name"] not in settings.AUTH_SETTINGS_SECRETS,
-                    "editable": item["name"]
-                    not in settings.AUTH_SETTINGS_SECRETS_NO_EDIT,
+                    "editable": item["name"] not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
             created_secret_names.append(item["name"])
@@ -579,7 +609,7 @@ class App(EntityResource):
                     "created": True,
                     "env_name": env_name,
                     "removable": item["name"] not in settings.AUTH_SETTINGS_ENVS,
-                    "editable": True,
+                    "editable": item["name"] not in settings.AUTH_SETTINGS_NO_EDIT,
                 }
             )
             created_var_names.append(item["name"])
@@ -613,9 +643,13 @@ class App(EntityResource):
         secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
         for secret_name in secrets_require_remove:
             self.delete_secret(env_name, secret_name)
-        envs_require_remove = [App.AUTH0_CALLBACK_URL, App.AUTH0_DOMAIN]
+        envs_require_remove = [App.AUTH0_DOMAIN]
         for app_env_name in envs_require_remove:
             self.delete_env_var(env_name, app_env_name)
+        self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
+        self.app.clear_auth_settings(env_name)
+
+    def remove_redundant_env(self, env_name):
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
         self.app.clear_auth_settings(env_name)
 

@@ -31,6 +31,18 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             name=claims.get(settings.OIDC_FIELD_NAME),
         )
 
+    def update_user(self, user, claims):
+        # Update the non-key information to sync the user's info
+        # with user profile from idp when the user's username is not changed.
+        if user.username != claims.get(settings.OIDC_FIELD_USERNAME):
+            return user
+
+        if user.email != claims.get(settings.OIDC_FIELD_EMAIL):
+            user.update(email=claims.get(settings.OIDC_FIELD_EMAIL))
+        if user.name != claims.get(settings.OIDC_FIELD_NAME):
+            user.update(name=claims.get(settings.OIDC_FIELD_NAME))
+        return user
+
     def filter_users_by_claims(self, claims):
         sub = claims.get("sub")
         if not sub:
@@ -71,6 +83,7 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context["broadcast_messages"] = settings.BROADCAST_MESSAGE.split("|")
+        context["settings"] = settings
         return context
 
     def dispatch(self, request, *args, **kwargs):

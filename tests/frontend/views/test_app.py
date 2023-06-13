@@ -3,6 +3,7 @@ import uuid
 from unittest.mock import patch
 
 # Third-party
+from bs4 import BeautifulSoup
 import pytest
 import requests
 from django.contrib.messages import get_messages
@@ -15,7 +16,7 @@ from controlpanel.api import cluster
 from controlpanel.api import auth0
 from controlpanel.api.models.app import DeleteCustomerError
 from tests.api.fixtures.aws import *
-from controlpanel.api.models import App, S3Bucket
+from controlpanel.api.models import App, AppIPAllowList, S3Bucket
 
 NUM_APPS = 3
 
@@ -51,6 +52,9 @@ def users(users):
 
 @pytest.fixture
 def app(users):
+    ip_allowlists = [
+        mommy.make("api.IPAllowlist", allowed_ip_ranges="xyz"),
+    ]
     mommy.make("api.App", NUM_APPS - 1)
     app = mommy.make("api.App")
     app.repo_url = "https://github.com/github_org/testing_repo"
@@ -70,6 +74,7 @@ def app(users):
         App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings
     }
     app.save()
+    AppIPAllowList.objects.update_records(app, "dev_env", ip_allowlists)
     mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
     return app
 
@@ -92,11 +97,39 @@ def repos(githubapi):
     }
     githubapi.get_repository.return_value = test_repo
     githubapi.get_repo_envs.return_value = ["dev_env", "prod_env"]
+    githubapi.get_repo_env_vars.return_value = [
+        {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"},
+        {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}PARAM_VAR", "value": "test_var"},
+    ]
+    githubapi.get_repo_env_secrets.return_value = [
+        {"name": cluster.App.IP_RANGES},
+        {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}PARAM_SECRET"},
+    ]
     yield githubapi
 
 
 @pytest.yield_fixture
-def repos_for_requiring_auth(githubapi):
+def repos_with_auth(githubapi):
+    test_repo = {
+        "full_name": "Test App",
+        "html_url": "https://github.com/moj-analytical-services/test_app",
+    }
+    githubapi.get_repository.return_value = test_repo
+    githubapi.get_repo_envs.return_value = ["dev_env"]
+    githubapi.get_repo_env_vars.return_value = [
+        {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"},
+        {"name": cluster.App.AUTH0_DOMAIN, "value": "http://testing"},
+    ]
+    githubapi.get_repo_env_secrets.return_value = [
+        {"name": cluster.App.AUTH0_CLIENT_ID},
+        {"name": cluster.App.AUTH0_CLIENT_SECRET},
+        {"name": cluster.App.IP_RANGES},
+    ]
+    yield githubapi
+
+
+@pytest.yield_fixture
+def repos_for_missing_auth(githubapi):
     test_repo = {
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
@@ -111,6 +144,23 @@ def repos_for_requiring_auth(githubapi):
 
 @pytest.yield_fixture
 def repos_for_no_auth(githubapi):
+    test_repo = {
+        "full_name": "Test App",
+        "html_url": "https://github.com/moj-analytical-services/test_app",
+    }
+    githubapi.get_repository.return_value = test_repo
+    githubapi.get_repo_envs.return_value = ["dev_env"]
+    githubapi.get_repo_env_vars.return_value = [
+        {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "False"},
+    ]
+    githubapi.get_repo_env_secrets.return_value = [
+        {"name": cluster.App.IP_RANGES},
+    ]
+    yield githubapi
+
+
+@pytest.yield_fixture
+def repos_for_redundant_auth(githubapi):
     test_repo = {
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
@@ -482,7 +532,6 @@ def test_app_detail_display_all_envs(client, app, users, repos):
             cluster.App.IP_RANGES,
             cluster.App.AUTH0_CLIENT_ID,
             cluster.App.AUTH0_CLIENT_SECRET,
-            cluster.App.AUTH0_CALLBACK_URL,
             cluster.App.AUTH0_DOMAIN,
             cluster.App.AUTH0_CONNECTIONS,
             cluster.App.AUTHENTICATION_REQUIRED,
@@ -492,7 +541,7 @@ def test_app_detail_display_all_envs(client, app, users, repos):
             assert key_word in str(response.content)
 
 
-def test_app_detail_with_missing_auth_client(client, users, repos_for_requiring_auth):
+def test_app_detail_with_missing_auth_client(client, users, repos_for_missing_auth):
     with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
         feature_flag.return_value = True
         app = mommy.make("api.App")
@@ -506,7 +555,7 @@ def test_app_detail_with_missing_auth_client(client, users, repos_for_requiring_
         assert btn_text in str(response.content)
 
 
-def test_app_detail_with_auth_client_redundant(client, users, app, repos_for_no_auth):
+def test_app_detail_with_auth_client_redundant(client, users, app, repos_for_redundant_auth):
     with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
         feature_flag.return_value = True
         client.force_login(users["superuser"])
@@ -547,6 +596,148 @@ def test_app_description_display_old_app_info(client, app_being_migrated, users)
         assert app_being_migrated.migration_info["app_url"] in str(response.content)
 
 
+def get_auth_settings(content, env_name):
+    soup = BeautifulSoup(content, "html.parser")
+    setting_panel = soup.find("section", {"class": f"{env_name}-settings-panel"})
+    return setting_panel.findAll("tr", {"class": "auth-setting-row"})
+
+
+def locate_setting_ui(settings, setting_name):
+    for item in settings:
+        if setting_name in item.text:
+            return item
+    return None
+
+
+def test_app_detail_with_auth_on(client, app, users, repos_with_auth):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users["superuser"])
+        response = detail(client, app)
+        assert response.status_code == 200
+        auth_settings = get_auth_settings(response.content, 'dev_env')
+        settings_for_checks = [
+            {"n": cluster.App.IP_RANGES,
+             "v": app.env_allowed_ip_ranges_names('dev_env'),
+             "e": True},
+            {"n": cluster.App.AUTH0_CLIENT_ID,
+             "v": settings.SECRET_DISPLAY_VALUE,
+             "e": False},
+            {"n": cluster.App.AUTH0_CLIENT_SECRET,
+             "v": settings.SECRET_DISPLAY_VALUE,
+             "e": False},
+            {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": True},
+            {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
+            {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
+            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
+        ]
+        for item in settings_for_checks:
+            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+            if not auth_item_ui:
+                continue
+            assert item['v'] in auth_item_ui.text
+            if item['e']:
+                assert 'Edit' in auth_item_ui.text
+            else:
+                assert 'Edit' not in auth_item_ui.text
+
+
+def test_app_detail_with_auth_off(client, app, users, repos_for_no_auth):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users["superuser"])
+        response = detail(client, app)
+        assert response.status_code == 200
+
+        settings_no_displayed = [
+            cluster.App.AUTH0_DOMAIN,
+            cluster.App.AUTH0_CLIENT_ID,
+            cluster.App.AUTH0_CLIENT_SECRET,
+            cluster.App.AUTH0_CONNECTIONS,
+            cluster.App.AUTH0_PASSWORDLESS,
+        ]
+
+        auth_settings = get_auth_settings(response.content, 'dev_env')
+        for item in settings_no_displayed:
+            auth_item_ui = locate_setting_ui(auth_settings, item)
+            assert auth_item_ui is None
+
+        settings_for_checks = [
+            {"n": cluster.App.IP_RANGES,
+             "v": app.env_allowed_ip_ranges_names('dev_env'),
+             "e": True},
+            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "False", "e": True},
+        ]
+        for item in settings_for_checks:
+            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+            if not auth_item_ui:
+                continue
+            assert item['v'] in auth_item_ui.text
+            assert 'Edit' in auth_item_ui.text
+
+
+def test_app_detail_with_self_define_settings(client, app, users, repos):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users["superuser"])
+        response = detail(client, app)
+        assert response.status_code == 200
+
+        auth_settings = get_auth_settings(response.content, 'dev_env')
+        settings_for_checks = [
+            {"n": "PARAM_SECRET", "v": settings.SECRET_DISPLAY_VALUE},
+            {"n": "PARAM_VAR", "v": "test_var"},
+        ]
+        for item in settings_for_checks:
+            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+            if not auth_item_ui:
+                continue
+            setting_link = auth_item_ui.findAll("a")[0]["href"]
+            assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
+            assert item['v'] in auth_item_ui.text
+            assert 'Edit' in auth_item_ui.text
+
+
+@pytest.mark.parametrize(
+    "user,can_edit_connections",
+    [
+        ("superuser", True),
+        ("app_admin", False),
+    ],
+)
+def test_app_settings_permission(client, app, users, repos_with_auth, user, can_edit_connections):
+    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
+        feature_flag.return_value = True
+        client.force_login(users[user])
+        response = detail(client, app)
+        assert response.status_code == 200
+        auth_settings = get_auth_settings(response.content, 'dev_env')
+        settings_for_checks = [
+            {"n": cluster.App.IP_RANGES,
+             "v": app.env_allowed_ip_ranges_names('dev_env'),
+             "e": True},
+            {"n": cluster.App.AUTH0_CLIENT_ID,
+             "v": settings.SECRET_DISPLAY_VALUE,
+             "e": False},
+            {"n": cluster.App.AUTH0_CLIENT_SECRET,
+             "v": settings.SECRET_DISPLAY_VALUE,
+             "e": False},
+            {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": can_edit_connections},
+            {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
+            {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
+            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
+        ]
+        for item in settings_for_checks:
+            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+            if not auth_item_ui:
+                continue
+            assert item['v'] in auth_item_ui.text
+            if item['e']:
+                assert 'Edit' in auth_item_ui.text
+            else:
+                assert 'Edit' not in auth_item_ui.text
+
+
 def test_register_app_with_creating_datasource(client, users):
     test_app_name = "test_app_with_creating_datasource"
     test_bucket_name = "test-bucket"
@@ -569,3 +760,4 @@ def test_register_app_with_creating_datasource(client, users):
     related_bucket_ids = [a.s3bucket_id for a in created_app.apps3buckets.all()]
     assert len(related_bucket_ids) == 1
     assert bucket.id in related_bucket_ids
+
