@@ -215,8 +215,7 @@ class S3AccessPolicy:
         folder = arn.split("/")[-1]
         prefixes[:] = [prefix for prefix in prefixes if not prefix.startswith(folder)]
 
-        # remove the resource if no prefixes left as this will ensure the statement is
-        # removed from the policy so that other folder names not viewable in AWS console
+        # remove the resource if no prefixes left so that the statement is removed
         if prefixes == [] or prefixes == [""]:
             statement.pop("Resource", None)
 
