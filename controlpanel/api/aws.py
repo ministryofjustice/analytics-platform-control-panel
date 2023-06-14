@@ -197,6 +197,29 @@ class S3AccessPolicy:
                 return True
         return False
 
+    def remove_prefix(self, arn, sid, condition):
+        """
+        Removes access to a folder by taking the folder name from the ARN, and removes
+        any matches from the given condition block related to the statement
+        """
+        statement = self.statement(sid)
+        if not statement:
+            return
+
+        try:
+            prefixes = statement["Condition"][condition]["s3:prefix"]
+        except KeyError:
+            prefixes = []
+
+        # remove access to the folder
+        folder = arn.split("/")[-1]
+        prefixes[:] = [prefix for prefix in prefixes if not prefix.startswith(folder)]
+
+        # remove the resource if no prefixes left as this will ensure the statement is
+        # removed from the policy so that other folder names not viewable in AWS console
+        if prefixes == [] or prefixes == [""]:
+            statement.pop("Resource", None)
+
     def remove_resource(self, arn, sid):
         statement = self.statement(sid)
         if statement:
@@ -269,6 +292,8 @@ class S3AccessPolicy:
         self.remove_resource(arn, "readonly")
         self.remove_resource(arn, "readwrite")
         self.remove_resource(arn, "list")
+        self.remove_prefix(arn, sid="listFolder", condition="StringEquals")
+        self.remove_prefix(arn, sid="listSubFolders", condition="StringLike")
 
     def put(self, policy_document=None):
         if policy_document is None:
