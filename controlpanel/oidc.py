@@ -38,9 +38,11 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             return user
 
         if user.email != claims.get(settings.OIDC_FIELD_EMAIL):
-            user.update(email=claims.get(settings.OIDC_FIELD_EMAIL))
+            user.email = claims.get(settings.OIDC_FIELD_EMAIL)
+            user.save()
         if user.name != claims.get(settings.OIDC_FIELD_NAME):
-            user.update(name=claims.get(settings.OIDC_FIELD_NAME))
+            user.name = claims.get(settings.OIDC_FIELD_NAME)
+            user.save()
         return user
 
     def filter_users_by_claims(self, claims):
