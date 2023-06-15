@@ -242,22 +242,18 @@ class S3AccessPolicy:
         except KeyError:
             prefixes = [""]
 
-        subfolders = folder.split("/")
-        to_add = []
+        subfolders = folder.split("/")[:-1]
+        for index, path in enumerate(subfolders):
+            prev = "/".join(subfolders[:index])
+            if prev:
+                path = f"{prev}/{path}"
 
-        for sub in subfolders[:-1]:
+            if path not in prefixes:
+                prefixes.append(path)
+                prefixes.append(f"{path}/")
 
-            try:
-                prev = to_add[-1]
-            except IndexError:
-                to_add.append(f"{sub}/")
-                continue
-
-            to_add.append(f"{prev}{sub}/")
-
-        for path in to_add:
-            prefixes.append(path)
-            # prefixes.append(f"{folder}/")
+        if folder not in prefixes:
+            prefixes.append(folder)
 
         statement["Condition"] = {
             "StringEquals": {

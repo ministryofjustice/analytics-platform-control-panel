@@ -863,7 +863,7 @@ def test_grant_folder_list_access(s3_access_policy):
     assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
     assert s3_access_policy.statements["listFolder"]["Condition"] == {
         "StringEquals": {
-            "s3:prefix": ["", folder_name, f"{folder_name}/"],
+            "s3:prefix": ["", folder_name],
             "s3:delimiter": ["/"]
         }
     }
@@ -886,9 +886,7 @@ def test_grant_folder_list_access(s3_access_policy):
             "s3:prefix": [
                 "",
                 folder_name,
-                f"{folder_name}/",
                 folder_name_2,
-                f"{folder_name_2}/",
             ],
             "s3:delimiter": ["/"]
         }
