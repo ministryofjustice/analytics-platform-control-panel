@@ -838,7 +838,8 @@ def test_grant_folder_access(access_level, roles):
         aws.AWSRole().grant_folder_access(
             'test_user_normal-user',
             bucket_arn,
-            access_level
+            access_level,
+            [bucket_arn],
         )
         revoke_access.assert_called_once_with(bucket_arn)
         grant_folder_list_access.assert_called_once_with(bucket_arn)

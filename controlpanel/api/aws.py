@@ -409,7 +409,7 @@ class AWSRole(AWSService):
             policy.grant_object_access(arn, access_level)
         policy.put()
 
-    def grant_folder_access(self, role_name, bucket_arn, access_level, paths=None):
+    def grant_folder_access(self, role_name, bucket_arn, access_level, paths):
 
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
@@ -417,8 +417,6 @@ class AWSRole(AWSService):
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
         policy.revoke_access(bucket_arn)
-
-        paths = paths or [bucket_arn]
         for path in paths:
             policy.grant_folder_list_access(path)
             policy.grant_object_access(path, access_level)

@@ -68,9 +68,10 @@ def test_aws_create_folder(grant_folder_access, user, bucket):
             access_level=AccessToS3Bucket.READONLY,
         )
         grant_folder_access.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-            AccessToS3Bucket.READONLY,
+            role_name=user.iam_role_name,
+            bucket_arn=bucket.arn,
+            access_level=AccessToS3Bucket.READONLY,
+            paths=[bucket.arn],
         )
 
 

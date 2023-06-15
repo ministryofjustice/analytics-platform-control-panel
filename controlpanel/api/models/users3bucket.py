@@ -38,9 +38,6 @@ class UserS3Bucket(AccessToS3Bucket):
 
     def grant_bucket_access(self):
         if self.s3bucket.is_folder:
-            # TODO update to include paths/resources
-            # will be implemented in ANPL-1592
-
             return cluster.User(self.user).grant_folder_access(
                 bucket_arn=self.s3bucket.arn,
                 access_level=self.access_level,

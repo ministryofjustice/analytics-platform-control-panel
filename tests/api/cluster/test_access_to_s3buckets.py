@@ -92,12 +92,13 @@ def test_grant_access(grant_bucket_access, bucket, entities, entity_type, resour
 )
 def test_grant_folder_access(grant_folder_access, bucket, entities, entity_type, resources):
     entity = entities[entity_type]
-    entity.grant_folder_access(bucket.arn, "readonly")
+    entity.grant_folder_access(bucket.arn, "readonly", resources)
 
     grant_folder_access.assert_called_with(
-        entity.iam_role_name,
-        bucket.arn,
-        "readonly",
+        role_name=entity.iam_role_name,
+        bucket_arn=bucket.arn,
+        access_level="readonly",
+        paths=resources,
     )
 
 

@@ -346,9 +346,12 @@ class User(EntityResource):
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
-    def grant_folder_access(self, bucket_arn, access_level, paths=None):
+    def grant_folder_access(self, bucket_arn, access_level, paths):
         self.aws_role_service.grant_folder_access(
-            self.iam_role_name, bucket_arn, access_level, paths
+            role_name=self.iam_role_name,
+            bucket_arn=bucket_arn,
+            access_level=access_level,
+            paths=paths,
         )
 
     def revoke_bucket_access(self, bucket_arn):
