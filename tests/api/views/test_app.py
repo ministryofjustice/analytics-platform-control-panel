@@ -23,7 +23,7 @@ def app():
 @pytest.fixture(autouse=True)  # noqa: F405
 def models(app, users):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+            patch("controlpanel.api.aws.AWSBucket.create"):
         mommy.make("api.App")
         mommy.make("api.AppS3Bucket", app=app)
         mommy.make("api.UserApp", app=app, user=users["superuser"])

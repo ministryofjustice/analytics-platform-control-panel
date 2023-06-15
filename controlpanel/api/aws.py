@@ -50,8 +50,7 @@ WRITE_ACTIONS = [
     "s3:RestoreObject",
 ]
 
-LIST_ACTIONS = [
-    "s3:ListBucket",
+LIST_BUCKET_META_ACTIONS = [
     "s3:GetBucketPublicAccessBlock",
     "s3:GetBucketPolicyStatus",
     "s3:GetBucketTagging",
@@ -62,6 +61,13 @@ LIST_ACTIONS = [
     "s3:GetBucketLocation",
     "s3:ListBucketVersions",
 ]
+
+LIST_BUCKET_CONTENTS_ACTIONS = [
+    "s3:ListBucket",
+]
+
+LIST_ACTIONS = LIST_BUCKET_META_ACTIONS + LIST_BUCKET_CONTENTS_ACTIONS
+
 
 BASE_S3_ACCESS_STATEMENT = {
     "list": {
@@ -79,6 +85,24 @@ BASE_S3_ACCESS_STATEMENT = {
         "Action": READ_ACTIONS + WRITE_ACTIONS,
         "Effect": "Allow",
     },
+    # additional permissions for folder based access
+    "listFolder": {
+        "Sid": "listFolder",
+        "Action": LIST_BUCKET_CONTENTS_ACTIONS,
+        "Effect": "Allow",
+    },
+    "listSubFolders": {
+        "Sid": "listSubFolders",
+        "Action": [
+            "s3:ListBucket",
+        ],
+        "Effect": "Allow",
+    },
+    "rootFolderBucketMeta": {
+        "Sid": "rootFolderBucketMeta",
+        "Action": LIST_BUCKET_META_ACTIONS,
+        "Effect": "Allow",
+    }
 }
 
 BUCKET_TLS_STATEMENT = {
@@ -129,16 +153,20 @@ class S3AccessPolicy:
         self.policy_document.setdefault("Statement", [])
         for stmt in self.policy_document["Statement"]:
             sid = stmt.get("Sid")
-            if sid in ("list", "readonly", "readwrite"):
+            if sid in self.base_s3_access_sids:
                 stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
                 self.statements[sid] = stmt
+
+    @property
+    def base_s3_access_sids(self):
+        return [statement["Sid"] for key, statement in BASE_S3_ACCESS_STATEMENT.items()]
 
     def load_policy_document(self):
         # triggers API call
         return self.policy.policy_document
 
     def statement(self, sid):
-        if sid in ("list", "readonly", "readwrite"):
+        if sid in self.base_s3_access_sids:
             if sid not in self.statements:
                 stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
                 self.statements[sid] = stmt
@@ -184,6 +212,58 @@ class S3AccessPolicy:
 
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
+
+    def _add_folder_to_list_folder_prefixes(self, folder):
+        statement = self.statement("listFolder")
+        try:
+            prefixes = statement["Condition"]["StringEquals"]["s3:prefix"]
+        except KeyError:
+            prefixes = [""]
+
+        if folder not in prefixes:
+            prefixes.append(folder)
+            prefixes.append(f"{folder}/")
+
+        statement["Condition"] = {
+            "StringEquals": {
+                "s3:prefix": prefixes,
+                "s3:delimiter": ["/"]
+            }
+        }
+
+    def _add_folder_to_list_sub_folders_prefixes(self, folder):
+        statement = self.statement("listSubFolders")
+        try:
+            prefixes = statement["Condition"]["StringLike"]["s3:prefix"]
+        except KeyError:
+            prefixes = []
+
+        folder_wildcard = f"{folder}/*"
+        if folder_wildcard not in prefixes:
+            prefixes.append(folder_wildcard)
+
+        statement["Condition"] = {
+            "StringLike": {
+                "s3:prefix": prefixes
+            }
+        }
+
+    def grant_folder_list_access(self, arn):
+        """
+        Splits the resource arn to get the bucket ARN and folder name, then for all
+        permissions required for folder list access makes sure the ARN is added as the
+        resource, and folder name is used in the statement condition prefixes so that
+        access if only granted to the specific folder and sub folders in the S3 bucket.
+        For a detailed breakdown of folder-level permissions see the docs:
+        https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
+        """
+        arn, folder = arn.split("/")
+        # required to avoid warnings when accessing AWS console
+        self.add_resource(arn, "rootFolderBucketMeta")
+        self.add_resource(arn, "listFolder")
+        self._add_folder_to_list_folder_prefixes(folder)
+        self.add_resource(arn, "listSubFolders")
+        self._add_folder_to_list_sub_folders_prefixes(folder)
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")
@@ -295,6 +375,16 @@ class AWSRole(AWSService):
             policy.grant_object_access(arn, access_level)
         policy.put()
 
+    def grant_folder_access(self, role_name, bucket_arn, access_level):
+        if access_level not in ("readonly", "readwrite"):
+            raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
+
+        role = self.boto3_session.resource("iam").Role(role_name)
+        policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.grant_folder_list_access(bucket_arn)
+        policy.grant_object_access(bucket_arn, access_level)
+        policy.put()
+
     def revoke_bucket_access(self, role_name, bucket_arn=None):
         if not bucket_arn:
             log.warning(f"Asked to revoke {role_name} role access to nothing")
@@ -314,8 +404,32 @@ class AWSRole(AWSService):
         policy.put()
 
 
+class AWSFolder(AWSService):
+    @staticmethod
+    def _ensure_trailing_slash(folder_name):
+        if not folder_name.endswith("/"):
+            folder_name = f"{folder_name}/"
+        return folder_name
+
+    def create(self, datasource_name, *args):
+        folder_name = datasource_name.split("/")[-1]
+        folder_name = self._ensure_trailing_slash(folder_name)
+        s3 = self.boto3_session.resource("s3")
+        s3.Object(bucket_name=settings.S3_FOLDER_BUCKET_NAME, key=folder_name).put()
+
+    def exists(self, folder_name):
+        s3_client = self.boto3_session.client("s3")
+        bucket_name, folder_name = folder_name.split("/")
+        folder_name = self._ensure_trailing_slash(folder_name)
+        try:
+            s3_client.get_object(Bucket=bucket_name, Key=folder_name)
+            return True
+        except botocore.exceptions.ClientError:
+            return False
+
+
 class AWSBucket(AWSService):
-    def create_bucket(self, bucket_name, is_data_warehouse=False):
+    def create(self, bucket_name, is_data_warehouse=False):
         s3_resource = self.boto3_session.resource("s3")
         s3_client = self.boto3_session.client("s3")
         try:

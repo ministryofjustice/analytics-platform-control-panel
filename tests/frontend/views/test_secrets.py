@@ -71,7 +71,7 @@ def repos(githubapi):
 
 @pytest.fixture(autouse=True)  # noqa: F405
 def s3buckets(app):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSBucket.create"):
         buckets = {
             "not_connected": mommy.make("api.S3Bucket"),
             "connected": mommy.make("api.S3Bucket"),

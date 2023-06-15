@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from model_mommy import mommy
 
 # First-party/Local
+from controlpanel.api import cluster
 from controlpanel.api.models import S3Bucket, UserS3Bucket
 
 
@@ -23,7 +24,7 @@ def bucket():
 def test_delete_revokes_permissions(bucket):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
-                    as revoke_bucket_access_action:
+            as revoke_bucket_access_action:
         users3bucket = mommy.make("api.UserS3Bucket", s3bucket=bucket)
         apps3bucket = mommy.make("api.AppS3Bucket", s3bucket=bucket)
 
@@ -54,13 +55,13 @@ def test_delete_marks_bucket_for_archival_when_tag_bucket_fails(bucket):
 
 
 def test_bucket_create():
-    with patch("controlpanel.api.cluster.AWSBucket.create_bucket") as create_bucket:
+    with patch("controlpanel.api.aws.AWSBucket.create") as create_bucket:
         bucket = S3Bucket.objects.create(name="test-bucket-1")
         create_bucket.assert_called_with(bucket.name, False)
 
 
 def test_create_users3bucket(superuser):
-    with patch("controlpanel.api.cluster.AWSBucket.create_bucket") as create_bucket:
+    with patch("controlpanel.api.aws.AWSBucket.create") as create_bucket:
         bucket = S3Bucket.objects.create(
             name="test-bucket-1",
             created_by=superuser,
@@ -69,3 +70,25 @@ def test_create_users3bucket(superuser):
         create_bucket.assert_called()
 
         assert UserS3Bucket.objects.get(user=superuser, s3bucket=bucket)
+
+
+@pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("bucketname/foldername", True),
+        ("bucketname", False),
+    ],
+)
+def test_is_folder(name, expected):
+    assert S3Bucket(name=name).is_folder is expected
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("bucketname/foldername", cluster.S3Folder),
+        ("bucketname", cluster.S3Bucket),
+    ],
+)
+def test_cluster(name, expected):
+    assert isinstance(S3Bucket(name=name).cluster, expected)

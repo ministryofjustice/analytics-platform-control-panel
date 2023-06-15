@@ -14,6 +14,7 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from controlpanel.api import auth0, helm
 from controlpanel.api.aws import (
     AWSBucket,
+    AWSFolder,
     AWSParameterStore,
     AWSPolicy,
     AWSRole,
@@ -344,6 +345,11 @@ class User(EntityResource):
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
+    def grant_folder_access(self, bucket_arn, access_level):
+        self.aws_role_service.grant_folder_access(
+            self.iam_role_name, bucket_arn, access_level
+        )
+
     def revoke_bucket_access(self, bucket_arn):
         self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
@@ -658,11 +664,12 @@ class S3Bucket(EntityResource):
     """Wraps a S3Bucket model to provide convenience methods for AWS"""
 
     def __init__(self, bucket):
-        super(S3Bucket, self).__init__()
         self.bucket = bucket
+        super(S3Bucket, self).__init__()
 
     def _init_aws_services(self):
-        self.aws_bucket_service = self.create_aws_service(AWSBucket)
+        self.aws_service_class = AWSBucket
+        self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
 
     @property
     def arn(self):
@@ -676,23 +683,33 @@ class S3Bucket(EntityResource):
 
     def create(self, owner=AWSRoleCategory.user):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
-            AWSBucket, aws_role_category=owner
+            self.aws_service_class, aws_role_category=owner
         )
-        return self.aws_bucket_service.create_bucket(
+        return self.aws_bucket_service.create(
             self.bucket.name, self.bucket.is_data_warehouse
         )
 
     def mark_for_archival(self):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
-            AWSBucket, aws_role_category=self._get_assume_role_category()
+            self.aws_service_class, aws_role_category=self._get_assume_role_category()
         )
         self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
 
     def exists(self, bucket_name, bucket_owner):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
-            AWSBucket, aws_role_category=bucket_owner
+            self.aws_service_class, aws_role_category=bucket_owner
         )
         return self.aws_bucket_service.exists(bucket_name)
+
+
+class S3Folder(S3Bucket):
+    def _init_aws_services(self):
+        self.aws_service_class = AWSFolder
+        self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
+
+    def exists(self, folder_name, bucket_owner):
+        folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
+        return super().exists(folder_path, bucket_owner), folder_path
 
 
 class RoleGroup(EntityResource):

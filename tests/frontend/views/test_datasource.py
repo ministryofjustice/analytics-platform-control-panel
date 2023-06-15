@@ -8,7 +8,9 @@ from model_mommy import mommy
 from rest_framework import status
 
 # First-party/Local
-from controlpanel.api.models import UserS3Bucket
+from controlpanel.api.models import S3Bucket, UserS3Bucket
+from controlpanel.frontend.forms import CreateDatasourceFolderForm, CreateDatasourceForm
+from controlpanel.frontend.views import CreateDatasource
 
 
 @pytest.fixture(autouse=True)
@@ -29,7 +31,7 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def buckets(db):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSBucket.create"):
         return {
             "app_data1": mommy.make("api.S3Bucket", is_data_warehouse=False),
             "app_data2": mommy.make("api.S3Bucket", is_data_warehouse=False),
@@ -105,9 +107,10 @@ def detail(client, buckets, *args):
     )
 
 
-def create(client, *args):
+def create(client, *args, **kwargs):
+    name = kwargs.pop("name", "test-new-bucket")
     data = {
-        "name": "test-new-bucket",
+        "name": name,
     }
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
@@ -280,13 +283,70 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
     assert ub.is_admin
 
 
-@patch("django.conf.settings.features.s3_folders")
-def test_create_s3_folder(s3_folders, client, users):
-    # TODO this test will be updated to assert correct behaviour when S3 folders have
-    #  been implemented.
-    s3_folders.enabled = True
-    for user_type, user_obj in users.items():
-        client.force_login(user_obj)
+@pytest.mark.parametrize(
+    "enabled, form_class",
+    [
+        (False, CreateDatasourceForm),
+        (True, CreateDatasourceFolderForm),
+    ]
+)
+def test_create_get_form_class(enabled, form_class):
+    with patch("django.conf.settings.features.s3_folders") as s3_folders:
+        s3_folders.enabled = enabled
+        view = CreateDatasource()
 
-        with pytest.raises(NotImplementedError):
-            create(client)
+        assert view.get_form_class() == form_class
+
+
+@patch("django.conf.settings.features.s3_folders.enabled", True)
+def test_create_folders(client, users, root_folder_bucket):
+    """
+    Check that all users can create a folder datasource
+    """
+    for _, user in users.items():
+        client.force_login(user)
+        folder_name = f"test-{user.username}-folder"
+        response = create(client, name=folder_name)
+
+        # redirect expected on success
+        assert response.status_code == 302
+        assert user.users3buckets.filter(
+            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+        ).exists()
+
+        # create another folder to catch any errors updating IAM policy
+        folder_name = f"test-{user.username}-folder-2"
+        response = create(client, name=folder_name)
+
+        # redirect expected on success
+        assert response.status_code == 302
+        assert user.users3buckets.filter(
+            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+        ).exists()
+
+
+@patch("django.conf.settings.features.s3_folders.enabled", False)
+def test_create_bucket_name_greater_than_63_fails(client, users):
+
+    name = "test-bucket-" + ("x" * 52)
+    assert len(name) == 64
+
+    client.force_login(users["superuser"])
+    response = create(client, name=name)
+
+    assert response.status_code == 200
+    assert S3Bucket.objects.filter(name=name).exists() is False
+
+
+@patch("django.conf.settings.features.s3_folders.enabled", True)
+def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_bucket):
+    name = "test-folder-" + ("x" * 52)
+    assert len(name) == 64
+
+    client.force_login(users["superuser"])
+    response = create(client, name=name)
+
+    assert response.status_code == 302
+    assert S3Bucket.objects.filter(
+        name=f"{root_folder_bucket.name}/{name}"
+    ).exists() is True

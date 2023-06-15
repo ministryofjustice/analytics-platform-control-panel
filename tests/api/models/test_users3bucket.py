@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import patch
+from unittest.mock import patch, PropertyMock
 
 # Third-party
 import pytest
@@ -39,7 +39,7 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 
 
 @pytest.mark.django_db
-def test_aws_create(user, bucket):
+def test_aws_create_bucket(user, bucket):
     with patch(
         "controlpanel.api.cluster.AWSRole.grant_bucket_access"
     ) as grant_bucket_access:
@@ -55,6 +55,23 @@ def test_aws_create(user, bucket):
             users3bucket.resources,
         )
         # TODO get policy from call and assert bucket ARN present
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.cluster.AWSRole.grant_folder_access")
+def test_aws_create_folder(grant_folder_access, user, bucket):
+    with patch.object(
+        bucket.__class__, "is_folder", new_callable=PropertyMock(return_value=True)
+    ):
+        user.users3buckets.create(
+            s3bucket=bucket,
+            access_level=AccessToS3Bucket.READONLY,
+        )
+        grant_folder_access.assert_called_with(
+            user.iam_role_name,
+            bucket.arn,
+            AccessToS3Bucket.READONLY,
+        )
 
 
 @pytest.mark.django_db

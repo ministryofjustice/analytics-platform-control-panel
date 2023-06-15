@@ -215,7 +215,7 @@ def logs_bucket(s3):
 
 def test_bucket_policy_on_creation(logs_bucket, s3):
     bucket_name = f"bucket-{id(MagicMock())}"
-    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
     policy = json.loads(
         s3.meta.client.get_bucket_policy(Bucket=bucket_name).get("Policy")
@@ -238,7 +238,7 @@ def test_create_bucket(logs_bucket, s3):
     with pytest.raises(s3.meta.client.exceptions.NoSuchBucket):
         s3.meta.client.get_bucket_location(Bucket=bucket_name)
 
-    aws.AWSBucket().create_bucket(bucket_name, is_data_warehouse=True)
+    aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
     # Check versioning.
     assert bucket.Versioning().status == "Enabled"
@@ -800,3 +800,120 @@ def test_delete_app_secret(secretsmanager):
             assert True
         else:
             assert False
+
+
+def test_aws_folder_create(root_folder_bucket, s3):
+    with pytest.raises(s3.meta.client.exceptions.NoSuchKey):
+        root_folder_bucket.Object(key="test-folder/").get()
+
+    aws.AWSFolder().create(f"{root_folder_bucket.name}/test-folder")
+
+    response = root_folder_bucket.Object(key="test-folder/").get()
+    assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+
+@pytest.mark.parametrize(
+    "new_folder, existing_folder, expected",
+    [
+        ("my-folder", "my-folder/", True),
+        ("my-folder", None, False),
+    ]
+)
+def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bucket):
+    if existing_folder:
+        root_folder_bucket.Object(key=existing_folder).put()
+
+    assert aws.AWSFolder().exists(f"{root_folder_bucket.name}/{new_folder}") is expected
+
+
+@pytest.mark.parametrize(
+    "access_level",
+    ["readwrite", "readonly"]
+)
+def test_grant_folder_access(access_level, roles):
+    bucket_arn = "arn:aws:s3:::test-bucket/user-folder"
+    with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
+            patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access:
+        aws.AWSRole().grant_folder_access(
+            'test_user_normal-user',
+            bucket_arn,
+            access_level
+        )
+        grant_folder_list_access.assert_called_once_with(bucket_arn)
+        grant_object_access.assert_called_once_with(
+            bucket_arn, access_level
+        )
+
+
+def test_grant_folder_list_access():
+    mock_policy = MagicMock()
+    mock_policy.policy_document = {}
+
+    policy = aws.S3AccessPolicy(mock_policy)
+
+    bucket_name_arn = "arn:aws:s3:::test-bucket"
+    folder_name = "user-folder"
+    bucket_and_folder_arn = f"{bucket_name_arn}/{folder_name}"
+    policy.grant_folder_list_access(bucket_and_folder_arn)
+
+    assert policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Condition"] == {
+        "StringEquals": {
+            "s3:prefix": ["", folder_name, f"{folder_name}/"],
+            "s3:delimiter": ["/"]
+        }
+    }
+    assert policy.statements["listSubFolders"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listSubFolders"]["Condition"] == {
+        "StringLike": {
+            "s3:prefix": [f"{folder_name}/*"],
+        }
+    }
+
+    # now test granting access to another folder
+
+    # create new object with old policy document
+    mock_policy = MagicMock()
+    mock_policy.policy_document = policy.policy_document
+    policy = aws.S3AccessPolicy(mock_policy)
+
+    folder_name_2 = "user-folder-2"
+    bucket_and_folder_arn = f"{bucket_name_arn}/{folder_name_2}"
+    policy.grant_folder_list_access(bucket_and_folder_arn)
+    # make sure that the policy has not been overwritten, and contains both folders
+    assert policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listFolder"]["Condition"] == {
+        "StringEquals": {
+            "s3:prefix": [
+                "",
+                folder_name,
+                f"{folder_name}/",
+                folder_name_2,
+                f"{folder_name_2}/",
+            ],
+            "s3:delimiter": ["/"]
+        }
+    }
+    assert policy.statements["listSubFolders"]["Resource"] == [bucket_name_arn]
+    assert policy.statements["listSubFolders"]["Condition"] == {
+        "StringLike": {
+            "s3:prefix": [
+                f"{folder_name}/*",
+                f"{folder_name_2}/*"
+            ],
+        }
+    }
+
+
+def test_base_s3_access_sids():
+    expected = [
+        'list',
+        'readonly',
+        'readwrite',
+        'listFolder',
+        'listSubFolders',
+        'rootFolderBucketMeta',
+    ]
+    assert aws.S3AccessPolicy(MagicMock()).base_s3_access_sids == expected

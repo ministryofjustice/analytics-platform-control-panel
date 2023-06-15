@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 # Third-party
 from django.conf import settings
+from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
 from django.db.transaction import atomic
@@ -40,11 +41,11 @@ class S3BucketQuerySet(models.QuerySet):
 class S3Bucket(TimeStampedModel):
     name = models.CharField(
         unique=True,
-        max_length=63,
+        max_length=100,
         validators=[
             validators.validate_env_prefix,
-            validators.validate_s3_bucket_length,
             validators.validate_s3_bucket_labels,
+            MinLengthValidator(limit_value=3)
         ],
     )
     created_by = models.ForeignKey(
@@ -74,8 +75,14 @@ class S3Bucket(TimeStampedModel):
         return f"<{self.__class__.__name__}: {self.name}{warehouse}>"
 
     @property
+    def cluster(self):
+        if self.is_folder:
+            return cluster.S3Folder(self)
+        return cluster.S3Bucket(self)
+
+    @property
     def arn(self):
-        return cluster.S3Bucket(self).arn
+        return self.cluster.arn
 
     def arn_from_path(self, path):
         return f"{self.arn}{path}"
@@ -87,6 +94,16 @@ class S3Bucket(TimeStampedModel):
     @property
     def is_used_for_app(self):
         return not (AppS3Bucket.objects.filter(s3bucket_id=self.id).first() is None)
+
+    @property
+    def is_folder(self):
+        """
+        Determines if the datasource is a folder or S3 bucket. We store the name of a
+        folder including the root bucket name, separated by a forward slash, and by
+        convention a bucket name cannot contain a '/'. So if one is present in the name
+        it must represent a folder.
+        """
+        return "/" in self.name
 
     def user_is_admin(self, user):
         return (
@@ -116,7 +133,7 @@ class S3Bucket(TimeStampedModel):
 
         if is_create:
             bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
-            cluster.S3Bucket(self).create(bucket_owner)
+            self.cluster.create(bucket_owner)
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:
@@ -131,5 +148,7 @@ class S3Bucket(TimeStampedModel):
 
     @atomic
     def delete(self, *args, **kwargs):
-        cluster.S3Bucket(self).mark_for_archival()
+        # TODO update when deletion is enabled for folders
+        if not self.is_folder:
+            self.cluster.mark_for_archival()
         super().delete(*args, **kwargs)

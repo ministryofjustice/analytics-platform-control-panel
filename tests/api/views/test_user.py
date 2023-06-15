@@ -16,7 +16,7 @@ from controlpanel.api.models import User
 
 @pytest.fixture(autouse=True)
 def models(users):
-    with patch("controlpanel.api.aws.AWSBucket.create_bucket"):
+    with patch("controlpanel.api.aws.AWSBucket.create"):
         mommy.make("api.UserS3Bucket", user=users["normal_user"])
         mommy.make("api.UserApp", user=users["normal_user"])
 
