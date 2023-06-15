@@ -42,7 +42,6 @@ class Command(loaddata.Command):
                     chart_name=tool["fields"]["chart_name"],
                     name=tool["fields"]["name"],
                     version=tool["fields"]["version"],
-                    target_infrastructure=tool["fields"]["target_infrastructure"],
                 )
 
                 if matching_tools:

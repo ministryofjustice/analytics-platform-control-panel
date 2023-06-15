@@ -140,21 +140,6 @@
       "value": release.target_users if release else "",
       "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
     }) }}
-    {{ govukRadios({
-      "fieldset": {
-        "legend": {
-          "text": "Target Infrastructure",
-          "classes": "govuk-fieldset__legend--m",
-        },
-      },
-      "classes": "govuk-!-width-two-thirds",
-      "hint": {
-        "text": 'The infrastructure on which this tool is to run'
-      },
-      "name": "target_infrastructure",
-      "items": infra_choices,
-      "errorMessage": { "html": form.is_restricted.errors|join(". ") } if form.is_restricted.errors else {}
-    }) }}
     <button class="govuk-button">Create tool release</button>
   </form>
   {% endcall %}

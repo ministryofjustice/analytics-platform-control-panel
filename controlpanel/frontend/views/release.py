@@ -56,14 +56,6 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         for user in self.object.target_users.all():
             target_users.append(user.username)
         context["target_users"] = ", ".join(target_users)
-        context["infra_choices"] = [
-            {
-                "text": c[1],
-                "value": c[0],
-                "checked": self.object.target_infrastructure == c[0],
-            }
-            for c in ToolReleaseForm.base_fields["target_infrastructure"].choices
-        ]
         return context
 
     def form_valid(self, form):
@@ -91,14 +83,14 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
     permission_required = "api.create_tool_release"
     template_name = "release-create.html"
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["infra_choices"] = [
-            {"text": c[1], "value": c[0], "checked": "True"}
-            for c in Tool.INFRASTRUCTURE_STATES_ALLOWED
-        ]
-        return context
-
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context["infra_choices"] = [
+    #         {"text": c[1], "value": c[0], "checked": "True"}
+    #         for c in Tool.INFRASTRUCTURE_STATES_ALLOWED
+    #     ]
+    #     return context
+    #
     def form_valid(self, form):
         """
         Ensure the object is created as expected (with the beta-users).

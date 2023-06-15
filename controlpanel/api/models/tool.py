@@ -19,17 +19,6 @@ class Tool(TimeStampedModel):
     instance of a tool.
     """
 
-    # States that indicate which infrastructure a tool is to target.
-    OLD = "o"  # Old pre-EKS infrastructure.
-    EKS = "e"  # EKS infrastructure.
-
-    INFRASTRUCTURE_STATES = (
-        (OLD, "Old pre-EKS infrastructure."),
-        (EKS, "Amazon EKS infrastructure."),
-    )
-
-    INFRASTRUCTURE_STATES_ALLOWED = ((EKS, "Amazon EKS infrastructure."),)
-
     # Defines how a matching chart name is put into a named tool bucket.
     # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
     # chart name match: tool bucket
@@ -44,13 +33,7 @@ class Tool(TimeStampedModel):
     is_restricted = models.BooleanField(default=False)
     # The users for whom this release is visible
     target_users = models.ManyToManyField("User")
-    # The infrastructure this tool targets.
-    target_infrastructure = models.CharField(
-        help_text="The infrastructure this tool targets.",
-        max_length=1,
-        choices=INFRASTRUCTURE_STATES,
-        default=EKS,
-    )
+
     # If set, the bespoke name for the tool to be used in the domain name
     # (rather than the default chart name).
     tool_domain = models.SlugField(
