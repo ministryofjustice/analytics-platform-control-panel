@@ -340,14 +340,15 @@ class User(EntityResource):
         self.aws_role_service.delete_role(self.user.iam_role_name)
         self.delete_user_helm_charts()
 
-    def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
+    def grant_bucket_access(self, bucket_arn, access_level, path_arns=None):
+        path_arns = path_arns or []
         self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
-    def grant_folder_access(self, bucket_arn, access_level):
+    def grant_folder_access(self, bucket_arn, access_level, paths=None):
         self.aws_role_service.grant_folder_access(
-            self.iam_role_name, bucket_arn, access_level
+            self.iam_role_name, bucket_arn, access_level, paths
         )
 
     def revoke_bucket_access(self, bucket_arn):

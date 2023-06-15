@@ -242,9 +242,22 @@ class S3AccessPolicy:
         except KeyError:
             prefixes = [""]
 
-        if folder not in prefixes:
-            prefixes.append(folder)
-            prefixes.append(f"{folder}/")
+        subfolders = folder.split("/")
+        to_add = []
+
+        for sub in subfolders[:-1]:
+
+            try:
+                prev = to_add[-1]
+            except IndexError:
+                to_add.append(f"{sub}/")
+                continue
+
+            to_add.append(f"{prev}{sub}/")
+
+        for path in to_add:
+            prefixes.append(path)
+            # prefixes.append(f"{folder}/")
 
         statement["Condition"] = {
             "StringEquals": {
@@ -279,7 +292,8 @@ class S3AccessPolicy:
         For a detailed breakdown of folder-level permissions see the docs:
         https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
         """
-        arn, folder = arn.split("/")
+        # breakpoint()
+        arn, folder = arn.split("/", 1)
         # required to avoid warnings when accessing AWS console
         self.add_resource(arn, "rootFolderBucketMeta")
         self.add_resource(arn, "listFolder")
@@ -399,15 +413,19 @@ class AWSRole(AWSService):
             policy.grant_object_access(arn, access_level)
         policy.put()
 
-    def grant_folder_access(self, role_name, bucket_arn, access_level):
+    def grant_folder_access(self, role_name, bucket_arn, access_level, paths=None):
+
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
         policy.revoke_access(bucket_arn)
-        policy.grant_folder_list_access(bucket_arn)
-        policy.grant_object_access(bucket_arn, access_level)
+
+        paths = paths or [bucket_arn]
+        for path in paths:
+            policy.grant_folder_list_access(path)
+            policy.grant_object_access(path, access_level)
         policy.put()
 
     def revoke_bucket_access(self, role_name, bucket_arn=None):
