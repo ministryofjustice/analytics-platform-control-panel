@@ -288,7 +288,6 @@ class S3AccessPolicy:
         For a detailed breakdown of folder-level permissions see the docs:
         https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
         """
-        # breakpoint()
         arn, folder = arn.split("/", 1)
         # required to avoid warnings when accessing AWS console
         self.add_resource(arn, "rootFolderBucketMeta")
@@ -414,6 +413,7 @@ class AWSRole(AWSService):
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
+        paths = paths or [bucket_arn]
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
         policy.revoke_access(bucket_arn)
