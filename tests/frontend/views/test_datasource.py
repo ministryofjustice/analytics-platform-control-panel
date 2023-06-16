@@ -284,16 +284,20 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
 
 
 @pytest.mark.parametrize(
-    "enabled, form_class",
+    "folders_enabled, datasource_type, form_class",
     [
-        (False, CreateDatasourceForm),
-        (True, CreateDatasourceFolderForm),
+        (False, "", CreateDatasourceForm),
+        (False, "webapp", CreateDatasourceForm),
+        (True, "webapp", CreateDatasourceForm),
+        (True, "", CreateDatasourceFolderForm),
     ]
 )
-def test_create_get_form_class(enabled, form_class):
+def test_create_get_form_class(rf, folders_enabled, datasource_type, form_class):
+    request = rf.get(f"/?type={datasource_type}")
     with patch("django.conf.settings.features.s3_folders") as s3_folders:
-        s3_folders.enabled = enabled
+        s3_folders.enabled = folders_enabled
         view = CreateDatasource()
+        view.request = request
 
         assert view.get_form_class() == form_class
 
