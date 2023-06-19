@@ -22,6 +22,12 @@ class PolicyS3Bucket(AccessToS3Bucket):
         ordering = ("id",)
 
     def grant_bucket_access(self):
+        if self.s3bucket.is_folder:
+            return cluster.RoleGroup(self.policy).grant_folder_access(
+                self.s3bucket.arn,
+                self.access_level,
+                self.resources,
+            )
         cluster.RoleGroup(self.policy).grant_bucket_access(
             self.s3bucket.arn,
             self.access_level,

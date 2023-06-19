@@ -656,6 +656,20 @@ class AWSPolicy(AWSService):
 
         policy.delete()
 
+    def grant_folder_access(self, policy_arn, bucket_arn, access_level, paths=None):
+
+        if access_level not in ("readonly", "readwrite"):
+            raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
+
+        paths = paths or [bucket_arn]
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        policy = ManagedS3AccessPolicy(policy)
+        policy.revoke_access(bucket_arn)
+        for path in paths:
+            policy.grant_folder_list_access(path)
+            policy.grant_object_access(path, access_level)
+        policy.put()
+
     def grant_policy_bucket_access(
         self, policy_arn, bucket_arn, access_level, path_arns=None
     ):

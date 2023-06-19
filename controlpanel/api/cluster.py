@@ -762,6 +762,11 @@ class RoleGroup(EntityResource):
             self.arn, bucket_arn, access_level, path_arns
         )
 
+    def grant_folder_access(self, bucket_arn, access_level, path_arns):
+        self.aws_policy_service.grant_folder_access(
+            self.arn, bucket_arn, access_level, path_arns
+        )
+
     def revoke_bucket_access(self, bucket_arn):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
 

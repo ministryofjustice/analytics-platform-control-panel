@@ -1,13 +1,13 @@
 # Standard library
 import json
 import uuid
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import pytest
 
 # First-party/Local
-from controlpanel.api import aws, cluster
+from controlpanel.api import aws
 from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
 from tests.api.fixtures.aws import *
 
@@ -849,12 +849,57 @@ def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bu
         ]),
     ]
 )
-def test_grant_folder_access(access_level, roles, bucket_arn, paths):
+def test_role_grant_folder_access(access_level, roles, bucket_arn, paths):
     with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
             patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access, \
             patch("controlpanel.api.aws.S3AccessPolicy.revoke_access") as revoke_access:
         aws.AWSRole().grant_folder_access(
             'test_user_normal-user',
+            bucket_arn,
+            access_level,
+            paths,
+        )
+        revoke_access.assert_called_once_with(bucket_arn)
+
+        list_calls = [call(bucket_arn)]
+        object_calls = [call(bucket_arn, access_level)]
+        if paths:
+            list_calls = [call(path) for path in paths]
+            object_calls = [call(path, access_level) for path in paths]
+
+        grant_folder_list_access.assert_has_calls(list_calls)
+        grant_object_access.assert_has_calls(object_calls)
+
+
+@pytest.mark.parametrize(
+    "access_level, bucket_arn, paths",
+    [
+        ("readwrite", "arn:aws:s3:::test-bucket/user-folder", None),
+        ("readonly", "arn:aws:s3:::test-bucket/user-folder", None),
+        ("readwrite", "arn:aws:s3:::test-bucket/user-folder", []),
+        ("readonly", "arn:aws:s3:::test-bucket/user-folder", []),
+        ("readwrite", "arn:aws:s3:::test-bucket/user-folder", [
+            "arn:aws:s3:::test-bucket/user-folder/public"
+        ]),
+        ("readonly", "arn:aws:s3:::test-bucket/user-folder", [
+            "arn:aws:s3:::test-bucket/user-folder/public"
+        ]),
+        ("readwrite", "arn:aws:s3:::test-bucket/user-folder", [
+            "arn:aws:s3:::test-bucket/user-folder/public",
+            "arn:aws:s3:::test-bucket/user-folder/another"
+        ]),
+        ("readonly", "arn:aws:s3:::test-bucket/user-folder", [
+            "arn:aws:s3:::test-bucket/user-folder/public",
+            "arn:aws:s3:::test-bucket/user-folder/another"
+        ]),
+    ]
+)
+def test_policy_grant_folder_access(access_level, group, bucket_arn, paths):
+    with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
+            patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access, \
+            patch("controlpanel.api.aws.S3AccessPolicy.revoke_access") as revoke_access:
+        aws.AWSPolicy().grant_folder_access(
+            group.arn,
             bucket_arn,
             access_level,
             paths,
