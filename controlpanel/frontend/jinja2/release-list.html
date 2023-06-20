@@ -13,6 +13,8 @@
       <th class="govuk-table__header">Name</th>
       <th class="govuk-table__header">Chart</th>
       <th class="govuk-table__header">Version</th>
+      <th class="govuk-table__header">Description</th>
+      <th class="govuk-table__header">Is Restricted Release?</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -29,6 +31,12 @@
       <td class="govuk-table__cell">{{ release.chart_name}}</td>
       <td class="govuk-table__cell">
         {{ release.version }}
+      </td>
+      <td class="govuk-table__cell">
+        {{ release.description }}
+      </td>
+      <td class="govuk-table__cell">
+        {{ release.is_restricted }}
       </td>
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"

@@ -21,7 +21,6 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -31,7 +30,6 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -41,7 +39,6 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -51,7 +48,6 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
@@ -61,7 +57,6 @@ def test_tool_release_form_check_release_name():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid() is False
@@ -78,7 +73,6 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
         "tool_domain": "jupyter-lab",
     }
     f = forms.ToolReleaseForm(data)
@@ -89,7 +83,6 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
         "tool_domain": "jupyter-lab",
     }
     f = forms.ToolReleaseForm(data)
@@ -100,7 +93,6 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "target_infrastructure": "e",
         "tool_domain": "invalid-tool-domain",
     }
     f = forms.ToolReleaseForm(data)

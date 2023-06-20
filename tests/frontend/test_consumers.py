@@ -26,9 +26,9 @@ def users(db):
 @pytest.fixture
 def tools(db):
     print("Setting up tools...")
-    Tool(chart_name="a_tool", target_infrastructure="e", description="testing").save()
+    Tool(chart_name="a_tool", description="testing").save()
     Tool(
-        chart_name="another_tool", target_infrastructure="e", description="testing"
+        chart_name="another_tool", description="testing"
     ).save()
 
 

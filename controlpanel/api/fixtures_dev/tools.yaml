@@ -15,8 +15,7 @@
       redirectdomain: tools.dev.analytical-platform.service.justice.gov.uk
     version: 4.1.7
     is_restricted: false
-    target_infrastructure: "e"
-    tool_domain: 
+    tool_domain:
     target_users: []
 - model: api.tool
   pk: null
@@ -35,8 +34,7 @@
       redirectdomain: tools.dev.analytical-platform.service.justice.gov.uk
     version: 4.2.3
     is_restricted: false
-    target_infrastructure: "e"
-    tool_domain: 
+    tool_domain:
     target_users: []
 - model: api.tool
   pk: null
@@ -53,7 +51,6 @@
       proxy.auth0.clientSecret:
     version: 3.0.6
     is_restricted: false
-    target_infrastructure: "e"
     tool_domain: jupyter-lab
     target_users: []
 - model: api.tool
@@ -71,7 +68,6 @@
       proxy.auth0.clientSecret:
     version: 3.0.13
     is_restricted: false
-    target_infrastructure: "e"
     tool_domain: jupyter-lab
     target_users: []
 - model: api.tool
@@ -89,6 +85,5 @@
       proxy.auth0.clientSecret:
     version: 3.0.14
     is_restricted: false
-    target_infrastructure: "e"
     tool_domain: jupyter-lab
     target_users: []
