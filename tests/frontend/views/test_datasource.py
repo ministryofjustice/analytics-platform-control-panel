@@ -357,12 +357,19 @@ def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_
     ).exists() is True
 
 
-def test_grant_access_invalid_form(client, users3buckets, users):
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"paths": ["/invalidpath/"]},
+        {"entity_id": ""},
+    ]
+)
+def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
     """
     Regression test to check that the page renders when the form is invalid
     """
     client.force_login(users["superuser"])
-    response = grant_access(client, users3buckets, users, paths=["invalidpath"])
+    response = grant_access(client, users3buckets, users, **kwargs)
 
     assert response.status_code == 200
     assert response.context_data["form"].is_valid() is False

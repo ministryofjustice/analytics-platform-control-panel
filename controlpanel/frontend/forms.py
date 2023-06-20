@@ -309,9 +309,9 @@ class GrantAccessForm(forms.Form):
             cleaned_data["is_admin"] = True
 
         if cleaned_data["entity_type"] == "user":
-            cleaned_data["user_id"] = cleaned_data["entity_id"]
+            cleaned_data["user_id"] = cleaned_data.get("entity_id")
         elif cleaned_data["entity_type"] == "group":
-            cleaned_data["policy_id"] = cleaned_data["entity_id"]
+            cleaned_data["policy_id"] = cleaned_data.get("entity_id")
 
         return cleaned_data
 
