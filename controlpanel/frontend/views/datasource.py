@@ -339,8 +339,8 @@ class GrantAccess(
     model = UserS3Bucket
     permission_required = "api.create_users3bucket"
 
-    def get_context_data(self):
-        context = super().get_context_data()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         bucket = get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
         context["bucket"] = bucket
         member_ids = list(

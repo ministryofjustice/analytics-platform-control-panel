@@ -175,13 +175,14 @@ def revoke_access(client, users3buckets, *args):
     )
 
 
-def grant_access(client, users3buckets, users, *args):
+def grant_access(client, users3buckets, users, **kwargs):
     data = {
         "access_level": UserS3Bucket.READWRITE,
         "is_admin": False,
         "entity_id": users["other_user"].auth0_id,
         "entity_type": "user",
     }
+    data.update(**kwargs)
     return client.post(
         reverse(
             "grant-datasource-access",
@@ -354,3 +355,14 @@ def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_
     assert S3Bucket.objects.filter(
         name=f"{root_folder_bucket.name}/{name}"
     ).exists() is True
+
+
+def test_grant_access_invalid_form(client, users3buckets, users):
+    """
+    Regression test to check that the page renders when the form is invalid
+    """
+    client.force_login(users["superuser"])
+    response = grant_access(client, users3buckets, users, paths=["invalidpath"])
+
+    assert response.status_code == 200
+    assert response.context_data["form"].is_valid() is False
