@@ -39,7 +39,7 @@ def delete(client, app, param, *args):
     return client.post(reverse("delete-app-var", kwargs={"pk": app.id, "var_name": key}))
 
 
-@pytest.yield_fixture(autouse=True)  # noqa: F405
+@pytest.fixture(autouse=True)  # noqa: F405
 def github_api_token():
     with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
         ExtendedAuth0.return_value.users.get.return_value = {
@@ -53,7 +53,7 @@ def github_api_token():
         yield ExtendedAuth0.return_value
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_create_update_var():
     with patch(
         "controlpanel.api.cluster.App.create_or_update_env_var"
@@ -61,7 +61,7 @@ def fixture_create_update_var():
         yield create_or_update
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_delete_var():
     with patch(
         "controlpanel.api.cluster.App.delete_env_var"

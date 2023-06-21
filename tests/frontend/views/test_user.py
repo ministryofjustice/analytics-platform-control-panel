@@ -80,7 +80,7 @@ def test_list(client, users, view, user, expected_count):
     assert len(response.context_data["object_list"]) == expected_count
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def slack():
     with patch("controlpanel.api.models.user.slack") as slack:
         yield slack

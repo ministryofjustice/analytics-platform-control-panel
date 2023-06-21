@@ -47,7 +47,7 @@ def test_deploy_for_generic(helm, tool, users):
     )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def cluster():
     with patch("controlpanel.api.models.tool.cluster") as cluster:
         yield cluster

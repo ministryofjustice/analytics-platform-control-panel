@@ -55,7 +55,7 @@ def test_reset_home(helm, users):
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def aws_delete_role():
     with patch(
         "controlpanel.api.cluster.AWSRole.delete_role"

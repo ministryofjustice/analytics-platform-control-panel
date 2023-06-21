@@ -7,7 +7,7 @@ from model_mommy import mommy
 from rest_framework import status
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def k8s_get_config():
     with patch("controlpanel.kubeapi.views.api.kubernetes.get_config") as get_config:
         config = MagicMock("k8s config")
@@ -22,7 +22,7 @@ def k8s_get_config():
         yield get_config
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def k8s_api():
     with patch("djproxy.views.request") as request:
         request.return_value.status_code = 200

@@ -11,7 +11,7 @@ from django.conf import settings
 from controlpanel.api import auth0
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def ExtendedAuth0():
     with patch(
         "auth0.v3.authentication.GetToken.client_credentials"
@@ -20,7 +20,7 @@ def ExtendedAuth0():
         yield auth0.ExtendedAuth0()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_users_200(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "all") as request:
         request.side_effect = [
@@ -40,7 +40,7 @@ def fixture_users_200(ExtendedAuth0):
         yield
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_users_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "create") as request:
         request.side_effect = [{"name": "create-testing-bob"}]
@@ -72,14 +72,14 @@ def test_get_or_create_existed(ExtendedAuth0, fixture_users_200, fixture_users_c
     assert user["name"] == "Test User 1"
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_has_group_existed(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "has_group_existed") as has_group_existed:
         has_group_existed.return_value = True
         yield has_group_existed
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_get_group_roles(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "all") as groups_all:
         groups_all.return_value = [
@@ -89,21 +89,21 @@ def fixture_get_group_roles(ExtendedAuth0):
         yield groups_all
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_roles_delete(ExtendedAuth0):
     with patch.object(ExtendedAuth0.roles, "delete") as roles_delete:
         roles_delete.return_value = []
         yield roles_delete
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_permission_delete(ExtendedAuth0):
     with patch.object(ExtendedAuth0.permissions, "delete") as permissions_delete:
         permissions_delete.return_value = []
         yield permissions_delete
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_groups_delete(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "delete") as groups_delete:
         groups_delete.return_value = []
@@ -166,7 +166,7 @@ def test_create_user(ExtendedAuth0):
         )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_get_users_email_search_empty(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.users, "get_users_email_search"
@@ -175,7 +175,7 @@ def fixture_get_users_email_search_empty(ExtendedAuth0):
         yield get_users_email_search
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_get_users_email_search(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.users, "get_users_email_search"
@@ -200,7 +200,7 @@ def fixture_get_users_email_search(ExtendedAuth0):
         yield get_users_email_search
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_create_user(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "create_user") as create_user:
         create_user.return_value = {
@@ -221,7 +221,7 @@ def fixture_create_user(ExtendedAuth0):
         yield create_user
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_groups_update(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups.client, "patch") as group_update:
         group_update.return_value = {}
@@ -263,7 +263,7 @@ def test_existing_user_add_to_group(
     )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_client_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.clients, "create") as client_create:
         client_create.return_value = {
@@ -273,7 +273,7 @@ def fixture_client_create(ExtendedAuth0):
         yield client_create
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_connection_search_first_match(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.connections, "search_first_match"
@@ -285,7 +285,7 @@ def fixture_connection_search_first_match(ExtendedAuth0):
         yield connection_search_first_match
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_connection_disable_client(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.connections, "disable_client"
@@ -294,7 +294,7 @@ def fixture_connection_disable_client(ExtendedAuth0):
         yield connection_disable_client
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_connection_enable_client(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.connections, "enable_client"
@@ -303,7 +303,7 @@ def fixture_connection_enable_client(ExtendedAuth0):
         yield connection_enable_client
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_connection_get_all(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "get_all") as connection_get_all:
         connection_get_all.return_value = [
@@ -326,7 +326,7 @@ def fixture_connection_get_all(ExtendedAuth0):
         yield connection_get_all
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_permission_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.permissions, "create") as permission_create:
         permission_create.return_value = {
@@ -337,7 +337,7 @@ def fixture_permission_create(ExtendedAuth0):
         yield permission_create
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_role_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.roles, "create") as role_create:
         role_create.return_value = {
@@ -350,21 +350,21 @@ def fixture_role_create(ExtendedAuth0):
         yield role_create
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_group_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "create") as group_create:
         group_create.return_value = {"name": "view:app", "_id": "group_001"}
         yield group_create
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_role_add_permission(ExtendedAuth0):
     with patch.object(ExtendedAuth0.roles, "put") as role_add_permission:
         role_add_permission.return_value = {}
         yield role_add_permission
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_group_add_role(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups.client, "patch") as group_add_role:
         group_add_role.return_value = {}
@@ -425,7 +425,7 @@ def test_setup_auth0_client(
     )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_users_get_user_groups(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "get_user_groups") as get_user_groups:
         get_user_groups.return_value = [
@@ -443,21 +443,21 @@ def fixture_users_get_user_groups(ExtendedAuth0):
         yield get_user_groups
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_group_delete_member(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups.client, "delete") as group_delete_member:
         group_delete_member.return_value = {}
         yield group_delete_member
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_user_delete(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users.client, "delete") as user_delete:
         user_delete.return_value = {}
         yield user_delete
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_user_has_existed(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "has_existed") as user_has_existed:
         user_has_existed.return_value = True
@@ -490,7 +490,7 @@ def test_clear_up_user(
     fixture_user_delete.assert_called_with(f"https://{domain}/api/v2/users/{user_id}")
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_group_members_200(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "all") as request:
         request.side_effect = [
@@ -517,7 +517,7 @@ def test_group_member_more_than_100(
     assert len(members) == 200
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_client_search_first_match(ExtendedAuth0):
     with patch.object(
         ExtendedAuth0.clients, "search_first_match"
@@ -561,7 +561,7 @@ def test_update_client_auth_connections(
     )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_connection_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "create") as connection_create:
         connection_create.return_value = {

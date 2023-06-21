@@ -14,7 +14,7 @@ from tests.api.fixtures.aws import *
 from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def ExtendedAuth0():
     with patch(
         "auth0.v3.authentication.GetToken.client_credentials"
@@ -23,7 +23,7 @@ def ExtendedAuth0():
         yield auth0.ExtendedAuth0()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_get_group_id(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "get_group_id") as request:
         request.return_value = uuid.uuid4()
@@ -41,7 +41,7 @@ def client(client):
     return client
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def k8s_client():
     """
     Mock calls to kubernetes
@@ -50,7 +50,7 @@ def k8s_client():
         yield k8s_client.return_value
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def elasticsearch():
     """
     Mock calls to Elasticsearch
@@ -61,7 +61,7 @@ def elasticsearch():
         yield es.return_value
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def helm():
     """
     Mock calls to Helm
@@ -79,7 +79,7 @@ def helm_repository_index(autouse=True):
     return mock_open(read_data=content)
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def slack_WebClient():
     """
     Mock calls to Slack

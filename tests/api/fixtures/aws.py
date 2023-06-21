@@ -17,31 +17,31 @@ def aws_creds():
     os.environ["AWS_SESSION_TOKEN"] = "test-session-token"
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def iam(aws_creds):
     with moto.mock_iam():
         yield boto3.Session().resource("iam")
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def s3(aws_creds):
     with moto.mock_s3():
         yield boto3.resource("s3")
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def sts(aws_creds):
     with moto.mock_sts():
         yield boto3.client("sts")
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def ssm(aws_creds):
     with moto.mock_ssm():
         yield boto3.client("ssm", region_name="eu-west-1")
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def secretsmanager(aws_creds):
     with moto.mock_secretsmanager():
         yield boto3.client("secretsmanager", region_name="eu-west-1")

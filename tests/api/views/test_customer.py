@@ -36,13 +36,13 @@ def app():
     return app
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def ExtendedAuth0():
     with patch("controlpanel.api.models.app.auth0.ExtendedAuth0") as authz:
         yield authz.return_value
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_users_200(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "all") as request:
         request.side_effect = [
@@ -63,14 +63,14 @@ def fixture_users_200(ExtendedAuth0):
         yield
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_group_mocked(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "get_group_id") as request:
         request.side_effect = "my_group_id"
         yield request
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_customers_mocked(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "get_group_members_paginated") as request:
         items = [

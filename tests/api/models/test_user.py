@@ -16,7 +16,7 @@ def enable_db_for_all_tests(db):
     pass
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def auth0():
     with patch("controlpanel.api.models.user.auth0") as auth0:
         yield auth0
@@ -91,7 +91,7 @@ def test_k8s_namespace():
     assert user.k8s_namespace == "user-alice"
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def slack():
     with patch("controlpanel.api.models.user.slack") as slack:
         yield slack

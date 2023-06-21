@@ -146,7 +146,7 @@ def test_app_detail_by_name(client, app):
     assert set(userapp["user"]) == expected_fields
 
 
-@pytest.yield_fixture  # noqa: F405
+@pytest.fixture  # noqa: F405
 def authz():
     with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
         yield authz()

@@ -26,7 +26,7 @@ def enable_db_for_all_tests(db):
     pass
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def github_api_token():
     with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
         ExtendedAuth0.return_value.users.get.return_value = {
@@ -79,7 +79,7 @@ def app(users):
     return app
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def githubapi():
     """
     Mock calls to Github
@@ -89,7 +89,7 @@ def githubapi():
         yield GithubAPI.return_value
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def repos(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -108,7 +108,7 @@ def repos(githubapi):
     yield githubapi
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def repos_with_auth(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -128,7 +128,7 @@ def repos_with_auth(githubapi):
     yield githubapi
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def repos_for_missing_auth(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -142,7 +142,7 @@ def repos_for_missing_auth(githubapi):
     yield githubapi
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def repos_for_no_auth(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -159,7 +159,7 @@ def repos_for_no_auth(githubapi):
     yield githubapi
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def repos_for_redundant_auth(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -410,7 +410,7 @@ def remove_customer_failure(client, response):
     return "Failed removing customer" in messages
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_delete_group_members(ExtendedAuth0):
     with patch.object(ExtendedAuth0.groups, "delete_group_members") as request:
         yield request
