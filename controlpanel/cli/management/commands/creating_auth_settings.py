@@ -90,6 +90,8 @@ class Command(BaseCommand):
     def _create_initial_users(self, cluster_instance, group, initial_user_ids):
         if not group:
             return
+        if not initial_user_ids:
+            return
         cluster_instance.auth0_instance.groups.add_group_members(
             group_id=group["_id"], user_ids=initial_user_ids)
 
@@ -145,6 +147,15 @@ class Command(BaseCommand):
             app_conf.get("initial_users"), user_options={"connection": "email"})
         return user_ids
 
+    def _is_target_repo_ready(self,  cluster_instance):
+        try:
+            cluster_instance.get_deployment_envs()
+        except Exception as ex:
+            self.stdout.write(f"App: {cluster_instance.app['app_name']} has problem with repo,"
+                              f" error: {ex.__str__()}")
+            return False
+        return True
+
     def _migration_apps(self, apps_info, github_token, app_conf):
         auth0_instance = auth0.ExtendedAuth0()
         cluster_instance = cluster.App(None, github_token, auth0_instance)
@@ -155,6 +166,11 @@ class Command(BaseCommand):
             app_detail = app_item["migration"]
             dummpy_app = DummyApp(app_detail)
             cluster_instance.app = dummpy_app
+
+            # Check whether the target_repo meet the criteria
+            if not self._is_target_repo_ready(cluster_instance):
+                continue
+
             for deployment_env in app_detail["envs"]:
                 try:
                     self._create_auth_settings(
