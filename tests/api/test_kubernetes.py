@@ -11,7 +11,7 @@ from controlpanel.api.kubernetes import KubernetesClient
 SERVICE_ACCOUNT_TEST_TOKEN = "test-service-account-token"
 
 
-@pytest.yield_fixture()
+@pytest.fixture()
 def k8s_config():
     config = kubernetes.client.Configuration()
     with patch("controlpanel.api.kubernetes.kubernetes.client.Configuration.get_default_copy") as Configuration:

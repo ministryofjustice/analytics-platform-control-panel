@@ -42,7 +42,7 @@ def app(users):
     return app
 
 
-@pytest.yield_fixture  # noqa: F405
+@pytest.fixture  # noqa: F405
 def authz():
     with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
         yield authz()

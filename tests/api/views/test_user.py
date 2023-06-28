@@ -21,7 +21,7 @@ def models(users):
         mommy.make("api.UserApp", user=users["normal_user"])
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def ExtendedAuth0():
     with patch("controlpanel.api.models.app.auth0.ExtendedAuth0") as authz:
         yield authz.return_value
@@ -112,7 +112,7 @@ def test_create(client, helm):
         helm.upgrade_release.assert_called()
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def slack():
     with patch("controlpanel.api.models.user.slack") as slack:
         yield slack

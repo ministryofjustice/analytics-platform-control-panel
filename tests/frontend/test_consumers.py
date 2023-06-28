@@ -32,7 +32,7 @@ def tools(db):
     ).save()
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def update_tool_status():
     with patch(
         "controlpanel.frontend.consumers.update_tool_status"
@@ -40,7 +40,7 @@ def update_tool_status():
         yield update_tool_status
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def update_home_status():
     with patch(
         "controlpanel.frontend.consumers.update_home_status"
@@ -48,7 +48,7 @@ def update_home_status():
         yield update_home_status
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def wait_for_deployment():
     with patch(
         "controlpanel.frontend.consumers.wait_for_deployment"
@@ -56,7 +56,7 @@ def wait_for_deployment():
         yield wait_for_deployment
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def wait_for_home_reset():
     with patch(
         "controlpanel.frontend.consumers.wait_for_home_reset"

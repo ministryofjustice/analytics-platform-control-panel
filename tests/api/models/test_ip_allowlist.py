@@ -11,7 +11,7 @@ def enable_db_access_for_all_tests(db):
     pass
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def update_aws_secrets_manager():
     with patch(
         "controlpanel.api.cluster.App.create_or_update_secret"

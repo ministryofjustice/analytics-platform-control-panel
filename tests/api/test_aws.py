@@ -12,7 +12,7 @@ from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
 from tests.api.fixtures.aws import *
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
 
@@ -743,7 +743,7 @@ def test_create_app_secret(secretsmanager):
     assert result["SecretString"] == json.dumps(test_data)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_update_secret():
     with patch("controlpanel.api.aws.AWSSecretManager.update_secret") as update_secret:
         update_secret.return_value = {

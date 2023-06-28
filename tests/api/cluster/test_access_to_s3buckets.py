@@ -9,7 +9,7 @@ from model_mommy import mommy
 from controlpanel.api.cluster import App, RoleGroup, User
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def grant_bucket_access():
     with patch(
         "controlpanel.api.cluster.AWSRole.grant_bucket_access"
@@ -17,7 +17,7 @@ def grant_bucket_access():
         yield grant_bucket_access_action
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def grant_policy_bucket_access():
     with patch(
         "controlpanel.api.cluster.AWSPolicy.grant_policy_bucket_access"

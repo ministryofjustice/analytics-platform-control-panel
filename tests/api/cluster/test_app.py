@@ -14,7 +14,7 @@ def app():
     return models.App(slug="slug", repo_url="https://gitpub.example.com/test-repo")
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def aws_create_role():
     with patch(
         "controlpanel.api.cluster.AWSRole.create_role"
@@ -22,7 +22,7 @@ def aws_create_role():
         yield aws_create_role_action
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def aws_delete_role():
     with patch(
         "controlpanel.api.cluster.AWSRole.delete_role"
@@ -30,7 +30,7 @@ def aws_delete_role():
         yield aws_delete_role_action
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def githubapi():
     """
     Mock calls to Github
@@ -39,7 +39,7 @@ def githubapi():
         yield GithubAPI.return_value
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def repos(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -55,7 +55,7 @@ def test_app_create_iam_role(aws_create_role, app):
     aws_create_role.assert_called_with(app.iam_role_name, BASE_ASSUME_ROLE_POLICY)
 
 
-@pytest.yield_fixture  # noqa: F405
+@pytest.fixture  # noqa: F405
 def authz():
     with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
         yield authz()

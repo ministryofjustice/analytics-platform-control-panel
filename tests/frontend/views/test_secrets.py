@@ -16,7 +16,7 @@ def enable_db_for_all_tests(db):
     pass
 
 
-@pytest.yield_fixture(autouse=True)  # noqa: F405
+@pytest.fixture(autouse=True)  # noqa: F405
 def github_api_token():
     with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
         ExtendedAuth0.return_value.users.get.return_value = {
@@ -48,7 +48,7 @@ def app(users):
     return app
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def githubapi():
     """
     Mock calls to Github
@@ -58,7 +58,7 @@ def githubapi():
         yield GithubAPI.return_value
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def repos(githubapi):
     test_repo = {
         "full_name": "Test App",
@@ -84,7 +84,7 @@ def apps3bucket(app, s3buckets):
     return mommy.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_create_update_secret():
     with patch(
         "controlpanel.api.cluster.App.create_or_update_secret"
@@ -92,7 +92,7 @@ def fixture_create_update_secret():
         yield create_or_update
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def fixture_delete_secret():
     with patch(
         "controlpanel.api.cluster.App.delete_secret"

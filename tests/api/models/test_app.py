@@ -10,14 +10,14 @@ from controlpanel.api.auth0 import Auth0Error
 from controlpanel.api.models import App
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def auth0():
     with patch("controlpanel.api.models.app.auth0") as auth0:
         auth0.Auth0Error = Auth0Error
         yield auth0
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def update_aws_secrets_manager():
     with patch(
         "controlpanel.api.cluster.App.create_or_update_secret"

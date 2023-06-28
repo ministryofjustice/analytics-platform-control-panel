@@ -64,7 +64,7 @@ def user_update_self(client, users):
     )
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def auth0():
     with patch("controlpanel.api.models.user.auth0") as auth0:
         yield auth0

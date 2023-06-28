@@ -44,7 +44,7 @@ def audience(settings):
     settings.OIDC_CPANEL_API_AUDIENCE = TEST_CLIENT_ID
 
 
-@pytest.yield_fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def jwks():
     key = jwk.construct(TEST_PUBLIC_KEY, "RS256")
     jwk_dict = key.to_dict()
