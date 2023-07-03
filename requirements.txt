@@ -7,7 +7,7 @@ channels-redis==4.0.0
 daphne==4.0.0
 Django==4.2.1
 django-crequest==2018.5.11
-django-extensions==3.2.1
+django-extensions==3.2.3
 django-filter==22.1
 django-prometheus==2.1.0
 django-redis==5.3.0
