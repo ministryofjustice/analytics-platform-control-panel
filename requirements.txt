@@ -5,7 +5,7 @@ boto3==1.20.13
 channels==4.0.0
 channels-redis==4.0.0
 daphne==4.0.0
-Django==4.2.1
+Django==4.2.3
 django-crequest==2018.5.11
 django-extensions==3.2.1
 django-filter==22.1
