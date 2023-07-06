@@ -170,3 +170,24 @@ def test_delete_customer_by_email_success(auth0):
             user_ids=[user["user_id"]],
             group_id=user_groups["_id"],
         )
+
+
+@pytest.mark.django_db
+def test_app_allowed_ip_ranges():
+    ip_allow_lists = [
+        mommy.make("api.IPAllowlist", allowed_ip_ranges="127.0.0.1, 128.10.10.100"),
+        mommy.make("api.IPAllowlist", allowed_ip_ranges=" 123.0.0.122,152.0.0.1"),
+    ]
+    app = mommy.make("api.App")  # noqa:F841
+    for item in ip_allow_lists:
+        mommy.make("api.AppIPAllowList",
+            app_id=app.id, ip_allowlist_id=item.id, deployment_env="test"
+        )
+    app_ip_ranges = app.env_allowed_ip_ranges("test")
+    assert " " not in app_ip_ranges
+    assert len(app_ip_ranges.split(",")) == 4
+
+    full_app_ip_ranges = app.app_allowed_ip_ranges
+    assert " " not in full_app_ip_ranges
+    assert len(full_app_ip_ranges.split(",")) == 4
+

@@ -127,7 +127,8 @@ class App(TimeStampedModel):
         allowed_ip_ranges = self.ip_allowlists.values_list(
             "allowed_ip_ranges", flat=True
         ).order_by("pk")
-        return ", ".join(list(set(allowed_ip_ranges)))
+        cleaned_ip_ranges = ",".join(list(set(allowed_ip_ranges))).replace(" ", "")
+        return cleaned_ip_ranges
 
     def env_allowed_ip_ranges(self, env_name):
         related_item_ids = self.appipallowlists.filter(
@@ -138,7 +139,8 @@ class App(TimeStampedModel):
             .values_list("allowed_ip_ranges", flat=True)
             .order_by("pk")
         )
-        return ", ".join(list(allowed_ip_ranges))
+        cleaned_ip_ranges = ",".join(list(allowed_ip_ranges)).replace(" ", "")
+        return cleaned_ip_ranges
 
     def env_allowed_ip_ranges_names(self, env_name):
         related_item_ids = self.appipallowlists.filter(
