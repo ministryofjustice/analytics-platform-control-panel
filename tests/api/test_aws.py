@@ -852,14 +852,14 @@ def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bu
 def test_role_grant_folder_access(access_level, roles, bucket_arn, paths):
     with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
             patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access, \
-            patch("controlpanel.api.aws.S3AccessPolicy.revoke_access") as revoke_access:
+            patch("controlpanel.api.aws.S3AccessPolicy.revoke_folder_access") as revoke_access:
         aws.AWSRole().grant_folder_access(
             'test_user_normal-user',
             bucket_arn,
             access_level,
             paths,
         )
-        revoke_access.assert_called_once_with(bucket_arn)
+        revoke_access.assert_called_once_with(root_folder_path=bucket_arn)
 
         list_calls = [call(bucket_arn)]
         object_calls = [call(bucket_arn, access_level)]
@@ -897,14 +897,14 @@ def test_role_grant_folder_access(access_level, roles, bucket_arn, paths):
 def test_policy_grant_folder_access(access_level, group, bucket_arn, paths):
     with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_list_access") as grant_folder_list_access, \
             patch("controlpanel.api.aws.S3AccessPolicy.grant_object_access") as grant_object_access, \
-            patch("controlpanel.api.aws.S3AccessPolicy.revoke_access") as revoke_access:
+            patch("controlpanel.api.aws.S3AccessPolicy.revoke_folder_access") as revoke_access:
         aws.AWSPolicy().grant_folder_access(
             group.arn,
             bucket_arn,
             access_level,
             paths,
         )
-        revoke_access.assert_called_once_with(bucket_arn)
+        revoke_access.assert_called_once_with(root_folder_path=bucket_arn)
 
         list_calls = [call(bucket_arn)]
         object_calls = [call(bucket_arn, access_level)]
@@ -984,15 +984,22 @@ def test_base_s3_access_sids():
 
 
 def test_revoke_folder_access(s3_access_policy):
-    with patch.object(s3_access_policy, "remove_prefix") as remove_prefix:
+    with patch.object(s3_access_policy, "remove_prefix") as remove_prefix, \
+            patch.object(s3_access_policy, "remove_resource") as remove_resource:
         arn = "arn:aws:s3:::test-bucket/folder"
-        s3_access_policy.revoke_access(arn=arn)
+        s3_access_policy.revoke_folder_access(root_folder_path=arn)
         remove_prefix.assert_has_calls(
             [
-                call(arn, sid="listFolder", condition="StringEquals"),
-                call(arn, sid="listSubFolders", condition="StringLike"),
+                call(root_folder_path=arn, sid="listFolder", condition="StringEquals"),
+                call(root_folder_path=arn, sid="listSubFolders", condition="StringLike"),
             ],
             any_order=True,
+        )
+        remove_resource.assert_has_calls(
+            [
+                call(arn=arn, sid="readonly"),
+                call(arn=arn, sid="readwrite"),
+            ]
         )
 
 
@@ -1009,7 +1016,7 @@ def test_remove_prefix(s3_access_policy):
 
     # now revoke access
     arn_and_folder = f"{bucket_arn}/{folder_name}"
-    s3_access_policy.revoke_access(arn=arn_and_folder)
+    s3_access_policy.revoke_folder_access(root_folder_path=arn_and_folder)
 
     assert s3_access_policy.statements["listFolder"].get("Resource", None) is None
     assert s3_access_policy.statements["listFolder"]["Condition"] == {

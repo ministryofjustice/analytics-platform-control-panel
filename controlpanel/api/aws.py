@@ -311,9 +311,20 @@ class S3AccessPolicy:
         self.remove_resource(arn, "readonly")
         self.remove_resource(arn, "readwrite")
         self.remove_resource(arn, "list")
-        if "/" in arn:
-            self.remove_prefix(arn, sid="listFolder", condition="StringEquals")
-            self.remove_prefix(arn, sid="listSubFolders", condition="StringLike")
+
+    def revoke_folder_access(self, root_folder_path):
+        self.remove_resource(arn=root_folder_path, sid="readonly")
+        self.remove_resource(arn=root_folder_path, sid="readwrite")
+        self.remove_prefix(
+            root_folder_path=root_folder_path,
+            sid="listFolder",
+            condition="StringEquals",
+        )
+        self.remove_prefix(
+            root_folder_path=root_folder_path,
+            sid="listSubFolders",
+            condition="StringLike",
+        )
 
     def put(self, policy_document=None):
         if policy_document is None:
@@ -428,7 +439,7 @@ class AWSRole(AWSService):
         paths = paths or [bucket_arn]
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
-        policy.revoke_access(bucket_arn)
+        policy.revoke_folder_access(root_folder_path=bucket_arn)
         for path in paths:
             policy.grant_folder_list_access(path)
             policy.grant_object_access(path, access_level)
@@ -449,7 +460,10 @@ class AWSRole(AWSService):
             raise e
 
         policy = S3AccessPolicy(role.Policy("s3-access"))
-        policy.revoke_access(bucket_arn)
+        if "/" in bucket_arn:
+            policy.revoke_folder_access(root_folder_path=bucket_arn)
+        else:
+            policy.revoke_access(bucket_arn)
         policy.put()
 
 
@@ -676,7 +690,7 @@ class AWSPolicy(AWSService):
         paths = paths or [bucket_arn]
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
         policy = ManagedS3AccessPolicy(policy)
-        policy.revoke_access(bucket_arn)
+        policy.revoke_folder_access(root_folder_path=bucket_arn)
         for path in paths:
             policy.grant_folder_list_access(path)
             policy.grant_object_access(path, access_level)
@@ -706,7 +720,10 @@ class AWSPolicy(AWSService):
 
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
         policy = ManagedS3AccessPolicy(policy)
-        policy.revoke_access(bucket_arn)
+        if "/" in bucket_arn:
+            policy.revoke_folder_access(root_folder_path=bucket_arn)
+        else:
+            policy.revoke_access(bucket_arn)
         policy.put()
 
 
