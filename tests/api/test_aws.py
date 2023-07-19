@@ -1026,6 +1026,26 @@ def test_remove_prefix(s3_access_policy):
     }
 
 
+def test_remove_prefix_different_resource(s3_access_policy):
+    bucket_arn = "arn:aws:s3:::test-bucket"
+    folder_name = "user-folder"
+    s3_access_policy.grant_folder_list_access(f"{bucket_arn}/{folder_name}")
+
+    assert s3_access_policy.statements["listFolder"].get("Resource", None) is not None
+    assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is not None
+    assert s3_access_policy.statements["listFolder"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
+    assert s3_access_policy.statements["listSubFolders"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
+
+    # now revoke access
+    arn_and_folder = f"{bucket_arn}-2/{folder_name}"
+    s3_access_policy.revoke_access(arn=arn_and_folder)
+
+    assert s3_access_policy.statements["listFolder"].get("Resource", None) is not None
+    assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is not None
+    assert s3_access_policy.statements["listFolder"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
+    assert s3_access_policy.statements["listSubFolders"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
+
+
 def test_grant_folder_list_access_to_paths(s3_access_policy):
     """
     See docstring on grant_folder_list_access method for full explanation of

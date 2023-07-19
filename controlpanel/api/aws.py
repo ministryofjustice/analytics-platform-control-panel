@@ -197,13 +197,25 @@ class S3AccessPolicy:
                 return True
         return False
 
-    def remove_prefix(self, arn, sid, condition):
+    def remove_prefix(self, root_folder_path, sid, condition):
         """
         Removes access to a folder by taking the folder name from the ARN, and removes
-        any matches from the given condition block related to the statement
+        any matches from the given condition block related to the statement if the
+        bucket ARN is in the statement resource.
+
+        :param str root_folder_path: Path to the root folder including bucket arn e.g.
+            - arn:aws:s3:::bucket-name/folder-name
+        :param str sid: Statement ID
+        :param str condition: Condition operator. Should be StringEquals or StringLike
         """
         statement = self.statement(sid)
+
         if not statement:
+            return
+
+        # check the resource matches the bucket arn before removing anything else
+        bucket_arn, folder = root_folder_path.split("/")
+        if bucket_arn not in statement.get("Resource", []):
             return
 
         try:
@@ -212,7 +224,6 @@ class S3AccessPolicy:
             prefixes = []
 
         # remove access to the folder
-        folder = arn.split("/")[-1]
         prefixes[:] = [prefix for prefix in prefixes if not prefix.startswith(folder)]
 
         # remove the resource if no prefixes left so that the statement is removed
@@ -300,8 +311,9 @@ class S3AccessPolicy:
         self.remove_resource(arn, "readonly")
         self.remove_resource(arn, "readwrite")
         self.remove_resource(arn, "list")
-        self.remove_prefix(arn, sid="listFolder", condition="StringEquals")
-        self.remove_prefix(arn, sid="listSubFolders", condition="StringLike")
+        if "/" in arn:
+            self.remove_prefix(arn, sid="listFolder", condition="StringEquals")
+            self.remove_prefix(arn, sid="listSubFolders", condition="StringLike")
 
     def put(self, policy_document=None):
         if policy_document is None:
