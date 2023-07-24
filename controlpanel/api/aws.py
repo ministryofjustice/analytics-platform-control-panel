@@ -466,6 +466,20 @@ class AWSRole(AWSService):
             policy.revoke_access(bucket_arn)
         policy.put()
 
+    def revoke_folder_access(self, role_name, path_to_folder):
+        try:
+            role = self.boto3_session.resource("iam").Role(role_name)
+            role.load()
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{role_name}' doesn't exist: Nothing to revoke")
+                return
+            raise e
+
+        policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.revoke_folder_access(root_folder_path=path_to_folder)
+        policy.put()
+
 
 class AWSFolder(AWSService):
     @staticmethod
@@ -720,10 +734,13 @@ class AWSPolicy(AWSService):
 
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
         policy = ManagedS3AccessPolicy(policy)
-        if "/" in bucket_arn:
-            policy.revoke_folder_access(root_folder_path=bucket_arn)
-        else:
-            policy.revoke_access(bucket_arn)
+        policy.revoke_access(bucket_arn)
+        policy.put()
+
+    def revoke_policy_folder_access(self, policy_arn, path_to_folder):
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        policy = ManagedS3AccessPolicy(policy)
+        policy.revoke_folder_access(root_folder_path=path_to_folder)
         policy.put()
 
 
