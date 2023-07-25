@@ -95,6 +95,9 @@ class BucketList(
 
         context["other_datasources"] = other_datasources
         context["other_datasources_admins"] = other_datasources_admins
+
+        from ..tasks import sleep_then_print
+        sleep_then_print.delay()
         return context
 
 

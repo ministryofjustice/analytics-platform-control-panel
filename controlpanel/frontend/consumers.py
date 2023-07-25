@@ -282,6 +282,7 @@ def update_home_status(home_directory, status):
     )
 
 
+# this used currently to run a task
 def start_background_task(task, message):
     async_to_sync(channel_layer.send)(
         "background_tasks",

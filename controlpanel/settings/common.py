@@ -538,3 +538,20 @@ structlog.configure(
 # volume name for the EFS directory for user homes
 EFS_VOLUME = os.environ.get("EFS_VOLUME")
 MAX_RELEASE_NAME_LEN = 53
+
+
+CELERY_BROKER_URL = "sqs://"
+CELERY_CREATE_MISSING_QUEUES = False
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    "region": "eu-west-1",
+    "queue_name_prefix": "django-",
+    "predefined_queues": {
+        "django-celery": {
+            "url": "https://sqs.eu-west-1.amazonaws.com/525294151996/django-celery"
+        },
+        "mjc-test-1": {
+            "url": "https://sqs.eu-west-1.amazonaws.com/525294151996/mjc-test-1"
+        }
+    }
+}
+# CELERY_BROKER_URL = "redis://localhost:6379/0"

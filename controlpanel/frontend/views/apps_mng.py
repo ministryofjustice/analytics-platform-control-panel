@@ -131,4 +131,6 @@ class AppManager:
         )
 
     def _create_app_role(self, app):
-        cluster.App(app).create_iam_role()
+        # cluster.App(app).create_iam_role()
+        from controlpanel.frontend.tasks import create_app_role_task
+        create_app_role_task.delay()
