@@ -12,7 +12,7 @@
 {% set page_name = "webapps" %}
 {% set page_title = app.name %}
 {% set app_domain = settings.APP_DOMAIN %}
-{% set app_old_url = "https://" + app.slug + "/" + settings.APP_DOMAIN_BEFORE_MIGRATION %}
+{% set app_old_url = "https://" + app.slug + "." + settings.APP_DOMAIN_BEFORE_MIGRATION %}
 {% set feature_enabled = settings.features.app_migration.enabled %}
 
 {% set app_admins_html %}
