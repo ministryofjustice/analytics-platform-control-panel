@@ -44,25 +44,11 @@ class UserS3Bucket(AccessToS3Bucket):
                 bucket_arn=self.s3bucket.arn,
                 access_level=self.access_level,
             )
-        from ..tasks import grant_user_bucket_access_task
-        # cluster.User(self.user).grant_bucket_access(
-        #     self.s3bucket.arn,
-        #     self.access_level,
-        #     self.resources,
-        # )
-        from controlpanel import celery_app
-        celery_app.send_task("controlpanel.api.tasks.grant_user_bucket_access_task", kwargs={
-            "user_pk": self.user.pk,
-            "arn": self.s3bucket.arn,
-            "access_level": self.access_level,
-            "resources": self.resources,
-        })
-        # grant_user_bucket_access_task.delay(
-        #     self.user.pk,
-        #     self.s3bucket.arn,
-        #     self.access_level,
-        #     self.resources,
-        # )
+        cluster.User(self.user).grant_bucket_access(
+            self.s3bucket.arn,
+            self.access_level,
+            self.resources,
+        )
 
     def revoke_bucket_access(self):
         cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)
