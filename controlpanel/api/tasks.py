@@ -8,25 +8,25 @@ from controlpanel.api.models import App, User, S3Bucket, UserS3Bucket, AppS3Buck
 # this should mean that for any failure it is will be added back to the queue
 # after SQS timeout visibility has passed. Could result in tasks being run forever
 # unless SQS defines a limit?
-@shared_task(bind=True, max_retries=3)
-def create_app_aws_role(self, app_pk):
+@shared_task(acks_late=True, acks_on_failure_or_timeout=False)
+def create_app_aws_role(app_pk):
     try:
         app = App.objects.get(pk=app_pk)
     except App.DoesNotExist as exc:
-        # the app does not exist, so add message back to the queue. Is this the best way?
-        raise self.retry(exc=exc, countdown=5)
+        print(exc)
+        raise exc
 
     # this will catch when a role already exists
     cluster.App(app).create_iam_role()
 
 
-@shared_task(bind=True, max_retries=3)
-def create_app_auth_settings(self, app_pk, user_pk, envs, disable_authentication, connections):
+@shared_task(acks_late=True, acks_on_failure_or_timeout=False)
+def create_app_auth_settings(app_pk, user_pk, envs, disable_authentication, connections):
     try:
         app = App.objects.get(pk=app_pk)
     except App.DoesNotExist as exc:
-        # the app does not exist, so add message back to the queue. Is this the best way?
-        raise self.retry(exc=exc, countdown=5)
+        print(exc)
+        raise exc
 
     try:
         user = User.objects.get(pk=user_pk)
@@ -46,14 +46,14 @@ def create_app_auth_settings(self, app_pk, user_pk, envs, disable_authentication
         )
 
 
-@shared_task(bind=True, max_retries=3)
-def create_s3bucket(self, bucket_pk, user_pk, bucket_owner="APP"):
+@shared_task(acks_late=True, acks_on_failure_or_timeout=False)
+def create_s3bucket(bucket_pk, user_pk, bucket_owner="APP"):
     try:
         datasource = S3Bucket.objects.get(pk=bucket_pk)
     except S3Bucket.DoesNotExist as exc:
         # nothing to do, dont want to be added back to queue, so return
-        print(f"BUCKET NOT FOUND FOR PK {bucket_pk}")
-        raise self.retry(exc=exc, countdown=5)
+        print(exc)
+        raise exc
 
     # TODO use the user_pk to check user permission
 
@@ -61,8 +61,8 @@ def create_s3bucket(self, bucket_pk, user_pk, bucket_owner="APP"):
     datasource.cluster.create(owner=bucket_owner)
 
 
-@shared_task(bind=True, max_retries=3)
-def grant_user_s3bucket_access(self, bucket_pk, user_pk):
+@shared_task(acks_late=True, acks_on_failure_or_timeout=False)
+def grant_user_s3bucket_access(bucket_pk, user_pk):
     try:
         user = User.objects.get(pk=user_pk)
         # TODO check user has permission?
@@ -74,7 +74,8 @@ def grant_user_s3bucket_access(self, bucket_pk, user_pk):
         user_bucket = UserS3Bucket.objects.get(pk=bucket_pk)
     except UserS3Bucket.DoesNotExist as exc:
         # try again in case the bucket not yet created
-        raise self.retry(exc=exc, countdown=5)
+        print(exc)
+        raise exc
 
     cluster.User(user).grant_bucket_access(
         user_bucket.s3bucket.arn,
@@ -83,15 +84,16 @@ def grant_user_s3bucket_access(self, bucket_pk, user_pk):
     )
 
 
-@shared_task(bind=True, max_retries=3)
-def grant_app_s3bucket_access(self, app_s3_bucket_pk, user_pk):
+@shared_task(acks_late=True, acks_on_failure_or_timeout=False)
+def grant_app_s3bucket_access(app_s3_bucket_pk, user_pk):
 
     # TODO lookup user and check if they have permission
 
     try:
         bucket = AppS3Bucket.objects.get(pk=app_s3_bucket_pk)
     except AppS3Bucket.DoesNotExist as exc:
-        raise self.retry(exc=exc, countdown=5)
+        print(exc)
+        raise exc
 
     cluster.App(bucket.app).grant_bucket_access(
         bucket.s3bucket.arn,
