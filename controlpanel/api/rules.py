@@ -214,3 +214,5 @@ add_perm("api.create_parameter", is_authenticated)
 add_perm("api.retrieve_parameter", is_authenticated & is_owner)
 add_perm("api.update_parameter", is_authenticated & is_owner)
 add_perm("api.destroy_parameter", is_authenticated & is_owner)
+
+add_perm("api.list_task", is_authenticated & is_superuser)

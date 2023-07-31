@@ -142,6 +142,7 @@ class S3Bucket(TimeStampedModel):
             if self.created_by:
                 UserS3Bucket.objects.create(
                     user=self.created_by,
+                    current_user=self.created_by,
                     s3bucket=self,
                     is_admin=True,
                     access_level=UserS3Bucket.READWRITE,

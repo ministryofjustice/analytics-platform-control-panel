@@ -124,9 +124,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         # TODO: The following field should be removed after app migration
         context["app_migration_info"] = app.migration_info
         context["app_migration_status"] = context["app_migration_info"].get('status', "")
-
-        context["app_tasks"] = Task.objects.filter(
-            entity_class="App", entity_id=app.id, completed=False)
         return context
 
 
@@ -153,16 +150,13 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return reverse_lazy("list-apps")
 
     def form_valid(self, form):
-        self.object = AppManager().register_app(
-            self.request.user, form.cleaned_data
-        )
-        # try:
-        #     self.object = AppManager().register_app(
-        #         self.request.user, form.cleaned_data
-        #     )
-        # except Exception as ex:
-        #     form.add_error("repo_url", str(ex))
-        #     return FormMixin.form_invalid(self, form)
+        try:
+            self.object = AppManager().register_app(
+                self.request.user, form.cleaned_data
+            )
+        except Exception as ex:
+            form.add_error("repo_url", str(ex))
+            return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
 

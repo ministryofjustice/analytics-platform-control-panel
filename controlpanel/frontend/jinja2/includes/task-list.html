@@ -3,6 +3,9 @@
 <table class="govuk-table">
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
+      <th class="govuk-table__header">Entity class</th>
+      <th class="govuk-table__header">Entity ID</th>
+      <th class="govuk-table__header">Entity description</th>
       <th class="govuk-table__header">Task description</th>
       <th class="govuk-table__header">Create time</th>
       <th class="govuk-table__header">
@@ -13,6 +16,9 @@
   <tbody class="govuk-table__body">
   {%- for task in tasks %}
     <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ task.entity_class }}</td>
+      <td class="govuk-table__cell">{{ task.entity_id }}</td>
+      <td class="govuk-table__cell">{{ task.entity_description }}</td>
       <td class="govuk-table__cell">{{ task.task_description }}</td>
       <td class="govuk-table__cell">{{ task.created }}</td>
       <td class="govuk-table__cell">

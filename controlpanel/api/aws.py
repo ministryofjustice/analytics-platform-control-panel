@@ -823,13 +823,6 @@ class AWSSQS(AWSService):
         )
         self.client = self.boto3_session.resource("sqs")
 
-    # def __init__(self, assume_role_name=None, profile_name=None):
-    #     self.assume_role_name = assume_role_name
-    #     self.profile_name = profile_name
-    #
-    #     self.aws_sessions = AWSCredentialSessionSet(region_name=settings.SQS_REGION)
-    #     self.client = self.boto3_session.resource("sqs")
-    #
     def get_queue(self, name):
         """
         Gets an SQS queue by name.

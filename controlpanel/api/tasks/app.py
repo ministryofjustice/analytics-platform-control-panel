@@ -25,8 +25,10 @@ class AppCreateAuth(AppCreateRole):
         return [
             self.entity.id,
             self.user.id,
+            self.extra_data.get('deployment_envs'),
             self.extra_data.get('disable_authentication'),
             self.extra_data.get('connections'),
+            self.extra_data.get('has_ip_ranges')
         ]
 
     @property

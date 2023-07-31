@@ -21,11 +21,19 @@ class UserS3Bucket(AccessToS3Bucket):
     )
     is_admin = models.BooleanField(default=False)
 
+    # Non database field just for passing extra parameters
+    current_user = None
+
     class Meta:
         db_table = "control_panel_api_users3bucket"
         # one record per user/s3bucket
         unique_together = ("user", "s3bucket")
         ordering = ("id",)
+
+    def __init__(self, *args, **kwargs):
+        """Overwrite this constructor to pass some non-field parameter"""
+        self.current_user = kwargs.pop("current_user", None)
+        super().__init__(*args, **kwargs)
 
     @property
     def iam_role_name(self):
@@ -45,7 +53,7 @@ class UserS3Bucket(AccessToS3Bucket):
                 bucket_arn=self.s3bucket.arn,
                 access_level=self.access_level,
             )
-        tasks.S3BucketGrantToUser(self, self.user).create_task()
+        tasks.S3BucketGrantToUser(self, self.current_user).create_task()
         # cluster.User(self.user).grant_bucket_access(
         #     self.s3bucket.arn,
         #     self.access_level,

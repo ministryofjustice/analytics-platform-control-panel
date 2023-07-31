@@ -20,11 +20,19 @@ class AppS3Bucket(AccessToS3Bucket):
         on_delete=models.CASCADE,
     )
 
+    # Non database field just for passing extra parameters
+    current_user = None
+
     class Meta:
         db_table = "control_panel_api_apps3bucket"
         # one record per app/s3bucket
         unique_together = ("app", "s3bucket")
         ordering = ("id",)
+
+    def __init__(self, *args, **kwargs):
+        """Overwrite this constructor to pass some non-field parameter"""
+        self.current_user = kwargs.pop("current_user", None)
+        super().__init__(*args, **kwargs)
 
     @property
     def iam_role_name(self):
@@ -34,7 +42,7 @@ class AppS3Bucket(AccessToS3Bucket):
         return f"<AppS3Bucket: {self.app!r} {self.s3bucket!r} {self.access_level}>"
 
     def grant_bucket_access(self):
-        tasks.S3BucketGrantToApp(self).create_task()
+        tasks.S3BucketGrantToApp(self, self.current_user).create_task()
         # cluster.App(self.app).grant_bucket_access(
         #     self.s3bucket.arn,
         #     self.access_level,

@@ -38,7 +38,9 @@ class App(TimeStampedModel):
     # Non database field just for passing extra parameters
     disable_authentication = False
     connections = {}
-    user = None
+    current_user = None
+    deployment_envs = []
+    has_ip_ranges = False
 
     DEFAULT_AUTH_CATEGORY = "primary"
     KEY_WORD_FOR_AUTH_SETTINGS = "auth_settings"
@@ -53,7 +55,9 @@ class App(TimeStampedModel):
         """Overwrite this constructor to pass some non-field parameter"""
         self.disable_authentication = kwargs.pop("disable_authentication", False)
         self.connections = kwargs.pop("connections", {})
-        self.user = kwargs.pop("user", None)
+        self.current_user = kwargs.pop("current_user", None)
+        self.deployment_envs = kwargs.pop("deployment_envs", [])
+        self.has_ip_ranges = kwargs.pop("has_ip_ranges", False)
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -325,10 +329,12 @@ from django.dispatch import receiver
 @receiver(post_save, sender=App)
 def trigger_app_create_related_messages(sender, instance, created, **kwargs):
     if created:
-        tasks.AppCreateRole(instance, instance.user).create_task()
-        tasks.AppCreateAuth(instance, instance.user, extra_data=dict(
+        tasks.AppCreateRole(instance, instance.current_user).create_task()
+        tasks.AppCreateAuth(instance, instance.current_user, extra_data=dict(
+            deployment_envs=instance.deployment_envs,
             disable_authentication=instance.disable_authentication,
-            connections=instance.connections
+            connections=instance.connections,
+            has_ip_ranges=instance.has_ip_ranges,
         )).create_task()
 
 

@@ -38,13 +38,19 @@ class AppManager:
             repo_url=repo_url,
             disable_authentication=disable_authentication,
             connections=connections,
-            user=user
+            current_user=user,
+            deployment_envs=envs,
+            has_ip_ranges=True if ip_allowlists else False
         )
-        with transaction.atomic():
-            self._add_ip_allowlists(new_app, envs, ip_allowlists)
-            self._add_app_to_users(new_app, user)
-            # self._create_app_role(new_app)
-            self._create_or_link_datasource(new_app, user, app_data)
+        self._add_ip_allowlists(new_app, envs, ip_allowlists)
+        self._add_app_to_users(new_app, user)
+        # self._create_app_role(new_app)
+        self._create_or_link_datasource(new_app, user, app_data)
+        # with transaction.atomic():
+        #     self._add_ip_allowlists(new_app, envs, ip_allowlists)
+        #     self._add_app_to_users(new_app, user)
+        #     # self._create_app_role(new_app)
+        #     self._create_or_link_datasource(new_app, user, app_data)
 
         # self._create_auth_settigs(
         #     new_app, envs, github_api_token, disable_authentication, connections
@@ -110,18 +116,15 @@ class AppManager:
     def _create_or_link_datasource(self, app, user, bucket_data):
         if bucket_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
-                name=bucket_data["new_datasource_name"], bucket_owner="APP"
+                name=bucket_data["new_datasource_name"],
+                bucket_owner="APP",
+                created_by=user,
             )
             AppS3Bucket.objects.create(
                 app=app,
                 s3bucket=bucket,
                 access_level="readonly",
-            )
-            UserS3Bucket.objects.create(
-                user=user,
-                s3bucket=bucket,
-                access_level="readwrite",
-                is_admin=True,
+                current_user=user,
             )
         elif bucket_data.get("existing_datasource_id"):
             AppS3Bucket.objects.create(

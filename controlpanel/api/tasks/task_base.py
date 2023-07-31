@@ -38,6 +38,10 @@ class TaskBase:
         raise NotImplementedError("Not implemented")
 
     @property
+    def entity_description(self):
+        return self.entity.name
+
+    @property
     def task_name(self):
         raise NotImplementedError("Not implemented")
 
@@ -63,7 +67,7 @@ class TaskBase:
         )
         Task.objects.create(
             entity_class=self.ENTITY_CLASS,
-            entity_description=self.entity.name,
+            entity_description=self.task_description,
             entity_id=self.entity.id,
             user_id=self.user.auth0_id if self.user else 'None',
             task_id=task_id,
