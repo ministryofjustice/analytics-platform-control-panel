@@ -29,7 +29,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         wget \
-        libcurl4-openssl-dev \
+        libcurl-devel \
         libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
