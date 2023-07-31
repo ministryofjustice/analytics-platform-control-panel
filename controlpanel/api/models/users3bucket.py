@@ -44,11 +44,14 @@ class UserS3Bucket(AccessToS3Bucket):
                 bucket_arn=self.s3bucket.arn,
                 access_level=self.access_level,
             )
-        cluster.User(self.user).grant_bucket_access(
-            self.s3bucket.arn,
-            self.access_level,
-            self.resources,
-        )
+        #
+        # cluster.User(self.user).grant_bucket_access(
+        #     self.s3bucket.arn,
+        #     self.access_level,
+        #     self.resources,
+        # )
+        from controlpanel.api.tasks import grant_user_s3bucket_access
+        grant_user_s3bucket_access.delay(self.pk, self.user.pk)
 
     def revoke_bucket_access(self):
         cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)

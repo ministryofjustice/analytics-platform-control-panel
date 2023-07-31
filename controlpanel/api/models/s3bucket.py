@@ -133,7 +133,10 @@ class S3Bucket(TimeStampedModel):
 
         if is_create:
             bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
-            self.cluster.create(bucket_owner)
+            # self.cluster.create(bucket_owner)
+            from controlpanel.api.tasks import create_s3bucket
+            # self.refresh_from_db()
+            create_s3bucket.delay(self.pk, None, bucket_owner)
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:
