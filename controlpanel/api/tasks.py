@@ -46,18 +46,19 @@ def create_app_auth_settings(self, app_pk, user_pk, envs, disable_authentication
         )
 
 
-@shared_task
-def create_s3bucket(bucket_pk, user_pk, bucket_owner="APP"):
+@shared_task(bind=True, max_retries=3)
+def create_s3bucket(self, bucket_pk, user_pk, bucket_owner="APP"):
     try:
         datasource = S3Bucket.objects.get(pk=bucket_pk)
-    except S3Bucket.DoesNotExist:
+    except S3Bucket.DoesNotExist as exc:
         # nothing to do, dont want to be added back to queue, so return
-        return
+        print(f"BUCKET NOT FOUND FOR PK {bucket_pk}")
+        raise self.retry(exc=exc, countdown=5)
 
     # TODO use the user_pk to check user permission
 
     # TODO bucket_owner should be passed by the task?
-    datasource.cluster.create(bucket_owner=bucket_owner)
+    datasource.cluster.create(owner=bucket_owner)
 
 
 @shared_task(bind=True, max_retries=3)
@@ -92,7 +93,7 @@ def grant_app_s3bucket_access(self, app_s3_bucket_pk, user_pk):
     except AppS3Bucket.DoesNotExist as exc:
         raise self.retry(exc=exc, countdown=5)
 
-    cluster.App(self.app).grant_bucket_access(
+    cluster.App(bucket.app).grant_bucket_access(
         bucket.s3bucket.arn,
         bucket.access_level,
         bucket.resources,
