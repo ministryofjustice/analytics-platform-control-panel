@@ -32,6 +32,7 @@ RUN apt-get update \
         gcc \
         libcurl4-gnutls-dev \
         python3-dev \
+        libgnutls28-dev \
         libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
