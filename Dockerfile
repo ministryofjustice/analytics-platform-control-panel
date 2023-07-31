@@ -29,6 +29,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         postgresql-client \
         wget \
+        gcc \
         libcurl4-gnutls-dev \
         python3-dev \
         libssl-dev \
