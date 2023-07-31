@@ -538,3 +538,25 @@ structlog.configure(
 # volume name for the EFS directory for user homes
 EFS_VOLUME = os.environ.get("EFS_VOLUME")
 MAX_RELEASE_NAME_LEN = 53
+
+
+# Configure for celery for message queues
+DEFAULT_QUEUE = "iam_queue"
+BROKER_URL = 'sqs://'
+DEFAULT_BACKOFF_POLICY = {1: 10, 2: 20, 3: 40, 4: 80, 5: 320, 6: 640}
+PRE_DEFINED_QUEUES = ['auth_queue', 's3_queue', 'iam_queue']
+CELERY_DEFAULT_QUEUE = DEFAULT_QUEUE
+SQS_REGION = os.environ.get("SQS_REGION", "eu-west-2")
+
+BROKER_TRANSPORT_OPTIONS = {
+    "polling_interval": 10,
+    "region": SQS_REGION,
+    "wait_time_seconds": 20,
+    "predefined_queues": {}
+}
+
+for queue in PRE_DEFINED_QUEUES:
+    BROKER_TRANSPORT_OPTIONS['predefined_queues'][queue] = {
+        'url': f'https://sqs.eu-west-2.amazonaws.com/525294151996/{queue}',
+        'backoff_policy': DEFAULT_BACKOFF_POLICY,
+    }

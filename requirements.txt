@@ -35,3 +35,5 @@ sentry-sdk==1.14.0
 slackclient==2.8.1
 urllib3==1.26.11
 uvicorn[standard]==0.20.0
+celery[sqs]==5.3.0
+pycurl==7.45.2

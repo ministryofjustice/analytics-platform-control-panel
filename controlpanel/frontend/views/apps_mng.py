@@ -11,7 +11,7 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.frontend.consumers import start_background_task
+from controlpanel.utils import start_background_task
 
 
 class AppManager:
@@ -33,15 +33,22 @@ class AppManager:
         _, name = repo_url.rsplit("/", 1)
 
         # Create app and all the related sources
+        new_app = self._create_app(
+            name=name,
+            repo_url=repo_url,
+            disable_authentication=disable_authentication,
+            connections=connections,
+            user=user
+        )
         with transaction.atomic():
-            new_app = self._create_app(name=name, repo_url=repo_url)
             self._add_ip_allowlists(new_app, envs, ip_allowlists)
             self._add_app_to_users(new_app, user)
-            self._create_app_role(new_app)
+            # self._create_app_role(new_app)
             self._create_or_link_datasource(new_app, user, app_data)
-        self._create_auth_settigs(
-            new_app, envs, github_api_token, disable_authentication, connections
-        )
+
+        # self._create_auth_settigs(
+        #     new_app, envs, github_api_token, disable_authentication, connections
+        # )
 
         return new_app
 

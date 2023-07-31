@@ -307,16 +307,19 @@ class ManagedS3AccessPolicy(S3AccessPolicy):
 
 
 class AWSService:
-    def __init__(self, assume_role_name=None, profile_name=None):
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         self.assume_role_name = assume_role_name
         self.profile_name = profile_name
+        self.region_name = region_name or settings.AWS_DEFAULT_REGION
 
         self.aws_sessions = AWSCredentialSessionSet()
 
     @property
     def boto3_session(self):
         return self.aws_sessions.get_session(
-            assume_role_name=self.assume_role_name, profile_name=self.profile_name
+            assume_role_name=self.assume_role_name,
+            profile_name=self.profile_name,
+            region_name=self.region_name
         )
 
 
@@ -808,3 +811,119 @@ class AWSSecretManager(AWSService):
         if self.has_existed(secret_name):
             return self.get_secret(secret_name)
         return {}
+
+
+class AWSSQS(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None):
+        super(AWSSQS, self).__init__(
+            assume_role_name=assume_role_name,
+            profile_name=profile_name,
+            region_name=settings.SQS_REGION
+        )
+        self.client = self.boto3_session.resource("sqs")
+
+    # def __init__(self, assume_role_name=None, profile_name=None):
+    #     self.assume_role_name = assume_role_name
+    #     self.profile_name = profile_name
+    #
+    #     self.aws_sessions = AWSCredentialSessionSet(region_name=settings.SQS_REGION)
+    #     self.client = self.boto3_session.resource("sqs")
+    #
+    def get_queue(self, name):
+        """
+        Gets an SQS queue by name.
+
+        :param name: The name that was used to create the queue.
+        :return: A Queue object.
+        """
+        try:
+            queue = self.client.get_queue_by_name(QueueName=name)
+            log.info("Got queue '%s' with URL=%s", name, queue.url)
+        except botocore.exceptions.ClientError as error:
+            log.exception("Couldn't get queue named %s.", name)
+            raise error
+        else:
+            return queue
+
+    def send_message(self, queue_name, message_body, message_attributes=None):
+        """
+        Send a message to an Amazon SQS queue.
+
+        :param queue_name: The queue that receives the message.
+        :param message_body: The body text of the message.
+        :param message_attributes: Custom attributes of the message. These are key-value
+                                   pairs that can be whatever you want.
+        :return: The response from SQS that contains the assigned message ID.
+        """
+        if not message_attributes:
+            message_attributes = {}
+
+        queue = self.get_queue(name=queue_name)
+        try:
+            response = queue.send_message(
+                MessageBody=message_body,
+                MessageAttributes=message_attributes
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception("Send message failed: %s", message_body)
+            raise error
+        else:
+            return response
+
+    def receive_messages(self, queue_name, max_number, wait_time):
+        """
+        Receive a batch of messages in a single request from an SQS queue.
+
+        :param queue_name: The queue from which to receive messages.
+        :param max_number: The maximum number of messages to receive. The actual number
+                           of messages received might be less.
+        :param wait_time: The maximum time to wait (in seconds) before returning. When
+                          this number is greater than zero, long polling is used. This
+                          can result in reduced costs and fewer false empty responses.
+        :return: The list of Message objects received. These each contain the body
+                 of the message and metadata and custom attributes.
+        """
+        queue = self.get_queue(name=queue_name)
+        try:
+            messages = queue.receive_messages(
+                MessageAttributeNames=['All'],
+                MaxNumberOfMessages=max_number,
+                WaitTimeSeconds=wait_time
+            )
+            for msg in messages:
+                log.info("Received message: %s: %s", msg.message_id, msg.body)
+        except botocore.exceptions.ClientError as error:
+            log.exception("Couldn't receive messages from queue: %s", queue_name)
+            raise error
+        else:
+            return messages
+
+    def delete_messages(self, queue, messages):
+        """
+        Delete a batch of messages from a queue in a single request.
+
+        :param queue: The queue from which to delete the messages.
+        :param messages: The list of messages to delete.
+        :return: The response from SQS that contains the list of successful and failed
+                 message deletions.
+        """
+        try:
+            entries = [{
+                'Id': str(ind),
+                'ReceiptHandle': msg.receipt_handle
+            } for ind, msg in enumerate(messages)]
+            response = queue.delete_messages(Entries=entries)
+            if 'Successful' in response:
+                for msg_meta in response['Successful']:
+                    log.info("Deleted %s", messages[int(msg_meta['Id'])].receipt_handle)
+            if 'Failed' in response:
+                for msg_meta in response['Failed']:
+                    log.warning(
+                        "Could not delete %s",
+                        messages[int(msg_meta['Id'])].receipt_handle
+                    )
+        except botocore.exceptions.ClientError:
+            log.exception("Couldn't delete messages from queue %s", queue)
+        else:
+            return response

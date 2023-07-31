@@ -4,6 +4,7 @@ from django.db import models
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
+from controlpanel.api import tasks
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -44,12 +45,12 @@ class UserS3Bucket(AccessToS3Bucket):
                 bucket_arn=self.s3bucket.arn,
                 access_level=self.access_level,
             )
-
-        cluster.User(self.user).grant_bucket_access(
-            self.s3bucket.arn,
-            self.access_level,
-            self.resources,
-        )
+        tasks.S3BucketGrantToUser(self, self.user).create_task()
+        # cluster.User(self.user).grant_bucket_access(
+        #     self.s3bucket.arn,
+        #     self.access_level,
+        #     self.resources,
+        # )
 
     def revoke_bucket_access(self):
         cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)

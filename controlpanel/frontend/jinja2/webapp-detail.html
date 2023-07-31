@@ -8,12 +8,14 @@
 {% from "user/macro.html" import user_name %}
 {% from "includes/yesno.html" import yes_no %}
 {% from "includes/app-deployment-settings.html" import app_deployment_settings %}
+{% from "includes/task-list.html" import task_list %}
 
 {% set page_name = "webapps" %}
 {% set page_title = app.name %}
 {% set app_domain = settings.APP_DOMAIN %}
 {% set app_old_url = "https://" + app.slug + "/" + settings.APP_DOMAIN_BEFORE_MIGRATION %}
 {% set feature_enabled = settings.features.app_migration.enabled %}
+{% set mq_feature_enabled = settings.features.message_broker.enabled %}
 
 {% set app_admins_html %}
 {% include "modals/app_admins.html" %}
@@ -72,6 +74,10 @@
     {% endif %}
   {% endif %}
 
+  {% if mq_feature_enabled and app_tasks%}
+    <h2 class="govuk-heading-m">Incomplete pp tasks</h2>
+    {{ task_list(app_tasks, csrf_input) }}
+  {% endif %}
 
   {% if feature_enabled and repo_access_error_msg %}
   <div class="govuk-grid-row">
@@ -128,7 +134,7 @@
 
 </header>
 
-<section class="cpanel-section app-auth-settings-panel">
+<section class="cpanel-section track_task app-auth-settings-panel">
   {% if feature_enabled %}
     {% if github_settings_access_error_msg %}
       <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
