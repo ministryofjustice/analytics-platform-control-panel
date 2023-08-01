@@ -10,7 +10,7 @@ from rest_framework import status
 from rest_framework.reverse import reverse
 
 # First-party/Local
-from controlpanel.api.models import UserS3Bucket
+from controlpanel.api.models import S3Bucket, UserS3Bucket
 from tests.api.fixtures.es import BUCKET_HITS_AGGREGATION
 
 
@@ -94,26 +94,30 @@ def test_delete(client, bucket):
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, superuser):
-    with patch("controlpanel.api.aws.AWSBucket.create") as create_bucket:
-        data = {"name": "test-bucket-123"}
-        response = client.post(reverse("s3bucket-list"), data)
-        assert response.status_code == status.HTTP_201_CREATED
+def test_create(client, superuser, sqs, helpers):
+    data = {"name": "test-bucket-123"}
+    response = client.post(reverse("s3bucket-list"), data)
+    assert response.status_code == status.HTTP_201_CREATED
 
-        assert response.data["created_by"] == superuser.auth0_id
-        assert not response.data["is_data_warehouse"]
+    assert response.data["created_by"] == superuser.auth0_id
+    assert not response.data["is_data_warehouse"]
 
-        create_bucket.assert_called()
+    # create_bucket.assert_called()
 
-        users3bucket = UserS3Bucket.objects.get(
-            user_id=superuser.auth0_id,
-            s3bucket_id=response.data["id"],
-        )
+    bucket = S3Bucket.objects.get(id=response.data["id"])
+    users3bucket = UserS3Bucket.objects.get(
+        user_id=superuser.auth0_id,
+        s3bucket_id=response.data["id"],
+    )
 
-        assert users3bucket.user.auth0_id == superuser.auth0_id
-        assert response.data["id"] == users3bucket.s3bucket.id
-        assert UserS3Bucket.READWRITE == users3bucket.access_level
-        assert users3bucket.is_admin
+    assert users3bucket.user.auth0_id == superuser.auth0_id
+    assert response.data["id"] == users3bucket.s3bucket.id
+    assert UserS3Bucket.READWRITE == users3bucket.access_level
+    assert users3bucket.is_admin
+
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, S3Bucket.__name__, bucket.id)
+    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
 
 
 EXISTING_BUCKET_NAME = object()

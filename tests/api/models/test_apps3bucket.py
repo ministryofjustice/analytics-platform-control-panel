@@ -37,47 +37,16 @@ def test_one_record_per_app_per_s3bucket(app, bucket):
 
 
 @pytest.mark.django_db
-def test_update_aws_permissions(app, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access_action:
-        apps3bucket = AppS3Bucket(
-            app=app,
-            s3bucket=bucket,
-            access_level=AppS3Bucket.READONLY,
-        )
+def test_aws_permissions(app, bucket, sqs, helpers):
+    apps3bucket = AppS3Bucket(
+        app=app,
+        s3bucket=bucket,
+        access_level=AppS3Bucket.READONLY,
+    )
 
-        apps3bucket.save()
-
-        grant_bucket_access_action.assert_called_with(
-            app.iam_role_name,
-            bucket.arn,
-            AppS3Bucket.READONLY,
-            apps3bucket.resources,
-        )
-        # TODO get policy from call and assert ARN in correct place
-
-
-@pytest.mark.django_db
-def test_aws_create(app, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access_action:
-        apps3bucket = AppS3Bucket(
-            app=app,
-            s3bucket=bucket,
-            access_level=AppS3Bucket.READONLY,
-        )
-
-        apps3bucket.save()
-
-        grant_bucket_access_action.assert_called_with(
-            app.iam_role_name,
-            bucket.arn,
-            AppS3Bucket.READONLY,
-            apps3bucket.resources,
-        )
-        # TODO make this test a case on previous
+    apps3bucket.save()
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, AppS3Bucket.__name__, apps3bucket.id)
 
 
 @pytest.mark.django_db

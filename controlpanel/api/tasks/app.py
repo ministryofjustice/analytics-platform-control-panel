@@ -1,3 +1,4 @@
+from django.conf import settings
 from controlpanel.api.tasks.task_base import TaskBase
 
 
@@ -15,7 +16,7 @@ class AppCreateRole(TaskBase):
 
 class AppCreateAuth(AppCreateRole):
 
-    QUEUE_NAME = "auth_queue"
+    QUEUE_NAME = settings.AUTH_QUEUE_NAME
 
     @property
     def task_name(self):
@@ -24,7 +25,7 @@ class AppCreateAuth(AppCreateRole):
     def _get_args_list(self):
         return [
             self.entity.id,
-            self.user.id,
+            self.user.id if self.user else 'None',
             self.extra_data.get('deployment_envs'),
             self.extra_data.get('disable_authentication'),
             self.extra_data.get('connections'),

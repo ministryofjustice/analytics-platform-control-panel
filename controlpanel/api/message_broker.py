@@ -118,7 +118,7 @@ class CeleryTaskMessage(MessageProtocol):
         info['priority'] = self.DEFAULT_PRIORITY or 0
         message['content-encoding'] = self.DEFAULT_CONTENT_ENCODING
         message['content-type'] = self.DEFAULT_CONTENT_TYPE
-        message['body'], body_encoding = self.encode_body(
+        message['body'], body_encoding = self.__class__.encode_body(
             json.dumps(message['body']), self.DEFAULT_BODY_ENCODING
         )
         props = message['properties']
@@ -129,11 +129,35 @@ class CeleryTaskMessage(MessageProtocol):
         props['delivery_info'].update(
             routing_key=self.queue_name,
         )
-        encoded_message, _ = self.encode_body(json.dumps(message), self.DEFAULT_BODY_ENCODING)
+        encoded_message, _ = self.__class__.encode_body(
+            json.dumps(message), self.DEFAULT_BODY_ENCODING)
         return encoded_message
 
-    def encode_body(self, body, encoding=None):
-        return self.codecs.get(encoding).encode(body), encoding
+    @classmethod
+    def encode_body(cls, body, encoding=None):
+        if encoding:
+            return cls.codecs.get(encoding).encode(body), encoding
+        return body, encoding
+
+    @classmethod
+    def decode_body(cls, body, encoding=None):
+        if encoding:
+            return cls.codecs.get(encoding).decode(body)
+        return body
+
+    @classmethod
+    def validate_message(cls, message):
+        decoded_message = cls.decode_body(message, cls.DEFAULT_BODY_ENCODING)
+        try:
+            message_body = json.loads(decoded_message)
+            assert message_body["content-encoding"] == cls.DEFAULT_CONTENT_ENCODING
+            assert message_body["content-type"] == cls.DEFAULT_CONTENT_TYPE
+            assert message_body["headers"]["id"] == message_body["headers"]["root_id"]
+            assert message_body["headers"]["id"] == message_body["properties"]["correlation_id"]
+            assert type(json.loads(cls.decode_body(message_body["body"], cls.DEFAULT_BODY_ENCODING))) == list
+            return True, message_body
+        except (ValueError, KeyError):
+            return False, None
 
 
 class MessageBrokerClient:

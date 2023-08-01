@@ -42,6 +42,14 @@ def app():
 
 
 @pytest.mark.django_db
+def test_create(sqs, helpers):
+    repo_url = "https://example.com/foo__bar-baz!bat-1337"
+    app = App.objects.create(repo_url=repo_url)
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, App.__name__, app.id)
+
+
+@pytest.mark.django_db
 def test_slug_characters_replaced():
     repo_url = "https://example.com/foo__bar-baz!bat-1337"
     app = App.objects.create(repo_url=repo_url)
