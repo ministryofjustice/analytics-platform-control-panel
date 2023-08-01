@@ -4,6 +4,8 @@ from celery import Celery
 from time import time
 import json
 
+from kombu import Queue
+
 # First-party/Local
 from controlpanel.utils import load_app_conf_from_file
 dotenv.load_dotenv()
@@ -90,3 +92,12 @@ def s3bucket_grant_to_app(self, apps3bucket_id, user_id):
         if task:
             task.completed = True
             task.save()
+
+
+# ensures worker picks and runs tasks from all queues rather than just default queue
+# alternative is to run the worker and pass queue name to -Q flag
+app.conf.task_queues = [
+    Queue("iam_queue"),
+    Queue("auth_queue"),
+    Queue("s3_queue"),
+]

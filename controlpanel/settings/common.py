@@ -560,3 +560,7 @@ for queue in PRE_DEFINED_QUEUES:
         'url': f'https://sqs.eu-west-2.amazonaws.com/525294151996/{queue}',
         'backoff_policy': DEFAULT_BACKOFF_POLICY,
     }
+
+CELERY_IMPORTS = [
+    "controlpanel.api.tasks.handlers.celery"
+]

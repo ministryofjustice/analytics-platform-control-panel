@@ -6,7 +6,7 @@ class AppCreateRole(TaskBase):
 
     @property
     def task_name(self):
-        return "controlpanel.celery.create_app_role"
+        return "create_app_aws_role"
 
     @property
     def task_description(self):
@@ -15,11 +15,11 @@ class AppCreateRole(TaskBase):
 
 class AppCreateAuth(AppCreateRole):
 
-    # QUEUE_NAME = "auth_queue"
+    QUEUE_NAME = "auth_queue"
 
     @property
     def task_name(self):
-        return "controlpanel.celery.create_auth_settings"
+        return "create_app_auth_settings"
 
     def _get_args_list(self):
         return [
@@ -28,7 +28,7 @@ class AppCreateAuth(AppCreateRole):
             self.extra_data.get('deployment_envs'),
             self.extra_data.get('disable_authentication'),
             self.extra_data.get('connections'),
-            self.extra_data.get('has_ip_ranges')
+            # self.extra_data.get('has_ip_ranges') # NOT USER, REMOVED?
         ]
 
     @property

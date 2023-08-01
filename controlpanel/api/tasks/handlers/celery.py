@@ -17,8 +17,6 @@ class BaseTaskHandler(Task):
             return self.model.objects.get(pk=pk)
         except self.model.DoesNotExist as exc:
             print(exc)
-            print("RAISING THE ERROR")
-            # should raise to sentry and then return safely
             raise exc
 
     def get_user(self, pk):
@@ -28,6 +26,12 @@ class BaseTaskHandler(Task):
             print(exc)
             raise exc
 
+    def complete(self):
+        from controlpanel.api.models import Task as TaskModel
+        task = TaskModel.objects.filter(task_id=self.request.id).first()
+        if task:
+            task.completed = True
+            task.save()
 
 # @shared_task(acks_late=True, acks_on_failure_or_timeout=False)
 # def create_app_auth_settings(app_pk, user_pk, envs, disable_authentication, connections):
@@ -71,7 +75,7 @@ class CreateAppAuthSettings(BaseTaskHandler):
                 disable_authentication=disable_authentication,
                 connections=connections,
             )
-
+        self.complete()
 
 # @shared_task(acks_late=True, acks_on_failure_or_timeout=False)
 # def create_s3bucket(bucket_pk, user_pk, bucket_owner="APP"):
@@ -95,6 +99,13 @@ class CreateS3Bucket(BaseTaskHandler):
 
     def run(self, bucket_pk, user_pk, bucket_owner="APP"):
         bucket = self.get_object(pk=bucket_pk)
+        # this will already have run when the obj was created via modelform validation.
+        # Is it unnecessary to call again?
+        if cluster.S3Bucket(bucket).exists(bucket.name, bucket_owner=bucket_owner):
+            return
+
+        # TODO verify user?
+
         bucket.cluster.create(owner=bucket_owner)
 
 
@@ -114,9 +125,14 @@ class CreateAppAWSRole(BaseTaskHandler):
     model = App
     name = "create_app_aws_role"
 
-    def run(self, app_pk):
+    def run(self, app_pk, user_pk):
         app = self.get_object(pk=app_pk)
+
+        # TODO verify user?
+        # user = self.get_user(pk=user_pk)
+
         cluster.App(app).create_iam_role()
+        self.complete()
 
 
 # @shared_task(acks_late=True, acks_on_failure_or_timeout=False)
@@ -144,6 +160,9 @@ class GrantAppS3BucketAccess(BaseTaskHandler):
 
     def run(self, app_s3_bucket_pk, user_pk):
         app_bucket = self.get_object(pk=app_s3_bucket_pk)
+
+        # TODO verify user?
+
         cluster.App(app_bucket.app).grant_bucket_access(
             app_bucket.s3bucket.arn,
             app_bucket.access_level,
@@ -182,6 +201,9 @@ class GrantUserS3BucketAccess(BaseTaskHandler):
     def run(self, bucket_pk, user_pk):
         user_bucket = self.get_object(pk=bucket_pk)
         user = self.get_user(pk=user_pk)
+
+        # TODO verify user?
+
         cluster.User(user).grant_bucket_access(
             user_bucket.s3bucket.arn,
             user_bucket.access_level,
