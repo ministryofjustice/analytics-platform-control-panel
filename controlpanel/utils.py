@@ -8,8 +8,10 @@ import re
 # Third-party
 import structlog
 import yaml
+from asgiref.sync import async_to_sync
 from channels.exceptions import StopConsumer
 from channels.generic.http import AsyncHttpConsumer
+from channels.layers import get_channel_layer
 from django.conf import settings
 from django.template.defaultfilters import slugify
 from nacl import encoding, public
@@ -229,3 +231,25 @@ def time_it(func):
         return result
 
     return wrapper
+
+
+def send_sse(user_id, event):
+    """
+    Tell the SSEConsumer to send an event to the specified user
+    """
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        sanitize_dns_label(user_id),
+        {"type": "sse.event", **event},
+    )
+
+
+def start_background_task(task, message):
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.send)(
+        "background_tasks",
+        {
+            "type": task,
+            **message,
+        },
+    )

@@ -13,6 +13,7 @@ from django_extensions.db.models import TimeStampedModel
 from controlpanel.api import cluster, validators
 from controlpanel.api.models.apps3bucket import AppS3Bucket
 from controlpanel.api.models.users3bucket import UserS3Bucket
+from controlpanel.api import tasks
 
 
 def s3bucket_console_url(name):
@@ -133,12 +134,15 @@ class S3Bucket(TimeStampedModel):
 
         if is_create:
             bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
-            self.cluster.create(bucket_owner)
+
+            # self.cluster.create(bucket_owner)
+            tasks.S3BucketCreate(self, self.created_by).create_task()
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:
                 UserS3Bucket.objects.create(
                     user=self.created_by,
+                    current_user=self.created_by,
                     s3bucket=self,
                     is_admin=True,
                     access_level=UserS3Bucket.READWRITE,

@@ -9,9 +9,9 @@ from time import sleep
 
 # Third-party
 import structlog
-from asgiref.sync import async_to_sync
+# from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
-from channels.layers import get_channel_layer
+# from channels.layers import get_channel_layer
 from django.db import transaction
 
 # First-party/Local
@@ -31,12 +31,12 @@ from controlpanel.api.models import (
     ToolDeployment,
     User,
 )
-from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
+from controlpanel.utils import (PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse)
 
 WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
 
 
-channel_layer = get_channel_layer()
+# channel_layer = get_channel_layer()
 
 log = structlog.getLogger(__name__)
 
@@ -239,16 +239,6 @@ class BackgroundTaskConsumer(SyncConsumer):
         log.debug("Worker health ping task executed")
 
 
-def send_sse(user_id, event):
-    """
-    Tell the SSEConsumer to send an event to the specified user
-    """
-    async_to_sync(channel_layer.group_send)(
-        sanitize_dns_label(user_id),
-        {"type": "sse.event", **event},
-    )
-
-
 def update_tool_status(tool_deployment, id_token, status):
     user = tool_deployment.user
     tool = tool_deployment.tool
@@ -278,17 +268,6 @@ def update_home_status(home_directory, status):
         {
             "event": "homeStatus",
             "data": json.dumps({"status": status}),
-        },
-    )
-
-
-# this used currently to run a task
-def start_background_task(task, message):
-    async_to_sync(channel_layer.send)(
-        "background_tasks",
-        {
-            "type": task,
-            **message,
         },
     )
 

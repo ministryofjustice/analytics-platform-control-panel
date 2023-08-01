@@ -72,7 +72,6 @@
     {% endif %}
   {% endif %}
 
-
   {% if feature_enabled and repo_access_error_msg %}
   <div class="govuk-grid-row">
     <div class="govuk-column-two-thirds">
@@ -128,7 +127,7 @@
 
 </header>
 
-<section class="cpanel-section app-auth-settings-panel">
+<section class="cpanel-section track_task app-auth-settings-panel">
   {% if feature_enabled %}
     {% if github_settings_access_error_msg %}
       <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">

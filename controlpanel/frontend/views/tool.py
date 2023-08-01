@@ -19,7 +19,7 @@ from controlpanel.api.helm import (
     get_helm_entries,
 )
 from controlpanel.api.models import Tool, ToolDeployment
-from controlpanel.frontend.consumers import start_background_task
+from controlpanel.utils import start_background_task
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)

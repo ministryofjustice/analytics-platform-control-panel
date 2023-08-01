@@ -1,0 +1,47 @@
+{% macro task_list(tasks, csrf_input) %}
+{%- set num_tasks = tasks|length %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Entity class</th>
+      <th class="govuk-table__header">Entity ID</th>
+      <th class="govuk-table__header">Entity description</th>
+      <th class="govuk-table__header">Task description</th>
+      <th class="govuk-table__header">Create time</th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Action</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {%- for task in tasks %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">{{ task.entity_class }}</td>
+      <td class="govuk-table__cell">{{ task.entity_id }}</td>
+      <td class="govuk-table__cell">{{ task.entity_description }}</td>
+      <td class="govuk-table__cell">{{ task.task_description }}</td>
+      <td class="govuk-table__cell">{{ task.created }}</td>
+      <td class="govuk-table__cell">
+        <form style="display: inline;" id="form-task" action="" method="post">
+          {{ csrf_input }}
+          <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-form-url="{{ url('tasks', kwargs={'task_id': task.task_id, 'action': 'send_message'}) }}"
+              data-form-target="form-task"
+              id="task-{{ task_name }}"
+              data-confirm-message="Do you wish to re-trigger the task again?">
+            Re-trigger task
+          </button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ num_tasks }} task{% if num_tasks != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endmacro %}

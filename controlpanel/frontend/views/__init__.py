@@ -78,6 +78,7 @@ from controlpanel.frontend.views.user import (
     UserList,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.frontend.views.task import TaskList
 
 
 class IndexView(OIDCLoginRequiredMixin, TemplateView):

@@ -11,8 +11,8 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.frontend.consumers import start_background_task
 from controlpanel.utils import time_it
+from controlpanel.utils import start_background_task
 
 
 class AppManager:
@@ -34,15 +34,28 @@ class AppManager:
         _, name = repo_url.rsplit("/", 1)
 
         # Create app and all the related sources
-        with transaction.atomic():
-            new_app = self._create_app(name=name, repo_url=repo_url)
-            self._add_ip_allowlists(new_app, envs, ip_allowlists)
-            self._add_app_to_users(new_app, user)
-            self._create_app_role(new_app)
-            self._create_or_link_datasource(new_app, user, app_data)
-        self._create_auth_settigs(
-            new_app, envs, github_api_token, disable_authentication, connections
+        new_app = self._create_app(
+            name=name,
+            repo_url=repo_url,
+            disable_authentication=disable_authentication,
+            connections=connections,
+            current_user=user,
+            deployment_envs=envs,
+            has_ip_ranges=True if ip_allowlists else False
         )
+        self._add_ip_allowlists(new_app, envs, ip_allowlists)
+        self._add_app_to_users(new_app, user)
+        # self._create_app_role(new_app)
+        self._create_or_link_datasource(new_app, user, app_data)
+        # with transaction.atomic():
+        #     self._add_ip_allowlists(new_app, envs, ip_allowlists)
+        #     self._add_app_to_users(new_app, user)
+        #     # self._create_app_role(new_app)
+        #     self._create_or_link_datasource(new_app, user, app_data)
+
+        # self._create_auth_settigs(
+        #     new_app, envs, github_api_token, disable_authentication, connections
+        # )
 
         return new_app
 
@@ -107,18 +120,15 @@ class AppManager:
     def _create_or_link_datasource(self, app, user, bucket_data):
         if bucket_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
-                name=bucket_data["new_datasource_name"], bucket_owner="APP"
+                name=bucket_data["new_datasource_name"],
+                bucket_owner="APP",
+                created_by=user,
             )
             AppS3Bucket.objects.create(
                 app=app,
                 s3bucket=bucket,
                 access_level="readonly",
-            )
-            UserS3Bucket.objects.create(
-                user=user,
-                s3bucket=bucket,
-                access_level="readwrite",
-                is_admin=True,
+                current_user=user,
             )
         elif bucket_data.get("existing_datasource_id"):
             AppS3Bucket.objects.create(

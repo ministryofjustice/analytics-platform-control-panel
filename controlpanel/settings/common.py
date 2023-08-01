@@ -540,17 +540,23 @@ EFS_VOLUME = os.environ.get("EFS_VOLUME")
 MAX_RELEASE_NAME_LEN = 53
 
 
-CELERY_BROKER_URL = "sqs://"
-CELERY_CREATE_MISSING_QUEUES = False
-CELERY_BROKER_TRANSPORT_OPTIONS = {
-    "region": "eu-west-1",
-    "queue_name_prefix": "django-",
-    "predefined_queues": {
-        "django-celery": {
-            "url": "https://sqs.eu-west-1.amazonaws.com/525294151996/django-celery"
-        },
-        "mjc-test-1": {
-            "url": "https://sqs.eu-west-1.amazonaws.com/525294151996/mjc-test-1"
-        }
-    }
+# Configure for celery for message queues
+DEFAULT_QUEUE = "iam_queue"
+BROKER_URL = 'sqs://'
+DEFAULT_BACKOFF_POLICY = {1: 10, 2: 20, 3: 40, 4: 80, 5: 320, 6: 640}
+PRE_DEFINED_QUEUES = ['auth_queue', 's3_queue', 'iam_queue']
+CELERY_DEFAULT_QUEUE = DEFAULT_QUEUE
+SQS_REGION = os.environ.get("SQS_REGION", "eu-west-2")
+
+BROKER_TRANSPORT_OPTIONS = {
+    "polling_interval": 10,
+    "region": SQS_REGION,
+    "wait_time_seconds": 20,
+    "predefined_queues": {}
 }
+
+for queue in PRE_DEFINED_QUEUES:
+    BROKER_TRANSPORT_OPTIONS['predefined_queues'][queue] = {
+        'url': f'https://sqs.eu-west-2.amazonaws.com/525294151996/{queue}',
+        'backoff_policy': DEFAULT_BACKOFF_POLICY,
+    }
