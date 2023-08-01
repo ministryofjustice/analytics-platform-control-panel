@@ -29,7 +29,7 @@ class AppCreateAuth(AppCreateRole):
             self.extra_data.get('deployment_envs'),
             self.extra_data.get('disable_authentication'),
             self.extra_data.get('connections'),
-            # self.extra_data.get('has_ip_ranges') # NOT USER, REMOVED?
+            # self.extra_data.get('has_ip_ranges') # NOT USED, REMOVE IT?
         ]
 
     @property
