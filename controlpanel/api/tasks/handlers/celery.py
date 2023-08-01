@@ -1,14 +1,18 @@
-from celery import shared_task, Task
+from celery import Task as CeleryTask
 
 from controlpanel import celery_app
 from controlpanel.api import cluster
-from controlpanel.api.models import App, User, S3Bucket, UserS3Bucket, AppS3Bucket
+from controlpanel.api.models import App, User, S3Bucket, UserS3Bucket, AppS3Bucket, Task
 
 
-class BaseTaskHandler(Task):
+class BaseTaskHandler(CeleryTask):
 
     model = None
     # can be applied to project settings
+    # these settings mean that messages are only removed from the queue (acknowledged)
+    # when returned. if an error occurs, they remain in the queue, and will be resent
+    # to the worker when the "visibility_timeout" has expired. "visibility_timeout" is
+    # a setting that is configured in SQS per queue. Currently set to 30secs
     acks_late = True
     acks_on_failure_or_timeout = False
 
@@ -27,8 +31,7 @@ class BaseTaskHandler(Task):
             raise exc
 
     def complete(self):
-        from controlpanel.api.models import Task as TaskModel
-        task = TaskModel.objects.filter(task_id=self.request.id).first()
+        task = Task.objects.filter(task_id=self.request.id).first()
         if task:
             task.completed = True
             task.save()
