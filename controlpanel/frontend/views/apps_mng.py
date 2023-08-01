@@ -40,12 +40,9 @@ class AppManager:
             self._add_app_to_users(new_app, user)
             self._create_app_role(new_app)
             self._create_or_link_datasource(new_app, user, app_data)
-
-        from controlpanel.api import tasks
-        tasks.create_app_auth_settings.delay(new_app.pk, user.pk, envs, disable_authentication, connections)
-        # self._create_auth_settigs(
-        #     new_app, envs, github_api_token, disable_authentication, connections
-        # )
+        self._create_auth_settigs(
+            new_app, envs, github_api_token, disable_authentication, connections
+        )
 
         return new_app
 

@@ -33,13 +33,11 @@ class AppS3Bucket(AccessToS3Bucket):
         return f"<AppS3Bucket: {self.app!r} {self.s3bucket!r} {self.access_level}>"
 
     def grant_bucket_access(self):
-        # cluster.App(self.app).grant_bucket_access(
-        #     self.s3bucket.arn,
-        #     self.access_level,
-        #     self.resources,
-        # )
-        from controlpanel.api.tasks import grant_app_s3bucket_access
-        grant_app_s3bucket_access.delay(self.pk, None)
+        cluster.App(self.app).grant_bucket_access(
+            self.s3bucket.arn,
+            self.access_level,
+            self.resources,
+        )
 
     def revoke_bucket_access(self):
         cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn)
