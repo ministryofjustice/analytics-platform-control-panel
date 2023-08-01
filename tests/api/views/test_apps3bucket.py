@@ -75,53 +75,35 @@ def test_delete(client, apps3buckets):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, apps, buckets):
-    with patch(
-        "controlpanel.api.aws.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access:
-        data = {
-            "app": apps[1].id,
-            "s3bucket": buckets[3].id,
-            "access_level": AppS3Bucket.READONLY,
-        }
-        response = client.post(reverse("apps3bucket-list"), data)
-        assert response.status_code == status.HTTP_201_CREATED
-
-        apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
-
-        grant_bucket_access.assert_called_with(
-            apps[1].iam_role_name,
-            buckets[3].arn,
-            AppS3Bucket.READONLY,
-            apps3bucket.resources,
-        )
-        # TODO get policy from call and check for presence of bucket ARN
+def test_create(client, apps, buckets, sqs, helpers):
+    data = {
+        "app": apps[1].id,
+        "s3bucket": buckets[3].id,
+        "access_level": AppS3Bucket.READONLY,
+    }
+    response = client.post(reverse("apps3bucket-list"), data)
+    assert response.status_code == status.HTTP_201_CREATED
+    apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, AppS3Bucket.__name__, apps3bucket.id)
 
 
-def test_update(client, apps, apps3buckets, buckets):
-    with patch(
-        "controlpanel.api.aws.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access:
-        data = {
-            "app": apps[1].id,
-            "s3bucket": buckets[1].id,
-            "access_level": AppS3Bucket.READWRITE,
-        }
-        response = client.put(
-            reverse("apps3bucket-detail", (apps3buckets[1].id,)),
-            json.dumps(data),
-            content_type="application/json",
-        )
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data["access_level"] == data["access_level"]
-
-        grant_bucket_access.assert_called_with(
-            apps[1].iam_role_name,
-            buckets[1].arn,
-            AppS3Bucket.READWRITE,
-            apps3buckets[1].resources,
-        )
-        # TODO get policy from call and check for presence of bucket ARN
+def test_update(client, apps, apps3buckets, buckets, sqs, helpers):
+    data = {
+        "app": apps[1].id,
+        "s3bucket": buckets[1].id,
+        "access_level": AppS3Bucket.READWRITE,
+    }
+    response = client.put(
+        reverse("apps3bucket-detail", (apps3buckets[1].id,)),
+        json.dumps(data),
+        content_type="application/json",
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["access_level"] == data["access_level"]
+    apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[1])
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, AppS3Bucket.__name__, apps3bucket.id)
 
 
 def test_update_bad_requests(client, apps, apps3buckets, buckets):

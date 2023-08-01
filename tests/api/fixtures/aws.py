@@ -42,6 +42,14 @@ def ssm(aws_creds):
 
 
 @pytest.fixture(autouse=True)
+def sqs(aws_creds):
+    with moto.mock_sqs():
+        sqs = boto3.resource("sqs")
+        sqs.create_queue(QueueName=settings.DEFAULT_QUEUE)
+        yield sqs
+
+
+@pytest.fixture(autouse=True)
 def secretsmanager(aws_creds):
     with moto.mock_secretsmanager():
         yield boto3.client("secretsmanager", region_name="eu-west-1")

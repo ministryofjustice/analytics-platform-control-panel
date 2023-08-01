@@ -1,9 +1,10 @@
+from django.conf import settings
 from controlpanel.api.tasks.task_base import TaskBase
 
 
 class S3BucketCreate(TaskBase):
     ENTITY_CLASS = "S3Bucket"
-    QUEUE_NAME = "iam_queue"
+    # QUEUE_NAME = settings.S3_QUEUE_NAME
 
     @property
     def task_name(self):
@@ -16,7 +17,6 @@ class S3BucketCreate(TaskBase):
 
 class S3BucketGrantToUser(TaskBase):
     ENTITY_CLASS = "UserS3Bucket"
-    QUEUE_NAME = "iam_queue"
 
     @property
     def task_name(self):
@@ -33,7 +33,6 @@ class S3BucketGrantToUser(TaskBase):
 
 class S3BucketGrantToApp(TaskBase):
     ENTITY_CLASS = "AppS3Bucket"
-    QUEUE_NAME = "iam_queue"
 
     @property
     def task_name(self):

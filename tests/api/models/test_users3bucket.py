@@ -8,6 +8,7 @@ from model_mommy import mommy
 
 # First-party/Local
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
+from controlpanel.api.models import UserS3Bucket
 
 
 @pytest.fixture
@@ -39,22 +40,13 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 
 
 @pytest.mark.django_db
-def test_aws_create_bucket(user, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access:
-        users3bucket = user.users3buckets.create(
-            s3bucket=bucket,
-            access_level=AccessToS3Bucket.READONLY,
-        )
-
-        grant_bucket_access.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-            AccessToS3Bucket.READONLY,
-            users3bucket.resources,
-        )
-        # TODO get policy from call and assert bucket ARN present
+def test_aws_create_bucket(user, bucket, sqs, helpers):
+    users3bucket = user.users3buckets.create(
+        s3bucket=bucket,
+        access_level=AccessToS3Bucket.READONLY
+    )
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
 
 
 @pytest.mark.django_db

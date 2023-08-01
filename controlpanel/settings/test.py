@@ -29,3 +29,5 @@ SLACK = {
     "api_token": "test-slack-api-token",
     "channel": "test-slack-channel",
 }
+
+SQS_REGION = "eu-west-1"
