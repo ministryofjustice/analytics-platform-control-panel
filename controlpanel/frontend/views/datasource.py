@@ -95,7 +95,6 @@ class BucketList(
 
         context["other_datasources"] = other_datasources
         context["other_datasources_admins"] = other_datasources_admins
-
         return context
 
 
