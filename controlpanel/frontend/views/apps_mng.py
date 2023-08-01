@@ -11,7 +11,6 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.utils import time_it
 from controlpanel.utils import start_background_task
 
 
@@ -100,12 +99,10 @@ class AppManager:
     def _create_app(self, **kwargs):
         return App.objects.create(**kwargs)
 
-    @time_it
     def _add_ip_allowlists(self, app, envs, ip_allowlists):
         for env in envs:
             AppIPAllowList.objects.update_records(app, env, ip_allowlists)
 
-    @time_it
     def _create_auth_settigs(
         self, app, envs, github_api_token, disable_authentication, connections
     ):
@@ -116,7 +113,6 @@ class AppManager:
                 connections=connections,
             )
 
-    @time_it
     def _create_or_link_datasource(self, app, user, bucket_data):
         if bucket_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
@@ -137,7 +133,6 @@ class AppManager:
                 access_level="readonly",
             )
 
-    @time_it
     def _add_app_to_users(self, app, user):
         UserApp.objects.create(
             app=app,
@@ -145,6 +140,5 @@ class AppManager:
             is_admin=True,
         )
 
-    @time_it
     def _create_app_role(self, app):
         cluster.App(app).create_iam_role()

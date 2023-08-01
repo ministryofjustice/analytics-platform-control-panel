@@ -222,6 +222,11 @@ def encrypt_data_by_using_public_key(public_key: str, data: str) -> str:
 
 
 def time_it(func):
+    """
+    Debug tool to time how long a function takes. Use as a decorator e.g.:
+    @time_it
+    def my_func():
+    """
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
