@@ -45,7 +45,8 @@ class CreateAppAuthSettings(BaseTaskHandler):
         app = self.get_object(pk=app_pk)
         user = self.get_user(pk=user_pk)
         if not user.github_api_token:
-            return
+            # should a task that cannot be completed be marked as complete in DB?
+            return self.complete()
 
         for env in envs:
             cluster.App(app, user.github_api_token).create_auth_settings(
@@ -66,11 +67,13 @@ class CreateS3Bucket(BaseTaskHandler):
         # this will already have run when the obj was created via modelform validation.
         # Is it unnecessary to call again?
         if cluster.S3Bucket(bucket).exists(bucket.name, bucket_owner=bucket_owner):
-            return
+            # should a task that cannot be completed be marked as complete in DB?
+            return self.complete()
 
         # TODO verify user?
 
         bucket.cluster.create(owner=bucket_owner)
+        self.complete()
 
 
 class CreateAppAWSRole(BaseTaskHandler):
@@ -102,6 +105,7 @@ class GrantAppS3BucketAccess(BaseTaskHandler):
             app_bucket.access_level,
             app_bucket.resources,
         )
+        self.complete()
 
 
 class GrantUserS3BucketAccess(BaseTaskHandler):
@@ -120,6 +124,7 @@ class GrantUserS3BucketAccess(BaseTaskHandler):
             user_bucket.access_level,
             user_bucket.resources,
         )
+        self.complete()
 
 
 create_app_aws_role = celery_app.register_task(CreateAppAWSRole())
