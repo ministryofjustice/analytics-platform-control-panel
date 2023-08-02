@@ -4,6 +4,7 @@ from unittest.mock import call, patch
 # Third-party
 import pytest
 from botocore.exceptions import ClientError
+from django.conf import settings
 from model_mommy import mommy
 
 # First-party/Local
@@ -56,8 +57,10 @@ def test_delete_marks_bucket_for_archival_when_tag_bucket_fails(bucket):
 
 def test_bucket_create(sqs, superuser, helpers):
     bucket = S3Bucket.objects.create(name="test-bucket-1")
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, S3Bucket.__name__, bucket.id)
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )
 
 
 def test_create_users3bucket(sqs, superuser, helpers):
@@ -67,9 +70,14 @@ def test_create_users3bucket(sqs, superuser, helpers):
     )
     user_s3bucket = UserS3Bucket.objects.get(user=superuser, s3bucket=bucket)
     assert user_s3bucket
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, S3Bucket.__name__, bucket.id)
-    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, user_s3bucket.id)
+    s3_messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        s3_messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME
+    )
+    iam_messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        iam_messages, UserS3Bucket.__name__, user_s3bucket.id, queue_name=settings.IAM_QUEUE_NAME
+    )
 
 
 @pytest.mark.parametrize(

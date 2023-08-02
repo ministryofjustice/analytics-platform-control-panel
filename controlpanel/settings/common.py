@@ -564,3 +564,7 @@ for queue in PRE_DEFINED_QUEUES:
         'url': f'https://sqs.{SQS_REGION}.amazonaws.com/{AWS_DATA_ACCOUNT_ID}/{queue}',
         'backoff_policy': DEFAULT_BACKOFF_POLICY,
     }
+
+CELERY_IMPORTS = [
+    "controlpanel.api.tasks.handlers.celery"
+]

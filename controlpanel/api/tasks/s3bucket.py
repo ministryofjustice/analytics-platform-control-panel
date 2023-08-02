@@ -4,11 +4,11 @@ from controlpanel.api.tasks.task_base import TaskBase
 
 class S3BucketCreate(TaskBase):
     ENTITY_CLASS = "S3Bucket"
-    # QUEUE_NAME = settings.S3_QUEUE_NAME
+    QUEUE_NAME = settings.S3_QUEUE_NAME
 
     @property
     def task_name(self):
-        return "controlpanel.celery.create_s3bucket"
+        return "create_s3bucket"
 
     @property
     def task_description(self):
@@ -20,7 +20,7 @@ class S3BucketGrantToUser(TaskBase):
 
     @property
     def task_name(self):
-        return "controlpanel.celery.s3bucket_grant_to_user"
+        return "grant_user_s3bucket_access"
 
     @property
     def task_description(self):
@@ -36,7 +36,7 @@ class S3BucketGrantToApp(TaskBase):
 
     @property
     def task_name(self):
-        return "controlpanel.celery.s3bucket_grant_to_app"
+        return "grant_app_s3bucket_access"
 
     @property
     def task_description(self):

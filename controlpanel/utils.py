@@ -1,4 +1,5 @@
 # Standard library
+import time
 from base64 import b64encode
 import os
 import re
@@ -218,6 +219,23 @@ def encrypt_data_by_using_public_key(public_key: str, data: str) -> str:
     sealed_box = public.SealedBox(public_key)
     encrypted = sealed_box.encrypt(data.encode("utf-8"))
     return b64encode(encrypted).decode("utf-8")
+
+
+def time_it(func):
+    """
+    Debug tool to time how long a function takes. Use as a decorator e.g.:
+    @time_it
+    def my_func():
+    """
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        elapsed = end - start
+        print(f"{func.__name__} took {elapsed:.5f} secs")
+        return result
+
+    return wrapper
 
 
 def send_sse(user_id, event):

@@ -9,10 +9,9 @@ from time import sleep
 
 # Third-party
 import structlog
-# from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
-# from channels.layers import get_channel_layer
 from django.db import transaction
+from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -33,10 +32,6 @@ from controlpanel.api.models import (
 )
 from controlpanel.utils import (PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse)
 
-WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
-
-
-# channel_layer = get_channel_layer()
 
 log = structlog.getLogger(__name__)
 
@@ -234,7 +229,7 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Reset home directory for user {user}")
 
     def workers_health(self, message):
-        Path(WORKER_HEALTH_FILENAME).touch()
+        Path(settings.WORKER_HEALTH_FILENAME).touch()
 
         log.debug("Worker health ping task executed")
 

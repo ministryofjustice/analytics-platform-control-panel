@@ -22,7 +22,7 @@ def login_superuser(client, superuser):
     ],
 )
 @pytest.mark.django_db
-def test_pagination(client, urlparams, page_size, next, prev):
+def test_pagination(client, urlparams, page_size, next, prev, sqs):
     mommy.make("api.App", DEFAULT_PAGE_SIZE + 20)
     app_list_url = reverse("app-list")
 

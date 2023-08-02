@@ -178,7 +178,18 @@ class ExtendedAuth0(Auth0):
         )
         role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
-        group = self.groups.create(dict(name=client_name))
+        try:
+            group = self.groups.create(dict(name=client_name))
+        except exceptions.Auth0Error as exc:
+            # celery fails to unpickle original exception, but not 100% sure why.
+            # Seems to be because __reduce__  method is incorrect? Possible bug.
+            # https://github.com/celery/celery/issues/6990#issuecomment-1433689294
+            # TODO what should happen if group already exists? Raise new error and
+            #  catch in the worker? e.g.:
+            # raise Auth0Error(detail=exc.message, code=exc.error_code)
+            # Or get the group ID and continue?
+            group = dict(_id=self.groups.get_group_id(client_name))
+
         self.groups.add_role(group["_id"], role["_id"])
 
         self._enable_connections_for_new_client(
