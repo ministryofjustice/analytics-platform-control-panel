@@ -136,3 +136,6 @@ S3_FOLDER_BUCKET_NAME:
   _DEFAULT: "dev-folder-migration-spike"
   _HOST_test: "test-folder-bucket"
   _HOST_dev: "dev-folder-migration-spike"
+
+
+WORKER_HEALTH_FILENAME: "/tmp/worker_health.txt"
