@@ -20,15 +20,17 @@ class BaseTaskHandler(CeleryTask):
         try:
             return self.model.objects.get(pk=pk)
         except self.model.DoesNotExist as exc:
-            print(exc)
+            # if the main object cannot be found, raise error and allow message to be
+            # added back to the queue as could be due to a race condition
             raise exc
 
     def get_user(self, pk):
         try:
             return User.objects.get(pk=pk)
         except User.DoesNotExist as exc:
-            print(exc)
-            raise exc
+            # if the user is found, this should be a hard fail? So suggest log the error
+            # and then mark as complete to stop task being rerun?
+            return self.complete()
 
     def complete(self):
         task = Task.objects.filter(task_id=self.request.id).first()
@@ -40,10 +42,16 @@ class BaseTaskHandler(CeleryTask):
 class CreateAppAuthSettings(BaseTaskHandler):
     model = App
     name = "create_app_auth_settings"
+    permission_required = "api.create_app"
 
     def run(self, app_pk, user_pk, envs, disable_authentication, connections):
-        app = self.get_object(pk=app_pk)
         user = self.get_user(pk=user_pk)
+        if not user.has_perm(self.permission_required):
+            # suggest send error to sentry with capture_messgae then mark complete so it
+            # doesnt run again?
+            return self.complete()
+
+        app = self.get_object(pk=app_pk)
         if not user.github_api_token:
             # should a task that cannot be completed be marked as complete in DB?
             return self.complete()
@@ -61,6 +69,7 @@ class CreateS3Bucket(BaseTaskHandler):
 
     model = S3Bucket
     name = "create_s3bucket"
+    permission_required = "api.create_s3bucket"
 
     def run(self, bucket_pk, user_pk, bucket_owner="APP"):
         bucket = self.get_object(pk=bucket_pk)
@@ -70,7 +79,11 @@ class CreateS3Bucket(BaseTaskHandler):
             # should a task that cannot be completed be marked as complete in DB?
             return self.complete()
 
-        # TODO verify user?
+        user = self.get_user(pk=user_pk)
+        if not user.has_perm(self.permission_required):
+            # suggest send error to sentry with capture_messgae then mark complete so it
+            # doesnt run again?
+            return self.complete()
 
         bucket.cluster.create(owner=bucket_owner)
         self.complete()
@@ -79,13 +92,16 @@ class CreateS3Bucket(BaseTaskHandler):
 class CreateAppAWSRole(BaseTaskHandler):
     model = App
     name = "create_app_aws_role"
+    permission_required = "api.create_app"
 
     def run(self, app_pk, user_pk):
+        user = self.get_user(pk=user_pk)
+        if not user.has_perm(self.permission_required):
+            # suggest send error to sentry with capture_messgae then mark complete so it
+            # doesnt run again?
+            return self.complete()
+
         app = self.get_object(pk=app_pk)
-
-        # TODO verify user?
-        # user = self.get_user(pk=user_pk)
-
         cluster.App(app).create_iam_role()
         self.complete()
 
@@ -94,8 +110,15 @@ class GrantAppS3BucketAccess(BaseTaskHandler):
 
     model = AppS3Bucket
     name = 'grant_app_s3bucket_access'
+    permission_required = 'api.create_apps3bucket'
 
     def run(self, app_s3_bucket_pk, user_pk):
+        user = self.get_user(pk=user_pk)
+        if not user.has_perm(self.permission_required):
+            # suggest send error to sentry with capture_messgae then mark complete so it
+            # doesnt run again?
+            return self.complete()
+
         app_bucket = self.get_object(pk=app_s3_bucket_pk)
 
         # TODO verify user?
@@ -112,14 +135,18 @@ class GrantUserS3BucketAccess(BaseTaskHandler):
 
     model = UserS3Bucket
     name = "grant_user_s3bucket_access"
+    permission_required = "api.create_users3bucket"
 
     def run(self, bucket_pk, user_pk):
-        user_bucket = self.get_object(pk=bucket_pk)
         user = self.get_user(pk=user_pk)
+        if not user.has_perm(self.permission_required):
+            # suggest send error to sentry with capture_messgae then mark complete so it
+            # doesnt run again?
+            return self.complete()
 
-        # TODO verify user?
+        user_bucket = self.get_object(pk=bucket_pk)
 
-        cluster.User(user).grant_bucket_access(
+        cluster.User(user_bucket.user).grant_bucket_access(
             user_bucket.s3bucket.arn,
             user_bucket.access_level,
             user_bucket.resources,
