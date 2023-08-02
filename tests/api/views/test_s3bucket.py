@@ -5,6 +5,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from botocore.exceptions import ClientError
+from django.conf import settings
 from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -115,9 +116,14 @@ def test_create(client, superuser, sqs, helpers):
     assert UserS3Bucket.READWRITE == users3bucket.access_level
     assert users3bucket.is_admin
 
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, S3Bucket.__name__, bucket.id)
-    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
+    s3_messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        s3_messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME
+    )
+    iam_messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        iam_messages, UserS3Bucket.__name__, users3bucket.id, queue_name=settings.IAM_QUEUE_NAME
+    )
 
 
 EXISTING_BUCKET_NAME = object()

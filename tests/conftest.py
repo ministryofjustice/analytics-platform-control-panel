@@ -121,9 +121,13 @@ def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_p
 class Helpers:
 
     @staticmethod
-    def validate_task_with_sqs_messages(messages, entity_class, entity_id):
+    def validate_task_with_sqs_messages(
+        messages, entity_class, entity_id, queue_name=settings.DEFAULT_QUEUE,
+    ):
         from controlpanel.api.models import Task
-        tasks_created = Task.objects.filter(entity_class=entity_class, entity_id=entity_id)
+        tasks_created = Task.objects.filter(
+            entity_class=entity_class, entity_id=entity_id, queue_name=queue_name
+        )
         found_tasks_cnt = 0
         tasks_cnt = 0
         for task in tasks_created:
@@ -138,9 +142,9 @@ class Helpers:
         assert tasks_cnt == found_tasks_cnt
 
     @staticmethod
-    def retrieve_messages(sqs):
+    def retrieve_messages(sqs, queue_name=settings.DEFAULT_QUEUE):
         from controlpanel.api.message_broker import CeleryTaskMessage
-        queue = sqs.get_queue_by_name(QueueName=settings.DEFAULT_QUEUE)
+        queue = sqs.get_queue_by_name(QueueName=queue_name)
         messages = queue.receive_messages(
                 MessageAttributeNames=['All'],
                 MaxNumberOfMessages=10
