@@ -20,10 +20,12 @@ from controlpanel.api.models import (
 
 
 class UserViewSet(viewsets.ModelViewSet):
+    resource = "app"
+
     queryset = User.objects.all()
     serializer_class = serializers.UserSerializer
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = (permissions.UserPermissions,)
+    permission_classes = (permissions.UserPermissions | permissions.JWTTokenResourcePermissions,)
 
 
 class AppViewSet(viewsets.ModelViewSet):
