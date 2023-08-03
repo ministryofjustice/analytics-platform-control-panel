@@ -11,11 +11,6 @@ enabled_features:
     _HOST_dev: false
     _HOST_prod: false
     _HOST_alpha: false
-  message_broker:
-    _DEFAULT: false
-    _HOST_dev: true
-    _HOST_prod: false
-    _HOST_alpha: false
 
 
 AWS_SERVICE_URL:
