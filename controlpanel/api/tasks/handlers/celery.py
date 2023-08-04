@@ -95,13 +95,13 @@ class CreateAppAWSRole(BaseTaskHandler):
     permission_required = "api.create_app"
 
     def run(self, app_pk, user_pk):
+        app = self.get_object(pk=app_pk)
         user = self.get_user(pk=user_pk)
-        if not user.has_perm(self.permission_required):
+        if not user or not user.has_perm(self.permission_required, app):
             # suggest send error to sentry with capture_messgae then mark complete so it
             # doesnt run again?
             return self.complete()
 
-        app = self.get_object(pk=app_pk)
         cluster.App(app).create_iam_role()
         self.complete()
 
@@ -114,7 +114,7 @@ class GrantAppS3BucketAccess(BaseTaskHandler):
 
     def run(self, app_s3_bucket_pk, user_pk):
         user = self.get_user(pk=user_pk)
-        if not user.has_perm(self.permission_required):
+        if not user and not user.has_perm(self.permission_required):
             # suggest send error to sentry with capture_messgae then mark complete so it
             # doesnt run again?
             return self.complete()

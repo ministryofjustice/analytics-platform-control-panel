@@ -1,31 +1,46 @@
 import pytest
 from unittest.mock import patch
-from celery.exceptions import Retry
+
 from model_mommy import mommy
 
+from controlpanel.api.models import App
 from controlpanel.api.tasks.handlers.celery import create_app_aws_role
 
 
-@pytest.mark.skip("Need to refactor since changing to class-based task")
 @pytest.mark.django_db
-@patch("controlpanel.api.tasks.create_app_aws_role.retry")
-@patch("controlpanel.api.tasks.cluster")
-def test_retry_when_app_does_not_exist(cluster, retry):
-    retry.side_effect = Retry
+@patch("controlpanel.api.tasks.handlers.celery.BaseTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.celery.cluster")
+def test_cluster_not_called_without_valid_app(cluster, complete, users):
+    with pytest.raises(App.DoesNotExist):
+        create_app_aws_role(app_pk=1, user_pk=users["superuser"].pk)
+        cluster.App.assert_not_called()
+        # should not be complete as we want to try it again
+        complete.assert_not_called()
 
-    with pytest.raises(Retry):
-        create_app_aws_role(app_pk=1)
 
-    cluster.App.assert_not_called()
-
-
-@pytest.mark.skip("Need to refactor since changing to class-based task")
 @pytest.mark.django_db
-@patch("controlpanel.api.tasks.cluster")
-def test_app_exists(cluster):
+@patch("controlpanel.api.tasks.handlers.celery.BaseTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.celery.cluster")
+def test_cluster_not_called_without_valid_user(cluster, complete, users):
     app = mommy.make("api.App")
 
-    create_app_aws_role(app_pk=app.pk)
+    user = users["normal_user"]
+    create_app_aws_role(app_pk=app.pk, user_pk=user.pk)
+
+    # role should not be created
+    cluster.App.assert_not_called()
+    # task should be complete so that it does not run again, as user not valid
+    complete.assert_called_once()
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.tasks.handlers.celery.BaseTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.celery.cluster")
+def test_valid_app_and_user(cluster, complete, users):
+    app = mommy.make("api.App")
+
+    create_app_aws_role(app_pk=app.pk, user_pk=users["superuser"].pk)
 
     cluster.App.assert_called_once_with(app)
     cluster.App.return_value.create_iam_role.assert_called_once()
+    complete.assert_called_once()
