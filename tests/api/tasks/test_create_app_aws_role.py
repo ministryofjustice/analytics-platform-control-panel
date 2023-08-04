@@ -4,7 +4,7 @@ from unittest.mock import patch
 from model_mommy import mommy
 
 from controlpanel.api.models import App
-from controlpanel.api.tasks.handlers import create_app_aws_role
+from controlpanel.api.tasks.handlers import create_app_aws_role, create_app_auth_settings
 
 
 @pytest.mark.django_db

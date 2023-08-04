@@ -9,9 +9,10 @@ class CreateAppAuthSettings(BaseModelTaskHandler):
     permission_required = "api.create_app"
 
     def has_permission(self, user, obj=None):
-        if not user.github_api_token:
+        if not super().has_permission(user, obj):
             return False
-        return super().has_permission(user, obj)
+
+        return user.github_api_token
 
     def run_task(self, app, user, envs, disable_authentication, connections):
         for env in envs:
