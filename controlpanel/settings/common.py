@@ -566,5 +566,5 @@ for queue in PRE_DEFINED_QUEUES:
     }
 
 CELERY_IMPORTS = [
-    "controlpanel.api.tasks.handlers.celery"
+    "controlpanel.api.tasks.handlers"
 ]

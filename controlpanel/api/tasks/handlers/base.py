@@ -1,8 +1,6 @@
 from celery import Task as CeleryTask
 
-from controlpanel import celery_app
-from controlpanel.api import cluster
-from controlpanel.api.models import App, User, S3Bucket, UserS3Bucket, AppS3Bucket, Task
+from controlpanel.api.models import User, Task
 
 
 class BaseModelTaskHandler(CeleryTask):
@@ -81,78 +79,3 @@ class BaseModelTaskHandler(CeleryTask):
         method has been successfully called.
         """
         raise NotImplementedError("Task logic not implemented")
-
-
-class CreateAppAuthSettings(BaseModelTaskHandler):
-    model = App
-    name = "create_app_auth_settings"
-    permission_required = "api.create_app"
-
-    def has_permission(self, user, obj=None):
-        if not user.github_api_token:
-            return False
-        return super().has_permission(user, obj)
-
-    def run_task(self, app, user, envs, disable_authentication, connections):
-        for env in envs:
-            cluster.App(app, user.github_api_token).create_auth_settings(
-                env_name=env,
-                disable_authentication=disable_authentication,
-                connections=connections,
-            )
-        self.complete()
-
-
-class CreateS3Bucket(BaseModelTaskHandler):
-    model = S3Bucket
-    name = "create_s3bucket"
-    permission_required = "api.create_s3bucket"
-
-    def run_task(self, bucket, user, bucket_owner="APP"):
-        bucket.cluster.create(owner=bucket_owner)
-        self.complete()
-
-
-class CreateAppAWSRole(BaseModelTaskHandler):
-    model = App
-    name = "create_app_aws_role"
-    permission_required = "api.create_app"
-
-    def run_task(self, app, user):
-        cluster.App(app).create_iam_role()
-        self.complete()
-
-
-class GrantAppS3BucketAccess(BaseModelTaskHandler):
-    model = AppS3Bucket
-    name = 'grant_app_s3bucket_access'
-    permission_required = 'api.create_apps3bucket'
-
-    def run_task(self, app_bucket, user):
-        cluster.App(app_bucket.app).grant_bucket_access(
-            app_bucket.s3bucket.arn,
-            app_bucket.access_level,
-            app_bucket.resources,
-        )
-        self.complete()
-
-
-class GrantUserS3BucketAccess(BaseModelTaskHandler):
-    model = UserS3Bucket
-    name = "grant_user_s3bucket_access"
-    permission_required = "api.create_users3bucket"
-
-    def run_task(self, user_bucket, user):
-        cluster.User(user_bucket.user).grant_bucket_access(
-            user_bucket.s3bucket.arn,
-            user_bucket.access_level,
-            user_bucket.resources,
-        )
-        self.complete()
-
-
-create_app_aws_role = celery_app.register_task(CreateAppAWSRole())
-create_s3bucket = celery_app.register_task(CreateS3Bucket())
-grant_app_s3bucket_access = celery_app.register_task(GrantAppS3BucketAccess())
-grant_user_s3bucket_access = celery_app.register_task(GrantUserS3BucketAccess())
-create_app_auth_settings = celery_app.register_task(CreateAppAuthSettings())

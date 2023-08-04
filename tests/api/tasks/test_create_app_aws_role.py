@@ -4,12 +4,12 @@ from unittest.mock import patch
 from model_mommy import mommy
 
 from controlpanel.api.models import App
-from controlpanel.api.tasks.handlers.celery import create_app_aws_role
+from controlpanel.api.tasks.handlers import create_app_aws_role
 
 
 @pytest.mark.django_db
-@patch("controlpanel.api.tasks.handlers.celery.BaseModelTaskHandler.complete")
-@patch("controlpanel.api.tasks.handlers.celery.cluster")
+@patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.app.cluster")
 def test_cluster_not_called_without_valid_app(cluster, complete, users):
     with pytest.raises(App.DoesNotExist):
         create_app_aws_role(1, users["superuser"].pk)
@@ -19,8 +19,8 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 
 
 @pytest.mark.django_db
-@patch("controlpanel.api.tasks.handlers.celery.BaseModelTaskHandler.complete")
-@patch("controlpanel.api.tasks.handlers.celery.cluster")
+@patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.app.cluster")
 def test_cluster_not_called_without_valid_user(cluster, complete, users):
     app = mommy.make("api.App")
 
@@ -34,8 +34,8 @@ def test_cluster_not_called_without_valid_user(cluster, complete, users):
 
 
 @pytest.mark.django_db
-@patch("controlpanel.api.tasks.handlers.celery.BaseModelTaskHandler.complete")
-@patch("controlpanel.api.tasks.handlers.celery.cluster")
+@patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.app.cluster")
 def test_valid_app_and_user(cluster, complete, users):
     app = mommy.make("api.App")
 
