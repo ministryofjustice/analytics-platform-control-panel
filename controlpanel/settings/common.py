@@ -545,7 +545,9 @@ IAM_QUEUE_NAME = os.environ.get("IAM_QUEUE_NAME", "iam_queue")
 S3_QUEUE_NAME = os.environ.get("S3_QUEUE_NAME", "s3_queue")
 AUTH_QUEUE_NAME = os.environ.get("AUTH_QUEUE_NAME", "auth_queue")
 
-BROKER_URL = 'sqs://'
+# BROKER_URL = 'sqs://'
+# TODO load from env vars
+BROKER_URL = 'redis://localhost:6379/0'
 DEFAULT_QUEUE = IAM_QUEUE_NAME
 DEFAULT_BACKOFF_POLICY = {1: 10, 2: 20, 3: 40, 4: 80, 5: 320, 6: 640}
 PRE_DEFINED_QUEUES = [IAM_QUEUE_NAME, S3_QUEUE_NAME, AUTH_QUEUE_NAME]

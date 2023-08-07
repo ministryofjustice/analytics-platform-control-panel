@@ -6,6 +6,7 @@ import base64
 from collections.abc import Mapping
 
 from controlpanel.api.aws import AWSSQS
+from controlpanel import celery_app
 
 
 class MessageProtocolError(Exception):
@@ -189,3 +190,10 @@ class MessageBrokerClient:
         return message
 
 
+class LocalBrokerClient:
+
+    @staticmethod
+    def send_message(task_id, task_name, queue_name, args):
+        return celery_app.send_task(
+            task_name, task_id=task_id, queue_name=queue_name, args=args,
+        )

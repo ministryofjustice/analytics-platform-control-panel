@@ -1,7 +1,7 @@
 import uuid
 from django.conf import settings
 
-from controlpanel.api.message_broker import MessageBrokerClient
+from controlpanel.api.message_broker import MessageBrokerClient, LocalBrokerClient
 from controlpanel.api.models.task import Task
 
 
@@ -48,7 +48,9 @@ class TaskBase:
     @property
     def message_broker_client(self):
         if self._message_broker_client is None:
-            self._message_broker_client = MessageBrokerClient()
+            # self._message_broker_client = MessageBrokerClient()
+            # TODO conditionally load the client for the development environment
+            self._message_broker_client = LocalBrokerClient()
         return self._message_broker_client
 
     def _get_args_list(self):
