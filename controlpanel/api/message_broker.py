@@ -190,8 +190,11 @@ class MessageBrokerClient:
         return message
 
 
-class LocalBrokerClient:
-
+class LocalMessageBrokerClient:
+    """
+    Uses celery to send tasks so that it can be used with a message broker running
+    locally such as Redis
+    """
     @staticmethod
     def send_message(task_id, task_name, queue_name, args):
         return celery_app.send_task(

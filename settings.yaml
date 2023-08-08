@@ -134,3 +134,5 @@ S3_FOLDER_BUCKET_NAME:
 
 
 WORKER_HEALTH_FILENAME: "/tmp/worker_health.txt"
+USE_LOCAL_MESSAGE_BROKER: false
+BROKER_URL: "sqs://"

@@ -31,3 +31,4 @@ SLACK = {
 }
 
 SQS_REGION = "eu-west-1"
+USE_LOCAL_MESSAGE_BROKER = False
