@@ -199,22 +199,25 @@ class S3AccessPolicy:
 
     def remove_prefix(self, root_folder_path, sid, condition):
         """
-        Removes access to a folder by taking the folder name from the ARN, and removes
-        any matches from the given condition block related to the statement if the
-        bucket ARN is in the statement resource.
+        Remove the folder name from the prefixes condition of a statement block. The
+        prefixes condition is used to limit list access to specific folders in an S3
+        bucket, so by removing the folder name from the prefixes it removes access to that
+        folder.
 
-        :param str root_folder_path: Path to the root folder including bucket arn e.g.
-            - arn:aws:s3:::bucket-name/folder-name
+        :param str root_folder_path: Path to the root folder including bucket name e.g.
+        user-data-bucket/my-folder
         :param str sid: Statement ID
         :param str condition: Condition operator. Should be StringEquals or StringLike
         """
         statement = self.statement(sid)
-
         if not statement:
             return
 
-        # check the resource matches the bucket arn before removing anything else
-        bucket_arn, folder = root_folder_path.split("/")
+        # split the path into the bucket name and the folder name
+        bucket_name, folder = root_folder_path.split("/")
+        # build arn for the bucket to check that it is included in the statements
+        # resource element
+        bucket_arn = s3_arn(resource=bucket_name)
         if bucket_arn not in statement.get("Resource", []):
             return
 
@@ -224,7 +227,9 @@ class S3AccessPolicy:
             prefixes = []
 
         # remove access to the folder
-        prefixes[:] = [prefix for prefix in prefixes if not prefix.startswith(folder)]
+        prefixes[:] = [
+            prefix for prefix in prefixes if not prefix.startswith(folder)
+        ]
 
         # remove the resource if no prefixes left so that the statement is removed
         if prefixes == [] or prefixes == [""]:
@@ -313,8 +318,11 @@ class S3AccessPolicy:
         self.remove_resource(arn, "list")
 
     def revoke_folder_access(self, root_folder_path):
-        self.remove_resource(arn=root_folder_path, sid="readonly")
-        self.remove_resource(arn=root_folder_path, sid="readwrite")
+        # build arn for full path, including the folder name. important to include the
+        # folder name, as this is the resource string that is used when granting access
+        folder_resource_arn = s3_arn(root_folder_path)
+        self.remove_resource(arn=folder_resource_arn, sid="readonly")
+        self.remove_resource(arn=folder_resource_arn, sid="readwrite")
         self.remove_prefix(
             root_folder_path=root_folder_path,
             sid="listFolder",
@@ -460,13 +468,10 @@ class AWSRole(AWSService):
             raise e
 
         policy = S3AccessPolicy(role.Policy("s3-access"))
-        if "/" in bucket_arn:
-            policy.revoke_folder_access(root_folder_path=bucket_arn)
-        else:
-            policy.revoke_access(bucket_arn)
+        policy.revoke_access(bucket_arn)
         policy.put()
 
-    def revoke_folder_access(self, role_name, path_to_folder):
+    def revoke_folder_access(self, role_name, root_folder_path):
         try:
             role = self.boto3_session.resource("iam").Role(role_name)
             role.load()
@@ -477,7 +482,7 @@ class AWSRole(AWSService):
             raise e
 
         policy = S3AccessPolicy(role.Policy("s3-access"))
-        policy.revoke_folder_access(root_folder_path=path_to_folder)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
         policy.put()
 
 
@@ -737,10 +742,10 @@ class AWSPolicy(AWSService):
         policy.revoke_access(bucket_arn)
         policy.put()
 
-    def revoke_policy_folder_access(self, policy_arn, path_to_folder):
+    def revoke_policy_folder_access(self, policy_arn, root_folder_path):
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
         policy = ManagedS3AccessPolicy(policy)
-        policy.revoke_folder_access(root_folder_path=path_to_folder)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
         policy.put()
 
 

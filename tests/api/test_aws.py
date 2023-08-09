@@ -986,12 +986,13 @@ def test_base_s3_access_sids():
 def test_revoke_folder_access(s3_access_policy):
     with patch.object(s3_access_policy, "remove_prefix") as remove_prefix, \
             patch.object(s3_access_policy, "remove_resource") as remove_resource:
-        arn = "arn:aws:s3:::test-bucket/folder"
-        s3_access_policy.revoke_folder_access(root_folder_path=arn)
+        root_folder_path = "test-bucket/folder"
+        arn = f"arn:aws:s3:::{root_folder_path}"
+        s3_access_policy.revoke_folder_access(root_folder_path=root_folder_path)
         remove_prefix.assert_has_calls(
             [
-                call(root_folder_path=arn, sid="listFolder", condition="StringEquals"),
-                call(root_folder_path=arn, sid="listSubFolders", condition="StringLike"),
+                call(root_folder_path=root_folder_path, sid="listFolder", condition="StringEquals"),
+                call(root_folder_path=root_folder_path, sid="listSubFolders", condition="StringLike"),
             ],
             any_order=True,
         )
@@ -1005,18 +1006,16 @@ def test_revoke_folder_access(s3_access_policy):
 
 def test_remove_prefix(s3_access_policy):
     # grant access to the folder, so that it can be revoked later
-    bucket_arn = "arn:aws:s3:::test-bucket"
-    folder_name = "user-folder"
-    s3_access_policy.grant_folder_list_access(f"{bucket_arn}/{folder_name}")
+    root_folder_path = "test-bucket/user-folder"
+    arn = f"arn:aws:s3:::{root_folder_path}"
+    s3_access_policy.grant_folder_list_access(arn)
 
     assert s3_access_policy.statements["listFolder"].get("Resource", None) is not None
     assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is not None
     assert s3_access_policy.statements["listFolder"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
     assert s3_access_policy.statements["listSubFolders"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
 
-    # now revoke access
-    arn_and_folder = f"{bucket_arn}/{folder_name}"
-    s3_access_policy.revoke_folder_access(root_folder_path=arn_and_folder)
+    s3_access_policy.revoke_folder_access(root_folder_path=root_folder_path)
 
     assert s3_access_policy.statements["listFolder"].get("Resource", None) is None
     assert s3_access_policy.statements["listFolder"]["Condition"] == {

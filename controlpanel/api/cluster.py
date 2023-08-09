@@ -357,8 +357,8 @@ class User(EntityResource):
     def revoke_bucket_access(self, bucket_arn):
         self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
 
-    def revoke_folder_access(self, bucket_arn):
-        self.aws_role_service.revoke_folder_access(self.iam_role_name, bucket_arn)
+    def revoke_folder_access(self, root_folder_path):
+        self.aws_role_service.revoke_folder_access(self.iam_role_name, root_folder_path)
 
     def has_required_installation_charts(self):
         """Checks if the expected helm charts exist for the user."""
@@ -773,8 +773,8 @@ class RoleGroup(EntityResource):
     def revoke_bucket_access(self, bucket_arn):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
 
-    def revoke_folder_access(self, path_to_folder):
-        self.aws_policy_service.revoke_policy_folder_access(self.arn, path_to_folder)
+    def revoke_folder_access(self, root_folder_path):
+        self.aws_policy_service.revoke_policy_folder_access(self.arn, root_folder_path)
 
 
 class AppParameter(EntityResource):

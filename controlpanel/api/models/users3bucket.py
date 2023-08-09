@@ -52,5 +52,7 @@ class UserS3Bucket(AccessToS3Bucket):
 
     def revoke_bucket_access(self):
         if self.s3bucket.is_folder:
-            return cluster.User(self.user).revoke_folder_access(self.s3bucket.arn)
+            return cluster.User(self.user).revoke_folder_access(
+                root_folder_path=self.s3bucket.name
+            )
         cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)
