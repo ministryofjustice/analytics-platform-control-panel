@@ -1,7 +1,9 @@
 import uuid
 from django.conf import settings
 
-from controlpanel.api.message_broker import MessageBrokerClient
+from controlpanel.api.message_broker import (
+    MessageBrokerClient, LocalMessageBrokerClient
+)
 from controlpanel.api.models.task import Task
 
 
@@ -48,8 +50,14 @@ class TaskBase:
     @property
     def message_broker_client(self):
         if self._message_broker_client is None:
-            self._message_broker_client = MessageBrokerClient()
+            self._message_broker_client = self._get_message_broker_client()
         return self._message_broker_client
+
+    @staticmethod
+    def _get_message_broker_client():
+        if settings.USE_LOCAL_MESSAGE_BROKER:
+            return LocalMessageBrokerClient()
+        return MessageBrokerClient()
 
     def _get_args_list(self):
         args = [self.entity.id]
