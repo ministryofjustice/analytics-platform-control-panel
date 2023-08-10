@@ -39,9 +39,9 @@ class UserS3Bucket(AccessToS3Bucket):
     def grant_bucket_access(self):
         if self.s3bucket.is_folder:
             return cluster.User(self.user).grant_folder_access(
-                bucket_arn=self.s3bucket.arn,
+                root_folder_path=self.s3bucket.name,
                 access_level=self.access_level,
-                paths=self.resources,
+                paths=self.paths,
             )
 
         cluster.User(self.user).grant_bucket_access(

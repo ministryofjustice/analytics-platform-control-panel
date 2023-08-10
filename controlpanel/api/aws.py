@@ -201,8 +201,8 @@ class S3AccessPolicy:
         """
         Remove the folder name from the prefixes condition of a statement block. The
         prefixes condition is used to limit list access to specific folders in an S3
-        bucket, so by removing the folder name from the prefixes it removes access to that
-        folder.
+        bucket, so by removing the folder name from the prefixes it removes access to
+        that folder.
 
         :param str root_folder_path: Path to the root folder including bucket name e.g.
         user-data-bucket/my-folder
@@ -295,21 +295,44 @@ class S3AccessPolicy:
             }
         }
 
-    def grant_folder_list_access(self, arn):
+    def grant_folder_access(self, root_folder_path, access_level, paths=None):
         """
-        Splits the resource arn to get the bucket ARN and folder name, then for all
-        permissions required for folder list access makes sure the ARN is added as the
-        resource, and folder name is used in the statement condition prefixes so that
-        access if only granted to the specific folder and sub folders in the S3 bucket.
-        For a detailed breakdown of folder-level permissions see the docs:
+        Grant access to the given folder for the given access level. If paths have been
+        specified, only grants access to those paths within the root folder.
+        """
+        bucket_name, folder = root_folder_path.split("/")
+        bucket_arn = s3_arn(bucket_name)
+        # make sure the root bucket arn is included in the resources
+        self.add_resource(bucket_arn, "rootFolderBucketMeta")
+        self.add_resource(bucket_arn, "listFolder")
+        self.add_resource(bucket_arn, "listSubFolders")
+
+        # if paths not specified grant access to anything within in the root folder
+        if not paths:
+            self.grant_object_access(
+                arn=s3_arn(root_folder_path),
+                access_level=access_level
+            )
+            self.grant_folder_list_access(folder=folder)
+        else:
+            # only grant access to specified paths within the root folder
+            for path in paths:
+                absolute_path = f"{root_folder_path}{path}"
+                self.grant_object_access(
+                    arn=s3_arn(absolute_path),
+                    access_level=access_level
+                )
+                self.grant_folder_list_access(folder=f"{folder}{path}")
+
+    def grant_folder_list_access(self, folder):
+        """
+        Updates policy statement related to list access to add folder to the condition
+        prefixes so that access if only granted to the specific folder and sub folders
+        in the S3 bucket.
+        For a detailed breakdown of folder-level permissions see aws blog post:
         https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
         """
-        arn, folder = arn.split("/", 1)
-        # required to avoid warnings when accessing AWS console
-        self.add_resource(arn, "rootFolderBucketMeta")
-        self.add_resource(arn, "listFolder")
         self._add_folder_to_list_folder_prefixes(folder)
-        self.add_resource(arn, "listSubFolders")
         self._add_folder_to_list_sub_folders_prefixes(folder)
 
     def revoke_access(self, arn):
@@ -439,18 +462,19 @@ class AWSRole(AWSService):
             policy.grant_object_access(arn, access_level)
         policy.put()
 
-    def grant_folder_access(self, role_name, bucket_arn, access_level, paths):
+    def grant_folder_access(self, role_name, root_folder_path, access_level, paths):
 
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
-        paths = paths or [bucket_arn]
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
-        policy.revoke_folder_access(root_folder_path=bucket_arn)
-        for path in paths:
-            policy.grant_folder_list_access(path)
-            policy.grant_object_access(path, access_level)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
+        policy.grant_folder_access(
+            root_folder_path=root_folder_path,
+            access_level=access_level,
+            paths=paths,
+        )
         policy.put()
 
     def revoke_bucket_access(self, role_name, bucket_arn=None):
@@ -701,18 +725,19 @@ class AWSPolicy(AWSService):
 
         policy.delete()
 
-    def grant_folder_access(self, policy_arn, bucket_arn, access_level, paths=None):
+    def grant_folder_access(self, policy_arn, root_folder_path, access_level, paths=None):
 
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
-        paths = paths or [bucket_arn]
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
         policy = ManagedS3AccessPolicy(policy)
-        policy.revoke_folder_access(root_folder_path=bucket_arn)
-        for path in paths:
-            policy.grant_folder_list_access(path)
-            policy.grant_object_access(path, access_level)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
+        policy.grant_folder_access(
+            root_folder_path=root_folder_path,
+            access_level=access_level,
+            paths=paths,
+        )
         policy.put()
 
     def grant_policy_bucket_access(
