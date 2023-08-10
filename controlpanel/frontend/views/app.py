@@ -28,6 +28,7 @@ from controlpanel.api.models import (
     IPAllowlist,
     User,
     UserApp,
+    Task,
 )
 from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.api.serializers import AppAuthSettingsSerializer

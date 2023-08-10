@@ -16,3 +16,4 @@ from controlpanel.api.models.user import User
 from controlpanel.api.models.userapp import UserApp
 from controlpanel.api.models.users3bucket import UserS3Bucket
 from controlpanel.api.models.app_ip_allowlist import AppIPAllowList
+from controlpanel.api.models.task import Task

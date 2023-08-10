@@ -164,13 +164,17 @@ def test_delete(client, app, authz):
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_create(client, users):
+def test_create(client, users, sqs, helpers):
     data = {"name": "bar", "repo_url": "https://example.com/bar.git"}
     response = client.post(reverse("app-list"), data)
     assert response.status_code == status.HTTP_201_CREATED
 
     assert response.data["created_by"] == users["superuser"].auth0_id
     assert response.data["repo_url"] == "https://example.com/bar"
+
+    app = App.objects.get(repo_url="https://example.com/bar")
+    messages = helpers.retrieve_messages(sqs)
+    helpers.validate_task_with_sqs_messages(messages, App.__name__, app.id)
 
 
 def test_update(client, app):

@@ -99,3 +99,37 @@ AWS_ROLES_MAP:
 - The feature of supporting the multi AWS accounts was required by the app migration, since we changed
   cluster to Cloud-Platoform team, the feature is not required any more but we are not going to revert
   the code back as the current code support single account too
+  
+## Message Broker and Queue
+The Control panel is under the process of refactoring how we manage/trigger/perform the tasks which are related to
+external third party of tools, service and infrastructure including AWS and cluster etc,.
+Although right now those tasks are mainly application and user related, potentially it can be
+extended to other type of resources the future. 
+
+We introduce the message broker and queue as the key role during this process, 
+
+The main reasons for introduce the MB and MQ:
+- Make the sequences of task more controllable and not affect each other, more robust 
+- Outsource or offload the heavy task (e.g. ip_range lookup table change)
+- Make the parts related infrastructure side easier to be maintained or be replaced
+  better visibility for background tasks
+  
+Main tech stack
+- Use AWS SQS as message broker
+- Use celery for workers
+- User boto3 to send message but following the message protocol of celery for 
+  decoupling sender from particular mq client
+
+## RESTFul APIs
+
+Two ways for allowing external parties to use Control Panel's APIs
+- SessionAuthentication
+- JWTAuthentication(Oauth2 flow): mainly for Machine to Machine API call
+  we use Auth0 as the oauth server to produce the access token. 
+  The process for granting the access to Control panel's API
+  - Register a machine-to-machine auth0 client for this external party
+  - Grant the access to Control panel APIs from auth0:
+    Applications>APIs>`Control panel APIs`>`Machine To Machine Applications`
+  - Choose the suitable scopes for this third party there
+  
+  

@@ -197,6 +197,32 @@ Then you can run migrations:
 python3 manage.py migrate
 ```
 
+### Message broker
+
+The Control Panel uses a message queue to run some tasks. For local development, Redis
+is recommended as the message broker rather than SQS (which is used in the development
+and production environments). To use Redis as the message broker you need to ensure that
+the following environment variables are set in your local .env file:
+
+```
+USE_LOCAL_MESSAGE_BROKER=True
+BROKER_URL=redis://localhost:6379/0
+```
+
+You will need to ensure that you have Redis running locally (see steps above), and then
+start the celery worker with the following command from your terminal:
+
+```
+celery -A controlpanel worker --loglevel=info
+```
+
+Note, if using aws vault you will need to prefix the command with
+`aws-vault exec admin-dev-sso -- `.
+
+When running correctly you will see the output `Connected to redis://localhost:6379/0`.
+Now when tasks are sent to the message queue by Control Panel they will bypass SQS,
+making sure that tasks are only received by your locally running celery worker.
+
 
 ### Compile Sass and Javascript
 
