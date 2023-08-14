@@ -87,7 +87,7 @@ def test_grant_access(grant_bucket_access, bucket, entities, entity_type, resour
 
 
 @pytest.mark.parametrize(
-    "entity_type, resources",
+    "entity_type, paths",
     [
         ("user", []),
         ("user", ["/foo/bar", "/foo/baz"]),
@@ -97,15 +97,15 @@ def test_grant_access(grant_bucket_access, bucket, entities, entity_type, resour
         "user-paths",
     ],
 )
-def test_grant_folder_access(grant_folder_access, bucket, entities, entity_type, resources):
+def test_grant_folder_access(grant_folder_access, bucket, entities, entity_type, paths):
     entity = entities[entity_type]
-    entity.grant_folder_access(bucket.arn, "readonly", resources)
+    entity.grant_folder_access(bucket.name, "readonly", paths)
 
     grant_folder_access.assert_called_with(
         role_name=entity.iam_role_name,
-        bucket_arn=bucket.arn,
+        root_folder_path=bucket.name,
         access_level="readonly",
-        paths=resources,
+        paths=paths,
     )
 
 
@@ -145,11 +145,11 @@ def test_grant_group_access(grant_policy_bucket_access, bucket, entities, resour
 )
 def test_grant_group_folder_access(grant_policy_folder_access, bucket, entities, entity_type, resources):
     entity = entities["group"]
-    entity.grant_folder_access(bucket.arn, "readonly", resources)
+    entity.grant_folder_access(bucket.name, "readonly", resources)
 
     grant_policy_folder_access.assert_called_with(
         entity.arn,
-        bucket.arn,
+        bucket.name,
         "readonly",
         resources,
     )

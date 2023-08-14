@@ -251,8 +251,13 @@ class S3AccessPolicy:
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
 
-    def _add_folder_to_list_folder_prefixes(self, folder):
+    def _add_folder_to_list_folder_prefixes(self, folder, bucket_arn):
         statement = self.statement("listFolder")
+
+        # make sure that we are updating statement for the correct bucket
+        if bucket_arn not in statement["Resource"]:
+            return
+
         try:
             prefixes = statement["Condition"]["StringEquals"]["s3:prefix"]
         except KeyError:
@@ -278,8 +283,13 @@ class S3AccessPolicy:
             }
         }
 
-    def _add_folder_to_list_sub_folders_prefixes(self, folder):
+    def _add_folder_to_list_sub_folders_prefixes(self, folder, bucket_arn):
         statement = self.statement("listSubFolders")
+
+        # make sure that we are updating statement for the correct bucket
+        if bucket_arn not in statement["Resource"]:
+            return
+
         try:
             prefixes = statement["Condition"]["StringLike"]["s3:prefix"]
         except KeyError:
@@ -313,7 +323,7 @@ class S3AccessPolicy:
                 arn=s3_arn(root_folder_path),
                 access_level=access_level
             )
-            self.grant_folder_list_access(folder=folder)
+            self.grant_folder_list_access(folder=folder, bucket_arn=bucket_arn)
         else:
             # only grant access to specified paths within the root folder
             for path in paths:
@@ -322,9 +332,9 @@ class S3AccessPolicy:
                     arn=s3_arn(absolute_path),
                     access_level=access_level
                 )
-                self.grant_folder_list_access(folder=f"{folder}{path}")
+                self.grant_folder_list_access(folder=f"{folder}{path}", bucket_arn=bucket_arn)
 
-    def grant_folder_list_access(self, folder):
+    def grant_folder_list_access(self, folder, bucket_arn):
         """
         Updates policy statement related to list access to add folder to the condition
         prefixes so that access if only granted to the specific folder and sub folders
@@ -332,8 +342,8 @@ class S3AccessPolicy:
         For a detailed breakdown of folder-level permissions see aws blog post:
         https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
         """
-        self._add_folder_to_list_folder_prefixes(folder)
-        self._add_folder_to_list_sub_folders_prefixes(folder)
+        self._add_folder_to_list_folder_prefixes(folder, bucket_arn)
+        self._add_folder_to_list_sub_folders_prefixes(folder, bucket_arn)
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")
