@@ -841,7 +841,7 @@ def test_aws_folder_exists(new_folder, existing_folder, expected, root_folder_bu
 )
 def test_role_grant_folder_access(access_level, roles, root_folder_path, paths):
     with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_access") as grant_folder_access, \
-            patch("controlpanel.api.aws.S3AccessPolicy.revoke_folder_access") as revoke_access:
+            patch("controlpanel.api.aws.S3AccessPolicy.revoke_folder_access") as revoke_access:  # noqa
         aws.AWSRole().grant_folder_access(
             'test_user_normal-user',
             root_folder_path,
@@ -871,7 +871,7 @@ def test_role_grant_folder_access(access_level, roles, root_folder_path, paths):
 )
 def test_policy_grant_folder_access(group, access_level, root_folder_path, paths):
     with patch("controlpanel.api.aws.S3AccessPolicy.grant_folder_access") as grant_folder_access, \
-            patch("controlpanel.api.aws.S3AccessPolicy.revoke_folder_access") as revoke_access:
+            patch("controlpanel.api.aws.S3AccessPolicy.revoke_folder_access") as revoke_access:  # noqa
         aws.AWSPolicy().grant_folder_access(
             group.arn,
             root_folder_path,
@@ -904,6 +904,7 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
     )
 
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
+    assert f"{bucket_arn}/{folder_name}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
     assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
     assert s3_access_policy.statements["listFolder"]["Condition"] == {
         "StringEquals": {
@@ -927,6 +928,7 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
 
     # make sure that the policy has not been overwritten, and contains both folders
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
+    assert f"{bucket_arn}/{folder_name_2}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
     assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
     assert s3_access_policy.statements["listFolder"]["Condition"] == {
         "StringEquals": {
@@ -954,10 +956,6 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
     See docstring on grant_folder_list_access method for full explanation of
     required permissions
     """
-    # bucket_arn = "arn:aws:s3:::test-bucket"
-    # folder_path = "user-folder/public/folder"
-    # s3_access_policy.grant_folder_list_access(f"{bucket_arn}/{folder_path}")
-
     bucket_name = "test-bucket"
     folder_name = "user-folder"
     root_folder_path = f"{bucket_name}/{folder_name}"
@@ -968,8 +966,9 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
         access_level="readonly",
         paths=[allowed_path],
     )
-    # list access required for all sub-folders to the designated folder
+
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
+    assert f"{bucket_arn}/{folder_name}{allowed_path}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
     assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
     assert s3_access_policy.statements["listFolder"]["Condition"] == {
         "StringEquals": {
@@ -1000,6 +999,7 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
         paths=[another_path]
     )
     assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
+    assert f"{bucket_arn}/{folder_name}{another_path}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
     assert s3_access_policy.statements["listFolder"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": [
