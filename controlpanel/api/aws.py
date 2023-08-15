@@ -134,6 +134,7 @@ BASE_S3_ACCESS_POLICY = {
 
 class S3AccessPolicy:
     """Provides a convenience wrapper around a RolePolicy object"""
+    SID_SUFFIX_LEN = 32
 
     def __init__(self, policy):
         self.policy = policy
@@ -154,11 +155,18 @@ class S3AccessPolicy:
         self.policy_document.setdefault("Statement", [])
         for stmt in self.policy_document["Statement"]:
             sid = stmt.get("Sid")
-            # nb. this means that statements that use a suffix will not be updated if
-            # the base access statement is changed
             if sid in self.base_s3_access_sids:
                 stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
-            self.statements[sid] = stmt
+                self.statements[sid] = stmt
+                continue
+
+            # check for the SID without md5 suffix
+            if sid[:-self.SID_SUFFIX_LEN] in self.base_s3_access_sids:
+                stmt.update(
+                    deepcopy(BASE_S3_ACCESS_STATEMENT[sid[:-self.SID_SUFFIX_LEN]])
+                )
+                stmt["Sid"] = sid
+                self.statements[sid] = stmt
 
     @property
     def base_s3_access_sids(self):
@@ -169,6 +177,10 @@ class S3AccessPolicy:
         return self.policy.policy_document
 
     def statement(self, sid, suffix=""):
+        """
+        If a suffix is given then this will be hashed and be added to the Sid that is
+        set for the policy statement
+        """
         if sid not in self.base_s3_access_sids:
             return
 
@@ -182,9 +194,11 @@ class S3AccessPolicy:
         if sid_with_suffix in self.statements:
             return self.statements[sid_with_suffix]
 
+        # get the statement using the sid without suffix
         stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
         if suffix:
-            sid = f"{sid}{suffix}"
+            # update the sid to use sid with suffix if we had one
+            sid = sid_with_suffix
             stmt["Sid"] = sid
 
         self.statements[sid] = stmt
