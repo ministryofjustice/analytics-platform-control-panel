@@ -1,6 +1,7 @@
 # Standard library
 import json
 import uuid
+import hashlib
 from unittest.mock import MagicMock, call, patch
 
 # Third-party
@@ -60,6 +61,10 @@ def eks_assume_role(stmt, user):
             "StringLike": {f"{settings.OIDC_EKS_PROVIDER}:sub": match},  # noqa: F405
         },
     )
+
+
+def md5_hash(string):
+    return hashlib.md5(string.encode()).hexdigest()
 
 
 @pytest.fixture
@@ -895,6 +900,7 @@ def s3_access_policy():
 
 def test_s3_access_policy_grant_folder_access(s3_access_policy):
     bucket_name = "test-bucket"
+    bucket_hash = md5_hash(bucket_name)
     folder_name = "user-folder"
     root_folder_path = f"{bucket_name}/{folder_name}"
     bucket_arn = f"arn:aws:s3:::{bucket_name}"
@@ -905,15 +911,15 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
 
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
     assert f"{bucket_arn}/{folder_name}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
-    assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
-    assert s3_access_policy.statements["listFolder"]["Condition"] == {
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": ["", folder_name],
             "s3:delimiter": ["/"]
         }
     }
-    assert s3_access_policy.statements["listSubFolders"]["Resource"] == [bucket_arn]
-    assert s3_access_policy.statements["listSubFolders"]["Condition"] == {
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [f"{folder_name}/*"],
         }
@@ -929,8 +935,8 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
     # make sure that the policy has not been overwritten, and contains both folders
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
     assert f"{bucket_arn}/{folder_name_2}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
-    assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
-    assert s3_access_policy.statements["listFolder"]["Condition"] == {
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": [
                 "",
@@ -940,8 +946,8 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
             "s3:delimiter": ["/"]
         }
     }
-    assert s3_access_policy.statements["listSubFolders"]["Resource"] == [bucket_arn]
-    assert s3_access_policy.statements["listSubFolders"]["Condition"] == {
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [
                 f"{folder_name}/*",
@@ -957,6 +963,7 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
     required permissions
     """
     bucket_name = "test-bucket"
+    bucket_hash = md5_hash(bucket_name)
     folder_name = "user-folder"
     root_folder_path = f"{bucket_name}/{folder_name}"
     allowed_path = "/public/folder"
@@ -969,8 +976,8 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
 
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
     assert f"{bucket_arn}/{folder_name}{allowed_path}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
-    assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
-    assert s3_access_policy.statements["listFolder"]["Condition"] == {
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": [
                 "",
@@ -983,9 +990,9 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
             "s3:delimiter": ["/"]
         }
     }
-    assert s3_access_policy.statements["listSubFolders"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Resource"] == [bucket_arn]
     # only designated folder should use the wildcard
-    assert s3_access_policy.statements["listSubFolders"]["Condition"] == {
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [f"{folder_name}{allowed_path}/*"],
         }
@@ -998,9 +1005,9 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
         access_level="readonly",
         paths=[another_path]
     )
-    assert s3_access_policy.statements["listFolder"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Resource"] == [bucket_arn]
     assert f"{bucket_arn}/{folder_name}{another_path}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
-    assert s3_access_policy.statements["listFolder"]["Condition"] == {
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": [
                 "",
@@ -1014,8 +1021,8 @@ def test_s3_access_policy_grant_folder_access_to_paths(s3_access_policy):
             "s3:delimiter": ["/"]
         }
     }
-    assert s3_access_policy.statements["listSubFolders"]["Resource"] == [bucket_arn]
-    assert s3_access_policy.statements["listSubFolders"]["Condition"] == {
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Resource"] == [bucket_arn]
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [
                 f"{folder_name}{allowed_path}/*",
@@ -1060,43 +1067,47 @@ def test_revoke_folder_access(s3_access_policy):
 
 def test_revoke_access_removes_prefixes(s3_access_policy):
     # grant access to the folder, so that it can be revoked later
+    bucket_name = "test-bucket"
+    bucket_hash = md5_hash(bucket_name)
     root_folder_path = "test-bucket/user-folder"
     s3_access_policy.grant_folder_access(root_folder_path, "readwrite")
 
-    assert s3_access_policy.statements["listFolder"].get("Resource", None) is not None
-    assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is not None
-    assert s3_access_policy.statements["listFolder"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
-    assert s3_access_policy.statements["listSubFolders"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"].get("Resource", None) is not None
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"].get("Resource", None) is not None
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
 
     s3_access_policy.revoke_folder_access(root_folder_path=root_folder_path)
 
-    assert s3_access_policy.statements["listFolder"].get("Resource", None) is None
-    assert s3_access_policy.statements["listFolder"]["Condition"] == {
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"].get("Resource", None) is None
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {
             "s3:prefix": [""],
             "s3:delimiter": ["/"]
         }
     }
-    assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is None
-    assert s3_access_policy.statements["listSubFolders"]["Condition"] == {
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"].get("Resource", None) is None
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"] == {
         "StringLike": {
             "s3:prefix": [],
         }
     }
 
 
-def test_revoke_access_doesnt_removes_prefixes(s3_access_policy):
+def test_revoke_access_doesnt_remove_prefixes(s3_access_policy):
+    bucket_name = "test-bucket"
+    bucket_hash = md5_hash(bucket_name)
     s3_access_policy.grant_folder_access("test-bucket/my-folder", "readwrite")
 
-    assert s3_access_policy.statements["listFolder"].get("Resource", None) is not None
-    assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is not None
-    assert s3_access_policy.statements["listFolder"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
-    assert s3_access_policy.statements["listSubFolders"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"].get("Resource", None) is not None
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"].get("Resource", None) is not None
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
 
     # now revoke access
     s3_access_policy.revoke_folder_access("another-bucket/my-folder")
 
-    assert s3_access_policy.statements["listFolder"].get("Resource", None) is not None
-    assert s3_access_policy.statements["listSubFolders"].get("Resource", None) is not None
-    assert s3_access_policy.statements["listFolder"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
-    assert s3_access_policy.statements["listSubFolders"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"].get("Resource", None) is not None
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"].get("Resource", None) is not None
+    assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
+    assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa

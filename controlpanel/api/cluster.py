@@ -715,6 +715,7 @@ class S3Folder(S3Bucket):
         self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
 
     def exists(self, folder_name, bucket_owner):
+        # TODO this assumes only one multi root bucket
         folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
         return super().exists(folder_path, bucket_owner), folder_path
 
