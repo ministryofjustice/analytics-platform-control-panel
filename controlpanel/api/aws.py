@@ -176,37 +176,50 @@ class S3AccessPolicy:
         # triggers API call
         return self.policy.policy_document
 
-    def statement(self, sid, suffix=""):
+    def _get_statement(self, sid, suffix=None):
         """
-        If a suffix is given then this will be hashed and be added to the Sid that is
-        set for the policy statement
+        Try to get existing statement for the given Sid. If a suffix is given, this is
+        appended to the Sid used to find an existing statement.
+        """
+        if suffix:
+            sid = f"{sid}{suffix}"
+        return self.statements.get(sid, None)
+
+    def _build_statement(self, sid, suffix=None):
+        """
+        Build and store a new statement dictionary copied from the
+        BASE_S3_ACCESS_STATEMENT.
+        If a suffix is given this is appended to the Sid of the new statement block.
+        """
+        statement = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
+        if suffix:
+            statement["Sid"] = f"{sid}{suffix}"
+
+        self.statements[statement["Sid"]] = statement
+        self.policy_document["Statement"].append(statement)
+        return statement
+
+    def statement(self, sid, suffix=None):
+        """
+        Get or build the statement element for the given Sid and suffix.
+        If a suffix is given this is used to create a md5 hash in order to meet AWS
+        requirements for the Sid, which supports only uppercase letters (A-Z), lowercase
+        letters (a-z), and numbers (0-9).
         """
         if sid not in self.base_s3_access_sids:
             return
 
-        if sid in self.statements:
-            return self.statements[sid]
-
         if suffix:
             suffix = hashlib.md5(suffix.encode()).hexdigest()
 
-        sid_with_suffix = f"{sid}{suffix}"
-        if sid_with_suffix in self.statements:
-            return self.statements[sid_with_suffix]
+        statement = self._get_statement(sid=sid, suffix=suffix)
+        if not statement:
+            statement = self._build_statement(sid=sid, suffix=suffix)
 
-        # get the statement using the sid without suffix
-        stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
-        if suffix:
-            # update the sid to use sid with suffix if we had one
-            sid = sid_with_suffix
-            stmt["Sid"] = sid
+        return statement
 
-        self.statements[sid] = stmt
-        self.policy_document["Statement"].append(stmt)
-        return self.statements[sid]
-
-    def add_resource(self, arn, sid, statement_suffix=""):
-        statement = self.statement(sid, statement_suffix)
+    def add_resource(self, arn, sid, sid_suffix=None):
+        statement = self.statement(sid, sid_suffix)
         if statement:
             statement["Resource"] = statement.get("Resource", [])
             if arn not in statement["Resource"]:
@@ -345,8 +358,8 @@ class S3AccessPolicy:
         bucket_arn = s3_arn(bucket_name)
         # make sure the root bucket arn is included in the resources
         self.add_resource(bucket_arn, "rootFolderBucketMeta")
-        self.add_resource(bucket_arn, "listFolder", statement_suffix=bucket_name)
-        self.add_resource(bucket_arn, "listSubFolders", statement_suffix=bucket_name)
+        self.add_resource(bucket_arn, "listFolder", sid_suffix=bucket_name)
+        self.add_resource(bucket_arn, "listSubFolders", sid_suffix=bucket_name)
         # if paths not specified grant access to anything within in the root folder
         if not paths:
             self.grant_object_access(
