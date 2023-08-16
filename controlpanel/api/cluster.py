@@ -658,9 +658,6 @@ class App(EntityResource):
         self.app.clear_auth_settings(env_name)
 
     def update_auth_connections(self, env_name, new_conns):
-        print("------test-----", auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION in new_conns)
-        print("------test-----", auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION)
-        print("------test-----", new_conns)
         existing_conns = self.app.auth0_connections(env_name=env_name)
         self.create_or_update_env_var(
             env_name=env_name,
