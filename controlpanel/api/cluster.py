@@ -627,6 +627,8 @@ class App(EntityResource):
     ):
         client = None
         group = None
+        connections = connections or \
+                      {auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION: {}}
         if not disable_authentication:
             client, group = self._get_auth0_instance().setup_auth0_client(
                 client_name=self.app.auth0_client_name(env_name),
@@ -640,7 +642,7 @@ class App(EntityResource):
         self._create_env_vars(
             env_name,
             disable_authentication,
-            connections or [],
+            connections,
             client=client,
         )
         return client, group
@@ -654,6 +656,23 @@ class App(EntityResource):
             self.delete_env_var(env_name, app_env_name)
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
         self.app.clear_auth_settings(env_name)
+
+    def update_auth_connections(self, env_name, new_conns):
+        print("------test-----", auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION in new_conns)
+        print("------test-----", auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION)
+        print("------test-----", new_conns)
+        existing_conns = self.app.auth0_connections(env_name=env_name)
+        self.create_or_update_env_var(
+            env_name=env_name,
+            key_name=self.AUTH0_PASSWORDLESS,
+            key_value=auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION in new_conns
+        )
+        auth0.ExtendedAuth0().update_client_auth_connections(
+            app_name=self.app.auth0_client_name(env_name),
+            client_id=self.app.get_auth_client(env_name).get("client_id"),
+            new_conns=new_conns,
+            existing_conns=existing_conns,
+        )
 
     def remove_redundant_env(self, env_name):
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
