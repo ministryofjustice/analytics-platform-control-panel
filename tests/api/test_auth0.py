@@ -623,7 +623,7 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "create") as connection_create:
         connection_create.side_effect = exceptions.Auth0Error(
             400, 400, 'Error')
-        try:
+        with pytest.raises(auth0.Auth0Error, match="400: Error"):
             ExtendedAuth0.connections.create_custom_connection(
                 "auth0_nomis",
                 input_values={
@@ -631,8 +631,5 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                     "client_id": "test_nomis_connection_id",
                     "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
                 },
-             )
-        except auth0.Auth0Error as error:
-            connection_create.assert_called_once_with(mock.ANY)
-            print(error)
-            assert error.detail == '400: Error'
+            )
+        connection_create.assert_called_once_with(mock.ANY)
