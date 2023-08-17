@@ -380,9 +380,8 @@ class S3AccessPolicy:
             folder_paths = [f"{folder}{path}" for path in paths]
 
         for folder_path in folder_paths:
-            object_arn = s3_arn(f"{bucket_name}/{folder_path}")
             self.grant_object_access(
-                arn=object_arn,
+                arn=f"{bucket_arn}/{folder_path}",
                 access_level=access_level,
             )
             self._add_folder_to_list_folder_prefixes(folder_path, bucket_name)
