@@ -43,7 +43,7 @@ def worker_health_check(self):
 # ensures worker picks and runs tasks from all queues rather than just default queue
 # alternative is to run the worker and pass queue name to -Q flag
 app.conf.task_queues = [
-    Queue("iam_queue"),
-    Queue("auth_queue"),
-    Queue("s3_queue"),
+    Queue(settings.IAM_QUEUE_NAME),
+    Queue(settings.AUTH_QUEUE_NAME),
+    Queue(settings.S3_QUEUE_NAME),
 ]
