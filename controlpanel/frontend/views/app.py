@@ -191,13 +191,12 @@ class UpdateAppAuth0Connections(
 
     def form_valid(self, form):
         try:
-            env_name = form.cleaned_data.get("env_name")
-            auth0_client_id = self.object.get_auth_client(env_name).get("client_id")
-            auth0.ExtendedAuth0().update_client_auth_connections(
-                app_name=self.object.auth0_client_name(env_name),
-                client_id=auth0_client_id,
+            cluster.App(
+                app=self.get_object(),
+                github_api_token=self.request.user.github_api_token
+            ).update_auth_connections(
+                env_name=form.cleaned_data.get("env_name"),
                 new_conns=form.cleaned_data.get("auth0_connections"),
-                existing_conns=form.auth0_connections,
             )
         except Exception as ex:
             form.add_error("connections", str(ex))
