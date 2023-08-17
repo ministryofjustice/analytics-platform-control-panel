@@ -176,15 +176,6 @@ class S3AccessPolicy:
         # triggers API call
         return self.policy.policy_document
 
-    def _get_statement(self, sid, suffix=None):
-        """
-        Try to get existing statement for the given Sid. If a suffix is given, this is
-        appended to the Sid used to find an existing statement.
-        """
-        if suffix:
-            sid = f"{sid}{suffix}"
-        return self.statements.get(sid, None)
-
     def _build_statement(self, base_sid, sid):
         """
         Build and store a new statement dictionary copied from the
