@@ -189,30 +189,37 @@ class S3AccessPolicy:
         return statement
 
     @staticmethod
-    def _construct_sid(sid, suffix):
+    def _construct_sid(base_sid, suffix=None):
         """
         If a suffix is given this is used to create a md5 hash in order to meet AWS
         requirements for the Sid, which supports only uppercase letters (A-Z), lowercase
         letters (a-z), and numbers (0-9).
         """
         if not suffix:
-            return sid
+            return base_sid
 
         suffix = hashlib.md5(suffix.encode()).hexdigest()
-        return f"{sid}{suffix}"
+        return f"{base_sid}{suffix}"
 
-    def statement(self, sid, suffix=None):
+    def statement(self, base_sid, suffix=None):
         """
         Get or build the statement element for the given Sid and suffix.
+
+        :param str base_sid: should be one of the Sid defined that are defined in the
+        BASE_S3_ACCESS_STATEMENT
+        :param suffix: Optional arg, if given will be used when constructing the Sid
+        that is used to lookup or build a statement element.
+        :type suffix: str or None
         """
-        if sid not in self.base_s3_access_sids:
+        if base_sid not in self.base_s3_access_sids:
             return
 
-        statement = self.statements.get(self._construct_sid(sid, suffix), None)
+        sid = self._construct_sid(base_sid, suffix)
+        statement = self.statements.get(sid, None)
         if not statement:
             statement = self._build_statement(
-                base_sid=sid,
-                sid=self._construct_sid(sid, suffix)
+                base_sid=base_sid,
+                sid=sid
             )
 
         return statement
