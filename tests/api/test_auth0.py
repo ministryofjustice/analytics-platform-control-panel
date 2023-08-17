@@ -615,7 +615,7 @@ def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
                 "client_id": "test_nomis_connection_id",
                 "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
             },
-         )
+        )
         connection_create.assert_called_once_with(mock.ANY)
 
 
