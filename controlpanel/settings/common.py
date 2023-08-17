@@ -541,9 +541,9 @@ MAX_RELEASE_NAME_LEN = 53
 
 
 # Configure for celery for message queues
-IAM_QUEUE_NAME = os.environ.get("IAM_QUEUE_NAME", "iam_queue")
-S3_QUEUE_NAME = os.environ.get("S3_QUEUE_NAME", "s3_queue")
-AUTH_QUEUE_NAME = os.environ.get("AUTH_QUEUE_NAME", "auth_queue")
+IAM_QUEUE_NAME = os.environ.get("IAM_QUEUE_NAME", "control-panel-iam")
+S3_QUEUE_NAME = os.environ.get("S3_QUEUE_NAME", "control-panel-s3")
+AUTH_QUEUE_NAME = os.environ.get("AUTH_QUEUE_NAME", "control-panel-auth")
 
 BROKER_URL = os.environ.get("BROKER_URL", "sqs://")
 DEFAULT_QUEUE = IAM_QUEUE_NAME
