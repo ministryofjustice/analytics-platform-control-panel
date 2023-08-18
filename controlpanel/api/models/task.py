@@ -1,6 +1,8 @@
 import json
 
 # Third-party
+from django.apps import apps
+from django.contrib.auth import get_user_model
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
@@ -47,4 +49,20 @@ class Task(TimeStampedModel):
                 },
             )
 
+    @property
+    def entity_object(self):
+        cls = apps.get_model(app_label="api", model_name=self.entity_class)
+        try:
+            return cls.objects.get(pk=self.entity_id)
+        except cls.DoesNotExist:
+            return None
 
+    @property
+    def user_object(self):
+        return get_user_model().objects.get(pk=self.user_id)
+
+    def resend(self):
+        obj = self.entity_object
+        task_cls = obj.get_task_class(self.task_name)
+        task = task_cls(obj, self.user_object)
+        task.resend_task(task_id=self.task_id)

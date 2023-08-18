@@ -5,9 +5,10 @@ from django.db import models
 from controlpanel.api import cluster
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 from controlpanel.api import tasks
+from controlpanel.api.models.mixins import TaskModelMixin
 
 
-class UserS3Bucket(AccessToS3Bucket):
+class UserS3Bucket(AccessToS3Bucket, TaskModelMixin):
     """
     A user can have access to several S3 buckets.
 
@@ -15,6 +16,9 @@ class UserS3Bucket(AccessToS3Bucket):
     The `is_admin` field determine if the user has admin privileges on the
     S3 bucket
     """
+    TASK_MAPPING = {
+        "grant_user_s3bucket_access": tasks.S3BucketGrantToUser
+    }
 
     user = models.ForeignKey(
         "User", related_name="users3buckets", on_delete=models.CASCADE

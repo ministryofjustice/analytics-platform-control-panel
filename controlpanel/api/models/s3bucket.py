@@ -12,6 +12,7 @@ from django_extensions.db.models import TimeStampedModel
 # First-party/Local
 from controlpanel.api import cluster, validators
 from controlpanel.api.models.apps3bucket import AppS3Bucket
+from controlpanel.api.models.mixins import TaskModelMixin
 from controlpanel.api.models.users3bucket import UserS3Bucket
 from controlpanel.api import tasks
 
@@ -39,7 +40,11 @@ class S3BucketQuerySet(models.QuerySet):
         )
 
 
-class S3Bucket(TimeStampedModel):
+class S3Bucket(TimeStampedModel, TaskModelMixin):
+    TASK_MAPPING = {
+        "create_s3bucket": tasks.S3BucketCreate
+    }
+
     name = models.CharField(
         unique=True,
         max_length=100,

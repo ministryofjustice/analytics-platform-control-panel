@@ -84,3 +84,12 @@ class TaskBase:
             queue_name=self.QUEUE_NAME,
             message_body=message
         )
+
+    def resend_task(self, task_id):
+        # TODO could add in resent attempt count?
+        self.message_broker_client.send_message(
+            task_id=task_id,
+            task_name=self.task_name,
+            queue_name=self.QUEUE_NAME,
+            args=self._get_args_list()
+        )
