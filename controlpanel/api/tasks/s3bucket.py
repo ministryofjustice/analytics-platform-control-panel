@@ -5,10 +5,11 @@ from controlpanel.api.tasks.task_base import TaskBase
 class S3BucketCreate(TaskBase):
     ENTITY_CLASS = "S3Bucket"
     QUEUE_NAME = settings.S3_QUEUE_NAME
+    TASK_NAME = "create_s3bucket"
 
     @property
     def task_name(self):
-        return "create_s3bucket"
+        return self.TASK_NAME
 
     @property
     def task_description(self):

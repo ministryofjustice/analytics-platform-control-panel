@@ -41,8 +41,9 @@ class S3BucketQuerySet(models.QuerySet):
 
 
 class S3Bucket(TimeStampedModel, TaskModelMixin):
+    TASK_CREATE = tasks.S3BucketCreate.TASK_NAME
     TASK_MAPPING = {
-        "create_s3bucket": tasks.S3BucketCreate
+        TASK_CREATE: tasks.S3BucketCreate
     }
 
     name = models.CharField(
@@ -111,6 +112,10 @@ class S3Bucket(TimeStampedModel, TaskModelMixin):
         """
         return "/" in self.name
 
+    def create_s3bucket_task(self):
+        task = self.get_task_class(self.TASK_CREATE)
+        return task(self, self.created_by).create_task()
+
     def user_is_admin(self, user):
         return (
             self.users3buckets.filter(
@@ -141,7 +146,8 @@ class S3Bucket(TimeStampedModel, TaskModelMixin):
             bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
 
             # self.cluster.create(bucket_owner)
-            tasks.S3BucketCreate(self, self.created_by).create_task()
+
+            self.create_s3bucket_task()
 
             # XXX created_by is always set if model is saved by the API view
             if self.created_by:

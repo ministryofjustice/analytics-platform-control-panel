@@ -5,7 +5,7 @@ from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler
 
 class CreateS3Bucket(BaseModelTaskHandler):
     model = S3Bucket
-    name = "create_s3bucket"
+    name = S3Bucket.TASK_CREATE
     permission_required = "api.create_s3bucket"
 
     def run_task(self, bucket, user, bucket_owner="APP"):
