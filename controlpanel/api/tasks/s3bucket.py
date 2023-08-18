@@ -18,10 +18,11 @@ class S3BucketCreate(TaskBase):
 
 class S3BucketGrantToUser(TaskBase):
     ENTITY_CLASS = "UserS3Bucket"
+    TASK_NAME = "grant_user_s3bucket_access"
 
     @property
     def task_name(self):
-        return "grant_user_s3bucket_access"
+        return self.TASK_NAME
 
     @property
     def task_description(self):

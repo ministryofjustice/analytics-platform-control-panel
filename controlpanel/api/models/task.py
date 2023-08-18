@@ -4,6 +4,7 @@ import json
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils.functional import cached_property
 from django_extensions.db.models import TimeStampedModel
 
 from controlpanel.utils import send_sse
@@ -49,7 +50,7 @@ class Task(TimeStampedModel):
                 },
             )
 
-    @property
+    @cached_property
     def entity_object(self):
         cls = apps.get_model(app_label="api", model_name=self.entity_class)
         try:
@@ -62,7 +63,6 @@ class Task(TimeStampedModel):
         return get_user_model().objects.get(pk=self.user_id)
 
     def resend(self):
-        obj = self.entity_object
-        task_cls = obj.get_task_class(self.task_name)
-        task = task_cls(obj, self.user_object)
+        task_cls = self.entity_object.get_task_class(self.task_name)
+        task = task_cls(self.entity_object, self.user_object)
         task.resend_task(task_id=self.task_id)

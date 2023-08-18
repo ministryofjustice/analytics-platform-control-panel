@@ -16,8 +16,9 @@ class UserS3Bucket(AccessToS3Bucket, TaskModelMixin):
     The `is_admin` field determine if the user has admin privileges on the
     S3 bucket
     """
+    TASK_GRANT_ACCESS = tasks.S3BucketGrantToUser.TASK_NAME
     TASK_MAPPING = {
-        "grant_user_s3bucket_access": tasks.S3BucketGrantToUser
+        TASK_GRANT_ACCESS: tasks.S3BucketGrantToUser
     }
 
     user = models.ForeignKey(

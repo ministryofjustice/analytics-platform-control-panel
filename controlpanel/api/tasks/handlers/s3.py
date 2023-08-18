@@ -29,7 +29,7 @@ class GrantAppS3BucketAccess(BaseModelTaskHandler):
 
 class GrantUserS3BucketAccess(BaseModelTaskHandler):
     model = UserS3Bucket
-    name = "grant_user_s3bucket_access"
+    name = UserS3Bucket.TASK_GRANT_ACCESS
     permission_required = "api.create_users3bucket"
 
     def run_task(self, user_bucket, user):
