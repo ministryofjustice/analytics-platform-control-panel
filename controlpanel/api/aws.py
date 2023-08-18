@@ -1,5 +1,6 @@
 # Standard library
 import base64
+import hashlib
 import json
 import re
 from copy import deepcopy
@@ -133,6 +134,7 @@ BASE_S3_ACCESS_POLICY = {
 
 class S3AccessPolicy:
     """Provides a convenience wrapper around a RolePolicy object"""
+    SID_SUFFIX_LEN = 32
 
     def __init__(self, policy):
         self.policy = policy
@@ -156,6 +158,15 @@ class S3AccessPolicy:
             if sid in self.base_s3_access_sids:
                 stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid]))
                 self.statements[sid] = stmt
+                continue
+
+            # check for the SID without md5 suffix
+            if sid[:-self.SID_SUFFIX_LEN] in self.base_s3_access_sids:
+                stmt.update(
+                    deepcopy(BASE_S3_ACCESS_STATEMENT[sid[:-self.SID_SUFFIX_LEN]])
+                )
+                stmt["Sid"] = sid
+                self.statements[sid] = stmt
 
     @property
     def base_s3_access_sids(self):
@@ -165,16 +176,56 @@ class S3AccessPolicy:
         # triggers API call
         return self.policy.policy_document
 
-    def statement(self, sid):
-        if sid in self.base_s3_access_sids:
-            if sid not in self.statements:
-                stmt = deepcopy(BASE_S3_ACCESS_STATEMENT[sid])
-                self.statements[sid] = stmt
-                self.policy_document["Statement"].append(stmt)
-            return self.statements[sid]
+    def _build_statement(self, base_sid, sid):
+        """
+        Build and store a new statement dictionary copied from the
+        BASE_S3_ACCESS_STATEMENT.
+        If a suffix is given this is appended to the Sid of the new statement block.
+        """
+        statement = deepcopy(BASE_S3_ACCESS_STATEMENT[base_sid])
+        statement["Sid"] = sid
+        self.statements[sid] = statement
+        self.policy_document["Statement"].append(statement)
+        return statement
 
-    def add_resource(self, arn, sid):
-        statement = self.statement(sid)
+    @staticmethod
+    def _construct_sid(base_sid, suffix=None):
+        """
+        If a suffix is given this is used to create a md5 hash in order to meet AWS
+        requirements for the Sid, which supports only uppercase letters (A-Z), lowercase
+        letters (a-z), and numbers (0-9).
+        """
+        if not suffix:
+            return base_sid
+
+        suffix = hashlib.md5(suffix.encode()).hexdigest()
+        return f"{base_sid}{suffix}"
+
+    def statement(self, base_sid, suffix=None):
+        """
+        Get or build the statement element for the given Sid and suffix.
+
+        :param str base_sid: should be one of the Sid defined that are defined in the
+        BASE_S3_ACCESS_STATEMENT
+        :param suffix: Optional arg, if given will be used when constructing the Sid
+        that is used to lookup or build a statement element.
+        :type suffix: str or None
+        """
+        if base_sid not in self.base_s3_access_sids:
+            return
+
+        sid = self._construct_sid(base_sid, suffix)
+        statement = self.statements.get(sid, None)
+        if not statement:
+            statement = self._build_statement(
+                base_sid=base_sid,
+                sid=sid
+            )
+
+        return statement
+
+    def add_resource(self, arn, sid, sid_suffix=None):
+        statement = self.statement(sid, sid_suffix)
         if statement:
             statement["Resource"] = statement.get("Resource", [])
             if arn not in statement["Resource"]:
@@ -197,6 +248,44 @@ class S3AccessPolicy:
                 return True
         return False
 
+    def remove_prefix(self, root_folder_path, sid, condition):
+        """
+        Remove the folder name from the prefixes condition of a statement block. The
+        prefixes condition is used to limit list access to specific folders in an S3
+        bucket, so by removing the folder name from the prefixes it removes access to
+        that folder.
+
+        :param str root_folder_path: Path to the root folder including bucket name e.g.
+        user-data-bucket/my-folder
+        :param str sid: Statement ID
+        :param str condition: Condition operator. Should be StringEquals or StringLike
+        """
+        # split the path into the bucket name and the folder name
+        bucket_name, folder = self.get_bucket_and_path(root_folder_path)
+        statement = self.statement(sid, suffix=bucket_name)
+        if not statement:
+            return
+
+        # build arn for the bucket to check that it is included in the statements
+        # resource element
+        bucket_arn = s3_arn(resource=bucket_name)
+        if bucket_arn not in statement.get("Resource", []):
+            return
+
+        try:
+            prefixes = statement["Condition"][condition]["s3:prefix"]
+        except KeyError:
+            prefixes = []
+
+        # remove access to the folder
+        prefixes[:] = [
+            prefix for prefix in prefixes if not prefix.startswith(folder)
+        ]
+
+        # remove the resource if no prefixes left so that the statement is removed
+        if prefixes == [] or prefixes == [""]:
+            statement.pop("Resource", None)
+
     def remove_resource(self, arn, sid):
         statement = self.statement(sid)
         if statement:
@@ -213,16 +302,29 @@ class S3AccessPolicy:
     def grant_list_access(self, arn):
         self.add_resource(arn, "list")
 
-    def _add_folder_to_list_folder_prefixes(self, folder):
-        statement = self.statement("listFolder")
+    def _add_folder_to_list_folder_prefixes(self, folder, bucket_name):
+        statement = self.statement("listFolder", suffix=bucket_name)
+        # make sure that we are updating statement for the correct bucket
+        if s3_arn(bucket_name) not in statement["Resource"]:
+            return
+
         try:
             prefixes = statement["Condition"]["StringEquals"]["s3:prefix"]
         except KeyError:
             prefixes = [""]
 
+        subfolders = folder.split("/")[:-1]
+        for index, path in enumerate(subfolders):
+            prev = "/".join(subfolders[:index])
+            if prev:
+                path = f"{prev}/{path}"
+
+            if path not in prefixes:
+                prefixes.append(path)
+                prefixes.append(f"{path}/")
+
         if folder not in prefixes:
             prefixes.append(folder)
-            prefixes.append(f"{folder}/")
 
         statement["Condition"] = {
             "StringEquals": {
@@ -231,8 +333,13 @@ class S3AccessPolicy:
             }
         }
 
-    def _add_folder_to_list_sub_folders_prefixes(self, folder):
-        statement = self.statement("listSubFolders")
+    def _add_folder_to_list_sub_folders_prefixes(self, folder, bucket_name):
+        statement = self.statement("listSubFolders", suffix=bucket_name)
+
+        # make sure that we are updating statement for the correct bucket
+        if s3_arn(bucket_name) not in statement["Resource"]:
+            return
+
         try:
             prefixes = statement["Condition"]["StringLike"]["s3:prefix"]
         except KeyError:
@@ -248,27 +355,61 @@ class S3AccessPolicy:
             }
         }
 
-    def grant_folder_list_access(self, arn):
+    @staticmethod
+    def get_bucket_and_path(folder_path):
         """
-        Splits the resource arn to get the bucket ARN and folder name, then for all
-        permissions required for folder list access makes sure the ARN is added as the
-        resource, and folder name is used in the statement condition prefixes so that
-        access if only granted to the specific folder and sub folders in the S3 bucket.
-        For a detailed breakdown of folder-level permissions see the docs:
-        https://aws.amazon.com/blogs/security/writing-iam-policies-grant-access-to-user-specific-folders-in-an-amazon-s3-bucket/  # noqa
+        Splits a path on the first / to return the name of the bucket and rest of
+        the path.
         """
-        arn, folder = arn.split("/")
-        # required to avoid warnings when accessing AWS console
-        self.add_resource(arn, "rootFolderBucketMeta")
-        self.add_resource(arn, "listFolder")
-        self._add_folder_to_list_folder_prefixes(folder)
-        self.add_resource(arn, "listSubFolders")
-        self._add_folder_to_list_sub_folders_prefixes(folder)
+        return folder_path.split("/", 1)
+
+    def grant_folder_access(self, root_folder_path, access_level, paths=None):
+        """
+        Grant access to the given folder for the given access level. If paths have been
+        specified, only grants access to those paths within the root folder.
+        """
+        bucket_name, folder = self.get_bucket_and_path(root_folder_path)
+        bucket_arn = s3_arn(bucket_name)
+        # make sure the root bucket arn is included in the resources
+        self.add_resource(bucket_arn, "rootFolderBucketMeta")
+        self.add_resource(bucket_arn, "listFolder", sid_suffix=bucket_name)
+        self.add_resource(bucket_arn, "listSubFolders", sid_suffix=bucket_name)
+
+        folder_paths = [folder]
+        if paths:
+            folder_paths = [f"{folder}{path}" for path in paths]
+
+        for folder_path in folder_paths:
+            self.grant_object_access(
+                arn=f"{bucket_arn}/{folder_path}",
+                access_level=access_level,
+            )
+            self._add_folder_to_list_folder_prefixes(folder_path, bucket_name)
+            self._add_folder_to_list_sub_folders_prefixes(folder_path, bucket_name)
 
     def revoke_access(self, arn):
         self.remove_resource(arn, "readonly")
         self.remove_resource(arn, "readwrite")
         self.remove_resource(arn, "list")
+
+    def revoke_folder_access(self, root_folder_path):
+        # build arn for full path, including the folder name. important to include the
+        # folder name, as this is the resource string that is used when granting access
+        bucket_name, _ = self.get_bucket_and_path(root_folder_path)
+        folder_resource_arn = s3_arn(root_folder_path)
+        self.remove_resource(arn=folder_resource_arn, sid="readonly")
+        self.remove_resource(arn=folder_resource_arn, sid="readwrite")
+        self.remove_resource(arn=s3_arn(bucket_name), sid="rootFolderBucketMeta")
+        self.remove_prefix(
+            root_folder_path=root_folder_path,
+            sid="listFolder",
+            condition="StringEquals",
+        )
+        self.remove_prefix(
+            root_folder_path=root_folder_path,
+            sid="listSubFolders",
+            condition="StringLike",
+        )
 
     def put(self, policy_document=None):
         if policy_document is None:
@@ -378,14 +519,19 @@ class AWSRole(AWSService):
             policy.grant_object_access(arn, access_level)
         policy.put()
 
-    def grant_folder_access(self, role_name, bucket_arn, access_level):
+    def grant_folder_access(self, role_name, root_folder_path, access_level, paths):
+
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
         role = self.boto3_session.resource("iam").Role(role_name)
         policy = S3AccessPolicy(role.Policy("s3-access"))
-        policy.grant_folder_list_access(bucket_arn)
-        policy.grant_object_access(bucket_arn, access_level)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
+        policy.grant_folder_access(
+            root_folder_path=root_folder_path,
+            access_level=access_level,
+            paths=paths,
+        )
         policy.put()
 
     def revoke_bucket_access(self, role_name, bucket_arn=None):
@@ -404,6 +550,20 @@ class AWSRole(AWSService):
 
         policy = S3AccessPolicy(role.Policy("s3-access"))
         policy.revoke_access(bucket_arn)
+        policy.put()
+
+    def revoke_folder_access(self, role_name, root_folder_path):
+        try:
+            role = self.boto3_session.resource("iam").Role(role_name)
+            role.load()
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{role_name}' doesn't exist: Nothing to revoke")
+                return
+            raise e
+
+        policy = S3AccessPolicy(role.Policy("s3-access"))
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
         policy.put()
 
 
@@ -622,6 +782,23 @@ class AWSPolicy(AWSService):
 
         policy.delete()
 
+    def grant_folder_access(
+        self, policy_arn, root_folder_path, access_level, paths=None
+    ):
+
+        if access_level not in ("readonly", "readwrite"):
+            raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
+
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        policy = ManagedS3AccessPolicy(policy)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
+        policy.grant_folder_access(
+            root_folder_path=root_folder_path,
+            access_level=access_level,
+            paths=paths,
+        )
+        policy.put()
+
     def grant_policy_bucket_access(
         self, policy_arn, bucket_arn, access_level, path_arns=None
     ):
@@ -647,6 +824,12 @@ class AWSPolicy(AWSService):
         policy = self.boto3_session.resource("iam").Policy(policy_arn)
         policy = ManagedS3AccessPolicy(policy)
         policy.revoke_access(bucket_arn)
+        policy.put()
+
+    def revoke_policy_folder_access(self, policy_arn, root_folder_path):
+        policy = self.boto3_session.resource("iam").Policy(policy_arn)
+        policy = ManagedS3AccessPolicy(policy)
+        policy.revoke_folder_access(root_folder_path=root_folder_path)
         policy.put()
 
 

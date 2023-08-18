@@ -5,13 +5,13 @@ from itertools import chain
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
-from django.db import transaction
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
@@ -26,8 +26,8 @@ from controlpanel.api.models import (
 )
 from controlpanel.api.serializers import ESBucketHitsSerializer
 from controlpanel.frontend.forms import (
-    CreateDatasourceForm,
     CreateDatasourceFolderForm,
+    CreateDatasourceForm,
     GrantAccessForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -163,6 +163,8 @@ class CreateDatasource(
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.pk})
 
     def get_form_class(self):
+        if self.request.GET.get("type") == "webapp":
+            return CreateDatasourceForm
         if settings.features.s3_folders.enabled:
             return CreateDatasourceFolderForm
         return CreateDatasourceForm
@@ -337,8 +339,8 @@ class GrantAccess(
     model = UserS3Bucket
     permission_required = "api.create_users3bucket"
 
-    def get_context_data(self):
-        context = super().get_context_data()
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         bucket = get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
         context["bucket"] = bucket
         member_ids = list(

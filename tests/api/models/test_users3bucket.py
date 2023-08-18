@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
 
 # Third-party
 import pytest
@@ -60,9 +60,10 @@ def test_aws_create_folder(grant_folder_access, user, bucket):
             access_level=AccessToS3Bucket.READONLY,
         )
         grant_folder_access.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-            AccessToS3Bucket.READONLY,
+            role_name=user.iam_role_name,
+            root_folder_path=bucket.name,
+            access_level=AccessToS3Bucket.READONLY,
+            paths=[],
         )
 
 

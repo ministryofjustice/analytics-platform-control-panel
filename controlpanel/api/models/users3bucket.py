@@ -47,11 +47,10 @@ class UserS3Bucket(AccessToS3Bucket):
 
     def grant_bucket_access(self):
         if self.s3bucket.is_folder:
-            # TODO update to include paths/resources
-            # will be implemented in ANPL-1592
             return cluster.User(self.user).grant_folder_access(
-                bucket_arn=self.s3bucket.arn,
+                root_folder_path=self.s3bucket.name,
                 access_level=self.access_level,
+                paths=self.paths,
             )
         tasks.S3BucketGrantToUser(self, self.current_user).create_task()
         # cluster.User(self.user).grant_bucket_access(
@@ -61,4 +60,8 @@ class UserS3Bucket(AccessToS3Bucket):
         # )
 
     def revoke_bucket_access(self):
+        if self.s3bucket.is_folder:
+            return cluster.User(self.user).revoke_folder_access(
+                root_folder_path=self.s3bucket.name
+            )
         cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)

@@ -30,9 +30,9 @@
     <input type="hidden" name="entity_type" value="{{ entity_type }}">
     <input type="hidden" name="entity_id" value="{{ entity_id }}">
 
-    <div {% if form.errors %}class="govuk-form-group--error"{% endif %}>
+    <div {% if form.access_level.errors %}class="govuk-form-group--error"{% endif %}>
       <fieldset class="govuk-fieldset ">
-        {% if form.errors %}
+        {% if form.access_level.errors %}
         <span id="confirm-error" class="govuk-error-message">
           <span class="govuk-visually-hidden">Error:</span>
           {% for error in form.errors.access_level %}

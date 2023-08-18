@@ -340,18 +340,25 @@ class User(EntityResource):
         self.aws_role_service.delete_role(self.user.iam_role_name)
         self.delete_user_helm_charts()
 
-    def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
+    def grant_bucket_access(self, bucket_arn, access_level, path_arns=None):
+        path_arns = path_arns or []
         self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
-    def grant_folder_access(self, bucket_arn, access_level):
+    def grant_folder_access(self, root_folder_path, access_level, paths):
         self.aws_role_service.grant_folder_access(
-            self.iam_role_name, bucket_arn, access_level
+            role_name=self.iam_role_name,
+            root_folder_path=root_folder_path,
+            access_level=access_level,
+            paths=paths,
         )
 
     def revoke_bucket_access(self, bucket_arn):
         self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
+
+    def revoke_folder_access(self, root_folder_path):
+        self.aws_role_service.revoke_folder_access(self.iam_role_name, root_folder_path)
 
     def has_required_installation_charts(self):
         """Checks if the expected helm charts exist for the user."""
@@ -724,6 +731,7 @@ class S3Folder(S3Bucket):
         self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
 
     def exists(self, folder_name, bucket_owner):
+        # TODO this assumes only one multi root bucket
         folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
         return super().exists(folder_path, bucket_owner), folder_path
 
@@ -774,8 +782,16 @@ class RoleGroup(EntityResource):
             self.arn, bucket_arn, access_level, path_arns
         )
 
+    def grant_folder_access(self, root_folder_path, access_level, paths):
+        self.aws_policy_service.grant_folder_access(
+            self.arn, root_folder_path, access_level, paths
+        )
+
     def revoke_bucket_access(self, bucket_arn):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
+
+    def revoke_folder_access(self, root_folder_path):
+        self.aws_policy_service.revoke_policy_folder_access(self.arn, root_folder_path)
 
 
 class AppParameter(EntityResource):

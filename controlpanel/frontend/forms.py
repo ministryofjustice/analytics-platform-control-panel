@@ -284,7 +284,8 @@ class GrantAccessForm(forms.Form):
         label="Paths (optional)",
         help_text=(
             "Add specific paths for this user or group to access or leave blank "
-            "for whole bucket access"
+            "for full access. Paths must be separated by a newline, with a "
+            "leading forward slash and no trailing slash. For example: /my-path"
         ),
         required=False,
         delimiter="\n",
@@ -308,11 +309,27 @@ class GrantAccessForm(forms.Form):
             cleaned_data["is_admin"] = True
 
         if cleaned_data["entity_type"] == "user":
-            cleaned_data["user_id"] = cleaned_data["entity_id"]
+            cleaned_data["user_id"] = cleaned_data.get("entity_id")
         elif cleaned_data["entity_type"] == "group":
-            cleaned_data["policy_id"] = cleaned_data["entity_id"]
+            cleaned_data["policy_id"] = cleaned_data.get("entity_id")
 
         return cleaned_data
+
+    def clean_paths(self):
+        """
+        Validation to ensure paths are entered with a leading forward slash, and without
+        trailing slash. This is to ensure that the correct IAM permissions are added
+        at the aws.S3AccessPolicy level.
+        """
+        paths = self.cleaned_data["paths"]
+        for path in paths:
+            if not path.startswith("/"):
+                raise ValidationError("Enter paths prefixed with a forward slash")
+
+            if path.endswith("/"):
+                raise ValidationError("Enter paths without a trailing forward slash")
+
+        return paths
 
 
 class GrantAppAccessForm(forms.Form):

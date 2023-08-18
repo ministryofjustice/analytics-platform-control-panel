@@ -1,5 +1,5 @@
 {% from "fieldset/macro.html" import govukFieldset %}
-
+{% from "error-message/macro.html" import govukErrorMessage %}
 
 {% macro list_field_textarea(name, label, help_text="", value="", errors={}) -%}
   {% call govukFieldset({
@@ -9,6 +9,9 @@
     },
     "help_text": help_text
   }) %}
+    {% if errors %}
+      {{ govukErrorMessage({"text": errors|join(". ")}) }}
+    {% endif %}
     <textarea rows="8" class="govuk-textarea govuk-!-width-two-thirds" name="{{ name }}" id="{{ name }}_id">{{ value }}</textarea>
   {%- endcall %}
 {%- endmacro %}

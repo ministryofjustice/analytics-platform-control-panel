@@ -175,13 +175,14 @@ def revoke_access(client, users3buckets, *args):
     )
 
 
-def grant_access(client, users3buckets, users, *args):
+def grant_access(client, users3buckets, users, **kwargs):
     data = {
         "access_level": UserS3Bucket.READWRITE,
         "is_admin": False,
         "entity_id": users["other_user"].auth0_id,
         "entity_type": "user",
     }
+    data.update(**kwargs)
     return client.post(
         reverse(
             "grant-datasource-access",
@@ -284,16 +285,20 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
 
 
 @pytest.mark.parametrize(
-    "enabled, form_class",
+    "folders_enabled, datasource_type, form_class",
     [
-        (False, CreateDatasourceForm),
-        (True, CreateDatasourceFolderForm),
+        (False, "", CreateDatasourceForm),
+        (False, "webapp", CreateDatasourceForm),
+        (True, "webapp", CreateDatasourceForm),
+        (True, "", CreateDatasourceFolderForm),
     ]
 )
-def test_create_get_form_class(enabled, form_class):
+def test_create_get_form_class(rf, folders_enabled, datasource_type, form_class):
+    request = rf.get(f"/?type={datasource_type}")
     with patch("django.conf.settings.features.s3_folders") as s3_folders:
-        s3_folders.enabled = enabled
+        s3_folders.enabled = folders_enabled
         view = CreateDatasource()
+        view.request = request
 
         assert view.get_form_class() == form_class
 
@@ -350,3 +355,21 @@ def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_
     assert S3Bucket.objects.filter(
         name=f"{root_folder_bucket.name}/{name}"
     ).exists() is True
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"paths": ["/invalidpath/"]},
+        {"entity_id": ""},
+    ]
+)
+def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
+    """
+    Regression test to check that the page renders when the form is invalid
+    """
+    client.force_login(users["superuser"])
+    response = grant_access(client, users3buckets, users, **kwargs)
+
+    assert response.status_code == 200
+    assert response.context_data["form"].is_valid() is False
