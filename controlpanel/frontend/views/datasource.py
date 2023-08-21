@@ -234,6 +234,7 @@ class UpdateAccessLevelMixin:
     def form_valid(self, form):
         self.object.access_level = form.cleaned_data["access_level"]
         self.object.is_admin = form.cleaned_data.get("is_admin")
+        self.object.current_user = self.request.user
         self.object.paths = form.cleaned_data["paths"]
         self.object.save()
         return FormMixin.form_valid(self, form)
