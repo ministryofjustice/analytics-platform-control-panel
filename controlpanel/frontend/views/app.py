@@ -281,12 +281,14 @@ class GrantAppAccess(
                 app_id=self.kwargs["pk"],
             )
             self.object.access_level = form.cleaned_data["access_level"]
+            self.object.current_user = self.request.user
             self.object.save()
         except AppS3Bucket.DoesNotExist:
             self.object = AppS3Bucket.objects.create(
                 access_level=form.cleaned_data["access_level"],
                 app_id=self.kwargs["pk"],
                 s3bucket=form.cleaned_data["datasource"],
+                current_user=self.request.user,
             )
         return FormMixin.form_valid(self, form)
 
@@ -320,6 +322,13 @@ class UpdateAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateVie
                 "manage-datasource", kwargs={"pk": self.object.s3bucket.id}
             )
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        self.object.access_level = form.cleaned_data.get("access_level")
+        self.object.current_user = self.request.user
+        self.object.save()
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class DeleteApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

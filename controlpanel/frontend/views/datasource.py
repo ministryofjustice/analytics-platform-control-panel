@@ -325,7 +325,9 @@ class GrantAccessMixin:
         if is_admin and not user.has_perm("api.add_s3bucket_admin", bucket):
             raise PermissionDenied()
 
-        self.object = self.model.objects.create(**self.values(form))
+        self.object = self.model.objects.create(
+            current_user=self.request.user,
+            **self.values(form))
         return FormMixin.form_valid(self, form)
 
 
