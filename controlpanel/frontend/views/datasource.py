@@ -5,7 +5,6 @@ from itertools import chain
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
@@ -174,27 +173,20 @@ class CreateDatasource(
         datasource_type = self.request.GET.get("type")
 
         try:
-            with transaction.atomic():
-                self.object = S3Bucket.objects.create(
-                    name=name,
-                    created_by=self.request.user,
-                    is_data_warehouse=datasource_type == "warehouse",
-                    send_task=False
-                )
-                messages.success(
-                    self.request,
-                    f"Successfully created {name} {datasource_type} data source",
-                )
-                transaction.on_commit(self.create_tasks)
+            self.object = S3Bucket.objects.create(
+                name=name,
+                created_by=self.request.user,
+                is_data_warehouse=datasource_type == "warehouse",
+                send_task=True
+            )
+            messages.success(
+                self.request,
+                f"Successfully created {name} {datasource_type} data source",
+            )
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
-
-    def create_tasks(self):
-        tasks.S3BucketCreate(self.object, self.request.user).create_task()
-        user_bucket = UserS3Bucket.objects.get(s3bucket=self.object, user=self.request.user)
-        tasks.S3BucketGrantToUser(user_bucket, self.request.user).create_task()
 
 
 class DeleteDatasource(
