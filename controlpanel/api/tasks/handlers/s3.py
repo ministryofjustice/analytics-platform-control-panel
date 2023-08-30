@@ -10,22 +10,6 @@ class CreateS3Bucket(BaseModelTaskHandler):
 
     def run_task(self, bucket, user, bucket_owner="APP"):
         bucket.cluster.create(owner=bucket_owner)
-
-        # create access to the bucket for the user
-        if bucket.created_by:
-            try:
-                UserS3Bucket.objects.get(
-                    user=bucket.created_by,
-                    s3bucket=bucket,
-                )
-            except UserS3Bucket.DoesNotExist:
-                UserS3Bucket.objects.create(
-                    user=bucket.created_by,
-                    s3bucket=bucket,
-                    is_admin=True,
-                    access_level=UserS3Bucket.READWRITE,
-                    current_user=user,
-                )
         self.complete()
 
 
