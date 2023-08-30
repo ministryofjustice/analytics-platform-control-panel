@@ -130,18 +130,16 @@ class S3Bucket(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         is_create = not self.pk
-
         super().save(*args, **kwargs)
-
         if not is_create:
             return self
 
+        # TODO add this to the task args
         bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
-
         if self.send_task:
             tasks.S3BucketCreate(self, self.created_by).create_task()
 
-        # XXX created_by is always set if model is saved by the API view
+        # created_by should always be set, but this is a failsafe
         if self.created_by:
             UserS3Bucket.objects.create(
                 user=self.created_by,

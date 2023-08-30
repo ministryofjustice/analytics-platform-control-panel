@@ -175,6 +175,7 @@ class CreateDatasource(
 
         try:
             with transaction.atomic():
+                # create the object but dont send task yet
                 self.object = S3Bucket.objects.create(
                     name=name,
                     created_by=self.request.user,
@@ -185,16 +186,28 @@ class CreateDatasource(
                     self.request,
                     f"Successfully created {name} {datasource_type} data source",
                 )
-                transaction.on_commit(self.create_tasks)
+                # instead wait for all objects to be committed to the database before
+                # sending task to avoid a race condition resulting in task error
+                transaction.on_commit(self.send_create_tasks)
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
-    def create_tasks(self):
-        tasks.S3BucketCreate(self.object, self.request.user).create_task()
-        user_bucket = UserS3Bucket.objects.get(s3bucket=self.object, user=self.request.user)
-        tasks.S3BucketGrantToUser(user_bucket, self.request.user).create_task()
+    def send_create_tasks(self):
+        """
+        Sends tasks to create the S3 bucket and grant access to the user
+        """
+        tasks.S3BucketCreate(
+            entity=self.object,
+            user=self.request.user
+        ).create_task()
+        tasks.S3BucketGrantToUser(
+            entity=UserS3Bucket.objects.get(
+                s3bucket=self.object, user=self.request.user
+            ),
+            user=self.request.user,
+        ).create_task()
 
 
 class DeleteDatasource(
