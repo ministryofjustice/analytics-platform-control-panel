@@ -185,11 +185,16 @@ class CreateDatasource(
                     self.request,
                     f"Successfully created {name} {datasource_type} data source",
                 )
-                transaction.on_commit(tasks.S3BucketCreate(self.object, self.request.user).create_task)
+                transaction.on_commit(self.create_tasks)
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
+
+    def create_tasks(self):
+        tasks.S3BucketCreate(self.object, self.request.user).create_task()
+        user_bucket = UserS3Bucket.objects.get(s3bucket=self.object, user=self.request.user)
+        tasks.S3BucketGrantToUser(user_bucket, self.request.user).create_task()
 
 
 class DeleteDatasource(

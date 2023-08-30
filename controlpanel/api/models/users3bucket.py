@@ -33,6 +33,7 @@ class UserS3Bucket(AccessToS3Bucket):
     def __init__(self, *args, **kwargs):
         """Overwrite this constructor to pass some non-field parameter"""
         self.current_user = kwargs.pop("current_user", None)
+        self.send_task = kwargs.pop("send_task", True)
         super().__init__(*args, **kwargs)
 
     @property
@@ -46,18 +47,10 @@ class UserS3Bucket(AccessToS3Bucket):
         )
 
     def grant_bucket_access(self):
-        if self.s3bucket.is_folder:
-            return cluster.User(self.user).grant_folder_access(
-                root_folder_path=self.s3bucket.name,
-                access_level=self.access_level,
-                paths=self.paths,
-            )
-        tasks.S3BucketGrantToUser(self, self.current_user).create_task()
-        # cluster.User(self.user).grant_bucket_access(
-        #     self.s3bucket.arn,
-        #     self.access_level,
-        #     self.resources,
-        # )
+        if self.send_task:
+            print("SENDING TASK IMMEDIATELY")
+            return tasks.S3BucketGrantToUser(self, self.current_user).create_task()
+        print("NOT SENDING TASK - MUST BE SENT ELSEWHERE")
 
     def revoke_bucket_access(self):
         if self.s3bucket.is_folder:

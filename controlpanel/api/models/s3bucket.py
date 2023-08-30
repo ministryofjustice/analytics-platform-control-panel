@@ -149,6 +149,7 @@ class S3Bucket(TimeStampedModel):
                 s3bucket=self,
                 is_admin=True,
                 access_level=UserS3Bucket.READWRITE,
+                send_task=self.send_task
             )
 
         return self
