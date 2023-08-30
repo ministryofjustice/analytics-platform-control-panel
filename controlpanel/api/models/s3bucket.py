@@ -67,6 +67,7 @@ class S3Bucket(TimeStampedModel):
     def __init__(self, *args, **kwargs):
         """Overwrite this constructor to pass some non-field parameter"""
         self.bucket_owner = kwargs.pop("bucket_owner", cluster.AWSRoleCategory.user)
+        self.send_task = kwargs.pop("send_task", True)
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -132,21 +133,23 @@ class S3Bucket(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-        if is_create:
-            bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
+        if not is_create:
+            return self
 
-            # self.cluster.create(bucket_owner)
+        bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
+
+        if self.send_task:
             tasks.S3BucketCreate(self, self.created_by).create_task()
 
-            # XXX created_by is always set if model is saved by the API view
-            if self.created_by:
-                UserS3Bucket.objects.create(
-                    user=self.created_by,
-                    current_user=self.created_by,
-                    s3bucket=self,
-                    is_admin=True,
-                    access_level=UserS3Bucket.READWRITE,
-                )
+        # XXX created_by is always set if model is saved by the API view
+        if self.created_by:
+            UserS3Bucket.objects.create(
+                user=self.created_by,
+                current_user=self.created_by,
+                s3bucket=self,
+                is_admin=True,
+                access_level=UserS3Bucket.READWRITE,
+            )
 
         return self
 

@@ -15,7 +15,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     IAMManagedPolicy,
@@ -179,11 +179,13 @@ class CreateDatasource(
                     name=name,
                     created_by=self.request.user,
                     is_data_warehouse=datasource_type == "warehouse",
+                    send_task=False
                 )
                 messages.success(
                     self.request,
                     f"Successfully created {name} {datasource_type} data source",
                 )
+                transaction.on_commit(tasks.S3BucketCreate(self.object, self.request.user).create_task)
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
