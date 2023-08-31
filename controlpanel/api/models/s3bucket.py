@@ -10,10 +10,9 @@ from django.db.transaction import atomic
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
-from controlpanel.api import cluster, validators
+from controlpanel.api import cluster, tasks, validators
 from controlpanel.api.models.apps3bucket import AppS3Bucket
 from controlpanel.api.models.users3bucket import UserS3Bucket
-from controlpanel.api import tasks
 
 
 def s3bucket_console_url(name):
@@ -134,10 +133,14 @@ class S3Bucket(TimeStampedModel):
         if not is_create:
             return self
 
-        # TODO add this to the task args
-        bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
         if self.send_task:
-            tasks.S3BucketCreate(self, self.created_by).create_task()
+            tasks.S3BucketCreate(
+                entity=self,
+                user=self.created_by,
+                extra_data={
+                    "bucket_owner": kwargs.pop("bucket_owner", self.bucket_owner),
+                }
+            ).create_task()
 
         # created_by should always be set, but this is a failsafe
         if self.created_by:

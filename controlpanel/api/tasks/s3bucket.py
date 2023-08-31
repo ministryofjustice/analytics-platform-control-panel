@@ -1,4 +1,7 @@
+# Third-party
 from django.conf import settings
+
+# First-party/Local
 from controlpanel.api.tasks.task_base import TaskBase
 
 
@@ -13,6 +16,13 @@ class S3BucketCreate(TaskBase):
     @property
     def task_description(self):
         return "creating s3 bucket"
+
+    def _get_args_list(self):
+        return [
+            self.entity.id,
+            self.user.id if self.user else 'None',
+            self.extra_data.get('bucket_owner'),
+        ]
 
 
 class S3BucketGrantToUser(TaskBase):

@@ -200,7 +200,10 @@ class CreateDatasource(
         """
         tasks.S3BucketCreate(
             entity=self.object,
-            user=self.request.user
+            user=self.request.user,
+            extra_data={
+                "bucket_owner": self.object.bucket_owner,
+            }
         ).create_task()
         tasks.S3BucketGrantToUser(
             entity=UserS3Bucket.objects.get(

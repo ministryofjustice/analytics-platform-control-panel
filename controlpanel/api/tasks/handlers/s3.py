@@ -1,5 +1,6 @@
+# First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.models import S3Bucket, UserS3Bucket, AppS3Bucket
+from controlpanel.api.models import AppS3Bucket, S3Bucket, UserS3Bucket
 from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler
 
 
@@ -8,7 +9,8 @@ class CreateS3Bucket(BaseModelTaskHandler):
     name = "create_s3bucket"
     permission_required = "api.create_s3bucket"
 
-    def run_task(self, bucket, user, bucket_owner="APP"):
+    def run_task(self, bucket, user, bucket_owner=None):
+        bucket_owner = bucket_owner or "USER"
         bucket.cluster.create(owner=bucket_owner)
         self.complete()
 

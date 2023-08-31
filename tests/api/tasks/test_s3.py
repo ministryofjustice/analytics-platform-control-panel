@@ -1,11 +1,15 @@
+# Third-party
 import pytest
 from mock import patch
 from model_mommy import mommy
 
+# First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.models import S3Bucket, AppS3Bucket, UserS3Bucket
+from controlpanel.api.models import AppS3Bucket, S3Bucket, UserS3Bucket
 from controlpanel.api.tasks.handlers import (
-    create_s3bucket, grant_app_s3bucket_access, grant_user_s3bucket_access,
+    create_s3bucket,
+    grant_app_s3bucket_access,
+    grant_user_s3bucket_access,
 )
 
 
@@ -29,12 +33,16 @@ def test_exception_raised_when_called_without_valid_app(
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.models.s3bucket.cluster")
 def test_bucket_created(cluster, complete, users):
-    s3bucket = mommy.make("api.S3Bucket")
+    s3bucket = mommy.make("api.S3Bucket", bucket_owner="APP")
 
-    create_s3bucket(s3bucket.pk, users["superuser"].pk, bucket_owner="APP")
+    create_s3bucket(
+        s3bucket.pk, users["superuser"].pk, bucket_owner=s3bucket.bucket_owner
+    )
 
     cluster.S3Bucket.assert_called_once_with(s3bucket)
-    cluster.S3Bucket.return_value.create.assert_called_once_with(owner="APP")
+    cluster.S3Bucket.return_value.create.assert_called_once_with(
+        owner=s3bucket.bucket_owner
+    )
     complete.assert_called_once()
 
 
