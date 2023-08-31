@@ -9,9 +9,9 @@ class CreateS3Bucket(BaseModelTaskHandler):
     name = "create_s3bucket"
     permission_required = "api.create_s3bucket"
 
-    def run_task(self, bucket, user, bucket_owner=None):
+    def handle(self, bucket_owner=None):
         bucket_owner = bucket_owner or "USER"
-        bucket.cluster.create(owner=bucket_owner)
+        self.object.cluster.create(owner=bucket_owner)
         self.complete()
 
 
@@ -20,11 +20,11 @@ class GrantAppS3BucketAccess(BaseModelTaskHandler):
     name = 'grant_app_s3bucket_access'
     permission_required = 'api.create_apps3bucket'
 
-    def run_task(self, app_bucket, user):
-        cluster.App(app_bucket.app).grant_bucket_access(
-            app_bucket.s3bucket.arn,
-            app_bucket.access_level,
-            app_bucket.resources,
+    def handle(self):
+        cluster.App(self.object.app).grant_bucket_access(
+            self.object.s3bucket.arn,
+            self.object.access_level,
+            self.object.resources,
         )
         self.complete()
 
@@ -34,17 +34,17 @@ class GrantUserS3BucketAccess(BaseModelTaskHandler):
     name = "grant_user_s3bucket_access"
     permission_required = "api.create_users3bucket"
 
-    def run_task(self, user_bucket, user):
-        if user_bucket.s3bucket.is_folder:
-            cluster.User(user_bucket.user).grant_folder_access(
-                root_folder_path=user_bucket.s3bucket.name,
-                access_level=user_bucket.access_level,
-                paths=user_bucket.paths,
+    def handle(self):
+        if self.object.s3bucket.is_folder:
+            cluster.User(self.object.user).grant_folder_access(
+                root_folder_path=self.object.s3bucket.name,
+                access_level=self.object.access_level,
+                paths=self.object.paths,
             )
         else:
-            cluster.User(user_bucket.user).grant_bucket_access(
-                bucket_arn=user_bucket.s3bucket.arn,
-                access_level=user_bucket.access_level,
-                path_arns=user_bucket.resources,
+            cluster.User(self.object.user).grant_bucket_access(
+                bucket_arn=self.object.s3bucket.arn,
+                access_level=self.object.access_level,
+                path_arns=self.object.resources,
             )
         self.complete()

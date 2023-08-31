@@ -1,13 +1,16 @@
+# Third-party
 from celery import Task as CeleryTask
 
-from controlpanel.api.models import User, Task
+# First-party/Local
+from controlpanel.api.models import Task, User
 
 
 class BaseModelTaskHandler(CeleryTask):
     name = None
     model = None
     permission_required = None
-
+    object = None
+    user = None
     # can be applied to project settings also
     # these settings mean that messages are only removed from the queue (acknowledged)
     # when returned. if an error occurs, they remain in the queue, and will be resent
@@ -31,7 +34,7 @@ class BaseModelTaskHandler(CeleryTask):
         """
         try:
             return User.objects.get(pk=pk)
-        except User.DoesNotExist as exc:
+        except User.DoesNotExist:
             # if the user is found, this should be a hard fail? So suggest log the error
             # and then mark as complete to stop task being rerun?
             return None
@@ -58,22 +61,24 @@ class BaseModelTaskHandler(CeleryTask):
 
     def run(self, obj_pk, user_pk, *args, **kwargs):
         """
-        Default message that a celery Task object requires to be defined, and will be
-        called by the worker when a message is received by the queue. This runs some
-        lookups and validates the user, and if these pass calls `run_task` which must
-        be defined on any subclass of BaseTaskHandler.
+        Default method that a celery Task object requires to be defined, and will be
+        called by the worker when a message is received by the queue. This will look up
+        and store the user and instance of the model, and validate the user can run the
+        task for the instance. If these lookups and validation passes, the `handle`
+        method is called, with any other args and kwargs sent.
+        The handle method be defined on any subclass of BaseModelTaskHandler.
         """
-        obj = self.get_object(obj_pk)
-        user = self.get_user(user_pk)
-        if not user:
+        self.user = self.get_user(user_pk)
+        if not self.user:
             return self.complete()
 
-        if not self.has_permission(user, obj):
+        self.object = self.get_object(obj_pk)
+        if not self.has_permission(self.user, self.object):
             return self.complete()
 
-        self.run_task(obj, user, *args, **kwargs)
+        self.handle(*args, **kwargs)
 
-    def run_task(self, *args, **kwargs):
+    def handle(self, *args, **kwargs):
         """
         Should contain the logic to run the task, and will be called after the run
         method has been successfully called.
