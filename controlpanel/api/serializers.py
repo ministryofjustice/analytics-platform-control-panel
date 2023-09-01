@@ -404,8 +404,10 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
             env_data["auth_required"] = auth_required
 
-
     def _process_redundant_envs(self, app_auth_settings, auth_settings_status):
+        # NB. if earlier call to get app_auth_settings failed, this will have been
+        # passed into serializer as an empty dict. Which results in all env details
+        # being marked as redundant mistakenly
         redundant_envs = list(set(auth_settings_status.keys()) -
                               set(app_auth_settings.keys()))
         for env_name in redundant_envs:
