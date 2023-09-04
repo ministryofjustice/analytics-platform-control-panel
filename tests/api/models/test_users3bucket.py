@@ -71,11 +71,8 @@ def test_aws_create_folder(tasks, user, bucket):
 @pytest.mark.django_db
 def test_delete_revoke_permissions(user, bucket, users3bucket):
     with patch(
-        "controlpanel.api.cluster.AWSRole.revoke_bucket_access"
-    ) as revoke_bucket_access_action:
+        "controlpanel.api.tasks.S3BucketRevokeUserAccess"
+    ) as revoke_user_access_task:
         users3bucket.delete()
-        revoke_bucket_access_action.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-        )
-        # TODO get policy from call and assert bucket ARN removed
+        revoke_user_access_task.assert_called_with(users3bucket)
+        revoke_user_access_task.return_value.create_task.assert_called()
