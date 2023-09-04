@@ -2,9 +2,8 @@
 from django.db import models
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
-from controlpanel.api import tasks
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -56,8 +55,4 @@ class UserS3Bucket(AccessToS3Bucket):
             tasks.S3BucketGrantToUser(self, self.current_user).create_task()
 
     def revoke_bucket_access(self):
-        if self.s3bucket.is_folder:
-            return cluster.User(self.user).revoke_folder_access(
-                root_folder_path=self.s3bucket.name
-            )
-        cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)
+        tasks.S3BucketRevokeUserAccess(self).create_task()

@@ -5,7 +5,26 @@ from celery import Task as CeleryTask
 from controlpanel.api.models import Task, User
 
 
-class BaseModelTaskHandler(CeleryTask):
+class BaseTaskHandler(CeleryTask):
+
+    def complete(self):
+        task = Task.objects.filter(task_id=self.request.id).first()
+        if task:
+            task.completed = True
+            task.save()
+
+    def run(self, *args, **kwargs):
+        self.handle(*args, **kwargs)
+
+    def handle(self, *args, **kwargs):
+        """
+        Should contain the logic to run the task, and will be called after the run
+        method has been successfully called.
+        """
+        raise NotImplementedError("Task logic not implemented")
+
+
+class BaseModelTaskHandler(BaseTaskHandler):
     name = None
     model = None
     permission_required = None
@@ -53,12 +72,6 @@ class BaseModelTaskHandler(CeleryTask):
 
         return True
 
-    def complete(self):
-        task = Task.objects.filter(task_id=self.request.id).first()
-        if task:
-            task.completed = True
-            task.save()
-
     def run(self, obj_pk, user_pk, *args, **kwargs):
         """
         Default method that a celery Task object requires to be defined, and will be
@@ -69,18 +82,11 @@ class BaseModelTaskHandler(CeleryTask):
         The handle method be defined on any subclass of BaseModelTaskHandler.
         """
         self.user = self.get_user(user_pk)
-        if not self.user:
+        if user_pk and not self.user:
             return self.complete()
 
         self.object = self.get_object(obj_pk)
-        if not self.has_permission(self.user, self.object):
+        if self.user and not self.has_permission(self.user, self.object):
             return self.complete()
 
         self.handle(*args, **kwargs)
-
-    def handle(self, *args, **kwargs):
-        """
-        Should contain the logic to run the task, and will be called after the run
-        method has been successfully called.
-        """
-        raise NotImplementedError("Task logic not implemented")

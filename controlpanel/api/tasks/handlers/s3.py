@@ -1,7 +1,10 @@
+# Third-party
+from celery import Task as CeleryTask
+
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.models import AppS3Bucket, S3Bucket, UserS3Bucket
-from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler
+from controlpanel.api.models import AppS3Bucket, S3Bucket, User, UserS3Bucket
+from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskHandler
 
 
 class CreateS3Bucket(BaseModelTaskHandler):
@@ -32,7 +35,7 @@ class GrantAppS3BucketAccess(BaseModelTaskHandler):
 class GrantUserS3BucketAccess(BaseModelTaskHandler):
     model = UserS3Bucket
     name = "grant_user_s3bucket_access"
-    permission_required = "api.create_users3bucket"
+    permission_required = "api.update_users3bucket"
 
     def handle(self):
         if self.object.s3bucket.is_folder:
@@ -47,4 +50,16 @@ class GrantUserS3BucketAccess(BaseModelTaskHandler):
                 access_level=self.object.access_level,
                 path_arns=self.object.resources,
             )
+        self.complete()
+
+
+class S3BucketRevokeUserAccess(BaseTaskHandler):
+    name = "revoke_user_s3bucket_access"
+
+    def run(self, bucket_identifier, bucket_user_pk, is_folder):
+        bucket_user = User.objects.get(pk=bucket_user_pk)
+        if is_folder:
+            cluster.User(bucket_user).revoke_folder_access(bucket_identifier)
+        else:
+            cluster.User(bucket_user).revoke_bucket_access(bucket_identifier)
         self.complete()

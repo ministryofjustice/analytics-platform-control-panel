@@ -1,8 +1,13 @@
+# Standard library
 import uuid
+
+# Third-party
 from django.conf import settings
 
+# First-party/Local
 from controlpanel.api.message_broker import (
-    MessageBrokerClient, LocalMessageBrokerClient
+    LocalMessageBrokerClient,
+    MessageBrokerClient,
 )
 from controlpanel.api.models.task import Task
 
