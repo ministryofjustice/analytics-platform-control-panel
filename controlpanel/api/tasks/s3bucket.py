@@ -72,3 +72,15 @@ class S3BucketRevokeUserAccess(S3AccessMixin, TaskBase):
             self.entity.user.pk,
             bucket.is_folder,
         ]
+
+
+class S3BucketRevokeAppAccess(S3AccessMixin, TaskBase):
+    ENTITY_CLASS = "AppS3Bucket"
+    ACTION = "REVOKE"
+    ROLE = "APP"
+
+    def _get_args_list(self):
+        return [
+            self.entity.s3bucket.arn,
+            self.entity.app.pk,
+        ]

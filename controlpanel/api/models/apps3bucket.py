@@ -50,4 +50,6 @@ class AppS3Bucket(AccessToS3Bucket):
         # )
 
     def revoke_bucket_access(self):
+        # TODO enable using the task when ready
+        # tasks.S3BucketRevokeAppAccess(self).create_task()
         cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn)

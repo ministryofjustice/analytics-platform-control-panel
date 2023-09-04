@@ -3,7 +3,7 @@ from celery import Task as CeleryTask
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.models import AppS3Bucket, S3Bucket, User, UserS3Bucket
+from controlpanel.api.models import App, AppS3Bucket, S3Bucket, User, UserS3Bucket
 from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskHandler
 
 
@@ -62,4 +62,17 @@ class S3BucketRevokeUserAccess(BaseTaskHandler):
             cluster.User(bucket_user).revoke_folder_access(bucket_identifier)
         else:
             cluster.User(bucket_user).revoke_bucket_access(bucket_identifier)
+        self.complete()
+
+
+class S3BucketRevokeAppAccess(BaseTaskHandler):
+    name = "revoke_app_s3bucket_access"
+
+    def run(self, bucket_arn, app_pk):
+        try:
+            app = App.objects.get(pk=app_pk)
+        except App.DoesNotExist:
+            # if the app doesnt exist, nothing to revoke, so mark completed
+            self.complete()
+        cluster.App(app).revoke_bucket_access(bucket_arn)
         self.complete()
