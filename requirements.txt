@@ -1,5 +1,5 @@
 asgiref==3.6.0
-auth0-python==3.13.0
+auth0-python==4.4.2
 beautifulsoup4==4.12.2
 boto3==1.26.143
 celery[sqs]==5.3.1
