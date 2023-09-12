@@ -2,9 +2,8 @@
 from django.db import models
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
-from controlpanel.api import tasks
 
 
 class AppS3Bucket(AccessToS3Bucket):
@@ -50,6 +49,5 @@ class AppS3Bucket(AccessToS3Bucket):
         # )
 
     def revoke_bucket_access(self):
-        # TODO enable using the task when ready
-        # tasks.S3BucketRevokeAppAccess(self).create_task()
-        cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn)
+        tasks.S3BucketRevokeAppAccess(self).create_task()
+        # cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn)
