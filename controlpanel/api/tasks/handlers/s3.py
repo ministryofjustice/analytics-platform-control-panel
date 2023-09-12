@@ -56,7 +56,7 @@ class GrantUserS3BucketAccess(BaseModelTaskHandler):
 class S3BucketRevokeUserAccess(BaseTaskHandler):
     name = "revoke_user_s3bucket_access"
 
-    def run(self, bucket_identifier, bucket_user_pk, is_folder):
+    def handle(self, bucket_identifier, bucket_user_pk, is_folder):
         bucket_user = User.objects.get(pk=bucket_user_pk)
         if is_folder:
             cluster.User(bucket_user).revoke_folder_access(bucket_identifier)
@@ -68,7 +68,7 @@ class S3BucketRevokeUserAccess(BaseTaskHandler):
 class S3BucketRevokeAppAccess(BaseTaskHandler):
     name = "revoke_app_s3bucket_access"
 
-    def run(self, bucket_arn, app_pk):
+    def handle(self, bucket_arn, app_pk):
         try:
             app = App.objects.get(pk=app_pk)
         except App.DoesNotExist:
