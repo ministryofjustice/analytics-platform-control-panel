@@ -274,7 +274,11 @@ def test_list_other_datasources_admins(client, buckets, users):
     assert other_datasources_admins[buckets["other"].id] == []
 
 
-def test_bucket_creator_has_readwrite_and_admin_access(client, users):
+@patch("controlpanel.api.models.users3bucket.tasks.S3BucketGrantToUser")
+@patch("controlpanel.api.models.s3bucket.tasks.S3BucketCreate")
+def test_bucket_creator_has_readwrite_and_admin_access(
+    create_bucket_task, grant_user_task, client, users
+):
     user = users["normal_user"]
     client.force_login(user)
     create(client)
@@ -282,6 +286,8 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
     ub = user.users3buckets.all()[0]
     assert ub.access_level == UserS3Bucket.READWRITE
     assert ub.is_admin
+    create_bucket_task.assert_called_once()
+    grant_user_task.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -303,31 +309,44 @@ def test_create_get_form_class(rf, folders_enabled, datasource_type, form_class)
         assert view.get_form_class() == form_class
 
 
+@patch("controlpanel.api.models.users3bucket.tasks.S3BucketGrantToUser")
+@patch("controlpanel.api.models.s3bucket.tasks.S3BucketCreate")
 @patch("django.conf.settings.features.s3_folders.enabled", True)
-def test_create_folders(client, users, root_folder_bucket):
+@pytest.mark.parametrize("user", ["superuser", "normal_user", "other_user"])
+def test_create_folders(
+    create_bucket_task, grant_user_task, user, client, users, root_folder_bucket
+):
     """
     Check that all users can create a folder datasource
     """
-    for _, user in users.items():
-        client.force_login(user)
-        folder_name = f"test-{user.username}-folder"
-        response = create(client, name=folder_name)
+    user = users[user]
+    client.force_login(user)
+    folder_name = f"test-{user.username}-folder"
+    response = create(client, name=folder_name)
 
-        # redirect expected on success
-        assert response.status_code == 302
-        assert user.users3buckets.filter(
-            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
-        ).exists()
+    # redirect expected on success
+    assert response.status_code == 302
+    assert user.users3buckets.filter(
+        s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+    ).exists()
+    # make sure tasks are sent
+    create_bucket_task.assert_called_once()
+    grant_user_task.assert_called_once()
 
-        # create another folder to catch any errors updating IAM policy
-        folder_name = f"test-{user.username}-folder-2"
-        response = create(client, name=folder_name)
+    # create another folder to catch any errors updating IAM policy
+    create_bucket_task.reset_mock()
+    grant_user_task.reset_mock()
+    folder_name = f"test-{user.username}-folder-2"
+    response = create(client, name=folder_name)
 
-        # redirect expected on success
-        assert response.status_code == 302
-        assert user.users3buckets.filter(
-            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
-        ).exists()
+    # redirect expected on success
+    assert response.status_code == 302
+    assert user.users3buckets.filter(
+        s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+    ).exists()
+    # tasks to create are sent again for the second folder
+    create_bucket_task.assert_called_once()
+    grant_user_task.assert_called_once()
 
 
 @patch("django.conf.settings.features.s3_folders.enabled", False)
