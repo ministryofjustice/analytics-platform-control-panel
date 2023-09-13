@@ -312,6 +312,11 @@ class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
     model = AppS3Bucket
     permission_required = "api.remove_app_bucket"
 
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
+
     def get_success_url(self):
         messages.success(self.request, "Successfully disconnected data source")
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})

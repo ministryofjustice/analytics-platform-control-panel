@@ -69,10 +69,10 @@ def test_aws_create_folder(tasks, user, bucket):
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(user, bucket, users3bucket):
+def test_delete_revoke_permissions(bucket, users3bucket):
     with patch(
         "controlpanel.api.tasks.S3BucketRevokeUserAccess"
     ) as revoke_user_access_task:
         users3bucket.delete()
-        revoke_user_access_task.assert_called_with(users3bucket)
+        revoke_user_access_task.assert_called_with(users3bucket, None)
         revoke_user_access_task.return_value.create_task.assert_called()

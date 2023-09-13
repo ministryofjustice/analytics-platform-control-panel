@@ -48,4 +48,7 @@ class UserS3Bucket(AccessToS3Bucket):
         tasks.S3BucketGrantToUser(self, self.current_user).create_task()
 
     def revoke_bucket_access(self):
-        tasks.S3BucketRevokeUserAccess(self).create_task()
+        # TODO when soft delete is added, this should be updated to use the user that
+        # has deleted the parent S3bucket to ensure we store the user that has sent the
+        # task in the case of cascading deletes
+        tasks.S3BucketRevokeUserAccess(self, self.current_user).create_task()

@@ -293,6 +293,11 @@ class RevokeAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = UserS3Bucket
     permission_required = "api.destroy_users3bucket"
 
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
+
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})

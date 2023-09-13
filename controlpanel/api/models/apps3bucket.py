@@ -42,12 +42,6 @@ class AppS3Bucket(AccessToS3Bucket):
 
     def grant_bucket_access(self):
         tasks.S3BucketGrantToApp(self, self.current_user).create_task()
-        # cluster.App(self.app).grant_bucket_access(
-        #     self.s3bucket.arn,
-        #     self.access_level,
-        #     self.resources,
-        # )
 
     def revoke_bucket_access(self):
-        tasks.S3BucketRevokeAppAccess(self).create_task()
-        # cluster.App(self.app).revoke_bucket_access(self.s3bucket.arn)
+        tasks.S3BucketRevokeAppAccess(self, self.current_user).create_task()
