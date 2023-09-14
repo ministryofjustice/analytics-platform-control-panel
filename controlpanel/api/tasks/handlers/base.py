@@ -27,9 +27,8 @@ class BaseTaskHandler(CeleryTask):
 class BaseModelTaskHandler(BaseTaskHandler):
     name = None
     model = None
-    permission_required = None
     object = None
-    user = None
+    task_user_pk = None
     # can be applied to project settings also
     # these settings mean that messages are only removed from the queue (acknowledged)
     # when returned. if an error occurs, they remain in the queue, and will be resent
@@ -46,47 +45,14 @@ class BaseModelTaskHandler(BaseTaskHandler):
             # added back to the queue as could be due to a race condition
             raise exc
 
-    def get_user(self, pk):
-        """
-        Try to find the user, then check they have the correct permission required to
-        run the task action.
-        """
-        try:
-            return User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            # if the user is found, this should be a hard fail? So suggest log the error
-            # and then mark as complete to stop task being rerun?
-            return None
-
-    def has_permission(self, user, obj=None):
-        """
-        Check that the user has permission to run the task on the given object.
-        Override on the subclass for further permission checks.
-        """
-        if not self.permission_required:
-            raise NotImplementedError("Must define a permission to check")
-
-        if not user.has_perm(self.permission_required, obj=obj):
-            # log that the user did not have permission?
-            return False
-
-        return True
-
-    def run(self, obj_pk, user_pk, *args, **kwargs):
+    def run(self, obj_pk, task_user_pk, *args, **kwargs):
         """
         Default method that a celery Task object requires to be defined, and will be
         called by the worker when a message is received by the queue. This will look up
-        and store the user and instance of the model, and validate the user can run the
-        task for the instance. If these lookups and validation passes, the `handle`
-        method is called, with any other args and kwargs sent.
-        The handle method be defined on any subclass of BaseModelTaskHandler.
+        the instance of the model, and store the PK of the user running the task to use
+        to look up the user later if required. The `handle` method is then called
+        with any other args and kwargs sent.
         """
-        self.user = self.get_user(user_pk)
-        if user_pk and not self.user:
-            return self.complete()
-
         self.object = self.get_object(obj_pk)
-        if self.user and not self.has_permission(self.user, self.object):
-            return self.complete()
-
+        self.task_user_pk = task_user_pk
         self.handle(*args, **kwargs)

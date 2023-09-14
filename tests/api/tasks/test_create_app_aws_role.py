@@ -1,10 +1,16 @@
-import pytest
+# Standard library
 from unittest.mock import patch
 
+# Third-party
+import pytest
 from model_mommy import mommy
 
+# First-party/Local
 from controlpanel.api.models import App
-from controlpanel.api.tasks.handlers import create_app_aws_role, create_app_auth_settings
+from controlpanel.api.tasks.handlers import (
+    create_app_auth_settings,
+    create_app_aws_role,
+)
 
 
 @pytest.mark.django_db
@@ -16,21 +22,6 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
         cluster.App.assert_not_called()
         # should not be complete as we want to try it again
         complete.assert_not_called()
-
-
-@pytest.mark.django_db
-@patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
-@patch("controlpanel.api.tasks.handlers.app.cluster")
-def test_cluster_not_called_without_valid_user(cluster, complete, users):
-    app = mommy.make("api.App")
-
-    user = users["normal_user"]
-    create_app_aws_role(app.pk, user.pk)
-
-    # role should not be created
-    cluster.App.assert_not_called()
-    # task should be complete so that it does not run again, as user not valid
-    complete.assert_called_once()
 
 
 @pytest.mark.django_db

@@ -10,7 +10,6 @@ from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskH
 class CreateS3Bucket(BaseModelTaskHandler):
     model = S3Bucket
     name = "create_s3bucket"
-    permission_required = "api.create_s3bucket"
 
     def handle(self, bucket_owner=None):
         bucket_owner = bucket_owner or "USER"
@@ -21,7 +20,6 @@ class CreateS3Bucket(BaseModelTaskHandler):
 class GrantAppS3BucketAccess(BaseModelTaskHandler):
     model = AppS3Bucket
     name = 'grant_app_s3bucket_access'
-    permission_required = 'api.create_apps3bucket'
 
     def handle(self):
         cluster.App(self.object.app).grant_bucket_access(
@@ -35,7 +33,6 @@ class GrantAppS3BucketAccess(BaseModelTaskHandler):
 class GrantUserS3BucketAccess(BaseModelTaskHandler):
     model = UserS3Bucket
     name = "grant_user_s3bucket_access"
-    permission_required = "api.update_users3bucket"
 
     def handle(self):
         if self.object.s3bucket.is_folder:
