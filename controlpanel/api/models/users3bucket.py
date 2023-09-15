@@ -2,9 +2,8 @@
 from django.db import models
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
-from controlpanel.api import tasks
 
 
 class UserS3Bucket(AccessToS3Bucket):
@@ -46,22 +45,10 @@ class UserS3Bucket(AccessToS3Bucket):
         )
 
     def grant_bucket_access(self):
-        if self.s3bucket.is_folder:
-            return cluster.User(self.user).grant_folder_access(
-                root_folder_path=self.s3bucket.name,
-                access_level=self.access_level,
-                paths=self.paths,
-            )
         tasks.S3BucketGrantToUser(self, self.current_user).create_task()
-        # cluster.User(self.user).grant_bucket_access(
-        #     self.s3bucket.arn,
-        #     self.access_level,
-        #     self.resources,
-        # )
 
     def revoke_bucket_access(self):
-        if self.s3bucket.is_folder:
-            return cluster.User(self.user).revoke_folder_access(
-                root_folder_path=self.s3bucket.name
-            )
-        cluster.User(self.user).revoke_bucket_access(self.s3bucket.arn)
+        # TODO when soft delete is added, this should be updated to use the user that
+        # has deleted the parent S3bucket to ensure we store the user that has sent the
+        # task in the case of cascading deletes
+        tasks.S3BucketRevokeUserAccess(self, self.current_user).create_task()

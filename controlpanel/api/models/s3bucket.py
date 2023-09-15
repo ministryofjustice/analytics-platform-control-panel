@@ -10,10 +10,9 @@ from django.db.transaction import atomic
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
-from controlpanel.api import cluster, validators
+from controlpanel.api import cluster, tasks, validators
 from controlpanel.api.models.apps3bucket import AppS3Bucket
 from controlpanel.api.models.users3bucket import UserS3Bucket
-from controlpanel.api import tasks
 
 
 def s3bucket_console_url(name):
@@ -129,24 +128,27 @@ class S3Bucket(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         is_create = not self.pk
-
         super().save(*args, **kwargs)
+        if not is_create:
+            return self
 
-        if is_create:
-            bucket_owner = kwargs.pop("bucket_owner", self.bucket_owner)
+        tasks.S3BucketCreate(
+            entity=self,
+            user=self.created_by,
+            extra_data={
+                "bucket_owner": kwargs.pop("bucket_owner", self.bucket_owner),
+            }
+        ).create_task()
 
-            # self.cluster.create(bucket_owner)
-            tasks.S3BucketCreate(self, self.created_by).create_task()
-
-            # XXX created_by is always set if model is saved by the API view
-            if self.created_by:
-                UserS3Bucket.objects.create(
-                    user=self.created_by,
-                    current_user=self.created_by,
-                    s3bucket=self,
-                    is_admin=True,
-                    access_level=UserS3Bucket.READWRITE,
-                )
+        # created_by should always be set, but this is a failsafe
+        if self.created_by:
+            UserS3Bucket.objects.create(
+                user=self.created_by,
+                current_user=self.created_by,
+                s3bucket=self,
+                is_admin=True,
+                access_level=UserS3Bucket.READWRITE,
+            )
 
         return self
 

@@ -79,12 +79,17 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         access_repo_error_msg = None
         github_settings_access_error_msg = None
         try:
+            # NB: if this call fails....
             deployment_env_names = app_manager_ins.get_deployment_envs()
         except requests.exceptions.HTTPError as ex:
             access_repo_error_msg = ex.__str__()
+            github_settings_access_error_msg = ex.__str__()
+            # ...this is set to empty list...
             deployment_env_names = []
+        # ...which means this will remain empty dict...
         deployments_settings = {}
         auth0_connections = app.auth0_connections_by_env()
+        # ...so no call to get secrets/variables is made
         try:
             for env_name in deployment_env_names:
                 deployments_settings[env_name] = {
@@ -94,7 +99,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
                 }
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()
-
+        # ...knock on effect is in serializers.py these envs will be marked as redundant
         return deployments_settings, access_repo_error_msg, \
             github_settings_access_error_msg
 
@@ -111,6 +116,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             exclude_connected=True,
         )
 
+        # If auth settings not returned, all envs marked redundant in the serializer.
+        # Should hide them instead?
         auth_settings, access_repo_error_msg, github_settings_access_error_msg \
             = self._get_all_app_settings(app)
         auth0_clients_status = app.auth0_clients_status()
@@ -304,6 +311,11 @@ class GrantAppAccess(
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = AppS3Bucket
     permission_required = "api.remove_app_bucket"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
 
     def get_success_url(self):
         messages.success(self.request, "Successfully disconnected data source")

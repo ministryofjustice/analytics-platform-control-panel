@@ -23,20 +23,16 @@ def bucket():
 
 
 def test_delete_revokes_permissions(bucket):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
-            as revoke_bucket_access_action:
-        users3bucket = mommy.make("api.UserS3Bucket", s3bucket=bucket)
-        apps3bucket = mommy.make("api.AppS3Bucket", s3bucket=bucket)
-
+    with patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access") as app_revoke_bucket_access, \
+            patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access") as user_revoke_user_bucket_access:
+        # link the bucket with an UserS3Bucket and AppS3Bucket
+        mommy.make("api.UserS3Bucket", s3bucket=bucket)
+        mommy.make("api.AppS3Bucket", s3bucket=bucket)
+        # delete the source S3Bucket
         bucket.delete()
-
-        revoke_bucket_access_action.assert_has_calls(
-            [
-                call(apps3bucket.iam_role_name, bucket.arn),
-                call(users3bucket.iam_role_name, bucket.arn),
-            ]
-        )
+        # check that related objects revoke access methods were called
+        app_revoke_bucket_access.assert_called_once()
+        user_revoke_user_bucket_access.assert_called_once()
 
 
 def test_delete_marks_bucket_for_archival(bucket):

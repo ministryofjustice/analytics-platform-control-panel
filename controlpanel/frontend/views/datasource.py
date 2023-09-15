@@ -15,7 +15,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     IAMManagedPolicy,
@@ -174,16 +174,15 @@ class CreateDatasource(
         datasource_type = self.request.GET.get("type")
 
         try:
-            with transaction.atomic():
-                self.object = S3Bucket.objects.create(
-                    name=name,
-                    created_by=self.request.user,
-                    is_data_warehouse=datasource_type == "warehouse",
-                )
-                messages.success(
-                    self.request,
-                    f"Successfully created {name} {datasource_type} data source",
-                )
+            self.object = S3Bucket.objects.create(
+                name=name,
+                created_by=self.request.user,
+                is_data_warehouse=datasource_type == "warehouse",
+            )
+            messages.success(
+                self.request,
+                f"Successfully created {name} {datasource_type} data source",
+            )
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
@@ -293,6 +292,11 @@ class UpdateIAMManagedPolicyAccessLevel(
 class RevokeAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = UserS3Bucket
     permission_required = "api.destroy_users3bucket"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
 
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")

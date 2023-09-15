@@ -62,16 +62,12 @@ def test_create(client, buckets, users, sqs, helpers):
 
 def test_delete(client, users3buckets):
     with patch(
-        "controlpanel.api.aws.AWSRole.revoke_bucket_access"
+        "controlpanel.api.models.UserS3Bucket.revoke_bucket_access"
     ) as revoke_bucket_access:
         response = client.delete(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        revoke_bucket_access.assert_called_with(
-            users3buckets[1].user.iam_role_name,
-            users3buckets[1].s3bucket.arn,
-        )
-        # TODO get policy from call and assert bucket ARN not contained
+        revoke_bucket_access.assert_called()
 
         response = client.get(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND
