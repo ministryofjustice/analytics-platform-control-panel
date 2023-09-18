@@ -8,7 +8,7 @@ enabled_features:
     _DEFAULT: true
   s3_folders:
     _DEFAULT: false
-    _HOST_dev: false
+    _HOST_dev: true
     _HOST_prod: false
     _HOST_alpha: false
 
