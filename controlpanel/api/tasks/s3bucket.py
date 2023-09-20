@@ -28,6 +28,7 @@ class S3BucketCreate(TaskBase):
 class S3AccessMixin:
     ACTION = None
     ROLE = None
+    QUEUE_NAME = settings.IAM_QUEUE_NAME
 
     @property
     def task_name(self):

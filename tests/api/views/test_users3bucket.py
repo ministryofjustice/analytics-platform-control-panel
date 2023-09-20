@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -56,8 +57,10 @@ def test_create(client, buckets, users, sqs, helpers):
     users3bucket = UserS3Bucket.objects.get(
         user=users["other_user"], s3bucket=buckets[1]
     )
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
+    messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 def test_delete(client, users3buckets):
@@ -86,11 +89,13 @@ def test_update(client, buckets, users, users3buckets, sqs, helpers):
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.data["access_level"] == data["access_level"]
-    messages = helpers.retrieve_messages(sqs)
+    messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
     users3bucket = UserS3Bucket.objects.get(
         user=users["normal_user"], s3bucket=buckets[1]
     )
-    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
+    helpers.validate_task_with_sqs_messages(
+        messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 @pytest.mark.parametrize(

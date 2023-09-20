@@ -3,6 +3,7 @@ from unittest.mock import PropertyMock, patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.db.utils import IntegrityError
 from model_mommy import mommy
 
@@ -45,9 +46,9 @@ def test_aws_create_bucket(user, bucket, sqs, helpers):
         s3bucket=bucket,
         access_level=AccessToS3Bucket.READONLY
     )
-    messages = helpers.retrieve_messages(sqs)
+    messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
-        messages, UserS3Bucket.__name__, users3bucket.id
+        messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
     )
 
 

@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -80,9 +81,9 @@ def test_create(client, apps, buckets, sqs, helpers):
     response = client.post(reverse("apps3bucket-list"), data)
     assert response.status_code == status.HTTP_201_CREATED
     apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
-    messages = helpers.retrieve_messages(sqs)
+    iam_messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
-        messages, AppS3Bucket.__name__, apps3bucket.id
+        iam_messages, AppS3Bucket.__name__, apps3bucket.id, settings.IAM_QUEUE_NAME
     )
 
 
@@ -100,9 +101,9 @@ def test_update(client, apps, apps3buckets, buckets, sqs, helpers):
     assert response.status_code == status.HTTP_200_OK
     assert response.data["access_level"] == data["access_level"]
     apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[1])
-    messages = helpers.retrieve_messages(sqs)
+    iam_messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
-        messages, AppS3Bucket.__name__, apps3bucket.id
+        iam_messages, AppS3Bucket.__name__, apps3bucket.id, settings.IAM_QUEUE_NAME
     )
 
 

@@ -7,6 +7,7 @@ from controlpanel.api.tasks.task_base import TaskBase
 
 class AppCreateRole(TaskBase):
     ENTITY_CLASS = "App"
+    QUEUE_NAME = settings.IAM_QUEUE_NAME
 
     @property
     def task_name(self):

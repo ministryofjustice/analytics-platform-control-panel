@@ -29,7 +29,7 @@ def update_aws_secrets_manager():
 @pytest.fixture
 def app():
     app = mommy.make("api.App")
-    app.repo_url="https://github.com/example.com/repo_name"
+    app.repo_url = "https://github.com/example.com/repo_name"
     auth_settings = dict(
         client_id="testing_client_id",
         group_id="testing_group_id"
@@ -46,9 +46,9 @@ def app():
 def test_create(sqs, helpers):
     repo_url = "https://example.com/foo__bar-baz!bat-1337"
     app = App.objects.create(repo_url=repo_url)
-    iam_messages = helpers.retrieve_messages(sqs, queue_name=settings.DEFAULT_QUEUE)
+    iam_messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
-        iam_messages, App.__name__, app.id, queue_name=settings.DEFAULT_QUEUE
+        iam_messages, App.__name__, app.id, queue_name=settings.IAM_QUEUE_NAME
     )
     auth_messages = helpers.retrieve_messages(sqs, queue_name=settings.AUTH_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
@@ -195,8 +195,11 @@ def test_app_allowed_ip_ranges():
     ]
     app = mommy.make("api.App")  # noqa:F841
     for item in ip_allow_lists:
-        mommy.make("api.AppIPAllowList",
-            app_id=app.id, ip_allowlist_id=item.id, deployment_env="test"
+        mommy.make(
+            "api.AppIPAllowList",
+            app_id=app.id,
+            ip_allowlist_id=item.id,
+            deployment_env="test",
         )
     app_ip_ranges = app.env_allowed_ip_ranges("test")
     assert " " not in app_ip_ranges
@@ -205,4 +208,3 @@ def test_app_allowed_ip_ranges():
     full_app_ip_ranges = app.app_allowed_ip_ranges
     assert " " not in full_app_ip_ranges
     assert len(full_app_ip_ranges.split(",")) == 4
-
