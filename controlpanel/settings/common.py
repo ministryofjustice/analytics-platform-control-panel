@@ -83,7 +83,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "controlpanel.middleware.DisableClientSideCachingMiddleware",
-    "controlpanel.middleware.LegacyAPIRedirectMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
