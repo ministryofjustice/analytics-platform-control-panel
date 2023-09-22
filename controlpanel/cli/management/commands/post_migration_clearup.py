@@ -15,6 +15,8 @@ class Command(BaseCommand):
 
     SCRIPT_LOG_FILE_NAME = "./clear_up_auth0_resources_log.txt"
 
+    EXCEPTION_APPS = ["gold-scorecard-form"]
+
     def add_arguments(self, parser):
         parser.add_argument(
             "-a", "--apply", action="store_true", help="Apply the actions"
@@ -61,6 +63,10 @@ class Command(BaseCommand):
         apps = App.objects.all()
         counter = 1
         for app in apps:
+            if app.slug in self.EXCEPTION_APPS:
+                self._log_info(f"Ignore the application {app.slug}")
+                continue
+
             try:
                 self._log_info(f"{counter}--Processing the application {app.slug}")
 
