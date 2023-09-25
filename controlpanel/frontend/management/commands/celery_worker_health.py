@@ -1,11 +1,12 @@
 # Standard library
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
 from sys import exit
 
 # Third-party
-from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.core.management.base import BaseCommand
 
 # First-party/Local
 from controlpanel.celery import worker_health_check
@@ -24,8 +25,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         stale_after_secs = options["stale_after_secs"]
-
-        worker_health_check.delay().get()
+        # send task to randomly chosen queue
+        worker_health_check.apply_async(
+            queue=random.choice(settings.PRE_DEFINED_QUEUES)
+        )
         # Attempt to read worker health ping file
         # NOTE: This may initially fail depending on timing of health task
         # execution but that's fine as Kubernetes' `failureThreashold`
