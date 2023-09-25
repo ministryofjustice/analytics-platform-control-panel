@@ -66,8 +66,8 @@ def test_delete_revoke_permissions(app, bucket):
 
         apps3bucket.delete()
 
-        revoke_bucket_access_task.assert_called_with(
+        revoke_bucket_access_task.assert_called_once_with(
             apps3bucket,
             None
         )
-        revoke_bucket_access_task.return_value.create_task.assert_called()
+        revoke_bucket_access_task.return_value.create_task.assert_called_once()

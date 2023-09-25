@@ -70,7 +70,7 @@ def test_delete(client, users3buckets):
         response = client.delete(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        revoke_bucket_access.assert_called()
+        revoke_bucket_access.assert_called_once()
 
         response = client.get(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND

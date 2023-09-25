@@ -66,7 +66,7 @@ def test_delete(client, apps3buckets):
         response = client.delete(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        revoke_bucket_access.assert_called()
+        revoke_bucket_access.assert_called_once()
 
         response = client.get(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND

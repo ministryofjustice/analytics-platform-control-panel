@@ -75,5 +75,5 @@ def test_delete_revoke_permissions(bucket, users3bucket):
         "controlpanel.api.tasks.S3BucketRevokeUserAccess"
     ) as revoke_user_access_task:
         users3bucket.delete()
-        revoke_user_access_task.assert_called_with(users3bucket, None)
-        revoke_user_access_task.return_value.create_task.assert_called()
+        revoke_user_access_task.assert_called_once_with(users3bucket, None)
+        revoke_user_access_task.return_value.create_task.assert_called_once()
