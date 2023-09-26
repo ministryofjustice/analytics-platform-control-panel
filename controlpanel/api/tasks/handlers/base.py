@@ -2,18 +2,31 @@
 from celery import Task as CeleryTask
 
 # First-party/Local
-from controlpanel.api.models import Task, User
+from controlpanel.api.models import Task
 
 
 class BaseTaskHandler(CeleryTask):
+    # can be applied to project settings also
+    # these settings mean that messages are only removed from the queue (acknowledged)
+    # when returned. if an error occurs, they remain in the queue, and will be resent
+    # to the worker when the "visibility_timeout" has expired. "visibility_timeout" is
+    # a setting that is configured in SQS per queue. Currently set to 30secs
+    acks_late = True
+    acks_on_failure_or_timeout = False
+    task_obj = None
 
     def complete(self):
-        task = Task.objects.filter(task_id=self.request.id).first()
-        if task:
-            task.completed = True
-            task.save()
+        if self.task_obj:
+            self.task_obj.completed = True
+            self.task_obj.save()
+
+    def get_task_obj(self):
+        return Task.objects.filter(task_id=self.request.id).first()
 
     def run(self, *args, **kwargs):
+        self.task_obj = self.get_task_obj()
+        if self.task_obj and self.task_obj.completed:
+            return
         self.handle(*args, **kwargs)
 
     def handle(self, *args, **kwargs):
@@ -29,13 +42,6 @@ class BaseModelTaskHandler(BaseTaskHandler):
     model = None
     object = None
     task_user_pk = None
-    # can be applied to project settings also
-    # these settings mean that messages are only removed from the queue (acknowledged)
-    # when returned. if an error occurs, they remain in the queue, and will be resent
-    # to the worker when the "visibility_timeout" has expired. "visibility_timeout" is
-    # a setting that is configured in SQS per queue. Currently set to 30secs
-    acks_late = True
-    acks_on_failure_or_timeout = False
 
     def get_object(self, pk):
         try:
@@ -53,6 +59,9 @@ class BaseModelTaskHandler(BaseTaskHandler):
         to look up the user later if required. The `handle` method is then called
         with any other args and kwargs sent.
         """
+        self.task_obj = self.get_task_obj()
+        if self.task_obj and self.task_obj.completed:
+            return
         self.object = self.get_object(obj_pk)
         self.task_user_pk = task_user_pk
         self.handle(*args, **kwargs)
