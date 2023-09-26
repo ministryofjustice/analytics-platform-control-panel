@@ -553,7 +553,7 @@ CELERY_DEFAULT_QUEUE = DEFAULT_QUEUE
 SQS_REGION = os.environ.get("SQS_REGION", "eu-west-2")
 
 BROKER_TRANSPORT_OPTIONS = {
-    "polling_interval": 10,
+    "polling_interval": 1,
     "region": SQS_REGION,
     "wait_time_seconds": 20,
     "predefined_queues": {}
