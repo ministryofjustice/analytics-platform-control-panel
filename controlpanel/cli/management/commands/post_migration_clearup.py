@@ -22,7 +22,7 @@ class Command(BaseCommand):
             "-a", "--apply", action="store_true", help="Apply the actions"
         )
 
-    def _remove_old_auth0_clients(self, app, auth0_instance, apply_action: bool = False):
+    def _remove_old_auth0_clients(self, app, auth0_instance):
         old_client_info = app.app_conf.get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}).\
             get(App.DEFAULT_AUTH_CATEGORY, {})
         if not old_client_info:
@@ -30,18 +30,18 @@ class Command(BaseCommand):
             return
 
         self._log_info(f"Removing the old client for {app.slug} - {app.repo_url}")
-        if apply_action:
+        if self.apply_action:
             auth0_instance.clear_up_app(old_client_info)
 
-    def _update_db(self, app, apply_action: bool = False):
+    def _update_db(self, app):
         self._log_info(f"Removing the migration info and old clients for {app.slug} - {app.repo_url}")
         app.description = ""
         if App.DEFAULT_AUTH_CATEGORY in app.app_conf.get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}):
             del app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY]
-        if apply_action:
+        if self.apply_action:
             app.save()
 
-    def _remove_application(self, app, apply_action: bool = False):
+    def _remove_application(self, app):
         self._log_info(f"Removing the application {app.slug} - {app.repo_url}")
 
         """ TODO: how to deal with related bucket? we will output
@@ -50,7 +50,10 @@ class Command(BaseCommand):
         related_buckets = AppS3Bucket.objects.filter(app_id=app.id)
         for item in related_buckets:
             self._log_info(f"The app links the bucket - {item.s3bucket.name}")
-        if apply_action:
+            # Remove the relationship to avoid removal of the bucket when removing the app
+            if self.apply_action:
+                item.delete()
+        if self.apply_action:
             app.delete()
 
     def _log_info(self, info):
@@ -59,7 +62,7 @@ class Command(BaseCommand):
             f.write(info)
             f.write("\n")
 
-    def _clear_up_resources(self, auth0_instance, apply_action: bool = False):
+    def _clear_up_resources(self, auth0_instance):
         apps = App.objects.all()
         counter = 1
         for app in apps:
@@ -70,11 +73,11 @@ class Command(BaseCommand):
             try:
                 self._log_info(f"{counter}--Processing the application {app.slug}")
 
-                self._remove_old_auth0_clients(app, auth0_instance, apply_action=apply_action)
+                self._remove_old_auth0_clients(app, auth0_instance)
                 if "moj-analytical-services" in app.repo_url:
-                    self._remove_application(app, apply_action=apply_action)
+                    self._remove_application(app)
                 else:
-                    self._update_db(app, apply_action=apply_action)
+                    self._update_db(app)
                 self._log_info(f"{counter}--Done with the application {app.slug}")
                 counter += 1
             except Exception as ex:
@@ -83,6 +86,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("start to scan the apps from database.")
         auth0_instance = auth0.ExtendedAuth0()
-        self._clear_up_resources(auth0_instance, options.get('apply'))
+        self.apply_action = options.get('apply') or False
+        self._clear_up_resources(auth0_instance)
         self.stdout.write("Clean up action has completed.")
 
