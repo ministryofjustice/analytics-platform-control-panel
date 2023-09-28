@@ -23,7 +23,7 @@ class Command(BaseCommand):
         )
 
     def _remove_old_auth0_clients(self, app, auth0_instance):
-        old_client_info = app.app_conf.get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}).\
+        old_client_info = (app.app_conf or {}).get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}).\
             get(App.DEFAULT_AUTH_CATEGORY, {})
         if not old_client_info:
             self._log_info(f"No old client for {app.slug} - {app.repo_url}")
@@ -36,7 +36,7 @@ class Command(BaseCommand):
     def _update_db(self, app):
         self._log_info(f"Removing the migration info and old clients for {app.slug} - {app.repo_url}")
         app.description = ""
-        if App.DEFAULT_AUTH_CATEGORY in app.app_conf.get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}):
+        if App.DEFAULT_AUTH_CATEGORY in (app.app_conf or {}).get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}):
             del app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY]
         if self.apply_action:
             app.save()
@@ -74,10 +74,9 @@ class Command(BaseCommand):
                 self._log_info(f"{counter}--Processing the application {app.slug}")
 
                 self._remove_old_auth0_clients(app, auth0_instance)
+                self._update_db(app)
                 if "moj-analytical-services" in app.repo_url:
                     self._remove_application(app)
-                else:
-                    self._update_db(app)
                 self._log_info(f"{counter}--Done with the application {app.slug}")
                 counter += 1
             except Exception as ex:
