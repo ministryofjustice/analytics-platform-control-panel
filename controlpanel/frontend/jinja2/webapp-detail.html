@@ -13,7 +13,6 @@
 {% set page_title = app.name %}
 {% set app_domain = settings.APP_DOMAIN %}
 {% set app_old_url = "https://" + app.slug + "." + settings.APP_DOMAIN_BEFORE_MIGRATION %}
-{% set feature_enabled = settings.features.app_migration.enabled %}
 
 {% set app_admins_html %}
 {% include "modals/app_admins.html" %}
@@ -26,53 +25,17 @@
 {% block content %}
 
 <header>
-  {% if feature_enabled %}
-  <div class="govuk-width-container">
-    <div class="govuk-warning-text">
-      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-      <strong class="govuk-warning-text__text">
-        <span class="govuk-warning-text__assistive">Warning</span>
-        More information and user guidance for the webapp deployment pipeline and related settings will be provided soon. If you have questions about the app migration process, please contact us on the <a href=https://mojdt.slack.com/archives/C0504KY0Z2N>#data-platform-application-migration-support</a> Slack channel.
-      </strong>
-    </div>
-    <hr class="govuk-section-break govuk-section-break--visible">
-  </div>
-  <br/>
-  {% endif %}
 
   <span class="govuk-caption-xl">Webapp</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if feature_enabled %}
-      <h2 class="govuk-heading-m">Migration status:</h2>
-      {% if app_migration_status == "in_progress" %}
-        <p class="govuk-body" ><b>This app is currently being migrated. It has been deployed onto Cloud Platform for testing, and the original version is still available on the Alpha cluster.</b></p>
-        <ul class="govuk-body">
-          <li>Old repository: <a href="{{ app_migration_info["repo_url"] }}">{{ app_migration_info["repo_url"] }}</a></li>
-          <li>Old app name: <strong>{{ app_migration_info["app_name"] }}</strong></li>
-          <li>Old app URL: <a href="{{ app_migration_info["app_url"] }}">{{ app_migration_info["app_url"] }}</a></li>
-        </ul>
-        <p class="govuk-body" >
-          <b style="color:red">The above information about old app will be removed once the migration process is completed.</b>
-        </p>
-      {% elif app_migration_status == "done" %}
-        <p class="govuk-body">
-          <b style="color:red">The migration for this app has been completed</b>
-        </p>
-      {% else %}
-        <p class="govuk-body">
-          <b style="color:red">The migration process for this app has not been started yet!</b>
-        </p>
-      {% endif %}
-  {% else %}
-    {% if app.description %}
-      <p class="govuk-body">
-        {{ app.description }}
-      </p>
-    {% endif %}
+  {% if app.description %}
+    <p class="govuk-body">
+      {{ app.description }}
+    </p>
   {% endif %}
 
-  {% if feature_enabled and repo_access_error_msg %}
+  {% if repo_access_error_msg %}
   <div class="govuk-grid-row">
     <div class="govuk-column-two-thirds">
 
@@ -91,14 +54,6 @@
   </div>
   {% endif %}
 
-  {% if not app_migration_info and app_old_url %}
-  <h2 class="govuk-heading-m">Deployed URL</h2>
-    <p> If the app was successfully built on the alpha (original) cluster, it can be accessed here:</p>
-    <p class="govuk-body">
-      <a href="{{ app_old_url }}">{{ app_old_url }}</a>
-    </p>
-  {% endif %}
-
   <h2 class="govuk-heading-m">Source Code Repository</h2>
   <p class="govuk-body">
     {% if app.repo_url %}
@@ -108,52 +63,48 @@
     {% endif %}
   </p>
 
-  {% if feature_enabled %}
+  <h2 class="govuk-heading-m">App logs</h2>
+  <p class="govuk-body">
+    <a href="{{ settings.KIBANA_BASE_URL }}">{{ settings.KIBANA_BASE_URL }}</a>
+  </p>
 
-    <h2 class="govuk-heading-m">App logs</h2>
-    <p class="govuk-body">
-      <a href="{{ settings.KIBANA_BASE_URL }}">{{ settings.KIBANA_BASE_URL }}</a>
-    </p>
+  <h2 class="govuk-heading-m">App resources usage dashboard</h2>
+  <p class="govuk-body">
+    <a href="{{ settings.GRAFANA_BASE_URL }}">{{ settings.GRAFANA_BASE_URL }}</a>
+  </p>
 
-    <h2 class="govuk-heading-m">App resources usage dashboard</h2>
-    <p class="govuk-body">
-      <a href="{{ settings.GRAFANA_BASE_URL }}">{{ settings.GRAFANA_BASE_URL }}</a>
-    </p>
-
-    <h2 class="govuk-heading-m">Deployment Pipeline</h2>
-    <p class="govuk-body"> Github workflows on app's repo are used for deploying the app.</p>
-    <p class="govuk-body"><strong>You are required to be member of admin team for this app repo in order to be able to maintain the deployments settings</strong></p>
-  {% endif %}
+  <h2 class="govuk-heading-m">Deployment Pipeline</h2>
+  <p class="govuk-body"> Github workflows on app's repo are used for deploying the app.</p>
+  <p class="govuk-body"><strong>You are required to be member of admin team for this app repo in order to be able to maintain the deployments settings</strong></p>
 
 </header>
 
 <section class="cpanel-section track_task app-auth-settings-panel">
-  {% if feature_enabled %}
-    {% if github_settings_access_error_msg %}
-      <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
-        <p style="color:red">Couldn't load the github settings</p>
-        <p style="color:red">Raw error message: {{ github_settings_access_error_msg }}</p>
-      </div>
-    {% endif %}
 
-    {% for env_name, deployment_setting in deployments_settings.items() %}
-    <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
-      {% if deployment_setting.get('is_redundant') and request.user.has_perm('api.update_app', app) %}
-        <section class="cpanel-section">
-          <p style="color:red">It appears this deployment environment is redundant and can be removed</p>
-          <form action="{{ url('remove-app-deployment-env', kwargs={'pk': app.id, 'env_name': env_name}) }}" method="post">
-            {{ csrf_input }}
-            <button class="govuk-button cpanel-button--destructive js-confirm"
-                    data-confirm-message="Are you sure you want to remove this deployment environment?">
-              Remove redundant deployment environment
-            </button>
-          </form>
-        </section>
-      {% else %}
-        {{ app_deployment_settings(app, env_name, app_domain, deployment_setting, request, csrf_input) }}
-      {% endif %}
-    {% endfor %}
+  {% if github_settings_access_error_msg %}
+    <div class="govuk-error-summary" role="alert" aria-labelledby="error-summary-heading-example-1" tabindex="-1">
+      <p style="color:red">Couldn't load the github settings</p>
+      <p style="color:red">Raw error message: {{ github_settings_access_error_msg }}</p>
+    </div>
   {% endif %}
+
+  {% for env_name, deployment_setting in deployments_settings.items() %}
+  <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
+    {% if deployment_setting.get('is_redundant') and request.user.has_perm('api.update_app', app) %}
+      <section class="cpanel-section">
+        <p style="color:red">It appears this deployment environment is redundant and can be removed</p>
+        <form action="{{ url('remove-app-deployment-env', kwargs={'pk': app.id, 'env_name': env_name}) }}" method="post">
+          {{ csrf_input }}
+          <button class="govuk-button cpanel-button--destructive js-confirm"
+                  data-confirm-message="Are you sure you want to remove this deployment environment?">
+            Remove redundant deployment environment
+          </button>
+        </form>
+      </section>
+    {% else %}
+      {{ app_deployment_settings(app, env_name, app_domain, deployment_setting, request, csrf_input) }}
+    {% endif %}
+  {% endfor %}
 
 </section>
 

@@ -128,9 +128,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
 
-        # TODO: The following field should be removed after app migration
-        context["app_migration_info"] = app.migration_info
-        context["app_migration_status"] = context["app_migration_info"].get('status', "")
         return context
 
 
@@ -223,9 +220,6 @@ class UpdateAppIPAllowlists(
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
-        context[
-            "app_migration_feature_enabled"
-        ] = settings.features.app_migration.enabled
         context["env_name"] = self.request.GET.get("env_name")
         context["app_ip_allowlists"] = [
             {
