@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.db.utils import IntegrityError
 from model_mommy import mommy
 
@@ -45,9 +46,9 @@ def test_aws_permissions(app, bucket, sqs, helpers):
     )
 
     apps3bucket.save()
-    messages = helpers.retrieve_messages(sqs)
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
-        messages, AppS3Bucket.__name__, apps3bucket.id
+        messages, AppS3Bucket.__name__, apps3bucket.id, settings.IAM_QUEUE_NAME
     )
 
 
@@ -65,8 +66,8 @@ def test_delete_revoke_permissions(app, bucket):
 
         apps3bucket.delete()
 
-        revoke_bucket_access_task.assert_called_with(
+        revoke_bucket_access_task.assert_called_once_with(
             apps3bucket,
             None
         )
-        revoke_bucket_access_task.return_value.create_task.assert_called()
+        revoke_bucket_access_task.return_value.create_task.assert_called_once()

@@ -545,19 +545,17 @@ S3_QUEUE_NAME = os.environ.get("S3_QUEUE_NAME", "control-panel-s3")
 AUTH_QUEUE_NAME = os.environ.get("AUTH_QUEUE_NAME", "control-panel-auth")
 
 BROKER_URL = os.environ.get("BROKER_URL", "sqs://")
-DEFAULT_QUEUE = IAM_QUEUE_NAME
+DEFAULT_QUEUE = AUTH_QUEUE_NAME
 DEFAULT_BACKOFF_POLICY = {1: 10, 2: 20, 3: 40, 4: 80, 5: 320, 6: 640}
 PRE_DEFINED_QUEUES = [IAM_QUEUE_NAME, S3_QUEUE_NAME, AUTH_QUEUE_NAME]
 CELERY_DEFAULT_QUEUE = DEFAULT_QUEUE
 SQS_REGION = os.environ.get("SQS_REGION", "eu-west-2")
-
 BROKER_TRANSPORT_OPTIONS = {
-    "polling_interval": 10,
+    "polling_interval": 1,
     "region": SQS_REGION,
-    "wait_time_seconds": 20,
+    "wait_time_seconds": 0,
     "predefined_queues": {}
 }
-
 for queue in PRE_DEFINED_QUEUES:
     BROKER_TRANSPORT_OPTIONS['predefined_queues'][queue] = {
         'url': f'https://sqs.{SQS_REGION}.amazonaws.com/{AWS_DATA_ACCOUNT_ID}/{queue}',

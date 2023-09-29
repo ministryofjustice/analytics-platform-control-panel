@@ -76,6 +76,15 @@ class AccessToS3Bucket(TimeStampedModel):
 # MUST use signals because cascade deletes do not call delete()
 @receiver(models.signals.pre_delete)
 def revoke_access(sender, **kwargs):
-    if issubclass(sender, AccessToS3Bucket):
-        obj = kwargs["instance"]
+    """
+    Revokes access when the delete is via cascade delete, as these do not call the
+    instance level delete() method. Checks that the origin is different to the instance,
+    to ensure that revoke_bucket_access is not called twice when deleting an access
+    object directly.
+    """
+    if not issubclass(sender, AccessToS3Bucket):
+        return
+
+    obj = kwargs["instance"]
+    if obj != kwargs["origin"]:
         obj.revoke_bucket_access()
