@@ -1,5 +1,7 @@
 
 # Third-party
+import json
+
 from django.core.management.base import BaseCommand
 
 # First-party/Local
@@ -19,6 +21,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
+            "-n",
+            "--number",
+            type=int,
+            default=2,
+            help="input: The number of apps for testing",
+        )
+        parser.add_argument(
             "-a", "--apply", action="store_true", help="Apply the actions"
         )
 
@@ -29,12 +38,13 @@ class Command(BaseCommand):
             self._log_info(f"No old client for {app.slug} - {app.repo_url}")
             return
 
+        self._log_info(f"Old client information: {json.dumps(old_client_info)}")
         self._log_info(f"Removing the old client for {app.slug} - {app.repo_url}")
         if self.apply_action:
             auth0_instance.clear_up_app(old_client_info)
 
     def _update_db(self, app):
-        self._log_info(f"Removing the migration info and old clients for {app.slug} - {app.repo_url}")
+        self._log_info(f"Removing the migration info for {app.slug} - {app.repo_url}")
         app.description = ""
         if App.DEFAULT_AUTH_CATEGORY in (app.app_conf or {}).get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}):
             del app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY]
@@ -62,23 +72,23 @@ class Command(BaseCommand):
             f.write(info)
             f.write("\n")
 
-    def _clear_up_resources(self, auth0_instance):
+    def _clear_up_resources(self, auth0_instance, testing_number: 0):
         apps = App.objects.all()
-        counter = 1
-        for app in apps:
+        for cnt, app in enumerate(apps):
+            if (testing_number > 0) and (cnt > (testing_number-1)):
+                continue
             if app.slug in self.EXCEPTION_APPS:
                 self._log_info(f"Ignore the application {app.slug}")
                 continue
 
             try:
-                self._log_info(f"{counter}--Processing the application {app.slug}")
+                self._log_info(f"{cnt+1}--Processing the application {app.slug}")
 
                 self._remove_old_auth0_clients(app, auth0_instance)
                 self._update_db(app)
                 if "moj-analytical-services" in app.repo_url:
                     self._remove_application(app)
-                self._log_info(f"{counter}--Done with the application {app.slug}")
-                counter += 1
+                self._log_info(f"{cnt+1}--Done with the application {app.slug}")
             except Exception as ex:
                 self._log_info(f"Failed to process {app.slug} due to error : {ex.__str__()}")
 
@@ -86,6 +96,6 @@ class Command(BaseCommand):
         self.stdout.write("start to scan the apps from database.")
         auth0_instance = auth0.ExtendedAuth0()
         self.apply_action = options.get('apply') or False
-        self._clear_up_resources(auth0_instance)
+        self._clear_up_resources(auth0_instance, options.get('number', 0))
         self.stdout.write("Clean up action has completed.")
 
