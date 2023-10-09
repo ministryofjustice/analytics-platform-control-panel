@@ -56,6 +56,14 @@ class S3Bucket(TimeStampedModel):
     is_data_warehouse = models.BooleanField(default=False)
     # TODO remove this field - it's unused
     location_url = models.CharField(max_length=128, null=True)
+    is_deleted = models.BooleanField(default=False)
+    deleted_by = models.ForeignKey(
+        "User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="deleted_s3buckets"
+    )
+    deleted_at = models.DateTimeField(null=True)
 
     objects = S3BucketQuerySet.as_manager()
 
