@@ -1,8 +1,11 @@
 <!-- The title of this PR should complete the sentence: “Merging this PR will ...” -->
 
 ## :memo: Summary
-This PR closes/completes/contributes to issue ...
-<!-- Adding the issue number above will automatically link it to the github issue.
+This PR resolves ...
+<!-- Adding the issue number above will automatically link the PR to the github issue,
+and will close the issue on merging. Note this will only happen if the correct keyword
+is used, such resolves/closes/fixes. See full list of keywords at
+https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword.
 If the issue belongs to the current repo, add the number prefixed with e.g #1234.
 If the issue belongs to another repo, add with Organization_name/Repository#... e.g.
 ministryofjustice/data-platform#1234 -->
