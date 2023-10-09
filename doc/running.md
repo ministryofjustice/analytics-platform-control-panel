@@ -444,19 +444,7 @@ Current checks are:-
 - `black` library (formats Python code)
 - `isort` library (standardises the order of Python imports)
 - `flake8` library (formats Python code and also improves code style)
-- Github issue reference (commits must reference the issue number)
 
 To override the above for whatever reason (maybe you don't have a ticket number and because you are working on hotfix) you can use the following command.
 
 `PRE_COMMIT_ALLOW_NO_CONFIG=1 git push ...`
-
-### Git commit message
-
-Commit messages should follow the appropriate format.
-All commits must begin with the Github issue they are associated with.
-
-format: `GH-[int]`
-
-e.g.
-
-`git commit -m "GH-1234 insert message here"`
