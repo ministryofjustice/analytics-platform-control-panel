@@ -32,9 +32,9 @@ repos:
 
   - repo: local
     hooks:
-    - id: jira-ticket
-      name: Check for Jira ticket
+    - id: issue-number
+      name: Check for Github issue number
       language: pygrep
-      entry: '\A(?!ANPL+-[0-9]+)'
+      entry: '\A(?!GH+-[0-9]+)'
       args: [--multiline]
       stages: [commit-msg]
