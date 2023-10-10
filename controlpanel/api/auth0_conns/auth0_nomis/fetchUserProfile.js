@@ -7,7 +7,6 @@ function fetchUserProfile(accessToken, context, callback) {
     nickname: context.name,
     name: context.name,
     username: context.user_name,
-    _deliusAccessToken: accessToken,
     _accessToken: accessToken,
     email: context.user_name + "+" + context.user_id + "@" + context.auth_source,
   };
