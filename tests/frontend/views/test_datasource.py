@@ -214,23 +214,24 @@ def test_access_permissions(client, users3buckets, users, view, user, expected_s
 
 
 @pytest.mark.parametrize(
-    "view,user,expected_count",
+    "view,user,expected_count,show_deleted",
     [
-        (list_warehouse, "superuser", 0),
-        (list_warehouse, "normal_user", 0),
-        (list_warehouse, "bucket_viewer", 1),
-        (list_warehouse, "bucket_admin", 2),
-        (list_app_data, "superuser", 0),
-        (list_app_data, "normal_user", 0),
-        (list_app_data, "bucket_viewer", 1),
-        (list_app_data, "bucket_admin", 2),
-        (list_all, "superuser", 5),
+        (list_warehouse, "superuser", 0, False),
+        (list_warehouse, "normal_user", 0, False),
+        (list_warehouse, "bucket_viewer", 1, False),
+        (list_warehouse, "bucket_admin", 2, False),
+        (list_app_data, "superuser", 0, False),
+        (list_app_data, "normal_user", 0, False),
+        (list_app_data, "bucket_viewer", 1, False),
+        (list_app_data, "bucket_admin", 2, False),
+        (list_all, "superuser", 5, True),
     ],
 )
-def test_list(client, buckets, users, view, user, expected_count):
+def test_list(client, buckets, users, view, user, expected_count, show_deleted):
     client.force_login(users[user])
     response = view(client, buckets, users)
     assert len(response.context_data["object_list"]) == expected_count
+    assert ("deleted_datasources" in response.context_data) is show_deleted
 
 
 @pytest.mark.parametrize(

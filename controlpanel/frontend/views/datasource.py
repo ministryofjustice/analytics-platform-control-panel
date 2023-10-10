@@ -45,7 +45,7 @@ class DatasourceMixin(ContextMixin):
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context["all-datasources"] = self.all_datasources
+        context["all_datasources"] = self.all_datasources
         context["datasource_type"] = self.get_datasource_type()
         return context
 
@@ -76,6 +76,7 @@ class BucketList(
         return S3Bucket.objects.prefetch_related("users3buckets").filter(
             is_data_warehouse=self.datasource_type == "warehouse",
             users3buckets__user=self.request.user,
+            is_deleted=False,
         )
 
     def get_context_data(self, *args, **kwargs):
@@ -85,6 +86,7 @@ class BucketList(
             "users3buckets__user"
         ).filter(
             is_data_warehouse=self.datasource_type == "warehouse",
+            is_deleted=False,
         )
         other_datasources = all_datasources.exclude(id__in=self.get_queryset())
         other_datasources_admins = {}
@@ -104,7 +106,14 @@ class AdminBucketList(BucketList):
     permission_required = "api.is_superuser"
 
     def get_queryset(self):
-        return S3Bucket.objects.prefetch_related("users3buckets").all()
+        return S3Bucket.objects.prefetch_related("users3buckets").filter(
+            is_deleted=False
+        )
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["deleted_datasources"] = S3Bucket.objects.filter(is_deleted=True)
+        return context
 
 
 class WebappBucketList(BucketList):
