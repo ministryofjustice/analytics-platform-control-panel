@@ -594,13 +594,13 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
     call_args, call_kwargs = call
     actual_arg = call_args[0]
 
+    print(actual_arg["options"]["scripts"]["fetchUserProfile"])
     actual_arg["options"]["scripts"]["fetchUserProfile"] = _clean_string(
         actual_arg["options"]["scripts"]["fetchUserProfile"]
     )
     expected["options"]["scripts"]["fetchUserProfile"] = _clean_string(
         expected["options"]["scripts"]["fetchUserProfile"]
     )
-
     assert actual_arg == expected
 
 

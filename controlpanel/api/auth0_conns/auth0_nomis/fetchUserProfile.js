@@ -1,4 +1,5 @@
 function fetchUserProfile(accessToken, context, callback) {
+  // The email is only for auth0 usage purpose, not the actual email of login user
   const profile = {
     sub: context.sub,
     user_id: context.user_id,
@@ -8,7 +9,7 @@ function fetchUserProfile(accessToken, context, callback) {
     username: context.user_name,
     _deliusAccessToken: accessToken,
     _accessToken: accessToken,
-    email: context.user_name + "+" + context.user_id + "@nomis"
+    email: context.user_name + "+" + context.user_id + "@" + context.auth_source,
   };
   callback(null, profile);
 }
