@@ -3,10 +3,12 @@ from urllib.parse import urlencode
 
 # Third-party
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
@@ -166,3 +168,15 @@ class S3Bucket(TimeStampedModel):
         if not self.is_folder:
             self.cluster.mark_for_archival()
         super().delete(*args, **kwargs)
+
+    def soft_delete(self, deleted_by: User):
+        """
+        Mark the object as deleted, but do not remove it from the database
+        """
+        self.is_deleted = True
+        self.deleted_by = deleted_by
+        self.deleted_at = timezone.now()
+        self.save()
+        # TODO update to handle deleting folders
+        if not self.is_folder:
+            self.cluster.mark_for_archival()

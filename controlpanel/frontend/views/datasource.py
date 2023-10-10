@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
@@ -198,16 +199,16 @@ class DeleteDatasource(
     permission_required = "api.destroy_s3bucket"
     success_url = reverse_lazy("list-warehouse-datasources")
 
-    def delete(self, *args, **kwargs):
-        bucket = self.get_object()
-        if not bucket.is_data_warehouse:
-            self.success_url = reverse_lazy("list-webapp-datasources")
+    def get_success_url(self):
+        if not self.object.is_data_warehouse:
+            return reverse_lazy("list-webapp-datasources")
+        return self.success_url
 
-        response = super().delete(*args, **kwargs)
-
+    def form_valid(self, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.soft_delete(deleted_by=self.request.user)
         messages.success(self.request, "Successfully deleted data source")
-
-        return response
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class UpdateAccessLevelMixin:

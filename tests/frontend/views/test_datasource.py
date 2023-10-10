@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from model_mommy import mommy
 from rest_framework import status
 
@@ -115,9 +115,10 @@ def create(client, *args, **kwargs):
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
 
-def delete(client, buckets, *args):
-    return client.delete(
-        reverse("delete-datasource", kwargs={"pk": buckets["warehouse1"].id})
+def delete(client, buckets, *args, bucket=None):
+    bucket = bucket or buckets["warehouse1"]
+    return client.post(
+        reverse("delete-datasource", kwargs={"pk": bucket.id})
     )
 
 
@@ -392,3 +393,25 @@ def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
 
     assert response.status_code == 200
     assert response.context_data["form"].is_valid() is False
+
+
+@pytest.mark.parametrize(
+    "bucket, success_url",
+    [
+        ("warehouse1", reverse_lazy("list-warehouse-datasources")),
+        ("app_data1", reverse_lazy("list-webapp-datasources")),
+    ]
+)
+def test_delete_calls_soft_delete(client, buckets, users, bucket, success_url):
+    admin = users["bucket_admin"]
+    bucket = buckets[bucket]
+
+    client.force_login(admin)
+    response = delete(client, buckets, bucket=bucket)
+    bucket.refresh_from_db()
+
+    assert bucket.pk is not None
+    assert bucket.is_deleted is True
+    assert bucket.deleted_by == admin
+    assert bucket.deleted_at is not None
+    assert response.url == success_url
