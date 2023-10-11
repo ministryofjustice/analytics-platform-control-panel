@@ -20,9 +20,15 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <p class="govuk-body">
-  <a href="{{ bucket.aws_url }}" class="govuk-button govuk-button--secondary" target="_blank" rel="noopener">
-    Open on AWS
-  </a>
+  {% if bucket.is_deleted %}
+    <p>
+      This bucket was deleted by <a href="{{ url('manage-user', kwargs={ "pk": bucket.deleted_by.auth0_id }) }}">{{ user_name(bucket.deleted_by) }}</a> on {{ bucket.deleted_at.strftime("%Y/%m/%d %H:%M:%S") }}.
+    </p>
+  {% else %}
+    <a href="{{ bucket.aws_url }}" class="govuk-button govuk-button--secondary" target="_blank" rel="noopener">
+      Open on AWS
+    </a>
+  {% endif %}
 </p>
 
 <section class="cpanel-section track_task">
@@ -212,6 +218,7 @@
 </section>
 {% endif %}
 
+<!-- TODO replace with a restore button when bucket has been soft-deleted -->
 {% if request.user.has_perm('api.destroy_s3bucket', bucket) %}
 <section class="cpanel-section">
   <form action="{{ url('delete-datasource', kwargs={ "pk": bucket.id }) }}" method="post">

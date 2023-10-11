@@ -101,9 +101,10 @@ def list_all(client, *args):
     return client.get(reverse("list-all-datasources"))
 
 
-def detail(client, buckets, *args):
+def detail(client, buckets, *args, bucket=None):
+    bucket = bucket or buckets["warehouse1"]
     return client.get(
-        reverse("manage-datasource", kwargs={"pk": buckets["warehouse1"].id})
+        reverse("manage-datasource", kwargs={"pk": bucket.id})
     )
 
 
@@ -416,3 +417,35 @@ def test_delete_calls_soft_delete(client, buckets, users, bucket, success_url):
     assert bucket.deleted_by == admin
     assert bucket.deleted_at is not None
     assert response.url == success_url
+
+
+@pytest.mark.parametrize(
+    "user, bucket, expected_status",
+    [
+        ("superuser", "app_data1", status.HTTP_200_OK),
+        ("superuser", "app_data2", status.HTTP_200_OK),
+        ("superuser", "warehouse1", status.HTTP_200_OK),
+        ("superuser", "warehouse2", status.HTTP_200_OK),
+        ("superuser", "other", status.HTTP_200_OK),
+        ("bucket_viewer", "app_data1", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "app_data2", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "warehouse1", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "warehouse2", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "other", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "app_data1", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "app_data2", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "warehouse1", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "warehouse2", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "other", status.HTTP_404_NOT_FOUND),
+
+    ]
+)
+def test_detail_for_deleted_datasouce(client, buckets, users, user, bucket, expected_status):
+    user = users[user]
+    bucket = buckets[bucket]
+    bucket.soft_delete(deleted_by=user)
+
+    client.force_login(user)
+    response = detail(client, user, bucket=bucket)
+
+    assert response.status_code == expected_status

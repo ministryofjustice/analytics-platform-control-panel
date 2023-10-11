@@ -131,6 +131,12 @@ class BucketDetail(
     permission_required = "api.retrieve_s3bucket"
     template_name = "datasource-detail.html"
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if not self.request.user.is_superuser:
+            queryset = queryset.filter(is_deleted=False)
+        return queryset
+
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         bucket = kwargs["object"]
