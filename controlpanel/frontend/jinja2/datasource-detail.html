@@ -21,9 +21,15 @@
 
 <p class="govuk-body">
   {% if bucket.is_deleted %}
-    <p>
-      This bucket was deleted by <a href="{{ url('manage-user', kwargs={ "pk": bucket.deleted_by.auth0_id }) }}">{{ user_name(bucket.deleted_by) }}</a> on {{ bucket.deleted_at.strftime("%Y/%m/%d %H:%M:%S") }}.
-    </p>
+    <div class="govuk-warning-text">
+      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+      <strong class="govuk-warning-text__text">
+          <span class="govuk-warning-text__assistive">Warning</span>
+          This bucket was deleted by <a href="{{ url('manage-user', kwargs={ "pk": bucket.deleted_by.auth0_id }) }}">
+          {{ user_name(bucket.deleted_by) }}</a> on {{ bucket.deleted_at.strftime("%Y/%m/%d %H:%M:%S") }}.<br>
+          All access listed below has been revoked in IAM.
+      </strong>
+    </div>
   {% else %}
     <a href="{{ bucket.aws_url }}" class="govuk-button govuk-button--secondary" target="_blank" rel="noopener">
       Open on AWS
@@ -69,7 +75,7 @@
         {%- endif %}
         </td>
         <td class="govuk-table__cell">
-          {% if request.user.has_perm('api.update_users3bucket', member) %}
+          {% if request.user.has_perm('api.update_users3bucket', member) and not bucket.is_deleted %}
           <a href="{% if member.user -%}{{ url("update-access-level", kwargs={"pk": member.id}) }}{%- else -%}{{ url("update-policy-access-level", kwargs={"pk": member.id}) }}{%- endif %}"
              class="govuk-button govuk-button--secondary right">
             Edit access level
@@ -89,7 +95,7 @@
     </tfoot>
   </table>
 
-  {% if request.user.has_perm('api.create_users3bucket', bucket) and users_options|length %}
+  {% if request.user.has_perm('api.create_users3bucket', bucket) and users_options|length and not bucket.is_deleted %}
     <a href="{{ url('grant-datasource-access', kwargs={'pk': bucket.pk}) }}"
        class="govuk-button govuk-button--secondary">
       Grant user access
@@ -97,7 +103,7 @@
   {% endif %}
 
   {% if request.user.has_perm('api.manage_groups') %}
-    {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length %}
+    {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length and not bucket.is_deleted %}
       <a href="{{ url('grant-datasource-policy-access', kwargs={'pk': bucket.pk}) }}"
          class="govuk-button govuk-button--secondary">
         Grant group access

@@ -98,7 +98,7 @@ def test_cluster(name, expected):
     assert isinstance(S3Bucket(name=name).cluster, expected)
 
 
-def test_soft_delete(bucket, users):
+def test_soft_delete(bucket, users, sqs, helpers):
     user = users["superuser"]
 
     assert bucket.is_deleted is False
@@ -109,3 +109,8 @@ def test_soft_delete(bucket, users):
     assert bucket.deleted_by == user
     assert bucket.deleted_at is not None
     archive.assert_called_once()
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )

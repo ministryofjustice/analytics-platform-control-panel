@@ -1,6 +1,8 @@
+# Standard library
+from unittest.mock import MagicMock, patch
+
 # Third-party
 import pytest
-from mock import patch
 from model_mommy import mommy
 
 # First-party/Local
@@ -9,6 +11,7 @@ from controlpanel.api.tasks.handlers import (
     create_s3bucket,
     grant_app_s3bucket_access,
     grant_user_s3bucket_access,
+    revoke_all_access_s3bucket,
     revoke_app_s3bucket_access,
     revoke_user_s3bucket_access,
 )
@@ -112,3 +115,20 @@ def test_revoke_app_access(cluster, complete):
         app_bucket_access.s3bucket.arn
     )
     complete.assert_called_once()
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access", new=MagicMock())
+@patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access", new=MagicMock())
+@patch("controlpanel.api.models.PolicyS3Bucket.revoke_bucket_access", new=MagicMock())
+def test_revoke_all_access():
+    bucket = mommy.make("api.S3Bucket")
+    user_access = mommy.make("api.UserS3Bucket", s3bucket=bucket)
+    app_access = mommy.make("api.AppS3Bucket", s3bucket=bucket)
+    policy_access = mommy.make("api.PolicyS3Bucket", s3bucket=bucket)
+
+    revoke_all_access_s3bucket(bucket.pk, bucket.created_by)
+
+    user_access.revoke_bucket_access.assert_called_once()
+    app_access.revoke_bucket_access.assert_called_once()
+    policy_access.revoke_bucket_access.assert_called_once()

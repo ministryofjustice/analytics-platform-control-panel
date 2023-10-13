@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.urls import reverse, reverse_lazy
 from model_mommy import mommy
 from rest_framework import status
@@ -404,7 +405,9 @@ def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
         ("app_data1", reverse_lazy("list-webapp-datasources")),
     ]
 )
-def test_delete_calls_soft_delete(client, buckets, users, bucket, success_url):
+def test_delete_calls_soft_delete(
+    client, buckets, users, bucket, success_url, sqs, helpers,
+):
     admin = users["bucket_admin"]
     bucket = buckets[bucket]
 
@@ -417,6 +420,11 @@ def test_delete_calls_soft_delete(client, buckets, users, bucket, success_url):
     assert bucket.deleted_by == admin
     assert bucket.deleted_at is not None
     assert response.url == success_url
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )
 
 
 @pytest.mark.parametrize(
@@ -440,7 +448,9 @@ def test_delete_calls_soft_delete(client, buckets, users, bucket, success_url):
 
     ]
 )
-def test_detail_for_deleted_datasouce(client, buckets, users, user, bucket, expected_status):
+def test_detail_for_deleted_datasource(
+    client, buckets, users, user, bucket, expected_status
+):
     user = users[user]
     bucket = buckets[bucket]
     bucket.soft_delete(deleted_by=user)

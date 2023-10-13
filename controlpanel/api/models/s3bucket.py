@@ -15,6 +15,7 @@ from django_extensions.db.models import TimeStampedModel
 from controlpanel.api import cluster, tasks, validators
 from controlpanel.api.models.apps3bucket import AppS3Bucket
 from controlpanel.api.models.users3bucket import UserS3Bucket
+from controlpanel.api.tasks.s3bucket import S3BucketRevokeAllAccess
 
 
 def s3bucket_console_url(name):
@@ -180,3 +181,5 @@ class S3Bucket(TimeStampedModel):
         # TODO update to handle deleting folders
         if not self.is_folder:
             self.cluster.mark_for_archival()
+
+        S3BucketRevokeAllAccess(self, self.deleted_by).create_task()
