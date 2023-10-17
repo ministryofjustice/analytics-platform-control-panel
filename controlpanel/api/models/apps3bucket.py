@@ -43,5 +43,6 @@ class AppS3Bucket(AccessToS3Bucket):
     def grant_bucket_access(self):
         tasks.S3BucketGrantToApp(self, self.current_user).create_task()
 
-    def revoke_bucket_access(self):
-        tasks.S3BucketRevokeAppAccess(self, self.current_user).create_task()
+    def revoke_bucket_access(self, revoked_by=None):
+        revoked_by = revoked_by or None
+        tasks.S3BucketRevokeAppAccess(self, revoked_by).create_task()

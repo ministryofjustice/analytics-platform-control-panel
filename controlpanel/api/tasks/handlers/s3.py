@@ -86,9 +86,11 @@ class S3BucketRevokeAllAccess(BaseModelTaskHandler):
         remain in place. In order to keep IAM roles updated, this task collects objects
         that would have been deleted by a cascade, and revokes access to deleted bucket
         """
+        task_user = User.objects.filter(pk=self.task_user_pk).first()
         collector = Collector(using="default")
         collector.collect([self.object])
         for model, instance in collector.instances_with_model():
             if not issubclass(model, AccessToS3Bucket):
                 continue
-            instance.revoke_bucket_access()
+
+            instance.revoke_bucket_access(revoked_by=task_user)

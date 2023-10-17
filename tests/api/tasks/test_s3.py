@@ -121,14 +121,21 @@ def test_revoke_app_access(cluster, complete):
 @patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access", new=MagicMock())
 @patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access", new=MagicMock())
 @patch("controlpanel.api.models.PolicyS3Bucket.revoke_bucket_access", new=MagicMock())
-def test_revoke_all_access():
+def test_revoke_all_access(users):
     bucket = mommy.make("api.S3Bucket")
     user_access = mommy.make("api.UserS3Bucket", s3bucket=bucket)
     app_access = mommy.make("api.AppS3Bucket", s3bucket=bucket)
     policy_access = mommy.make("api.PolicyS3Bucket", s3bucket=bucket)
+    task = mommy.make("api.Task", user_id=users["superuser"].pk)
 
-    revoke_all_access_s3bucket(bucket.pk, bucket.created_by)
+    revoke_all_access_s3bucket(bucket.pk, task.user_id)
 
-    user_access.revoke_bucket_access.assert_called_once()
-    app_access.revoke_bucket_access.assert_called_once()
-    policy_access.revoke_bucket_access.assert_called_once()
+    user_access.revoke_bucket_access.assert_called_once_with(
+        revoked_by=users["superuser"],
+    )
+    app_access.revoke_bucket_access.assert_called_once_with(
+        revoked_by=users["superuser"],
+    )
+    policy_access.revoke_bucket_access.assert_called_once_with(
+        revoked_by=users["superuser"],
+    )
