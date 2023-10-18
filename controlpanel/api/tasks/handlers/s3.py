@@ -93,4 +93,5 @@ class S3BucketRevokeAllAccess(BaseModelTaskHandler):
             if not issubclass(model, AccessToS3Bucket):
                 continue
 
-            instance.revoke_bucket_access(revoked_by=task_user)
+            instance.current_user = task_user
+            instance.revoke_bucket_access()

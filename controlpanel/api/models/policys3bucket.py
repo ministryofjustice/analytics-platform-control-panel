@@ -38,8 +38,8 @@ class PolicyS3Bucket(AccessToS3Bucket):
             self.resources,
         )
 
-    def revoke_bucket_access(self, revoked_by=None):
-        # TODO update to use a Task to revoke access, to match user/app access{{
+    def revoke_bucket_access(self):
+        # TODO update to use a Task to revoke access, to match user/app access
         if self.s3bucket.is_folder:
             return cluster.RoleGroup(self.policy).revoke_folder_access(
                 root_folder_path=self.s3bucket.name

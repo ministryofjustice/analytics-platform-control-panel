@@ -130,12 +130,6 @@ def test_revoke_all_access(users):
 
     revoke_all_access_s3bucket(bucket.pk, task.user_id)
 
-    user_access.revoke_bucket_access.assert_called_once_with(
-        revoked_by=users["superuser"],
-    )
-    app_access.revoke_bucket_access.assert_called_once_with(
-        revoked_by=users["superuser"],
-    )
-    policy_access.revoke_bucket_access.assert_called_once_with(
-        revoked_by=users["superuser"],
-    )
+    user_access.revoke_bucket_access.assert_called_once()
+    app_access.revoke_bucket_access.assert_called_once()
+    policy_access.revoke_bucket_access.assert_called_once()
