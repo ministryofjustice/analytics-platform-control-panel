@@ -38,7 +38,7 @@
 </p>
 
 <section class="cpanel-section track_task">
-  <h2 class="govuk-heading-m">Users and groups with access</h2>
+  <h2 class="govuk-heading-m">Users and groups with{% if bucket.is_deleted %} revoked{% endif %} access</h2>
   <table class="govuk-table">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
@@ -85,11 +85,13 @@
       </tr>
     {% endfor %}
     </tbody>
+
+    {% set plural = access_list|length > 1 %}
     <tfoot class="govuk-table__foot">
       <tr class="govuk-table__row">
         <td class="govuk-table__cell" colspan="3">
           {{ access_list|length }}
-          user{%- if access_list|length != 1 -%}s{% endif %} or group{%- if access_list|length != 1 -%}s have{% else %} has{% endif %}
+          user{%- if plural -%}s{% endif %} or group{%- if plural -%}s{% endif %}{% if bucket.is_deleted %} had{% elif plural %} have{% else %} has{% endif %}
           access to this {{ datasource_type }} data source
       </tr>
     </tfoot>
@@ -224,8 +226,7 @@
 </section>
 {% endif %}
 
-<!-- TODO replace with a restore button when bucket has been soft-deleted -->
-{% if request.user.has_perm('api.destroy_s3bucket', bucket) %}
+{% if not bucket.is_deleted and request.user.has_perm('api.destroy_s3bucket', bucket) %}
 <section class="cpanel-section">
   <form action="{{ url('delete-datasource', kwargs={ "pk": bucket.id }) }}" method="post">
     {{ csrf_input }}
