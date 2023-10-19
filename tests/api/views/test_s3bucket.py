@@ -54,6 +54,9 @@ def test_detail(client, bucket):
         "created_by",
         "is_data_warehouse",
         "location_url",
+        "is_deleted",
+        "deleted_by",
+        "deleted_at",
     }
     assert set(response.data) == expected_s3bucket_fields
 

@@ -3,16 +3,19 @@ from urllib.parse import urlencode
 
 # Third-party
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.utils import timezone
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import cluster, tasks, validators
 from controlpanel.api.models.apps3bucket import AppS3Bucket
 from controlpanel.api.models.users3bucket import UserS3Bucket
+from controlpanel.api.tasks.s3bucket import S3BucketRevokeAllAccess
 
 
 def s3bucket_console_url(name):
@@ -56,6 +59,14 @@ class S3Bucket(TimeStampedModel):
     is_data_warehouse = models.BooleanField(default=False)
     # TODO remove this field - it's unused
     location_url = models.CharField(max_length=128, null=True)
+    is_deleted = models.BooleanField(default=False)
+    deleted_by = models.ForeignKey(
+        "User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="deleted_s3buckets"
+    )
+    deleted_at = models.DateTimeField(null=True)
 
     objects = S3BucketQuerySet.as_manager()
 
@@ -158,3 +169,17 @@ class S3Bucket(TimeStampedModel):
         if not self.is_folder:
             self.cluster.mark_for_archival()
         super().delete(*args, **kwargs)
+
+    def soft_delete(self, deleted_by: User):
+        """
+        Mark the object as deleted, but do not remove it from the database
+        """
+        self.is_deleted = True
+        self.deleted_by = deleted_by
+        self.deleted_at = timezone.now()
+        self.save()
+        # TODO update to handle deleting folders
+        if not self.is_folder:
+            self.cluster.mark_for_archival()
+
+        S3BucketRevokeAllAccess(self, self.deleted_by).create_task()

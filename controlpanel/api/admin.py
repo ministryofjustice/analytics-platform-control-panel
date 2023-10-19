@@ -24,8 +24,8 @@ class AppAdmin(admin.ModelAdmin):
 
 
 class S3Admin(admin.ModelAdmin):
-    list_display = ("name", "created_by", "created", "is_data_warehouse")
-    list_filter = ("created_by", "is_data_warehouse")
+    list_display = ("name", "created_by", "created", "is_data_warehouse", "is_deleted")
+    list_filter = ("created_by", "is_data_warehouse", "is_deleted")
     search_fields = ("name",)
 
 
