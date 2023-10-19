@@ -54,7 +54,7 @@ AWS_DEFAULT_REGION: "eu-west-1"
 APP_DOMAIN_BEFORE_MIGRATION: apps.alpha.mojanalytics.xyz
 APP_DOMAIN: apps.live.cloud-platform.service.justice.gov.uk
 
-SLACK_CHANNEL: "#analytical-platform"
+SLACK_CHANNEL: "#data-platform-notifications"
 
 
 AWS_ROLES_MAP:
