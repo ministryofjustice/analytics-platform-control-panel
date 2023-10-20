@@ -95,3 +95,5 @@ class S3BucketRevokeAllAccess(BaseModelTaskHandler):
 
             instance.current_user = task_user
             instance.revoke_bucket_access()
+
+        self.complete()
