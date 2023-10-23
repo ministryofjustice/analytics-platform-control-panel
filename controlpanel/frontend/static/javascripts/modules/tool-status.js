@@ -53,8 +53,13 @@ moj.Modules.toolStatus = {
           // maybe have a Cancel button? Report issue?
           break;
         case 'READY':
-          toolstatus.showActions(listener, ['open', 'restart']);
-          toolstatus.updateAppVersion(listener, data);
+          if (data.toolName == 'sagemaker'){
+            toolstatus.showActions(listener, ['open']);
+            toolstatus.updatePreSignedURL(listener, data);
+          } else {
+            toolstatus.showActions(listener, ['open', 'restart']);
+            toolstatus.updateAppVersion(listener, data);
+          }
           toolstatus.updateMessage("The tool has been deployed")
           break;
         case 'IDLED':
@@ -156,5 +161,11 @@ moj.Modules.toolStatus = {
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled
     deployButton.disabled = notInstalledSelected || installedSelected;
+  },
+
+  // update sagemaker's the pre_signed_url to the open link
+  updatePreSignedURL(listener, data) {
+    const button = listener.querySelector(`${this.buttonClass}[data-action-name='open']`);
+    button.setAttribute("onclick", "window.open('" + data.PresignedDomainURL + "', '_blank');");
   },
 };

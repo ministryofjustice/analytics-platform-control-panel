@@ -18,6 +18,7 @@ from controlpanel.api.aws import (
     AWSParameterStore,
     AWSPolicy,
     AWSRole,
+    AWSSageMaker,
     iam_arn,
     s3_arn,
 )
@@ -212,6 +213,7 @@ class User(EntityResource):
 
     def _init_aws_services(self):
         self.aws_role_service = self.create_aws_service(AWSRole)
+        self.aws_sagemaker_service = self.create_aws_service(AWSSageMaker)
 
     @property
     def user_helm_charts(self):
@@ -372,6 +374,17 @@ class User(EntityResource):
             if helm_chart_item["release"] not in installed_helm_charts:
                 return False
         return True
+
+    def prepare_sagemaker(self):
+        self.aws_sagemaker_service.create_user_profile(self.user)
+        presigned_domain_url = self.aws_sagemaker_service.create_presigned_domain_url(self.user)
+        return {
+            "UserProfileName": self.user.user_profile_name,
+            "PresignedDomainURL": presigned_domain_url,
+        }
+
+    def delete_user_sagemaker_profile(self):
+        return self.aws_sagemaker_service.delete_user_profile(self.user)
 
 
 class App(EntityResource):

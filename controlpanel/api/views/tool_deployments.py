@@ -15,7 +15,17 @@ class ToolDeploymentAPIView(GenericAPIView):
     serializer_class = serializers.ToolDeploymentSerializer
     permission_classes = (IsAuthenticated,)
 
-    def _deploy(self, chart_name, data):
+    def _sagemaker_deploy(self, tool_name, data):
+        start_background_task(
+            "tool.deploy",
+            {
+                "tool_name": tool_name,
+                "user_id": self.request.user.id,
+                "id_token": self.request.user.get_id_token()
+            },
+        )
+
+    def _deploy_tool(self, tool_name, data):
         """
         This is the most backwards thing you'll see for a while. The helm
         task to deploy the tool apparently must happen when the view class
@@ -34,13 +44,13 @@ class ToolDeploymentAPIView(GenericAPIView):
         # attribute and then split on "__" to extract them. Why? Because we
         # need both pieces of information to kick off the background helm
         # deploy.
-        tool_name, tool_version, tool_id = chart_info.split("__")
+        _, tool_version, tool_id = chart_info.split("__")
 
         # Kick off the helm chart as a background task.
         start_background_task(
             "tool.deploy",
             {
-                "tool_name": chart_name,
+                "tool_name": tool_name,
                 "version": tool_version,
                 "tool_id": tool_id,
                 "user_id": self.request.user.id,
@@ -48,16 +58,17 @@ class ToolDeploymentAPIView(GenericAPIView):
                 "old_chart_name": old_chart_name,
             },
         )
+        return None
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        chart_name = self.kwargs["tool_name"]
+        tool_name = self.kwargs["tool_name"]
         tool_action = self.kwargs["action"]
-        tool_action_function = getattr(self, f"_{tool_action}", None)
+        tool_action_function = getattr(self, f"_{tool_name}_{tool_action}", None)
         if tool_action_function and callable(tool_action_function):
-            tool_action_function(chart_name, request.data)
-            return Response(status=status.HTTP_200_OK)
+            tool_action_function(tool_name, request.data)
         else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            self._deploy_tool(tool_name, request.data)
+        return Response(status=status.HTTP_200_OK)

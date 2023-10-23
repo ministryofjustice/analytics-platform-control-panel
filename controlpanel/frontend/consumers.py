@@ -15,12 +15,13 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
+from controlpanel.api.cluster import (
     HOME_RESET_FAILED,
     HOME_RESETTING,
     TOOL_DEPLOY_FAILED,
     TOOL_DEPLOYING,
     TOOL_RESTARTING,
+    TOOL_READY
 )
 from controlpanel.api.models import (
     App,
@@ -151,7 +152,14 @@ class BackgroundTaskConsumer(SyncConsumer):
         if ip_range.apps.count() == 0:
             ip_range.delete()
 
-    def tool_deploy(self, message):
+    def _deploy_sagemaker(self, message):
+        user = User.objects.get(auth0_id=message["user_id"])
+        update_sagemaker_status(user, TOOL_DEPLOYING)
+        result = cluster.User(user).prepare_sagemaker()
+        # result = {"PresignedDomainURL": "http://testing"}
+        update_sagemaker_status(user, TOOL_READY, data=result)
+
+    def _general_tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
         Expects a message with `tool_name`, `version` and `user_id` values
@@ -177,6 +185,13 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.warning(f"Failed deploying {tool.name} for {user}")
         else:
             log.debug(f"Deployed {tool.name} for {user}")
+
+    def tool_deploy(self, message):
+        tool_action_function = getattr(self, f"_deploy_{message.get('tool_name')}", None)
+        if tool_action_function and callable(tool_action_function):
+            tool_action_function(message)
+        else:
+            self._general_tool_deploy(message)
 
     def _send_to_sentry(self, error):
         if os.environ.get("SENTRY_DSN"):
@@ -244,6 +259,22 @@ def update_tool_status(tool_deployment, id_token, status):
         "tool_id": tool.id,
         "status": status,
     }
+    send_sse(
+        user.auth0_id,
+        {
+            "event": "toolStatus",
+            "data": json.dumps(payload),
+        },
+    )
+
+
+def update_sagemaker_status(user, status, data=None):
+    payload = {
+        "toolName": "sagemaker",
+        "status": status,
+    }
+    if data:
+        payload.update(data)
     send_sse(
         user.auth0_id,
         {

@@ -1,9 +1,11 @@
 enabled_features:
-  redirect_legacy_api_urls:
-    _DEFAULT: true
   s3_folders:
     _DEFAULT: false
     _HOST_dev: false
+    _HOST_prod: false
+    _HOST_alpha: false
+  sagemaker:
+    _HOST_dev: true
     _HOST_prod: false
     _HOST_alpha: false
 

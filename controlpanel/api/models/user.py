@@ -72,6 +72,10 @@ class User(AbstractUser):
         return cluster.User(self).iam_role_name
 
     @property
+    def user_profile_name(self):
+        return f"{self.slug}"
+
+    @property
     def k8s_namespace(self):
         return cluster.User(self).k8s_namespace
 

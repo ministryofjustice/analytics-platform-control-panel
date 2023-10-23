@@ -565,3 +565,7 @@ for queue in PRE_DEFINED_QUEUES:
 CELERY_IMPORTS = [
     "controlpanel.api.tasks.handlers"
 ]
+
+SAGEMAKER_DOMAIN_ID = os.environ.get("SAGEMAKER_DOMAIN_ID", "testing")
+SAGEMAKER_SESSION_DURATION = os.environ.get("SAGEMAKER_SESSION_DURATION", 43200)
+SAGEMAKER_URL_EXPIRE_SECONDS = os.environ.get("SAGEMAKER_URL_EXPIRE_SECONDS", 300)

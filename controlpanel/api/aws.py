@@ -1103,3 +1103,83 @@ class AWSSQS(AWSService):
             log.exception("Couldn't delete messages from queue %s", queue)
         else:
             return response
+
+
+class AWSSageMaker(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None):
+        super(AWSSageMaker, self).__init__(
+            assume_role_name=assume_role_name,
+            profile_name=profile_name,
+            region_name=settings.SQS_REGION
+        )
+        self.client = self.boto3_session.client("sagemaker")
+        self.domain_id = settings.SAGEMAKER_DOMAIN_ID
+        self.session_duration = settings.SAGEMAKER_SESSION_DURATION
+        self.url_expires_seconds = settings.SAGEMAKER_URL_EXPIRE_SECONDS
+
+    def _get_error_code(self, exception):
+        if hasattr(exception, 'response'):
+            return exception.response.get('Error', {}).get('Code')
+        else:
+            return None
+
+    def describe_user_profile(self, user_profile_name):
+        try:
+            response = self.client.describe_user_profile(
+                DomainId=self.domain_id,
+                UserProfileName=user_profile_name
+            )
+        except botocore.exceptions.ClientError as ex:
+            log.exception("Couldn't retrieve the profile information for %s due to %s",
+                          user_profile_name, ex.__str__())
+            if self._get_error_code(ex) == "ResourceNotFound":
+                return None
+            raise ex
+        else:
+            return response
+
+    def create_user_profile(self, user):
+        user_profile = self.describe_user_profile(user.user_profile_name)
+        if user_profile is None:
+            user_settings = {
+                'ExecutionRole': f"{iam_arn('role')}/{user.iam_role_name}"
+            }
+            try:
+                user_profile = self.client.create_user_profile(
+                    DomainId=self.domain_id,
+                    UserProfileName=user.user_profile_name,
+                    UserSettings=user_settings
+                )
+            except botocore.exceptions.ClientError as ex:
+                log.exception("Couldn't create the user_profile fro %s due to %s",
+                              user.user_profile_name, ex.__str__)
+        return user_profile
+
+    def create_presigned_domain_url(self, user):
+        try:
+            response = self.client.create_presigned_domain_url(
+                DomainId=self.domain_id,
+                UserProfileName=user.user_profile_name,
+                SessionExpirationDurationInSeconds=self.session_duration,
+                ExpiresInSeconds=self.url_expires_seconds
+            )
+        except botocore.exceptions.ClientError as ex:
+            log.exception("Couldn't create the user_profile fro %s due to %s",
+                          user.user_profile_name, ex.__str__(),
+                          ex.__str__())
+        else:
+            return response.get('AuthorizedUrl')
+
+    def delete_user_profile(self, user):
+        try:
+            response = self.client.delete_user_profile(
+                DomainId=self.domain_id,
+                UserProfileName=user.user_profile_name
+            )
+        except botocore.exceptions.ClientError as ex:
+            log.exception("Couldn't delete the user_profile fro %s due to %s",
+                          user.user_profile_name,
+                          ex.__str__())
+        else:
+            return response
