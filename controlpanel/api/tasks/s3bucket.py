@@ -98,3 +98,34 @@ class S3BucketRevokeAppAccess(S3AccessMixin, TaskBase):
             self.entity.s3bucket.arn,
             self.entity.app.pk,
         ]
+
+
+class S3BucketArchive(TaskBase):
+    ENTITY_CLASS = "S3Bucket"
+    QUEUE_NAME = settings.S3_QUEUE_NAME
+
+    @property
+    def task_name(self):
+        return "archive_s3bucket"
+
+    @property
+    def task_description(self):
+        return "move contents of s3 datasource to the archive bucket"
+
+
+class S3BucketArchiveObject(TaskBase):
+    ENTITY_CLASS = "S3Bucket"
+    QUEUE_NAME = settings.S3_QUEUE_NAME
+
+    @property
+    def task_name(self):
+        return "archive_s3_object"
+
+    @property
+    def task_description(self):
+        return "move object to archive bucket"
+
+    def _get_args_list(self):
+        args = super()._get_args_list()
+        args.append(self.extra_data.get('s3obj_key'))
+        return args
