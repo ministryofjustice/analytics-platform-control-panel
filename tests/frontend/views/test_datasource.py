@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.urls import reverse
+from django.conf import settings
+from django.urls import reverse, reverse_lazy
 from model_mommy import mommy
 from rest_framework import status
 
@@ -101,9 +102,10 @@ def list_all(client, *args):
     return client.get(reverse("list-all-datasources"))
 
 
-def detail(client, buckets, *args):
+def detail(client, buckets, *args, bucket=None):
+    bucket = bucket or buckets["warehouse1"]
     return client.get(
-        reverse("manage-datasource", kwargs={"pk": buckets["warehouse1"].id})
+        reverse("manage-datasource", kwargs={"pk": bucket.id})
     )
 
 
@@ -115,9 +117,10 @@ def create(client, *args, **kwargs):
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
 
-def delete(client, buckets, *args):
-    return client.delete(
-        reverse("delete-datasource", kwargs={"pk": buckets["warehouse1"].id})
+def delete(client, buckets, *args, bucket=None):
+    bucket = bucket or buckets["warehouse1"]
+    return client.post(
+        reverse("delete-datasource", kwargs={"pk": bucket.id})
     )
 
 
@@ -213,23 +216,24 @@ def test_access_permissions(client, users3buckets, users, view, user, expected_s
 
 
 @pytest.mark.parametrize(
-    "view,user,expected_count",
+    "view,user,expected_count,show_deleted",
     [
-        (list_warehouse, "superuser", 0),
-        (list_warehouse, "normal_user", 0),
-        (list_warehouse, "bucket_viewer", 1),
-        (list_warehouse, "bucket_admin", 2),
-        (list_app_data, "superuser", 0),
-        (list_app_data, "normal_user", 0),
-        (list_app_data, "bucket_viewer", 1),
-        (list_app_data, "bucket_admin", 2),
-        (list_all, "superuser", 5),
+        (list_warehouse, "superuser", 0, False),
+        (list_warehouse, "normal_user", 0, False),
+        (list_warehouse, "bucket_viewer", 1, False),
+        (list_warehouse, "bucket_admin", 2, False),
+        (list_app_data, "superuser", 0, False),
+        (list_app_data, "normal_user", 0, False),
+        (list_app_data, "bucket_viewer", 1, False),
+        (list_app_data, "bucket_admin", 2, False),
+        (list_all, "superuser", 5, True),
     ],
 )
-def test_list(client, buckets, users, view, user, expected_count):
+def test_list(client, buckets, users, view, user, expected_count, show_deleted):
     client.force_login(users[user])
     response = view(client, buckets, users)
     assert len(response.context_data["object_list"]) == expected_count
+    assert ("deleted_datasources" in response.context_data) is show_deleted
 
 
 @pytest.mark.parametrize(
@@ -392,3 +396,66 @@ def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
 
     assert response.status_code == 200
     assert response.context_data["form"].is_valid() is False
+
+
+@pytest.mark.parametrize(
+    "bucket, success_url",
+    [
+        ("warehouse1", reverse_lazy("list-warehouse-datasources")),
+        ("app_data1", reverse_lazy("list-webapp-datasources")),
+    ]
+)
+def test_delete_calls_soft_delete(
+    client, buckets, users, bucket, success_url, sqs, helpers,
+):
+    admin = users["bucket_admin"]
+    bucket = buckets[bucket]
+
+    client.force_login(admin)
+    response = delete(client, buckets, bucket=bucket)
+    bucket.refresh_from_db()
+
+    assert bucket.pk is not None
+    assert bucket.is_deleted is True
+    assert bucket.deleted_by == admin
+    assert bucket.deleted_at is not None
+    assert response.url == success_url
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )
+
+
+@pytest.mark.parametrize(
+    "user, bucket, expected_status",
+    [
+        ("superuser", "app_data1", status.HTTP_200_OK),
+        ("superuser", "app_data2", status.HTTP_200_OK),
+        ("superuser", "warehouse1", status.HTTP_200_OK),
+        ("superuser", "warehouse2", status.HTTP_200_OK),
+        ("superuser", "other", status.HTTP_200_OK),
+        ("bucket_viewer", "app_data1", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "app_data2", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "warehouse1", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "warehouse2", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "other", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "app_data1", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "app_data2", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "warehouse1", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "warehouse2", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "other", status.HTTP_404_NOT_FOUND),
+
+    ]
+)
+def test_detail_for_deleted_datasource(
+    client, buckets, users, user, bucket, expected_status
+):
+    user = users[user]
+    bucket = buckets[bucket]
+    bucket.soft_delete(deleted_by=user)
+
+    client.force_login(user)
+    response = detail(client, user, bucket=bucket)
+
+    assert response.status_code == expected_status

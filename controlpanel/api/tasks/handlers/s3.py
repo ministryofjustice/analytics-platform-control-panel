@@ -1,9 +1,10 @@
 # Third-party
-from celery import Task as CeleryTask
+from django.db.models.deletion import Collector
 
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import App, AppS3Bucket, S3Bucket, User, UserS3Bucket
+from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskHandler
 
 
@@ -72,4 +73,27 @@ class S3BucketRevokeAppAccess(BaseTaskHandler):
             # if the app doesnt exist, nothing to revoke, so mark completed
             self.complete()
         cluster.App(app).revoke_bucket_access(bucket_arn)
+        self.complete()
+
+
+class S3BucketRevokeAllAccess(BaseModelTaskHandler):
+    model = S3Bucket
+    name = "s3bucket_revoke_all_access"
+
+    def handle(self, *args, **kwargs):
+        """
+        When an S3Bucket is soft-deleted, the related objects that handle access will
+        remain in place. In order to keep IAM roles updated, this task collects objects
+        that would have been deleted by a cascade, and revokes access to deleted bucket
+        """
+        task_user = User.objects.filter(pk=self.task_user_pk).first()
+        collector = Collector(using="default")
+        collector.collect([self.object])
+        for model, instance in collector.instances_with_model():
+            if not issubclass(model, AccessToS3Bucket):
+                continue
+
+            instance.current_user = task_user
+            instance.revoke_bucket_access()
+
         self.complete()

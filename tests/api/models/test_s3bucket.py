@@ -96,3 +96,21 @@ def test_is_folder(name, expected):
 )
 def test_cluster(name, expected):
     assert isinstance(S3Bucket(name=name).cluster, expected)
+
+
+def test_soft_delete(bucket, users, sqs, helpers):
+    user = users["superuser"]
+
+    assert bucket.is_deleted is False
+    with patch("controlpanel.api.cluster.S3Bucket.mark_for_archival") as archive:
+        bucket.soft_delete(deleted_by=user)
+
+    assert bucket.is_deleted is True
+    assert bucket.deleted_by == user
+    assert bucket.deleted_at is not None
+    archive.assert_called_once()
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )

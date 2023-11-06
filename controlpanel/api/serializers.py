@@ -209,12 +209,18 @@ class S3BucketSerializer(serializers.ModelSerializer):
             "created_by",
             "is_data_warehouse",
             "location_url",
+            "is_deleted",
+            "deleted_by",
+            "deleted_at",
         )
         read_only_fields = (
             "apps3buckets",
             "users3buckets",
             "created_by",
             "url",
+            "is_deleted",
+            "deleted_by",
+            "deleted_at",
         )
 
 

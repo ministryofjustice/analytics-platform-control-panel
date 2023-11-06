@@ -25,6 +25,19 @@ class S3BucketCreate(TaskBase):
         ]
 
 
+class S3BucketRevokeAllAccess(TaskBase):
+    ENTITY_CLASS = "S3Bucket"
+    QUEUE_NAME = settings.S3_QUEUE_NAME
+
+    @property
+    def task_name(self):
+        return "s3bucket_revoke_all_access"
+
+    @property
+    def task_description(self):
+        return "Revokes all access to an S3 bucket"
+
+
 class S3AccessMixin:
     ACTION = None
     ROLE = None

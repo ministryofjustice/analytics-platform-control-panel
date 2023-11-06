@@ -146,7 +146,7 @@ class CreateAppForm(AppAuth0Form):
         required=False,
     )
     existing_datasource_id = DatasourceChoiceField(
-        queryset=S3Bucket.objects.filter(is_data_warehouse=False),
+        queryset=S3Bucket.objects.filter(is_data_warehouse=False, is_deleted=False),
         empty_label="Select",
         required=False,
     )
@@ -353,9 +353,11 @@ class GrantAppAccessForm(forms.Form):
         if self.exclude_connected:
             self.fields["datasource"].queryset = S3Bucket.objects.exclude(
                 id__in=[a.s3bucket_id for a in self.app.apps3buckets.all()],
-            )
+            ).filter(is_deleted=False)
         else:
-            self.fields["datasource"].queryset = S3Bucket.objects.all()
+            self.fields["datasource"].queryset = S3Bucket.objects.filter(
+                is_deleted=False,
+            )
 
 
 class CreateIAMManagedPolicyForm(forms.Form):
