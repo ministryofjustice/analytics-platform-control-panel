@@ -600,7 +600,6 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
     expected["options"]["scripts"]["fetchUserProfile"] = _clean_string(
         expected["options"]["scripts"]["fetchUserProfile"]
     )
-
     assert actual_arg == expected
 
 
