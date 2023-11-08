@@ -606,10 +606,10 @@ class AWSFolder(AWSService):
         new_key = f"{archive_bucket.name}/{key}"
 
         archive_bucket.copy(copy_source, new_key)
-        print(f"Moved {key} to {new_key}")
+        log.info(f"Moved {key} to {new_key}")
         if delete_original:
             self.boto3_session.resource("s3").Object(source_bucket_name, key).delete()
-            print(f"deleted original: {source_bucket_name}/{key}")
+            log.info(f"deleted original: {source_bucket_name}/{key}")
 
 
 class AWSBucket(AWSService):
