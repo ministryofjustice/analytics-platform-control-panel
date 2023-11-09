@@ -590,6 +590,27 @@ class AWSFolder(AWSService):
         except botocore.exceptions.ClientError:
             return False
 
+    def get_objects(self, bucket_name, folder_name):
+        bucket = self.boto3_session.resource("s3").Bucket(bucket_name)
+        return bucket.objects.filter(Prefix=f"{folder_name}/")
+
+    def archive_object(self, key, source_bucket_name=None, delete_original=True):
+        source_bucket_name = source_bucket_name or settings.S3_FOLDER_BUCKET_NAME
+        copy_source = {
+            'Bucket': source_bucket_name,
+            'Key': key
+        }
+        archive_bucket = self.boto3_session.resource("s3").Bucket(
+            settings.S3_ARCHIVE_BUCKET_NAME
+        )
+        new_key = f"{archive_bucket.name}/{key}"
+
+        archive_bucket.copy(copy_source, new_key)
+        log.info(f"Moved {key} to {new_key}")
+        if delete_original:
+            self.boto3_session.resource("s3").Object(source_bucket_name, key).delete()
+            log.info(f"deleted original: {source_bucket_name}/{key}")
+
 
 class AWSBucket(AWSService):
     def create(self, bucket_name, is_data_warehouse=False):

@@ -98,7 +98,7 @@ def test_cluster(name, expected):
     assert isinstance(S3Bucket(name=name).cluster, expected)
 
 
-def test_soft_delete(bucket, users, sqs, helpers):
+def test_soft_delete_bucket(bucket, users, sqs, helpers):
     user = users["superuser"]
 
     assert bucket.is_deleted is False
@@ -114,3 +114,24 @@ def test_soft_delete(bucket, users, sqs, helpers):
     helpers.validate_task_with_sqs_messages(
         messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
     )
+
+
+def test_soft_delete_folder(users, sqs, helpers):
+    folder = S3Bucket.objects.create(name="bucket/folder-1")
+    user = users["superuser"]
+
+    assert folder.is_deleted is False
+    folder.soft_delete(deleted_by=user)
+
+    assert folder.is_deleted is True
+    assert folder.deleted_by == user
+    assert folder.deleted_at is not None
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    task_names = [message["headers"]["task"] for message in messages]
+
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, folder.id, queue_name=settings.S3_QUEUE_NAME,
+    )
+    assert "archive_s3bucket" in task_names
+    assert "s3bucket_revoke_all_access" in task_names
