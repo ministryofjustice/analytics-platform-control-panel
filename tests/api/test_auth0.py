@@ -6,7 +6,7 @@ from unittest.mock import call, patch
 import mock
 import pytest
 from django.conf import settings
-from auth0.v3 import exceptions
+from auth0 import exceptions
 
 # First-party/Local
 from controlpanel.api import auth0

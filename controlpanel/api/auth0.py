@@ -6,13 +6,13 @@ from pathlib import Path
 # Third-party
 import structlog
 import yaml
-from auth0.v3 import authentication, exceptions
-from auth0.v3.management import Auth0
-from auth0.v3.management.clients import Clients
-from auth0.v3.management.connections import Connections
-from auth0.v3.management.device_credentials import DeviceCredentials
-from auth0.v3.management.rest import RestClient
-from auth0.v3.management.users import Users
+from auth0 import authentication, exceptions
+from auth0.management import Auth0
+from auth0.management.clients import Clients
+from auth0.management.connections import Connections
+from auth0.management.device_credentials import DeviceCredentials
+from auth0.rest import RestClient
+from auth0.management.users import Users
 from django.conf import settings
 from jinja2 import Environment
 from rest_framework.exceptions import APIException
@@ -27,7 +27,7 @@ PER_PAGE = 50
 # This is the maximum they'll allow for group/members API
 PER_PAGE_FOR_GROUP_MEMBERS = 25
 
-# The default value for timeout in auth0.v3.management is 5 seconds which will
+# The default value for timeout in auth0.management is 5 seconds which will
 # get ReadTimeOut error quite easily on Auth0 dev tenant when Control panel
 # initialises the connection with it. In order to avoid this, a longer timeout
 # is defined below as the default value for this app. This value will be passed

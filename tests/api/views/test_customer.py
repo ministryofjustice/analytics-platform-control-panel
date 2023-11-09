@@ -3,7 +3,7 @@ import uuid
 from unittest.mock import patch
 
 # Third-party
-from auth0.v3.management.rest import Auth0Error
+from auth0.rest import Auth0Error
 from bs4 import BeautifulSoup
 from model_mommy import mommy
 import pytest
