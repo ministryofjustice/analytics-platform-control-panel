@@ -482,9 +482,7 @@ def test_delete_customer_by_email(client, app, users, side_effect, expected_mess
 
 
 def test_github_error1_on_app_detail(client, app, users,):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
-            patch("controlpanel.api.cluster.App.get_deployment_envs") as get_envs:
-        feature_flag.return_value = True
+    with patch("controlpanel.api.cluster.App.get_deployment_envs") as get_envs:
         error_msg = "Testing github error"
         get_envs.side_effect = requests.exceptions.HTTPError(error_msg)
         client.force_login(users["superuser"])
@@ -494,9 +492,7 @@ def test_github_error1_on_app_detail(client, app, users,):
 
 
 def test_github_error2_on_app_detail(client, app, users, repos):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
-            patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets:
-        feature_flag.return_value = True
+    with patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets:
         error_msg = "Testing github secret error"
         get_secrets.side_effect = requests.exceptions.HTTPError(error_msg)
         client.force_login(users["superuser"])
@@ -506,10 +502,8 @@ def test_github_error2_on_app_detail(client, app, users, repos):
 
 
 def test_github_error3_on_app_detail(client, app, users, repos):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag, \
-            patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets, \
+    with patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets, \
             patch("controlpanel.api.cluster.App.get_env_vars") as get_env_vars:
-        feature_flag.return_value = True
         error_msg = "Testing github env error"
         get_secrets.return_value = [{"name": "testing_github_secret"}]
         get_env_vars.side_effect = requests.exceptions.HTTPError(error_msg)
@@ -520,49 +514,43 @@ def test_github_error3_on_app_detail(client, app, users, repos):
 
 
 def test_app_detail_display_all_envs(client, app, users, repos):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users["superuser"])
-        response = detail(client, app)
-        assert response.status_code == 200
+    client.force_login(users["superuser"])
+    response = detail(client, app)
+    assert response.status_code == 200
 
-        key_words_for_checks = [
-            "Deployment settings under dev_env",
-            "Deployment settings under prod_env",
-            cluster.App.IP_RANGES,
-            cluster.App.AUTH0_CLIENT_ID,
-            cluster.App.AUTH0_CLIENT_SECRET,
-            cluster.App.AUTH0_DOMAIN,
-            cluster.App.AUTH0_CONNECTIONS,
-            cluster.App.AUTHENTICATION_REQUIRED,
-            cluster.App.AUTH0_PASSWORDLESS,
-        ]
-        for key_word in key_words_for_checks:
-            assert key_word in str(response.content)
+    key_words_for_checks = [
+        "Deployment settings under dev_env",
+        "Deployment settings under prod_env",
+        cluster.App.IP_RANGES,
+        cluster.App.AUTH0_CLIENT_ID,
+        cluster.App.AUTH0_CLIENT_SECRET,
+        cluster.App.AUTH0_DOMAIN,
+        cluster.App.AUTH0_CONNECTIONS,
+        cluster.App.AUTHENTICATION_REQUIRED,
+        cluster.App.AUTH0_PASSWORDLESS,
+    ]
+    for key_word in key_words_for_checks:
+        assert key_word in str(response.content)
 
 
 def test_app_detail_with_missing_auth_client(client, users, repos_for_missing_auth):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        app = mommy.make("api.App")
-        app.repo_url = "https://github.com/github_org/testing_repo_with_auth"
-        app.save()
+    app = mommy.make("api.App")
+    app.repo_url = "https://github.com/github_org/testing_repo_with_auth"
+    app.save()
 
-        client.force_login(users["superuser"])
-        response = detail(client, app)
-        btn_text = "Create auth0 client"
-        assert response.status_code == 200
-        assert btn_text in str(response.content)
+    client.force_login(users["superuser"])
+    response = detail(client, app)
+    btn_text = "Create auth0 client"
+    assert response.status_code == 200
+    assert btn_text in str(response.content)
 
 
 def test_app_detail_with_auth_client_redundant(client, users, app, repos_for_redundant_auth):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users["superuser"])
-        response = detail(client, app)
-        btn_text = "Remove auth0 client"
-        assert response.status_code == 200
-        assert btn_text in str(response.content)
+    client.force_login(users["superuser"])
+    response = detail(client, app)
+    btn_text = "Remove auth0 client"
+    assert response.status_code == 200
+    assert btn_text in str(response.content)
 
 
 @pytest.fixture
@@ -585,17 +573,6 @@ def app_being_migrated(users):
     return app
 
 
-def test_app_description_display_old_app_info(client, app_being_migrated, users):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users["superuser"])
-        response = detail(client, app_being_migrated)
-        assert response.status_code == 200
-        assert app_being_migrated.migration_info["app_name"] in str(response.content)
-        assert app_being_migrated.migration_info["repo_url"] in str(response.content)
-        assert app_being_migrated.migration_info["app_url"] in str(response.content)
-
-
 def get_auth_settings(content, env_name):
     soup = BeautifulSoup(content, "html.parser")
     setting_panel = soup.find("section", {"class": f"{env_name}-settings-panel"})
@@ -610,92 +587,86 @@ def locate_setting_ui(settings, setting_name):
 
 
 def test_app_detail_with_auth_on(client, app, users, repos_with_auth):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users["superuser"])
-        response = detail(client, app)
-        assert response.status_code == 200
-        auth_settings = get_auth_settings(response.content, 'dev_env')
-        settings_for_checks = [
-            {"n": cluster.App.IP_RANGES,
-             "v": app.env_allowed_ip_ranges_names('dev_env'),
-             "e": True},
-            {"n": cluster.App.AUTH0_CLIENT_ID,
-             "v": settings.SECRET_DISPLAY_VALUE,
-             "e": False},
-            {"n": cluster.App.AUTH0_CLIENT_SECRET,
-             "v": settings.SECRET_DISPLAY_VALUE,
-             "e": False},
-            {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": True},
-            {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
-            {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
-            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
-        ]
-        for item in settings_for_checks:
-            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
-            if not auth_item_ui:
-                continue
-            assert item['v'] in auth_item_ui.text
-            if item['e']:
-                assert 'Edit' in auth_item_ui.text
-            else:
-                assert 'Edit' not in auth_item_ui.text
+    client.force_login(users["superuser"])
+    response = detail(client, app)
+    assert response.status_code == 200
+    auth_settings = get_auth_settings(response.content, 'dev_env')
+    settings_for_checks = [
+        {"n": cluster.App.IP_RANGES,
+         "v": app.env_allowed_ip_ranges_names('dev_env'),
+         "e": True},
+        {"n": cluster.App.AUTH0_CLIENT_ID,
+         "v": settings.SECRET_DISPLAY_VALUE,
+         "e": False},
+        {"n": cluster.App.AUTH0_CLIENT_SECRET,
+         "v": settings.SECRET_DISPLAY_VALUE,
+         "e": False},
+        {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": True},
+        {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
+        {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
+        {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
+    ]
+    for item in settings_for_checks:
+        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        if not auth_item_ui:
+            continue
+        assert item['v'] in auth_item_ui.text
+        if item['e']:
+            assert 'Edit' in auth_item_ui.text
+        else:
+            assert 'Edit' not in auth_item_ui.text
 
 
 def test_app_detail_with_auth_off(client, app, users, repos_for_no_auth):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users["superuser"])
-        response = detail(client, app)
-        assert response.status_code == 200
+    client.force_login(users["superuser"])
+    response = detail(client, app)
+    assert response.status_code == 200
 
-        settings_no_displayed = [
-            cluster.App.AUTH0_DOMAIN,
-            cluster.App.AUTH0_CLIENT_ID,
-            cluster.App.AUTH0_CLIENT_SECRET,
-            cluster.App.AUTH0_CONNECTIONS,
-            cluster.App.AUTH0_PASSWORDLESS,
-        ]
+    settings_no_displayed = [
+        cluster.App.AUTH0_DOMAIN,
+        cluster.App.AUTH0_CLIENT_ID,
+        cluster.App.AUTH0_CLIENT_SECRET,
+        cluster.App.AUTH0_CONNECTIONS,
+        cluster.App.AUTH0_PASSWORDLESS,
+    ]
 
-        auth_settings = get_auth_settings(response.content, 'dev_env')
-        for item in settings_no_displayed:
-            auth_item_ui = locate_setting_ui(auth_settings, item)
-            assert auth_item_ui is None
+    auth_settings = get_auth_settings(response.content, 'dev_env')
+    for item in settings_no_displayed:
+        auth_item_ui = locate_setting_ui(auth_settings, item)
+        assert auth_item_ui is None
 
-        settings_for_checks = [
-            {"n": cluster.App.IP_RANGES,
-             "v": app.env_allowed_ip_ranges_names('dev_env'),
-             "e": True},
-            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "False", "e": True},
-        ]
-        for item in settings_for_checks:
-            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
-            if not auth_item_ui:
-                continue
-            assert item['v'] in auth_item_ui.text
-            assert 'Edit' in auth_item_ui.text
+    settings_for_checks = [
+        {"n": cluster.App.IP_RANGES,
+         "v": app.env_allowed_ip_ranges_names('dev_env'),
+         "e": True},
+        {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "False", "e": True},
+    ]
+    for item in settings_for_checks:
+        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        if not auth_item_ui:
+            continue
+        assert item['v'] in auth_item_ui.text
+        assert 'Edit' in auth_item_ui.text
 
 
 def test_app_detail_with_self_define_settings(client, app, users, repos):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users["superuser"])
-        response = detail(client, app)
-        assert response.status_code == 200
+    client.force_login(users["superuser"])
+    response = detail(client, app)
+    assert response.status_code == 200
 
-        auth_settings = get_auth_settings(response.content, 'dev_env')
-        settings_for_checks = [
-            {"n": "PARAM_SECRET", "v": settings.SECRET_DISPLAY_VALUE},
-            {"n": "PARAM_VAR", "v": "test_var"},
-        ]
-        for item in settings_for_checks:
-            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
-            if not auth_item_ui:
-                continue
-            setting_link = auth_item_ui.findAll("a")[0]["href"]
-            assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
-            assert item['v'] in auth_item_ui.text
-            assert 'Edit' in auth_item_ui.text
+    auth_settings = get_auth_settings(response.content, 'dev_env')
+    settings_for_checks = [
+        {"n": "PARAM_SECRET", "v": settings.SECRET_DISPLAY_VALUE},
+        {"n": "PARAM_VAR", "v": "test_var"},
+    ]
+    for item in settings_for_checks:
+        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        if not auth_item_ui:
+            continue
+        setting_link = auth_item_ui.findAll("a")[0]["href"]
+        assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
+        assert item['v'] in auth_item_ui.text
+        assert 'Edit' in auth_item_ui.text
 
 
 @pytest.mark.parametrize(
@@ -706,36 +677,34 @@ def test_app_detail_with_self_define_settings(client, app, users, repos):
     ],
 )
 def test_app_settings_permission(client, app, users, repos_with_auth, user, can_edit_connections):
-    with patch('django.conf.settings.features.app_migration.enabled') as feature_flag:
-        feature_flag.return_value = True
-        client.force_login(users[user])
-        response = detail(client, app)
-        assert response.status_code == 200
-        auth_settings = get_auth_settings(response.content, 'dev_env')
-        settings_for_checks = [
-            {"n": cluster.App.IP_RANGES,
-             "v": app.env_allowed_ip_ranges_names('dev_env'),
-             "e": True},
-            {"n": cluster.App.AUTH0_CLIENT_ID,
-             "v": settings.SECRET_DISPLAY_VALUE,
-             "e": False},
-            {"n": cluster.App.AUTH0_CLIENT_SECRET,
-             "v": settings.SECRET_DISPLAY_VALUE,
-             "e": False},
-            {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": can_edit_connections},
-            {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
-            {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
-            {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
-        ]
-        for item in settings_for_checks:
-            auth_item_ui = locate_setting_ui(auth_settings, item['n'])
-            if not auth_item_ui:
-                continue
-            assert item['v'] in auth_item_ui.text
-            if item['e']:
-                assert 'Edit' in auth_item_ui.text
-            else:
-                assert 'Edit' not in auth_item_ui.text
+    client.force_login(users[user])
+    response = detail(client, app)
+    assert response.status_code == 200
+    auth_settings = get_auth_settings(response.content, 'dev_env')
+    settings_for_checks = [
+        {"n": cluster.App.IP_RANGES,
+         "v": app.env_allowed_ip_ranges_names('dev_env'),
+         "e": True},
+        {"n": cluster.App.AUTH0_CLIENT_ID,
+         "v": settings.SECRET_DISPLAY_VALUE,
+         "e": False},
+        {"n": cluster.App.AUTH0_CLIENT_SECRET,
+         "v": settings.SECRET_DISPLAY_VALUE,
+         "e": False},
+        {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": can_edit_connections},
+        {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
+        {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
+        {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
+    ]
+    for item in settings_for_checks:
+        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        if not auth_item_ui:
+            continue
+        assert item['v'] in auth_item_ui.text
+        if item['e']:
+            assert 'Edit' in auth_item_ui.text
+        else:
+            assert 'Edit' not in auth_item_ui.text
 
 
 def test_register_app_with_creating_datasource(client, users):

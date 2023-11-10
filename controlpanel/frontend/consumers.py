@@ -9,10 +9,9 @@ from time import sleep
 
 # Third-party
 import structlog
-from asgiref.sync import async_to_sync
 from channels.consumer import SyncConsumer
-from channels.layers import get_channel_layer
 from django.db import transaction
+from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -31,12 +30,8 @@ from controlpanel.api.models import (
     ToolDeployment,
     User,
 )
-from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label
+from controlpanel.utils import (PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse)
 
-WORKER_HEALTH_FILENAME = "/tmp/worker_health.txt"
-
-
-channel_layer = get_channel_layer()
 
 log = structlog.getLogger(__name__)
 
@@ -234,19 +229,9 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Reset home directory for user {user}")
 
     def workers_health(self, message):
-        Path(WORKER_HEALTH_FILENAME).touch()
+        Path(settings.WORKER_HEALTH_FILENAME).touch()
 
         log.debug("Worker health ping task executed")
-
-
-def send_sse(user_id, event):
-    """
-    Tell the SSEConsumer to send an event to the specified user
-    """
-    async_to_sync(channel_layer.group_send)(
-        sanitize_dns_label(user_id),
-        {"type": "sse.event", **event},
-    )
 
 
 def update_tool_status(tool_deployment, id_token, status):
@@ -278,16 +263,6 @@ def update_home_status(home_directory, status):
         {
             "event": "homeStatus",
             "data": json.dumps({"status": status}),
-        },
-    )
-
-
-def start_background_task(task, message):
-    async_to_sync(channel_layer.send)(
-        "background_tasks",
-        {
-            "type": task,
-            **message,
         },
     )
 

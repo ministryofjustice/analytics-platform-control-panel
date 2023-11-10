@@ -218,4 +218,5 @@ urlpatterns = [
         name="delete-ip-allowlist",
     ),
     path("accessibility/", views.Accessibility.as_view(), name="accessibility"),
+    path("tasks/", views.TaskList.as_view(), name="list-tasks"),
 ]

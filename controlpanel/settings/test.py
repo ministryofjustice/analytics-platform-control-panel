@@ -29,3 +29,6 @@ SLACK = {
     "api_token": "test-slack-api-token",
     "channel": "test-slack-channel",
 }
+
+SQS_REGION = "eu-west-1"
+USE_LOCAL_MESSAGE_BROKER = False

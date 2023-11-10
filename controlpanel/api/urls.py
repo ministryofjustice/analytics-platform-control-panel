@@ -36,4 +36,9 @@ urlpatterns = [
         views.ToolDeploymentAPIView.as_view(),
         name="tool-deployments",
     ),
+    path(
+        "tasks/<uuid:task_id>/<str:action>",
+        views.TaskAPIView.as_view(),
+        name="tasks",
+    ),
 ]

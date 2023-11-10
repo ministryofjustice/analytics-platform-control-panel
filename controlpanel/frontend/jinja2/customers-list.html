@@ -18,7 +18,11 @@
     Customer management for {{ app.name }}
 </h2>
 
-{% if groups_dict %}
+{% if not groups_dict %}
+   <h2 class="govuk-heading-s">
+      No need to manage the customers of the app on Control panel as it does not require authentication
+   </h2>
+{% else %}
   <section>
    <h2 class="govuk-heading-s">
       Switch to different deployment environment from the following links:
@@ -48,13 +52,6 @@
     App customers under {{ groups_dict.get(group_id) }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
-{% else %}
-   <h2 class="govuk-heading-s">
-      No need to manage the customers of app on Control panel
-   </h2>
-{% endif %}
-
-
 
   <form method="post" action="{{ url("remove-app-customer", kwargs={"pk": app.id, "group_id": group_id }) }}">
     {{ csrf_input }}
@@ -112,41 +109,44 @@
     )
   }}
 
-{% if request.user.has_perm('api.add_app_customer', app) %}
-  <form action="{{ url('add-app-customers', kwargs={ "pk": app.id, "group_id": group_id }) }}" method="post">
-    {{ csrf_input }}
-    <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
-      <label class="govuk-label" for="customer_email">
-        Add app customers by entering their email addresses (separated by spaces)
-      </label>
-      {% if errors and errors.customer_email %}
-        {% for error in errors.customer_email %}
-      <span id="customer_email-error" class="govuk-error-message">
-        <span class="govuk-visually-hidden">Error:</span> {{ error }}
-      </span>
-        {% endfor %}
-      {% endif %}
-      <input id="customer_email" class="govuk-input cpanel-input" name="customer_email" autocomplete="off">
-    </div>
-    <div class="govuk-form-group">
-      <button class="govuk-button" {% if not group_id %} disabled {% endif %}>Add customer</button>
-    </div>
-  </form>
+    {% if request.user.has_perm('api.add_app_customer', app) %}
+      <form action="{{ url('add-app-customers', kwargs={ "pk": app.id, "group_id": group_id }) }}" method="post">
+        {{ csrf_input }}
+        <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
+          <label class="govuk-label" for="customer_email">
+            Add app customers by entering their email addresses (separated by spaces)
+          </label>
+          {% if errors and errors.customer_email %}
+            {% for error in errors.customer_email %}
+          <span id="customer_email-error" class="govuk-error-message">
+            <span class="govuk-visually-hidden">Error:</span> {{ error }}
+          </span>
+            {% endfor %}
+          {% endif %}
+          <input id="customer_email" class="govuk-input cpanel-input" name="customer_email" autocomplete="off">
+        </div>
+        <div class="govuk-form-group">
+          <button class="govuk-button" {% if not group_id %} disabled {% endif %}>Add customer</button>
+        </div>
+      </form>
+    {% endif %}
+
+    {% if remove_perm %}
+      <form action="{{ url('remove-app-customer-by-email', kwargs={ "pk": app.id, "group_id": group_id}) }}" method="post">
+        {{ csrf_input }}
+        <div class="govuk-form-group">
+          <label class="govuk-label" for="{{ remove_customer_form.email.id_for_label }}">
+            Remove a customer by entering their email address
+          </label>
+          {{ remove_customer_form.email }}
+        </div>
+        <div class="govuk-form-group">
+          <button class="govuk-button" {% if not group_id %} disabled {% endif %}>Remove customer</button>
+        </div>
+      </form>
+    {% endif %}
+
 {% endif %}
 
-{% if remove_perm %}
-  <form action="{{ url('remove-app-customer-by-email', kwargs={ "pk": app.id, "group_id": group_id}) }}" method="post">
-    {{ csrf_input }}
-    <div class="govuk-form-group">
-      <label class="govuk-label" for="{{ remove_customer_form.email.id_for_label }}">
-        Remove a customer by entering their email address
-      </label>
-      {{ remove_customer_form.email }}
-    </div>
-    <div class="govuk-form-group">
-      <button class="govuk-button" {% if not group_id %} disabled {% endif %}>Remove customer</button>
-    </div>
-  </form>
-{% endif %}
 
 {% endblock %}
