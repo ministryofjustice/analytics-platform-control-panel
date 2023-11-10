@@ -1,11 +1,14 @@
 # Third-party
+import structlog
 from django.db.models.deletion import Collector
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.models import App, AppS3Bucket, S3Bucket, User, UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskHandler
+
+log = structlog.getLogger(__name__)
 
 
 class CreateS3Bucket(BaseModelTaskHandler):
@@ -96,4 +99,27 @@ class S3BucketRevokeAllAccess(BaseModelTaskHandler):
             instance.current_user = task_user
             instance.revoke_bucket_access()
 
+        self.complete()
+
+
+class ArchiveS3Bucket(BaseModelTaskHandler):
+    model = S3Bucket
+    name = "archive_s3bucket"
+
+    def handle(self, *args, **kwargs):
+        task_user = User.objects.filter(pk=self.task_user_pk).first()
+        for s3obj in cluster.S3Folder(self.object).get_objects():
+            tasks.S3BucketArchiveObject(
+                self.object, task_user, extra_data={"s3obj_key": s3obj.key}
+            ).create_task()
+        self.complete()
+
+
+class ArchiveS3Object(BaseModelTaskHandler):
+    model = S3Bucket
+    name = "archive_s3_object"
+
+    def handle(self, s3obj_key):
+        # TODO update to use self.object.cluster to work with buckets
+        cluster.S3Folder(self.object).archive_object(key=s3obj_key)
         self.complete()

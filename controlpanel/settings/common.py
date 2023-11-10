@@ -565,3 +565,5 @@ for queue in PRE_DEFINED_QUEUES:
 CELERY_IMPORTS = [
     "controlpanel.api.tasks.handlers"
 ]
+
+S3_ARCHIVE_BUCKET_NAME = "dev-archive-folder"

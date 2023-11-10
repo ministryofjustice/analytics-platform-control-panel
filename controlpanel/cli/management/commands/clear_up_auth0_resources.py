@@ -3,7 +3,7 @@ import csv
 from datetime import datetime
 
 # Third-party
-from auth0.v3.exceptions import Auth0Error
+from auth0.exceptions import Auth0Error
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
