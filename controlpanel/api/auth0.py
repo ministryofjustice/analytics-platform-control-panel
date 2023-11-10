@@ -47,6 +47,8 @@ class ExtendedAuth0(Auth0):
     DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
     DEFAULT_APP_TYPE = "regular_web"
 
+    DEFAULT_CONNECTION_OPTION = 'email'
+
     def __init__(self, **kwargs):
         self.client_id = kwargs.get("client_id", settings.AUTH0["client_id"])
         self.client_secret = kwargs.get(
@@ -156,7 +158,7 @@ class ExtendedAuth0(Auth0):
                 }
         """
         if connections is None:
-            connections = {"email": {}}
+            connections = {self.DEFAULT_CONNECTION_OPTION: {}}
         new_connections = self._create_custom_connection(client_name, connections)
         app_url = "https://{}.{}".format(
             app_url_name or client_name, app_domain or self.app_domain)
@@ -178,7 +180,18 @@ class ExtendedAuth0(Auth0):
         )
         role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
-        group = self.groups.create(dict(name=client_name))
+        try:
+            group = self.groups.create(dict(name=client_name))
+        except exceptions.Auth0Error as exc:
+            # celery fails to unpickle original exception, but not 100% sure why.
+            # Seems to be because __reduce__  method is incorrect? Possible bug.
+            # https://github.com/celery/celery/issues/6990#issuecomment-1433689294
+            # TODO what should happen if group already exists? Raise new error and
+            #  catch in the worker? e.g.:
+            # raise Auth0Error(detail=exc.message, code=exc.error_code)
+            # Or get the group ID and continue?
+            group = dict(_id=self.groups.get_group_id(client_name))
+
         self.groups.add_role(group["_id"], role["_id"])
 
         self._enable_connections_for_new_client(
@@ -277,7 +290,7 @@ class ExtendedAuth0(Auth0):
         so we have to get all social connections, then check whether the client
         (client_id) is in the list of enabled_clients
         """
-        connections = {"email": {}} if new_conns is None else new_conns
+        connections = {self.DEFAULT_CONNECTION_OPTION: {}} if new_conns is None else new_conns
         new_connections = self._create_custom_connection(app_name, connections)
 
         # Get the list of  removed connections based on the existing connections
@@ -512,7 +525,12 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
             body = yaml.safe_load(yaml_rendered) or defaultdict(dict)
             body["options"]["scripts"] = scripts_rendered
 
-        self.create(body)
+        try:
+            self.create(body)
+        except exceptions.Auth0Error as error:
+            # Skip the exception when the connection name existed already
+            if error.status_code != 409:
+                raise Auth0Error(error.__str__(), code=error.status_code)
         return input_values["name"]
 
 

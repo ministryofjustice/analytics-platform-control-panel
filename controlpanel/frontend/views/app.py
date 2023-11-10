@@ -28,6 +28,7 @@ from controlpanel.api.models import (
     IPAllowlist,
     User,
     UserApp,
+    Task,
 )
 from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.api.serializers import AppAuthSettingsSerializer
@@ -78,12 +79,17 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         access_repo_error_msg = None
         github_settings_access_error_msg = None
         try:
+            # NB: if this call fails....
             deployment_env_names = app_manager_ins.get_deployment_envs()
         except requests.exceptions.HTTPError as ex:
             access_repo_error_msg = ex.__str__()
+            github_settings_access_error_msg = ex.__str__()
+            # ...this is set to empty list...
             deployment_env_names = []
+        # ...which means this will remain empty dict...
         deployments_settings = {}
         auth0_connections = app.auth0_connections_by_env()
+        # ...so no call to get secrets/variables is made
         try:
             for env_name in deployment_env_names:
                 deployments_settings[env_name] = {
@@ -93,7 +99,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
                 }
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()
-
+        # ...knock on effect is in serializers.py these envs will be marked as redundant
         return deployments_settings, access_repo_error_msg, \
             github_settings_access_error_msg
 
@@ -110,6 +116,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             exclude_connected=True,
         )
 
+        # If auth settings not returned, all envs marked redundant in the serializer.
+        # Should hide them instead?
         auth_settings, access_repo_error_msg, github_settings_access_error_msg \
             = self._get_all_app_settings(app)
         auth0_clients_status = app.auth0_clients_status()
@@ -120,9 +128,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
 
-        # TODO: The following field should be removed after app migration
-        context["app_migration_info"] = app.migration_info
-        context["app_migration_status"] = context["app_migration_info"].get('status', "")
         return context
 
 
@@ -190,13 +195,12 @@ class UpdateAppAuth0Connections(
 
     def form_valid(self, form):
         try:
-            env_name = form.cleaned_data.get("env_name")
-            auth0_client_id = self.object.get_auth_client(env_name).get("client_id")
-            auth0.ExtendedAuth0().update_client_auth_connections(
-                app_name=self.object.auth0_client_name(env_name),
-                client_id=auth0_client_id,
+            cluster.App(
+                app=self.get_object(),
+                github_api_token=self.request.user.github_api_token
+            ).update_auth_connections(
+                env_name=form.cleaned_data.get("env_name"),
                 new_conns=form.cleaned_data.get("auth0_connections"),
-                existing_conns=form.auth0_connections,
             )
         except Exception as ex:
             form.add_error("connections", str(ex))
@@ -216,9 +220,6 @@ class UpdateAppIPAllowlists(
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
-        context[
-            "app_migration_feature_enabled"
-        ] = settings.features.app_migration.enabled
         context["env_name"] = self.request.GET.get("env_name")
         context["app_ip_allowlists"] = [
             {
@@ -281,12 +282,14 @@ class GrantAppAccess(
                 app_id=self.kwargs["pk"],
             )
             self.object.access_level = form.cleaned_data["access_level"]
+            self.object.current_user = self.request.user
             self.object.save()
         except AppS3Bucket.DoesNotExist:
             self.object = AppS3Bucket.objects.create(
                 access_level=form.cleaned_data["access_level"],
                 app_id=self.kwargs["pk"],
                 s3bucket=form.cleaned_data["datasource"],
+                current_user=self.request.user,
             )
         return FormMixin.form_valid(self, form)
 
@@ -302,6 +305,11 @@ class GrantAppAccess(
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = AppS3Bucket
     permission_required = "api.remove_app_bucket"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
 
     def get_success_url(self):
         messages.success(self.request, "Successfully disconnected data source")
@@ -320,6 +328,13 @@ class UpdateAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateVie
                 "manage-datasource", kwargs={"pk": self.object.s3bucket.id}
             )
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        self.object.access_level = form.cleaned_data.get("access_level")
+        self.object.current_user = self.request.user
+        self.object.save()
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class DeleteApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

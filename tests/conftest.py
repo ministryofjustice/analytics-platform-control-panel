@@ -116,3 +116,47 @@ def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_p
             auth0_id="github|user_3",
         ),
     }
+
+
+class Helpers:
+
+    @staticmethod
+    def validate_task_with_sqs_messages(
+        messages, entity_class, entity_id, queue_name=settings.DEFAULT_QUEUE,
+    ):
+        from controlpanel.api.models import Task
+        tasks_created = Task.objects.filter(
+            entity_class=entity_class, entity_id=entity_id, queue_name=queue_name
+        )
+        found_tasks_cnt = 0
+        tasks_cnt = 0
+        for task in tasks_created:
+            tasks_cnt += 1
+            for message in messages:
+                print(tasks_cnt, task.task_id, message["headers"]["id"])
+                if str(task.task_id) == message["headers"]["id"]:
+                    found_tasks_cnt += 1
+                    assert message["headers"]["task"] == task.task_name
+        assert len(message) > 0
+        assert tasks_cnt > 0
+        assert tasks_cnt == found_tasks_cnt
+
+    @staticmethod
+    def retrieve_messages(sqs, queue_name=settings.DEFAULT_QUEUE):
+        from controlpanel.api.message_broker import CeleryTaskMessage
+        queue = sqs.get_queue_by_name(QueueName=queue_name)
+        messages = queue.receive_messages(
+                MessageAttributeNames=['All'],
+                MaxNumberOfMessages=10
+            )
+        decoded_messages = []
+        for message in messages:
+            valid, message_body = CeleryTaskMessage.validate_message(message.body)
+            assert valid
+            decoded_messages.append(message_body)
+        return decoded_messages
+
+
+@pytest.fixture
+def helpers():
+    return Helpers

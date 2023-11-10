@@ -197,6 +197,32 @@ Then you can run migrations:
 python3 manage.py migrate
 ```
 
+### Message broker
+
+The Control Panel uses a message queue to run some tasks. For local development, Redis
+is recommended as the message broker rather than SQS (which is used in the development
+and production environments). To use Redis as the message broker you need to ensure that
+the following environment variables are set in your local .env file:
+
+```
+USE_LOCAL_MESSAGE_BROKER=True
+BROKER_URL=redis://localhost:6379/0
+```
+
+You will need to ensure that you have Redis running locally (see steps above), and then
+start the celery worker with the following command from your terminal:
+
+```
+celery -A controlpanel worker --loglevel=info
+```
+
+Note, if using aws vault you will need to prefix the command with
+`aws-vault exec admin-dev-sso -- `.
+
+When running correctly you will see the output `Connected to redis://localhost:6379/0`.
+Now when tasks are sent to the message queue by Control Panel they will bypass SQS,
+making sure that tasks are only received by your locally running celery worker.
+
 
 ### Compile Sass and Javascript
 
@@ -245,19 +271,19 @@ and then ask a colleague for help.
 
 ## Run the app
 
-**Assumption**: 
+**Assumption**:
 - You have completed your local env setup by following the above sections.
 - we use aws with sso login, the name of profile for our aws dev account is `admin-dev-sso`
 
 ### Local AWS profile setup (on first run only)
 This app needs to interact with AWS account.
 The AWS resources like IAM, s3 buckets are under our dev account and will be managed by
-app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html). 
+app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html).
 In order to make sure the boto3 can obtain the right profile for local env.
 
 #### using aws-cli directly
 
-Check your `.aws/config`, the profile `admin-dev-sso` should look like below 
+Check your `.aws/config`, the profile `admin-dev-sso` should look like below
 
 ```ini
     [profile admin-dev-sso]
@@ -270,7 +296,7 @@ __NOTES__ boto3 doesn't recognise `sso_session` and it will fail to retrieve the
 `.aws/sso/cache` folder if you mix above setting with `sso_session` together.
 
 #### using aws-vault
-If you use aws-vault to manage your aws credential, then the profile should look like 
+If you use aws-vault to manage your aws credential, then the profile should look like
 
 ```ini
     [profile sso-default]
@@ -359,15 +385,15 @@ Or with Gunicorn WSGI server:
 ```sh
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
-if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- ` 
-before the above command e.g. 
+if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- `
+before the above command e.g.
 ```sh
 aws-vault exec admin-dev-sso -- python3 manage.py runserver
 ```
 If the AWS session token is expired,  you will be redirected to auth-flow to refresh the session token automatically
 
-if you choose not using `aws-vault`, then in order to reduce the chance of getting sesion_token expiration during 
-debugging, make sure you run the following command in advance 
+if you choose not using `aws-vault`, then in order to reduce the chance of getting sesion_token expiration during
+debugging, make sure you run the following command in advance
 ```sh
 aws sso login --profile <profile_name e.g. admin-dev-sso>
 ```
@@ -418,19 +444,7 @@ Current checks are:-
 - `black` library (formats Python code)
 - `isort` library (standardises the order of Python imports)
 - `flake8` library (formats Python code and also improves code style)
-- Jira ticket reference (commits must reference the ticket number)
 
 To override the above for whatever reason (maybe you don't have a ticket number and because you are working on hotfix) you can use the following command.
 
 `PRE_COMMIT_ALLOW_NO_CONFIG=1 git push ...`
-
-### Git commit message
-
-Commit messages should follow the appropriate format.
-All commits must begin with the Jira ticket they are associated with.
-
-format: `ANPL-[int]`
-
-e.g.
-
-`git commit -m "ANPL-1234 insert message here"`

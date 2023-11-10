@@ -13,6 +13,7 @@ from django_extensions.db.models import TimeStampedModel
 from controlpanel.api import auth0, cluster
 from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
+from controlpanel.api import tasks
 
 
 class App(TimeStampedModel):
@@ -34,6 +35,13 @@ class App(TimeStampedModel):
     # are not within the fields which will be searched frequently
     app_conf = models.JSONField(null=True)
 
+    # Non database field just for passing extra parameters
+    disable_authentication = False
+    connections = {}
+    current_user = None
+    deployment_envs = []
+    has_ip_ranges = False
+
     DEFAULT_AUTH_CATEGORY = "primary"
     KEY_WORD_FOR_AUTH_SETTINGS = "auth_settings"
 
@@ -42,6 +50,15 @@ class App(TimeStampedModel):
     class Meta:
         db_table = "control_panel_api_app"
         ordering = ("name",)
+
+    def __init__(self, *args, **kwargs):
+        """Overwrite this constructor to pass some non-field parameter"""
+        self.disable_authentication = kwargs.pop("disable_authentication", False)
+        self.connections = kwargs.pop("connections", {})
+        self.current_user = kwargs.pop("current_user", None)
+        self.deployment_envs = kwargs.pop("deployment_envs", [])
+        self.has_ip_ranges = kwargs.pop("has_ip_ranges", False)
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return f"<App: {self.slug}>"
@@ -232,15 +249,6 @@ class App(TimeStampedModel):
         return settings.AUTH0_CLIENT_NAME_PATTERN.format(
             app_name=client_name, env=env_name)
 
-    @property
-    def migration_info(self):
-        # TODO: using app.description for temporary place for storing old app info,
-        #  The content of this field should be removed after app migration is completed.
-        try:
-            return json.loads(self.description).get("migration", {})
-        except ValueError:
-            return {}
-
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
         if not format_pattern:
@@ -303,3 +311,27 @@ class DeleteCustomerError(Exception):
 
 App.AddCustomerError = AddCustomerError
 App.DeleteCustomerError = DeleteCustomerError
+
+
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
+
+
+@receiver(post_save, sender=App)
+def trigger_app_create_related_messages(sender, instance, created, **kwargs):
+    if created:
+        tasks.AppCreateRole(instance, instance.current_user).create_task()
+        tasks.AppCreateAuth(instance, instance.current_user, extra_data=dict(
+            deployment_envs=instance.deployment_envs,
+            disable_authentication=instance.disable_authentication,
+            connections=instance.connections,
+            has_ip_ranges=instance.has_ip_ranges,
+        )).create_task()
+
+
+@receiver(post_delete, sender=App)
+def remove_app_related_tasks(sender, instance, **kwargs):
+    from controlpanel.api.models import Task
+    related_app_tasks = Task.objects.filter(entity_class="App", entity_id=instance.id)
+    for task in related_app_tasks:
+        task.delete()

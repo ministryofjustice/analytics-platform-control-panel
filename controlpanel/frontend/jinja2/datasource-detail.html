@@ -20,13 +20,25 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <p class="govuk-body">
-  <a href="{{ bucket.aws_url }}" class="govuk-button govuk-button--secondary" target="_blank" rel="noopener">
-    Open on AWS
-  </a>
+  {% if bucket.is_deleted %}
+    <div class="govuk-warning-text">
+      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+      <strong class="govuk-warning-text__text">
+          <span class="govuk-warning-text__assistive">Warning</span>
+          This bucket was deleted by <a href="{{ url('manage-user', kwargs={ "pk": bucket.deleted_by.auth0_id }) }}">
+          {{ user_name(bucket.deleted_by) }}</a> on {{ bucket.deleted_at.strftime("%Y/%m/%d %H:%M:%S") }}.<br>
+          All access listed below has been revoked in IAM.
+      </strong>
+    </div>
+  {% else %}
+    <a href="{{ bucket.aws_url }}" class="govuk-button govuk-button--secondary" target="_blank" rel="noopener">
+      Open on AWS
+    </a>
+  {% endif %}
 </p>
 
-<section class="cpanel-section">
-  <h2 class="govuk-heading-m">Users and groups with access</h2>
+<section class="cpanel-section track_task">
+  <h2 class="govuk-heading-m">Users and groups with{% if bucket.is_deleted %} revoked{% endif %} access</h2>
   <table class="govuk-table">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
@@ -63,7 +75,7 @@
         {%- endif %}
         </td>
         <td class="govuk-table__cell">
-          {% if request.user.has_perm('api.update_users3bucket', member) %}
+          {% if request.user.has_perm('api.update_users3bucket', member) and not bucket.is_deleted %}
           <a href="{% if member.user -%}{{ url("update-access-level", kwargs={"pk": member.id}) }}{%- else -%}{{ url("update-policy-access-level", kwargs={"pk": member.id}) }}{%- endif %}"
              class="govuk-button govuk-button--secondary right">
             Edit access level
@@ -73,17 +85,19 @@
       </tr>
     {% endfor %}
     </tbody>
+
+    {% set plural = access_list|length > 1 %}
     <tfoot class="govuk-table__foot">
       <tr class="govuk-table__row">
         <td class="govuk-table__cell" colspan="3">
           {{ access_list|length }}
-          user{%- if access_list|length != 1 -%}s{% endif %} or group{%- if access_list|length != 1 -%}s have{% else %} has{% endif %}
+          user{%- if plural -%}s{% endif %} or group{%- if plural -%}s{% endif %}{% if bucket.is_deleted %} had{% elif plural %} have{% else %} has{% endif %}
           access to this {{ datasource_type }} data source
       </tr>
     </tfoot>
   </table>
 
-  {% if request.user.has_perm('api.create_users3bucket', bucket) and users_options|length %}
+  {% if request.user.has_perm('api.create_users3bucket', bucket) and users_options|length and not bucket.is_deleted %}
     <a href="{{ url('grant-datasource-access', kwargs={'pk': bucket.pk}) }}"
        class="govuk-button govuk-button--secondary">
       Grant user access
@@ -91,7 +105,7 @@
   {% endif %}
 
   {% if request.user.has_perm('api.manage_groups') %}
-    {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length %}
+    {% if request.user.has_perm('api.create_policys3bucket', bucket) and policies_options|length and not bucket.is_deleted %}
       <a href="{{ url('grant-datasource-policy-access', kwargs={'pk': bucket.pk}) }}"
          class="govuk-button govuk-button--secondary">
         Grant group access
@@ -212,7 +226,7 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.destroy_s3bucket', bucket) %}
+{% if not bucket.is_deleted and request.user.has_perm('api.destroy_s3bucket', bucket) %}
 <section class="cpanel-section">
   <form action="{{ url('delete-datasource', kwargs={ "pk": bucket.id }) }}" method="post">
     {{ csrf_input }}

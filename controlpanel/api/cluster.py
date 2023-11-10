@@ -340,18 +340,25 @@ class User(EntityResource):
         self.aws_role_service.delete_role(self.user.iam_role_name)
         self.delete_user_helm_charts()
 
-    def grant_bucket_access(self, bucket_arn, access_level, path_arns=[]):
+    def grant_bucket_access(self, bucket_arn, access_level, path_arns=None):
+        path_arns = path_arns or []
         self.aws_role_service.grant_bucket_access(
             self.iam_role_name, bucket_arn, access_level, path_arns
         )
 
-    def grant_folder_access(self, bucket_arn, access_level):
+    def grant_folder_access(self, root_folder_path, access_level, paths):
         self.aws_role_service.grant_folder_access(
-            self.iam_role_name, bucket_arn, access_level
+            role_name=self.iam_role_name,
+            root_folder_path=root_folder_path,
+            access_level=access_level,
+            paths=paths,
         )
 
     def revoke_bucket_access(self, bucket_arn):
         self.aws_role_service.revoke_bucket_access(self.iam_role_name, bucket_arn)
+
+    def revoke_folder_access(self, root_folder_path):
+        self.aws_role_service.revoke_folder_access(self.iam_role_name, root_folder_path)
 
     def has_required_installation_charts(self):
         """Checks if the expected helm charts exist for the user."""
@@ -627,6 +634,8 @@ class App(EntityResource):
     ):
         client = None
         group = None
+        connections = connections or \
+                      {auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION: {}}
         if not disable_authentication:
             client, group = self._get_auth0_instance().setup_auth0_client(
                 client_name=self.app.auth0_client_name(env_name),
@@ -640,7 +649,7 @@ class App(EntityResource):
         self._create_env_vars(
             env_name,
             disable_authentication,
-            connections or [],
+            connections,
             client=client,
         )
         return client, group
@@ -654,6 +663,20 @@ class App(EntityResource):
             self.delete_env_var(env_name, app_env_name)
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
         self.app.clear_auth_settings(env_name)
+
+    def update_auth_connections(self, env_name, new_conns):
+        existing_conns = self.app.auth0_connections(env_name=env_name)
+        self.create_or_update_env_var(
+            env_name=env_name,
+            key_name=self.AUTH0_PASSWORDLESS,
+            key_value=auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION in new_conns
+        )
+        auth0.ExtendedAuth0().update_client_auth_connections(
+            app_name=self.app.auth0_client_name(env_name),
+            client_id=self.app.get_auth_client(env_name).get("client_id"),
+            new_conns=new_conns,
+            existing_conns=existing_conns,
+        )
 
     def remove_redundant_env(self, env_name):
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
@@ -708,8 +731,20 @@ class S3Folder(S3Bucket):
         self.aws_bucket_service = self.create_aws_service(self.aws_service_class)
 
     def exists(self, folder_name, bucket_owner):
+        # TODO this assumes only one multi root bucket
         folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
         return super().exists(folder_path, bucket_owner), folder_path
+
+    def get_objects(self):
+        bucket_name, folder_name = self.bucket.name.split("/")
+        return self.aws_bucket_service.get_objects(
+            bucket_name=bucket_name, folder_name=folder_name,
+        )
+
+    def archive_object(self, key, source_bucket=None, delete_original=True):
+        self.aws_bucket_service.archive_object(
+            key=key, source_bucket_name=source_bucket, delete_original=delete_original,
+        )
 
 
 class RoleGroup(EntityResource):
@@ -758,8 +793,16 @@ class RoleGroup(EntityResource):
             self.arn, bucket_arn, access_level, path_arns
         )
 
+    def grant_folder_access(self, root_folder_path, access_level, paths):
+        self.aws_policy_service.grant_folder_access(
+            self.arn, root_folder_path, access_level, paths
+        )
+
     def revoke_bucket_access(self, bucket_arn):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
+
+    def revoke_folder_access(self, root_folder_path):
+        self.aws_policy_service.revoke_policy_folder_access(self.arn, root_folder_path)
 
 
 class AppParameter(EntityResource):
