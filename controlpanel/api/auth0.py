@@ -104,11 +104,9 @@ class ExtendedAuth0(Auth0):
         )
 
     def _access_token(self, audience):
-        get_token = authentication.GetToken(self.domain)
+        get_token = authentication.GetToken(self.domain, client_id=self.client_id)
         try:
-            token = get_token.client_credentials(
-                self.client_id, self.client_secret, audience
-            )
+            token = get_token.client_credentials(audience)
         except exceptions.Auth0Error as error:
             error_detail = (
                 f"Access token error: {self.client_id}, {self.domain}, {error}"

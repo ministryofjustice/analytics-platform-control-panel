@@ -15,7 +15,7 @@ from controlpanel.api import auth0
 @pytest.fixture()
 def ExtendedAuth0():
     with patch(
-        "auth0.v3.authentication.GetToken.client_credentials"
+        "auth0.authentication.GetToken.client_credentials"
     ) as client_credentials:
         client_credentials.return_value = {"access_token": "access_token_testing"}
         yield auth0.ExtendedAuth0()

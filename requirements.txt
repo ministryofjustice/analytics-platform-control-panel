@@ -4,14 +4,14 @@ beautifulsoup4==4.12.2
 boto3==1.26.143
 celery[sqs]==5.3.1
 channels==4.0.0
-channels-redis==4.1.0
+channels-redis==4.0.0
 daphne==4.0.0
 Django==4.2.7
 django-crequest==2018.5.11
 django-extensions==3.2.3
 django-filter==22.1
 django-prometheus==2.1.0
-django-redis==5.3.0
+django-redis==5.4.0
 django-simple-history==3.3.0
 django-structlog==2.2.0
 djangorestframework==3.14.0
