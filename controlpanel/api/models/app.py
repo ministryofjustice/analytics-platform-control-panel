@@ -3,7 +3,7 @@ import json
 import uuid
 
 # Third-party
-from auth0.v3.exceptions import Auth0Error
+from auth0.exceptions import Auth0Error
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
