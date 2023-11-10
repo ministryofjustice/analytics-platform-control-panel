@@ -7,9 +7,7 @@ from sys import exit
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.core.management.base import BaseCommand
-
-# First-party/Local
-from controlpanel.frontend.consumers import WORKER_HEALTH_FILENAME
+from django.conf import settings
 
 
 class Command(BaseCommand):
@@ -38,7 +36,7 @@ class Command(BaseCommand):
         # execution but that's fine as Kubernetes' `failureThreashold`
         # will be more than 1 anyway
         try:
-            last_run_at_epoch = Path(WORKER_HEALTH_FILENAME).stat().st_mtime
+            last_run_at_epoch = Path(settings.WORKER_HEALTH_FILENAME).stat().st_mtime
             last_run_at = datetime.utcfromtimestamp(last_run_at_epoch)
         except FileNotFoundError:
             # Health ping file not found. Health task hasn't run on this worker yet

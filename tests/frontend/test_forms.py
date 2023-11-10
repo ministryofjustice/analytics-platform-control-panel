@@ -3,6 +3,7 @@ from unittest import mock
 
 # Third-party
 import pytest
+from django.core.exceptions import ValidationError
 
 # First-party/Local
 from controlpanel.api import aws
@@ -226,6 +227,28 @@ def test_create_new_datasource_folder_exists(root_folder_bucket):
 
     assert form.is_valid() is False
     assert "Folder 'test-folder' already exists" in form.errors["name"]
+
+
+@pytest.mark.parametrize(
+    "path, expected_error",
+    [
+        ("noslash", "Enter paths prefixed with a forward slash"),
+        ("/trailingslash/", "Enter paths without a trailing forward slash"),
+        ("/valid", None),
+    ]
+)
+def test_grant_access_form_clean_paths(path, expected_error):
+    data = {
+        "paths": [path]
+    }
+    form = forms.GrantAccessForm()
+    form.cleaned_data = data
+
+    if expected_error:
+        with pytest.raises(ValidationError, match=expected_error):
+            form.clean_paths()
+    else:
+        assert form.clean_paths() == [path]
 
 
 def test_create_app_form_clean_repo_url():

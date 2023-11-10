@@ -14,8 +14,6 @@
         {% endif %}
     </div>
 
-    {% if app_migration_feature_enabled %}
-
     <form action="{{ url('update-app-ip-allowlists', kwargs={'pk': app.pk}) }}" method="post">
         {{ csrf_input }}
         <input type="hidden" name="env_name" value="{{ env_name }}">
@@ -44,12 +42,6 @@
         contact the Analytical Platform team via our <a href="https://asdslack.slack.com/archives/C4PF7QAJZ">support Slack channel</a>.
     </p>
 
-    {% else %}
-
-    <h2 class="govuk-heading-m">IP allowlists for {{app.name}}</h2>
-    <p>This feature is not yet available for general use.</p>
-
-    {% endif %}
 
 </section>
 

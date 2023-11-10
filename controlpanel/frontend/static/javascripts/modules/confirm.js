@@ -18,7 +18,7 @@ moj.Modules.jsConfirm = {
 
     // works on any children of a `<form>` with `confirmClass` but it's
     // usually used on `<input type="submit">` or `<button>`
-    $(document).on('click', `form .${this.confirmClass}`, (e) => {
+    $(document).on('click', `.${this.confirmClass}`, (e) => {
       const $el = $(e.target);
       e.preventDefault();
 
@@ -27,11 +27,15 @@ moj.Modules.jsConfirm = {
         const target_url = $el.data("form-url");
         // Check if the button has a target form to submit.
         const target = $el.data("form-target");
+        var data = []
+        if (target) {
+          data = $('#' + target).serializeArray()
+        };
         if(target_url) {
             $.ajax({
                 type: "POST",
                 url: target_url,
-                data: $('#' + target).serializeArray(),
+                data: data,
                 success: function () {
                     console.log('success post');
                 }

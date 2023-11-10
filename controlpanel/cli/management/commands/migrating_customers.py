@@ -10,7 +10,10 @@ from controlpanel.api import auth0
 
 
 class Command(BaseCommand):
-    help = "Copy the customers of an application from old auth client to new auth clients"
+    help = """Copy the customers of an application from old auth client to new auth
+        clients. This is idempotent, meaning that rerunning for the apps will not
+        problems, all copied customers will remain but any un-copied customers will be
+        migrated."""
 
     DEFAULT_ENVS = ["dev", "prod"]
 

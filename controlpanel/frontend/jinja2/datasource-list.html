@@ -4,12 +4,12 @@
 
 {% extends "base.html" %}
 
-{% if datasource_type %}
-  {% set page_name = datasource_type + "-datasource-list" %}
-  {% set page_title = "Your " + datasource_type + " data sources" %}
-{% else %}
+{% if all_datasources %}
   {% set page_name = "all-datasources" %}
   {% set page_title = "All data sources" %}
+{% else %}
+  {% set page_name = datasource_type + "-datasource-list" %}
+  {% set page_title = "Your " + datasource_type + " data sources" %}
 {% endif %}
 
 {% set access_levels_html %}
@@ -69,6 +69,11 @@
     {% endfor %}
     </tbody>
   </table>
+{% endif %}
+
+{% if request.user.is_superuser and deleted_datasources %}
+  <h3 class="govuk-heading-m">Deleted data sources</h3>
+  {{ datasource_list(deleted_datasources, datasource_type|default(""), request.user) }}
 {% endif %}
 
 {% endblock %}

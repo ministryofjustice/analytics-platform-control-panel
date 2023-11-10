@@ -216,3 +216,14 @@ def test_no_exist_auth0_clients_on_customers_page(client, app, users, ExtendedAu
 
         assert response.status_code == 200
         assert error_msg in str(response.content)
+
+
+def test_no_auth0_customers_page(client, app, users, ExtendedAuth0):
+    app.app_conf = None
+    app.save()
+    message = "No need to manage the customers of the app on Control pane"
+    client.force_login(users["superuser"])
+    response = client.get(reverse("appcustomers-page", args=(app.id, 1)))
+
+    assert response.status_code == 200
+    assert message in str(response.content)

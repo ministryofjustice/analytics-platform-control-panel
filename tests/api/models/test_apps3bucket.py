@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.db.utils import IntegrityError
 from model_mommy import mommy
 
@@ -37,54 +38,25 @@ def test_one_record_per_app_per_s3bucket(app, bucket):
 
 
 @pytest.mark.django_db
-def test_update_aws_permissions(app, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access_action:
-        apps3bucket = AppS3Bucket(
-            app=app,
-            s3bucket=bucket,
-            access_level=AppS3Bucket.READONLY,
-        )
+def test_aws_permissions(app, bucket, sqs, helpers):
+    apps3bucket = AppS3Bucket(
+        app=app,
+        s3bucket=bucket,
+        access_level=AppS3Bucket.READONLY,
+    )
 
-        apps3bucket.save()
-
-        grant_bucket_access_action.assert_called_with(
-            app.iam_role_name,
-            bucket.arn,
-            AppS3Bucket.READONLY,
-            apps3bucket.resources,
-        )
-        # TODO get policy from call and assert ARN in correct place
-
-
-@pytest.mark.django_db
-def test_aws_create(app, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access_action:
-        apps3bucket = AppS3Bucket(
-            app=app,
-            s3bucket=bucket,
-            access_level=AppS3Bucket.READONLY,
-        )
-
-        apps3bucket.save()
-
-        grant_bucket_access_action.assert_called_with(
-            app.iam_role_name,
-            bucket.arn,
-            AppS3Bucket.READONLY,
-            apps3bucket.resources,
-        )
-        # TODO make this test a case on previous
+    apps3bucket.save()
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, AppS3Bucket.__name__, apps3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 @pytest.mark.django_db
 def test_delete_revoke_permissions(app, bucket):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
-                    as revoke_bucket_access_action:
+    with patch(
+        "controlpanel.api.tasks.S3BucketRevokeAppAccess"
+    ) as revoke_bucket_access_task:
         apps3bucket = mommy.make(
             "api.AppS3Bucket",
             app=app,
@@ -94,7 +66,8 @@ def test_delete_revoke_permissions(app, bucket):
 
         apps3bucket.delete()
 
-        revoke_bucket_access_action.assert_called_with(
-            apps3bucket.iam_role_name,
-            bucket.arn,
+        revoke_bucket_access_task.assert_called_once_with(
+            apps3bucket,
+            None
         )
+        revoke_bucket_access_task.return_value.create_task.assert_called_once()

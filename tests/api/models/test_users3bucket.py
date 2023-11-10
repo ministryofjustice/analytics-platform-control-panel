@@ -1,12 +1,14 @@
 # Standard library
-from unittest.mock import patch, PropertyMock
+from unittest.mock import PropertyMock, patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.db.utils import IntegrityError
 from model_mommy import mommy
 
 # First-party/Local
+from controlpanel.api.models import UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 
@@ -39,49 +41,39 @@ def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
 
 
 @pytest.mark.django_db
-def test_aws_create_bucket(user, bucket):
-    with patch(
-        "controlpanel.api.cluster.AWSRole.grant_bucket_access"
-    ) as grant_bucket_access:
-        users3bucket = user.users3buckets.create(
-            s3bucket=bucket,
-            access_level=AccessToS3Bucket.READONLY,
-        )
-
-        grant_bucket_access.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-            AccessToS3Bucket.READONLY,
-            users3bucket.resources,
-        )
-        # TODO get policy from call and assert bucket ARN present
+def test_aws_create_bucket(user, bucket, sqs, helpers):
+    users3bucket = user.users3buckets.create(
+        s3bucket=bucket,
+        access_level=AccessToS3Bucket.READONLY
+    )
+    messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 @pytest.mark.django_db
-@patch("controlpanel.api.cluster.AWSRole.grant_folder_access")
-def test_aws_create_folder(grant_folder_access, user, bucket):
+@patch("controlpanel.api.models.users3bucket.tasks")
+def test_aws_create_folder(tasks, user, bucket):
     with patch.object(
         bucket.__class__, "is_folder", new_callable=PropertyMock(return_value=True)
     ):
-        user.users3buckets.create(
+        user_bucket = user.users3buckets.create(
             s3bucket=bucket,
             access_level=AccessToS3Bucket.READONLY,
+            current_user=user
         )
-        grant_folder_access.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-            AccessToS3Bucket.READONLY,
+        tasks.S3BucketGrantToUser.assert_called_once_with(
+            user_bucket, user
         )
+        tasks.S3BucketGrantToUser.return_value.create_task.assert_called_once()
 
 
 @pytest.mark.django_db
-def test_delete_revoke_permissions(user, bucket, users3bucket):
+def test_delete_revoke_permissions(bucket, users3bucket):
     with patch(
-        "controlpanel.api.cluster.AWSRole.revoke_bucket_access"
-    ) as revoke_bucket_access_action:
+        "controlpanel.api.tasks.S3BucketRevokeUserAccess"
+    ) as revoke_user_access_task:
         users3bucket.delete()
-        revoke_bucket_access_action.assert_called_with(
-            user.iam_role_name,
-            bucket.arn,
-        )
-        # TODO get policy from call and assert bucket ARN removed
+        revoke_user_access_task.assert_called_once_with(users3bucket, None)
+        revoke_user_access_task.return_value.create_task.assert_called_once()
