@@ -6,7 +6,7 @@ from unittest.mock import call, patch
 import mock
 import pytest
 from django.conf import settings
-from auth0.v3 import exceptions
+from auth0 import exceptions
 
 # First-party/Local
 from controlpanel.api import auth0
@@ -15,7 +15,7 @@ from controlpanel.api import auth0
 @pytest.fixture()
 def ExtendedAuth0():
     with patch(
-        "auth0.v3.authentication.GetToken.client_credentials"
+        "auth0.authentication.GetToken.client_credentials"
     ) as client_credentials:
         client_credentials.return_value = {"access_token": "access_token_testing"}
         yield auth0.ExtendedAuth0()
@@ -600,7 +600,6 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
     expected["options"]["scripts"]["fetchUserProfile"] = _clean_string(
         expected["options"]["scripts"]["fetchUserProfile"]
     )
-
     assert actual_arg == expected
 
 

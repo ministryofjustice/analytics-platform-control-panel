@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -56,22 +57,20 @@ def test_create(client, buckets, users, sqs, helpers):
     users3bucket = UserS3Bucket.objects.get(
         user=users["other_user"], s3bucket=buckets[1]
     )
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
+    messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 def test_delete(client, users3buckets):
     with patch(
-        "controlpanel.api.aws.AWSRole.revoke_bucket_access"
+        "controlpanel.api.models.UserS3Bucket.revoke_bucket_access"
     ) as revoke_bucket_access:
         response = client.delete(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        revoke_bucket_access.assert_called_with(
-            users3buckets[1].user.iam_role_name,
-            users3buckets[1].s3bucket.arn,
-        )
-        # TODO get policy from call and assert bucket ARN not contained
+        revoke_bucket_access.assert_called_once()
 
         response = client.get(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -90,11 +89,13 @@ def test_update(client, buckets, users, users3buckets, sqs, helpers):
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.data["access_level"] == data["access_level"]
-    messages = helpers.retrieve_messages(sqs)
+    messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
     users3bucket = UserS3Bucket.objects.get(
         user=users["normal_user"], s3bucket=buckets[1]
     )
-    helpers.validate_task_with_sqs_messages(messages, UserS3Bucket.__name__, users3bucket.id)
+    helpers.validate_task_with_sqs_messages(
+        messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 @pytest.mark.parametrize(

@@ -735,6 +735,17 @@ class S3Folder(S3Bucket):
         folder_path = f"{settings.S3_FOLDER_BUCKET_NAME}/{folder_name}"
         return super().exists(folder_path, bucket_owner), folder_path
 
+    def get_objects(self):
+        bucket_name, folder_name = self.bucket.name.split("/")
+        return self.aws_bucket_service.get_objects(
+            bucket_name=bucket_name, folder_name=folder_name,
+        )
+
+    def archive_object(self, key, source_bucket=None, delete_original=True):
+        self.aws_bucket_service.archive_object(
+            key=key, source_bucket_name=source_bucket, delete_original=delete_original,
+        )
+
 
 class RoleGroup(EntityResource):
     """

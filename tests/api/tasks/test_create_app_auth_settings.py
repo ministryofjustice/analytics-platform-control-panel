@@ -1,8 +1,11 @@
-import pytest
-from unittest.mock import patch, PropertyMock
+# Standard library
+from unittest.mock import PropertyMock, patch
 
+# Third-party
+import pytest
 from model_mommy import mommy
 
+# First-party/Local
 from controlpanel.api.models import App
 from controlpanel.api.tasks.handlers import create_app_auth_settings
 
@@ -21,12 +24,14 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 @pytest.mark.django_db
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
-@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None))
+@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None))  # noqa
 def test_cluster_not_called_without_github_api_token(cluster, complete, users):
     app = mommy.make("api.App")
 
     user = users["superuser"]
-    create_app_auth_settings(app.pk, user.pk)
+    create_app_auth_settings(
+        app.pk, user.pk, "envs", "disable_authentication", "connections",
+    )
 
     # role should not be created
     cluster.App.assert_not_called()
@@ -37,7 +42,7 @@ def test_cluster_not_called_without_github_api_token(cluster, complete, users):
 @pytest.mark.django_db
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
-@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value="dummy-token"))
+@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value="dummy-token"))  # noqa
 def test_valid_app_and_user(cluster, complete, users):
     app = mommy.make("api.App")
 

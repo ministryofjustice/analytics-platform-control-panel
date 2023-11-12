@@ -17,7 +17,7 @@ from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
-from auth0.v3.management.rest import Auth0Error
+from auth0.rest import Auth0Error
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
@@ -79,12 +79,17 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         access_repo_error_msg = None
         github_settings_access_error_msg = None
         try:
+            # NB: if this call fails....
             deployment_env_names = app_manager_ins.get_deployment_envs()
         except requests.exceptions.HTTPError as ex:
             access_repo_error_msg = ex.__str__()
+            github_settings_access_error_msg = ex.__str__()
+            # ...this is set to empty list...
             deployment_env_names = []
+        # ...which means this will remain empty dict...
         deployments_settings = {}
         auth0_connections = app.auth0_connections_by_env()
+        # ...so no call to get secrets/variables is made
         try:
             for env_name in deployment_env_names:
                 deployments_settings[env_name] = {
@@ -94,7 +99,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
                 }
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()
-
+        # ...knock on effect is in serializers.py these envs will be marked as redundant
         return deployments_settings, access_repo_error_msg, \
             github_settings_access_error_msg
 
@@ -111,6 +116,8 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             exclude_connected=True,
         )
 
+        # If auth settings not returned, all envs marked redundant in the serializer.
+        # Should hide them instead?
         auth_settings, access_repo_error_msg, github_settings_access_error_msg \
             = self._get_all_app_settings(app)
         auth0_clients_status = app.auth0_clients_status()
@@ -121,9 +128,6 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
 
-        # TODO: The following field should be removed after app migration
-        context["app_migration_info"] = app.migration_info
-        context["app_migration_status"] = context["app_migration_info"].get('status', "")
         return context
 
 
@@ -216,9 +220,6 @@ class UpdateAppIPAllowlists(
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
-        context[
-            "app_migration_feature_enabled"
-        ] = settings.features.app_migration.enabled
         context["env_name"] = self.request.GET.get("env_name")
         context["app_ip_allowlists"] = [
             {
@@ -304,6 +305,11 @@ class GrantAppAccess(
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = AppS3Bucket
     permission_required = "api.remove_app_bucket"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
 
     def get_success_url(self):
         messages.success(self.request, "Successfully disconnected data source")

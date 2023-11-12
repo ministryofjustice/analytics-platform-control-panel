@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from model_mommy import mommy
 from rest_framework import status
 from rest_framework.reverse import reverse
@@ -60,16 +61,12 @@ def test_detail(client, apps3buckets):
 
 def test_delete(client, apps3buckets):
     with patch(
-        "controlpanel.api.aws.AWSRole.revoke_bucket_access"
+        "controlpanel.api.models.AppS3Bucket.revoke_bucket_access"
     ) as revoke_bucket_access:
         response = client.delete(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        revoke_bucket_access.assert_called_with(
-            apps3buckets[1].iam_role_name,
-            apps3buckets[1].s3bucket.arn,
-        )
-        # TODO get policy document JSON from call and assert bucket ARN not present
+        revoke_bucket_access.assert_called_once()
 
         response = client.get(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -84,8 +81,10 @@ def test_create(client, apps, buckets, sqs, helpers):
     response = client.post(reverse("apps3bucket-list"), data)
     assert response.status_code == status.HTTP_201_CREATED
     apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[3])
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, AppS3Bucket.__name__, apps3bucket.id)
+    iam_messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        iam_messages, AppS3Bucket.__name__, apps3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 def test_update(client, apps, apps3buckets, buckets, sqs, helpers):
@@ -102,8 +101,10 @@ def test_update(client, apps, apps3buckets, buckets, sqs, helpers):
     assert response.status_code == status.HTTP_200_OK
     assert response.data["access_level"] == data["access_level"]
     apps3bucket = AppS3Bucket.objects.get(app=apps[1], s3bucket=buckets[1])
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, AppS3Bucket.__name__, apps3bucket.id)
+    iam_messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        iam_messages, AppS3Bucket.__name__, apps3bucket.id, settings.IAM_QUEUE_NAME
+    )
 
 
 def test_update_bad_requests(client, apps, apps3buckets, buckets):

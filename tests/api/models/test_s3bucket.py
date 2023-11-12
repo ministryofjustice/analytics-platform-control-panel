@@ -23,20 +23,16 @@ def bucket():
 
 
 def test_delete_revokes_permissions(bucket):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.cluster.AWSRole.revoke_bucket_access") \
-            as revoke_bucket_access_action:
-        users3bucket = mommy.make("api.UserS3Bucket", s3bucket=bucket)
-        apps3bucket = mommy.make("api.AppS3Bucket", s3bucket=bucket)
-
+    with patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access") as app_revoke_bucket_access, \
+            patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access") as user_revoke_user_bucket_access:
+        # link the bucket with an UserS3Bucket and AppS3Bucket
+        mommy.make("api.UserS3Bucket", s3bucket=bucket)
+        mommy.make("api.AppS3Bucket", s3bucket=bucket)
+        # delete the source S3Bucket
         bucket.delete()
-
-        revoke_bucket_access_action.assert_has_calls(
-            [
-                call(apps3bucket.iam_role_name, bucket.arn),
-                call(users3bucket.iam_role_name, bucket.arn),
-            ]
-        )
+        # check that related objects revoke access methods were called
+        app_revoke_bucket_access.assert_called_once()
+        user_revoke_user_bucket_access.assert_called_once()
 
 
 def test_delete_marks_bucket_for_archival(bucket):
@@ -100,3 +96,42 @@ def test_is_folder(name, expected):
 )
 def test_cluster(name, expected):
     assert isinstance(S3Bucket(name=name).cluster, expected)
+
+
+def test_soft_delete_bucket(bucket, users, sqs, helpers):
+    user = users["superuser"]
+
+    assert bucket.is_deleted is False
+    with patch("controlpanel.api.cluster.S3Bucket.mark_for_archival") as archive:
+        bucket.soft_delete(deleted_by=user)
+
+    assert bucket.is_deleted is True
+    assert bucket.deleted_by == user
+    assert bucket.deleted_at is not None
+    archive.assert_called_once()
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )
+
+
+def test_soft_delete_folder(users, sqs, helpers):
+    folder = S3Bucket.objects.create(name="bucket/folder-1")
+    user = users["superuser"]
+
+    assert folder.is_deleted is False
+    folder.soft_delete(deleted_by=user)
+
+    assert folder.is_deleted is True
+    assert folder.deleted_by == user
+    assert folder.deleted_at is not None
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    task_names = [message["headers"]["task"] for message in messages]
+
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, folder.id, queue_name=settings.S3_QUEUE_NAME,
+    )
+    assert "archive_s3bucket" in task_names
+    assert "s3bucket_revoke_all_access" in task_names

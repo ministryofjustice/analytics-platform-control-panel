@@ -1,13 +1,16 @@
+# Standard library
 import os
-from celery import Celery
-import dotenv
-from kombu import Queue
 from pathlib import Path
+
+# Third-party
+import dotenv
 import structlog
+from celery import Celery
+from django.conf import settings
+from kombu import Queue
 
 # First-party/Local
 from controlpanel.utils import load_app_conf_from_file
-from django.conf import settings
 
 dotenv.load_dotenv()
 
@@ -43,7 +46,8 @@ def worker_health_check(self):
 # ensures worker picks and runs tasks from all queues rather than just default queue
 # alternative is to run the worker and pass queue name to -Q flag
 app.conf.task_queues = [
-    Queue(settings.IAM_QUEUE_NAME),
-    Queue(settings.AUTH_QUEUE_NAME),
-    Queue(settings.S3_QUEUE_NAME),
+    Queue(settings.IAM_QUEUE_NAME, routing_key=settings.IAM_QUEUE_NAME),
+    Queue(settings.AUTH_QUEUE_NAME, routing_key=settings.AUTH_QUEUE_NAME),
+    Queue(settings.S3_QUEUE_NAME, routing_key=settings.S3_QUEUE_NAME),
 ]
+app.conf.task_default_exchange = "tasks"

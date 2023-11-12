@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin
@@ -15,7 +16,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, tasks
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import (
     IAMManagedPolicy,
@@ -44,7 +45,7 @@ class DatasourceMixin(ContextMixin):
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context["all-datasources"] = self.all_datasources
+        context["all_datasources"] = self.all_datasources
         context["datasource_type"] = self.get_datasource_type()
         return context
 
@@ -75,6 +76,7 @@ class BucketList(
         return S3Bucket.objects.prefetch_related("users3buckets").filter(
             is_data_warehouse=self.datasource_type == "warehouse",
             users3buckets__user=self.request.user,
+            is_deleted=False,
         )
 
     def get_context_data(self, *args, **kwargs):
@@ -84,6 +86,7 @@ class BucketList(
             "users3buckets__user"
         ).filter(
             is_data_warehouse=self.datasource_type == "warehouse",
+            is_deleted=False,
         )
         other_datasources = all_datasources.exclude(id__in=self.get_queryset())
         other_datasources_admins = {}
@@ -103,7 +106,14 @@ class AdminBucketList(BucketList):
     permission_required = "api.is_superuser"
 
     def get_queryset(self):
-        return S3Bucket.objects.prefetch_related("users3buckets").all()
+        return S3Bucket.objects.prefetch_related("users3buckets").filter(
+            is_deleted=False
+        )
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["deleted_datasources"] = S3Bucket.objects.filter(is_deleted=True)
+        return context
 
 
 class WebappBucketList(BucketList):
@@ -120,6 +130,12 @@ class BucketDetail(
     model = S3Bucket
     permission_required = "api.retrieve_s3bucket"
     template_name = "datasource-detail.html"
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if not self.request.user.is_superuser:
+            queryset = queryset.filter(is_deleted=False)
+        return queryset
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -174,16 +190,15 @@ class CreateDatasource(
         datasource_type = self.request.GET.get("type")
 
         try:
-            with transaction.atomic():
-                self.object = S3Bucket.objects.create(
-                    name=name,
-                    created_by=self.request.user,
-                    is_data_warehouse=datasource_type == "warehouse",
-                )
-                messages.success(
-                    self.request,
-                    f"Successfully created {name} {datasource_type} data source",
-                )
+            self.object = S3Bucket.objects.create(
+                name=name,
+                created_by=self.request.user,
+                is_data_warehouse=datasource_type == "warehouse",
+            )
+            messages.success(
+                self.request,
+                f"Successfully created {name} {datasource_type} data source",
+            )
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)
@@ -199,16 +214,16 @@ class DeleteDatasource(
     permission_required = "api.destroy_s3bucket"
     success_url = reverse_lazy("list-warehouse-datasources")
 
-    def delete(self, *args, **kwargs):
-        bucket = self.get_object()
-        if not bucket.is_data_warehouse:
-            self.success_url = reverse_lazy("list-webapp-datasources")
+    def get_success_url(self):
+        if not self.object.is_data_warehouse:
+            return reverse_lazy("list-webapp-datasources")
+        return self.success_url
 
-        response = super().delete(*args, **kwargs)
-
+    def form_valid(self, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.soft_delete(deleted_by=self.request.user)
         messages.success(self.request, "Successfully deleted data source")
-
-        return response
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class UpdateAccessLevelMixin:
@@ -293,6 +308,11 @@ class UpdateIAMManagedPolicyAccessLevel(
 class RevokeAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = UserS3Bucket
     permission_required = "api.destroy_users3bucket"
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset=queryset)
+        obj.current_user = self.request.user
+        return obj
 
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")

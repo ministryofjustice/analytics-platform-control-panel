@@ -1,3 +1,2 @@
 # First-party/Local
-from controlpanel.middleware.legacy_api_redirect import LegacyAPIRedirectMiddleware
 from controlpanel.middleware.never_cache import DisableClientSideCachingMiddleware

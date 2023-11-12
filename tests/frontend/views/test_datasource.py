@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.urls import reverse
+from django.conf import settings
+from django.urls import reverse, reverse_lazy
 from model_mommy import mommy
 from rest_framework import status
 
@@ -101,9 +102,10 @@ def list_all(client, *args):
     return client.get(reverse("list-all-datasources"))
 
 
-def detail(client, buckets, *args):
+def detail(client, buckets, *args, bucket=None):
+    bucket = bucket or buckets["warehouse1"]
     return client.get(
-        reverse("manage-datasource", kwargs={"pk": buckets["warehouse1"].id})
+        reverse("manage-datasource", kwargs={"pk": bucket.id})
     )
 
 
@@ -115,9 +117,10 @@ def create(client, *args, **kwargs):
     return client.post(reverse("create-datasource") + "?type=warehouse", data)
 
 
-def delete(client, buckets, *args):
-    return client.delete(
-        reverse("delete-datasource", kwargs={"pk": buckets["warehouse1"].id})
+def delete(client, buckets, *args, bucket=None):
+    bucket = bucket or buckets["warehouse1"]
+    return client.post(
+        reverse("delete-datasource", kwargs={"pk": bucket.id})
     )
 
 
@@ -213,23 +216,24 @@ def test_access_permissions(client, users3buckets, users, view, user, expected_s
 
 
 @pytest.mark.parametrize(
-    "view,user,expected_count",
+    "view,user,expected_count,show_deleted",
     [
-        (list_warehouse, "superuser", 0),
-        (list_warehouse, "normal_user", 0),
-        (list_warehouse, "bucket_viewer", 1),
-        (list_warehouse, "bucket_admin", 2),
-        (list_app_data, "superuser", 0),
-        (list_app_data, "normal_user", 0),
-        (list_app_data, "bucket_viewer", 1),
-        (list_app_data, "bucket_admin", 2),
-        (list_all, "superuser", 5),
+        (list_warehouse, "superuser", 0, False),
+        (list_warehouse, "normal_user", 0, False),
+        (list_warehouse, "bucket_viewer", 1, False),
+        (list_warehouse, "bucket_admin", 2, False),
+        (list_app_data, "superuser", 0, False),
+        (list_app_data, "normal_user", 0, False),
+        (list_app_data, "bucket_viewer", 1, False),
+        (list_app_data, "bucket_admin", 2, False),
+        (list_all, "superuser", 5, True),
     ],
 )
-def test_list(client, buckets, users, view, user, expected_count):
+def test_list(client, buckets, users, view, user, expected_count, show_deleted):
     client.force_login(users[user])
     response = view(client, buckets, users)
     assert len(response.context_data["object_list"]) == expected_count
+    assert ("deleted_datasources" in response.context_data) is show_deleted
 
 
 @pytest.mark.parametrize(
@@ -274,7 +278,11 @@ def test_list_other_datasources_admins(client, buckets, users):
     assert other_datasources_admins[buckets["other"].id] == []
 
 
-def test_bucket_creator_has_readwrite_and_admin_access(client, users):
+@patch("controlpanel.api.models.users3bucket.tasks.S3BucketGrantToUser")
+@patch("controlpanel.api.models.s3bucket.tasks.S3BucketCreate")
+def test_bucket_creator_has_readwrite_and_admin_access(
+    create_bucket_task, grant_user_task, client, users
+):
     user = users["normal_user"]
     client.force_login(user)
     create(client)
@@ -282,6 +290,8 @@ def test_bucket_creator_has_readwrite_and_admin_access(client, users):
     ub = user.users3buckets.all()[0]
     assert ub.access_level == UserS3Bucket.READWRITE
     assert ub.is_admin
+    create_bucket_task.assert_called_once()
+    grant_user_task.assert_called_once()
 
 
 @pytest.mark.parametrize(
@@ -303,31 +313,44 @@ def test_create_get_form_class(rf, folders_enabled, datasource_type, form_class)
         assert view.get_form_class() == form_class
 
 
+@patch("controlpanel.api.models.users3bucket.tasks.S3BucketGrantToUser")
+@patch("controlpanel.api.models.s3bucket.tasks.S3BucketCreate")
 @patch("django.conf.settings.features.s3_folders.enabled", True)
-def test_create_folders(client, users, root_folder_bucket):
+@pytest.mark.parametrize("user", ["superuser", "normal_user", "other_user"])
+def test_create_folders(
+    create_bucket_task, grant_user_task, user, client, users, root_folder_bucket
+):
     """
     Check that all users can create a folder datasource
     """
-    for _, user in users.items():
-        client.force_login(user)
-        folder_name = f"test-{user.username}-folder"
-        response = create(client, name=folder_name)
+    user = users[user]
+    client.force_login(user)
+    folder_name = f"test-{user.username}-folder"
+    response = create(client, name=folder_name)
 
-        # redirect expected on success
-        assert response.status_code == 302
-        assert user.users3buckets.filter(
-            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
-        ).exists()
+    # redirect expected on success
+    assert response.status_code == 302
+    assert user.users3buckets.filter(
+        s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+    ).exists()
+    # make sure tasks are sent
+    create_bucket_task.assert_called_once()
+    grant_user_task.assert_called_once()
 
-        # create another folder to catch any errors updating IAM policy
-        folder_name = f"test-{user.username}-folder-2"
-        response = create(client, name=folder_name)
+    # create another folder to catch any errors updating IAM policy
+    create_bucket_task.reset_mock()
+    grant_user_task.reset_mock()
+    folder_name = f"test-{user.username}-folder-2"
+    response = create(client, name=folder_name)
 
-        # redirect expected on success
-        assert response.status_code == 302
-        assert user.users3buckets.filter(
-            s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
-        ).exists()
+    # redirect expected on success
+    assert response.status_code == 302
+    assert user.users3buckets.filter(
+        s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
+    ).exists()
+    # tasks to create are sent again for the second folder
+    create_bucket_task.assert_called_once()
+    grant_user_task.assert_called_once()
 
 
 @patch("django.conf.settings.features.s3_folders.enabled", False)
@@ -373,3 +396,66 @@ def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
 
     assert response.status_code == 200
     assert response.context_data["form"].is_valid() is False
+
+
+@pytest.mark.parametrize(
+    "bucket, success_url",
+    [
+        ("warehouse1", reverse_lazy("list-warehouse-datasources")),
+        ("app_data1", reverse_lazy("list-webapp-datasources")),
+    ]
+)
+def test_delete_calls_soft_delete(
+    client, buckets, users, bucket, success_url, sqs, helpers,
+):
+    admin = users["bucket_admin"]
+    bucket = buckets[bucket]
+
+    client.force_login(admin)
+    response = delete(client, buckets, bucket=bucket)
+    bucket.refresh_from_db()
+
+    assert bucket.pk is not None
+    assert bucket.is_deleted is True
+    assert bucket.deleted_by == admin
+    assert bucket.deleted_at is not None
+    assert response.url == success_url
+
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+    )
+
+
+@pytest.mark.parametrize(
+    "user, bucket, expected_status",
+    [
+        ("superuser", "app_data1", status.HTTP_200_OK),
+        ("superuser", "app_data2", status.HTTP_200_OK),
+        ("superuser", "warehouse1", status.HTTP_200_OK),
+        ("superuser", "warehouse2", status.HTTP_200_OK),
+        ("superuser", "other", status.HTTP_200_OK),
+        ("bucket_viewer", "app_data1", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "app_data2", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "warehouse1", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "warehouse2", status.HTTP_404_NOT_FOUND),
+        ("bucket_viewer", "other", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "app_data1", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "app_data2", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "warehouse1", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "warehouse2", status.HTTP_404_NOT_FOUND),
+        ("bucket_admin", "other", status.HTTP_404_NOT_FOUND),
+
+    ]
+)
+def test_detail_for_deleted_datasource(
+    client, buckets, users, user, bucket, expected_status
+):
+    user = users[user]
+    bucket = buckets[bucket]
+    bucket.soft_delete(deleted_by=user)
+
+    client.force_login(user)
+    response = detail(client, user, bucket=bucket)
+
+    assert response.status_code == expected_status

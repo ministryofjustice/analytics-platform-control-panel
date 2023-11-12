@@ -3,7 +3,7 @@ import json
 import uuid
 
 # Third-party
-from auth0.v3.exceptions import Auth0Error
+from auth0.exceptions import Auth0Error
 from django.conf import settings
 from django.db import models
 from django_extensions.db.fields import AutoSlugField
@@ -248,15 +248,6 @@ class App(TimeStampedModel):
         client_name = self.slug[0:allowed_length-1]
         return settings.AUTH0_CLIENT_NAME_PATTERN.format(
             app_name=client_name, env=env_name)
-
-    @property
-    def migration_info(self):
-        # TODO: using app.description for temporary place for storing old app info,
-        #  The content of this field should be removed after app migration is completed.
-        try:
-            return json.loads(self.description).get("migration", {})
-        except ValueError:
-            return {}
 
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
