@@ -30,7 +30,7 @@ pytest==7.3.1
 pytest-django==4.5.2
 python-dotenv==0.21.0
 python-jose==3.3.0
-pyyaml==6.0
+pyyaml==6.0.1
 rules==3.3
 sentry-sdk==1.14.0
 slackclient==2.9.4
