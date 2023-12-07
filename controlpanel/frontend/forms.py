@@ -115,11 +115,6 @@ class AppAuth0Form(forms.Form):
 
 class CreateAppForm(AppAuth0Form):
 
-    org_names = forms.ChoiceField(
-        required=True,
-        choices=list(zip(settings.GITHUB_ORGS, settings.GITHUB_ORGS)),
-    )
-
     repo_url = forms.CharField(
         max_length=512,
         validators=[
@@ -151,20 +146,6 @@ class CreateAppForm(AppAuth0Form):
         required=False,
     )
 
-    disable_authentication = forms.BooleanField(required=False)
-
-    app_ip_allowlists = forms.ModelMultipleChoiceField(
-        required=False, queryset=IPAllowlist.objects.filter(deleted=False)
-    )
-
-    deployment_envs = DynamicMultiChoiceField(required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(CreateAppForm, self).__init__(*args, **kwargs)
-        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
-            is_recommended=True
-        )
-
     def clean(self):
         cleaned_data = super().clean()
         connect_data_source = cleaned_data["connect_bucket"]
@@ -187,10 +168,6 @@ class CreateAppForm(AppAuth0Form):
 
         if connect_data_source == "existing" and not existing_datasource:
             self.add_error("existing_datasource_id", "This field is required.")
-
-        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
-            cleaned_data
-        )
 
         return cleaned_data
 

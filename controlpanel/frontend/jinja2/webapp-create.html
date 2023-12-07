@@ -56,54 +56,7 @@
 
   <div class="govuk-form-group" id="container-element">
 
-    <label class="govuk-label govuk-label--m" for="org_names_list">Github organisation
-      <br/>
-      <br/>
-      <div class="govuk-radios" id="org_names_list">
-      {% set checked_item = form.org_names.value() if form.org_names.value() else form.fields.org_names.choices[0][0] %}
-      {% for key, value  in form.fields.org_names.choices %}
-        <div class="govuk-radios__item">
-        <input class="govuk-radios__input" id="{{ key }}_id" name="org_names" type="radio" value="{{ value }}"
-        {{-" checked" if checked_item == value else "" }}>
-        {{ govukLabel({
-          "text": key,
-          "classes": 'govuk-radios__label',
-          "for": key + "_id"
-        }) }}
-        </div>
-      {% endfor %}
-      </div>
-    </label>
-
-    <br/>
     <label class="govuk-label govuk-label--m" for="display_result_repo">Github repository
-      <div style="float: right;">
-        <div style="float: left;" >
-          <input type="hidden" value="1" id="current_index" />
-          <button id="add_more" type="button" class="govuk-button govuk-button--secondary" style="margin-right: 20px" >load more</button>
-        </div>
-        <div style="float: left;" id="loading_text">loading repos: </div>
-        <div id="repos_loaded" style="float: left;" >0</div>
-
-        <div class="windows8" id="loading_gif" style="float: left;">
-          <div class="wBall" id="wBall_1">
-            <div class="wInnerBall"></div>
-          </div>
-          <div class="wBall" id="wBall_2">
-            <div class="wInnerBall"></div>
-          </div>
-          <div class="wBall" id="wBall_3">
-            <div class="wInnerBall"></div>
-          </div>
-          <div class="wBall" id="wBall_4">
-            <div class="wInnerBall"></div>
-          </div>
-          <div class="wBall" id="wBall_5">
-            <div class="wInnerBall"></div>
-          </div>
-        </div>
-      </div>
-
     </label>
 
     {% set error_repo_msg = form.errors.get("repo_url") %}
@@ -119,30 +72,6 @@
 
     <br/>
     <br/>
-    <label class="govuk-label govuk-label--m" for="deployment_envs_list">Available Deployment Environments
-      {% if form.deployment_envs.errors -%}
-        {{ govukErrorMessage({"text": form.deployment_envs.errors|join(". ")}) }}
-      {% endif %}
-      <p>Choose the environment you want to initialise the settings for deployment. If there is no environment available,
-        you need to raise request to Data platform to setup your project's deployment pipeline first,
-        alternatively you can still proceed to register the app here but no auth0 clients will be created even you require
-        auth for this app.
-      </p>
-      <div class="govuk-checkboxes" id="deployment_envs_list">
-      {% set checked_items = form.deployment_envs.value() if form.deployment_envs.value() else form.fields.org_names.choices[0][0] %}
-      {% for env_key, value  in form.fields.deployment_envs.choices %}
-        <div class="govuk-checkboxes__item">
-        <input class="govuk-checkboxes__input" id="{{ env_key }}_id" name="deployment_envs" type="checkbox" value="{{ value }}"
-        {{-" checked" if value in checked_item else "" }}>
-        {{ govukLabel({
-          "text": env_key,
-          "classes": 'govuk-checkboxes__label ',
-          "for": env_key + "_id"
-        }) }}
-        </div>
-      {% endfor %}
-      </div>
-    </label>
 
   </div>
 
@@ -175,71 +104,6 @@
       },
     ]
   }) }}
-
-  {% set permissions_link %}
-    <div>For more information on permissions, please have a look at this <a href="https://user-guidance.services.alpha.mojanalytics.xyz/rshiny-app.html#set-access-permissions"  >document.</a></div>
-  {% endset %}
-
-  {{
-    govukCheckboxes({
-      "fieldset": {
-        "legend": {
-          "text": "Disable Authentication",
-          "classes": "govuk-fieldset__legend--m",
-        },
-      },
-      "classes": "govuk-!-width-two-thirds",
-      "hint": {
-        "text": 'A flag to indicate if the app disables authentication. ' + permissions_link + " The auth0 won't be created if the option is ticked"
-      },
-      "name": "disable_authentication",
-      "items": [
-        {
-          "value": "True",
-          "text": "Disable app authentication",
-          "checked": form.disable_authentication.value(),
-        },
-      ],
-      "errorMessage": { "html": form.disable_authentication.errors|join(". ") } if form.disable_authentication.errors else {}
-    })
-  }}
-
-  <div class="govuk-form-group">
-    <label class="govuk-label govuk-label--m">IP Allowlists</label>
-    <span class="govuk-hint">
-      Customers will only be able to access this app from the IP networks in the allowlists selected below.
-      If no allowlists are selected, the app will be accessible from any IP address.
-    </span>
-
-    <div class="govuk-checkboxes">
-    {% for ip_allowlist in form.fields.app_ip_allowlists.choices %}
-      {% set id = "app-ip-allowlists-" + loop.index|string %}
-      {% set name = "app_ip_allowlists" %}
-      <div class="govuk-checkboxes__item">
-        <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ ip_allowlist[0] }}" {{-" checked" if (ip_allowlist[0] in form.app_ip_allowlists.value() or ip_allowlist[0]|string in form.app_ip_allowlists.value()) else "" }}>
-        {{ govukLabel({
-          "text": ip_allowlist[1],
-          "classes": 'govuk-checkboxes__label' + (' ' + (ip_allowlist.label|default({})).classes|default("")),
-          "attributes": (ip_allowlist.label|default({})).attributes|default(""),
-          "for": id
-        }) }}
-      </div>
-    {% endfor %}
-    </div>
-  </div>
-
-  {{ auth0_connections_form({
-      "fieldset": {
-        "legend": {
-        "text": "Oauth0 client - connections",
-        "classes": "govuk-fieldset__legend--m",
-        },
-      },
-      "errors": form.errors,
-      "field": form.fields['connections'],
-      "selected_values": form.connections.value()
-    } )
-  }}
 
   <div class="govuk-form-group">
     <button class="govuk-button">Register app</button>
