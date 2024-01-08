@@ -3,20 +3,19 @@ import uuid
 from unittest.mock import patch
 
 # Third-party
-from bs4 import BeautifulSoup
 import pytest
 import requests
+from bs4 import BeautifulSoup
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_mommy import mommy
 from rest_framework import status
 
 # First-party/Local
-from controlpanel.api import cluster
-from controlpanel.api import auth0
-from controlpanel.api.models.app import DeleteCustomerError
-from tests.api.fixtures.aws import *
+from controlpanel.api import auth0, cluster
 from controlpanel.api.models import App, AppIPAllowList, S3Bucket
+from controlpanel.api.models.app import DeleteCustomerError
+from tests.api.fixtures.aws import *  # noqa
 
 NUM_APPS = 3
 
@@ -210,12 +209,7 @@ def update_auth0_connections(client, app, *args):
 
 
 def create(client, *args):
-    data = {
-        "repo_url": "https://github.com/moj-analytical-services/test_app",
-        "connect_bucket": "later",
-        "disable_authentication": False,
-    }
-    return client.post(reverse("create-app"), data)
+    return client.get(reverse("create-app"))
 
 
 def delete(client, app, *args):
@@ -713,11 +707,9 @@ def test_register_app_with_creating_datasource(client, users):
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(users["superuser"])
     data = dict(
-        org_names="moj-analytical-services",
-        repo_url=f"https://github.com/moj-analytical-services/{test_app_name}",
+        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
         connect_bucket="new",
         new_datasource_name=test_bucket_name,
-        connections=[]
     )
     response = client.post(reverse("create-app"), data)
 
@@ -730,3 +722,18 @@ def test_register_app_with_creating_datasource(client, users):
     assert len(related_bucket_ids) == 1
     assert bucket.id in related_bucket_ids
 
+
+def test_register_app_invalid_organisation(client, users):
+    client.force_login(users["superuser"])
+    app_name = "example-app-old-org"
+    data = dict(
+        repo_url=f"https://github.com/moj-analytical-services/{app_name}",
+        connect_bucket="later",
+    )
+
+    response = client.post(reverse("create-app"), data)
+
+    # 200 due to errors
+    assert response.status_code == 200
+    assert "repo_url" in response.context_data["form"].errors
+    assert App.objects.filter(name=app_name).count() == 0
