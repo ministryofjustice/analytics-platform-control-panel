@@ -124,13 +124,9 @@ def test_create_app_form_clean_new_datasource():
     """
     f = forms.CreateAppForm(
         data={
-            "org_names": "moj-analytical-services",
-            "deployment_envs": ["test"],
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"],
-            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
@@ -142,33 +138,29 @@ def test_create_app_form_clean_new_datasource():
     # A new datasource name is required if the connection is new.
     f = forms.CreateAppForm(
         data={
-            "org_names": "moj-analytical-services",
             "deployment_envs": ["test"],
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
-            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
     assert f.is_valid() is False
     assert "new_datasource_name" in f.errors
+    assert "This field is required" in f.errors["new_datasource_name"][0]
     # If a datasource already exists, report the duplication.
     f = forms.CreateAppForm(
         data={
-            "org_names": "moj-analytical-services",
             "deployment_envs": ["test"],
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"],
-            "disable_authentication": True,
         }
     )
     f.clean_repo_url = mock.MagicMock()
     mock_s3 = mock.MagicMock()
     with mock.patch("controlpanel.frontend.forms.S3Bucket.objects", mock_s3):
         assert f.is_valid() is False
-        assert "new_datasource_name" in f.errors
+        assert "Datasource named test-bucketname already exists" in f.errors["new_datasource_name"][0]
 
 
 def test_create_app_form_clean_existing_datasource():
@@ -259,13 +251,9 @@ def test_create_app_form_clean_repo_url():
     # The good case.
     f = forms.CreateAppForm(
         data={
-            "org_names": "moj-analytical-services",
-            "deployment_envs": ["test"],
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "connections": ["email"],
-            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -284,12 +272,9 @@ def test_create_app_form_clean_repo_url():
     # Repo not found.
     f = forms.CreateAppForm(
         data={
-            "org_names": "moj-analytical-services",
-            "deployment_envs": ["test"],
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -304,17 +289,14 @@ def test_create_app_form_clean_repo_url():
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
         assert f.is_valid() is False
-        assert "repo_url" in f.errors
+        assert "Unknown Github organization" in f.errors["repo_url"][0]
 
     # App already exists.
     f = forms.CreateAppForm(
         data={
-            "org_names": "moj-analytical-services",
-            "deployment_envs": ["test"],
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
+            "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "disable_authentication": True,
         }
     )
     f.request = mock.MagicMock()
@@ -329,69 +311,7 @@ def test_create_app_form_clean_repo_url():
         "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
     ):
         assert f.is_valid() is False
-        assert "repo_url" in f.errors
-
-
-def test_create_app_with_custom_connection():
-    # Good case.
-    f = forms.CreateAppForm(
-        data={
-            "org_names": "moj-analytical-services",
-            "deployment_envs": ["test"],
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
-            "connect_bucket": "new",
-            "new_datasource_name": "test-bucketname",
-            "connections": ["email", "auth0_nomis"],
-            "disable_authentication": True,
-            "auth0_nomis_auth0_client_id": "nomis-client-id",
-            "auth0_nomis_auth0_client_secret": "nomis-client-secret",
-            "auth0_nomis_auth0_conn_name": "nomis-conn-name",
-        },
-        all_connections_names=["github", "email", "auth0_nomis"],
-        custom_connections=["auth0_nomis"],
-    )
-    f.request = mock.MagicMock()
-    mock_get_repo = mock.MagicMock(return_value=True)
-    mock_app = mock.MagicMock()
-    mock_app.objects.filter().exists.return_value = False
-    mock_s3 = mock.MagicMock()
-    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
-    with mock.patch(
-        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
-    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
-        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
-    ):
-        assert f.is_valid() is True
-
-    # Bad case: missing client credential for nomis login + not valid connection name
-    f = forms.CreateAppForm(
-        data={
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
-            "connect_bucket": "new",
-            "new_datasource_name": "test-bucketname",
-            "connections": ["email", "auth0_nomis"],
-            "disable_authentication": True,
-            "auth0_nomis_auth0_client_id": "nomis-client-id",
-            "auth0_nomis_auth0_client_secret": "",
-            "auth0_nomis_auth0_conn_name": "nomis_conn_name",
-        },
-        all_connections_names=["github", "email", "auth0_nomis"],
-        custom_connections=["auth0_nomis"],
-    )
-    f.request = mock.MagicMock()
-    mock_get_repo = mock.MagicMock(return_value=True)
-    mock_app = mock.MagicMock()
-    mock_app.objects.filter().exists.return_value = False
-    mock_s3 = mock.MagicMock()
-    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
-    with mock.patch(
-        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
-    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
-        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
-    ):
-        assert f.is_valid() is False
-        assert "auth0_nomis_auth0_client_secret" in f.errors
-        assert "auth0_nomis_auth0_conn_name" in f.errors
+        assert f.errors["repo_url"][0] == "App already exists for this repository URL"
 
 
 def test_update_app_with_custom_connection():

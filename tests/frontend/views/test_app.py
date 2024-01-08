@@ -15,7 +15,7 @@ from rest_framework import status
 from controlpanel.api import auth0, cluster
 from controlpanel.api.models import App, AppIPAllowList, S3Bucket
 from controlpanel.api.models.app import DeleteCustomerError
-from tests.api.fixtures.aws import *  # noqa
+from tests.api.fixtures.aws import *
 
 NUM_APPS = 3
 
