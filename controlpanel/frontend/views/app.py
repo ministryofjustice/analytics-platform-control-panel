@@ -17,7 +17,7 @@ from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
-from auth0.v3.management.rest import Auth0Error
+from auth0.rest import Auth0Error
 
 # First-party/Local
 from controlpanel.api import auth0, cluster

@@ -6,7 +6,7 @@ from datetime import datetime
 from time import time
 
 from controlpanel.api import auth0
-from auth0.v3.management.logs import Logs
+from auth0.management.logs import Logs
 
 
 class Command(BaseCommand):
