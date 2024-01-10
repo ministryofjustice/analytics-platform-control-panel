@@ -74,9 +74,18 @@ def validate_github_repository_url(value):
     if not value.startswith(github_base_url):
         raise ValidationError("Must be a Github hosted repository")
 
-    repo_name = value[len(github_base_url) :]  # noqa: E203
-    org, _ = repo_name.split("/", 1)
+    if value[-1] == "/":
+        raise ValidationError("Repository URL should not include a trailing slash")
 
+    repo_name = value[len(github_base_url) :]  # noqa: E203
+    repo_parts = list(filter(None, repo_name.split("/")))
+    if len(repo_parts) > 2:
+        raise ValidationError("Repository URL should not include subdirectories")
+
+    if len(repo_parts) < 2:
+        raise ValidationError("Repository URL is missing the repository name")
+
+    org = repo_parts[0]
     if org not in settings.GITHUB_ORGS:
         orgs = ", ".join(settings.GITHUB_ORGS)
         raise ValidationError(
