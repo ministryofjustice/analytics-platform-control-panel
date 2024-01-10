@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 
 # First-party/Local
 from controlpanel.api import aws
+from controlpanel.api.github import RepositoryNotFound
 from controlpanel.api.models import S3Bucket
 from controlpanel.frontend import forms
 
@@ -269,28 +270,6 @@ def test_create_app_form_clean_repo_url():
     ):
         assert f.is_valid() is True
 
-    # Repo not found.
-    f = forms.CreateAppForm(
-        data={
-            "repo_url": "https://github.com/moj-analytical-services/my_repo",
-            "connect_bucket": "new",
-            "new_datasource_name": "test-bucketname",
-        }
-    )
-    f.request = mock.MagicMock()
-    mock_get_repo = mock.MagicMock(return_value=None)
-    mock_app = mock.MagicMock()
-    mock_app.objects.filter().exists.return_value = False
-    mock_s3 = mock.MagicMock()
-    mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
-    with mock.patch(
-        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
-    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
-        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
-    ):
-        assert f.is_valid() is False
-        assert "Unknown Github organization" in f.errors["repo_url"][0]
-
     # App already exists.
     f = forms.CreateAppForm(
         data={
@@ -300,7 +279,6 @@ def test_create_app_form_clean_repo_url():
         }
     )
     f.request = mock.MagicMock()
-    mock_get_repo = mock.MagicMock(return_value=True)
     mock_app = mock.MagicMock()
     mock_app.objects.filter().exists.return_value = True
     mock_s3 = mock.MagicMock()
@@ -312,6 +290,27 @@ def test_create_app_form_clean_repo_url():
     ):
         assert f.is_valid() is False
         assert f.errors["repo_url"][0] == "App already exists for this repository URL"
+
+    # Repo in correct org but not found
+    f = forms.CreateAppForm(
+        data={
+            "repo_url": "https://github.com/ministryofjustice/doesnt-exist",
+            "connect_bucket": "new",
+            "new_datasource_name": "test-bucketname",
+        }
+    )
+    f.request = mock.MagicMock()
+    mock_app = mock.MagicMock()
+    mock_app.objects.filter().exists.return_value = False
+    with mock.patch(
+            "controlpanel.frontend.forms.GithubAPI.get_repository",
+            side_effect=RepositoryNotFound
+    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
+        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    ):
+        assert f.is_valid() is False
+        error = f.errors["repo_url"][0]
+        assert "Github repository not found - it may be private" in error
 
 
 def test_update_app_with_custom_connection():
