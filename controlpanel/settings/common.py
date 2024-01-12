@@ -166,6 +166,9 @@ OIDC_CALLBACK_CLASS = "controlpanel.oidc.StateMismatchHandler"
 # Hostname of the OIDC provider
 OIDC_DOMAIN = os.environ.get("OIDC_DOMAIN")
 
+# Provider for cloud platform
+OIDC_APP_EKS_PROVIDER = os.environ.get("OIDC_APP_EKS_PROVIDER")
+
 # OIDC endpoints
 OIDC_OP_AUTHORIZATION_ENDPOINT = os.environ.get("OIDC_OP_AUTHORIZATION_ENDPOINT")
 OIDC_OP_JWKS_ENDPOINT = os.environ.get("OIDC_OP_JWKS_ENDPOINT")

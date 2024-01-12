@@ -20,6 +20,8 @@ OIDC_OP_JWKS_ENDPOINT = "https://example.com/.well-known/jwks.json"
 OIDC_ALLOW_UNSECURED_JWT = True
 OIDC_DOMAIN = "oidc.idp.example.com"
 
+OIDC_APP_EKS_PROVIDER = "oidc-app-example"
+
 TOOLS_DOMAIN = "example.com"
 
 CSRF_COOKIE_SECURE = False

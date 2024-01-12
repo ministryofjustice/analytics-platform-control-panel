@@ -1,0 +1,17 @@
+{
+    "Sid": "AllowCloudPlatformOIDCProvider",
+    "Effect": "Allow",
+    "Principal": {
+        "Federated": "{{ identity_provider_arn }}"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+        "StringEquals": {
+            "{{ identity_provider }}:aud": "sts.amazonaws.com",
+            "{{ identity_provider }}:sub": [
+                "system:serviceaccount:data-platform-app-{{ app_name }}-dev:data-platform-app-{{ app_name }}-dev-sa",
+                "system:serviceaccount:data-platform-app-{{ app_name }}-prod:data-platform-app-{{ app_name }}-prod-sa"
+            ]
+        }
+    }
+}

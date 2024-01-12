@@ -50,9 +50,36 @@ def repos(githubapi):
     yield githubapi
 
 
-def test_app_create_iam_role(aws_create_role, app):
+@pytest.fixture
+def oidc_provider_statement(app, settings):
+    statement = dict()
+    statement["Sid"] = "AllowCloudPlatformOIDCProvider"
+    statement["Effect"] = "Allow"
+    statement["Action"] = "sts:AssumeRoleWithWebIdentity"
+    statement["Principal"] = {
+        "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_APP_EKS_PROVIDER}"  # noqa
+    }
+    statement["Condition"] = {
+        "StringEquals": {
+            f"{settings.OIDC_APP_EKS_PROVIDER}:aud": "sts.amazonaws.com",
+            f"{settings.OIDC_APP_EKS_PROVIDER}:sub": [
+                f"system:serviceaccount:data-platform-app-{app.slug}-dev:data-platform-app-{app.slug}-dev-sa",  # noqa
+                f"system:serviceaccount:data-platform-app-{app.slug}-prod:data-platform-app-{app.slug}-prod-sa"  # noqa
+            ]
+        }
+    }
+    return statement
+
+
+def test_oidc_provider_statement(app, oidc_provider_statement):
+    assert cluster.App(app).oidc_provider_statement == oidc_provider_statement
+
+
+def test_app_create_iam_role(aws_create_role, app, oidc_provider_statement):
     cluster.App(app).create_iam_role()
-    aws_create_role.assert_called_with(app.iam_role_name, BASE_ASSUME_ROLE_POLICY)
+    statement = BASE_ASSUME_ROLE_POLICY.copy()
+    statement.update(oidc_provider_statement)
+    aws_create_role.assert_called_with(app.iam_role_name, statement)
 
 
 @pytest.fixture  # noqa: F405
