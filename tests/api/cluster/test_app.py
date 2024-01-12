@@ -76,10 +76,12 @@ def test_oidc_provider_statement(app, oidc_provider_statement):
 
 
 def test_app_create_iam_role(aws_create_role, app, oidc_provider_statement):
+    expected_assume_role = BASE_ASSUME_ROLE_POLICY.copy()
+    expected_assume_role["Statement"].append(oidc_provider_statement)
+
     cluster.App(app).create_iam_role()
-    statement = BASE_ASSUME_ROLE_POLICY.copy()
-    statement.update(oidc_provider_statement)
-    aws_create_role.assert_called_with(app.iam_role_name, statement)
+
+    aws_create_role.assert_called_with(app.iam_role_name, expected_assume_role)
 
 
 @pytest.fixture  # noqa: F405
