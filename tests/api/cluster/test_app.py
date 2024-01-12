@@ -11,7 +11,7 @@ from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
 @pytest.fixture
 def app():
-    return models.App(slug="slug", repo_url="https://gitpub.example.com/test-repo")
+    return models.App(slug="test-app", repo_url="https://gitpub.example.com/test-repo")
 
 
 @pytest.fixture
@@ -128,7 +128,7 @@ def test_update_auth_connections(app, ExtendedAuth0):
             key_name='AUTH0_PASSWORDLESS',
             key_value=False)
         update_conns.assert_called_with(
-            app_name='data-platform-app-slug-testing_env',
+            app_name=f'data-platform-app-{app.slug}-testing_env',
             client_id='testing_client_id',
             new_conns=new_conns,
             existing_conns='email')
@@ -147,7 +147,7 @@ def test_update_auth_connections(app, ExtendedAuth0):
             key_name='AUTH0_PASSWORDLESS',
             key_value=True)
         update_conns.assert_called_with(
-            app_name='data-platform-app-slug-testing_env',
+            app_name=f'data-platform-app-{app.slug}-testing_env',
             client_id='testing_client_id',
             new_conns=new_conns,
             existing_conns='github')
