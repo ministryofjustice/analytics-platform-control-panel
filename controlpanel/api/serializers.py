@@ -362,7 +362,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             "edit_link": "update-app-ip-allowlists"
         },
         cluster.App.AUTH0_CONNECTIONS: {
-            "permission_flag": "api.create_app",
+            "permission_flag": "api.create_connections",
             "edit_link": "update-auth0-connections"
         }
     }

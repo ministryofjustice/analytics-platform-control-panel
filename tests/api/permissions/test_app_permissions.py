@@ -98,13 +98,13 @@ def test_authenticated_user_has_basic_perms(client, users):
         (app_detail, "app_user", status.HTTP_403_FORBIDDEN),
         (app_detail, "normal_user", status.HTTP_404_NOT_FOUND),
         (app_delete, "normal_user", status.HTTP_403_FORBIDDEN),
-        (app_create, "normal_user", status.HTTP_403_FORBIDDEN),
+        (app_create, "normal_user", status.HTTP_201_CREATED),
         (app_update, "normal_user", status.HTTP_403_FORBIDDEN),
 
         (app_list, "app_admin", status.HTTP_200_OK),
         (app_detail, "app_admin", status.HTTP_200_OK),
         (app_delete, "app_admin", status.HTTP_403_FORBIDDEN),
-        (app_create, "app_admin", status.HTTP_403_FORBIDDEN),
+        (app_create, "app_admin", status.HTTP_201_CREATED),
         (app_update, "app_admin", status.HTTP_403_FORBIDDEN),
     ],
 )
