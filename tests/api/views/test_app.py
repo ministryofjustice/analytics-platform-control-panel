@@ -173,8 +173,8 @@ def test_create(client, users, sqs, helpers):
     assert response.data["repo_url"] == "https://example.com/bar"
 
     app = App.objects.get(repo_url="https://example.com/bar")
-    messages = helpers.retrieve_messages(sqs)
-    helpers.validate_task_with_sqs_messages(messages, App.__name__, app.id)
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(messages, App.__name__, app.id, queue_name=settings.IAM_QUEUE_NAME)
 
 
 def test_update(client, app):

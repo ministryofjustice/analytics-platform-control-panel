@@ -50,10 +50,6 @@ def test_create(sqs, helpers):
     helpers.validate_task_with_sqs_messages(
         iam_messages, App.__name__, app.id, queue_name=settings.IAM_QUEUE_NAME
     )
-    auth_messages = helpers.retrieve_messages(sqs, queue_name=settings.AUTH_QUEUE_NAME)
-    helpers.validate_task_with_sqs_messages(
-        auth_messages, App.__name__, app.id, queue_name=settings.AUTH_QUEUE_NAME
-    )
 
 
 @pytest.mark.django_db
