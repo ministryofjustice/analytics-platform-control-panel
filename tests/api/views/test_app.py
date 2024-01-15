@@ -5,10 +5,12 @@ from unittest.mock import patch
 from botocore.exceptions import ClientError
 from model_mommy import mommy
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
 
 # First-party/Local
 from controlpanel.api.models import App
+from controlpanel.api.serializers import AppSerializer
 from tests.api.fixtures.aws import *
 
 
@@ -16,7 +18,7 @@ from tests.api.fixtures.aws import *
 def app():
     return mommy.make(
         "api.App",
-        repo_url="https://example.com/foo.git",
+        repo_url="https://github.com/ministryofjustice/example.git",
     )
 
 
@@ -165,20 +167,20 @@ def test_delete(client, app, authz):
 
 
 def test_create(client, users, sqs, helpers):
-    data = {"name": "bar", "repo_url": "https://example.com/bar.git"}
+    data = {"name": "bar", "repo_url": "https://github.com/ministryofjustice/new-example.git"}
     response = client.post(reverse("app-list"), data)
     assert response.status_code == status.HTTP_201_CREATED
 
     assert response.data["created_by"] == users["superuser"].auth0_id
-    assert response.data["repo_url"] == "https://example.com/bar"
+    assert response.data["repo_url"] == "https://github.com/ministryofjustice/new-example"
 
-    app = App.objects.get(repo_url="https://example.com/bar")
+    app = App.objects.get(repo_url="https://github.com/ministryofjustice/new-example")
     messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(messages, App.__name__, app.id, queue_name=settings.IAM_QUEUE_NAME)
 
 
 def test_update(client, app):
-    data = {"name": "foo", "repo_url": "http://foo.com.git"}
+    data = {"name": "foo", "repo_url": "https://github.com/ministryofjustice/new.git"}
     response = client.put(
         reverse("app-detail", (app.res_id,)),
         data,
@@ -186,7 +188,7 @@ def test_update(client, app):
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.data["name"] == data["name"]
-    assert response.data["repo_url"] == "http://foo.com"
+    assert response.data["repo_url"] == "https://github.com/ministryofjustice/new"
 
 
 @pytest.mark.skip(
@@ -202,3 +204,19 @@ def test_aws_error_and_transaction(client):
 
         with pytest.raises(App.DoesNotExist):  # noqa: F405
             App.objects.get(name=data["name"])
+
+
+@pytest.mark.parametrize("url, valid", [
+    ("https://example.com/repo", False),
+    ("https://github.com/someorg/repo", False),
+    ("https://github.com/ministryofjustice", False),
+    ("http://github.com/ministryofjustice/nothttps", False),
+    ("https://github.com/ministryofjustice/success", True),
+])
+def test_validate_repo_url(url, valid):
+    serializer = AppSerializer()
+    if valid:
+        assert serializer.validate_repo_url(url) == url
+    else:
+        with pytest.raises(ValidationError):
+            serializer.validate_repo_url(url)

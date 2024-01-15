@@ -61,12 +61,12 @@ def app_delete(client, app, *args):
 
 
 def app_create(client, *args):
-    data = {"name": "test-app", "repo_url": "https://example.com"}
+    data = {"name": "test-app", "repo_url": "https://github.com/ministryofjustice/example"}
     return client.post(reverse("app-list"), data)
 
 
 def app_update(client, app, *args):
-    data = {"name": "test-app", "repo_url": "https://example.com"}
+    data = {"name": "test-app", "repo_url": "https://github.com/ministryofjustice/example"}
     return client.put(
         reverse("app-detail", (app.res_id,)),
         json.dumps(data),
