@@ -107,7 +107,6 @@
         "active": page_name == "webapp-datasource-list",
       },
       {
-        "hide": not request.user.userapps.filter(is_admin=True).exists(),
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps",

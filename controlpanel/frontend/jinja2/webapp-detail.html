@@ -90,7 +90,7 @@
 
   {% for env_name, deployment_setting in deployments_settings.items() %}
   <h2 class="govuk-heading-m" >Deployment settings under {{ env_name }}</h2>
-    {% if deployment_setting.get('is_redundant') and request.user.has_perm('api.update_app', app) %}
+    {% if deployment_setting.get('is_redundant') and request.user.has_perm('api.destroy_app', app) %}
       <section class="cpanel-section">
         <p style="color:red">It appears this deployment environment is redundant and can be removed</p>
         <form action="{{ url('remove-app-deployment-env', kwargs={'pk': app.id, 'env_name': env_name}) }}" method="post">
