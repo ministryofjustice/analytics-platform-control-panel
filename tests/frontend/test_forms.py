@@ -4,6 +4,7 @@ from unittest import mock
 # Third-party
 import pytest
 from django.core.exceptions import ValidationError
+from django.urls import reverse
 
 # First-party/Local
 from controlpanel.api import aws
@@ -118,7 +119,14 @@ def test_tool_release_form_get_target_users():
         )
 
 
-def test_create_app_form_clean_new_datasource():
+@pytest.fixture
+def create_app_request_superuser(rf, users):
+    request = rf.post(reverse("create-app"))
+    request.user = users["superuser"]
+    return request
+
+
+def test_create_app_form_clean_new_datasource(create_app_request_superuser):
     """
     The CreateAppForm class has a bespoke "clean" method. We should ensure it
     checks the expected things in the correct way.
@@ -128,7 +136,8 @@ def test_create_app_form_clean_new_datasource():
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.clean_repo_url = mock.MagicMock()
     mock_s3 = mock.MagicMock()
@@ -142,7 +151,8 @@ def test_create_app_form_clean_new_datasource():
             "deployment_envs": ["test"],
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.clean_repo_url = mock.MagicMock()
     assert f.is_valid() is False
@@ -155,7 +165,8 @@ def test_create_app_form_clean_new_datasource():
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.clean_repo_url = mock.MagicMock()
     mock_s3 = mock.MagicMock()
@@ -164,7 +175,7 @@ def test_create_app_form_clean_new_datasource():
         assert "Datasource named test-bucketname already exists" in f.errors["new_datasource_name"][0]
 
 
-def test_create_app_form_clean_existing_datasource():
+def test_create_app_form_clean_existing_datasource(create_app_request_superuser):
     """
     An existing datasource name is required if the datasource is marked as
     already existing.
@@ -174,7 +185,8 @@ def test_create_app_form_clean_existing_datasource():
             "repo_url": "https://github.com/moj-analytical-services/my_repo",
             "connect_bucket": "existing",
             "connections": ["email"],
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.clean_repo_url = mock.MagicMock()
     # A valid form returns True.
@@ -182,7 +194,7 @@ def test_create_app_form_clean_existing_datasource():
     assert "existing_datasource_id" in f.errors
 
 
-def test_create_app_form_new_datasource_but_bucket_existed():
+def test_create_app_form_new_datasource_but_bucket_existed(create_app_request_superuser):
     bucket_name = "test-bucketname"
     aws.AWSBucket().create(bucket_name, is_data_warehouse=True)
 
@@ -192,7 +204,8 @@ def test_create_app_form_new_datasource_but_bucket_existed():
             "connect_bucket": "new",
             "new_datasource_name": bucket_name,
             "connections": ["email"],
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.clean_repo_url = mock.MagicMock()
     assert f.is_valid() is False
@@ -244,7 +257,7 @@ def test_grant_access_form_clean_paths(path, expected_error):
         assert form.clean_paths() == [path]
 
 
-def test_create_app_form_clean_repo_url():
+def test_create_app_form_clean_repo_url(create_app_request_superuser):
     """
     Ensure the various states of a GitHub repository result in a valid form or
     errors.
@@ -255,7 +268,8 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.request = mock.MagicMock()
     mock_get_repo = mock.MagicMock(return_value=True)
@@ -276,7 +290,8 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-        }
+        },
+        request=create_app_request_superuser
     )
     f.request = mock.MagicMock()
     mock_app = mock.MagicMock()
@@ -297,7 +312,8 @@ def test_create_app_form_clean_repo_url():
             "repo_url": "https://github.com/ministryofjustice/doesnt-exist",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-        }
+        },
+        request=create_app_request_superuser,
     )
     f.request = mock.MagicMock()
     mock_app = mock.MagicMock()
@@ -311,6 +327,42 @@ def test_create_app_form_clean_repo_url():
         assert f.is_valid() is False
         error = f.errors["repo_url"][0]
         assert "Github repository not found - it may be private" in error
+
+
+@pytest.mark.parametrize("user", ["superuser", "normal_user", "other_user"])
+def test_create_app_form_get_datasource_queryset(users, rf, user):
+    """
+    Assert that for each user,
+    """
+    superuser_bucket = S3Bucket.objects.create(
+        name="superuser_bucket",
+        created_by=users["superuser"],
+        is_data_warehouse=False,
+    )
+    user_bucket = S3Bucket.objects.create(
+        name="user_bucket",
+        created_by=users["normal_user"],
+        is_data_warehouse=False,
+    )
+    warehouse_bucket = S3Bucket.objects.create(
+        name="warehouse_bucket",
+        created_by=users["superuser"],
+        is_data_warehouse=True,
+    )
+    expected_buckets = {
+        "superuser": [superuser_bucket, user_bucket],
+        "normal_user": [user_bucket],
+        "other_user": []
+    }
+
+    request = rf.post(reverse("create-app"))
+    request.user = users[user]
+    form = forms.CreateAppForm(request=request)
+
+    queryset = form.get_datasource_queryset()
+
+    assert list(queryset) == expected_buckets[user]
+    assert warehouse_bucket not in expected_buckets[user]
 
 
 def test_update_app_with_custom_connection():
