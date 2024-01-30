@@ -11,12 +11,15 @@ from django.conf import settings
 # First-party/Local
 from controlpanel.utils import encrypt_data_by_using_public_key
 
-
 log = structlog.getLogger(__name__)
 
 
 class GithubAPIException(Exception):
     pass
+
+
+class RepositoryNotFound(GithubAPIException):
+    status_code = 404
 
 
 def extract_repo_info_from_url(repo_url):
@@ -62,6 +65,11 @@ class GithubAPI:
             self._get_repo_api_url(repo_name=repo_name, api_call=None),
             headers=self.headers,
         )
+        if response.status_code == 404:
+            raise RepositoryNotFound(
+                f"Repository '{repo_name}' not found, it may be private"
+            )
+
         return self._process_response(response)
 
     def read_app_deploy_info(self, repo_name: str, deploy_file="deploy.json"):
@@ -156,7 +164,9 @@ class GithubAPI:
         if not public_key:
             public_key = self.get_repo_env_public_key(repo_name, env_name)
         secret_data = {
-            "encrypted_value": encrypt_data_by_using_public_key(public_key["key"], secret_value),
+            "encrypted_value": encrypt_data_by_using_public_key(
+                public_key["key"], secret_value
+            ),
             "key_id": public_key["key_id"],
         }
         repo_secret_url = self._get_repo_env_api_url(

@@ -61,12 +61,12 @@ def app_delete(client, app, *args):
 
 
 def app_create(client, *args):
-    data = {"name": "test-app", "repo_url": "https://example.com"}
+    data = {"name": "test-app", "repo_url": "https://github.com/ministryofjustice/example"}
     return client.post(reverse("app-list"), data)
 
 
 def app_update(client, app, *args):
-    data = {"name": "test-app", "repo_url": "https://example.com"}
+    data = {"name": "test-app", "repo_url": "https://github.com/ministryofjustice/example"}
     return client.put(
         reverse("app-detail", (app.res_id,)),
         json.dumps(data),
@@ -98,13 +98,13 @@ def test_authenticated_user_has_basic_perms(client, users):
         (app_detail, "app_user", status.HTTP_403_FORBIDDEN),
         (app_detail, "normal_user", status.HTTP_404_NOT_FOUND),
         (app_delete, "normal_user", status.HTTP_403_FORBIDDEN),
-        (app_create, "normal_user", status.HTTP_403_FORBIDDEN),
+        (app_create, "normal_user", status.HTTP_201_CREATED),
         (app_update, "normal_user", status.HTTP_403_FORBIDDEN),
 
         (app_list, "app_admin", status.HTTP_200_OK),
         (app_detail, "app_admin", status.HTTP_200_OK),
         (app_delete, "app_admin", status.HTTP_403_FORBIDDEN),
-        (app_create, "app_admin", status.HTTP_403_FORBIDDEN),
+        (app_create, "app_admin", status.HTTP_201_CREATED),
         (app_update, "app_admin", status.HTTP_403_FORBIDDEN),
     ],
 )

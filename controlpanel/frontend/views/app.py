@@ -170,7 +170,7 @@ class UpdateAppAuth0Connections(
 
     form_class = UpdateAppAuth0ConnectionsForm
     model = App
-    permission_required = "api.create_app"
+    permission_required = "api.create_connections"
     template_name = "webapp-auth0-connections-update.html"
     success_url = "manage-app"
 

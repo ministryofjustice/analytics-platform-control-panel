@@ -74,3 +74,35 @@ def test_validate_auth0_conn_name_fail2(auth0_client_id):
 )
 def test_validate_auth0_conn_name_pass2(auth0_client_id):
     validators.validate_auth0_client_id(auth0_client_id)
+
+
+@pytest.mark.parametrize(
+    "url, error",
+    [
+        ("https://gitlab.com/org/repo", "Must be a Github hosted repository"),
+        (
+            "https://github.com/moj-analytical-services/repo",
+            "Unknown Github organization",
+        ),
+        (
+            "https://github.com/ministryofjustice/repo/",
+            "Repository URL should not include a trailing slash",
+        ),
+        (
+            "https://github.com/ministryofjustice/repo/subdir",
+            "Repository URL should not include subdirectories",
+        ),
+        (
+            "https://github.com/ministryofjustice/",
+            "Repository URL is missing the repository name",
+        ),
+        ("https://github.com/ministryofjustice/repo", None),
+    ],
+)
+def test_validate_github_repository_url(url, error):
+    if not error:
+        assert validators.validate_github_repository_url(url) is None
+    else:
+        with pytest.raises(ValidationError) as exc:
+            validators.validate_github_repository_url(url)
+            assert exc.value.args[0] == error

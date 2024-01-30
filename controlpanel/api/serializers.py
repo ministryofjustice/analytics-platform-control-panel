@@ -5,6 +5,7 @@ from operator import itemgetter
 
 # Third-party
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 # First-party/Local
@@ -18,6 +19,7 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
+from controlpanel.api import validators
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
@@ -177,6 +179,10 @@ class AppSerializer(serializers.ModelSerializer):
 
     def validate_repo_url(self, value):
         """Normalise repo URLs by removing trailing .git"""
+        try:
+            validators.validate_github_repository_url(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.message)
         return value.rsplit(".git", 1)[0]
 
 
@@ -362,7 +368,7 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             "edit_link": "update-app-ip-allowlists"
         },
         cluster.App.AUTH0_CONNECTIONS: {
-            "permission_flag": "api.create_app",
+            "permission_flag": "api.create_connections",
             "edit_link": "update-auth0-connections"
         }
     }

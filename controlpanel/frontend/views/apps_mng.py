@@ -23,12 +23,6 @@ class AppManager:
     """
 
     def register_app(self, user, app_data):
-        # prepare the data
-        github_api_token = user.github_api_token
-        envs = app_data.get("deployment_envs")
-        disable_authentication = app_data.get("disable_authentication") or False
-        connections = app_data.get("auth0_connections")
-        ip_allowlists = app_data.get("app_ip_allowlists")
         repo_url = app_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
 
@@ -36,26 +30,10 @@ class AppManager:
         new_app = self._create_app(
             name=name,
             repo_url=repo_url,
-            disable_authentication=disable_authentication,
-            connections=connections,
             current_user=user,
-            deployment_envs=envs,
-            has_ip_ranges=True if ip_allowlists else False
         )
-        self._add_ip_allowlists(new_app, envs, ip_allowlists)
         self._add_app_to_users(new_app, user)
-        # self._create_app_role(new_app)
         self._create_or_link_datasource(new_app, user, app_data)
-        # with transaction.atomic():
-        #     self._add_ip_allowlists(new_app, envs, ip_allowlists)
-        #     self._add_app_to_users(new_app, user)
-        #     # self._create_app_role(new_app)
-        #     self._create_or_link_datasource(new_app, user, app_data)
-
-        # self._create_auth_settigs(
-        #     new_app, envs, github_api_token, disable_authentication, connections
-        # )
-
         return new_app
 
     def trigger_tasks_for_ip_range_removal(self, user, deleted_object):

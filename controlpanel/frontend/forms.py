@@ -3,7 +3,6 @@ import re
 
 # Third-party
 from django import forms
-from django.conf import settings
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
@@ -12,7 +11,11 @@ from django.core.validators import RegexValidator, validate_email
 from controlpanel.api import validators
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
-from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
+from controlpanel.api.github import (
+    GithubAPI,
+    RepositoryNotFound,
+    extract_repo_info_from_url,
+)
 from controlpanel.api.models import App, S3Bucket, Tool, User
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
@@ -115,11 +118,6 @@ class AppAuth0Form(forms.Form):
 
 class CreateAppForm(AppAuth0Form):
 
-    org_names = forms.ChoiceField(
-        required=True,
-        choices=list(zip(settings.GITHUB_ORGS, settings.GITHUB_ORGS)),
-    )
-
     repo_url = forms.CharField(
         max_length=512,
         validators=[
@@ -151,20 +149,6 @@ class CreateAppForm(AppAuth0Form):
         required=False,
     )
 
-    disable_authentication = forms.BooleanField(required=False)
-
-    app_ip_allowlists = forms.ModelMultipleChoiceField(
-        required=False, queryset=IPAllowlist.objects.filter(deleted=False)
-    )
-
-    deployment_envs = DynamicMultiChoiceField(required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(CreateAppForm, self).__init__(*args, **kwargs)
-        self.fields["app_ip_allowlists"].initial = IPAllowlist.objects.filter(
-            is_recommended=True
-        )
-
     def clean(self):
         cleaned_data = super().clean()
         connect_data_source = cleaned_data["connect_bucket"]
@@ -188,19 +172,16 @@ class CreateAppForm(AppAuth0Form):
         if connect_data_source == "existing" and not existing_datasource:
             self.add_error("existing_datasource_id", "This field is required.")
 
-        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
-            cleaned_data
-        )
-
         return cleaned_data
 
     def clean_repo_url(self):
         repo_url = self.cleaned_data["repo_url"]
         org_name, repo_name = extract_repo_info_from_url(repo_url)
-        repo = GithubAPI(
-            self.request.user.github_api_token, github_org=org_name
-        ).get_repository(repo_name)
-        if repo is None:
+        try:
+            GithubAPI(
+                self.request.user.github_api_token, github_org=org_name
+            ).get_repository(repo_name)
+        except RepositoryNotFound:
             raise ValidationError(
                 "Github repository not found - it may be private",
             )

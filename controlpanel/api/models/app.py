@@ -232,9 +232,6 @@ class App(TimeStampedModel):
     def status(self):
         return "Deployed"
 
-    def deployment_envs(self, github_token):
-        return cluster.App(self, github_token).get_deployment_envs()
-
     def delete(self, *args, **kwargs):
         github_api_token = None
         if "github_api_token" in kwargs:
@@ -319,8 +316,12 @@ from django.dispatch import receiver
 
 @receiver(post_save, sender=App)
 def trigger_app_create_related_messages(sender, instance, created, **kwargs):
-    if created:
-        tasks.AppCreateRole(instance, instance.current_user).create_task()
+    if not created:
+        return
+    tasks.AppCreateRole(instance, instance.current_user).create_task()
+
+    # TODO this could be removed as part of a review of task queue usage
+    if instance.deployment_envs:
         tasks.AppCreateAuth(instance, instance.current_user, extra_data=dict(
             deployment_envs=instance.deployment_envs,
             disable_authentication=instance.disable_authentication,

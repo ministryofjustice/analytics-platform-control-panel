@@ -48,7 +48,7 @@ def is_app_admin(user, obj):
 
 
 add_perm("api.list_app", is_authenticated)
-add_perm("api.create_app", is_authenticated & is_superuser)
+add_perm("api.create_app", is_authenticated)
 add_perm("api.retrieve_app", is_authenticated & is_app_admin)
 add_perm("api.update_app", is_authenticated & is_superuser)
 add_perm("api.destroy_app", is_authenticated & is_superuser)
@@ -186,6 +186,8 @@ add_perm("api.list_ip_allowlists", is_authenticated & is_superuser)
 add_perm("api.create_ip_allowlists", is_authenticated & is_superuser)
 add_perm("api.update_ip_allowlists", is_authenticated & is_superuser)
 add_perm("api.destroy_ip_allowlists", is_authenticated & is_superuser)
+
+add_perm("api.create_connections", is_authenticated & is_superuser)
 
 
 @predicate

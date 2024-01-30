@@ -1,4 +1,5 @@
 # Standard library
+import json
 import os
 import secrets
 from copy import deepcopy
@@ -9,6 +10,7 @@ import requests
 import structlog
 from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+from django.template.loader import render_to_string
 
 # First-party/Local
 from controlpanel.api import auth0, helm
@@ -483,8 +485,27 @@ class App(EntityResource):
     def iam_role_name(self):
         return f"{settings.ENV}_app_{self.app.slug}"
 
+    @property
+    def oidc_provider_statement(self):
+        """
+        Builds the assume role statement for the OIDC provider, currently Cloud Platform
+        """
+        statement = render_to_string(
+            template_name="assume_roles/cloud_platform_oidc.json",
+            context={
+                "identity_provider": settings.OIDC_APP_EKS_PROVIDER,
+                "identity_provider_arn": iam_arn(
+                    f"oidc-provider/{settings.OIDC_APP_EKS_PROVIDER}"
+                ),
+                "app_name": self.app.slug,
+            }
+        )
+        return json.loads(statement)
+
     def create_iam_role(self):
-        self.aws_role_service.create_role(self.iam_role_name, BASE_ASSUME_ROLE_POLICY)
+        assume_role_policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
+        assume_role_policy["Statement"].append(self.oidc_provider_statement)
+        self.aws_role_service.create_role(self.iam_role_name, assume_role_policy)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         self.aws_role_service.grant_bucket_access(

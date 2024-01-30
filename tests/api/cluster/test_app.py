@@ -1,4 +1,5 @@
 # Standard library
+from copy import deepcopy
 from unittest.mock import MagicMock, patch
 
 # Third-party
@@ -11,7 +12,7 @@ from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
 @pytest.fixture
 def app():
-    return models.App(slug="slug", repo_url="https://gitpub.example.com/test-repo")
+    return models.App(slug="test-app", repo_url="https://gitpub.example.com/test-repo")
 
 
 @pytest.fixture
@@ -50,9 +51,38 @@ def repos(githubapi):
     yield githubapi
 
 
-def test_app_create_iam_role(aws_create_role, app):
+@pytest.fixture
+def oidc_provider_statement(app, settings):
+    statement = dict()
+    statement["Sid"] = "AllowCloudPlatformOIDCProvider"
+    statement["Effect"] = "Allow"
+    statement["Action"] = "sts:AssumeRoleWithWebIdentity"
+    statement["Principal"] = {
+        "Federated": f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:oidc-provider/{settings.OIDC_APP_EKS_PROVIDER}"  # noqa
+    }
+    statement["Condition"] = {
+        "StringEquals": {
+            f"{settings.OIDC_APP_EKS_PROVIDER}:aud": "sts.amazonaws.com",
+            f"{settings.OIDC_APP_EKS_PROVIDER}:sub": [
+                f"system:serviceaccount:data-platform-app-{app.slug}-dev:data-platform-app-{app.slug}-dev-sa",  # noqa
+                f"system:serviceaccount:data-platform-app-{app.slug}-prod:data-platform-app-{app.slug}-prod-sa"  # noqa
+            ]
+        }
+    }
+    return statement
+
+
+def test_oidc_provider_statement(app, oidc_provider_statement):
+    assert cluster.App(app).oidc_provider_statement == oidc_provider_statement
+
+
+def test_app_create_iam_role(aws_create_role, app, oidc_provider_statement):
+    expected_assume_role = deepcopy(BASE_ASSUME_ROLE_POLICY)
+    expected_assume_role["Statement"].append(oidc_provider_statement)
+
     cluster.App(app).create_iam_role()
-    aws_create_role.assert_called_with(app.iam_role_name, BASE_ASSUME_ROLE_POLICY)
+
+    aws_create_role.assert_called_with(app.iam_role_name, expected_assume_role)
 
 
 @pytest.fixture  # noqa: F405
@@ -101,7 +131,7 @@ def test_update_auth_connections(app, ExtendedAuth0):
             key_name='AUTH0_PASSWORDLESS',
             key_value=False)
         update_conns.assert_called_with(
-            app_name='data-platform-app-slug-testing_env',
+            app_name=f'data-platform-app-{app.slug}-testing_env',
             client_id='testing_client_id',
             new_conns=new_conns,
             existing_conns='email')
@@ -120,7 +150,7 @@ def test_update_auth_connections(app, ExtendedAuth0):
             key_name='AUTH0_PASSWORDLESS',
             key_value=True)
         update_conns.assert_called_with(
-            app_name='data-platform-app-slug-testing_env',
+            app_name=f'data-platform-app-{app.slug}-testing_env',
             client_id='testing_client_id',
             new_conns=new_conns,
             existing_conns='github')
