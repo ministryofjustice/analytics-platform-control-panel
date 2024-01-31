@@ -204,7 +204,7 @@
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-      {% set buckets = app.apps3buckets.all() %}
+      {% set buckets = app.apps3buckets.filter(s3bucket__is_deleted=False) %}
       {% set num_buckets = buckets|length %}
       {% for bucket in buckets %}
       <tr class="govuk-table__row">

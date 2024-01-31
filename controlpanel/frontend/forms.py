@@ -340,18 +340,33 @@ class GrantAppAccessForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.app = kwargs.pop("app")
-        self.exclude_connected = kwargs.pop("exclude_connected", False)
+        self.user = kwargs.pop("user")
+        self.exclude_connected = kwargs.pop("exclude_connected", True)
 
         super().__init__(*args, **kwargs)
 
+        self.fields["datasource"].queryset = self.get_datasource_queryset()
+
+    def get_datasource_queryset(self):
+        """
+        For all users excludes deleted buckets
+        Optionally excludes connected buckets
+        If the user is a superuser, returns all remaining buckets
+        Otherwise, returns only non-data warehouse buckets that the user has access to
+        """
+        queryset = S3Bucket.objects.filter(is_deleted=False)
         if self.exclude_connected:
-            self.fields["datasource"].queryset = S3Bucket.objects.exclude(
-                id__in=[a.s3bucket_id for a in self.app.apps3buckets.all()],
-            ).filter(is_deleted=False)
-        else:
-            self.fields["datasource"].queryset = S3Bucket.objects.filter(
-                is_deleted=False,
+            queryset = queryset.exclude(
+                pk__in=self.app.apps3buckets.values_list("s3bucket__pk", flat=True)
             )
+
+        if self.user.is_superuser:
+            return queryset
+
+        return queryset.filter(
+            users3buckets__in=self.user.users3buckets.filter(is_admin=True),
+            is_data_warehouse=False,
+        )
 
 
 class CreateIAMManagedPolicyForm(forms.Form):

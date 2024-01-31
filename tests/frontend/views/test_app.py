@@ -177,11 +177,11 @@ def repos_for_redundant_auth(githubapi):
 
 
 @pytest.fixture(autouse=True)
-def s3buckets(app):
+def s3buckets(app, users):
     with patch("controlpanel.api.aws.AWSBucket.create") as _:
         buckets = {
-            "not_connected": mommy.make("api.S3Bucket"),
-            "connected": mommy.make("api.S3Bucket"),
+            "not_connected": mommy.make("api.S3Bucket", created_by=users["app_admin"]),
+            "connected": mommy.make("api.S3Bucket", created_by=users["app_admin"]),
         }
         return buckets
 
@@ -303,7 +303,7 @@ def update_ip_allowlists(client, app, *args):
         (remove_customer_by_email, "app_admin", status.HTTP_302_FOUND),
         (remove_customer_by_email, "normal_user", status.HTTP_403_FORBIDDEN),
         (connect_bucket, "superuser", status.HTTP_302_FOUND),
-        (connect_bucket, "app_admin", status.HTTP_403_FORBIDDEN),
+        (connect_bucket, "app_admin", status.HTTP_302_FOUND),
         (connect_bucket, "normal_user", status.HTTP_403_FORBIDDEN),
         (update_ip_allowlists, "superuser", status.HTTP_302_FOUND),
         (update_ip_allowlists, "app_admin", status.HTTP_302_FOUND),

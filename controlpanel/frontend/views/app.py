@@ -113,7 +113,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
         context["grant_access_form"] = GrantAppAccessForm(
             app=app,
-            exclude_connected=True,
+            user=self.request.user,
         )
 
         # If auth settings not returned, all envs marked redundant in the serializer.
@@ -258,16 +258,17 @@ class UpdateAppIPAllowlists(
 class GrantAppAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
-    CreateView,
+    UpdateView,
 ):
     form_class = GrantAppAccessForm
-    model = AppS3Bucket
+    model = App
     permission_required = "api.add_app_bucket"
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
         if "app" not in kwargs:
             kwargs["app"] = App.objects.get(pk=self.kwargs["pk"])
+        kwargs["user"] = self.request.user
         return kwargs
 
     def get_success_url(self):
