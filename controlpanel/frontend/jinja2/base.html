@@ -101,18 +101,16 @@
         "active": page_name == "warehouse-datasource-list",
       },
       {
-        "hide": not request.user.users3buckets.filter(s3bucket__is_data_warehouse=False).exists(),
+        "hide": not request.user.show_webapp_data_link,
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list",
       },
       {
-        "hide": not request.user.userapps.filter(is_admin=True).exists(),
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps",
       },
-
       {
         "hide": not request.user.is_superuser,
         "text": "Groups",

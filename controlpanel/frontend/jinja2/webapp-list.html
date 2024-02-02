@@ -12,7 +12,7 @@
   {% if request.user.has_perm('api.list_app') %}
   {{ app_list(apps, request.user) }}
 
-    {% if request.user.has_perm('api.create_app') %}
+    {% if request.user.is_superuser and request.user.has_perm('api.create_app') %}
     <p class="govuk-body">
       <a class="govuk-button" href="{{ url('create-app') }}">
         Register an app

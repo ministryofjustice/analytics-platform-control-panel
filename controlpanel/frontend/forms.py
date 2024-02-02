@@ -16,7 +16,7 @@ from controlpanel.api.github import (
     RepositoryNotFound,
     extract_repo_info_from_url,
 )
-from controlpanel.api.models import App, S3Bucket, Tool, User
+from controlpanel.api.models import App, S3Bucket, Tool, User, UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
@@ -144,10 +144,23 @@ class CreateAppForm(AppAuth0Form):
         required=False,
     )
     existing_datasource_id = DatasourceChoiceField(
-        queryset=S3Bucket.objects.filter(is_data_warehouse=False, is_deleted=False),
+        queryset=S3Bucket.objects.none(),
         empty_label="Select",
         required=False,
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["existing_datasource_id"].queryset = self.get_datasource_queryset()
+
+    def get_datasource_queryset(self):
+        queryset = S3Bucket.objects.filter(is_data_warehouse=False, is_deleted=False)
+        if self.request.user.is_superuser:
+            return queryset
+
+        user_admin_buckets = self.request.user.users3buckets.filter(is_admin=True)
+        queryset = queryset.filter(users3buckets__in=user_admin_buckets)
+        return queryset
 
     def clean(self):
         cleaned_data = super().clean()
@@ -327,18 +340,33 @@ class GrantAppAccessForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.app = kwargs.pop("app")
-        self.exclude_connected = kwargs.pop("exclude_connected", False)
+        self.user = kwargs.pop("user")
+        self.exclude_connected = kwargs.pop("exclude_connected", True)
 
         super().__init__(*args, **kwargs)
 
+        self.fields["datasource"].queryset = self.get_datasource_queryset()
+
+    def get_datasource_queryset(self):
+        """
+        For all users excludes deleted buckets
+        Optionally excludes connected buckets
+        If the user is a superuser, returns all remaining buckets
+        Otherwise, returns only non-data warehouse buckets that the user has access to
+        """
+        queryset = S3Bucket.objects.filter(is_deleted=False)
         if self.exclude_connected:
-            self.fields["datasource"].queryset = S3Bucket.objects.exclude(
-                id__in=[a.s3bucket_id for a in self.app.apps3buckets.all()],
-            ).filter(is_deleted=False)
-        else:
-            self.fields["datasource"].queryset = S3Bucket.objects.filter(
-                is_deleted=False,
+            queryset = queryset.exclude(
+                pk__in=self.app.apps3buckets.values_list("s3bucket__pk", flat=True)
             )
+
+        if self.user.is_superuser:
+            return queryset
+
+        return queryset.filter(
+            users3buckets__in=self.user.users3buckets.filter(is_admin=True),
+            is_data_warehouse=False,
+        )
 
 
 class CreateIAMManagedPolicyForm(forms.Form):

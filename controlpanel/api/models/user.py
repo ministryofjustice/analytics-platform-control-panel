@@ -3,6 +3,7 @@ from crequest.middleware import CrequestMiddleware
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.signals import user_logged_in
 from django.db import models
+from django.utils.functional import cached_property
 
 # First-party/Local
 from controlpanel.api import auth0, cluster, slack
@@ -93,6 +94,24 @@ class User(AbstractUser):
     @property
     def slug(self):
         return sanitize_dns_label(self.username)
+
+    @cached_property
+    def show_webapp_data_link(self):
+        """
+        Check if the user already has an app bucket, or if the user is an admin of an
+        app
+        """
+        if self.is_superuser:
+            return True
+
+        if self.users3buckets.filter(
+                s3bucket__is_deleted=False
+        ).exclude(
+            s3bucket__is_data_warehouse=True
+        ).exists():
+            return True
+
+        return self.userapps.filter(is_admin=True).exists()
 
     def is_app_admin(self, app_id):
         return (
