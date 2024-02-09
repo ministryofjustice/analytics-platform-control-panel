@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 # Third-party
 import pytest
+from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster, models
@@ -156,5 +157,22 @@ def test_update_auth_connections(app, ExtendedAuth0):
             existing_conns='github')
 
 
+@patch("controlpanel.api.models.App.env_allowed_ip_ranges", new=MagicMock(return_value="1.2.3"))
+def test_create_secrets(app):
+    app_cluster = cluster.App(app)
+    secrets = {
+        app_cluster.IP_RANGES: "1.2.3",
+        app_cluster.APP_ROLE_ARN: app.iam_role_arn,
+        app_cluster.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
+    }
+    with patch.object(app_cluster, "create_or_update_secrets"):
+        app_cluster._create_secrets(env_name="dev", client=None)
+        app_cluster.create_or_update_secrets.assert_called_once_with(
+            env_name="dev",
+            secret_data=secrets
+        )
+
+
+# TODO can this be removed?
 mock_ingress = MagicMock(name="Ingress")
 mock_ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
