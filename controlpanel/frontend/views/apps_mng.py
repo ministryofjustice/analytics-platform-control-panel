@@ -81,16 +81,6 @@ class AppManager:
         for env in envs:
             AppIPAllowList.objects.update_records(app, env, ip_allowlists)
 
-    def _create_auth_settigs(
-        self, app, envs, github_api_token, disable_authentication, connections
-    ):
-        for env in envs:
-            cluster.App(app, github_api_token).create_auth_settings(
-                env_name=env,
-                disable_authentication=disable_authentication,
-                connections=connections,
-            )
-
     def _create_or_link_datasource(self, app, user, bucket_data):
         if bucket_data.get("new_datasource_name"):
             bucket = S3Bucket.objects.create(
