@@ -6,7 +6,7 @@ celery[sqs]==5.3.1
 channels==4.0.0
 channels-redis==4.2.0
 daphne==4.0.0
-Django==4.2.7
+Django==5.0.2
 django-crequest==2018.5.11
 django-extensions==3.2.3
 django-filter==22.1
