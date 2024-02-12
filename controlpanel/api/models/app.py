@@ -79,6 +79,10 @@ class App(TimeStampedModel):
     def release_name(self):
         return webapp_release_name(self._repo_name)
 
+    @property
+    def iam_role_arn(self):
+        return cluster.iam_arn(f"role/{self.iam_role_name}")
+
     def get_group_id(self, env_name):
         return self.get_auth_client(env_name).get("group_id")
 

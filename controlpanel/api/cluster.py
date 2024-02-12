@@ -388,6 +388,8 @@ class App(EntityResource):
     AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
+    APP_ROLE_ARN = "APP_ROLE_ARN"
+    DATA_ACCOUNT_ID = 'DATA_ACCOUNT_ID'
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
@@ -411,7 +413,9 @@ class App(EntityResource):
 
     def _create_secrets(self, env_name, client=None):
         secret_data: dict = {
-            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name)
+            App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name),
+            App.APP_ROLE_ARN: self.app.iam_role_arn,
+            App.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
         }
         if client:
             secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
@@ -651,12 +655,13 @@ class App(EntityResource):
         return app_env_vars
 
     def create_auth_settings(
-            self, env_name, disable_authentication=False, connections=None, app_domain=None
+        self, env_name, disable_authentication=False, connections=None, app_domain=None
     ):
         client = None
         group = None
-        connections = connections or \
-                      {auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION: {}}
+        if connections is None:
+            connections = {auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION: {}}
+
         if not disable_authentication:
             client, group = self._get_auth0_instance().setup_auth0_client(
                 client_name=self.app.auth0_client_name(env_name),
@@ -665,7 +670,8 @@ class App(EntityResource):
                 app_domain=app_domain
             )
             self.app.save_auth_settings(
-                env_name=env_name, client=client, group=group)
+                env_name=env_name, client=client, group=group
+            )
         self._create_secrets(env_name, client=client)
         self._create_env_vars(
             env_name,
