@@ -389,7 +389,6 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
     APP_ROLE_ARN = "APP_ROLE_ARN"
-    DATA_ACCOUNT_ID = 'DATA_ACCOUNT_ID'
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
@@ -415,7 +414,6 @@ class App(EntityResource):
         secret_data: dict = {
             App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name),
             App.APP_ROLE_ARN: self.app.iam_role_arn,
-            App.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
         }
         if client:
             secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]

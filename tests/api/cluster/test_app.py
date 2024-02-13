@@ -163,7 +163,6 @@ def test_create_secrets(app):
     secrets = {
         app_cluster.IP_RANGES: "1.2.3",
         app_cluster.APP_ROLE_ARN: app.iam_role_arn,
-        app_cluster.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
     }
     with patch.object(app_cluster, "create_or_update_secrets"):
         app_cluster._create_secrets(env_name="dev", client=None)
@@ -178,7 +177,6 @@ def test_create_secrets(app):
     ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
     ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
     ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
-    ("DATA_ACCOUNT_ID", "DATA_ACCOUNT_ID"),
     ("APP_ROLE_ARN", "APP_ROLE_ARN"),
     ("CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
 ])
