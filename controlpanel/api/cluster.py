@@ -551,12 +551,10 @@ class App(EntityResource):
         Format the self-defined secret/variable by removing the prefix
         if reading it from github and there is prefix in the name
         """
-        if key_name and key_name not in settings.AUTH_SETTINGS_ENVS \
-                and key_name not in settings.AUTH_SETTINGS_SECRETS:
-            if settings.APP_SELF_DEFINE_SETTING_PREFIX in key_name:
-                return key_name.replace(
-                    settings.APP_SELF_DEFINE_SETTING_PREFIX, "")
-        return key_name
+        if not key_name.startswith(settings.APP_SELF_DEFINE_SETTING_PREFIX):
+            return key_name
+
+        return key_name.replace(settings.APP_SELF_DEFINE_SETTING_PREFIX, "", 1)
 
     def create_or_update_secret(self, env_name, secret_key, secret_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)

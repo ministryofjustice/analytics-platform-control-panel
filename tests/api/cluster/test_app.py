@@ -193,6 +193,7 @@ def test_format_github_key_name(key, expected):
     ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
     ("APP_ROLE_ARN", "APP_ROLE_ARN"),
     ("XXX_CUSTOM_SETTING", "CUSTOM_SETTING"),
+    ("XXX_XXX_CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
 ])
 def test_get_github_key_display_name(key, expected):
     assert cluster.App(None).get_github_key_display_name(key) == expected
