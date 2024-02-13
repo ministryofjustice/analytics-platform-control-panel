@@ -186,6 +186,18 @@ def test_format_github_key_name(key, expected):
     assert cluster.App(None).format_github_key_name(key_name=key) == expected
 
 
+@pytest.mark.parametrize("key, expected", [
+    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+    ("XXX_CUSTOM_SETTING", "CUSTOM_SETTING"),
+])
+def test_get_github_key_display_name(key, expected):
+    assert cluster.App(None).get_github_key_display_name(key) == expected
+
+
 # TODO can this be removed?
 mock_ingress = MagicMock(name="Ingress")
 mock_ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
