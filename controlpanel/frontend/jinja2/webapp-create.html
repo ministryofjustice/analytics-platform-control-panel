@@ -23,7 +23,12 @@
       "text": '60 chars max, only lowercase letters, numbers, periods and hyphens, auto-prefixed with "' + env + '"'
     },
     "errorMessage": {"text": form.new_datasource_name.errors|join(". ")} if form.new_datasource_name.errors else {},
-    "value": form.new_datasource_name.value()
+    "value": form.new_datasource_name.value(),
+    "attributes": {
+      "data-bucket-prefix": env + "-",
+      "pattern": "[a-z0-9.-]{1,60}",
+      "maxlength": "60",
+    }
   }) }}
   </div>
 {% endset %}
