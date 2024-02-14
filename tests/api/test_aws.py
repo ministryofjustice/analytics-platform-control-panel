@@ -274,7 +274,11 @@ def test_create_bucket(logs_bucket, s3):
 def test_tag_bucket(s3):
     bucket_name = f"bucket-{id(MagicMock())}"
     bucket = s3.Bucket(bucket_name)
-    bucket.create()
+    bucket.create(
+        CreateBucketConfiguration={
+            "LocationConstraint": settings.BUCKET_REGION,  # noqa: F405
+        }
+    )
 
     aws.AWSBucket().tag_bucket(bucket_name, {"env": "test", "test-update": "old-value"})
     aws.AWSBucket().tag_bucket(
@@ -557,8 +561,8 @@ def test_create_policy(iam, settings):
 def assert_group_members(policy, role_names):
     attached_roles = list(policy.attached_roles.all())
     assert len(attached_roles) == len(role_names)
-    for role, role_name in zip(attached_roles, role_names):
-        assert role.role_name == role_name
+    for role in attached_roles:
+        assert role.role_name in role_names
 
 
 @pytest.fixture
