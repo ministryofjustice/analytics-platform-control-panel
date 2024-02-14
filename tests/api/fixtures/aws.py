@@ -19,31 +19,31 @@ def aws_creds():
 
 @pytest.fixture(autouse=True)
 def iam(aws_creds):
-    with moto.mock_iam():
+    with moto.mock_aws():
         yield boto3.Session().resource("iam")
 
 
 @pytest.fixture(autouse=True)
 def s3(aws_creds):
-    with moto.mock_s3():
+    with moto.mock_aws():
         yield boto3.resource("s3")
 
 
 @pytest.fixture(autouse=True)
 def sts(aws_creds):
-    with moto.mock_sts():
+    with moto.mock_aws():
         yield boto3.client("sts")
 
 
 @pytest.fixture(autouse=True)
 def ssm(aws_creds):
-    with moto.mock_ssm():
+    with moto.mock_aws():
         yield boto3.client("ssm", region_name="eu-west-1")
 
 
 @pytest.fixture(autouse=True)
 def sqs(aws_creds):
-    with moto.mock_sqs():
+    with moto.mock_aws():
         sqs = boto3.resource("sqs")
         sqs.create_queue(QueueName=settings.DEFAULT_QUEUE)
         sqs.create_queue(QueueName=settings.IAM_QUEUE_NAME)
@@ -53,7 +53,7 @@ def sqs(aws_creds):
 
 @pytest.fixture(autouse=True)
 def secretsmanager(aws_creds):
-    with moto.mock_secretsmanager():
+    with moto.mock_aws():
         yield boto3.client("secretsmanager", region_name="eu-west-1")
 
 
@@ -161,4 +161,9 @@ def logs_bucket(s3):
 
 @pytest.fixture()
 def root_folder_bucket(s3):
-    yield s3.create_bucket(Bucket=settings.S3_FOLDER_BUCKET_NAME)
+    yield s3.create_bucket(
+        Bucket=settings.S3_FOLDER_BUCKET_NAME,
+        CreateBucketConfiguration={
+            "LocationConstraint": settings.BUCKET_REGION,  # noqa: F405
+        },
+    )
