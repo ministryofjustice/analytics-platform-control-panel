@@ -204,3 +204,8 @@ def test_app_allowed_ip_ranges():
     full_app_ip_ranges = app.app_allowed_ip_ranges
     assert " " not in full_app_ip_ranges
     assert len(full_app_ip_ranges.split(",")) == 4
+
+
+def test_iam_role_arn():
+    app = App(slug="example-app")
+    assert app.iam_role_arn == f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/test_app_example-app"
