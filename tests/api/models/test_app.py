@@ -209,3 +209,17 @@ def test_app_allowed_ip_ranges():
 def test_iam_role_arn():
     app = App(slug="example-app")
     assert app.iam_role_arn == f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/test_app_example-app"
+
+
+@pytest.mark.parametrize("conf, expected", [
+    (None, False),
+    ({}, False),
+    ({"some_setting_key": []}, False),
+    ({App.KEY_WORD_FOR_AUTH_SETTINGS: None}, False),
+    ({App.KEY_WORD_FOR_AUTH_SETTINGS: {}}, False),
+    ({App.KEY_WORD_FOR_AUTH_SETTINGS: {"dev": {}}}, True),
+])
+def test_can_manage_customers(conf, expected):
+    app = App()
+    app.app_conf = conf
+    assert app.can_manage_customers is expected

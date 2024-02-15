@@ -83,6 +83,12 @@ class App(TimeStampedModel):
     def iam_role_arn(self):
         return cluster.iam_arn(f"role/{self.iam_role_name}")
 
+    @property
+    def can_manage_customers(self):
+        if not self.app_conf:
+            return False
+        return bool(self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS))
+
     def get_group_id(self, env_name):
         return self.get_auth_client(env_name).get("group_id")
 

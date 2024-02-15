@@ -151,7 +151,7 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             self.request,
             f"Successfully registered {self.object.name} webapp",
         )
-        return reverse_lazy("list-apps")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
         try:

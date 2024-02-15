@@ -163,7 +163,6 @@ def test_create_secrets(app):
     secrets = {
         app_cluster.IP_RANGES: "1.2.3",
         app_cluster.APP_ROLE_ARN: app.iam_role_arn,
-        app_cluster.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
     }
     with patch.object(app_cluster, "create_or_update_secrets"):
         app_cluster._create_secrets(env_name="dev", client=None)
@@ -171,6 +170,31 @@ def test_create_secrets(app):
             env_name="dev",
             secret_data=secrets
         )
+
+
+@pytest.mark.parametrize("key, expected", [
+    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+    ("CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
+])
+def test_format_github_key_name(key, expected):
+    assert cluster.App(None).format_github_key_name(key_name=key) == expected
+
+
+@pytest.mark.parametrize("key, expected", [
+    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+    ("XXX_CUSTOM_SETTING", "CUSTOM_SETTING"),
+    ("XXX_XXX_CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
+])
+def test_get_github_key_display_name(key, expected):
+    assert cluster.App(None).get_github_key_display_name(key) == expected
 
 
 # TODO can this be removed?

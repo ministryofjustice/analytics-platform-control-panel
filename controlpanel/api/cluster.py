@@ -389,7 +389,6 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
     APP_ROLE_ARN = "APP_ROLE_ARN"
-    DATA_ACCOUNT_ID = 'DATA_ACCOUNT_ID'
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
@@ -415,7 +414,6 @@ class App(EntityResource):
         secret_data: dict = {
             App.IP_RANGES: self.app.env_allowed_ip_ranges(env_name=env_name),
             App.APP_ROLE_ARN: self.app.iam_role_arn,
-            App.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
         }
         if client:
             secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
@@ -534,24 +532,27 @@ class App(EntityResource):
         Format the self-defined secret/variable by adding prefix if
         create/update value back to github and there is no prefix in the name
         """
-        if key_name not in settings.AUTH_SETTINGS_ENVS \
-                and key_name not in settings.AUTH_SETTINGS_SECRETS:
-            if not key_name.startswith(settings.APP_SELF_DEFINE_SETTING_PREFIX):
-                return f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{key_name}"
-        return key_name
+        if key_name in settings.AUTH_SETTINGS_ENVS:
+            return key_name
+
+        if key_name in settings.AUTH_SETTINGS_SECRETS:
+            return key_name
+
+        if key_name.startswith(settings.APP_SELF_DEFINE_SETTING_PREFIX):
+            return key_name
+
+        return f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{key_name}"
 
     @staticmethod
-    def get_github_key_display_name(key_name):
+    def get_github_key_display_name(key_name: str) -> str:
         """
         Format the self-defined secret/variable by removing the prefix
         if reading it from github and there is prefix in the name
         """
-        if key_name and key_name not in settings.AUTH_SETTINGS_ENVS \
-                and key_name not in settings.AUTH_SETTINGS_SECRETS:
-            if settings.APP_SELF_DEFINE_SETTING_PREFIX in key_name:
-                return key_name.replace(
-                    settings.APP_SELF_DEFINE_SETTING_PREFIX, "")
-        return key_name
+        if not key_name.startswith(settings.APP_SELF_DEFINE_SETTING_PREFIX):
+            return key_name
+
+        return key_name.replace(settings.APP_SELF_DEFINE_SETTING_PREFIX, "", 1)
 
     def create_or_update_secret(self, env_name, secret_key, secret_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
