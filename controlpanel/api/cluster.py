@@ -544,7 +544,7 @@ class App(EntityResource):
         return f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{key_name}"
 
     @staticmethod
-    def get_github_key_display_name(key_name):
+    def get_github_key_display_name(key_name: str) -> str:
         """
         Format the self-defined secret/variable by removing the prefix
         if reading it from github and there is prefix in the name

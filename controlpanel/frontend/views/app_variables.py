@@ -37,7 +37,7 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         kwargs["initial"]["env_name"] = data.get("env_name")
         kwargs["initial"]["key"] = self.kwargs.get("var_name")
         kwargs["initial"]["display_key"] = cluster.App.get_github_key_display_name(
-            self.kwargs.get("var_name"))
+            self.kwargs.get("var_name", ""))
         if kwargs["initial"]["key"]:
             try:
                 var_info = cluster.App(
