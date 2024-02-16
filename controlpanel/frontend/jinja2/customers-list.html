@@ -20,7 +20,7 @@
 
 {% if not groups_dict %}
    <h2 class="govuk-heading-s">
-      No need to manage the customers of the app on Control panel as it does not require authentication
+      Customer management is disabled. To manage customers, create an Auth0 client and enable authentication on the <a href="{{ url("manage-app", kwargs={ "pk": app.id}) }}"> manage app page.</a>
    </h2>
 {% else %}
   <section>

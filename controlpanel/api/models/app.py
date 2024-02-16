@@ -10,10 +10,9 @@ from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
-from controlpanel.api import auth0, cluster
+from controlpanel.api import auth0, cluster, tasks
 from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
-from controlpanel.api import tasks
 
 
 class App(TimeStampedModel):
@@ -82,12 +81,6 @@ class App(TimeStampedModel):
     @property
     def iam_role_arn(self):
         return cluster.iam_arn(f"role/{self.iam_role_name}")
-
-    @property
-    def can_manage_customers(self):
-        if not self.app_conf:
-            return False
-        return bool(self.app_conf.get(self.KEY_WORD_FOR_AUTH_SETTINGS))
 
     def get_group_id(self, env_name):
         return self.get_auth_client(env_name).get("group_id")
@@ -320,7 +313,8 @@ App.AddCustomerError = AddCustomerError
 App.DeleteCustomerError = DeleteCustomerError
 
 
-from django.db.models.signals import post_save, post_delete
+# Third-party
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 
@@ -342,6 +336,7 @@ def trigger_app_create_related_messages(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=App)
 def remove_app_related_tasks(sender, instance, **kwargs):
+    # First-party/Local
     from controlpanel.api.models import Task
     related_app_tasks = Task.objects.filter(entity_class="App", entity_id=instance.id)
     for task in related_app_tasks:
