@@ -3,10 +3,10 @@ import uuid
 from unittest.mock import patch
 
 # Third-party
+import pytest
 from auth0.rest import Auth0Error
 from bs4 import BeautifulSoup
 from model_mommy import mommy
-import pytest
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -221,7 +221,7 @@ def test_no_exist_auth0_clients_on_customers_page(client, app, users, ExtendedAu
 def test_no_auth0_customers_page(client, app, users, ExtendedAuth0):
     app.app_conf = None
     app.save()
-    message = "No need to manage the customers of the app on Control pane"
+    message = "Customer management is disabled."
     client.force_login(users["superuser"])
     response = client.get(reverse("appcustomers-page", args=(app.id, 1)))
 
