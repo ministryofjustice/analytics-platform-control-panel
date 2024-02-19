@@ -56,6 +56,15 @@ def test_tool_release_form_check_release_name():
     assert f.is_valid()
     data = {
         "name": "Test Release",
+        "chart_name": "vscode",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
         "chart_name": "invalid-chartname",
         "version": "1.2.3",
         "values": {"foo": "bar"},
@@ -87,6 +96,16 @@ def test_tool_release_form_check_tool_domain():
         "values": {"foo": "bar"},
         "is_restricted": False,
         "tool_domain": "jupyter-lab",
+    }
+    f = forms.ToolReleaseForm(data)
+    assert f.is_valid()
+    data = {
+        "name": "Test Release",
+        "chart_name": "vscode",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "tool_domain": "vscode",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
