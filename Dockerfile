@@ -11,7 +11,7 @@ RUN /node_modules/.bin/jest
 
 FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
 
-ARG HELM_VERSION=3.5.4
+ARG HELM_VERSION=3.14.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://get.helm.sh
 
