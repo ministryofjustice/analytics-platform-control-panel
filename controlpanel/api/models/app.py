@@ -34,6 +34,9 @@ class App(TimeStampedModel):
     # are not within the fields which will be searched frequently
     app_conf = models.JSONField(null=True)
 
+    # Stores the Cloud Platform namespace name
+    namespace = models.CharField(unique=True, max_length=63)
+
     # Non database field just for passing extra parameters
     disable_authentication = False
     connections = {}
