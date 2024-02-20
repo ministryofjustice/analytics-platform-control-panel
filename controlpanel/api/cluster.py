@@ -499,7 +499,7 @@ class App(EntityResource):
                 "identity_provider_arn": iam_arn(
                     f"oidc-provider/{settings.OIDC_APP_EKS_PROVIDER}"
                 ),
-                "app_name": self.app.slug,
+                "app_namespace": self.app.namespace,
             }
         )
         return json.loads(statement)

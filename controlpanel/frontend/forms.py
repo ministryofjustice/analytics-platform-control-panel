@@ -116,7 +116,7 @@ class AppAuth0Form(forms.Form):
         return auth0_conn_data
 
 
-class CreateAppForm(AppAuth0Form):
+class CreateAppForm(forms.Form):
 
     repo_url = forms.CharField(
         max_length=512,
@@ -148,8 +148,10 @@ class CreateAppForm(AppAuth0Form):
         empty_label="Select",
         required=False,
     )
+    namespace = forms.CharField(required=True, max_length=63)
 
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
         self.fields["existing_datasource_id"].queryset = self.get_datasource_queryset()
 
@@ -203,6 +205,18 @@ class CreateAppForm(AppAuth0Form):
             raise ValidationError("App already exists for this repository URL")
 
         return repo_url
+
+    def clean_namespace(self):
+        """
+        Removes the env suffix is the user included it
+        """
+        namespace = self.cleaned_data["namespace"]
+        for suffix in ["-dev", "-prod"]:
+            if suffix in namespace:
+                namespace = namespace.removesuffix(suffix)
+                break
+
+        return namespace
 
 
 class UpdateAppAuth0ConnectionsForm(AppAuth0Form):

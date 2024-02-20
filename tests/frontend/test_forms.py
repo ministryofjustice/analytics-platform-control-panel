@@ -136,6 +136,7 @@ def test_create_app_form_clean_new_datasource(create_app_request_superuser):
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "namespace": "my-repo"
         },
         request=create_app_request_superuser,
     )
@@ -151,6 +152,7 @@ def test_create_app_form_clean_new_datasource(create_app_request_superuser):
             "deployment_envs": ["test"],
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
+            "namespace": "my-repo"
         },
         request=create_app_request_superuser,
     )
@@ -268,6 +270,7 @@ def test_create_app_form_clean_repo_url(create_app_request_superuser):
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
+            "namespace": "my-repo"
         },
         request=create_app_request_superuser,
     )
