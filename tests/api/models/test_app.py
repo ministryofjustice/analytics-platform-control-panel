@@ -61,10 +61,10 @@ def test_slug_characters_replaced():
 
 @pytest.mark.django_db
 def test_slug_collisions_increments():
-    app = App.objects.create(repo_url="git@github.com:org/foo-bar.git")
+    app = App.objects.create(repo_url="git@github.com:org/foo-bar.git", namespace="foo-bar")
     assert "foo-bar" == app.slug
 
-    app2 = App.objects.create(repo_url="https://www.example.com/org/foo-bar")
+    app2 = App.objects.create(repo_url="https://www.example.com/org/foo-bar", namespace="foo-bar-2")
     assert "foo-bar-2" == app2.slug
 
 

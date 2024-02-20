@@ -13,7 +13,7 @@ from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
 @pytest.fixture
 def app():
-    return models.App(slug="test-app", repo_url="https://gitpub.example.com/test-repo")
+    return models.App(slug="test-app", repo_url="https://gitpub.example.com/test-repo", namespace="test-namespace")
 
 
 @pytest.fixture
@@ -65,8 +65,8 @@ def oidc_provider_statement(app, settings):
         "StringEquals": {
             f"{settings.OIDC_APP_EKS_PROVIDER}:aud": "sts.amazonaws.com",
             f"{settings.OIDC_APP_EKS_PROVIDER}:sub": [
-                f"system:serviceaccount:data-platform-app-{app.slug}-dev:data-platform-app-{app.slug}-dev-sa",  # noqa
-                f"system:serviceaccount:data-platform-app-{app.slug}-prod:data-platform-app-{app.slug}-prod-sa"  # noqa
+                f"system:serviceaccount:{app.namespace}-dev:{app.namespace}-dev-sa",  # noqa
+                f"system:serviceaccount:{app.namespace}-prod:{app.namespace}-prod-sa"  # noqa
             ]
         }
     }

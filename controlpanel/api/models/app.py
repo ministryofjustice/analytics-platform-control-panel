@@ -257,9 +257,9 @@ class App(TimeStampedModel):
         if not format_pattern:
             format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_SETTING_KEY_WORD)
         if format_pattern:
-            return format_pattern.format(app_name=self.slug, env=env_name)
+            return format_pattern.format(app_name=self.namespace, env=env_name)
         else:
-            return self.slug
+            return self.namespace
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY
