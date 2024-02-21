@@ -34,6 +34,9 @@ class App(TimeStampedModel):
     # are not within the fields which will be searched frequently
     app_conf = models.JSONField(null=True)
 
+    # Stores the Cloud Platform namespace name
+    namespace = models.CharField(unique=True, max_length=63)
+
     # Non database field just for passing extra parameters
     disable_authentication = False
     connections = {}
@@ -251,12 +254,13 @@ class App(TimeStampedModel):
 
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
+        namespace = self.namespace.removeprefix("data-platform-app-")
         if not format_pattern:
             format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_SETTING_KEY_WORD)
         if format_pattern:
-            return format_pattern.format(app_name=self.slug, env=env_name)
+            return format_pattern.format(app_name=namespace, env=env_name)
         else:
-            return self.slug
+            return namespace
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY

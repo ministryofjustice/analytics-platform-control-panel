@@ -73,12 +73,27 @@
       }) }}
     {% endif %}
 
-    <input type="text" class="govuk-input" id="display_result_repo" name="repo_url" />
-
-    <br/>
-    <br/>
+    <input type="text" class="govuk-input" id="display_result_repo" name="repo_url" required />
 
   </div>
+  <div class="govuk-form-group" id="container-element">
+
+    <label class="govuk-label govuk-label--m" for="display_result_repo">Cloud Platform namespace
+    </label>
+
+    {% set error_repo_msg = form.errors.get("namespace") %}
+    {% if error_repo_msg %}
+      {% set errorId = 'namespace-error' %}
+      {{ govukErrorMessage({
+        "id": errorId,
+        "html": error_repo_msg|join(". "),
+      }) }}
+    {% endif %}
+    <span class="govuk-hint">Enter namespace with the -env suffix removed</span>
+    <input type="text" class="govuk-input" id="id_namespace" name="namespace" required />
+
+  </div>
+
 
   {{ govukRadios({
     "name": "connect_bucket",
@@ -89,7 +104,7 @@
       },
     },
     "hint": {
-      "text": "Connect an existing app data source to your app, or create a new one.",
+      "text": "Connect an existing app data source to your app, or create a new one. If you don't need to connect to an S3 bucket, select 'Do this later'",
     },
     "items": [
       {
@@ -100,6 +115,9 @@
       {
         "value": "existing",
         "html": existing_datasource_html|safe,
+        "hint": {
+          "text": "Only buckets that you have admin access to are displayed",
+        },
         "checked": form.connect_bucket.value() == "existing"
       },
       {
