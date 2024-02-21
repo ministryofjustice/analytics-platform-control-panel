@@ -254,12 +254,13 @@ class App(TimeStampedModel):
 
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
+        namespace = self.namespace.removeprefix("data-platform-app-")
         if not format_pattern:
             format_pattern = settings.APP_URL_NAME_PATTERN.get(self.DEFAULT_SETTING_KEY_WORD)
         if format_pattern:
-            return format_pattern.format(app_name=self.namespace, env=env_name)
+            return format_pattern.format(app_name=namespace, env=env_name)
         else:
-            return self.namespace
+            return namespace
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY

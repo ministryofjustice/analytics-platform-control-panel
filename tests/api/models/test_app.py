@@ -209,3 +209,16 @@ def test_app_allowed_ip_ranges():
 def test_iam_role_arn():
     app = App(slug="example-app")
     assert app.iam_role_arn == f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/test_app_example-app"
+
+
+@pytest.mark.parametrize("namespace, env, expected", [
+    ("data-platform-app-example", "dev", "example-dev"),
+    ("example", "dev", "example-dev"),
+    ("data-platform-example", "dev", "data-platform-example-dev"),
+    ("data-platform-app-example", "prod", "example"),
+    ("example", "prod", "example"),
+    ("data-platform-example", "prod", "data-platform-example"),
+])
+def test_app_url_name(namespace, env, expected):
+    app = App(namespace=namespace)
+    assert app.app_url_name(env_name=env) == expected
