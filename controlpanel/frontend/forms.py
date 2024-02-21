@@ -208,7 +208,7 @@ class CreateAppForm(forms.Form):
 
     def clean_namespace(self):
         """
-        Removes the env suffix is the user included it
+        Removes the env suffix if the user included it
         """
         namespace = self.cleaned_data["namespace"]
         for suffix in ["-dev", "-prod"]:
