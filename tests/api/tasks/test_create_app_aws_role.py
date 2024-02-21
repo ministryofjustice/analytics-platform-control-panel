@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 # Third-party
 import pytest
@@ -25,6 +25,7 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 
 
 @pytest.mark.django_db
+@patch("controlpanel.api.auth0.ExtendedAuth0", new=MagicMock())
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
 def test_valid_app_and_user(cluster, complete, users):
@@ -32,6 +33,6 @@ def test_valid_app_and_user(cluster, complete, users):
 
     create_app_aws_role(app.pk, users["superuser"].pk)
 
-    cluster.App.assert_called_once_with(app)
+    cluster.App.assert_called_once_with(app, users["superuser"].github_api_token)
     cluster.App.return_value.create_iam_role.assert_called_once()
     complete.assert_called_once()

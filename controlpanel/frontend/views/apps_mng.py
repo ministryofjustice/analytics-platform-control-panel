@@ -31,6 +31,7 @@ class AppManager:
             name=name,
             repo_url=repo_url,
             current_user=user,
+            namespace=app_data["namespace"],
         )
         self._add_app_to_users(new_app, user)
         self._create_or_link_datasource(new_app, user, app_data)

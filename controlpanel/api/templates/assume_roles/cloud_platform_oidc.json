@@ -9,8 +9,8 @@
         "StringEquals": {
             "{{ identity_provider }}:aud": "sts.amazonaws.com",
             "{{ identity_provider }}:sub": [
-                "system:serviceaccount:data-platform-app-{{ app_name }}-dev:data-platform-app-{{ app_name }}-dev-sa",
-                "system:serviceaccount:data-platform-app-{{ app_name }}-prod:data-platform-app-{{ app_name }}-prod-sa"
+                "system:serviceaccount:{{ app_namespace }}-dev:{{ app_namespace }}-dev-sa",
+                "system:serviceaccount:{{ app_namespace }}-prod:{{ app_namespace }}-prod-sa"
             ]
         }
     }

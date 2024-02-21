@@ -710,6 +710,7 @@ def test_register_app_with_creating_datasource(client, users):
         repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
         connect_bucket="new",
         new_datasource_name=test_bucket_name,
+        namespace="test-app-namespace",
     )
     response = client.post(reverse("create-app"), data)
 

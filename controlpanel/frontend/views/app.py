@@ -141,8 +141,6 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         kwargs = FormMixin.get_form_kwargs(self)
         kwargs.update(
             request=self.request,
-            all_connections_names=auth0.ExtendedAuth0().connections.get_all_connection_names(),  # noqa: E501
-            custom_connections=auth0.ExtendedConnections.custom_connections(),
         )
         return kwargs
 
