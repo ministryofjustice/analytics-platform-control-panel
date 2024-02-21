@@ -508,6 +508,8 @@ class App(EntityResource):
         assume_role_policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
         assume_role_policy["Statement"].append(self.oidc_provider_statement)
         self.aws_role_service.create_role(self.iam_role_name, assume_role_policy)
+        for env in self.get_deployment_envs():
+            self._create_secrets(env_name=env)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         self.aws_role_service.grant_bucket_access(

@@ -28,5 +28,6 @@ class CreateAppAWSRole(BaseModelTaskHandler):
     name = "create_app_aws_role"
 
     def handle(self):
-        cluster.App(self.object).create_iam_role()
+        task_user = User.objects.filter(pk=self.task_user_pk).first()
+        cluster.App(self.object, task_user.github_api_token).create_iam_role()
         self.complete()

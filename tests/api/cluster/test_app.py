@@ -1,10 +1,9 @@
 # Standard library
 from copy import deepcopy
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 # Third-party
 import pytest
-from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster, models
@@ -13,7 +12,11 @@ from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
 @pytest.fixture
 def app():
-    return models.App(slug="test-app", repo_url="https://gitpub.example.com/test-repo", namespace="test-namespace")
+    return models.App(
+        slug="test-app",
+        repo_url="https://gitpub.example.com/test-repo",
+        namespace="test-namespace",
+    )
 
 
 @pytest.fixture
@@ -77,13 +80,22 @@ def test_oidc_provider_statement(app, oidc_provider_statement):
     assert cluster.App(app).oidc_provider_statement == oidc_provider_statement
 
 
-def test_app_create_iam_role(aws_create_role, app, oidc_provider_statement):
+@patch("controlpanel.api.cluster.App.get_deployment_envs")
+@patch("controlpanel.api.cluster.App._create_secrets")
+def test_app_create_iam_role(
+    _create_secrets, get_deployment_envs, aws_create_role, app, oidc_provider_statement
+):
     expected_assume_role = deepcopy(BASE_ASSUME_ROLE_POLICY)
     expected_assume_role["Statement"].append(oidc_provider_statement)
 
+    get_deployment_envs.return_value = ["dev", "prod"]
     cluster.App(app).create_iam_role()
 
     aws_create_role.assert_called_with(app.iam_role_name, expected_assume_role)
+    _create_secrets.assert_has_calls([
+        call(env_name="dev"),
+        call(env_name="prod"),
+    ])
 
 
 @pytest.fixture  # noqa: F405
