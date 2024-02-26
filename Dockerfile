@@ -31,7 +31,7 @@ RUN apk update \
         wget \
         gcc \
         curl-dev \
-        python3-dev \
+        python3.11-dev \
         gnutls-dev \
         openssl-dev \
     && rm -rf /var/lib/apt/lists/*
