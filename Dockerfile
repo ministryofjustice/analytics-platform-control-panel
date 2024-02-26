@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/sass --load-path=node_modules/ --style=compressed src/ap
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.11-slim-buster AS base
+FROM public.ecr.aws/docker/library/python:3.11-alpine3.18 AS base
 
 ARG HELM_VERSION=3.5.4
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
