@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 from django.core.exceptions import ValidationError
 from django.urls import reverse
-
+from a_package import something
 
 # First-party/Local
 from controlpanel.api import aws
