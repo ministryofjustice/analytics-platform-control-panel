@@ -35,6 +35,7 @@ RUN apk update \
         gnutls-dev \
         openssl-dev \
         libffi-dev \
+        musl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
