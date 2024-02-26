@@ -30,10 +30,10 @@ RUN apk update \
         postgresql-client \
         wget \
         gcc \
-        libcurl4-gnutls-dev \
+        curl-dev \
         python3-dev \
-        libgnutls28-dev \
-        libssl-dev \
+        gnutls-dev \
+        openssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
