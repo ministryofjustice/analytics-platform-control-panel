@@ -25,8 +25,8 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
 RUN addgroup -g 1000 controlpanel \
     && adduser -G controlpanel -u 1000 controlpanel -D
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
+RUN apk update \
+    && apk add --no-cache \
         postgresql-client \
         wget \
         gcc \
