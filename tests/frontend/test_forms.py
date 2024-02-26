@@ -410,10 +410,6 @@ def test_update_app_with_custom_connection():
         assert "auth0_nomis_auth0_conn_name" in f.errors
 
 
-def test_pass():
-    assert True
-
-
 @pytest.mark.django_db
 def test_ip_allowlist_form_invalid_ip():
     """
