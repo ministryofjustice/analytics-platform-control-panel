@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from mock import MagicMock
 
+
 # First-party/Local
 from controlpanel.api import aws
 from controlpanel.api.github import RepositoryNotFound
