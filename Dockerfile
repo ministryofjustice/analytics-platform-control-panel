@@ -34,6 +34,7 @@ RUN apk update \
         python3-dev \
         gnutls-dev \
         openssl-dev \
+        libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel
