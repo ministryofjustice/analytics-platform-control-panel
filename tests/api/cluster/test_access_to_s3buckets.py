@@ -32,7 +32,7 @@ def grant_policy_bucket_access():
     ) as grant_policy_bucket_access_action:
         yield grant_policy_bucket_access_action
 
-@pytest.yield_fixture
+@pytest.fixture
 def grant_policy_folder_access():
     with patch(
         "controlpanel.api.cluster.AWSPolicy.grant_folder_access"
