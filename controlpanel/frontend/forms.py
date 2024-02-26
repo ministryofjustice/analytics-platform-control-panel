@@ -470,7 +470,7 @@ class ToolReleaseForm(forms.ModelForm):
             "airflow-sqlite",
             "jupyter-",
             "rstudio",
-            "vscode"
+            "visual-studio-code"
         ]
         value = self.cleaned_data["chart_name"]
         is_valid = False
@@ -493,7 +493,7 @@ class ToolReleaseForm(forms.ModelForm):
             "airflow-sqlite",
             "jupyter-lab",
             "rstudio",
-            "visual-studio-code"
+            "vscode"
         ]
         value = self.cleaned_data.get("tool_domain")
         if value and value not in valid_names:
