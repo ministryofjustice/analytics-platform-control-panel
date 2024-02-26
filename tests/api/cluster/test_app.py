@@ -1,10 +1,9 @@
 # Standard library
 from copy import deepcopy
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 
 # Third-party
 import pytest
-from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster, models
@@ -13,7 +12,11 @@ from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
 
 @pytest.fixture
 def app():
-    return models.App(slug="test-app", repo_url="https://gitpub.example.com/test-repo")
+    return models.App(
+        slug="test-app",
+        repo_url="https://gitpub.example.com/test-repo",
+        namespace="test-namespace",
+    )
 
 
 @pytest.fixture
@@ -65,8 +68,8 @@ def oidc_provider_statement(app, settings):
         "StringEquals": {
             f"{settings.OIDC_APP_EKS_PROVIDER}:aud": "sts.amazonaws.com",
             f"{settings.OIDC_APP_EKS_PROVIDER}:sub": [
-                f"system:serviceaccount:data-platform-app-{app.slug}-dev:data-platform-app-{app.slug}-dev-sa",  # noqa
-                f"system:serviceaccount:data-platform-app-{app.slug}-prod:data-platform-app-{app.slug}-prod-sa"  # noqa
+                f"system:serviceaccount:{app.namespace}-dev:{app.namespace}-dev-sa",  # noqa
+                f"system:serviceaccount:{app.namespace}-prod:{app.namespace}-prod-sa"  # noqa
             ]
         }
     }
@@ -77,13 +80,22 @@ def test_oidc_provider_statement(app, oidc_provider_statement):
     assert cluster.App(app).oidc_provider_statement == oidc_provider_statement
 
 
-def test_app_create_iam_role(aws_create_role, app, oidc_provider_statement):
+@patch("controlpanel.api.cluster.App.get_deployment_envs")
+@patch("controlpanel.api.cluster.App._create_secrets")
+def test_app_create_iam_role(
+    _create_secrets, get_deployment_envs, aws_create_role, app, oidc_provider_statement
+):
     expected_assume_role = deepcopy(BASE_ASSUME_ROLE_POLICY)
     expected_assume_role["Statement"].append(oidc_provider_statement)
 
+    get_deployment_envs.return_value = ["dev", "prod"]
     cluster.App(app).create_iam_role()
 
     aws_create_role.assert_called_with(app.iam_role_name, expected_assume_role)
+    _create_secrets.assert_has_calls([
+        call(env_name="dev"),
+        call(env_name="prod"),
+    ])
 
 
 @pytest.fixture  # noqa: F405
@@ -163,7 +175,6 @@ def test_create_secrets(app):
     secrets = {
         app_cluster.IP_RANGES: "1.2.3",
         app_cluster.APP_ROLE_ARN: app.iam_role_arn,
-        app_cluster.DATA_ACCOUNT_ID: settings.AWS_DATA_ACCOUNT_ID
     }
     with patch.object(app_cluster, "create_or_update_secrets"):
         app_cluster._create_secrets(env_name="dev", client=None)
@@ -171,6 +182,31 @@ def test_create_secrets(app):
             env_name="dev",
             secret_data=secrets
         )
+
+
+@pytest.mark.parametrize("key, expected", [
+    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+    ("CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
+])
+def test_format_github_key_name(key, expected):
+    assert cluster.App(None).format_github_key_name(key_name=key) == expected
+
+
+@pytest.mark.parametrize("key, expected", [
+    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+    ("XXX_CUSTOM_SETTING", "CUSTOM_SETTING"),
+    ("XXX_XXX_CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
+])
+def test_get_github_key_display_name(key, expected):
+    assert cluster.App(None).get_github_key_display_name(key) == expected
 
 
 # TODO can this be removed?

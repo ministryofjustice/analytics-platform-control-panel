@@ -11,7 +11,7 @@ RUN /node_modules/.bin/jest
 
 FROM public.ecr.aws/docker/library/python:3.11-alpine3.18 AS base
 
-ARG HELM_VERSION=3.5.4
+ARG HELM_VERSION=3.14.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://get.helm.sh
 

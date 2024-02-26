@@ -710,6 +710,7 @@ def test_register_app_with_creating_datasource(client, users):
         repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
         connect_bucket="new",
         new_datasource_name=test_bucket_name,
+        namespace="test-app-namespace",
     )
     response = client.post(reverse("create-app"), data)
 
@@ -721,6 +722,9 @@ def test_register_app_with_creating_datasource(client, users):
     related_bucket_ids = [a.s3bucket_id for a in created_app.apps3buckets.all()]
     assert len(related_bucket_ids) == 1
     assert bucket.id in related_bucket_ids
+    assert response.url == reverse(
+        "manage-app", kwargs={"pk": created_app.pk}
+    )
 
 
 def test_register_app_invalid_organisation(client, users):
@@ -731,7 +735,8 @@ def test_register_app_invalid_organisation(client, users):
         connect_bucket="later",
     )
 
-    response = client.post(reverse("create-app"), data)
+    url = reverse("create-app")
+    response = client.post(url, data)
 
     # 200 due to errors
     assert response.status_code == 200
