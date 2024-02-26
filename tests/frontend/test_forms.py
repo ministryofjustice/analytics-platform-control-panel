@@ -106,7 +106,7 @@ def test_tool_release_form_check_tool_domain():
         "version": "1.2.3",
         "values": {"foo": "bar"},
         "is_restricted": False,
-        "tool_domain": "visual-studio-code",
+        "tool_domain": "vscode",
     }
     f = forms.ToolReleaseForm(data)
     assert f.is_valid()
