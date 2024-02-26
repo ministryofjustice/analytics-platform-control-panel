@@ -22,8 +22,8 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   HELM_DATA_HOME=/tmp/helm/data
 
 # create a user to run as
-RUN addgroup -gid 1000 controlpanel && \
-  adduser -uid 1000 --gid 1000 controlpanel
+RUN addgroup -g 1000 controlpanel \
+    && adduser -G controlpanel -u 1000 controlpanel -D
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
