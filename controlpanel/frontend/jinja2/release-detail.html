@@ -48,7 +48,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'Helm chart name. Use only variations of: airflow-sqlite, jupyter-* or rstudio'
+        "text": 'Helm chart name. Use only variations of: airflow-sqlite, jupyter-*, rstudio or visual-studio-code'
       },
       "name": "chart_name",
       "attributes": {
@@ -98,7 +98,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'If the chart name is non-standard, use this value in the domain name for the tool. Use only one of: airflow-sqlite, jupyter-lab or rstudio.'
+        "text": 'If the chart name is non-standard, use this value in the domain name for the tool. Use only one of: airflow-sqlite, jupyter-lab, rstudio or vscode.'
       },
       "name": "tool_domain",
       "attributes": {
@@ -153,7 +153,7 @@ Create a new release of a tool in the analytical platform.
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive js-confirm"
             data-confirm-message="Are you sure you want to delete this release?">
-      Delete release 
+      Delete release
     </button>
   </form>
 </section>

@@ -22,7 +22,9 @@ class Tool(TimeStampedModel):
     # Defines how a matching chart name is put into a named tool bucket.
     # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
     # chart name match: tool bucket
-    TOOL_BOX_CHART_LOOKUP = {"jupyter": "jupyter-lab", "rstudio": "rstudio"}
+    TOOL_BOX_CHART_LOOKUP = {"jupyter": "jupyter-lab",
+                             "rstudio": "rstudio",
+                             "visual-studio-code": "visual-studio-code"}
 
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
