@@ -499,6 +499,34 @@ class AWSRole(AWSService):
 
         role.delete()
 
+    def attach_policy(self, iam_role_name, attach_policies):
+
+        try:
+            role = self.boto3_session.resource("iam").Role(iam_role_name)
+            role.load()
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role {iam_role_name}: Does not exist")
+                raise e
+
+        for attach_policy in attach_policies or []:
+            role.attach_policy(
+                PolicyArn=iam_arn(f"policy/{attach_policy}"),
+            )
+
+    def remove_policy(self, iam_role_name, remove_policies):
+
+        try:
+            role = self.boto3_session.resource("iam").Role(iam_role_name)
+            role.load()
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role {iam_role_name}: Does not exist")
+                raise e
+
+        for policy in remove_policies or []:
+            role.detach_policy(PolicyArn=iam_arn(f"policy/{policy}"))
+
     def list_role_names(self, prefix="/"):
         roles = self.boto3_session.resource("iam").roles.filter(PathPrefix=prefix).all()
         return [role.name for role in list(roles)]

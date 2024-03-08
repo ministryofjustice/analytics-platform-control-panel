@@ -129,6 +129,29 @@ def airflow_prod_policy(iam):
 
 
 @pytest.fixture(autouse=True)
+def test_policy(iam):
+    result = iam.meta.client.create_policy(
+        PolicyName="a-test-policy",
+        PolicyDocument=json.dumps(
+            {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Sid": "ThisIsATestPolicy",
+                        "Effect": "Allow",
+                        "Action": ["iam:TestPolicy"],
+                        "Resource": [
+                            "arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/{settings.ENV}_user_*"  # noqa: E501
+                        ],
+                    },
+                ],
+            }
+        ),
+    )
+    return result["Policy"]
+
+
+@pytest.fixture(autouse=True)
 def logs_bucket(s3):
     bucket = s3.Bucket(settings.LOGS_BUCKET_NAME)
     bucket.create(

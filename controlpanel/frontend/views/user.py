@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 
 # Third-party
 from django.contrib import messages
+from django.forms import BaseModelForm
+from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
@@ -91,6 +93,21 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated superadmin status")
+        return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
+
+
+class EnableBedrockUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    fields = ["is_bedrock_enabled"]
+    http_method_names = ["post"]
+    model = User
+    permission_required = "api.add_superuser"
+
+    def form_valid(self, form):
+        self.object.set_bedrock_access()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully updated bedrock status")
         return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
 
 

@@ -37,6 +37,7 @@ class User(AbstractUser):
         choices=MIGRATION_STATES,
         default=VOID,
     )
+    is_bedrock_enabled = models.BooleanField(default=False)
 
     REQUIRED_FIELDS = ["email", "auth0_id"]
 
@@ -133,6 +134,9 @@ class User(AbstractUser):
 
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
+
+    def set_bedrock_access(self):
+        cluster.User(self).set_bedrock_access()
 
     def save(self, *args, **kwargs):
         existing = User.objects.filter(pk=self.pk).first()
