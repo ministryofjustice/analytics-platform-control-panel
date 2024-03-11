@@ -199,6 +199,7 @@ class User(EntityResource):
     }
 
     READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
+    BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
 
     ATTACH_POLICIES = [
         READ_INLINE_POLICIES,
@@ -374,6 +375,13 @@ class User(EntityResource):
             if helm_chart_item["release"] not in installed_helm_charts:
                 return False
         return True
+
+    def set_bedrock_access(self):
+        bedrock_policy = [self.BEDROCK_POLICY_NAME]
+        if self.user.is_bedrock_enabled:
+            self.aws_role_service.attach_policy(self.iam_role_name, bedrock_policy)
+        else:
+            self.aws_role_service.remove_policy(self.iam_role_name, bedrock_policy)
 
 
 class App(EntityResource):

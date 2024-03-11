@@ -41,6 +41,14 @@ def reset_mfa(client, users, *args):
     return client.post(reverse("reset-mfa", kwargs=kwargs))
 
 
+def set_bedrock(client, users, *args):
+    data = {
+        "is_bedrock_enabled": True,
+    }
+    kwargs = {"pk": users["other_user"].auth0_id}
+    return client.post(reverse("set-bedrock", kwargs=kwargs), data)
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -58,6 +66,9 @@ def reset_mfa(client, users, *args):
         (reset_mfa, "superuser", status.HTTP_302_FOUND),
         (reset_mfa, "normal_user", status.HTTP_403_FORBIDDEN),
         (reset_mfa, "other_user", status.HTTP_403_FORBIDDEN),
+        (set_bedrock, "superuser", status.HTTP_302_FOUND),
+        (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_bedrock, "other_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permission(client, users, view, user, expected_status):

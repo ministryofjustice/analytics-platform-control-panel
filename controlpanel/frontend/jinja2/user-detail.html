@@ -63,6 +63,36 @@
 </section>
 {% endif %}
 
+{% if request.user.has_perm('api.add_superuser') %}
+<section class="cpanel-section">
+  <form action="{{ url('set-bedrock', kwargs={ "pk": user.auth0_id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "is_bedrock_enabled",
+      "fieldset": {
+        "legend": {
+          "text": "Enable Bedrock",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Toggle access to Bedrock for a user."
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Bedrock Enabled",
+          "checked": user.is_bedrock_enabled
+        },
+      ]
+    }) }}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% endif %}
+
 {% if request.user.has_perm('api.reset_mfa') %}
 <section class="cpanel-section">
   <form action="{{ url('reset-mfa', kwargs={ "pk": user.auth0_id }) }}" method="post">
