@@ -199,7 +199,7 @@ class User(EntityResource):
     }
 
     READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
-    BEDROCK_POLICY_NAME = "anaytial-platform-bedrock-integration"
+    BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
 
     ATTACH_POLICIES = [
         READ_INLINE_POLICIES,

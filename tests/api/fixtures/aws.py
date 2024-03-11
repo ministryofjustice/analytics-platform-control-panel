@@ -131,7 +131,7 @@ def airflow_prod_policy(iam):
 @pytest.fixture(autouse=True)
 def bedrock_policy(iam):
     result = iam.meta.client.create_policy(
-        PolicyName="anaytial-platform-bedrock-integration",
+        PolicyName="analytical-platform-bedrock-integration",
         PolicyDocument=json.dumps(
             {
                 "Version": "2012-10-17",
