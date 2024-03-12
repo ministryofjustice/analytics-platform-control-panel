@@ -9,7 +9,7 @@ RUN ./node_modules/.bin/sass --load-path=node_modules/ --style=compressed src/ap
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/python:3.9-slim-buster AS base
+FROM public.ecr.aws/docker/library/python:3.11-alpine3.18 AS base
 
 ARG HELM_VERSION=3.14.1
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
@@ -22,18 +22,20 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   HELM_DATA_HOME=/tmp/helm/data
 
 # create a user to run as
-RUN addgroup -gid 1000 controlpanel && \
-  adduser -uid 1000 --gid 1000 controlpanel
+RUN addgroup -g 1000 controlpanel \
+    && adduser -G controlpanel -u 1000 controlpanel -D
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
+RUN apk update \
+    && apk add --no-cache \
         postgresql-client \
         wget \
         gcc \
-        libcurl4-gnutls-dev \
+        curl-dev \
         python3-dev \
-        libgnutls28-dev \
-        libssl-dev \
+        gnutls-dev \
+        openssl-dev \
+        libffi-dev \
+        musl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /home/controlpanel

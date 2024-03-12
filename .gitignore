@@ -19,6 +19,7 @@ __pycache__
 /static
 /tags
 /venv
+/venv_311
 /.python-version
 /coverage/
 .idea/
