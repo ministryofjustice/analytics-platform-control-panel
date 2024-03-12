@@ -66,6 +66,9 @@ class S3BucketPermissions(RulesBasePermissions):
 class UserPermissions(RulesBasePermissions):
     resource = "user"
 
+    def has_object_permission(self, request, view, obj):
+        return request.user.is_superuser
+
 
 class AppS3BucketPermissions(RulesBasePermissions):
     resource = "apps3bucket"
