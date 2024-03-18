@@ -5,6 +5,7 @@ name: Run tests and push Docker image on success
     branches: [main]
   pull_request:
   release:
+    types: [published]
 
 jobs:
   test-and-push:
@@ -38,7 +39,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         with:
           registries: 593291632749
-          
+
       - name: Prep Tags
         id: prep
         run: |
