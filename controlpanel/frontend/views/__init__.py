@@ -1,7 +1,12 @@
 # Third-party
+import base64
+import hashlib
+
+from authlib.common.security import generate_token
+from authlib.integrations.django_client import OAuthError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.views.generic.base import TemplateView
+from django.views.generic.base import TemplateView, RedirectView
 from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
@@ -78,7 +83,7 @@ from controlpanel.frontend.views.user import (
     UserDetail,
     UserList,
 )
-from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
 from controlpanel.frontend.views.task import TaskList
 
 
@@ -100,6 +105,32 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
 
 class FrontPageView(TemplateView):
     template_name = "frontpage.html"
+
+    def _get_code_challenge(self):
+        code_verifier = generate_token(64)
+        digest = hashlib.sha256(code_verifier.encode()).digest()
+        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+
+    def post(self, request):
+        code_challenge = self._get_code_challenge()
+        redirect_uri = request.build_absolute_uri(reverse("justice-authorize"))
+        return oauth.azure.authorize_redirect(
+            request, redirect_uri, code_challenge=code_challenge,
+        )
+
+
+class JusticeAuthorize(RedirectView):
+
+    def authorize(self):
+        token = oauth.azure.authorize_access_token(self.request)
+        print(token["userinfo"]["email"])
+
+    def get_redirect_url(self, *args, **kwargs):
+        try:
+            self.authorize()
+        except OAuthError:
+            print("Something went wrong, we should log it and send to sentry")
+        return "/"
 
 
 class LogoutView(OIDCLogoutView):
