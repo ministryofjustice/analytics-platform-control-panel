@@ -98,6 +98,10 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
             return HttpResponseRedirect(reverse("list-tools"))
 
 
+class FrontPageView(TemplateView):
+    template_name = "frontpage.html"
+
+
 class LogoutView(OIDCLogoutView):
     def get(self, request):
         return super().post(request)

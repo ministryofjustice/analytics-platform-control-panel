@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% set page_name = "home" %}
+{% set hide_nav = True %}
+{% set page_title = "Hello " ~ ( request.user.name if request.user ) %}
+
+{% block content %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-xl">Authenticate with your Justice email</h1>
+      <p class="govuk-body-l">As part of upcoming work to offer new tools and services, we require all Analytical Platform users authenticate with their Justice email address.</p>
+      <p class="govuk-body">You will need to complete authentication by 30th April 2024. If you do not currently have a @justice.gov.uk email address, <a href="#" class="govuk-link">see our guidance on requesting one.</a></p>
+      <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">
+          Authenticate
+        </button>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+          Skip for now
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+{% endblock %}
