@@ -7,7 +7,7 @@ from authlib.integrations.django_client import OAuthError
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.views.generic.base import TemplateView, RedirectView
+from django.views.generic.base import TemplateView, View
 from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
@@ -118,18 +118,15 @@ class FrontPageView(TemplateView):
 
     def post(self, request):
         code_challenge = self._get_code_challenge()
-        redirect_uri = request.build_absolute_uri(reverse("justice-authorize"))
+        redirect_uri = request.build_absolute_uri(reverse("entraid-auth"))
         return oauth.azure.authorize_redirect(
             request, redirect_uri, code_challenge=code_challenge,
         )
 
 
-class JusticeAuthorize(RedirectView):
-    permanent = False
-    query_string = False
-    pattern_name = "index"
+class EntraIdAuthView(View):
 
-    def authorize_token(self):
+    def _authorize_token(self):
         try:
             token = oauth.azure.authorize_access_token(self.request)
         except OAuthError:
@@ -137,22 +134,23 @@ class JusticeAuthorize(RedirectView):
             token = None
         return token
 
-    def update_user(self, token):
-        self.request.user.justice_email = token["userinfo"]["email"]
-        self.request.user.save()
-
-    def get_redirect_url(self, *args, **kwargs):
-        token = self.authorize_token()
-        if token:
-            self.update_user(token)
-            messages.success(
-                request=self.request,
-                message=f"Successfully authenticated with your email {self.request.user.justice_email}"
-            )
-        else:
+    def get(self, request, *args, **kwargs):
+        token = self._authorize_token()
+        if not token:
             messages.error(self.request, "Something went wrong, please try again soon")
+            return HttpResponseRedirect(reverse("index"))
 
-        return super().get_redirect_url(*args, **kwargs)
+        self.update_user(token=token)
+        return HttpResponseRedirect(reverse("index"))
+
+    def update_user(self, token):
+        email = token["userinfo"]["email"]
+        self.request.user.justice_email = email
+        self.request.user.save()
+        messages.success(
+            request=self.request,
+            message=f"Successfully authenticated with your email {email}"
+        )
 
 
 class LogoutView(OIDCLogoutView):
