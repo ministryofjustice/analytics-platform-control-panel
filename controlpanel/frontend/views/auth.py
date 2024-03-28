@@ -13,18 +13,17 @@ from django.views import View
 from django.views.generic import TemplateView
 
 # First-party/Local
-from controlpanel.oidc import oauth
+from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
 
 
-class FrontPageView(TemplateView):
+class FrontPageView(OIDCLoginRequiredMixin, TemplateView):
     http_method_names = ["get", "post"]
     template_name = "frontpage.html"
-    # TODO bypass when user has already authenticated with UserPassesTestMixin
 
-    def _get_code_challenge(self):
-        code_verifier = generate_token(64)
-        digest = hashlib.sha256(code_verifier.encode()).digest()
-        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    def get(self, request, *args, **kwargs):
+        if self.request.user.justice_email:
+            return HttpResponseRedirect(reverse("index"))
+        return super().get(request, *args, **kwargs)
 
     def post(self, request):
         code_challenge = self._get_code_challenge()
@@ -35,8 +34,13 @@ class FrontPageView(TemplateView):
             code_challenge=code_challenge,
         )
 
+    def _get_code_challenge(self):
+        code_verifier = generate_token(64)
+        digest = hashlib.sha256(code_verifier.encode()).digest()
+        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
-class EntraIdAuthView(View):
+
+class EntraIdAuthView(OIDCLoginRequiredMixin, View):
     http_method_names = ["get"]
 
     def _authorize_token(self):
