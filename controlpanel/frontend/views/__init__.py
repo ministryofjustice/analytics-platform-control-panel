@@ -1,17 +1,12 @@
 # Third-party
-import base64
-import hashlib
-
-from authlib.common.security import generate_token
-from authlib.integrations.django_client import OAuthError
-from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.views.generic.base import TemplateView, View
+from django.views.generic.base import TemplateView
 from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
+from controlpanel.frontend.views.auth import EntraIdAuthView, FrontPageView
 
 # isort: off
 from controlpanel.frontend.views.app import (
@@ -75,17 +70,17 @@ from controlpanel.frontend.views.release import (
     ReleaseList,
 )
 from controlpanel.frontend.views.reset import ResetHome
+from controlpanel.frontend.views.task import TaskList
 from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
+    EnableBedrockUser,
     ResetMFA,
     SetSuperadmin,
-    EnableBedrockUser,
     UserDelete,
     UserDetail,
     UserList,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
-from controlpanel.frontend.views.task import TaskList
 
 
 class IndexView(OIDCLoginRequiredMixin, TemplateView):
@@ -105,52 +100,6 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         else:
             # Redirect to the tools page.
             return HttpResponseRedirect(reverse("list-tools"))
-
-
-class FrontPageView(TemplateView):
-    template_name = "frontpage.html"
-    # TODO bypass when user has already authenticated with UserPassesTestMixin
-
-    def _get_code_challenge(self):
-        code_verifier = generate_token(64)
-        digest = hashlib.sha256(code_verifier.encode()).digest()
-        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
-
-    def post(self, request):
-        code_challenge = self._get_code_challenge()
-        redirect_uri = request.build_absolute_uri(reverse("entraid-auth"))
-        return oauth.azure.authorize_redirect(
-            request, redirect_uri, code_challenge=code_challenge,
-        )
-
-
-class EntraIdAuthView(View):
-
-    def _authorize_token(self):
-        try:
-            token = oauth.azure.authorize_access_token(self.request)
-        except OAuthError:
-            # TODO log the error
-            token = None
-        return token
-
-    def get(self, request, *args, **kwargs):
-        token = self._authorize_token()
-        if not token:
-            messages.error(self.request, "Something went wrong, please try again soon")
-            return HttpResponseRedirect(reverse("index"))
-
-        self.update_user(token=token)
-        return HttpResponseRedirect(reverse("index"))
-
-    def update_user(self, token):
-        email = token["userinfo"]["email"]
-        self.request.user.justice_email = email
-        self.request.user.save()
-        messages.success(
-            request=self.request,
-            message=f"Successfully authenticated with your email {email}"
-        )
 
 
 class LogoutView(OIDCLogoutView):
