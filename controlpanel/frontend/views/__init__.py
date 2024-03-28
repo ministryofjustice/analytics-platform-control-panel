@@ -6,6 +6,7 @@ from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
+from controlpanel.frontend.views.auth import EntraIdAuthView, FrontPageView
 
 # isort: off
 from controlpanel.frontend.views.app import (
@@ -69,17 +70,17 @@ from controlpanel.frontend.views.release import (
     ReleaseList,
 )
 from controlpanel.frontend.views.reset import ResetHome
+from controlpanel.frontend.views.task import TaskList
 from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
+    EnableBedrockUser,
     ResetMFA,
     SetSuperadmin,
-    EnableBedrockUser,
     UserDelete,
     UserDetail,
     UserList,
 )
-from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.frontend.views.task import TaskList
+from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
 
 
 class IndexView(OIDCLoginRequiredMixin, TemplateView):
@@ -91,6 +92,9 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         admin related links). Otherwise, redirect the user to the list of the
         tools they currently have available on the platform.
         """
+        if not request.user.justice_email:
+            return HttpResponseRedirect(reverse("frontpage"))
+
         if request.user.is_superuser:
             return super().get(request)
         else:

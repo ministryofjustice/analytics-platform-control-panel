@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 
 # Third-party
 import structlog
+from authlib.integrations.django_client import OAuth
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import SuspiciousOperation
@@ -96,3 +97,10 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
         if token_expiry_seconds and current_seconds > token_expiry_seconds:
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
+
+
+oauth = OAuth()
+oauth.register(
+    name="azure",
+    **settings.AUTHLIB_OAUTH_CLIENTS["azure"]
+)

@@ -212,6 +212,26 @@ OIDC_DRF_AUTH_BACKEND = "controlpanel.oidc.OIDCSubAuthenticationBackend"
 # The audience for Control Panel RESTful APIs
 OIDC_CPANEL_API_AUDIENCE = os.environ.get("OIDC_CPANEL_API_AUDIENCE")
 
+# For authentication with EntraID
+AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID")
+AZURE_OP_CONF_URL = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/v2.0/.well-known/openid-configuration"
+AZURE_RP_SCOPES = "openid email profile"
+AZURE_CODE_CHALLENGE_METHOD = os.environ.get("AZURE_CODE_CHALLENGE_METHOD", "S256")
+AUTHLIB_OAUTH_CLIENTS = {
+    "azure": {
+        "client_id": os.environ.get("AZURE_CLIENT_ID"),
+        # TODO client_secret is not strictly required but would be better to use
+        "server_metadata_url": AZURE_OP_CONF_URL,
+        "client_kwargs": {
+            "scope": AZURE_RP_SCOPES,
+            "response_type": "code",
+            "token_endpoint_auth_method": "none",
+            "code_challenge_method": AZURE_CODE_CHALLENGE_METHOD,
+        },
+
+    }
+}
+
 # -- Security
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "change-me")
