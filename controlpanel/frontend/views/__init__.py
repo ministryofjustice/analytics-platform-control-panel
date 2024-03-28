@@ -4,6 +4,7 @@ import hashlib
 
 from authlib.common.security import generate_token
 from authlib.integrations.django_client import OAuthError
+from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic.base import TemplateView, RedirectView
@@ -96,6 +97,9 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         admin related links). Otherwise, redirect the user to the list of the
         tools they currently have available on the platform.
         """
+        if not request.user.justice_email:
+            return HttpResponseRedirect(reverse("frontpage"))
+
         if request.user.is_superuser:
             return super().get(request)
         else:
@@ -105,6 +109,7 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
 
 class FrontPageView(TemplateView):
     template_name = "frontpage.html"
+    # TODO bypass when user has already authenticated with UserPassesTestMixin
 
     def _get_code_challenge(self):
         code_verifier = generate_token(64)
@@ -120,17 +125,34 @@ class FrontPageView(TemplateView):
 
 
 class JusticeAuthorize(RedirectView):
+    permanent = False
+    query_string = False
+    pattern_name = "index"
 
-    def authorize(self):
-        token = oauth.azure.authorize_access_token(self.request)
-        print(token["userinfo"]["email"])
+    def authorize_token(self):
+        try:
+            token = oauth.azure.authorize_access_token(self.request)
+        except OAuthError:
+            # TODO log the error
+            token = None
+        return token
+
+    def update_user(self, token):
+        self.request.user.justice_email = token["userinfo"]["email"]
+        self.request.user.save()
 
     def get_redirect_url(self, *args, **kwargs):
-        try:
-            self.authorize()
-        except OAuthError:
-            print("Something went wrong, we should log it and send to sentry")
-        return "/"
+        token = self.authorize_token()
+        if token:
+            self.update_user(token)
+            messages.success(
+                request=self.request,
+                message=f"Successfully authenticated with your email {self.request.user.justice_email}"
+            )
+        else:
+            messages.error(self.request, "Something went wrong, please try again soon")
+
+        return super().get_redirect_url(*args, **kwargs)
 
 
 class LogoutView(OIDCLogoutView):
