@@ -1,12 +1,17 @@
+# Standard library
+import base64
+import hashlib
+
 # Third-party
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic.base import TemplateView
 from mozilla_django_oidc.views import OIDCLogoutView
+from oauthlib.common import generate_token
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
-from controlpanel.frontend.views.auth import EntraIdAuthView, FrontPageView
+from controlpanel.frontend.views.auth import EntraIdAuthView
 
 # isort: off
 from controlpanel.frontend.views.app import (
@@ -86,21 +91,42 @@ from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
 class IndexView(OIDCLoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
-    def get(self, request):
+    def get_template_names(self):
+        if not self.request.user.justice_email:
+            return ["justice_email.html"]
+
+        return [self.template_name]
+
+    def get(self, request, *args, **kwargs):
         """
         If the user is a superuser display the home page (containing useful
         admin related links). Otherwise, redirect the user to the list of the
         tools they currently have available on the platform.
         """
-        if not request.user.justice_email:
-            return HttpResponseRedirect(reverse("frontpage"))
 
         if request.user.is_superuser:
-            return super().get(request)
-        else:
-            # Redirect to the tools page.
-            return HttpResponseRedirect(reverse("list-tools"))
+            return super().get(request, *args, **kwargs)
 
+        # TODO add feature request check
+        if not request.user.justice_email:
+            return super().get(request, *args, **kwargs)
+
+        # Redirect to the tools page.
+        return HttpResponseRedirect(reverse("list-tools"))
+
+    def post(self, request):
+        code_challenge = self._get_code_challenge()
+        redirect_uri = request.build_absolute_uri(reverse("entraid-auth"))
+        return oauth.azure.authorize_redirect(
+            request,
+            redirect_uri,
+            code_challenge=code_challenge,
+        )
+
+    def _get_code_challenge(self):
+        code_verifier = generate_token(64)
+        digest = hashlib.sha256(code_verifier.encode()).digest()
+        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
 class LogoutView(OIDCLogoutView):
     def get(self, request):
