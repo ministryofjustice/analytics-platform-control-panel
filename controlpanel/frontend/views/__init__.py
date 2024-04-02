@@ -85,13 +85,17 @@ from controlpanel.frontend.views.user import (
     UserDetail,
     UserList,
 )
-from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
+from controlpanel.oidc import OIDCLoginRequiredMixin, get_code_challenge, oauth
 
 
 class IndexView(OIDCLoginRequiredMixin, TemplateView):
     template_name = "home.html"
 
     def get_template_names(self):
+        """
+        Returns the template to instruct users to authenticate with their Justice
+        account, unless this has already been captured.
+        """
         if not self.request.user.justice_email:
             return ["justice_email.html"]
 
@@ -99,9 +103,11 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
 
     def get(self, request, *args, **kwargs):
         """
-        If the user is a superuser display the home page (containing useful
-        admin related links). Otherwise, redirect the user to the list of the
-        tools they currently have available on the platform.
+        If the user has not authenticated with their Justice account, displays page to
+        ask them to authenticate, to allow us to capture their email address.
+        If their Justice email has been captured, normal users are redirected to their
+        tools. Superusers are displayed the home page (containing useful
+        admin related links).
         """
 
         if request.user.is_superuser:
@@ -115,18 +121,16 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         return HttpResponseRedirect(reverse("list-tools"))
 
     def post(self, request):
-        code_challenge = self._get_code_challenge()
+        """
+        Redirects user to authenticate with Azure EntraID.
+        """
         redirect_uri = request.build_absolute_uri(reverse("entraid-auth"))
         return oauth.azure.authorize_redirect(
             request,
             redirect_uri,
-            code_challenge=code_challenge,
+            code_challenge=get_code_challenge(),
         )
 
-    def _get_code_challenge(self):
-        code_verifier = generate_token(64)
-        digest = hashlib.sha256(code_verifier.encode()).digest()
-        return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
 
 class LogoutView(OIDCLogoutView):
     def get(self, request):
