@@ -19,7 +19,7 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
     """
     http_method_names = ["get"]
 
-    def _authorize_token(self):
+    def _get_access_token(self):
         """
         Attempts to valiate and return the access token
         """
@@ -34,7 +34,7 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
         """
         Attempts to retrieve the auth token, and update the user.
         """
-        token = self._authorize_token()
+        token = self._get_access_token()
         if not token:
             messages.error(request, "Something went wrong, please try again")
             return HttpResponseRedirect(reverse("index"))

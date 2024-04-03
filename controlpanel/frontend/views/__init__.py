@@ -1,13 +1,10 @@
 # Standard library
-import base64
-import hashlib
 
 # Third-party
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.views.generic.base import TemplateView
 from mozilla_django_oidc.views import OIDCLogoutView
-from oauthlib.common import generate_token
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
