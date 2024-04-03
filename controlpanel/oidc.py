@@ -1,8 +1,12 @@
 # Standard library
+import base64
+import hashlib
 from urllib.parse import urlencode
 
 # Third-party
 import structlog
+from authlib.common.security import generate_token
+from authlib.integrations.django_client import OAuth
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import SuspiciousOperation
@@ -96,3 +100,16 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
         if token_expiry_seconds and current_seconds > token_expiry_seconds:
             return self.handle_no_permission()
         return super().dispatch(request, *args, **kwargs)
+
+
+def get_code_challenge():
+    code_verifier = generate_token(64)
+    digest = hashlib.sha256(code_verifier.encode()).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+
+
+oauth = OAuth()
+oauth.register(
+    name="azure",
+    **settings.AUTHLIB_OAUTH_CLIENTS["azure"]
+)

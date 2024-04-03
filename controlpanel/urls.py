@@ -20,5 +20,4 @@ urlpatterns = [
     path("metrics", exports.ExportToDjangoView, name="prometheus-django-metrics"),
 ]
 
-
 urlpatterns += staticfiles_urlpatterns()

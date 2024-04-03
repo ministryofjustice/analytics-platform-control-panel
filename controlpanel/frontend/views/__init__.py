@@ -1,3 +1,5 @@
+# Standard library
+from django.conf import settings
 # Third-party
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -6,6 +8,7 @@ from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
+from controlpanel.frontend.views.auth import EntraIdAuthView
 
 # isort: off
 from controlpanel.frontend.views.app import (
@@ -69,33 +72,65 @@ from controlpanel.frontend.views.release import (
     ReleaseList,
 )
 from controlpanel.frontend.views.reset import ResetHome
+from controlpanel.frontend.views.task import TaskList
 from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
+    EnableBedrockUser,
     ResetMFA,
     SetSuperadmin,
-    EnableBedrockUser,
     UserDelete,
     UserDetail,
     UserList,
 )
-from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.frontend.views.task import TaskList
+from controlpanel.oidc import OIDCLoginRequiredMixin, get_code_challenge, oauth
 
 
 class IndexView(OIDCLoginRequiredMixin, TemplateView):
     template_name = "home.html"
+    http_method_names = ["get", "post"]
 
-    def get(self, request):
+    def get_template_names(self):
         """
-        If the user is a superuser display the home page (containing useful
-        admin related links). Otherwise, redirect the user to the list of the
-        tools they currently have available on the platform.
+        Returns the template to instruct users to authenticate with their Justice
+        account, unless this has already been captured.
         """
+        if not self.request.user.justice_email:
+            return ["justice_email.html"]
+
+        return [self.template_name]
+
+    def get(self, request, *args, **kwargs):
+        """
+        If the user has not authenticated with their Justice account, displays page to
+        ask them to authenticate, to allow us to capture their email address.
+        If their Justice email has been captured, normal users are redirected to their
+        tools. Superusers are displayed the home page (containing useful
+        admin related links).
+        """
+
         if request.user.is_superuser:
-            return super().get(request)
-        else:
-            # Redirect to the tools page.
-            return HttpResponseRedirect(reverse("list-tools"))
+            return super().get(request, *args, **kwargs)
+
+        # TODO add feature request check
+        if settings.features.justice_auth.enabled and not request.user.justice_email:
+            return super().get(request, *args, **kwargs)
+
+        # Redirect to the tools page.
+        return HttpResponseRedirect(reverse("list-tools"))
+
+    def post(self, request, *args, **kwargs):
+        """
+        Redirects user to authenticate with Azure EntraID.
+        """
+        if not settings.features.justice_auth.enabled and not request.user.is_superuser:
+            return self.http_method_not_allowed(request, *args, **kwargs)
+
+        redirect_uri = request.build_absolute_uri(reverse("entraid-auth"))
+        return oauth.azure.authorize_redirect(
+            request,
+            redirect_uri,
+            code_challenge=get_code_challenge(),
+        )
 
 
 class LogoutView(OIDCLogoutView):
