@@ -6,6 +6,10 @@ enabled_features:
     _HOST_dev: false
     _HOST_prod: false
     _HOST_alpha: false
+  justice_auth:
+    _DEFAULT: false
+    _HOST_dev: true
+    _HOST_test: true
 
 
 AWS_SERVICE_URL:

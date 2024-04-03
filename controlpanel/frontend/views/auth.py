@@ -3,8 +3,9 @@
 # Third-party
 import sentry_sdk
 from authlib.integrations.django_client import OAuthError
+from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.urls import reverse
 from django.views import View
 
@@ -34,6 +35,9 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
         """
         Attempts to retrieve the auth token, and update the user.
         """
+        if not settings.features.justice_auth.enabled and not request.user.is_superuser:
+            raise Http404()
+
         token = self._get_access_token()
         if not token:
             messages.error(request, "Something went wrong, please try again")

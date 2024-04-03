@@ -16,6 +16,18 @@ class TestAccess:
         response = getattr(client, method)("/")
         assert response.status_code == status_code
 
+    @patch("django.conf.settings.features.justice_auth.enabled", False)
+    @pytest.mark.parametrize("method, status_code", [
+        ("get", 302),
+        ("post", 405),
+    ])
+    def test_justice_auth_feature_flag_disabled_for_normal_user(
+        self, method, status_code, client, users,
+    ):
+        client.force_login(users["normal_user"])
+        response = getattr(client, method)("/")
+        assert response.status_code == status_code
+
 
 class TestGetAsSuperuser:
 
@@ -40,7 +52,6 @@ class TestGetAsSuperuser:
 
 
 class TestGetAsNormalUser:
-
     def test_without_justice_email(self, client, users):
         user = users["normal_user"]
         client.force_login(user)

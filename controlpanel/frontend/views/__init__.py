@@ -1,5 +1,5 @@
 # Standard library
-
+from django.conf import settings
 # Third-party
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -87,6 +87,7 @@ from controlpanel.oidc import OIDCLoginRequiredMixin, get_code_challenge, oauth
 
 class IndexView(OIDCLoginRequiredMixin, TemplateView):
     template_name = "home.html"
+    http_method_names = ["get", "post"]
 
     def get_template_names(self):
         """
@@ -111,16 +112,19 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
             return super().get(request, *args, **kwargs)
 
         # TODO add feature request check
-        if not request.user.justice_email:
+        if settings.features.justice_auth.enabled and not request.user.justice_email:
             return super().get(request, *args, **kwargs)
 
         # Redirect to the tools page.
         return HttpResponseRedirect(reverse("list-tools"))
 
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         """
         Redirects user to authenticate with Azure EntraID.
         """
+        if not settings.features.justice_auth.enabled and not request.user.is_superuser:
+            return self.http_method_not_allowed(request, *args, **kwargs)
+
         redirect_uri = request.build_absolute_uri(reverse("entraid-auth"))
         return oauth.azure.authorize_redirect(
             request,
