@@ -16,7 +16,6 @@ def test_iam_role_name(users):
 def test_create(helm, settings, users):
     with patch("controlpanel.api.cluster.AWSRole.create_role") as aws_create_role:
         user = users["normal_user"]
-        print(user)
         cluster.User(user).create()
         aws_create_role.assert_called_with(
             user.iam_role_name,
@@ -27,18 +26,18 @@ def test_create(helm, settings, users):
             call(
                 f"bootstrap-user-{user.slug}",
                 "mojanalytics/bootstrap-user",
-                f"--namespace=user-{user.slug}",
-                f"--set=Username={user.slug},",
-                f"Efsvolume={settings.EFS_VOLUME}",
-            ),
-            call(
-                f"config-user-{user.slug}",
-                "mojanalytics/config-user",
-                f"--namespace=user-{user.slug}",
+                f"--namespace=cpanel",
                 f"--set=Username={user.slug}",
             ),
+            call(
+                f"provision-user-{user.slug}",
+                "mojanalytics/provision-user",
+                f"--namespace=user-{user.slug}",
+                (f"--set=Username={user.slug},Efsvolume={settings.EFS_VOLUME},"
+                 "OidcDomain=oidc.idp.example.com,Email=,Fullname="),
+            ),
         ]
-        print(helm.upgrade_release.call_args_list)
+
         helm.upgrade_release.assert_has_calls(expected_calls)
 
 
@@ -54,7 +53,7 @@ def test_reset_home(helm, users):
             f"--set=Username={user.slug}",
         ),
     ]
-    print(helm.upgrade_release.call_args_list)
+
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
@@ -71,17 +70,14 @@ def test_delete(aws_delete_role, helm, users):
     Delete with Helm 3.
     """
     user = users["normal_user"]
-    print(user)
     helm.list_releases.return_value = [
         "chart-release",
     ]
     cluster.User(user).delete()
     aws_delete_role.assert_called_with(user.iam_role_name)
     expected_calls = [
-        call(f"user-{user.slug}", "chart-release"),
-        call("cpanel", "chart-release"),
+        call('user-bob', 'chart-release', dry_run=False),
     ]
-    print(helm.upgrade_release.call_args_list)
     helm.delete.assert_has_calls(expected_calls)
 
 
