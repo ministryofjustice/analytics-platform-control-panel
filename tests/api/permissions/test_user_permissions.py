@@ -80,12 +80,14 @@ def auth0():
         (user_update, "superuser", status.HTTP_200_OK),
         (user_list, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_detail, "normal_user", status.HTTP_403_FORBIDDEN),
-        (user_own_detail, "normal_user", status.HTTP_200_OK),
+        (user_own_detail, "superuser", status.HTTP_200_OK),
+        (user_own_detail, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_delete, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_delete_self, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_create, "normal_user", status.HTTP_403_FORBIDDEN),
         (user_update, "normal_user", status.HTTP_403_FORBIDDEN),
-        (user_update_self, "normal_user", status.HTTP_200_OK),
+        (user_update_self, "superuser", status.HTTP_200_OK),
+        (user_update_self, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 @pytest.mark.django_db
