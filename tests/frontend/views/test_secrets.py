@@ -128,18 +128,19 @@ def test_add_secret_permissions(
 
 
 @pytest.mark.parametrize(  # noqa: F405
-    "user, key, data, expected_status",
-    [["superuser", "testing", {"env_name": "testing"}, 302],
-     ["app_admin", "testing", {}, 302],
-     ["normal_user", "testing", {}, 403]],
+    "user, key, data, expected_status, expected_calls",
+    [["superuser", "testing", {"env_name": "testing"}, 302, 1],
+     ["app_admin", "testing", {}, 302, 1],
+     ["normal_user", "testing", {}, 403, 0]],
 )
 def test_delete_secret(
-    client, app, users, fixture_delete_secret, user, key, data, expected_status
+    client, app, users, fixture_delete_secret, user, key, data, expected_status,
+    expected_calls
 ):
     client.force_login(users[user])
     response = delete_secret_post(client, app, key, data)
     assert response.status_code == expected_status
-    assert fixture_delete_secret.assert_called_once()
+    assert fixture_delete_secret.call_count == expected_calls
 
 
 def test_add_secret(fixture_create_update_secret,
