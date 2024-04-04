@@ -139,7 +139,7 @@ def test_delete_secret(
     client.force_login(users[user])
     response = delete_secret_post(client, app, key, data)
     assert response.status_code == expected_status
-    assert fixture_delete_secret.called_once()
+    assert fixture_delete_secret.assert_called_once()
 
 
 def test_add_secret(fixture_create_update_secret,
