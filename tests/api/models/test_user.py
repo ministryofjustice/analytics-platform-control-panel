@@ -45,7 +45,7 @@ def test_helm_create_user(helm):
             f"--set=Username={user.slug}",
         ),
     ]
-    helm.upgrade_release.has_calls(expected_calls)
+    helm.upgrade_release.assert_has_calls(expected_calls)
 
 
 def test_helm_delete_user(helm, auth0):

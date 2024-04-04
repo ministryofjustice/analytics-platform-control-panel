@@ -99,7 +99,7 @@ def test_permission(
     client.force_login(users[user])
     response = view(client, app, data_input)
     assert response.status_code == expected_status
-    assert fixture_create_update_var.called_once()
-    assert fixture_delete_var.called_once()
+    assert fixture_create_update_var.assert_called_once()
+    assert fixture_delete_var.assert_called_once()
     if data_input:
         assert fixture_create_update_var.called_once_with(data_input)

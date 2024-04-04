@@ -2,7 +2,7 @@
 import pytest
 from authlib.integrations.base_client import OAuthError
 from django.urls import reverse, reverse_lazy
-from mock import patch
+from unittest.mock import patch
 from pytest_django.asserts import assertContains
 
 

@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 # Third-party
 import pytest
@@ -16,6 +16,7 @@ def test_iam_role_name(users):
 def test_create(helm, settings, users):
     with patch("controlpanel.api.cluster.AWSRole.create_role") as aws_create_role:
         user = users["normal_user"]
+        print(user)
         cluster.User(user).create()
         aws_create_role.assert_called_with(
             user.iam_role_name,
@@ -37,7 +38,8 @@ def test_create(helm, settings, users):
                 f"--set=Username={user.slug}",
             ),
         ]
-        helm.upgrade_release.has_calls(expected_calls)
+        print(helm.upgrade_release.call_args_list)
+        helm.upgrade_release.assert_has_calls(expected_calls)
 
 
 def test_reset_home(helm, users):
@@ -52,6 +54,7 @@ def test_reset_home(helm, users):
             f"--set=Username={user.slug}",
         ),
     ]
+    print(helm.upgrade_release.call_args_list)
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
@@ -68,6 +71,7 @@ def test_delete(aws_delete_role, helm, users):
     Delete with Helm 3.
     """
     user = users["normal_user"]
+    print(user)
     helm.list_releases.return_value = [
         "chart-release",
     ]
@@ -77,7 +81,8 @@ def test_delete(aws_delete_role, helm, users):
         call(f"user-{user.slug}", "chart-release"),
         call("cpanel", "chart-release"),
     ]
-    helm.delete.has_calls(expected_calls)
+    print(helm.upgrade_release.call_args_list)
+    helm.delete.assert_has_calls(expected_calls)
 
 
 def test_delete_eks_with_no_releases(aws_delete_role, helm, users):
