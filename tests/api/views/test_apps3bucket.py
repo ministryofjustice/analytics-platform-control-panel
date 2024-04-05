@@ -5,7 +5,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from django.conf import settings
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -16,8 +16,8 @@ from controlpanel.api.models import AppS3Bucket, S3Bucket
 @pytest.fixture
 def apps():
     return {
-        1: mommy.make("api.App", name="app_1"),
-        2: mommy.make("api.App", name="app_2"),
+        1: baker.make("api.App", name="app_1"),
+        2: baker.make("api.App", name="app_2"),
     }
 
 
@@ -133,7 +133,7 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets):
 def test_create_with_s3_data_warehouse_not_allowed(client, apps):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.aws.AWSBucket.create"):
-        s3_bucket_app = mommy.make(
+        s3_bucket_app = baker.make(
             "api.S3Bucket",
             is_data_warehouse=False,
         )
@@ -146,7 +146,7 @@ def test_create_with_s3_data_warehouse_not_allowed(client, apps):
         response = client.post(reverse("apps3bucket-list"), data)
         assert response.status_code == status.HTTP_201_CREATED
 
-        s3_bucket = mommy.make("api.S3Bucket", is_data_warehouse=True)
+        s3_bucket = baker.make("api.S3Bucket", is_data_warehouse=True)
 
         data = {
             "app": apps[1].id,

@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from django.contrib.messages import get_messages
 from django.urls import reverse
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 
 # First-party/Local
@@ -43,7 +43,7 @@ def github_api_token():
 def users(users):
     users.update(
         {
-            "app_admin": mommy.make("api.User", username="app_admin"),
+            "app_admin": baker.make("api.User", username="app_admin"),
         }
     )
     return users
@@ -52,10 +52,10 @@ def users(users):
 @pytest.fixture
 def app(users):
     ip_allowlists = [
-        mommy.make("api.IPAllowlist", allowed_ip_ranges="xyz"),
+        baker.make("api.IPAllowlist", allowed_ip_ranges="xyz"),
     ]
-    mommy.make("api.App", NUM_APPS - 1)
-    app = mommy.make("api.App")
+    baker.make("api.App", NUM_APPS - 1)
+    app = baker.make("api.App")
     app.repo_url = "https://github.com/github_org/testing_repo"
     dev_auth_settings = dict(
         client_id="dev_client_id",
@@ -74,7 +74,7 @@ def app(users):
     }
     app.save()
     AppIPAllowList.objects.update_records(app, "dev_env", ip_allowlists)
-    mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
+    baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
     return app
 
 
@@ -180,8 +180,8 @@ def repos_for_redundant_auth(githubapi):
 def s3buckets(app, users):
     with patch("controlpanel.api.aws.AWSBucket.create") as _:
         buckets = {
-            "not_connected": mommy.make("api.S3Bucket", created_by=users["app_admin"]),
-            "connected": mommy.make("api.S3Bucket", created_by=users["app_admin"]),
+            "not_connected": baker.make("api.S3Bucket", created_by=users["app_admin"]),
+            "connected": baker.make("api.S3Bucket", created_by=users["app_admin"]),
         }
         return buckets
 
@@ -189,7 +189,7 @@ def s3buckets(app, users):
 @pytest.fixture
 def apps3bucket(app, s3buckets):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
-        return mommy.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
+        return baker.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
 
 
 def list_apps(client, *args):
@@ -528,7 +528,7 @@ def test_app_detail_display_all_envs(client, app, users, repos):
 
 
 def test_app_detail_with_missing_auth_client(client, users, repos_for_missing_auth):
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
     app.repo_url = "https://github.com/github_org/testing_repo_with_auth"
     app.save()
 
@@ -549,7 +549,7 @@ def test_app_detail_with_auth_client_redundant(client, users, app, repos_for_red
 
 @pytest.fixture
 def app_being_migrated(users):
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
     app.repo_url = "https://github.com/new_github_org/testing_repo"
     app_old_repo_url = "https://github.com/github_org/testing_repo"
     migration_json = dict(
@@ -563,7 +563,7 @@ def app_being_migrated(users):
     )
     app.description = json.dumps(app_info)
     app.save()
-    mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
+    baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
     return app
 
 

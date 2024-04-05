@@ -5,7 +5,7 @@ import json
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -19,7 +19,7 @@ def users(users):
     for i, role in enumerate(("viewer", "editor", "admin")):
         users.update(
             {
-                f"bucket_{role}": mommy.make(
+                f"bucket_{role}": baker.make(
                     "api.User",
                     username=role,
                     auth0_id=f"github|user_{5 + i}",

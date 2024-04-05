@@ -6,7 +6,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from botocore.exceptions import ClientError
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -17,8 +17,8 @@ from controlpanel.api.models import User
 @pytest.fixture(autouse=True)
 def models(users):
     with patch("controlpanel.api.aws.AWSBucket.create"):
-        mommy.make("api.UserS3Bucket", user=users["normal_user"])
-        mommy.make("api.UserApp", user=users["normal_user"])
+        baker.make("api.UserS3Bucket", user=users["normal_user"])
+        baker.make("api.UserApp", user=users["normal_user"])
 
 
 @pytest.fixture
