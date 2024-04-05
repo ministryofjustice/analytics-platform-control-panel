@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from botocore.exceptions import ClientError
 from django.conf import settings
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -18,17 +18,17 @@ from tests.api.fixtures.es import BUCKET_HITS_AGGREGATION
 @pytest.fixture
 def bucket():
     with patch("controlpanel.api.aws.AWSBucket.create"):
-        return mommy.make("api.S3Bucket", name="test-bucket-1")
+        return baker.make("api.S3Bucket", name="test-bucket-1")
 
 
 @pytest.fixture(autouse=True)
 def models(bucket):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.aws.AWSBucket.create"):
-        mommy.make("api.S3Bucket")
-        mommy.make("api.S3Bucket", is_data_warehouse=True)
-        mommy.make("api.AppS3Bucket", s3bucket=bucket)
-        mommy.make("api.UserS3Bucket", s3bucket=bucket)
+        baker.make("api.S3Bucket")
+        baker.make("api.S3Bucket", is_data_warehouse=True)
+        baker.make("api.AppS3Bucket", s3bucket=bucket)
+        baker.make("api.UserS3Bucket", s3bucket=bucket)
 
 
 def test_list(client):

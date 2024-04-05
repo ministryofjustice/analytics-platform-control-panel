@@ -3,7 +3,7 @@ import json
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -14,8 +14,8 @@ from controlpanel.api.models import UserApp
 @pytest.fixture
 def apps():
     return {
-        1: mommy.make("api.App", name="app_1"),
-        2: mommy.make("api.App", name="app_2"),
+        1: baker.make("api.App", name="app_1"),
+        2: baker.make("api.App", name="app_2"),
     }
 
 

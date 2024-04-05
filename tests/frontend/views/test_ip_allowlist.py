@@ -1,13 +1,13 @@
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
 
 @pytest.fixture(autouse=True)
 def ip_allowlist():
-    allowlist = mommy.make(
+    allowlist = baker.make(
         "api.IPAllowlist",
         name="Test IP allowlist 1",
         allowed_ip_ranges="192.168.0.0/28",

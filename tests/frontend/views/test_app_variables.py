@@ -4,7 +4,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from django.urls import reverse
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 
 NUM_APPS = 3
@@ -14,7 +14,7 @@ NUM_APPS = 3
 def users(users):
     users.update(
         {
-            "owner": mommy.make("api.User", username="owner"),
+            "owner": baker.make("api.User", username="owner"),
         }
     )
     return users
@@ -22,9 +22,9 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def app(users):
-    mommy.make("api.App", NUM_APPS - 1)
-    app = mommy.make("api.App")
-    mommy.make("api.UserApp", user=users["owner"], app=app, is_admin=True)
+    baker.make("api.App", NUM_APPS - 1)
+    app = baker.make("api.App")
+    baker.make("api.UserApp", user=users["owner"], app=app, is_admin=True)
     return app
 
 

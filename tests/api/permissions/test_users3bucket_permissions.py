@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -16,7 +16,7 @@ from controlpanel.api.models import UserS3Bucket
 def users(users):
     users.update(
         {
-            "bucket_admin": mommy.make(
+            "bucket_admin": baker.make(
                 "api.User",
                 username="bucket_admin",
                 auth0_id="github|user_4",
@@ -29,19 +29,19 @@ def users(users):
 @pytest.fixture
 def bucket():
     with patch("controlpanel.api.aws.AWSBucket.create"):
-        return mommy.make("api.S3Bucket")
+        return baker.make("api.S3Bucket")
 
 
 @pytest.fixture
 def users3bucket(bucket, users):
-    mommy.make(
+    baker.make(
         "api.UserS3Bucket",
         user=users["bucket_admin"],
         s3bucket=bucket,
         access_level=UserS3Bucket.READONLY,
         is_admin=True,
     )
-    return mommy.make(
+    return baker.make(
         "api.UserS3Bucket",
         user=users["normal_user"],
         s3bucket=bucket,
