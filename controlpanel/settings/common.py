@@ -220,13 +220,14 @@ AZURE_CODE_CHALLENGE_METHOD = os.environ.get("AZURE_CODE_CHALLENGE_METHOD", "S25
 AUTHLIB_OAUTH_CLIENTS = {
     "azure": {
         "client_id": os.environ.get("AZURE_CLIENT_ID"),
-        # TODO client_secret is not strictly required but would be better to use
+        "client_secret": os.environ.get("AZURE_CLIENT_SECRET"),
         "server_metadata_url": AZURE_OP_CONF_URL,
         "client_kwargs": {
             "scope": AZURE_RP_SCOPES,
             "response_type": "code",
-            "token_endpoint_auth_method": "none",
+            "token_endpoint_auth_method": "client_secret_post",
             "code_challenge_method": AZURE_CODE_CHALLENGE_METHOD,
+            "prompt": "login"
         },
 
     }
