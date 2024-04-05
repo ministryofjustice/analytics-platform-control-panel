@@ -6,7 +6,6 @@ flake8==7.0.0
 ipdb==0.13.13
 ipython==8.21.0
 isort==5.13.2
-model-bakery==1.17.0
 pandas==2.2.0
 pre-commit==3.6.1
 pylint==3.0.3
