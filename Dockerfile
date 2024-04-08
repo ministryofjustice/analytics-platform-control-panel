@@ -1,4 +1,4 @@
-FROM 593291632749.dkr.ecr.eu-west-1.amazonaws.com/node:18.12.1-slim AS jsdep
+FROM public.ecr.aws/docker/library/node:20.11.1 AS build-node
 COPY package.json package-lock.json ./
 COPY jest.config.js controlpanel/frontend/static /src/
 
@@ -67,13 +67,13 @@ COPY docker docker
 COPY tests tests
 
 # install javascript dependencies
-COPY --from=jsdep dist/app.css dist/app.js static/
-COPY --from=jsdep node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
-COPY --from=jsdep node_modules/govuk-frontend static/govuk-frontend
-COPY --from=jsdep node_modules/@ministryofjustice/frontend/moj static/ministryofjustice-frontend
-COPY --from=jsdep node_modules/html5shiv/dist static/html5-shiv
-COPY --from=jsdep node_modules/jquery/dist static/jquery
-COPY --from=jsdep node_modules/jquery-ui/dist/ static/jquery-ui
+COPY --from=build-node dist/app.css dist/app.js static/
+COPY --from=build-node node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
+COPY --from=build-node node_modules/govuk-frontend static/govuk-frontend
+COPY --from=build-node node_modules/@ministryofjustice/frontend/moj static/ministryofjustice-frontend
+COPY --from=build-node node_modules/html5shiv/dist static/html5-shiv
+COPY --from=build-node node_modules/jquery/dist static/jquery
+COPY --from=build-node node_modules/jquery-ui/dist/ static/jquery-ui
 
 # empty .env file to prevent warning messages
 RUN touch .env
