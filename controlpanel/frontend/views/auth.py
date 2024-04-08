@@ -2,6 +2,7 @@
 
 # Third-party
 import sentry_sdk
+import structlog
 from authlib.integrations.django_client import OAuthError
 from django.conf import settings
 from django.contrib import messages
@@ -11,6 +12,8 @@ from django.views import View
 
 # First-party/Local
 from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
+
+log = structlog.getLogger(__name__)
 
 
 class EntraIdAuthView(OIDCLoginRequiredMixin, View):
@@ -28,6 +31,7 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
             token = oauth.azure.authorize_access_token(self.request)
         except OAuthError as error:
             sentry_sdk.capture_exception(error)
+            log.error(error.description)
             token = None
         return token
 
