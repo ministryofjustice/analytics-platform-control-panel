@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 from django.core.exceptions import ValidationError
 from django.urls import reverse
-from mock import MagicMock
+
 
 # First-party/Local
 from controlpanel.api import aws
@@ -469,7 +469,7 @@ def test_ip_allowlist_form_missing_name():
 @pytest.mark.parametrize("env", ["dev", "prod"])
 @mock.patch(
     "controlpanel.frontend.forms.CreateAppForm.get_datasource_queryset",
-    new=MagicMock,
+    new=mock.MagicMock,
 )
 def test_clean_namespace(env):
     form = forms.CreateAppForm()

@@ -3,8 +3,6 @@ from unittest.mock import call, patch
 
 # Third-party
 import pytest
-from django.conf import settings
-from model_mommy import mommy
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -20,32 +18,6 @@ def enable_db_for_all_tests(db):
 def auth0():
     with patch("controlpanel.api.models.user.auth0") as auth0:
         yield auth0
-
-
-def test_helm_create_user(helm):
-    user = mommy.prepare("api.User")
-
-    expected_calls = [
-        call(
-            f"bootstrap-user-{user.slug}",
-            "mojanalytics/bootstrap-user",
-            f"--set=Username={user.slug}",
-        ),
-        call(
-            f"provision-user-{user.slug}",
-            "mojanalytics/provision-user",
-            f"--namespace=user-{user.slug}",
-            f"--set=Username={user.slug},",
-            f"Efsvolume={settings.EFS_VOLUME}",
-        ),
-        call(
-            f"config-user-{user.slug}",
-            "mojanalytics/config-user",
-            f"--namespace=user-{user.slug}",
-            f"--set=Username={user.slug}",
-        ),
-    ]
-    helm.upgrade_release.has_calls(expected_calls)
 
 
 def test_helm_delete_user(helm, auth0):

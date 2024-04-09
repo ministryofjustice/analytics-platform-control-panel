@@ -5,7 +5,7 @@ from unittest.mock import call, patch
 import pytest
 from botocore.exceptions import ClientError
 from django.conf import settings
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -26,8 +26,8 @@ def test_delete_revokes_permissions(bucket):
     with patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access") as app_revoke_bucket_access, \
             patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access") as user_revoke_user_bucket_access:
         # link the bucket with an UserS3Bucket and AppS3Bucket
-        mommy.make("api.UserS3Bucket", s3bucket=bucket)
-        mommy.make("api.AppS3Bucket", s3bucket=bucket)
+        baker.make("api.UserS3Bucket", s3bucket=bucket)
+        baker.make("api.AppS3Bucket", s3bucket=bucket)
         # delete the source S3Bucket
         bucket.delete()
         # check that related objects revoke access methods were called

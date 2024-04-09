@@ -1,6 +1,6 @@
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework.reverse import reverse
 
 DEFAULT_PAGE_SIZE = 100
@@ -23,7 +23,7 @@ def login_superuser(client, superuser):
 )
 @pytest.mark.django_db
 def test_pagination(client, urlparams, page_size, next, prev, sqs):
-    mommy.make("api.App", DEFAULT_PAGE_SIZE + 20)
+    baker.make("api.App", DEFAULT_PAGE_SIZE + 20)
     app_list_url = reverse("app-list")
 
     response = client.get(app_list_url, urlparams)

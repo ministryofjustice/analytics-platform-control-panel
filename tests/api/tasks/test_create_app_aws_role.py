@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import App
@@ -29,7 +29,7 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
 def test_valid_app_and_user(cluster, complete, users):
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
 
     create_app_aws_role(app.pk, users["superuser"].pk)
 

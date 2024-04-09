@@ -1,6 +1,6 @@
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -13,14 +13,14 @@ def enable_db_for_all_tests(db):
 @pytest.fixture(autouse=True)
 def buckets(db):
     return {
-        1: mommy.make("api.S3Bucket", name="test-bucket-1"),
-        2: mommy.make("api.S3Bucket", name="test-bucket-2"),
+        1: baker.make("api.S3Bucket", name="test-bucket-1"),
+        2: baker.make("api.S3Bucket", name="test-bucket-2"),
     }
 
 
 @pytest.fixture(autouse=True)
 def users3bucket(db, buckets, users):
-    return mommy.make(
+    return baker.make(
         "api.UserS3Bucket",
         user=users["normal_user"],
         s3bucket=buckets[1],

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 from django.urls import reverse
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from tests.api.fixtures.aws import *
@@ -34,7 +34,7 @@ def github_api_token():
 def users(users):
     users.update(
         {
-            "app_admin": mommy.make("api.User", username="app_admin"),
+            "app_admin": baker.make("api.User", username="app_admin"),
         }
     )
     return users
@@ -42,9 +42,9 @@ def users(users):
 
 @pytest.fixture(autouse=True)  # noqa: F405
 def app(users):
-    mommy.make("api.App", NUM_APPS - 1)
-    app = mommy.make("api.App")
-    mommy.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
+    baker.make("api.App", NUM_APPS - 1)
+    app = baker.make("api.App")
+    baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
     return app
 
 
@@ -73,15 +73,15 @@ def repos(githubapi):
 def s3buckets(app):
     with patch("controlpanel.api.aws.AWSBucket.create"):
         buckets = {
-            "not_connected": mommy.make("api.S3Bucket"),
-            "connected": mommy.make("api.S3Bucket"),
+            "not_connected": baker.make("api.S3Bucket"),
+            "connected": baker.make("api.S3Bucket"),
         }
         return buckets
 
 
 @pytest.fixture  # noqa: F405
 def apps3bucket(app, s3buckets):
-    return mommy.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
+    return baker.make("api.AppS3Bucket", app=app, s3bucket=s3buckets["connected"])
 
 
 @pytest.fixture
@@ -128,18 +128,19 @@ def test_add_secret_permissions(
 
 
 @pytest.mark.parametrize(  # noqa: F405
-    "user, key, data, expected_status",
-    [["superuser", "testing", {"env_name": "testing"}, 302],
-     ["app_admin", "testing", {}, 302],
-     ["normal_user", "testing", {}, 403]],
+    "user, key, data, expected_status, expected_calls",
+    [["superuser", "testing", {"env_name": "testing"}, 302, 1],
+     ["app_admin", "testing", {}, 302, 1],
+     ["normal_user", "testing", {}, 403, 0]],
 )
 def test_delete_secret(
-    client, app, users, fixture_delete_secret, user, key, data, expected_status
+    client, app, users, fixture_delete_secret, user, key, data, expected_status,
+    expected_calls
 ):
     client.force_login(users[user])
     response = delete_secret_post(client, app, key, data)
     assert response.status_code == expected_status
-    assert fixture_delete_secret.called_once()
+    assert fixture_delete_secret.call_count == expected_calls
 
 
 def test_add_secret(fixture_create_update_secret,

@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import call, patch
 
 # Third-party
 import pytest
@@ -26,18 +26,19 @@ def test_create(helm, settings, users):
             call(
                 f"bootstrap-user-{user.slug}",
                 "mojanalytics/bootstrap-user",
-                f"--namespace=user-{user.slug}",
-                f"--set=Username={user.slug},",
-                f"Efsvolume={settings.EFS_VOLUME}",
-            ),
-            call(
-                f"config-user-{user.slug}",
-                "mojanalytics/config-user",
-                f"--namespace=user-{user.slug}",
+                f"--namespace=cpanel",
                 f"--set=Username={user.slug}",
             ),
+            call(
+                f"provision-user-{user.slug}",
+                "mojanalytics/provision-user",
+                f"--namespace=user-{user.slug}",
+                (f"--set=Username={user.slug},Efsvolume={settings.EFS_VOLUME},"
+                 "OidcDomain=oidc.idp.example.com,Email=,Fullname="),
+            ),
         ]
-        helm.upgrade_release.has_calls(expected_calls)
+
+        helm.upgrade_release.assert_has_calls(expected_calls)
 
 
 def test_reset_home(helm, users):
@@ -52,6 +53,7 @@ def test_reset_home(helm, users):
             f"--set=Username={user.slug}",
         ),
     ]
+
     helm.upgrade_release.assert_has_calls(expected_calls)
 
 
@@ -74,10 +76,9 @@ def test_delete(aws_delete_role, helm, users):
     cluster.User(user).delete()
     aws_delete_role.assert_called_with(user.iam_role_name)
     expected_calls = [
-        call(f"user-{user.slug}", "chart-release"),
-        call("cpanel", "chart-release"),
+        call('user-bob', 'chart-release', dry_run=False),
     ]
-    helm.delete.has_calls(expected_calls)
+    helm.delete.assert_has_calls(expected_calls)
 
 
 def test_delete_eks_with_no_releases(aws_delete_role, helm, users):

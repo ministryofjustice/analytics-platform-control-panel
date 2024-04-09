@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 # Third-party
 import pytest
 from django.conf import settings
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
@@ -12,7 +12,7 @@ from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
 
 @pytest.fixture
 def tool(db):
-    return mommy.make("api.Tool")
+    return baker.make("api.Tool")
 
 
 def test_deploy_for_generic(helm, tool, users):
