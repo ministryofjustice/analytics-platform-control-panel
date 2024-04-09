@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework.reverse import reverse
 
 NUM_APPS3BUCKETS = 2
@@ -13,7 +13,7 @@ NUM_APPS3BUCKETS = 2
 def apps3buckets(s3, sqs):
     with patch("controlpanel.api.aws.AWSBucket.create"),\
             patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
-        mommy.make("api.AppS3Bucket", NUM_APPS3BUCKETS)
+        baker.make("api.AppS3Bucket", NUM_APPS3BUCKETS)
 
 
 def list(client, *args):

@@ -4,7 +4,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from django.conf import settings
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -18,7 +18,7 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def bucket():
-    return mommy.prepare("api.S3Bucket", name="test-bucket")
+    return baker.prepare("api.S3Bucket", name="test-bucket")
 
 
 def test_arn(bucket):

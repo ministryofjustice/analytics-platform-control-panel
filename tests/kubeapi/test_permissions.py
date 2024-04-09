@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 
 
@@ -32,13 +32,13 @@ def k8s_api():
 @pytest.fixture
 def users():
     return {
-        "superuser": mommy.make(
+        "superuser": baker.make(
             "api.User",
             auth0_id="github|0",
             is_superuser=True,
             username="alice",
         ),
-        "normal_user": mommy.make(
+        "normal_user": baker.make(
             "api.User",
             username="bob",
             auth0_id="github|1",

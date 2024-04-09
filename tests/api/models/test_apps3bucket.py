@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from django.conf import settings
 from django.db.utils import IntegrityError
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import AppS3Bucket
@@ -13,12 +13,12 @@ from controlpanel.api.models import AppS3Bucket
 
 @pytest.fixture
 def app():
-    return mommy.make("api.App", name="app_1")
+    return baker.make("api.App", name="app_1")
 
 
 @pytest.fixture
 def bucket():
-    return mommy.make("api.S3Bucket", name="test-bucket-1")
+    return baker.make("api.S3Bucket", name="test-bucket-1")
 
 
 @pytest.mark.django_db
@@ -57,7 +57,7 @@ def test_delete_revoke_permissions(app, bucket):
     with patch(
         "controlpanel.api.tasks.S3BucketRevokeAppAccess"
     ) as revoke_bucket_access_task:
-        apps3bucket = mommy.make(
+        apps3bucket = baker.make(
             "api.AppS3Bucket",
             app=app,
             s3bucket=bucket,

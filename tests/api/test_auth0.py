@@ -1,9 +1,8 @@
 # Standard library
 import json
-from unittest.mock import call, patch
+from unittest.mock import call, patch, ANY
 
 # Third-party
-import mock
 import pytest
 from django.conf import settings
 from auth0 import exceptions
@@ -511,9 +510,7 @@ def fixture_group_members_200(ExtendedAuth0):
         yield
 
 
-def test_group_member_more_than_100(
-    ExtendedAuth0, fixture_group_members_200
-):
+def test_group_member_more_than_100(ExtendedAuth0, fixture_group_members_200):
     members = ExtendedAuth0.groups.get_group_members(group_id="foo-id-1")
     assert len(members) == 200
 
@@ -585,7 +582,7 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
             "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
         },
     )
-    fixture_connection_create.assert_called_once_with(mock.ANY)
+    fixture_connection_create.assert_called_once_with(ANY)
     with open("./tests/api/fixtures/nomis_body.json") as body_file:
         expected = json.loads(body_file.read())
 
@@ -606,7 +603,8 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
 def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "create") as connection_create:
         connection_create.side_effect = exceptions.Auth0Error(
-            409, 409, 'The connection name existed already')
+            409, 409, "The connection name existed already"
+        )
         ExtendedAuth0.connections.create_custom_connection(
             "auth0_nomis",
             input_values={
@@ -615,13 +613,12 @@ def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
                 "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
             },
         )
-        connection_create.assert_called_once_with(mock.ANY)
+        connection_create.assert_called_once_with(ANY)
 
 
 def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "create") as connection_create:
-        connection_create.side_effect = exceptions.Auth0Error(
-            400, 400, 'Error')
+        connection_create.side_effect = exceptions.Auth0Error(400, 400, "Error")
         with pytest.raises(auth0.Auth0Error, match="400: Error"):
             ExtendedAuth0.connections.create_custom_connection(
                 "auth0_nomis",
@@ -631,4 +628,4 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                     "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
                 },
             )
-        connection_create.assert_called_once_with(mock.ANY)
+        connection_create.assert_called_once_with(ANY)

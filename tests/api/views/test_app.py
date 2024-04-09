@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 from botocore.exceptions import ClientError
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.reverse import reverse
@@ -16,7 +16,7 @@ from tests.api.fixtures.aws import *
 
 @pytest.fixture  # noqa: F405
 def app():
-    return mommy.make(
+    return baker.make(
         "api.App",
         repo_url="https://github.com/ministryofjustice/example.git",
     )
@@ -26,9 +26,9 @@ def app():
 def models(app, users):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
             patch("controlpanel.api.aws.AWSBucket.create"):
-        mommy.make("api.App")
-        mommy.make("api.AppS3Bucket", app=app)
-        mommy.make("api.UserApp", app=app, user=users["superuser"])
+        baker.make("api.App")
+        baker.make("api.AppS3Bucket", app=app)
+        baker.make("api.UserApp", app=app, user=users["superuser"])
 
 
 def test_list(client):

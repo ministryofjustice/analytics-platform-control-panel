@@ -5,7 +5,7 @@ from unittest.mock import mock_open, patch
 # Third-party
 import pytest
 import yaml
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import auth0
@@ -92,7 +92,7 @@ def slack_WebClient():
 def superuser(
     db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airflow_prod_policy
 ):
-    return mommy.make(
+    return baker.make(
         "api.User",
         auth0_id="github|user_1",
         is_superuser=True,
@@ -104,13 +104,13 @@ def superuser(
 def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
     return {
         "superuser": superuser,
-        "normal_user": mommy.make(
+        "normal_user": baker.make(
             "api.User",
             auth0_id="github|user_2",
             username="bob",
             is_superuser=False,
         ),
-        "other_user": mommy.make(
+        "other_user": baker.make(
             "api.User",
             username="carol",
             auth0_id="github|user_3",

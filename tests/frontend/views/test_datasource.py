@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from django.conf import settings
 from django.urls import reverse, reverse_lazy
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 
 # First-party/Local
@@ -23,8 +23,8 @@ def enable_db_for_all_tests(db):
 def users(users):
     users.update(
         {
-            "bucket_viewer": mommy.make("api.User", username="bucket_viewer"),
-            "bucket_admin": mommy.make("api.User", username="bucket_admin"),
+            "bucket_viewer": baker.make("api.User", username="bucket_viewer"),
+            "bucket_admin": baker.make("api.User", username="bucket_admin"),
         }
     )
     return users
@@ -34,53 +34,53 @@ def users(users):
 def buckets(db):
     with patch("controlpanel.api.aws.AWSBucket.create"):
         return {
-            "app_data1": mommy.make("api.S3Bucket", is_data_warehouse=False),
-            "app_data2": mommy.make("api.S3Bucket", is_data_warehouse=False),
-            "warehouse1": mommy.make("api.S3Bucket", is_data_warehouse=True),
-            "warehouse2": mommy.make("api.S3Bucket", is_data_warehouse=True),
-            "other": mommy.make("api.S3Bucket"),
+            "app_data1": baker.make("api.S3Bucket", is_data_warehouse=False),
+            "app_data2": baker.make("api.S3Bucket", is_data_warehouse=False),
+            "warehouse1": baker.make("api.S3Bucket", is_data_warehouse=True),
+            "warehouse2": baker.make("api.S3Bucket", is_data_warehouse=True),
+            "other": baker.make("api.S3Bucket"),
         }
 
 
 @pytest.fixture(autouse=True)
 def users3buckets(buckets, users):
     return {
-        "app_data_admin": mommy.make(
+        "app_data_admin": baker.make(
             "api.UserS3Bucket",
             user=users["bucket_admin"],
             s3bucket=buckets["app_data1"],
             access_level=UserS3Bucket.READWRITE,
             is_admin=True,
         ),
-        "app_data_admin2": mommy.make(
+        "app_data_admin2": baker.make(
             "api.UserS3Bucket",
             user=users["bucket_admin"],
             s3bucket=buckets["app_data2"],
             access_level=UserS3Bucket.READWRITE,
             is_admin=True,
         ),
-        "app_data_readonly": mommy.make(
+        "app_data_readonly": baker.make(
             "api.UserS3Bucket",
             user=users["bucket_viewer"],
             s3bucket=buckets["app_data2"],
             access_level=UserS3Bucket.READONLY,
             is_admin=False,
         ),
-        "warehouse_admin": mommy.make(
+        "warehouse_admin": baker.make(
             "api.UserS3Bucket",
             s3bucket=buckets["warehouse1"],
             user=users["bucket_admin"],
             access_level=UserS3Bucket.READWRITE,
             is_admin=True,
         ),
-        "warehouse_admin2": mommy.make(
+        "warehouse_admin2": baker.make(
             "api.UserS3Bucket",
             s3bucket=buckets["warehouse2"],
             user=users["bucket_admin"],
             access_level=UserS3Bucket.READWRITE,
             is_admin=True,
         ),
-        "warehouse_readonly": mommy.make(
+        "warehouse_readonly": baker.make(
             "api.UserS3Bucket",
             s3bucket=buckets["warehouse1"],
             user=users["bucket_viewer"],

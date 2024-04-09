@@ -5,7 +5,7 @@ from unittest.mock import PropertyMock, patch
 import pytest
 from django.conf import settings
 from django.db.utils import IntegrityError
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import UserS3Bucket
@@ -14,12 +14,12 @@ from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 
 @pytest.fixture
 def user():
-    return mommy.make("api.User", auth0_id="github|user_1", username="user_1")
+    return baker.make("api.User", auth0_id="github|user_1", username="user_1")
 
 
 @pytest.fixture
 def bucket():
-    return mommy.make("api.S3Bucket", name="test-bucket-1")
+    return baker.make("api.S3Bucket", name="test-bucket-1")
 
 
 @pytest.fixture
