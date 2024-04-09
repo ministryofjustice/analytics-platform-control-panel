@@ -8,7 +8,7 @@ from mozilla_django_oidc.views import OIDCLogoutView
 
 # First-party/Local
 from controlpanel.frontend.views.accessibility import Accessibility
-from controlpanel.frontend.views.auth import EntraIdAuthView
+from controlpanel.frontend.views.auth import EntraIdAuthView, EntraOIDCAuthenticationCallbackView
 
 # isort: off
 from controlpanel.frontend.views.app import (
