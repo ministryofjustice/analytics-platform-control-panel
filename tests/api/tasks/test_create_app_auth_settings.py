@@ -3,7 +3,7 @@ from unittest.mock import PropertyMock, patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import App
@@ -26,7 +26,7 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 @patch("controlpanel.api.tasks.handlers.app.cluster")
 @patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None))  # noqa
 def test_cluster_not_called_without_github_api_token(cluster, complete, users):
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
 
     user = users["superuser"]
     create_app_auth_settings(
@@ -44,7 +44,7 @@ def test_cluster_not_called_without_github_api_token(cluster, complete, users):
 @patch("controlpanel.api.tasks.handlers.app.cluster")
 @patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value="dummy-token"))  # noqa
 def test_valid_app_and_user(cluster, complete, users):
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
 
     create_app_auth_settings(
         app.pk,

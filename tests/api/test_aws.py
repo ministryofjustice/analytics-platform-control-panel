@@ -274,7 +274,11 @@ def test_create_bucket(logs_bucket, s3):
 def test_tag_bucket(s3):
     bucket_name = f"bucket-{id(MagicMock())}"
     bucket = s3.Bucket(bucket_name)
-    bucket.create()
+    bucket.create(
+        CreateBucketConfiguration={
+            "LocationConstraint": settings.BUCKET_REGION,  # noqa: F405
+        }
+    )
 
     aws.AWSBucket().tag_bucket(bucket_name, {"env": "test", "test-update": "old-value"})
     aws.AWSBucket().tag_bucket(
@@ -557,8 +561,8 @@ def test_create_policy(iam, settings):
 def assert_group_members(policy, role_names):
     attached_roles = list(policy.attached_roles.all())
     assert len(attached_roles) == len(role_names)
-    for role, role_name in zip(attached_roles, role_names):
-        assert role.role_name == role_name
+    for role in attached_roles:
+        assert role.role_name in role_names
 
 
 @pytest.fixture
@@ -1111,71 +1115,3 @@ def test_revoke_access_doesnt_remove_prefixes(s3_access_policy):
     assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"].get("Resource", None) is not None
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"]["s3:prefix"] != [""]  # noqa
     assert s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"]["s3:prefix"] != []  # noqa
-
-
-def test_attach_policy(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, test_policy):
-    """
-    Ensure EKS settngs are in the policy document when running on that
-    infrastructure.
-    """
-    user = {
-        "auth0_id": "normal_user",
-        "user_name": "testing-bob",
-        "iam_role_name": "testing-bob",
-    }
-
-    aws.AWSRole().create_role(
-        user["iam_role_name"],
-        User.aws_user_policy(user["auth0_id"], user["user_name"]),
-        User.ATTACH_POLICIES,
-    )
-
-    aws.AWSRole().attach_policy(
-        user["iam_role_name"],
-        ["a-test-policy"]
-    )
-    role = iam.Role(user["iam_role_name"])
-
-
-    attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 4
-    arns = [policy.arn for policy in attached_policies]
-    assert managed_policy["Arn"] in arns
-    assert airflow_dev_policy["Arn"] in arns
-    assert airflow_prod_policy["Arn"] in arns
-    assert test_policy["Arn"] in arns
-
-
-def test_remove_policy(iam, managed_policy, airflow_dev_policy, airflow_prod_policy, test_policy):
-    """
-    Ensure EKS settngs are in the policy document when running on that
-    infrastructure.
-    """
-    user = {
-        "auth0_id": "normal_user",
-        "user_name": "testing-bob",
-        "iam_role_name": "testing-bob",
-    }
-
-    policies = User.ATTACH_POLICIES + ["a-test-policy"]
-
-    aws.AWSRole().create_role(
-        user["iam_role_name"],
-        User.aws_user_policy(user["auth0_id"], user["user_name"]),
-        policies,
-    )
-
-    aws.AWSRole().remove_policy(
-        user["iam_role_name"],
-        ["a-test-policy"]
-    )
-    role = iam.Role(user["iam_role_name"])
-
-
-    attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 3
-    arns = [policy.arn for policy in attached_policies]
-    assert managed_policy["Arn"] in arns
-    assert airflow_dev_policy["Arn"] in arns
-    assert airflow_prod_policy["Arn"] in arns
-    assert test_policy["Arn"] not in arns

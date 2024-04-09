@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from auth0.rest import Auth0Error
 from bs4 import BeautifulSoup
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -16,7 +16,7 @@ from controlpanel.api.models import App
 
 @pytest.fixture
 def app():
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
     dev_auth_settings = dict(
         client_id="dev_client_id",
         group_id=str(uuid.uuid4())

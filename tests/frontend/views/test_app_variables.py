@@ -4,7 +4,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from django.urls import reverse
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 
 NUM_APPS = 3
@@ -14,7 +14,7 @@ NUM_APPS = 3
 def users(users):
     users.update(
         {
-            "owner": mommy.make("api.User", username="owner"),
+            "owner": baker.make("api.User", username="owner"),
         }
     )
     return users
@@ -22,9 +22,9 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def app(users):
-    mommy.make("api.App", NUM_APPS - 1)
-    app = mommy.make("api.App")
-    mommy.make("api.UserApp", user=users["owner"], app=app, is_admin=True)
+    baker.make("api.App", NUM_APPS - 1)
+    app = baker.make("api.App")
+    baker.make("api.UserApp", user=users["owner"], app=app, is_admin=True)
     return app
 
 
@@ -70,19 +70,22 @@ def fixture_delete_var():
 
 
 @pytest.mark.parametrize(
-    "view,user,expected_status,data_input",
+    "view,user,expected_status,data_input,create_call_count,delete_call_count,expected_data",
     [
         (
             create,
             "superuser",
             status.HTTP_302_FOUND,
             dict(key="environment", value="prod", env_name="test_env"),
+            1,
+            0,
+            dict(env_name="test_env", key_name="XXX_environment", key_value="prod"),
         ),
-        (create, "owner", status.HTTP_200_OK, {}),
-        (create, "normal_user", status.HTTP_200_OK, {}),
-        (delete, "superuser", status.HTTP_302_FOUND, dict(key="hello")),
-        (delete, "owner", status.HTTP_302_FOUND, dict(key="hello")),
-        (delete, "normal_user", status.HTTP_403_FORBIDDEN, dict(key="hello")),
+        (create, "owner", status.HTTP_200_OK, {}, 0, 0, None),
+        (create, "normal_user", status.HTTP_200_OK, {}, 0, 0, None),
+        (delete, "superuser", status.HTTP_302_FOUND, dict(key="hello"), 0, 1, None),
+        (delete, "owner", status.HTTP_302_FOUND, dict(key="hello"), 0, 1, None),
+        (delete, "normal_user", status.HTTP_403_FORBIDDEN, dict(key="hello"), 0, 0, None),
     ],
 )
 def test_permission(
@@ -95,11 +98,14 @@ def test_permission(
     data_input,
     fixture_create_update_var,
     fixture_delete_var,
+    create_call_count,
+    delete_call_count,
+    expected_data
 ):
     client.force_login(users[user])
     response = view(client, app, data_input)
     assert response.status_code == expected_status
-    assert fixture_create_update_var.called_once()
-    assert fixture_delete_var.called_once()
-    if data_input:
-        assert fixture_create_update_var.called_once_with(data_input)
+    assert fixture_create_update_var.call_count == create_call_count
+    assert fixture_delete_var.call_count == delete_call_count
+    if data_input and create_call_count == 1:
+        fixture_create_update_var.assert_called_once_with(**expected_data)

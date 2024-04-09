@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import AppS3Bucket, S3Bucket, UserS3Bucket
@@ -37,7 +37,7 @@ def test_exception_raised_when_called_without_valid_app(
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 @patch("controlpanel.api.models.s3bucket.cluster")
 def test_bucket_created(cluster, complete, users):
-    s3bucket = mommy.make("api.S3Bucket", bucket_owner="APP")
+    s3bucket = baker.make("api.S3Bucket", bucket_owner="APP")
 
     create_s3bucket(
         s3bucket.pk, users["superuser"].pk, bucket_owner=s3bucket.bucket_owner
@@ -60,7 +60,7 @@ def test_bucket_created(cluster, complete, users):
 def test_access_granted(
     cluster, complete, users, task_method, model_class, cluster_class
 ):
-    obj = mommy.make(model_class)
+    obj = baker.make(model_class)
 
     task_method(obj.pk, users["superuser"].pk)
 
@@ -78,7 +78,7 @@ def test_access_granted(
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.s3.cluster")
 def test_revoke_user_access(cluster, complete, bucket_name, is_folder):
-    user_bucket_access = mommy.make("api.UserS3Bucket", s3bucket__name=bucket_name)
+    user_bucket_access = baker.make("api.UserS3Bucket", s3bucket__name=bucket_name)
     s3bucket = user_bucket_access.s3bucket
     bucket_identifier = s3bucket.name if is_folder else s3bucket.arn
     revoke_user_s3bucket_access(
@@ -104,7 +104,7 @@ def test_revoke_user_access(cluster, complete, bucket_name, is_folder):
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.s3.cluster")
 def test_revoke_app_access(cluster, complete):
-    app_bucket_access = mommy.make("api.AppS3Bucket")
+    app_bucket_access = baker.make("api.AppS3Bucket")
     revoke_app_s3bucket_access(
         bucket_arn=app_bucket_access.s3bucket.arn,
         app_pk=app_bucket_access.app.pk,
@@ -123,11 +123,11 @@ def test_revoke_app_access(cluster, complete):
 @patch("controlpanel.api.models.PolicyS3Bucket.revoke_bucket_access", new=MagicMock())
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 def test_revoke_all_access(complete, users):
-    bucket = mommy.make("api.S3Bucket")
-    user_access = mommy.make("api.UserS3Bucket", s3bucket=bucket)
-    app_access = mommy.make("api.AppS3Bucket", s3bucket=bucket)
-    policy_access = mommy.make("api.PolicyS3Bucket", s3bucket=bucket)
-    task = mommy.make("api.Task", user_id=users["superuser"].pk)
+    bucket = baker.make("api.S3Bucket")
+    user_access = baker.make("api.UserS3Bucket", s3bucket=bucket)
+    app_access = baker.make("api.AppS3Bucket", s3bucket=bucket)
+    policy_access = baker.make("api.PolicyS3Bucket", s3bucket=bucket)
+    task = baker.make("api.Task", user_id=users["superuser"].pk)
 
     revoke_all_access_s3bucket(bucket.pk, task.user_id)
 

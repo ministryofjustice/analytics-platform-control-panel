@@ -4,7 +4,7 @@ from unittest.mock import call, patch
 # Third-party
 import pytest
 from django.conf import settings
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.auth0 import Auth0Error
@@ -28,7 +28,7 @@ def update_aws_secrets_manager():
 
 @pytest.fixture
 def app():
-    app = mommy.make("api.App")
+    app = baker.make("api.App")
     app.repo_url = "https://github.com/example.com/repo_name"
     auth_settings = dict(
         client_id="testing_client_id",
@@ -129,7 +129,7 @@ def test_delete_customers(auth0, app):
     ],
 )
 def test_repo_name(url, expected_name):
-    app = mommy.prepare("api.App")
+    app = baker.prepare("api.App")
     app.repo_url = url
     assert app._repo_name == expected_name
 
@@ -144,7 +144,7 @@ def test_repo_name(url, expected_name):
 def test_delete_customer_by_email_error_getting_user(auth0, side_effect, error_message):
     authz = auth0.ExtendedAuth0.return_value
     authz.users.get_users_email_search.side_effect = side_effect
-    app = mommy.prepare("api.App")
+    app = baker.prepare("api.App")
     with pytest.raises(app.DeleteCustomerError, match=error_message):
         app.delete_customer_by_email("foo@email.com", group_id="123")
 
@@ -157,7 +157,7 @@ def test_delete_customer_by_email_user_missing_group(auth0):
     authz.users.get_users_email_search.return_value = [user]
     authz.users.get_user_groups.return_value = [user_groups]
 
-    app = mommy.prepare("api.App")
+    app = baker.prepare("api.App")
     with pytest.raises(
             app.DeleteCustomerError,
             match="User foo@email.com cannot be found in this application group"
@@ -173,7 +173,7 @@ def test_delete_customer_by_email_success(auth0):
     authz.users.get_users_email_search.return_value = [user]
     authz.users.get_user_groups.return_value = [user_groups]
 
-    app = mommy.prepare("api.App")
+    app = baker.prepare("api.App")
 
     with patch.object(app, "delete_customers") as delete_customers:
         app.delete_customer_by_email("foo@email.com", group_id="123")
@@ -186,12 +186,12 @@ def test_delete_customer_by_email_success(auth0):
 @pytest.mark.django_db
 def test_app_allowed_ip_ranges():
     ip_allow_lists = [
-        mommy.make("api.IPAllowlist", allowed_ip_ranges="127.0.0.1, 128.10.10.100"),
-        mommy.make("api.IPAllowlist", allowed_ip_ranges=" 123.0.0.122,152.0.0.1"),
+        baker.make("api.IPAllowlist", allowed_ip_ranges="127.0.0.1, 128.10.10.100"),
+        baker.make("api.IPAllowlist", allowed_ip_ranges=" 123.0.0.122,152.0.0.1"),
     ]
-    app = mommy.make("api.App")  # noqa:F841
+    app = baker.make("api.App")  # noqa:F841
     for item in ip_allow_lists:
-        mommy.make(
+        baker.make(
             "api.AppIPAllowList",
             app_id=app.id,
             ip_allowlist_id=item.id,

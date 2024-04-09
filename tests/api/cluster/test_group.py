@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -16,7 +16,7 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def iam_managed_policy():
-    return mommy.make("api.IAMManagedPolicy", name="test")
+    return baker.make("api.IAMManagedPolicy", name="test")
 
 
 def test_arn(settings, iam_managed_policy):
