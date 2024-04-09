@@ -34,13 +34,17 @@ class UserAdmin(admin.ModelAdmin):
         "username",
         "auth0_id",
         "email",
+        "justice_email",
         "is_superuser",
         "migration_state",
         "last_login",
     )
     actions = [make_migration_pending]
     exclude = ("password",)
-    list_filter = ("migration_state",)
+    list_filter = [
+        "migration_state",
+        ("justice_email", admin.EmptyFieldListFilter),
+    ]
     search_fields = (
         "username",
         "email",
