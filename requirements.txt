@@ -24,7 +24,7 @@ kubernetes==25.3.0
 MarkupSafe==2.1.5
 model-bakery==1.17.0
 moto==5.0.1
-mozilla-django-oidc==4.0.0
+mozilla-django-oidc==4.0.1
 psycopg2-binary==2.9.9
 PyNaCl==1.5.0
 pytest==8.0.0
