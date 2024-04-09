@@ -2,7 +2,7 @@
 import pytest
 from django.http import HttpResponse
 from django.urls import reverse
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 
 class TestAccess:

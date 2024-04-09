@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.cluster import App, RoleGroup, User
@@ -32,7 +32,7 @@ def grant_policy_bucket_access():
     ) as grant_policy_bucket_access_action:
         yield grant_policy_bucket_access_action
 
-@pytest.yield_fixture
+@pytest.fixture
 def grant_policy_folder_access():
     with patch(
         "controlpanel.api.cluster.AWSPolicy.grant_folder_access"
@@ -47,14 +47,14 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def bucket():
-    return mommy.prepare("api.S3Bucket")
+    return baker.prepare("api.S3Bucket")
 
 
 @pytest.fixture
 def entities(bucket, users):
     return {
-        "app": App(mommy.prepare("api.App")),
-        "group": RoleGroup(mommy.prepare("api.IAMManagedPolicy")),
+        "app": App(baker.prepare("api.App")),
+        "group": RoleGroup(baker.prepare("api.IAMManagedPolicy")),
         "user": User(users["normal_user"]),
     }
 

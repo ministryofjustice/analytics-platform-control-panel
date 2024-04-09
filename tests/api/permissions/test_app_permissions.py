@@ -6,9 +6,8 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.contrib import auth
 from django.contrib.auth import get_user
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 from rules import perm_exists
@@ -17,12 +16,12 @@ from rules import perm_exists
 @pytest.fixture
 def users(users):
     users.update({
-        "app_admin": mommy.make(
+        "app_admin": baker.make(
             "api.User",
             username="dave",
             auth0_id="github|user_4",
         ),
-        "app_user": mommy.make(
+        "app_user": baker.make(
             "api.User",
             username="testing",
             auth0_id="github|user_5",
@@ -33,12 +32,12 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def app(users):
-    app = mommy.make("api.App", name="Test App 1")
+    app = baker.make("api.App", name="Test App 1")
     user = users["app_admin"]
-    mommy.make("api.UserApp", user=user, app=app, is_admin=True)
+    baker.make("api.UserApp", user=user, app=app, is_admin=True)
 
     user = users["app_user"]
-    mommy.make("api.UserApp", user=user, app=app, is_admin=False)
+    baker.make("api.UserApp", user=user, app=app, is_admin=False)
     return app
 
 

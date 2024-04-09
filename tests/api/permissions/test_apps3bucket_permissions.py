@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from model_mommy import mommy
+from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
 
@@ -16,17 +16,17 @@ from controlpanel.api.models import AppS3Bucket
 def users(users):
     users.update(
         {
-            "app_admin": mommy.make(
+            "app_admin": baker.make(
                 "api.User",
                 username="dave",
                 auth0_id="github|user_4",
             ),
-            "bucket_admin": mommy.make(
+            "bucket_admin": baker.make(
                 "api.User",
                 username="ethel",
                 auth0_id="github|user_5",
             ),
-            "app_bucket_admin": mommy.make(
+            "app_bucket_admin": baker.make(
                 "api.User",
                 username="fred",
                 auth0_id="github|user_6",
@@ -38,14 +38,14 @@ def users(users):
 
 @pytest.fixture
 def app(users):
-    app = mommy.make("api.App", name="App 1")
-    mommy.make(
+    app = baker.make("api.App", name="App 1")
+    baker.make(
         "api.UserApp",
         app=app,
         user=users["app_admin"],
         is_admin=True,
     )
-    mommy.make(
+    baker.make(
         "api.UserApp",
         app=app,
         user=users["app_bucket_admin"],
@@ -58,16 +58,16 @@ def app(users):
 def buckets(users):
     with patch("controlpanel.api.aws.AWSBucket.create"):
         buckets = {
-            "first": mommy.make("api.S3Bucket", is_data_warehouse=False),
-            "other": mommy.make("api.S3Bucket", is_data_warehouse=False),
+            "first": baker.make("api.S3Bucket", is_data_warehouse=False),
+            "other": baker.make("api.S3Bucket", is_data_warehouse=False),
         }
-        mommy.make(
+        baker.make(
             "api.UserS3Bucket",
             user=users["bucket_admin"],
             s3bucket=buckets["first"],
             is_admin=True,
         )
-        mommy.make(
+        baker.make(
             "api.UserS3Bucket",
             user=users["app_bucket_admin"],
             s3bucket=buckets["first"],
