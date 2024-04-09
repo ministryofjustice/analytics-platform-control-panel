@@ -9,7 +9,6 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect, Http404
 from django.urls import reverse
 from django.views import View
-from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
 # First-party/Local
 from controlpanel.oidc import OIDCLoginRequiredMixin, oauth
@@ -63,17 +62,3 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
         email = token["userinfo"]["email"]
         self.request.user.justice_email = email
         self.request.user.save()
-
-
-class EntraOIDCAuthenticationCallbackView(OIDCAuthenticationCallbackView):
-    """
-    This view is used to redirect to the index page if the user has not
-    authenticated with their justice email.
-    """
-    def get(self, request):
-        response = super().get(request)
-
-        if self.user.justice_email is not None:
-            return response
-
-        return HttpResponseRedirect(reverse("index"))

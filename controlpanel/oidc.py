@@ -65,12 +65,21 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
 
 
 class StateMismatchHandler(OIDCAuthenticationCallbackView):
+
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)
         except SuspiciousOperation as e:
             log.warning(f"Caught {e}: redirecting to login")
             return HttpResponseRedirect(settings.LOGIN_REDIRECT_URL_FAILURE)
+
+    @property
+    def success_url(self):
+
+        if not self.user.justice_email:
+            return reverse("index")
+
+        return super().success_url
 
 
 def logout(request):

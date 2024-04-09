@@ -8,7 +8,6 @@ from controlpanel.frontend.views import app_variables, secrets
 urlpatterns = [
     path("", views.IndexView.as_view(), name="index"),
     path("oidc/entraid/auth/", views.EntraIdAuthView.as_view(), name="entraid-auth"),
-    path("oidc/callback/", views.EntraOIDCAuthenticationCallbackView.as_view(), name="entra_callback"),
     path("oidc/logout/", views.LogoutView.as_view(), name="oidc_logout"),
     path("datasources/", views.AdminBucketList.as_view(), name="list-all-datasources"),
     path(
