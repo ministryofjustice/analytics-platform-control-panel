@@ -26,7 +26,10 @@ class TestEntraIdAuthView:
     @patch("controlpanel.frontend.views.auth.oauth")
     def test_success(self, oauth, client, users):
         oauth.azure.authorize_access_token.return_value = {
-            "userinfo": {"email": "email@example.com"},
+            "userinfo": {
+                "email": "email@example.com",
+                "oid": "12345678"
+            },
         }
         user = users["normal_user"]
         assert user.justice_email is None
@@ -36,6 +39,7 @@ class TestEntraIdAuthView:
 
         user.refresh_from_db()
         assert user.justice_email == "email@example.com"
+        assert user.azure_oid == "12345678"
         assertContains(response, "Successfully authenticated with your email email@example.com")
 
     @patch("controlpanel.frontend.views.auth.oauth")
