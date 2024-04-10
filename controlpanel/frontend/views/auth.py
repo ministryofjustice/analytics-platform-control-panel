@@ -6,7 +6,7 @@ import structlog
 from authlib.integrations.django_client import OAuthError
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponseRedirect, Http404
+from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.views import View
 
@@ -59,6 +59,6 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
         Update user with details from the ID token returned by the provided EntraID
         access token
         """
-        email = token["userinfo"]["email"]
-        self.request.user.justice_email = email
+        self.request.user.justice_email = token["userinfo"]["email"]
+        self.request.user.azure_oid = token["userinfo"]["oid"]
         self.request.user.save()
