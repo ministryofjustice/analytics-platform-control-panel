@@ -39,6 +39,7 @@ class User(AbstractUser):
     )
     is_bedrock_enabled = models.BooleanField(default=False)
     justice_email = models.EmailField(blank=True, null=True, unique=True)
+    azure_oid = models.CharField(blank=True, null=True, unique=True)
 
     REQUIRED_FIELDS = ["email", "auth0_id"]
 
