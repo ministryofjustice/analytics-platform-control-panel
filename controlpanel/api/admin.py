@@ -43,6 +43,7 @@ class UserAdmin(admin.ModelAdmin):
     exclude = ("password",)
     list_filter = [
         "migration_state",
+        "last_login",
         ("justice_email", admin.EmptyFieldListFilter),
     ]
     search_fields = (
