@@ -68,9 +68,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         won't affect people usage.
         """
         tool_set = Tool.objects.filter(chart_name=chart_name, version=chart_version)
-        log.info(f"chart_name - {chart_name}, version - {chart_version}, tool_set - {tool_set}")
         for item in tool_set:
-            log.info(f"item image tag - {item.image_tag}, image_tag - {image_tag}")
             if item.image_tag == image_tag:
                 return item
         return tool_set.first()
@@ -108,14 +106,12 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             chart_name, chart_version = deployment.metadata.labels["chart"].rsplit(
                 "-", 1
             )
-            log.info(f"chart_name - {chart_name}, chart_version - {chart_version}")
             image_tag = self._get_tool_deployed_image_tag(
                 deployment.spec.template.spec.containers
             )
             tool_box = self._locate_tool_box_by_chart_name(chart_name)
             tool_box = tool_box or "Unknown"
             tool = self._find_related_tool_record(chart_name, chart_version, image_tag)
-            log.info(f"tool - {tool}")
             if not tool:
                 log.warn(
                     "this chart({}-{}) has not available from DB. ".format(
@@ -159,7 +155,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         charts_info = {}
         chart_entries = None
         for tool in tool_list:
-            log.info(f"tool version - {tool.version}, tool image tag - {tool.image_tag}")
             if tool.version in charts_info:
                 continue
                 
@@ -177,7 +172,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 image_tag = get_default_image_tag_from_helm_chart(
                     chart_app_version.chart_url, tool.chart_name
                 )
-            log.info(f"chart_info image tag - {image_tag}")
             charts_info[tool.version] = image_tag
         return charts_info
 
@@ -226,7 +220,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         id_token = user.get_id_token()
 
         context = super().get_context_data(*args, **kwargs)
-        log.info(f'context tools - {context["tools"]}')
         context["user_guidance_base_url"] = settings.USER_GUIDANCE_BASE_URL
         context["aws_service_url"] = settings.AWS_SERVICE_URL
 
@@ -249,7 +242,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         # Arrange tools information
         charts_info = self._get_charts_info(context["tools"])
-        log.info(f"charts_info - {charts_info}")
         tools_info = self._retrieve_detail_tool_info(
             user, context["tools"], charts_info
         )
