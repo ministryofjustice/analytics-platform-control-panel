@@ -24,7 +24,8 @@ class Tool(TimeStampedModel):
     # chart name match: tool bucket
     TOOL_BOX_CHART_LOOKUP = {"jupyter": "jupyter-lab",
                              "rstudio": "rstudio",
-                             "visual-studio-code": "visual-studio-code"}
+                             "visual-studio-code": "visual-studio-code",
+                             "vscode": "vscode"}
 
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)

@@ -470,7 +470,8 @@ class ToolReleaseForm(forms.ModelForm):
             "airflow-sqlite",
             "jupyter-",
             "rstudio",
-            "visual-studio-code"
+            "visual-studio-code",
+            "vscode"
         ]
         value = self.cleaned_data["chart_name"]
         is_valid = False
