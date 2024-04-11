@@ -111,7 +111,6 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         if request.user.is_superuser:
             return super().get(request, *args, **kwargs)
 
-        # TODO add feature request check
         if settings.features.justice_auth.enabled and not request.user.justice_email:
             return super().get(request, *args, **kwargs)
 
