@@ -10,21 +10,21 @@ repos:
     - id: trailing-whitespace
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 24.3.0
     hooks:
       - id: black
         name: black formatting
-        entry: bash -c 'black --check  $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
+        entry: bash -c 'black . --config=pyproject.toml --check  $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
         name: isort (python)
         entry: bash -c 'isort --check-only $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    rev: 7.0.0
     hooks:
     - id: flake8
       name: flake8 format check
