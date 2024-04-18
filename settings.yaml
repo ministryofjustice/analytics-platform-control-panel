@@ -84,7 +84,7 @@ AUTH0_NOMIS_GATEWAY_URL: "https://testing.com"
 
 
 BROADCAST_MESSAGE: >
-  We are close to the 1000 bucket limit on AWS. | Before we work on a long-term solution,
+  We are close to hitting the 1000 bucket limit on AWS. | Before we work on a long-term solution,
   please delete any unnecessary buckets and avoid creating more than you need.
   Consider using sub-folders to manage different datasets instead of multiple buckets.
 
