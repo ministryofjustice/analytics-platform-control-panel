@@ -1,4 +1,5 @@
 # Standard library
+import json
 import uuid
 from unittest.mock import patch
 
@@ -6,6 +7,7 @@ from unittest.mock import patch
 import pytest
 import requests
 from bs4 import BeautifulSoup
+from django.conf import settings
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
@@ -57,21 +59,13 @@ def app(users):
     baker.make("api.App", NUM_APPS - 1)
     app = baker.make("api.App")
     app.repo_url = "https://github.com/github_org/testing_repo"
-    dev_auth_settings = dict(
-        client_id="dev_client_id",
-        group_id=str(uuid.uuid4())
-    )
-    prod_auth_settings = dict(
-        client_id="prod_client_id",
-        group_id=str(uuid.uuid4())
-    )
+    dev_auth_settings = dict(client_id="dev_client_id", group_id=str(uuid.uuid4()))
+    prod_auth_settings = dict(client_id="prod_client_id", group_id=str(uuid.uuid4()))
     env_app_settings = dict(
         dev_env=dev_auth_settings,
         prod_env=prod_auth_settings,
     )
-    app.app_conf = {
-        App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings
-    }
+    app.app_conf = {App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings}
     app.save()
     AppIPAllowList.objects.update_records(app, "dev_env", ip_allowlists)
     baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
@@ -83,8 +77,10 @@ def githubapi():
     """
     Mock calls to Github
     """
-    with patch("controlpanel.frontend.forms.GithubAPI"), \
-            patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
+    with (
+        patch("controlpanel.frontend.forms.GithubAPI"),
+        patch("controlpanel.api.cluster.GithubAPI") as GithubAPI,
+    ):
         yield GithubAPI.return_value
 
 
@@ -235,7 +231,9 @@ def add_customers(client, app, *args):
     data = {
         "customer_email": "test@example.com",
     }
-    return client.post(reverse("add-app-customers", args=(app.id,  app.get_group_id("dev_env"))), data)
+    return client.post(
+        reverse("add-app-customers", args=(app.id, app.get_group_id("dev_env"))), data
+    )
 
 
 def remove_customers(client, app, *args):
@@ -243,14 +241,13 @@ def remove_customers(client, app, *args):
         "customer": "email|user_1",
     }
     return client.post(
-        reverse("remove-app-customer", args=(app.id,  app.get_group_id("dev_env"))),
-        data)
+        reverse("remove-app-customer", args=(app.id, app.get_group_id("dev_env"))), data
+    )
 
 
 def remove_customer_by_email(client, app, *args):
     return client.post(
-        reverse("remove-app-customer-by-email", args=(app.id,  app.get_group_id("dev_env"))),
-        data={}
+        reverse("remove-app-customer-by-email", args=(app.id, app.get_group_id("dev_env"))), data={}
     )
 
 
@@ -311,17 +308,12 @@ def update_ip_allowlists(client, app, *args):
     ],
 )
 def test_permissions(
-    client,
-    app,
-    s3buckets,
-    users,
-    view,
-    user,
-    expected_status,
-    fixture_get_group_id
+    client, app, s3buckets, users, view, user, expected_status, fixture_get_group_id
 ):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.cluster.App.create_or_update_secret"):
+    with (
+        patch("controlpanel.api.aws.AWSRole.grant_bucket_access"),
+        patch("controlpanel.api.cluster.App.create_or_update_secret"),
+    ):
         client.force_login(users[user])
         response = view(client, app, users, s3buckets)
         assert response.status_code == expected_status
@@ -389,8 +381,11 @@ def test_add_customers(client, app, users, emails, expected_response):
     client.force_login(users["superuser"])
     data = {"customer_email": emails, "env_name": "dev_env"}
     response = client.post(
-        reverse("add-app-customers",
-                kwargs={"pk": app.id, "group_id": app.get_group_id("dev_env")}), data)
+        reverse(
+            "add-app-customers", kwargs={"pk": app.id, "group_id": app.get_group_id("dev_env")}
+        ),
+        data,
+    )
     assert expected_response(client, response)
 
 
@@ -429,19 +424,22 @@ def test_delete_customers(
     data = {"customer": ["email|1234"]}
 
     response = client.post(
-        reverse("remove-app-customer", args=(app.id,  app.get_group_id("dev_env"))),
-        data)
+        reverse("remove-app-customer", args=(app.id, app.get_group_id("dev_env"))), data
+    )
     assert expected_response(client, response)
 
 
 def test_delete_cutomer_by_email_invalid_email(client, app, users):
     client.force_login(users["superuser"])
-    url = reverse("remove-app-customer-by-email", args=(app.id,  app.get_group_id("dev_env")))
-    response = client.post(url, data={
-        "remove-email": "notanemail",
-        "remove-env_name": "test",
-        "remove-group_id": "123",
-    })
+    url = reverse("remove-app-customer-by-email", args=(app.id, app.get_group_id("dev_env")))
+    response = client.post(
+        url,
+        data={
+            "remove-email": "notanemail",
+            "remove-env_name": "test",
+            "remove-group_id": "123",
+        },
+    )
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     assert response.status_code == 302
     assert "Invalid email address entered" in messages
@@ -454,28 +452,33 @@ def test_delete_cutomer_by_email_invalid_email(client, app, users):
         # fallback to display generic message if raised without one
         (DeleteCustomerError(), "Couldn't remove customer with email email@example.com"),
         # specific error message displayed
-        (DeleteCustomerError("API error"), "API error")
-    ]
+        (DeleteCustomerError("API error"), "API error"),
+    ],
 )
 def test_delete_customer_by_email(client, app, users, side_effect, expected_message):
     client.force_login(users["superuser"])
-    url =  reverse("remove-app-customer-by-email", args=(app.id,  app.get_group_id("dev_env")))
-    with patch(
-            "controlpanel.frontend.views.app.App.delete_customer_by_email"
-    ) as delete_by_email:
+    url = reverse("remove-app-customer-by-email", args=(app.id, app.get_group_id("dev_env")))
+    with patch("controlpanel.frontend.views.app.App.delete_customer_by_email") as delete_by_email:
         delete_by_email.side_effect = side_effect
-        response = client.post(url, data={
-            "remove-email": "email@example.com",
-            "remove-env_name": "test",
-            "remove-group_id": "123",
-        })
+        response = client.post(
+            url,
+            data={
+                "remove-email": "email@example.com",
+                "remove-env_name": "test",
+                "remove-group_id": "123",
+            },
+        )
         delete_by_email.assert_called_once()
         messages = [str(m) for m in get_messages(response.wsgi_request)]
         assert response.status_code == 302
         assert expected_message in messages
 
 
-def test_github_error1_on_app_detail(client, app, users,):
+def test_github_error1_on_app_detail(
+    client,
+    app,
+    users,
+):
     with patch("controlpanel.api.cluster.App.get_deployment_envs") as get_envs:
         error_msg = "Testing github error"
         get_envs.side_effect = requests.exceptions.HTTPError(error_msg)
@@ -496,8 +499,10 @@ def test_github_error2_on_app_detail(client, app, users, repos):
 
 
 def test_github_error3_on_app_detail(client, app, users, repos):
-    with patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets, \
-            patch("controlpanel.api.cluster.App.get_env_vars") as get_env_vars:
+    with (
+        patch("controlpanel.api.cluster.App.get_env_secrets") as get_secrets,
+        patch("controlpanel.api.cluster.App.get_env_vars") as get_env_vars,
+    ):
         error_msg = "Testing github env error"
         get_secrets.return_value = [{"name": "testing_github_secret"}]
         get_env_vars.side_effect = requests.exceptions.HTTPError(error_msg)
@@ -556,11 +561,9 @@ def app_being_migrated(users):
         app_name="testing_app",
         repo_url=app_old_repo_url,
         app_url=f"https://{app.slug}.{settings.APP_DOMAIN}",
-        status="in_progress"
+        status="in_progress",
     )
-    app_info = dict(
-        migration=migration_json
-    )
+    app_info = dict(migration=migration_json)
     app.description = json.dumps(app_info)
     app.save()
     baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
@@ -584,31 +587,25 @@ def test_app_detail_with_auth_on(client, app, users, repos_with_auth):
     client.force_login(users["superuser"])
     response = detail(client, app)
     assert response.status_code == 200
-    auth_settings = get_auth_settings(response.content, 'dev_env')
+    auth_settings = get_auth_settings(response.content, "dev_env")
     settings_for_checks = [
-        {"n": cluster.App.IP_RANGES,
-         "v": app.env_allowed_ip_ranges_names('dev_env'),
-         "e": True},
-        {"n": cluster.App.AUTH0_CLIENT_ID,
-         "v": settings.SECRET_DISPLAY_VALUE,
-         "e": False},
-        {"n": cluster.App.AUTH0_CLIENT_SECRET,
-         "v": settings.SECRET_DISPLAY_VALUE,
-         "e": False},
+        {"n": cluster.App.IP_RANGES, "v": app.env_allowed_ip_ranges_names("dev_env"), "e": True},
+        {"n": cluster.App.AUTH0_CLIENT_ID, "v": settings.SECRET_DISPLAY_VALUE, "e": False},
+        {"n": cluster.App.AUTH0_CLIENT_SECRET, "v": settings.SECRET_DISPLAY_VALUE, "e": False},
         {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": True},
         {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
         {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
         {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
     ]
     for item in settings_for_checks:
-        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        auth_item_ui = locate_setting_ui(auth_settings, item["n"])
         if not auth_item_ui:
             continue
-        assert item['v'] in auth_item_ui.text
-        if item['e']:
-            assert 'Edit' in auth_item_ui.text
+        assert item["v"] in auth_item_ui.text
+        if item["e"]:
+            assert "Edit" in auth_item_ui.text
         else:
-            assert 'Edit' not in auth_item_ui.text
+            assert "Edit" not in auth_item_ui.text
 
 
 def test_app_detail_with_auth_off(client, app, users, repos_for_no_auth):
@@ -624,23 +621,21 @@ def test_app_detail_with_auth_off(client, app, users, repos_for_no_auth):
         cluster.App.AUTH0_PASSWORDLESS,
     ]
 
-    auth_settings = get_auth_settings(response.content, 'dev_env')
+    auth_settings = get_auth_settings(response.content, "dev_env")
     for item in settings_no_displayed:
         auth_item_ui = locate_setting_ui(auth_settings, item)
         assert auth_item_ui is None
 
     settings_for_checks = [
-        {"n": cluster.App.IP_RANGES,
-         "v": app.env_allowed_ip_ranges_names('dev_env'),
-         "e": True},
+        {"n": cluster.App.IP_RANGES, "v": app.env_allowed_ip_ranges_names("dev_env"), "e": True},
         {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "False", "e": True},
     ]
     for item in settings_for_checks:
-        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        auth_item_ui = locate_setting_ui(auth_settings, item["n"])
         if not auth_item_ui:
             continue
-        assert item['v'] in auth_item_ui.text
-        assert 'Edit' in auth_item_ui.text
+        assert item["v"] in auth_item_ui.text
+        assert "Edit" in auth_item_ui.text
 
 
 def test_app_detail_with_self_define_settings(client, app, users, repos):
@@ -648,19 +643,19 @@ def test_app_detail_with_self_define_settings(client, app, users, repos):
     response = detail(client, app)
     assert response.status_code == 200
 
-    auth_settings = get_auth_settings(response.content, 'dev_env')
+    auth_settings = get_auth_settings(response.content, "dev_env")
     settings_for_checks = [
         {"n": "PARAM_SECRET", "v": settings.SECRET_DISPLAY_VALUE},
         {"n": "PARAM_VAR", "v": "test_var"},
     ]
     for item in settings_for_checks:
-        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        auth_item_ui = locate_setting_ui(auth_settings, item["n"])
         if not auth_item_ui:
             continue
         setting_link = auth_item_ui.findAll("a")[0]["href"]
         assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
-        assert item['v'] in auth_item_ui.text
-        assert 'Edit' in auth_item_ui.text
+        assert item["v"] in auth_item_ui.text
+        assert "Edit" in auth_item_ui.text
 
 
 @pytest.mark.parametrize(
@@ -674,31 +669,25 @@ def test_app_settings_permission(client, app, users, repos_with_auth, user, can_
     client.force_login(users[user])
     response = detail(client, app)
     assert response.status_code == 200
-    auth_settings = get_auth_settings(response.content, 'dev_env')
+    auth_settings = get_auth_settings(response.content, "dev_env")
     settings_for_checks = [
-        {"n": cluster.App.IP_RANGES,
-         "v": app.env_allowed_ip_ranges_names('dev_env'),
-         "e": True},
-        {"n": cluster.App.AUTH0_CLIENT_ID,
-         "v": settings.SECRET_DISPLAY_VALUE,
-         "e": False},
-        {"n": cluster.App.AUTH0_CLIENT_SECRET,
-         "v": settings.SECRET_DISPLAY_VALUE,
-         "e": False},
+        {"n": cluster.App.IP_RANGES, "v": app.env_allowed_ip_ranges_names("dev_env"), "e": True},
+        {"n": cluster.App.AUTH0_CLIENT_ID, "v": settings.SECRET_DISPLAY_VALUE, "e": False},
+        {"n": cluster.App.AUTH0_CLIENT_SECRET, "v": settings.SECRET_DISPLAY_VALUE, "e": False},
         {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": can_edit_connections},
         {"n": cluster.App.AUTH0_DOMAIN, "v": "http://testing", "e": False},
         {"n": cluster.App.AUTH0_PASSWORDLESS, "v": "False", "e": False},
         {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "True", "e": True},
     ]
     for item in settings_for_checks:
-        auth_item_ui = locate_setting_ui(auth_settings, item['n'])
+        auth_item_ui = locate_setting_ui(auth_settings, item["n"])
         if not auth_item_ui:
             continue
-        assert item['v'] in auth_item_ui.text
-        if item['e']:
-            assert 'Edit' in auth_item_ui.text
+        assert item["v"] in auth_item_ui.text
+        if item["e"]:
+            assert "Edit" in auth_item_ui.text
         else:
-            assert 'Edit' not in auth_item_ui.text
+            assert "Edit" not in auth_item_ui.text
 
 
 def test_register_app_with_creating_datasource(client, users):
@@ -722,9 +711,7 @@ def test_register_app_with_creating_datasource(client, users):
     related_bucket_ids = [a.s3bucket_id for a in created_app.apps3buckets.all()]
     assert len(related_bucket_ids) == 1
     assert bucket.id in related_bucket_ids
-    assert response.url == reverse(
-        "manage-app", kwargs={"pk": created_app.pk}
-    )
+    assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
 
 
 def test_register_app_invalid_organisation(client, users):

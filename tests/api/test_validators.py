@@ -46,9 +46,7 @@ def test_validate_ip_ranges_pass(ip_ranges_text):
     ],
 )
 def test_validate_auth0_conn_name_fail(auth0_conn_name):
-    with pytest.raises(
-        ValidationError, match=r"is invalid, check Auth0 connection name"
-    ):
+    with pytest.raises(ValidationError, match=r"is invalid, check Auth0 connection name"):
         validators.validate_auth0_conn_name(auth0_conn_name)
 
 
@@ -60,9 +58,7 @@ def test_validate_auth0_conn_name_pass(auth0_conn_name):
     validators.validate_auth0_conn_name(auth0_conn_name)
 
 
-@pytest.mark.parametrize(
-    "auth0_client_id", [("auth0_client_id*"), ("auth0_client*&_id")]
-)
+@pytest.mark.parametrize("auth0_client_id", [("auth0_client_id*"), ("auth0_client*&_id")])
 def test_validate_auth0_conn_name_fail2(auth0_client_id):
     with pytest.raises(ValidationError, match=r"is invalid, check Auth0 client_id"):
         validators.validate_auth0_client_id(auth0_client_id)

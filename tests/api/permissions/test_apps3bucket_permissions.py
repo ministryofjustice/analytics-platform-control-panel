@@ -153,9 +153,7 @@ def update(client, apps3bucket, app, buckets, *args):
     ],
 )
 @pytest.mark.django_db
-def test_permission(
-    client, app, apps3bucket, buckets, users, view, user, expected_status
-):
+def test_permission(client, app, apps3bucket, buckets, users, view, user, expected_status):
     with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
         client.force_login(users[user])
         response = view(client, apps3bucket, app, buckets)

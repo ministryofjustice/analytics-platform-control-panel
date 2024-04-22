@@ -2,6 +2,8 @@
 from unittest.mock import patch
 
 # Third-party
+import pytest
+from django.conf import settings
 from django.urls import reverse
 from model_bakery import baker
 
@@ -53,8 +55,10 @@ def githubapi():
     """
     Mock calls to Github
     """
-    with patch("controlpanel.frontend.forms.GithubAPI"), \
-            patch("controlpanel.api.cluster.GithubAPI") as GithubAPI:
+    with (
+        patch("controlpanel.frontend.forms.GithubAPI"),
+        patch("controlpanel.api.cluster.GithubAPI") as GithubAPI,
+    ):
         yield GithubAPI.return_value
 
 
@@ -86,17 +90,13 @@ def apps3bucket(app, s3buckets):
 
 @pytest.fixture
 def fixture_create_update_secret():
-    with patch(
-        "controlpanel.api.cluster.App.create_or_update_secret"
-    ) as create_or_update:
+    with patch("controlpanel.api.cluster.App.create_or_update_secret") as create_or_update:
         yield create_or_update
 
 
 @pytest.fixture
 def fixture_delete_secret():
-    with patch(
-        "controlpanel.api.cluster.App.delete_secret"
-    ) as delete_env_var:
+    with patch("controlpanel.api.cluster.App.delete_secret") as delete_env_var:
         yield delete_env_var
 
 
@@ -112,16 +112,12 @@ def delete_secret_post(client, app, key, data):
 
 @pytest.mark.parametrize(  # noqa: F405
     "user,expected_status",
-    [["superuser", 302],
-     ["app_admin", 302],
-     ["normal_user", 403]],
+    [["superuser", 302], ["app_admin", 302], ["normal_user", 403]],
 )
 def test_add_secret_permissions(
     client, app, users, fixture_create_update_secret, user, expected_status
 ):
-    data = {"env_name": ["dev"],
-            "key": ['NEW_SECRET'],
-            "value": ['testing']}
+    data = {"env_name": ["dev"], "key": ["NEW_SECRET"], "value": ["testing"]}
     client.force_login(users[user])
     response = add_update_secret(client, app, data=data)
     assert response.status_code == expected_status
@@ -129,13 +125,14 @@ def test_add_secret_permissions(
 
 @pytest.mark.parametrize(  # noqa: F405
     "user, key, data, expected_status, expected_calls",
-    [["superuser", "testing", {"env_name": "testing"}, 302, 1],
-     ["app_admin", "testing", {}, 302, 1],
-     ["normal_user", "testing", {}, 403, 0]],
+    [
+        ["superuser", "testing", {"env_name": "testing"}, 302, 1],
+        ["app_admin", "testing", {}, 302, 1],
+        ["normal_user", "testing", {}, 403, 0],
+    ],
 )
 def test_delete_secret(
-    client, app, users, fixture_delete_secret, user, key, data, expected_status,
-    expected_calls
+    client, app, users, fixture_delete_secret, user, key, data, expected_status, expected_calls
 ):
     client.force_login(users[user])
     response = delete_secret_post(client, app, key, data)
@@ -143,16 +140,13 @@ def test_delete_secret(
     assert fixture_delete_secret.call_count == expected_calls
 
 
-def test_add_secret(fixture_create_update_secret,
-    client, app, users
-):
-    client.force_login(users['superuser'])
-    data = {"env_name": ["dev"],
-            "key": ['NEW_SECRET'],
-            "value": ['testing']}
+def test_add_secret(fixture_create_update_secret, client, app, users):
+    client.force_login(users["superuser"])
+    data = {"env_name": ["dev"], "key": ["NEW_SECRET"], "value": ["testing"]}
     response = add_update_secret(client, app, data=data)
     assert response.status_code == 302
     fixture_create_update_secret.assert_called_with(
-        env_name='dev',
+        env_name="dev",
         secret_key=f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}NEW_SECRET",
-        secret_value='testing')
+        secret_value="testing",
+    )

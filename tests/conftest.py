@@ -5,6 +5,7 @@ from unittest.mock import mock_open, patch
 # Third-party
 import pytest
 import yaml
+from django.conf import settings
 from model_bakery import baker
 
 # First-party/Local
@@ -16,9 +17,7 @@ from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
 
 @pytest.fixture()
 def ExtendedAuth0():
-    with patch(
-        "auth0.authentication.GetToken.client_credentials"
-    ) as client_credentials:
+    with patch("auth0.authentication.GetToken.client_credentials") as client_credentials:
         client_credentials.return_value = {"access_token": "access_token_testing"}
         yield auth0.ExtendedAuth0()
 
@@ -55,8 +54,9 @@ def elasticsearch():
     """
     Mock calls to Elasticsearch
     """
-    with patch("controlpanel.api.elasticsearch.Elasticsearch") as es, patch(
-        "elasticsearch_dsl.search.scan"
+    with (
+        patch("controlpanel.api.elasticsearch.Elasticsearch") as es,
+        patch("elasticsearch_dsl.search.scan"),
     ):
         yield es.return_value
 
@@ -89,9 +89,7 @@ def slack_WebClient():
 
 
 @pytest.fixture
-def superuser(
-    db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airflow_prod_policy
-):
+def superuser(db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
     return baker.make(
         "api.User",
         auth0_id="github|user_1",
@@ -122,9 +120,14 @@ class Helpers:
 
     @staticmethod
     def validate_task_with_sqs_messages(
-        messages, entity_class, entity_id, queue_name=settings.DEFAULT_QUEUE,
+        messages,
+        entity_class,
+        entity_id,
+        queue_name=settings.DEFAULT_QUEUE,
     ):
+        # First-party/Local
         from controlpanel.api.models import Task
+
         tasks_created = Task.objects.filter(
             entity_class=entity_class, entity_id=entity_id, queue_name=queue_name
         )
@@ -143,12 +146,11 @@ class Helpers:
 
     @staticmethod
     def retrieve_messages(sqs, queue_name=settings.DEFAULT_QUEUE):
+        # First-party/Local
         from controlpanel.api.message_broker import CeleryTaskMessage
+
         queue = sqs.get_queue_by_name(QueueName=queue_name)
-        messages = queue.receive_messages(
-                MessageAttributeNames=['All'],
-                MaxNumberOfMessages=10
-            )
+        messages = queue.receive_messages(MessageAttributeNames=["All"], MaxNumberOfMessages=10)
         decoded_messages = []
         for message in messages:
             valid, message_body = CeleryTaskMessage.validate_message(message.body)

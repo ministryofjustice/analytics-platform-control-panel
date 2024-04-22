@@ -28,12 +28,8 @@ class AccessToS3Bucket(TimeStampedModel):
         (READWRITE, "Read-write"),
     )
 
-    s3bucket = models.ForeignKey(
-        "S3Bucket", related_name="%(class)ss", on_delete=models.CASCADE
-    )
-    access_level = models.CharField(
-        max_length=9, choices=ACCESS_LEVELS, default=READONLY
-    )
+    s3bucket = models.ForeignKey("S3Bucket", related_name="%(class)ss", on_delete=models.CASCADE)
+    access_level = models.CharField(max_length=9, choices=ACCESS_LEVELS, default=READONLY)
     paths = ArrayField(
         models.CharField(
             max_length=255,

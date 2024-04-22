@@ -88,9 +88,7 @@ class BotoSession:
             return auto_refresh_session
         except Exception as ex:
             log.error(
-                "Failed to establish the refreshable token due to reason ({})".format(
-                    str(ex)
-                )
+                "Failed to establish the refreshable token due to reason ({})".format(str(ex))
             )
             return boto3.Session()
 
@@ -114,12 +112,9 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
         self.credential_sessions = {}
 
     def get_session(
-            self,
-            profile_name: str = None,
-            assume_role_name: str = None,
-            region_name: str = None):
-        credential_session_key = "{}_{}_{}".format(
-            profile_name, assume_role_name, region_name)
+        self, profile_name: str = None, assume_role_name: str = None, region_name: str = None
+    ):
+        credential_session_key = "{}_{}_{}".format(profile_name, assume_role_name, region_name)
         if credential_session_key not in self.credential_sessions:
             log.warn(
                 "(for monitoring purpose) Initialising the session ({})".format(
@@ -129,6 +124,6 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
             self.credential_sessions[credential_session_key] = BotoSession(
                 region_name=region_name,
                 profile_name=profile_name,
-                assume_role_name=assume_role_name
+                assume_role_name=assume_role_name,
             ).refreshable_session()
         return self.credential_sessions[credential_session_key]

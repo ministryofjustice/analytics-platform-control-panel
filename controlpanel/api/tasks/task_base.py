@@ -5,10 +5,7 @@ import uuid
 from django.conf import settings
 
 # First-party/Local
-from controlpanel.api.message_broker import (
-    LocalMessageBrokerClient,
-    MessageBrokerClient,
-)
+from controlpanel.api.message_broker import LocalMessageBrokerClient, MessageBrokerClient
 from controlpanel.api.models.task import Task
 
 
@@ -76,16 +73,16 @@ class TaskBase:
             task_id=task_id,
             task_name=self.task_name,
             queue_name=self.QUEUE_NAME,
-            args=self._get_args_list()
+            args=self._get_args_list(),
         )
         Task.objects.create(
             entity_class=self.ENTITY_CLASS,
             entity_description=self.task_description,
             entity_id=self.entity.id,
-            user_id=self.user.auth0_id if self.user else 'None',
+            user_id=self.user.auth0_id if self.user else "None",
             task_id=task_id,
             task_description=self.task_description,
             task_name=self.task_name,
             queue_name=self.QUEUE_NAME,
-            message_body=message
+            message_body=message,
         )

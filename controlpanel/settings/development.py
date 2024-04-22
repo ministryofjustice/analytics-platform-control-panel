@@ -12,9 +12,7 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 # Enable Django debug toolbar
 if os.environ.get("ENABLE_DJANGO_DEBUG_TOOLBAR"):
-    MIDDLEWARE.insert(  # noqa: F405, E501
-        0, "debug_toolbar.middleware.DebugToolbarMiddleware"
-    )
+    MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405, E501
     INSTALLED_APPS.extend(  # noqa: F405, E501
         ["debug_toolbar", "requests_toolbar", "elastic_panel"]
     )

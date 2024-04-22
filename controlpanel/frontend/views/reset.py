@@ -4,9 +4,9 @@ from django.urls import reverse_lazy
 from django.views.generic.edit import FormView
 
 # First-party/Local
-from controlpanel.utils import start_background_task
 from controlpanel.frontend.forms import ResetHomeDirectoryForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.utils import start_background_task
 
 
 class ResetHome(OIDCLoginRequiredMixin, FormView):

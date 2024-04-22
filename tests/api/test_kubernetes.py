@@ -14,7 +14,9 @@ SERVICE_ACCOUNT_TEST_TOKEN = "test-service-account-token"
 @pytest.fixture()
 def k8s_config():
     config = kubernetes.client.Configuration()
-    with patch("controlpanel.api.kubernetes.kubernetes.client.Configuration.get_default_copy") as Configuration:
+    with patch(
+        "controlpanel.api.kubernetes.kubernetes.client.Configuration.get_default_copy"
+    ) as Configuration:
         config.host = "https://api.k8s.localhost"
         config.api_key_prefix = {"authorization": "Bearer"}
         config.api_key = {"authorization": SERVICE_ACCOUNT_TEST_TOKEN}
@@ -60,7 +62,7 @@ def test_kubernetes_client__getattr__(k8s_config):
     k8s_api_1 = client.NetworkingV1Api
     k8s_api_2 = client.AppsV1Api
 
-    assert type(k8s_api_1) == kubernetes.client.api.NetworkingV1Api
+    assert type(k8s_api_1) is kubernetes.client.api.NetworkingV1Api
     assert k8s_api_1.api_client == api_client
-    assert type(k8s_api_2) == kubernetes.client.api.AppsV1Api
+    assert type(k8s_api_2) is kubernetes.client.api.AppsV1Api
     assert k8s_api_2.api_client == api_client

@@ -18,13 +18,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import cluster, tasks
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
-from controlpanel.api.models import (
-    IAMManagedPolicy,
-    PolicyS3Bucket,
-    S3Bucket,
-    User,
-    UserS3Bucket,
-)
+from controlpanel.api.models import IAMManagedPolicy, PolicyS3Bucket, S3Bucket, User, UserS3Bucket
 from controlpanel.api.serializers import ESBucketHitsSerializer
 from controlpanel.frontend.forms import (
     CreateDatasourceFolderForm,
@@ -82,18 +76,14 @@ class BucketList(
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
-        all_datasources = S3Bucket.objects.prefetch_related(
-            "users3buckets__user"
-        ).filter(
+        all_datasources = S3Bucket.objects.prefetch_related("users3buckets__user").filter(
             is_data_warehouse=self.datasource_type == "warehouse",
             is_deleted=False,
         )
         other_datasources = all_datasources.exclude(id__in=self.get_queryset())
         other_datasources_admins = {}
         for datasource in other_datasources:
-            admins = [
-                m2m.user for m2m in datasource.users3buckets.filter(is_admin=True)
-            ]
+            admins = [m2m.user for m2m in datasource.users3buckets.filter(is_admin=True)]
             other_datasources_admins[datasource.id] = admins
 
         context["other_datasources"] = other_datasources
@@ -106,9 +96,7 @@ class AdminBucketList(BucketList):
     permission_required = "api.is_superuser"
 
     def get_queryset(self):
-        return S3Bucket.objects.prefetch_related("users3buckets").filter(
-            is_deleted=False
-        )
+        return S3Bucket.objects.prefetch_related("users3buckets").filter(is_deleted=False)
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -142,17 +130,13 @@ class BucketDetail(
         bucket = kwargs["object"]
         access_users = bucket.users3buckets.all().select_related("user")
         member_ids = [member.user.auth0_id for member in access_users]
-        context["access_logs"] = ESBucketHitsSerializer(
-            bucket_hits_aggregation(bucket.name)
-        ).data
+        context["access_logs"] = ESBucketHitsSerializer(bucket_hits_aggregation(bucket.name)).data
         context["users_options"] = User.objects.exclude(auth0_id__isnull=True).exclude(
             auth0_id__in=member_ids
         )
         access_policies = bucket.policys3buckets.all().select_related("policy")
         policy_ids = [access.policy.id for access in access_policies]
-        context["policies_options"] = IAMManagedPolicy.objects.exclude(
-            pk__in=policy_ids
-        )
+        context["policies_options"] = IAMManagedPolicy.objects.exclude(pk__in=policy_ids)
         context["access_list"] = list(chain(access_users, access_policies))
         return context
 
@@ -270,9 +254,7 @@ class UpdateAccessLevel(
                 "revoke_url": reverse_lazy(
                     "revoke-datasource-access", kwargs={"pk": self.object.id}
                 ),
-                "action_url": reverse_lazy(
-                    "update-access-level", kwargs={"pk": self.object.id}
-                ),
+                "action_url": reverse_lazy("update-access-level", kwargs={"pk": self.object.id}),
                 "entity_type": "user",
                 "entity_id": self.object.user.id,
             }
@@ -346,9 +328,7 @@ class GrantAccessMixin:
         if is_admin and not user.has_perm("api.add_s3bucket_admin", bucket):
             raise PermissionDenied()
 
-        self.object = self.model.objects.create(
-            current_user=self.request.user,
-            **self.values(form))
+        self.object = self.model.objects.create(current_user=self.request.user, **self.values(form))
         return FormMixin.form_valid(self, form)
 
 
@@ -378,9 +358,7 @@ class GrantAccess(
             auth0_id__in=member_ids,
         )
         context["entity_type"] = "user"
-        context["grant_url"] = reverse_lazy(
-            "grant-datasource-access", kwargs={"pk": bucket.id}
-        )
+        context["grant_url"] = reverse_lazy("grant-datasource-access", kwargs={"pk": bucket.id})
         return context
 
     def values(self, form):

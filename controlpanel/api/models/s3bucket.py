@@ -29,9 +29,7 @@ def s3bucket_console_url(name):
 
 class S3BucketQuerySet(models.QuerySet):
     def accessible_by(self, user):
-        return self.filter(
-            Q(users3buckets__user=user) | Q(policys3buckets__policy__users=user)
-        )
+        return self.filter(Q(users3buckets__user=user) | Q(policys3buckets__policy__users=user))
 
     def administered_by(self, user):
         return self.filter(
@@ -47,7 +45,7 @@ class S3Bucket(TimeStampedModel):
         validators=[
             validators.validate_env_prefix,
             validators.validate_s3_bucket_labels,
-            MinLengthValidator(limit_value=3)
+            MinLengthValidator(limit_value=3),
         ],
     )
     created_by = models.ForeignKey(
@@ -60,10 +58,7 @@ class S3Bucket(TimeStampedModel):
     location_url = models.CharField(max_length=128, null=True)
     is_deleted = models.BooleanField(default=False)
     deleted_by = models.ForeignKey(
-        "User",
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="deleted_s3buckets"
+        "User", on_delete=models.SET_NULL, null=True, related_name="deleted_s3buckets"
     )
     deleted_at = models.DateTimeField(null=True)
 
@@ -147,7 +142,7 @@ class S3Bucket(TimeStampedModel):
             user=self.created_by,
             extra_data={
                 "bucket_owner": kwargs.pop("bucket_owner", self.bucket_owner),
-            }
+            },
         ).create_task()
 
         # created_by should always be set, but this is a failsafe

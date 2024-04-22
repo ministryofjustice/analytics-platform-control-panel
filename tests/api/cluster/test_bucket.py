@@ -27,25 +27,19 @@ def test_arn(bucket):
 
 @pytest.fixture
 def aws_create_bucket():
-    with patch(
-        "controlpanel.api.aws.AWSBucket.create"
-    ) as aws_create_bucket_action:
+    with patch("controlpanel.api.aws.AWSBucket.create") as aws_create_bucket_action:
         yield aws_create_bucket_action
 
 
 @pytest.fixture
 def aws_create_folder():
-    with patch(
-        "controlpanel.api.aws.AWSFolder.create"
-    ) as aws_create_folder_action:
+    with patch("controlpanel.api.aws.AWSFolder.create") as aws_create_folder_action:
         yield aws_create_folder_action
 
 
 @pytest.fixture
 def aws_tag_bucket():
-    with patch(
-        "controlpanel.api.cluster.AWSBucket.tag_bucket"
-    ) as aws_tag_bucket_action:
+    with patch("controlpanel.api.cluster.AWSBucket.tag_bucket") as aws_tag_bucket_action:
         yield aws_tag_bucket_action
 
 
@@ -54,7 +48,7 @@ def aws_tag_bucket():
     [
         (cluster.S3Bucket, "aws_create_bucket"),
         (cluster.S3Folder, "aws_create_folder"),
-    ]
+    ],
 )
 def test_aws_create(cluster_class, aws_service_fixture, bucket, request):
     aws_bucket_service = request.getfixturevalue(aws_service_fixture)

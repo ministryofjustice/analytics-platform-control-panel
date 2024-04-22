@@ -60,9 +60,7 @@ def test_detail(client, apps3buckets):
 
 
 def test_delete(client, apps3buckets):
-    with patch(
-        "controlpanel.api.models.AppS3Bucket.revoke_bucket_access"
-    ) as revoke_bucket_access:
+    with patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access") as revoke_bucket_access:
         response = client.delete(reverse("apps3bucket-detail", (apps3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -131,8 +129,10 @@ def test_update_bad_requests(client, apps, apps3buckets, buckets):
 
 
 def test_create_with_s3_data_warehouse_not_allowed(client, apps):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.aws.AWSBucket.create"):
+    with (
+        patch("controlpanel.api.aws.AWSRole.grant_bucket_access"),
+        patch("controlpanel.api.aws.AWSBucket.create"),
+    ):
         s3_bucket_app = baker.make(
             "api.S3Bucket",
             is_data_warehouse=False,

@@ -6,8 +6,8 @@ from sys import exit
 # Third-party
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
@@ -52,8 +52,6 @@ class Command(BaseCommand):
 
         # Health ping file is fresh, success
         self.stdout.write(
-            self.style.SUCCESS(
-                "Health ping file is fresh. This worker ran health task recently."
-            )
+            self.style.SUCCESS("Health ping file is fresh. This worker ran health task recently.")
         )
         exit(0)

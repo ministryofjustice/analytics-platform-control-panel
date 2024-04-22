@@ -55,17 +55,13 @@ def github_api_token():
 
 @pytest.fixture
 def fixture_create_update_var():
-    with patch(
-        "controlpanel.api.cluster.App.create_or_update_env_var"
-    ) as create_or_update:
+    with patch("controlpanel.api.cluster.App.create_or_update_env_var") as create_or_update:
         yield create_or_update
 
 
 @pytest.fixture
 def fixture_delete_var():
-    with patch(
-        "controlpanel.api.cluster.App.delete_env_var"
-    ) as delete_env_var:
+    with patch("controlpanel.api.cluster.App.delete_env_var") as delete_env_var:
         yield delete_env_var
 
 
@@ -100,7 +96,7 @@ def test_permission(
     fixture_delete_var,
     create_call_count,
     delete_call_count,
-    expected_data
+    expected_data,
 ):
     client.force_login(users[user])
     response = view(client, app, data_input)

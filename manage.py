@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
+# Standard library
 import os
 import sys
 
+# Third-party
 import dotenv
 
+# First-party/Local
 from controlpanel.utils import load_app_conf_from_file
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     dotenv.load_dotenv()
 
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'controlpanel.settings')
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "controlpanel.settings")
 
     load_app_conf_from_file()
     try:
+        # Third-party
         from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(

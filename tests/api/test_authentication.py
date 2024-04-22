@@ -96,12 +96,12 @@ def token(claims={}, headers={}):
     "auth_header, status",
     [
         (None, 403),
-        (f'Bearer {token()}', 403),
+        (f"Bearer {token()}", 403),
         (f'Bearer {token(claims={"scope": "list:app"})}', 403),
         (f'Bearer {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
         (f'JWT {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
-        (f'FOO {token()}', 403),
-        (f'Bearer invalid_token', 403),
+        (f"FOO {token()}", 403),
+        ("Bearer invalid_token", 403),
         (f'Bearer {token(headers={"kid": "no_match"})}', 403),
     ],
     ids=[
