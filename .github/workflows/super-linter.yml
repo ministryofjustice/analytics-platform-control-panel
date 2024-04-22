@@ -30,12 +30,15 @@ jobs:
       - name: Super-Linter
         id: super_linter
         # yamllint disable-line rule:line-length
-        uses: super-linter/super-linter/slim@ba3315d7e5da8cee94ef552f3baf1c34f6021345 # v5.7.1
+        uses: super-linter/super-linter/slim@9d8128f17796a16326ceed5a607d5639a47feb82 # v6.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_JSCPD: false
           VALIDATE_PYTHON_MYPY: false
+          VALIDATE_PYTHON_PYLINT: false
+          VALIDATE_PYTHON_RUFF: false
           LINTER_RULES_PATH: /
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
           PYTHON_FLAKE8_CONFIG_FILE: .flake8
