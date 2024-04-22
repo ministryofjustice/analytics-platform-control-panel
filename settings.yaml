@@ -84,9 +84,9 @@ AUTH0_NOMIS_GATEWAY_URL: "https://testing.com"
 
 
 BROADCAST_MESSAGE: >
-  We are on the edge of hitting the limit of AWS S3 bucket (1000). | Before we implement the long term solution,
-  could you make sure you remove the buckets you do not need any more? also make sure not create more buckets than your need,
-  try to use sub-folders to manage different datasets rather than multiple buckets.
+  We are close to hitting the 1000 bucket limit on AWS. | Before we work on a long-term solution,
+  please delete any unnecessary buckets and avoid creating more than you need.
+  Consider using sub-folders to manage different datasets instead of multiple buckets.
 
 GITHUB_VERSION: "2022-11-28"
 
