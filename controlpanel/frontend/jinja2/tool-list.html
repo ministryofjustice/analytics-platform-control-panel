@@ -9,7 +9,7 @@
 
 <p class="govuk-body">The status of your tools will update automatically.</p>
 
-<p class="govuk-body">If your tools get into a broken state, try
+<p class="govuk-body">If your tools get into an unusable state, try
 <a href="{{ url('home-reset') }}">resetting your home directory</a>.</p>
 
 {% for chart_name, tool_info in tools_info.items() %}
@@ -110,9 +110,9 @@
 {% if deployment and deployment.tool_id == -1 %}
 <div>
   <p class="govuk-body">
-    Looks like your current deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
-    was not recognised within current maintained tool release versions, No worry you can still open it and have a look,
-    then feel free to switch one of versions from above dropdown list.
+    Your current deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
+    is not recognised as a current maintained tool release. You can still use it,
+    but it is recommended to switch to a new version from the dropdown list.
   </p>
 </div>
 {% endif %}
@@ -144,15 +144,6 @@
   </div>
 </div>
 <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
-
-
-<p class="govuk-body">
-  {% if env == "alpha" %}
-    You can <a href="https://grafana.services.{{ env }}.mojanalytics.xyz/d/platformusers/platform-users?refresh=10s&orgId=1&var-Username={{ request.user.username }}" target="_blank" rel="noopener">view your resource utilisation on Grafana (opens in new tab)</a>.
-  {% else %}
-    <em>(Grafana not available in {{ env }} environment)</em>
-  {% endif %}
-</p>
 
 <p class="govuk-body">
   You can <a href="{{ aws_service_url }}" target="_blank" rel="noopener"> access AWS services such as S3 and Athena via the AWS Console (opens in new tab).</a>

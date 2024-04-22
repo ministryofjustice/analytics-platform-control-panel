@@ -49,7 +49,7 @@
   </section>
 
   <h2 class="govuk-heading-s">
-    App customers under {{ groups_dict.get(group_id) }} environment
+    Customers under {{ groups_dict.get(group_id) }} environment
     {{ modal_dialog(app_customers_html|safe) }}
   </h2>
 
@@ -114,7 +114,7 @@
         {{ csrf_input }}
         <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
           <label class="govuk-label" for="customer_email">
-            Add app customers by entering their email addresses (separated by spaces)
+            Add customers by entering their email addresses (separated by spaces)
           </label>
           {% if errors and errors.customer_email %}
             {% for error in errors.customer_email %}

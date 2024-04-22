@@ -9,12 +9,12 @@
 {% block content %}
 
   {% if form.key.value() %}
-    <h3 class="govuk-heading-m">Update the variable: {{ form.display_key.value() }} - [{{ form.env_name.value() }}]</h3>
+    <h3 class="govuk-heading-m">Update Variable: {{ form.display_key.value() }} - [{{ form.env_name.value() }}]</h3>
   {% else %}
-    <h3 class="govuk-heading-m">Add deployment an variable for the app - [{{ form.env_name.value() }}]</h3>
+    <h3 class="govuk-heading-m">Add environemnt variable - [{{ form.env_name.value() }}]</h3>
+    <p>Adding a suffix as part of the key is encouraged.</p>
   {% endif %}
   <section class="cpanel-section form-section" >
-   <p>Adding suffix as part of key is encourage.</p>
    <div>
       {% if form.errors %}
         {{ govukErrorMessage({"text": form.errors}) }}
