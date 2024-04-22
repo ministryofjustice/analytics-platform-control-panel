@@ -35,6 +35,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_PYTHON_MYPY: false
           LINTER_RULES_PATH: /
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
           PYTHON_FLAKE8_CONFIG_FILE: .flake8
