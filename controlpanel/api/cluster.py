@@ -383,7 +383,7 @@ class App(EntityResource):
     AUTH0_DOMAIN = "AUTH0_DOMAIN"
     AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
-    AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
+    AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"  # gitleaks:allow
     APP_ROLE_ARN = "APP_ROLE_ARN"
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):

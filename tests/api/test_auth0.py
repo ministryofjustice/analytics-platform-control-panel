@@ -545,7 +545,7 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
         input_values={
             "name": "test_nomis_connection",
             "client_id": "test_nomis_connection_id",
-            "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+            "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
         },
     )
     fixture_connection_create.assert_called_once_with(ANY)
@@ -576,7 +576,7 @@ def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
             input_values={
                 "name": "test_nomis_connection",
                 "client_id": "test_nomis_connection_id",
-                "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+                "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
             },
         )
         connection_create.assert_called_once_with(ANY)
@@ -591,7 +591,7 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                 input_values={
                     "name": "test_nomis_connection",
                     "client_id": "test_nomis_connection_id",
-                    "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+                    "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
                 },
             )
         connection_create.assert_called_once_with(ANY)
