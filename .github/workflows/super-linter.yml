@@ -43,5 +43,5 @@ jobs:
           VALIDATE_PYTHON_RUFF: false
           LINTER_RULES_PATH: /
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
-          PYTHON_FLAKE8_CONFIG_FILE: .flake8
+          PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
           PYTHON_ISORT_CONFIG_FILE: pyproject.toml
