@@ -918,7 +918,7 @@ class ToolDeployment:
             if val:
                 # Helpful for debugging configs: ignore parameters with missing
                 # values and log that the value is missing.
-                escaped_val = val.replace(",", "\,")  # noqa : W605
+                escaped_val = val.replace(",", r"\,")
                 set_values.extend(["--set", f"{key}={escaped_val}"])
             else:
                 log.warning(
