@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       REDIS_PASSWORD: "redis"
-      REDIS_PORT: 63796
+      REDIS_PORT: 6379
     ports:
       - "6379:6379"
     healthcheck:
