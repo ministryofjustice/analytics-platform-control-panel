@@ -1,0 +1,17 @@
+---
+version: '3.8'
+
+services:
+  redis:
+    image: public.ecr.aws/docker/library/redis:7.2.4
+    restart: always
+    environment:
+      REDIS_PASSWORD: "redis"
+      REDIS_PORT: 63796
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
