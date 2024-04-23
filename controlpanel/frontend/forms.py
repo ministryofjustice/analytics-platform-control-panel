@@ -11,11 +11,7 @@ from django.core.validators import RegexValidator, validate_email
 from controlpanel.api import validators
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
-from controlpanel.api.github import (
-    GithubAPI,
-    RepositoryNotFound,
-    extract_repo_info_from_url,
-)
+from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
 from controlpanel.api.models import App, S3Bucket, Tool, User, UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
@@ -85,9 +81,7 @@ class AppAuth0Form(forms.Form):
                 continue
 
             if cleaned_data.get("{}_auth0_client_id".format(connection), "") == "":
-                self.add_error(
-                    "{}_auth0_client_id".format(connection), "This field is required."
-                )
+                self.add_error("{}_auth0_client_id".format(connection), "This field is required.")
 
             if cleaned_data.get("{}_auth0_client_secret".format(connection), "") == "":
                 self.add_error(
@@ -97,9 +91,7 @@ class AppAuth0Form(forms.Form):
 
             conn_name = cleaned_data.get("{}_auth0_conn_name".format(connection), "")
             if conn_name == "":
-                self.add_error(
-                    "{}_auth0_conn_name".format(connection), "This field is required."
-                )
+                self.add_error("{}_auth0_conn_name".format(connection), "This field is required.")
             elif (conn_name, conn_name) in self.fields["connections"].choices:
                 self.add_error(
                     "{}_auth0_conn_name".format(connection),
@@ -108,9 +100,7 @@ class AppAuth0Form(forms.Form):
 
             auth0_conn_data[connection] = {
                 "client_id": cleaned_data.get("{}_auth0_client_id".format(connection)),
-                "client_secret": cleaned_data.get(
-                    "{}_auth0_client_secret".format(connection)
-                ),
+                "client_secret": cleaned_data.get("{}_auth0_client_secret".format(connection)),
                 "name": cleaned_data.get("{}_auth0_conn_name".format(connection)),
             }
         return auth0_conn_data
@@ -193,9 +183,9 @@ class CreateAppForm(forms.Form):
         repo_url = self.cleaned_data["repo_url"]
         org_name, repo_name = extract_repo_info_from_url(repo_url)
         try:
-            GithubAPI(
-                self.request.user.github_api_token, github_org=org_name
-            ).get_repository(repo_name)
+            GithubAPI(self.request.user.github_api_token, github_org=org_name).get_repository(
+                repo_name
+            )
         except RepositoryNotFound:
             raise ValidationError(
                 "Github repository not found - it may be private",
@@ -223,7 +213,7 @@ class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
     env_name = forms.CharField(widget=forms.HiddenInput)
 
     def __init__(self, *args, **kwargs):
-        self.env_name = kwargs.pop("env_name", '')
+        self.env_name = kwargs.pop("env_name", "")
         super(UpdateAppAuth0ConnectionsForm, self).__init__(*args, **kwargs)
 
         self._create_inputs_for_custom_connections()
@@ -231,9 +221,7 @@ class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
 
     def clean(self):
         cleaned_data = super(UpdateAppAuth0ConnectionsForm, self).clean()
-        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(
-            cleaned_data
-        )
+        cleaned_data["auth0_connections"] = self._check_inputs_for_custom_connection(cleaned_data)
         return cleaned_data
 
 
@@ -251,10 +239,14 @@ class CreateDatasourceForm(forms.Form):
 
 class CreateDatasourceFolderForm(forms.Form):
 
-    name = forms.CharField(max_length=100, min_length=3, validators=[
-        validators.validate_s3_bucket_labels,
-        validators.validate_env_prefix,
-    ])
+    name = forms.CharField(
+        max_length=100,
+        min_length=3,
+        validators=[
+            validators.validate_s3_bucket_labels,
+            validators.validate_env_prefix,
+        ],
+    )
 
     def clean_name(self):
         """
@@ -426,9 +418,7 @@ class AddAppCustomersForm(forms.Form):
 class RemoveCustomerByEmailForm(forms.Form):
     prefix = "remove"
 
-    email = forms.EmailField(widget=forms.EmailInput(
-        attrs={"class": "govuk-input cpanel-input"})
-    )
+    email = forms.EmailField(widget=forms.EmailInput(attrs={"class": "govuk-input cpanel-input"}))
 
 
 class ResetHomeDirectoryForm(forms.Form):
@@ -466,12 +456,7 @@ class ToolReleaseForm(forms.ModelForm):
 
         Hence the path of least resistance with this custom form validation.
         """
-        valid_charts = [
-            "airflow-sqlite",
-            "jupyter-",
-            "rstudio",
-            "visual-studio-code"
-        ]
+        valid_charts = ["airflow-sqlite", "jupyter-", "rstudio", "visual-studio-code"]
         value = self.cleaned_data["chart_name"]
         is_valid = False
         for chart_name in valid_charts:
@@ -489,12 +474,7 @@ class ToolReleaseForm(forms.ModelForm):
         Ensures that if the bespoke tool_domain value is specified it is ONLY
         one of the acceptable names.
         """
-        valid_names = [
-            "airflow-sqlite",
-            "jupyter-lab",
-            "rstudio",
-            "vscode"
-        ]
+        valid_names = ["airflow-sqlite", "jupyter-lab", "rstudio", "vscode"]
         value = self.cleaned_data.get("tool_domain")
         if value and value not in valid_names:
             raise ValidationError(
@@ -553,8 +533,8 @@ class DisableAuthForm(AppVariableUpdateForm):
     )
 
     def __init__(self, *args, **kwargs):
-        init_for_value = kwargs.get('initial', {}).get('value')
-        kwargs["initial"]["value"] = str(init_for_value or 'true').lower() == 'true'
+        init_for_value = kwargs.get("initial", {}).get("value")
+        kwargs["initial"]["value"] = str(init_for_value or "true").lower() == "true"
         super(DisableAuthForm, self).__init__(*args, **kwargs)
 
 

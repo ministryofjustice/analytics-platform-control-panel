@@ -54,9 +54,7 @@ def test_create(client, buckets, users, sqs, helpers):
     response = client.post(reverse("users3bucket-list"), data)
     assert response.status_code == status.HTTP_201_CREATED
 
-    users3bucket = UserS3Bucket.objects.get(
-        user=users["other_user"], s3bucket=buckets[1]
-    )
+    users3bucket = UserS3Bucket.objects.get(user=users["other_user"], s3bucket=buckets[1])
     messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
         messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
@@ -64,9 +62,7 @@ def test_create(client, buckets, users, sqs, helpers):
 
 
 def test_delete(client, users3buckets):
-    with patch(
-        "controlpanel.api.models.UserS3Bucket.revoke_bucket_access"
-    ) as revoke_bucket_access:
+    with patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access") as revoke_bucket_access:
         response = client.delete(reverse("users3bucket-detail", (users3buckets[1].id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -90,9 +86,7 @@ def test_update(client, buckets, users, users3buckets, sqs, helpers):
     assert response.status_code == status.HTTP_200_OK
     assert response.data["access_level"] == data["access_level"]
     messages = helpers.retrieve_messages(sqs, settings.IAM_QUEUE_NAME)
-    users3bucket = UserS3Bucket.objects.get(
-        user=users["normal_user"], s3bucket=buckets[1]
-    )
+    users3bucket = UserS3Bucket.objects.get(user=users["normal_user"], s3bucket=buckets[1])
     helpers.validate_task_with_sqs_messages(
         messages, UserS3Bucket.__name__, users3bucket.id, settings.IAM_QUEUE_NAME
     )
@@ -109,9 +103,7 @@ def test_update(client, buckets, users, users3buckets, sqs, helpers):
         "s3bucket-changed",
     ],
 )
-def test_update_bad_requests(
-    client, buckets, users, users3buckets, user, s3bucket, access_level
-):
+def test_update_bad_requests(client, buckets, users, users3buckets, user, s3bucket, access_level):
     response = client.put(
         reverse("users3bucket-detail", (users3buckets[1].id,)),
         json.dumps(

@@ -1,8 +1,10 @@
+# Standard library
+from unittest.mock import patch
+
 # Third-party
 import pytest
 from authlib.integrations.base_client import OAuthError
 from django.urls import reverse, reverse_lazy
-from unittest.mock import patch
 from pytest_django.asserts import assertContains
 
 
@@ -26,10 +28,7 @@ class TestEntraIdAuthView:
     @patch("controlpanel.frontend.views.auth.oauth")
     def test_success(self, oauth, client, users):
         oauth.azure.authorize_access_token.return_value = {
-            "userinfo": {
-                "email": "email@example.com",
-                "oid": "12345678"
-            },
+            "userinfo": {"email": "email@example.com", "oid": "12345678"},
         }
         user = users["normal_user"]
         assert user.justice_email is None

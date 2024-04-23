@@ -30,14 +30,9 @@ def update_aws_secrets_manager():
 def app():
     app = baker.make("api.App")
     app.repo_url = "https://github.com/example.com/repo_name"
-    auth_settings = dict(
-        client_id="testing_client_id",
-        group_id="testing_group_id"
-    )
+    auth_settings = dict(client_id="testing_client_id", group_id="testing_group_id")
     env_app_settings = dict(test_env=auth_settings)
-    app.app_conf = {
-        App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings
-    }
+    app.app_conf = {App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings}
     app.save()
     return app
 
@@ -159,8 +154,8 @@ def test_delete_customer_by_email_user_missing_group(auth0):
 
     app = baker.prepare("api.App")
     with pytest.raises(
-            app.DeleteCustomerError,
-            match="User foo@email.com cannot be found in this application group"
+        app.DeleteCustomerError,
+        match="User foo@email.com cannot be found in this application group",
     ):
         app.delete_customer_by_email("foo@email.com", group_id="123")
 
@@ -208,17 +203,22 @@ def test_app_allowed_ip_ranges():
 
 def test_iam_role_arn():
     app = App(slug="example-app")
-    assert app.iam_role_arn == f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/test_app_example-app"
+    assert (
+        app.iam_role_arn == f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:role/test_app_example-app"
+    )
 
 
-@pytest.mark.parametrize("namespace, env, expected", [
-    ("data-platform-app-example", "dev", "example-dev"),
-    ("example", "dev", "example-dev"),
-    ("data-platform-example", "dev", "data-platform-example-dev"),
-    ("data-platform-app-example", "prod", "example"),
-    ("example", "prod", "example"),
-    ("data-platform-example", "prod", "data-platform-example"),
-])
+@pytest.mark.parametrize(
+    "namespace, env, expected",
+    [
+        ("data-platform-app-example", "dev", "example-dev"),
+        ("example", "dev", "example-dev"),
+        ("data-platform-example", "dev", "data-platform-example-dev"),
+        ("data-platform-app-example", "prod", "example"),
+        ("example", "prod", "example"),
+        ("data-platform-example", "prod", "data-platform-example"),
+    ],
+)
 def test_app_url_name(namespace, env, expected):
     app = App(namespace=namespace)
     assert app.app_url_name(env_name=env) == expected

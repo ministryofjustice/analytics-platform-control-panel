@@ -1,5 +1,7 @@
-# Third-party
+# Standard library
 from functools import wraps
+
+# Third-party
 from django.http import JsonResponse
 from rest_framework import authentication, exceptions
 
@@ -11,7 +13,7 @@ M2M_CLAIM_FLAG = "client-credentials"
 
 
 class AuthenticatedServiceClient:
-    """"
+    """ "
     The client instance for authenticated M2M client. This class plays the role of "user" object but
     for M2M client as the django DRF auth model is based on User Model. This class instance is
     available through request.user.
@@ -73,14 +75,14 @@ class JWTAuthentication(authentication.BaseAuthentication):
         return self._get_client(jwt), None
 
     def _is_m2m(self, payload):
-        return payload.get('gty', '') == M2M_CLAIM_FLAG
+        return payload.get("gty", "") == M2M_CLAIM_FLAG
 
     def _get_client(self, jwt):
         """
         claim "sub" store the id of caller.
         """
         try:
-            return User.objects.get(pk=jwt.payload['sub'])
+            return User.objects.get(pk=jwt.payload["sub"])
         except User.DoesNotExist:
             # Return the service client model
             if self._is_m2m(jwt.payload):
@@ -88,7 +90,9 @@ class JWTAuthentication(authentication.BaseAuthentication):
             else:
                 raise exceptions.AuthenticationFailed()
         except JWTDecodeError:
-            raise exceptions.AuthenticationFailed("Failed to be authenticated due to JWT decoder error!")
+            raise exceptions.AuthenticationFailed(
+                "Failed to be authenticated due to JWT decoder error!"
+            )
 
     @staticmethod
     def requires_scope(required_scope):
@@ -96,6 +100,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
         Args:
             required_scope (str): The scope required to access the resource
         """
+
         def require_scope(f):
             @wraps(f)
             def decorated(*args, **kwargs):
@@ -105,8 +110,10 @@ class JWTAuthentication(authentication.BaseAuthentication):
                     for token_scope in client.scope:
                         if token_scope == required_scope:
                             return f(*args, **kwargs)
-                response = JsonResponse({'message': 'You don\'t have access to this resource'})
+                response = JsonResponse({"message": "You don't have access to this resource"})
                 response.status_code = 403
                 return response
+
             return decorated
+
         return require_scope

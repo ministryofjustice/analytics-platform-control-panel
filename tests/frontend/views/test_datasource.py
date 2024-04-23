@@ -104,9 +104,7 @@ def list_all(client, *args):
 
 def detail(client, buckets, *args, bucket=None):
     bucket = bucket or buckets["warehouse1"]
-    return client.get(
-        reverse("manage-datasource", kwargs={"pk": bucket.id})
-    )
+    return client.get(reverse("manage-datasource", kwargs={"pk": bucket.id}))
 
 
 def create(client, *args, **kwargs):
@@ -119,9 +117,7 @@ def create(client, *args, **kwargs):
 
 def delete(client, buckets, *args, bucket=None):
     bucket = bucket or buckets["warehouse1"]
-    return client.post(
-        reverse("delete-datasource", kwargs={"pk": bucket.id})
-    )
+    return client.post(reverse("delete-datasource", kwargs={"pk": bucket.id}))
 
 
 @pytest.mark.parametrize(
@@ -249,9 +245,7 @@ def test_list(client, buckets, users, view, user, expected_count, show_deleted):
         (list_app_data, "bucket_admin", 1),
     ],
 )
-def test_list_other_datasources(
-    client, buckets, users, view, user, n_other_datasources
-):
+def test_list_other_datasources(client, buckets, users, view, user, n_other_datasources):
     client.force_login(users[user])
     response = view(client, buckets, users)
     assert len(response.context_data["other_datasources"]) == n_other_datasources
@@ -301,7 +295,7 @@ def test_bucket_creator_has_readwrite_and_admin_access(
         (False, "webapp", CreateDatasourceForm),
         (True, "webapp", CreateDatasourceForm),
         (True, "", CreateDatasourceFolderForm),
-    ]
+    ],
 )
 def test_create_get_form_class(rf, folders_enabled, datasource_type, form_class):
     request = rf.get(f"/?type={datasource_type}")
@@ -375,9 +369,7 @@ def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_
     response = create(client, name=name)
 
     assert response.status_code == 302
-    assert S3Bucket.objects.filter(
-        name=f"{root_folder_bucket.name}/{name}"
-    ).exists() is True
+    assert S3Bucket.objects.filter(name=f"{root_folder_bucket.name}/{name}").exists() is True
 
 
 @pytest.mark.parametrize(
@@ -385,7 +377,7 @@ def test_create_folder_name_greater_than_63_succeeds(client, users, root_folder_
     [
         {"paths": ["/invalidpath/"]},
         {"entity_id": ""},
-    ]
+    ],
 )
 def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
     """
@@ -403,10 +395,16 @@ def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
     [
         ("warehouse1", reverse_lazy("list-warehouse-datasources")),
         ("app_data1", reverse_lazy("list-webapp-datasources")),
-    ]
+    ],
 )
 def test_delete_calls_soft_delete(
-    client, buckets, users, bucket, success_url, sqs, helpers,
+    client,
+    buckets,
+    users,
+    bucket,
+    success_url,
+    sqs,
+    helpers,
 ):
     admin = users["bucket_admin"]
     bucket = buckets[bucket]
@@ -423,7 +421,10 @@ def test_delete_calls_soft_delete(
 
     messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
     helpers.validate_task_with_sqs_messages(
-        messages, S3Bucket.__name__, bucket.id, queue_name=settings.S3_QUEUE_NAME,
+        messages,
+        S3Bucket.__name__,
+        bucket.id,
+        queue_name=settings.S3_QUEUE_NAME,
     )
 
 
@@ -445,12 +446,9 @@ def test_delete_calls_soft_delete(
         ("bucket_admin", "warehouse1", status.HTTP_404_NOT_FOUND),
         ("bucket_admin", "warehouse2", status.HTTP_404_NOT_FOUND),
         ("bucket_admin", "other", status.HTTP_404_NOT_FOUND),
-
-    ]
+    ],
 )
-def test_detail_for_deleted_datasource(
-    client, buckets, users, user, bucket, expected_status
-):
+def test_detail_for_deleted_datasource(client, buckets, users, user, bucket, expected_status):
     user = users[user]
     bucket = buckets[bucket]
     bucket.soft_delete(deleted_by=user)

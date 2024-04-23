@@ -26,9 +26,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         stale_after_secs = options["stale_after_secs"]
         # send task to randomly chosen queue
-        worker_health_check.apply_async(
-            queue=random.choice(settings.PRE_DEFINED_QUEUES)
-        )
+        worker_health_check.apply_async(queue=random.choice(settings.PRE_DEFINED_QUEUES))
         # Attempt to read worker health ping file
         # NOTE: This may initially fail depending on timing of health task
         # execution but that's fine as Kubernetes' `failureThreashold`
@@ -50,8 +48,6 @@ class Command(BaseCommand):
 
         # Health ping file is fresh, success
         self.stdout.write(
-            self.style.SUCCESS(
-                "Health ping file is fresh. This worker ran health task recently."
-            )
+            self.style.SUCCESS("Health ping file is fresh. This worker ran health task recently.")
         )
         exit(0)

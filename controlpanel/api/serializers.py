@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
 # First-party/Local
-from controlpanel.api import cluster
+from controlpanel.api import cluster, validators
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
@@ -19,7 +19,6 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.api import validators
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
@@ -29,21 +28,15 @@ class AppS3BucketSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if instance.app != validated_data["app"]:
-            raise serializers.ValidationError(
-                "App is not editable. Create a new record."
-            )
+            raise serializers.ValidationError("App is not editable. Create a new record.")
         if instance.s3bucket != validated_data["s3bucket"]:
-            raise serializers.ValidationError(
-                "S3Bucket is not editable. Create a new record."
-            )
+            raise serializers.ValidationError("S3Bucket is not editable. Create a new record.")
 
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
         if validated_data["s3bucket"].is_data_warehouse:
-            raise serializers.ValidationError(
-                "Apps cannot access data warehouse S3 Buckets."
-            )
+            raise serializers.ValidationError("Apps cannot access data warehouse S3 Buckets.")
 
         return super().create(validated_data)
 
@@ -57,22 +50,15 @@ class UserS3BucketSerializer(serializers.ModelSerializer):
         user = instance.user
         s3bucket = instance.s3bucket
         if user != validated_data.get("user", user):
-            raise serializers.ValidationError(
-                "User is not editable. Create a new record."
-            )
+            raise serializers.ValidationError("User is not editable. Create a new record.")
         if s3bucket != validated_data.get("s3bucket", s3bucket):
-            raise serializers.ValidationError(
-                "S3Bucket is not editable. Create a new record."
-            )
+            raise serializers.ValidationError("S3Bucket is not editable. Create a new record.")
 
         return super().update(instance, validated_data)
 
 
 class AppSimpleSerializer(serializers.ModelSerializer):
-    url = serializers.HyperlinkedIdentityField(
-        view_name='app-detail',
-        lookup_field='res_id'
-    )
+    url = serializers.HyperlinkedIdentityField(view_name="app-detail", lookup_field="res_id")
 
     class Meta:
         model = App
@@ -154,10 +140,7 @@ class AppSerializer(serializers.ModelSerializer):
     userapps = UserAppNestedInAppSerializer(many=True, read_only=True)
     apps3buckets = AppS3BucketNestedInAppSerializer(many=True, read_only=True)
     ip_allowlists = IPAllowlistSimpleSerializer(many=True, read_only=True)
-    url = serializers.HyperlinkedIdentityField(
-        view_name='app-detail',
-        lookup_field='res_id'
-    )
+    url = serializers.HyperlinkedIdentityField(view_name="app-detail", lookup_field="res_id")
 
     class Meta:
         model = App
@@ -237,13 +220,9 @@ class UserAppSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if instance.user != validated_data["user"]:
-            raise serializers.ValidationError(
-                "User is not editable. Create a new record."
-            )
+            raise serializers.ValidationError("User is not editable. Create a new record.")
         if instance.app != validated_data["app"]:
-            raise serializers.ValidationError(
-                "App is not editable. Create a new record."
-            )
+            raise serializers.ValidationError("App is not editable. Create a new record.")
 
         return super().update(instance, validated_data)
 
@@ -315,8 +294,7 @@ class ToolDeploymentSerializer(serializers.Serializer):
             _, _, _ = value.split("__")
         except ValueError:
             raise serializers.ValidationError(
-                "This field include chart name, version and tool.id,"
-                ' they are joined by "__".'
+                "This field include chart name, version and tool.id," ' they are joined by "__".'
             )
 
 
@@ -365,12 +343,12 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
     APP_SETTINGS = {
         cluster.App.IP_RANGES: {
             "permission_flag": "api.update_app_ip_allowlists",
-            "edit_link": "update-app-ip-allowlists"
+            "edit_link": "update-app-ip-allowlists",
         },
         cluster.App.AUTH0_CONNECTIONS: {
             "permission_flag": "api.create_connections",
-            "edit_link": "update-auth0-connections"
-        }
+            "edit_link": "update-auth0-connections",
+        },
     }
 
     def _add_auth0_connection_as_part_secrets(self, env_name, app_secrets, connections):
@@ -386,20 +364,23 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         )
 
     def _auth_required(self, auth_flag):
-        return str(auth_flag.get('value') or 'true').lower() == 'true'
+        return str(auth_flag.get("value") or "true").lower() == "true"
 
     def _process_existing_env_settings(self, app_auth_settings, auth_settings_status):
         for env_name, env_data in app_auth_settings.items():
             # Preparing secret data
             self._add_auth0_connection_as_part_secrets(
-                env_name, env_data["secrets"], env_data["connections"])
+                env_name, env_data["secrets"], env_data["connections"]
+            )
             secret_data = self._process_secret_with_ui_info(env_data["secrets"])
             # Preparing env data
             var_data = self._process_env_with_ui_info(env_data["variables"])
 
-            auth_required = self._auth_required(var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {})
+            auth_required = self._auth_required(
+                var_data.get(cluster.App.AUTHENTICATION_REQUIRED) or {}
+            )
             # The client exists in app_conf field and auth0
-            created = auth_settings_status.get(env_name, {}).get('ok') or False
+            created = auth_settings_status.get(env_name, {}).get("ok") or False
             # The client_id secret exists in github repo
             secret_existed = secret_data[cluster.App.AUTH0_CLIENT_ID]["created"]
             # The client_id exists in app_conf field
@@ -411,17 +392,17 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
 
             env_data["secrets"] = sorted(secret_data.values(), key=lambda x: x["name"])
             env_data["can_create_client"] = auth_required and not created
-            env_data["can_remove_client"] = not auth_required and \
-                                            (created or secret_existed or conf_existed)
-            env_data["variables"] = sorted(var_data.values(), key=lambda  x: x["name"])
+            env_data["can_remove_client"] = not auth_required and (
+                created or secret_existed or conf_existed
+            )
+            env_data["variables"] = sorted(var_data.values(), key=lambda x: x["name"])
             env_data["auth_required"] = auth_required
 
     def _process_redundant_envs(self, app_auth_settings, auth_settings_status):
         # NB. if earlier call to get app_auth_settings failed, this will have been
         # passed into serializer as an empty dict. Which results in all env details
         # being marked as redundant mistakenly
-        redundant_envs = list(set(auth_settings_status.keys()) -
-                              set(app_auth_settings.keys()))
+        redundant_envs = list(set(auth_settings_status.keys()) - set(app_auth_settings.keys()))
         for env_name in redundant_envs:
             app_auth_settings[env_name] = dict(is_redundant=True)
 
@@ -431,12 +412,12 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
             cluster.App.AUTH0_CLIENT_SECRET,
             cluster.App.AUTH0_CONNECTIONS,
             cluster.App.AUTH0_PASSWORDLESS,
-            cluster.App.AUTH0_DOMAIN
+            cluster.App.AUTH0_DOMAIN,
         ]
         for item in removal_settings:
-            if item in secret_data and not secret_data[item].get('value'):
+            if item in secret_data and not secret_data[item].get("value"):
                 del secret_data[item]
-            if item in var_data and not var_data[item].get('value'):
+            if item in var_data and not var_data[item].get("value"):
                 del var_data[item]
 
     def _process_auth_settings(self, app_auth_settings, auth_settings_status):
@@ -447,29 +428,33 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
     def _process_secret_with_ui_info(self, secret_data):
         restructure_data = {}
         for item in secret_data:
-            item_key = item['name']
-            item.update(dict(
-                display_name=cluster.App.get_github_key_display_name(item_key),
-                permission_flag=self.APP_SETTINGS.get(item_key, {}).get('permission_flag') or
-                                self.DEFAULT_PERMISSION_FLAG,
-                edit_link=self.APP_SETTINGS.get(item_key, {}).get('edit_link') or
-                          self.DEFAULT_EDIT_SECRET_LINK,
-                remove_link=self.APP_SETTINGS.get(item_key, {}).get('remove_link') or
-                            self.DEFAULT_REMOVE_SECRET_LINK
-            ))
+            item_key = item["name"]
+            item.update(
+                dict(
+                    display_name=cluster.App.get_github_key_display_name(item_key),
+                    permission_flag=self.APP_SETTINGS.get(item_key, {}).get("permission_flag")
+                    or self.DEFAULT_PERMISSION_FLAG,
+                    edit_link=self.APP_SETTINGS.get(item_key, {}).get("edit_link")
+                    or self.DEFAULT_EDIT_SECRET_LINK,
+                    remove_link=self.APP_SETTINGS.get(item_key, {}).get("remove_link")
+                    or self.DEFAULT_REMOVE_SECRET_LINK,
+                )
+            )
             restructure_data[item_key] = item
         return restructure_data
 
     def _process_env_with_ui_info(self, env_data):
         restructure_data = {}
         for item in env_data:
-            item.update(dict(
-                display_name=cluster.App.get_github_key_display_name(item['name']),
-                permission_flag=self.DEFAULT_PERMISSION_FLAG,
-                edit_link=self.DEFAULT_EDIT_ENV_LINK,
-                remove_link=self.DEFAULT_REMOVE_ENV_LINK
-            ))
-            restructure_data[item['name']] = item
+            item.update(
+                dict(
+                    display_name=cluster.App.get_github_key_display_name(item["name"]),
+                    permission_flag=self.DEFAULT_PERMISSION_FLAG,
+                    edit_link=self.DEFAULT_EDIT_ENV_LINK,
+                    remove_link=self.DEFAULT_REMOVE_ENV_LINK,
+                )
+            )
+            restructure_data[item["name"]] = item
         return restructure_data
 
     def to_representation(self, app_auth_data):

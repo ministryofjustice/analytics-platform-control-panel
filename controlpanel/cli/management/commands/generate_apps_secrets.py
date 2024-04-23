@@ -42,9 +42,7 @@ class Command(BaseCommand):
         for app_item in app_info:
             if not app_item["can_be_migrated"]:
                 continue
-            self.stdout.write(
-                "Creating secrets for {}....".format(app_item["app_name"])
-            )
+            self.stdout.write("Creating secrets for {}....".format(app_item["app_name"]))
             if app_item.get("auth"):
                 if app_item["auth"].get("client_id"):
                     client = self._get_app_auth0_client_info(

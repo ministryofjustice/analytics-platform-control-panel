@@ -20,9 +20,7 @@ def get_repo_path():
     """
     Get the path for the repository cache.
     """
-    return os.path.join(
-        settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml"
-    )
+    return os.path.join(settings.HELM_REPOSITORY_CACHE, f"{settings.HELM_REPO}-index.yaml")
 
 
 class HelmError(APIException):
@@ -158,9 +156,7 @@ def get_helm_entries():
             repository = yaml.load(f, Loader=yaml.FullLoader)
     except Exception as ex:
         error = HelmError(ex)
-        error.detail = (
-            f"Error while opening/parsing helm repository cache: '{repo_path}'"
-        )
+        error.detail = f"Error while opening/parsing helm repository cache: '{repo_path}'"
         raise HelmError(error)
 
     if not repository:

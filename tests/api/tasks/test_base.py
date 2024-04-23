@@ -9,10 +9,13 @@ from controlpanel.api.models import Task
 from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskHandler
 
 
-@pytest.mark.parametrize("handler_cls, args", [
-    (BaseTaskHandler, (None,)),
-    (BaseModelTaskHandler, (1, 1)),
-])
+@pytest.mark.parametrize(
+    "handler_cls, args",
+    [
+        (BaseTaskHandler, (None,)),
+        (BaseModelTaskHandler, (1, 1)),
+    ],
+)
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.handle")
 def test_completed_task_handle_not_run(handle, handler_cls, args):
     completed_task = MagicMock(spec=Task, completed=True)
@@ -24,10 +27,13 @@ def test_completed_task_handle_not_run(handle, handler_cls, args):
     handle.assert_not_called()
 
 
-@pytest.mark.parametrize("handler_cls, args", [
-    (BaseTaskHandler, (None,)),
-    (BaseModelTaskHandler, (1, 1)),
-])
+@pytest.mark.parametrize(
+    "handler_cls, args",
+    [
+        (BaseTaskHandler, (None,)),
+        (BaseModelTaskHandler, (1, 1)),
+    ],
+)
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.handle")
 @patch(
     "controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.get_object",
@@ -43,10 +49,13 @@ def test_uncompleted_task_handle_is_run(handle, handler_cls, args):
     handle.assert_called_once()
 
 
-@pytest.mark.parametrize("handler_cls, args", [
-    (BaseTaskHandler, (None,)),
-    (BaseModelTaskHandler, (1, 1)),
-])
+@pytest.mark.parametrize(
+    "handler_cls, args",
+    [
+        (BaseTaskHandler, (None,)),
+        (BaseModelTaskHandler, (1, 1)),
+    ],
+)
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.handle")
 @patch(
     "controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.get_object",

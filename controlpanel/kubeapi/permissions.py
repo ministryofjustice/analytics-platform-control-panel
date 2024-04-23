@@ -43,6 +43,4 @@ class K8sPermissions(BasePermission):
 
 def has_access_token(request):
     auth_header = request.META.get("HTTP_AUTHORIZATION")
-    return auth_header and (
-        auth_header.startswith("Bearer ") or auth_header.startswith("JWT ")
-    )
+    return auth_header and (auth_header.startswith("Bearer ") or auth_header.startswith("JWT "))

@@ -64,8 +64,7 @@ class User(AbstractUser):
         request = CrequestMiddleware.get_request()
         if not request:
             raise Exception(
-                "request not found: have you called get_id_token() in a "
-                "background worker?"
+                "request not found: have you called get_id_token() in a " "background worker?"
             )
 
         if request.user == self:
@@ -107,11 +106,11 @@ class User(AbstractUser):
         if self.is_superuser:
             return True
 
-        if self.users3buckets.filter(
-                s3bucket__is_deleted=False
-        ).exclude(
-            s3bucket__is_data_warehouse=True
-        ).exists():
+        if (
+            self.users3buckets.filter(s3bucket__is_deleted=False)
+            .exclude(s3bucket__is_data_warehouse=True)
+            .exists()
+        ):
             return True
 
         return self.userapps.filter(is_admin=True).exists()

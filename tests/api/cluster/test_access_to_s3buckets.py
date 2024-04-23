@@ -32,6 +32,7 @@ def grant_policy_bucket_access():
     ) as grant_policy_bucket_access_action:
         yield grant_policy_bucket_access_action
 
+
 @pytest.fixture
 def grant_policy_folder_access():
     with patch(
@@ -143,7 +144,9 @@ def test_grant_group_access(grant_policy_bucket_access, bucket, entities, resour
         "group-paths",
     ],
 )
-def test_grant_group_folder_access(grant_policy_folder_access, bucket, entities, entity_type, resources):
+def test_grant_group_folder_access(
+    grant_policy_folder_access, bucket, entities, entity_type, resources
+):
     entity = entities["group"]
     entity.grant_folder_access(bucket.name, "readonly", resources)
 

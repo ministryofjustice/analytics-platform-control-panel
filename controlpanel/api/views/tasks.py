@@ -4,8 +4,9 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from controlpanel.api.models import Task
+# First-party/Local
 from controlpanel.api.message_broker import MessageBrokerClient
+from controlpanel.api.models import Task
 
 
 class TaskAPIView(GenericAPIView):
@@ -18,8 +19,7 @@ class TaskAPIView(GenericAPIView):
         if task:
             message_client = MessageBrokerClient()
             message_client.client.send_message(
-                queue_name=task.queue_name,
-                message_body=task.message_body
+                queue_name=task.queue_name, message_body=task.message_body
             )
 
     def post(self, request, *args, **kwargs):

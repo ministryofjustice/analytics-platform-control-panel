@@ -13,10 +13,7 @@ from rules.contrib.views import PermissionRequiredMixin
 from controlpanel.api import cluster
 from controlpanel.api.models import IAMManagedPolicy, User
 from controlpanel.api.permissions import is_superuser
-from controlpanel.frontend.forms import (
-    AddUserToIAMManagedPolicyForm,
-    CreateIAMManagedPolicyForm,
-)
+from controlpanel.frontend.forms import AddUserToIAMManagedPolicyForm, CreateIAMManagedPolicyForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
@@ -37,9 +34,7 @@ class AdminIAMManagedPolicyList(IAMManagedPolicyList):
         return IAMManagedPolicy.objects.all()
 
 
-class IAMManagedPolicyCreate(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView
-):
+class IAMManagedPolicyCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = CreateIAMManagedPolicyForm
     model = IAMManagedPolicy
     permission_required = "api.create_policy"
@@ -52,9 +47,7 @@ class IAMManagedPolicyCreate(
         return reverse_lazy("list-policies")
 
     def form_valid(self, form):
-        self.object = IAMManagedPolicy(
-            name=form.cleaned_data["name"], created_by=self.request.user
-        )
+        self.object = IAMManagedPolicy(name=form.cleaned_data["name"], created_by=self.request.user)
         self.object.save()
         messages.success(
             self.request,
@@ -63,9 +56,7 @@ class IAMManagedPolicyCreate(
         return FormMixin.form_valid(self, form)
 
 
-class IAMManagedPolicyDetail(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
-):
+class IAMManagedPolicyDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     form_class = AddUserToIAMManagedPolicyForm
     model = IAMManagedPolicy
     permission_required = "api.create_policy"
@@ -98,9 +89,7 @@ class IAMManagedPolicyDetail(
         return FormMixin.form_valid(self, form)
 
 
-class IAMManagedPolicyDelete(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView
-):
+class IAMManagedPolicyDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = IAMManagedPolicy
     permission_required = "api.destroy_policy"
 
@@ -118,11 +107,7 @@ class IAMManagedPolicyDelete(
 class IAMManagedPolicyFormRoleList(OIDCLoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         roles = cluster.list_role_names()
-        data = [
-            r
-            for r in roles
-            if r.startswith("airflow") or r.startswith(f"{settings.ENV}_app")
-        ]
+        data = [r for r in roles if r.startswith("airflow") or r.startswith(f"{settings.ENV}_app")]
         return JsonResponse(data, safe=False)
 
 

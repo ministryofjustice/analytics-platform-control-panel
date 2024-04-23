@@ -5,6 +5,7 @@ from typing import List
 import requests
 import sentry_sdk
 import structlog
+from auth0.rest import Auth0Error
 from django.conf import settings
 from django.contrib import messages
 from django.http import HttpResponseRedirect
@@ -17,7 +18,6 @@ from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
-from auth0.rest import Auth0Error
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
@@ -26,9 +26,9 @@ from controlpanel.api.models import (
     AppIPAllowList,
     AppS3Bucket,
     IPAllowlist,
+    Task,
     User,
     UserApp,
-    Task,
 )
 from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.api.serializers import AppAuthSettingsSerializer
@@ -100,14 +100,15 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         except requests.exceptions.HTTPError as ex:
             github_settings_access_error_msg = ex.__str__()
         # ...knock on effect is in serializers.py these envs will be marked as redundant
-        return deployments_settings, access_repo_error_msg, \
-            github_settings_access_error_msg
+        return deployments_settings, access_repo_error_msg, github_settings_access_error_msg
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
 
-        context["admin_options"] = User.objects.exclude(auth0_id="",).exclude(
+        context["admin_options"] = User.objects.exclude(
+            auth0_id="",
+        ).exclude(
             auth0_id__in=[user.auth0_id for user in app.admins],
         )
 
@@ -118,12 +119,12 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
         # If auth settings not returned, all envs marked redundant in the serializer.
         # Should hide them instead?
-        auth_settings, access_repo_error_msg, github_settings_access_error_msg \
-            = self._get_all_app_settings(app)
+        auth_settings, access_repo_error_msg, github_settings_access_error_msg = (
+            self._get_all_app_settings(app)
+        )
         auth0_clients_status = app.auth0_clients_status()
-        context["deployments_settings"] = AppAuthSettingsSerializer(dict(
-            auth_settings=auth_settings,
-            auth0_clients_status=auth0_clients_status)
+        context["deployments_settings"] = AppAuthSettingsSerializer(
+            dict(auth_settings=auth_settings, auth0_clients_status=auth0_clients_status)
         ).data
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
@@ -153,18 +154,14 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def form_valid(self, form):
         try:
-            self.object = AppManager().register_app(
-                self.request.user, form.cleaned_data
-            )
+            self.object = AppManager().register_app(self.request.user, form.cleaned_data)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
 
-class UpdateAppAuth0Connections(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
-):
+class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     form_class = UpdateAppAuth0ConnectionsForm
     model = App
@@ -194,8 +191,7 @@ class UpdateAppAuth0Connections(
     def form_valid(self, form):
         try:
             cluster.App(
-                app=self.get_object(),
-                github_api_token=self.request.user.github_api_token
+                app=self.get_object(), github_api_token=self.request.user.github_api_token
             ).update_auth_connections(
                 env_name=form.cleaned_data.get("env_name"),
                 new_conns=form.cleaned_data.get("auth0_connections"),
@@ -206,9 +202,7 @@ class UpdateAppAuth0Connections(
         return FormMixin.form_valid(self, form)
 
 
-class UpdateAppIPAllowlists(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView
-):
+class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     model = App
     template_name = "webapp-update-ip-allowlists.html"
@@ -323,9 +317,7 @@ class UpdateAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateVie
     def get_success_url(self):
         messages.success(self.request, "Successfully updated access")
         if self.request.POST.get("return_to") == "manage-datasource":
-            return reverse_lazy(
-                "manage-datasource", kwargs={"pk": self.object.s3bucket.id}
-            )
+            return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
         return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
 
     def form_valid(self, form):
@@ -382,9 +374,7 @@ class SetupAppAuth0(
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         env_name = dict(self.request.POST).get("env_name")[0]
-        cluster.App(app, self.request.user.github_api_token).create_auth_settings(
-            env_name=env_name
-        )
+        cluster.App(app, self.request.user.github_api_token).create_auth_settings(env_name=env_name)
         return super().post(request, *args, **kwargs)
 
 
@@ -400,9 +390,9 @@ class RemoveAppAuth0(
 
     def post(self, request, *args, **kwargs):
         env_name = dict(self.request.POST).get("env_name")[0]
-        cluster.App(self.get_object(),
-                    github_api_token=self.request.user.github_api_token).\
-            remove_auth_settings(env_name=env_name)
+        cluster.App(
+            self.get_object(), github_api_token=self.request.user.github_api_token
+        ).remove_auth_settings(env_name=env_name)
         return super().post(request, *args, **kwargs)
 
 
@@ -429,9 +419,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors
-        return HttpResponseRedirect(
-            self.get_success_url()
-        )
+        return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):
         self.get_object().add_customers(
@@ -439,9 +427,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
             group_id=self.kwargs.get("group_id"),
         )
         messages.success(self.request, "Successfully added customers")
-        return HttpResponseRedirect(
-            self.get_success_url()
-        )
+        return HttpResponseRedirect(self.get_success_url())
 
     def get_form_kwargs(self):
         kwargs = FormMixin.get_form_kwargs(self)
@@ -449,7 +435,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
     def get_success_url(self, *args, **kwargs):
         url = reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
-        return url + '?' + urlencode({'group_id': self.kwargs.get("group_id") })
+        return url + "?" + urlencode({"group_id": self.kwargs.get("group_id")})
 
 
 class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
@@ -484,23 +470,21 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         context["group_id"] = self._confirm_group_id(context)
         context["page_no"] = page_no = self.kwargs.get("page_no")
         customers, read_customer_error_msg = self._get_customer_list(context, page_no, app)
-        context["auth_errors"] = {
-            context["group_id"]: read_customer_error_msg
-        }
+        context["auth_errors"] = {context["group_id"]: read_customer_error_msg}
         context["customers"] = customers.get("users", [])
         context["paginator"] = paginator = self._paginate_customers(customers)
         context["elided"] = paginator.get_elided_page_range(page_no)
-        context["remove_customer_form"] = RemoveCustomerByEmailForm(initial={
-            "group_id": context["group_id"],
-        })
+        context["remove_customer_form"] = RemoveCustomerByEmailForm(
+            initial={
+                "group_id": context["group_id"],
+            }
+        )
         return context
 
     def _paginate_customers(self, auth_results: List[dict], per_page=25):
         total_count = auth_results.get("total", 0)
         customer_result = auth_results.get("users", [])
-        paginator = Auth0Paginator(
-            customer_result, per_page=per_page, total_count=total_count
-        )
+        paginator = Auth0Paginator(customer_result, per_page=per_page, total_count=total_count)
         return paginator
 
 
@@ -509,9 +493,7 @@ class RemoveCustomer(UpdateApp):
 
     def get_redirect_url(self, *args, **kwargs):
         return "{}?group_id={}".format(
-            reverse_lazy(
-                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
-            ),
+            reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}),
             kwargs.get("group_id"),
         )
 
@@ -519,16 +501,12 @@ class RemoveCustomer(UpdateApp):
         app = self.get_object()
         user_ids = self.request.POST.getlist("customer")
         try:
-            app.delete_customers(user_ids, group_id=kwargs.get('group_id'))
+            app.delete_customers(user_ids, group_id=kwargs.get("group_id"))
         except App.DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
-            messages.error(
-                self.request, f"Failed removing customer{pluralize(user_ids)}"
-            )
+            messages.error(self.request, f"Failed removing customer{pluralize(user_ids)}")
         else:
-            messages.success(
-                self.request, f"Successfully removed customer{pluralize(user_ids)}"
-            )
+            messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
 
 
 class RemoveCustomerByEmail(UpdateApp):
@@ -537,9 +515,7 @@ class RemoveCustomerByEmail(UpdateApp):
 
     def get_redirect_url(self, *args, **kwargs):
         return "{}?group_id={}".format(
-            reverse_lazy(
-                "appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}
-            ),
+            reverse_lazy("appcustomers-page", kwargs={"pk": self.kwargs["pk"], "page_no": 1}),
             kwargs.get("group_id"),
         )
 
@@ -554,18 +530,13 @@ class RemoveCustomerByEmail(UpdateApp):
         app = self.get_object()
         email = self.form.cleaned_data["email"]
         try:
-            app.delete_customer_by_email(
-                email=email,
-                group_id=str(kwargs.get("group_id"))
-            )
+            app.delete_customer_by_email(email=email, group_id=str(kwargs.get("group_id")))
         except App.DeleteCustomerError as e:
             return messages.error(
                 self.request, str(e) or f"Couldn't remove customer with email {email}"
             )
 
-        messages.success(
-            self.request, f"Successfully removed customer {email}"
-        )
+        messages.success(self.request, f"Successfully removed customer {email}")
 
 
 class AddAdmin(UpdateApp):

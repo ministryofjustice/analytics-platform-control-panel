@@ -1,6 +1,6 @@
 # Standard library
 from copy import deepcopy
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import pytest
@@ -21,17 +21,13 @@ def app():
 
 @pytest.fixture
 def aws_create_role():
-    with patch(
-        "controlpanel.api.cluster.AWSRole.create_role"
-    ) as aws_create_role_action:
+    with patch("controlpanel.api.cluster.AWSRole.create_role") as aws_create_role_action:
         yield aws_create_role_action
 
 
 @pytest.fixture
 def aws_delete_role():
-    with patch(
-        "controlpanel.api.cluster.AWSRole.delete_role"
-    ) as aws_delete_role_action:
+    with patch("controlpanel.api.cluster.AWSRole.delete_role") as aws_delete_role_action:
         yield aws_delete_role_action
 
 
@@ -69,8 +65,8 @@ def oidc_provider_statement(app, settings):
             f"{settings.OIDC_APP_EKS_PROVIDER}:aud": "sts.amazonaws.com",
             f"{settings.OIDC_APP_EKS_PROVIDER}:sub": [
                 f"system:serviceaccount:{app.namespace}-dev:{app.namespace}-dev-sa",  # noqa
-                f"system:serviceaccount:{app.namespace}-prod:{app.namespace}-prod-sa"  # noqa
-            ]
+                f"system:serviceaccount:{app.namespace}-prod:{app.namespace}-prod-sa",  # noqa
+            ],
         }
     }
     return statement
@@ -92,10 +88,12 @@ def test_app_create_iam_role(
     cluster.App(app).create_iam_role()
 
     aws_create_role.assert_called_with(app.iam_role_name, expected_assume_role)
-    _create_secrets.assert_has_calls([
-        call(env_name="dev"),
-        call(env_name="prod"),
-    ])
+    _create_secrets.assert_has_calls(
+        [
+            call(env_name="dev"),
+            call(env_name="prod"),
+        ]
+    )
 
 
 @pytest.fixture  # noqa: F405
@@ -118,55 +116,49 @@ def ExtendedAuth0():
 
 
 def test_update_auth_connections(app, ExtendedAuth0):
-    with patch.object(ExtendedAuth0, "get_client_enabled_connections") as get_conns, \
-            patch.object(ExtendedAuth0, "update_client_auth_connections") as update_conns, \
-            patch("controlpanel.api.cluster.App.create_or_update_env_var") as create_or_update:
+    with (
+        patch.object(ExtendedAuth0, "get_client_enabled_connections") as get_conns,
+        patch.object(ExtendedAuth0, "update_client_auth_connections") as update_conns,
+        patch("controlpanel.api.cluster.App.create_or_update_env_var") as create_or_update,
+    ):
         testing_env = "testing_env"
         testing_client_id = "testing_client_id"
         app.app_conf = {
-            models.App.KEY_WORD_FOR_AUTH_SETTINGS: {
-                testing_env: {"client_id": testing_client_id}
-            }
+            models.App.KEY_WORD_FOR_AUTH_SETTINGS: {testing_env: {"client_id": testing_client_id}}
         }
         app.repo_url = "https://github.com/moj-analytical-services/my_repo"
 
         # Change to use non-passwordless connection
-        new_conns = {"github": {}},
-        get_conns.return_value = {
-            testing_client_id: "email"
-        }
+        new_conns = ({"github": {}},)
+        get_conns.return_value = {testing_client_id: "email"}
         cluster.App(app, github_api_token="testing").update_auth_connections(
-            testing_env,
-            new_conns=new_conns
+            testing_env, new_conns=new_conns
         )
         create_or_update.assert_called_with(
-            env_name='testing_env',
-            key_name='AUTH0_PASSWORDLESS',
-            key_value=False)
+            env_name="testing_env", key_name="AUTH0_PASSWORDLESS", key_value=False
+        )
         update_conns.assert_called_with(
-            app_name=f'data-platform-app-{app.slug}-testing_env',
-            client_id='testing_client_id',
+            app_name=f"data-platform-app-{app.slug}-testing_env",
+            client_id="testing_client_id",
             new_conns=new_conns,
-            existing_conns='email')
+            existing_conns="email",
+        )
 
         # Change to use passwordless connection
         new_conns = {"email": {}}
-        get_conns.return_value = {
-            testing_client_id: "github"
-        }
+        get_conns.return_value = {testing_client_id: "github"}
         cluster.App(app, github_api_token="testing").update_auth_connections(
-            testing_env,
-            new_conns=new_conns
+            testing_env, new_conns=new_conns
         )
         create_or_update.assert_called_with(
-            env_name='testing_env',
-            key_name='AUTH0_PASSWORDLESS',
-            key_value=True)
+            env_name="testing_env", key_name="AUTH0_PASSWORDLESS", key_value=True
+        )
         update_conns.assert_called_with(
-            app_name=f'data-platform-app-{app.slug}-testing_env',
-            client_id='testing_client_id',
+            app_name=f"data-platform-app-{app.slug}-testing_env",
+            client_id="testing_client_id",
             new_conns=new_conns,
-            existing_conns='github')
+            existing_conns="github",
+        )
 
 
 @patch("controlpanel.api.models.App.env_allowed_ip_ranges", new=MagicMock(return_value="1.2.3"))
@@ -179,32 +171,37 @@ def test_create_secrets(app):
     with patch.object(app_cluster, "create_or_update_secrets"):
         app_cluster._create_secrets(env_name="dev", client=None)
         app_cluster.create_or_update_secrets.assert_called_once_with(
-            env_name="dev",
-            secret_data=secrets
+            env_name="dev", secret_data=secrets
         )
 
 
-@pytest.mark.parametrize("key, expected", [
-    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
-    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
-    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
-    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
-    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
-    ("CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
-])
+@pytest.mark.parametrize(
+    "key, expected",
+    [
+        ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+        ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+        ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+        ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+        ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+        ("CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
+    ],
+)
 def test_format_github_key_name(key, expected):
     assert cluster.App(None).format_github_key_name(key_name=key) == expected
 
 
-@pytest.mark.parametrize("key, expected", [
-    ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
-    ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
-    ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
-    ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
-    ("APP_ROLE_ARN", "APP_ROLE_ARN"),
-    ("XXX_CUSTOM_SETTING", "CUSTOM_SETTING"),
-    ("XXX_XXX_CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
-])
+@pytest.mark.parametrize(
+    "key, expected",
+    [
+        ("AUTH0_CLIENT_ID", "AUTH0_CLIENT_ID"),
+        ("AUTH0_CLIENT_SECRET", "AUTH0_CLIENT_SECRET"),
+        ("AUTH0_DOMAIN", "AUTH0_DOMAIN"),
+        ("AUTH0_PASSWORDLESS", "AUTH0_PASSWORDLESS"),
+        ("APP_ROLE_ARN", "APP_ROLE_ARN"),
+        ("XXX_CUSTOM_SETTING", "CUSTOM_SETTING"),
+        ("XXX_XXX_CUSTOM_SETTING", "XXX_CUSTOM_SETTING"),
+    ],
+)
 def test_get_github_key_display_name(key, expected):
     assert cluster.App(None).get_github_key_display_name(key) == expected
 

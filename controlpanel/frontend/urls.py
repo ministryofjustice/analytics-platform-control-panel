@@ -10,9 +10,7 @@ urlpatterns = [
     path("oidc/entraid/auth/", views.EntraIdAuthView.as_view(), name="entraid-auth"),
     path("oidc/logout/", views.LogoutView.as_view(), name="oidc_logout"),
     path("datasources/", views.AdminBucketList.as_view(), name="list-all-datasources"),
-    path(
-        "datasources/<int:pk>/", views.BucketDetail.as_view(), name="manage-datasource"
-    ),
+    path("datasources/<int:pk>/", views.BucketDetail.as_view(), name="manage-datasource"),
     path(
         "datasources/<int:pk>/access/",
         views.GrantAccess.as_view(),
@@ -23,9 +21,7 @@ urlpatterns = [
         views.DeleteDatasource.as_view(),
         name="delete-datasource",
     ),
-    path(
-        "datasources/new/", views.CreateDatasource.as_view(), name="create-datasource"
-    ),
+    path("datasources/new/", views.CreateDatasource.as_view(), name="create-datasource"),
     path(
         "datasource-access/<int:pk>/",
         views.UpdateAccessLevel.as_view(),
@@ -48,9 +44,7 @@ urlpatterns = [
         views.IAMManagedPolicyDelete.as_view(),
         name="delete-policy",
     ),
-    path(
-        "groups/<int:pk>/", views.IAMManagedPolicyDetail.as_view(), name="manage-policy"
-    ),
+    path("groups/<int:pk>/", views.IAMManagedPolicyDetail.as_view(), name="manage-policy"),
     path(
         "groups/<int:pk>/user/<str:user_id>/delete/",
         views.IAMManagedPolicyRemoveUser.as_view(),
@@ -83,12 +77,8 @@ urlpatterns = [
     path("users/<str:pk>/bedrock/", views.EnableBedrockUser.as_view(), name="set-bedrock"),
     path("users/<str:pk>/edit/", views.SetSuperadmin.as_view(), name="set-superadmin"),
     path("users/<str:pk>/reset-mfa/", views.ResetMFA.as_view(), name="reset-mfa"),
-    path(
-        "warehouse-data/", views.BucketList.as_view(), name="list-warehouse-datasources"
-    ),
-    path(
-        "webapp-data/", views.WebappBucketList.as_view(), name="list-webapp-datasources"
-    ),
+    path("warehouse-data/", views.BucketList.as_view(), name="list-warehouse-datasources"),
+    path("webapp-data/", views.WebappBucketList.as_view(), name="list-webapp-datasources"),
     path("webapps/", views.AppList.as_view(), name="list-apps"),
     path("webapps/all/", views.AdminAppList.as_view(), name="list-all-apps"),
     path("webapps/new/", views.CreateApp.as_view(), name="create-app"),
@@ -195,9 +185,7 @@ urlpatterns = [
     path("help/", views.Help.as_view(), name="help"),
     path("releases/", views.ReleaseList.as_view(), name="list-tool-releases"),
     path("release/new/", views.ReleaseCreate.as_view(), name="create-tool-release"),
-    path(
-        "release/<int:pk>/", views.ReleaseDetail.as_view(), name="manage-tool-release"
-    ),
+    path("release/<int:pk>/", views.ReleaseDetail.as_view(), name="manage-tool-release"),
     path(
         "release/<int:pk>/delete/",
         views.ReleaseDelete.as_view(),

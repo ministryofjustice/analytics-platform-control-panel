@@ -1,11 +1,10 @@
-from rest_framework import viewsets, mixins
+# Third-party
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, viewsets
 
+# First-party/Local
+from controlpanel.api import permissions, serializers
 from controlpanel.api.models import App
-from controlpanel.api import (
-    permissions,
-    serializers,
-)
 
 
 class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -16,5 +15,5 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = serializers.AppSerializer
     permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
     filter_backends = (DjangoFilterBackend,)
-    http_method_names = ['get']
+    http_method_names = ["get"]
     lookup_field = "name"

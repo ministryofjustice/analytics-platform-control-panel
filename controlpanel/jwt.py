@@ -85,7 +85,7 @@ class JWT:
                 **self.decode_options,
             )
         except (JWTError, KeyError) as error:
-            raise JWTDecodeError(f'Failed decoding JWT: {error}')
+            raise JWTDecodeError(f"Failed decoding JWT: {error}")
 
     @classmethod
     def from_auth_header(cls, request):

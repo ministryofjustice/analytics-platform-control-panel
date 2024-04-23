@@ -24,13 +24,19 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 @pytest.mark.django_db
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
-@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None))  # noqa
+@patch(
+    "controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None)
+)  # noqa
 def test_cluster_not_called_without_github_api_token(cluster, complete, users):
     app = baker.make("api.App")
 
     user = users["superuser"]
     create_app_auth_settings(
-        app.pk, user.pk, "envs", "disable_authentication", "connections",
+        app.pk,
+        user.pk,
+        "envs",
+        "disable_authentication",
+        "connections",
     )
 
     # role should not be created
@@ -42,7 +48,10 @@ def test_cluster_not_called_without_github_api_token(cluster, complete, users):
 @pytest.mark.django_db
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
-@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value="dummy-token"))  # noqa
+@patch(
+    "controlpanel.api.models.user.User.github_api_token",
+    new=PropertyMock(return_value="dummy-token"),
+)  # noqa
 def test_valid_app_and_user(cluster, complete, users):
     app = baker.make("api.App")
 
@@ -56,8 +65,6 @@ def test_valid_app_and_user(cluster, complete, users):
 
     cluster.App.assert_called_once_with(app, "dummy-token")
     cluster.App.return_value.create_auth_settings.assert_called_once_with(
-        env_name="test",
-        disable_authentication=False,
-        connections=["email"]
+        env_name="test", disable_authentication=False, connections=["email"]
     )
     complete.assert_called_once()

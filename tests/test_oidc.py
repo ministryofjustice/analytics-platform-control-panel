@@ -1,6 +1,11 @@
-import pytest
-from controlpanel.oidc import StateMismatchHandler
+# Standard library
 from unittest.mock import Mock
+
+# Third-party
+import pytest
+
+# First-party/Local
+from controlpanel.oidc import StateMismatchHandler
 
 
 @pytest.mark.parametrize(
