@@ -6,7 +6,7 @@ from controlpanel.utils import SettingLoader
 
 
 def test_not_overwrite_var_in_setting():
-    test_json={"AWS_DATA_ACCOUNT_ID": "new_account_id"}
+    test_json = {"AWS_DATA_ACCOUNT_ID": "new_account_id"}
     SettingLoader(test_json)
     assert settings.AWS_DATA_ACCOUNT_ID == "123456789012"
 
@@ -32,16 +32,12 @@ def test_feature_flag_default_false():
 
 
 def test_feature_flag_env_false():
-    test_json = {
-        "enabled_features": {"test_feature": {"_DEFAULT": True, "_HOST_test": False}}
-    }
+    test_json = {"enabled_features": {"test_feature": {"_DEFAULT": True, "_HOST_test": False}}}
     SettingLoader(test_json)
     assert not settings.features.test_feature.enabled
 
 
 def test_feature_flag_env_True():
-    test_json = {
-        "enabled_features": {"test_feature": {"_DEFAULT": False, "_HOST_test": True}}
-    }
+    test_json = {"enabled_features": {"test_feature": {"_DEFAULT": False, "_HOST_test": True}}}
     SettingLoader(test_json)
     assert settings.features.test_feature.enabled

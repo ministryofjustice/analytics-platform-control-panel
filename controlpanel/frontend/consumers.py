@@ -3,15 +3,14 @@ import asyncio
 import json
 import os
 from datetime import datetime
-import os
 from pathlib import Path
 from time import sleep
 
 # Third-party
 import structlog
 from channels.consumer import SyncConsumer
-from django.db import transaction
 from django.conf import settings
+from django.db import transaction
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -22,16 +21,8 @@ from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     TOOL_DEPLOYING,
     TOOL_RESTARTING,
 )
-from controlpanel.api.models import (
-    App,
-    HomeDirectory,
-    IPAllowlist,
-    Tool,
-    ToolDeployment,
-    User,
-)
-from controlpanel.utils import (PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse)
-
+from controlpanel.api.models import App, HomeDirectory, IPAllowlist, Tool, ToolDeployment, User
+from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse
 
 log = structlog.getLogger(__name__)
 

@@ -27,9 +27,7 @@ def test_arn(settings, iam_managed_policy):
 
 @pytest.fixture
 def aws_create_policy():
-    with patch(
-        "controlpanel.api.cluster.AWSPolicy.create_policy"
-    ) as aws_create_policy_action:
+    with patch("controlpanel.api.cluster.AWSPolicy.create_policy") as aws_create_policy_action:
         yield aws_create_policy_action
 
 

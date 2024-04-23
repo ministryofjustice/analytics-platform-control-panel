@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 # Third-party
 import pytest
@@ -7,10 +7,7 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.models import App
-from controlpanel.api.tasks.handlers import (
-    create_app_auth_settings,
-    create_app_aws_role,
-)
+from controlpanel.api.tasks.handlers import create_app_auth_settings, create_app_aws_role
 
 
 @pytest.mark.django_db

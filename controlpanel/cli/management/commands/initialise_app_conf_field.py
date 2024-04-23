@@ -19,14 +19,14 @@ class Command(BaseCommand):
         group_list = auth0_instance.groups.get_all()
         groups_info = {}
         for group in group_list:
-            groups_info[group.get('name')] = group
+            groups_info[group.get("name")] = group
         return groups_info
 
     def _get_full_clients(self, auth0_instance):
         client_list = auth0_instance.clients.get_all()
         clients_info = {}
         for client in client_list:
-            clients_info[client.get('name')] = client
+            clients_info[client.get("name")] = client
         return clients_info
 
     def _get_auth0_name(self, app):
@@ -49,7 +49,7 @@ class Command(BaseCommand):
         clients_info = self._get_full_clients(auth0_instance)
         apps_list = App.objects.all()
         for cnt, app in enumerate(apps_list):
-            self.stdout.write(f"{cnt+1}: start to process app {app.slug}")
+            self.stdout.write(f"{cnt + 1}: start to process app {app.slug}")
             client = clients_info.get(self._get_auth0_name(app))
             auth_settings = dict()
             if client:
@@ -69,13 +69,15 @@ class Command(BaseCommand):
                     app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS] = {}
 
             if auth_settings:
-                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY] = auth_settings
+                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][
+                    App.DEFAULT_AUTH_CATEGORY
+                ] = auth_settings
 
             for env_name, env_info in new_auth0_clients.items():
                 app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = env_info
 
             app.save()
-            self.stdout.write(f"{cnt+1}: app {app.slug} done!")
+            self.stdout.write(f"{cnt + 1}: app {app.slug} done!")
 
     def handle(self, *args, **options):
         self._initialise_auth_info_to_new_field()

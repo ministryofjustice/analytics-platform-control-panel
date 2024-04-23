@@ -35,14 +35,10 @@ class Parameter(TimeStampedModel):
     def name(self):
         return f"/{settings.ENV}/{self.app_type}/{self.role_name}/secrets/{self.key}"
 
-    key = models.CharField(
-        max_length=50, validators=[RegexValidator(r"[a-zA-Z0-9_]{1,50}")]
-    )
+    key = models.CharField(max_length=50, validators=[RegexValidator(r"[a-zA-Z0-9_]{1,50}")])
     description = models.CharField(max_length=600)
     app_type = models.CharField(max_length=8, choices=APP_TYPE_CHOICES)
-    role_name = models.CharField(
-        max_length=63, validators=[RegexValidator(r"[a-zA-Z0-9_]{1,63}")]
-    )
+    role_name = models.CharField(max_length=63, validators=[RegexValidator(r"[a-zA-Z0-9_]{1,63}")])
     created_by = models.ForeignKey(
         "User",
         on_delete=models.SET_NULL,

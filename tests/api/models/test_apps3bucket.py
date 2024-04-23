@@ -54,9 +54,7 @@ def test_aws_permissions(app, bucket, sqs, helpers):
 
 @pytest.mark.django_db
 def test_delete_revoke_permissions(app, bucket):
-    with patch(
-        "controlpanel.api.tasks.S3BucketRevokeAppAccess"
-    ) as revoke_bucket_access_task:
+    with patch("controlpanel.api.tasks.S3BucketRevokeAppAccess") as revoke_bucket_access_task:
         apps3bucket = baker.make(
             "api.AppS3Bucket",
             app=app,
@@ -66,8 +64,5 @@ def test_delete_revoke_permissions(app, bucket):
 
         apps3bucket.delete()
 
-        revoke_bucket_access_task.assert_called_once_with(
-            apps3bucket,
-            None
-        )
+        revoke_bucket_access_task.assert_called_once_with(apps3bucket, None)
         revoke_bucket_access_task.return_value.create_task.assert_called_once()

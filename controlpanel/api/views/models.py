@@ -9,14 +9,7 @@ from rest_framework.response import Response
 # First-party/Local
 from controlpanel.api import filters, permissions, serializers
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
-from controlpanel.api.models import (
-    App,
-    AppS3Bucket,
-    S3Bucket,
-    User,
-    UserApp,
-    UserS3Bucket,
-)
+from controlpanel.api.models import App, AppS3Bucket, S3Bucket, User, UserApp, UserS3Bucket
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -38,8 +31,9 @@ class AppViewSet(viewsets.ModelViewSet):
     lookup_field = "res_id"
 
     def _skip_queryset_restriction(self):
-        return self.request.user.is_superuser or \
-               (hasattr(self.request.user, "is_client") and self.request.user.is_client)
+        return self.request.user.is_superuser or (
+            hasattr(self.request.user, "is_client") and self.request.user.is_client
+        )
 
     def get_queryset(self):
         if self._skip_queryset_restriction():

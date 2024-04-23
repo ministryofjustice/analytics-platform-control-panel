@@ -49,9 +49,7 @@ class AppCustomersAPIView(GenericAPIView):
         if errors:
             raise ValidationError(errors)
 
-        app.add_customers(
-            emails,
-            env_name=request.GET.get("env_name", ""))
+        app.add_customers(emails, env_name=request.GET.get("env_name", ""))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -59,13 +57,11 @@ class AppCustomersAPIView(GenericAPIView):
 class AppCustomersDetailAPIView(GenericAPIView):
     queryset = App.objects.all()
     permission_classes = (permissions.IsSuperuser,)
-    http_method_names = ['delete']
+    http_method_names = ["delete"]
     lookup_field = "res_id"
 
     def delete(self, request, *args, **kwargs):
         app = self.get_object()
-        app.delete_customers(
-            [kwargs["user_id"]],
-            env_name=request.GET.get("env_name", ""))
+        app.delete_customers([kwargs["user_id"]], env_name=request.GET.get("env_name", ""))
 
         return Response(status=status.HTTP_204_NO_CONTENT)

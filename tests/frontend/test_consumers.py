@@ -6,12 +6,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 # First-party/Local
-from controlpanel.api.cluster import (
-    HOME_RESETTING,
-    TOOL_DEPLOYING,
-    TOOL_READY,
-    TOOL_RESTARTING,
-)
+from controlpanel.api.cluster import HOME_RESETTING, TOOL_DEPLOYING, TOOL_READY, TOOL_RESTARTING
 from controlpanel.api.models import Tool, ToolDeployment, User
 from controlpanel.frontend import consumers
 
@@ -27,40 +22,30 @@ def users(db):
 def tools(db):
     print("Setting up tools...")
     Tool(chart_name="a_tool", description="testing").save()
-    Tool(
-        chart_name="another_tool", description="testing"
-    ).save()
+    Tool(chart_name="another_tool", description="testing").save()
 
 
 @pytest.fixture
 def update_tool_status():
-    with patch(
-        "controlpanel.frontend.consumers.update_tool_status"
-    ) as update_tool_status:
+    with patch("controlpanel.frontend.consumers.update_tool_status") as update_tool_status:
         yield update_tool_status
 
 
 @pytest.fixture
 def update_home_status():
-    with patch(
-        "controlpanel.frontend.consumers.update_home_status"
-    ) as update_home_status:
+    with patch("controlpanel.frontend.consumers.update_home_status") as update_home_status:
         yield update_home_status
 
 
 @pytest.fixture
 def wait_for_deployment():
-    with patch(
-        "controlpanel.frontend.consumers.wait_for_deployment"
-    ) as wait_for_deployment:
+    with patch("controlpanel.frontend.consumers.wait_for_deployment") as wait_for_deployment:
         yield wait_for_deployment
 
 
 @pytest.fixture
 def wait_for_home_reset():
-    with patch(
-        "controlpanel.frontend.consumers.wait_for_home_reset"
-    ) as wait_for_home_reset:
+    with patch("controlpanel.frontend.consumers.wait_for_home_reset") as wait_for_home_reset:
         yield wait_for_home_reset
 
 
@@ -97,9 +82,7 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
         wait_for_deployment.assert_called_with(tool_deployment, id_token)
 
 
-def test_tool_deploy_with_old_chart_name(
-    users, tools, update_tool_status, wait_for_deployment
-):
+def test_tool_deploy_with_old_chart_name(users, tools, update_tool_status, wait_for_deployment):
     user = User.objects.first()
     tool = Tool.objects.first()
     id_token = "secret user id_token"

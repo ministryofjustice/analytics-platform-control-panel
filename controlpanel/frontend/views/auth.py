@@ -21,6 +21,7 @@ class EntraIdAuthView(OIDCLoginRequiredMixin, View):
     This view is used as the callback after a user authenticates with their Justice
     identity via Azure EntraID, in order to capture a users Justice email address.
     """
+
     http_method_names = ["get"]
 
     def _get_access_token(self):

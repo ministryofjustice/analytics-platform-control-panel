@@ -131,9 +131,7 @@ class EntityResource:
     ENTITY_ASSUME_ROLE_CATEGORY = None
 
     def __init__(self):
-        self.aws_credential_settings = AWSServiceCredentialSettings(
-            settings.AWS_ROLES_MAP
-        )
+        self.aws_credential_settings = AWSServiceCredentialSettings(settings.AWS_ROLES_MAP)
         self._init_aws_services()
 
     def _init_aws_services(self):
@@ -150,21 +148,15 @@ class EntityResource:
             aws_service_name = aws_service_class.__name__
         return aws_service_name
 
-    def get_assume_role(
-        self, aws_service_class, aws_role_category=None, aws_service_name=None
-    ):
+    def get_assume_role(self, aws_service_class, aws_role_category=None, aws_service_name=None):
         aws_role_category = aws_role_category or self.entity_category_key
-        aws_service_name = aws_service_name or self.get_aws_service_name(
-            aws_service_class
-        )
+        aws_service_name = aws_service_name or self.get_aws_service_name(aws_service_class)
         assume_role_name = self.aws_credential_settings.get_credential_setting(
             category_name=aws_role_category, aws_service_name=aws_service_name
         )
         return assume_role_name
 
-    def create_aws_service(
-        self, aws_service_class, aws_role_category=None, aws_service_name=None
-    ):
+    def create_aws_service(self, aws_service_class, aws_role_category=None, aws_service_name=None):
         return aws_service_class(
             assume_role_name=self.get_assume_role(
                 aws_service_class=aws_service_class,
@@ -283,9 +275,7 @@ class User(EntityResource):
         policy["Statement"].append(oidc_statement)
         eks_statement = deepcopy(User.EKS_STATEMENT)
         match = f"system:serviceaccount:user-{user_name}:{user_name}-*"
-        eks_statement["Condition"]["StringLike"] = {
-            f"{settings.OIDC_EKS_PROVIDER}:sub": match
-        }
+        eks_statement["Condition"]["StringLike"] = {f"{settings.OIDC_EKS_PROVIDER}:sub": match}
         policy["Statement"].append(eks_statement)
         return policy
 
@@ -329,9 +319,7 @@ class User(EntityResource):
 
         init_installed_charts = self._filter_out_installation_charts(user_releases)
         self._uninstall_helm_charts(self.k8s_namespace, user_releases, dry_run=dry_run)
-        self._uninstall_helm_charts(
-            self.k8s_namespace, init_installed_charts, dry_run=dry_run
-        )
+        self._uninstall_helm_charts(self.k8s_namespace, init_installed_charts, dry_run=dry_run)
 
         # Only remove the installed charts from cpanel namespace
         init_installed_charts = self._filter_out_installation_charts(cpanel_releases)
@@ -395,7 +383,7 @@ class App(EntityResource):
     AUTH0_DOMAIN = "AUTH0_DOMAIN"
     AUTH0_CONNECTIONS = "AUTH0_CONNECTIONS"
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
-    AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"
+    AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"  # gitleaks:allow
     APP_ROLE_ARN = "APP_ROLE_ARN"
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
@@ -460,9 +448,7 @@ class App(EntityResource):
         return False
 
     def _add_missing_mandatory_secrets(self, env_name, app_secrets, created_secret_names):
-        not_created_ones = list(
-            set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names)
-        )
+        not_created_ones = list(set(settings.AUTH_SETTINGS_SECRETS) - set(created_secret_names))
         for item_name in not_created_ones:
             app_secrets.append(
                 {
@@ -476,9 +462,7 @@ class App(EntityResource):
             )
 
     def _add_missing_mandatory_vars(self, env_name, app_env_vars, created_var_names):
-        not_created_ones = list(
-            set(settings.AUTH_SETTINGS_ENVS) - set(created_var_names)
-        )
+        not_created_ones = list(set(settings.AUTH_SETTINGS_ENVS) - set(created_var_names))
         for item_name in not_created_ones:
             app_env_vars.append(
                 {
@@ -504,11 +488,9 @@ class App(EntityResource):
             template_name="assume_roles/cloud_platform_oidc.json",
             context={
                 "identity_provider": settings.OIDC_APP_EKS_PROVIDER,
-                "identity_provider_arn": iam_arn(
-                    f"oidc-provider/{settings.OIDC_APP_EKS_PROVIDER}"
-                ),
+                "identity_provider_arn": iam_arn(f"oidc-provider/{settings.OIDC_APP_EKS_PROVIDER}"),
                 "app_namespace": self.app.namespace,
-            }
+            },
         )
         return json.loads(statement)
 
@@ -567,19 +549,14 @@ class App(EntityResource):
     def create_or_update_secret(self, env_name, secret_key, secret_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_repo_env_secret(
-            repo_name,
-            env_name,
-            secret_key,
-            secret_value
+            repo_name, env_name, secret_key, secret_value
         )
 
     def delete_secret(self, env_name, secret_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         try:
             GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_secret(
-                repo_name,
-                env_name=env_name,
-                secret_name=secret_name
+                repo_name, env_name=env_name, secret_name=secret_name
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
@@ -594,19 +571,14 @@ class App(EntityResource):
     def create_or_update_env_var(self, env_name, key_name, key_value):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         GithubAPI(self.github_api_token, github_org=org_name).create_or_update_env_var(
-            repo_name,
-            env_name,
-            key_name,
-            key_value
+            repo_name, env_name, key_name, key_value
         )
 
     def delete_env_var(self, env_name, key_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         try:
             GithubAPI(self.github_api_token, github_org=org_name).delete_repo_env_var(
-                repo_name,
-                env_name,
-                key_name
+                repo_name, env_name, key_name
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
@@ -678,11 +650,9 @@ class App(EntityResource):
                 client_name=self.app.auth0_client_name(env_name),
                 app_url_name=self.app.app_url_name(env_name),
                 connections=connections,
-                app_domain=app_domain
+                app_domain=app_domain,
             )
-            self.app.save_auth_settings(
-                env_name=env_name, client=client, group=group
-            )
+            self.app.save_auth_settings(env_name=env_name, client=client, group=group)
         self._create_secrets(env_name, client=client)
         self._create_env_vars(
             env_name,
@@ -707,7 +677,7 @@ class App(EntityResource):
         self.create_or_update_env_var(
             env_name=env_name,
             key_name=self.AUTH0_PASSWORDLESS,
-            key_value=auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION in new_conns
+            key_value=auth0.ExtendedAuth0.DEFAULT_CONNECTION_OPTION in new_conns,
         )
         auth0.ExtendedAuth0().update_client_auth_connections(
             app_name=self.app.auth0_client_name(env_name),
@@ -746,9 +716,7 @@ class S3Bucket(EntityResource):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             self.aws_service_class, aws_role_category=owner
         )
-        return self.aws_bucket_service.create(
-            self.bucket.name, self.bucket.is_data_warehouse
-        )
+        return self.aws_bucket_service.create(self.bucket.name, self.bucket.is_data_warehouse)
 
     def mark_for_archival(self):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
@@ -776,12 +744,15 @@ class S3Folder(S3Bucket):
     def get_objects(self):
         bucket_name, folder_name = self.bucket.name.split("/")
         return self.aws_bucket_service.get_objects(
-            bucket_name=bucket_name, folder_name=folder_name,
+            bucket_name=bucket_name,
+            folder_name=folder_name,
         )
 
     def archive_object(self, key, source_bucket=None, delete_original=True):
         self.aws_bucket_service.archive_object(
-            key=key, source_bucket_name=source_bucket, delete_original=delete_original,
+            key=key,
+            source_bucket_name=source_bucket,
+            delete_original=delete_original,
         )
 
 
@@ -832,9 +803,7 @@ class RoleGroup(EntityResource):
         )
 
     def grant_folder_access(self, root_folder_path, access_level, paths):
-        self.aws_policy_service.grant_folder_access(
-            self.arn, root_folder_path, access_level, paths
-        )
+        self.aws_policy_service.grant_folder_access(self.arn, root_folder_path, access_level, paths)
 
     def revoke_bucket_access(self, bucket_arn):
         self.aws_policy_service.revoke_policy_bucket_access(self.arn, bucket_arn)
@@ -949,7 +918,7 @@ class ToolDeployment:
             if val:
                 # Helpful for debugging configs: ignore parameters with missing
                 # values and log that the value is missing.
-                escaped_val = val.replace(",", "\,")  # noqa : W605
+                escaped_val = val.replace(",", r"\,")
                 set_values.extend(["--set", f"{key}={escaped_val}"])
             else:
                 log.warning(
@@ -1000,9 +969,7 @@ class ToolDeployment:
         We may change this part if we want to refactor how the tool is released
         and managed.
         """
-        return metadata.labels.get("unidler-key") is not None or metadata.labels.get(
-            "unidle-key"
-        )
+        return metadata.labels.get("unidler-key") is not None or metadata.labels.get("unidle-key")
 
     @classmethod
     def get_deployments(cls, user, id_token, search_name=None, search_version=None):
@@ -1052,9 +1019,7 @@ class ToolDeployment:
             log.warning(f"Multiple objects returned for {self}")
             return TOOL_STATUS_UNKNOWN
 
-        conditions = {
-            condition.type: condition for condition in deployment.status.conditions
-        }
+        conditions = {condition.type: condition for condition in deployment.status.conditions}
 
         if "Available" in conditions:
             if conditions["Available"].status == "True":

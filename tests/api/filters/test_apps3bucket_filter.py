@@ -11,8 +11,10 @@ NUM_APPS3BUCKETS = 2
 
 @pytest.fixture(autouse=True)
 def apps3buckets(s3, sqs):
-    with patch("controlpanel.api.aws.AWSBucket.create"),\
-            patch("controlpanel.api.aws.AWSRole.grant_bucket_access"):
+    with (
+        patch("controlpanel.api.aws.AWSBucket.create"),
+        patch("controlpanel.api.aws.AWSRole.grant_bucket_access"),
+    ):
         baker.make("api.AppS3Bucket", NUM_APPS3BUCKETS)
 
 

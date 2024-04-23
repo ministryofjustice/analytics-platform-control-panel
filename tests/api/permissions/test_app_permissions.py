@@ -15,18 +15,20 @@ from rules import perm_exists
 
 @pytest.fixture
 def users(users):
-    users.update({
-        "app_admin": baker.make(
-            "api.User",
-            username="dave",
-            auth0_id="github|user_4",
-        ),
-        "app_user": baker.make(
-            "api.User",
-            username="testing",
-            auth0_id="github|user_5",
-        ),
-    })
+    users.update(
+        {
+            "app_admin": baker.make(
+                "api.User",
+                username="dave",
+                auth0_id="github|user_4",
+            ),
+            "app_user": baker.make(
+                "api.User",
+                username="testing",
+                auth0_id="github|user_5",
+            ),
+        }
+    )
     return users
 
 
@@ -92,14 +94,12 @@ def test_authenticated_user_has_basic_perms(client, users):
         (app_delete, "superuser", status.HTTP_204_NO_CONTENT),
         (app_create, "superuser", status.HTTP_201_CREATED),
         (app_update, "superuser", status.HTTP_200_OK),
-
         (app_list, "normal_user", status.HTTP_200_OK),
         (app_detail, "app_user", status.HTTP_403_FORBIDDEN),
         (app_detail, "normal_user", status.HTTP_404_NOT_FOUND),
         (app_delete, "normal_user", status.HTTP_403_FORBIDDEN),
         (app_create, "normal_user", status.HTTP_201_CREATED),
         (app_update, "normal_user", status.HTTP_404_NOT_FOUND),
-
         (app_list, "app_admin", status.HTTP_200_OK),
         (app_detail, "app_admin", status.HTTP_200_OK),
         (app_delete, "app_admin", status.HTTP_403_FORBIDDEN),

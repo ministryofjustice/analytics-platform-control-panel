@@ -214,7 +214,9 @@ OIDC_CPANEL_API_AUDIENCE = os.environ.get("OIDC_CPANEL_API_AUDIENCE")
 
 # For authentication with EntraID
 AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID")
-AZURE_OP_CONF_URL = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/v2.0/.well-known/openid-configuration"
+AZURE_OP_CONF_URL = (
+    f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/v2.0/.well-known/openid-configuration"
+)
 AZURE_RP_SCOPES = "openid email profile"
 AZURE_CODE_CHALLENGE_METHOD = os.environ.get("AZURE_CODE_CHALLENGE_METHOD", "S256")
 AUTHLIB_OAUTH_CLIENTS = {
@@ -227,9 +229,8 @@ AUTHLIB_OAUTH_CLIENTS = {
             "response_type": "code",
             "token_endpoint_auth_method": "client_secret_post",
             "code_challenge_method": AZURE_CODE_CHALLENGE_METHOD,
-            "prompt": "login"
+            "prompt": "login",
         },
-
     }
 }
 
@@ -285,9 +286,7 @@ DEBUG = str(os.environ.get("DEBUG", False)).lower() == "true"
 # -- Database
 DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
 ENABLE_DB_SSL = (
-    str(
-        os.environ.get("ENABLE_DB_SSL", DB_HOST not in ["127.0.0.1", "localhost"])
-    ).lower()
+    str(os.environ.get("ENABLE_DB_SSL", DB_HOST not in ["127.0.0.1", "localhost"])).lower()
     == "true"
 )
 DATABASES = {
@@ -332,7 +331,8 @@ TIME_ZONE = "UTC"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         # Token authentication
-        # need to check why a user can be created automatically during a process of authentication flow for our cases
+        # need to check why a user can be created automatically
+        # during a process of authentication flow for our cases
         "controlpanel.api.jwt_auth.JWTAuthentication",
         # save question as above
         "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
@@ -450,7 +450,7 @@ GITHUB_ORGS = list(
         set(
             os.environ.get("GITHUB_ORGS", "").split(",")
             + [
-                'ministryofjustice',
+                "ministryofjustice",
             ]
         ),
     )
@@ -577,16 +577,14 @@ BROKER_TRANSPORT_OPTIONS = {
     "polling_interval": 1,
     "region": SQS_REGION,
     "wait_time_seconds": 0,
-    "predefined_queues": {}
+    "predefined_queues": {},
 }
 for queue in PRE_DEFINED_QUEUES:
-    BROKER_TRANSPORT_OPTIONS['predefined_queues'][queue] = {
-        'url': f'https://sqs.{SQS_REGION}.amazonaws.com/{AWS_DATA_ACCOUNT_ID}/{queue}',
-        'backoff_policy': DEFAULT_BACKOFF_POLICY,
+    BROKER_TRANSPORT_OPTIONS["predefined_queues"][queue] = {
+        "url": f"https://sqs.{SQS_REGION}.amazonaws.com/{AWS_DATA_ACCOUNT_ID}/{queue}",
+        "backoff_policy": DEFAULT_BACKOFF_POLICY,
     }
 
-CELERY_IMPORTS = [
-    "controlpanel.api.tasks.handlers"
-]
+CELERY_IMPORTS = ["controlpanel.api.tasks.handlers"]
 
 S3_ARCHIVE_BUCKET_NAME = "dev-archive-folder"

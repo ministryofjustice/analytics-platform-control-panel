@@ -11,8 +11,8 @@ from auth0.management import Auth0
 from auth0.management.clients import Clients
 from auth0.management.connections import Connections
 from auth0.management.device_credentials import DeviceCredentials
-from auth0.rest import RestClient
 from auth0.management.users import Users
+from auth0.rest import RestClient
 from django.conf import settings
 from jinja2 import Environment
 from rest_framework.exceptions import APIException
@@ -47,13 +47,11 @@ class ExtendedAuth0(Auth0):
     DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
     DEFAULT_APP_TYPE = "regular_web"
 
-    DEFAULT_CONNECTION_OPTION = 'email'
+    DEFAULT_CONNECTION_OPTION = "email"
 
     def __init__(self, **kwargs):
         self.client_id = kwargs.get("client_id", settings.AUTH0["client_id"])
-        self.client_secret = kwargs.get(
-            "client_secret", settings.AUTH0["client_secret"]
-        )
+        self.client_secret = kwargs.get("client_secret", settings.AUTH0["client_secret"])
         self.domain = kwargs.get("domain", settings.AUTH0["domain"])
         self.app_domain = kwargs.get("domain", settings.APP_DOMAIN)
         self.audience = "https://{domain}/api/v2/".format(domain=self.domain)
@@ -65,12 +63,8 @@ class ExtendedAuth0(Auth0):
         self._token = self._access_token(audience=self.audience)
         super(ExtendedAuth0, self).__init__(self.domain, self._token)
 
-        self.clients = ExtendedClients(
-            self.domain, self._token, timeout=DEFAULT_TIMEOUT
-        )
-        self.connections = ExtendedConnections(
-            self.domain, self._token, timeout=DEFAULT_TIMEOUT
-        )
+        self.clients = ExtendedClients(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
+        self.connections = ExtendedConnections(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
         self.device_credentials = ExtendedDeviceCredentials(
             self.domain, self._token, timeout=DEFAULT_TIMEOUT
         )
@@ -105,16 +99,12 @@ class ExtendedAuth0(Auth0):
 
     def _access_token(self, audience):
         get_token = authentication.GetToken(
-            self.domain,
-            client_id=self.client_id,
-            client_secret=self.client_secret
+            self.domain, client_id=self.client_id, client_secret=self.client_secret
         )
         try:
             token = get_token.client_credentials(audience)
         except exceptions.Auth0Error as error:
-            error_detail = (
-                f"Access token error: {self.client_id}, {self.domain}, {error}"
-            )
+            error_detail = f"Access token error: {self.client_id}, {self.domain}, {error}"
             log.error(error_detail)
             raise Auth0Error(error_detail)
 
@@ -135,7 +125,7 @@ class ExtendedAuth0(Auth0):
 
     def _create_custom_connection(self, app_name, connections):
         new_connections = []
-        if type(connections) == list:
+        if type(connections) is list:
             connections = {item: {} for item in connections}
         for connection_name, user_inputs in connections.items():
             if connection_name not in ExtendedConnections.custom_connections():
@@ -150,8 +140,7 @@ class ExtendedAuth0(Auth0):
             new_connections.append(new_connection_name)
         return new_connections
 
-    def setup_auth0_client(
-            self, client_name, app_url_name=None, connections=None, app_domain=None):
+    def setup_auth0_client(self, client_name, app_url_name=None, connections=None, app_domain=None):
         """
         parameters:
             connections:
@@ -162,8 +151,7 @@ class ExtendedAuth0(Auth0):
         if connections is None:
             connections = {self.DEFAULT_CONNECTION_OPTION: {}}
         new_connections = self._create_custom_connection(client_name, connections)
-        app_url = "https://{}.{}".format(
-            app_url_name or client_name, app_domain or self.app_domain)
+        app_url = "https://{}.{}".format(app_url_name or client_name, app_domain or self.app_domain)
         client = self.clients.create(
             dict(
                 name=client_name,
@@ -172,19 +160,17 @@ class ExtendedAuth0(Auth0):
                 app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
                 web_origins=[app_url],
                 grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
-                allowed_logout_urls=[app_url]
+                allowed_logout_urls=[app_url],
             )
         )
         client_id = client["client_id"]
 
-        view_app = self.permissions.create(
-            dict(name="view:app", applicationId=client_id)
-        )
+        view_app = self.permissions.create(dict(name="view:app", applicationId=client_id))
         role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
         self.roles.add_permission(role, view_app["_id"])
         try:
             group = self.groups.create(dict(name=client_name))
-        except exceptions.Auth0Error as exc:
+        except exceptions.Auth0Error:
             # celery fails to unpickle original exception, but not 100% sure why.
             # Seems to be because __reduce__  method is incorrect? Possible bug.
             # https://github.com/celery/celery/issues/6990#issuecomment-1433689294
@@ -196,18 +182,12 @@ class ExtendedAuth0(Auth0):
 
         self.groups.add_role(group["_id"], role["_id"])
 
-        self._enable_connections_for_new_client(
-            client_id, chosen_connections=new_connections
-        )
+        self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client, group
 
-    def add_group_members_by_emails(
-            self, emails, user_options={}, group_id=None, group_name=None):
+    def add_group_members_by_emails(self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
-        self.groups.add_group_members(
-            user_ids=user_ids,
-            group_id=group_id,
-            group_name=group_name)
+        self.groups.add_group_members(user_ids=user_ids, group_id=group_id, group_name=group_name)
         return user_ids
 
     def clear_up_group(self, group_id):
@@ -258,8 +238,8 @@ class ExtendedAuth0(Auth0):
         self.users.delete(user_id)
 
     def clear_up_app(self, auth_client):
-        client_id = auth_client.get('client_id')
-        group_id = auth_client.get('group_id')
+        client_id = auth_client.get("client_id")
+        group_id = auth_client.get("group_id")
         if group_id:
             self.clear_up_group(group_id)
         if client_id:
@@ -321,9 +301,7 @@ class Auth0API(object):
             url = "{}/{}".format(url, resource_name)
         return url
 
-    def all(
-        self, request_url=None, fields=None, page=None, per_page=None, extra_params=None
-    ):
+    def all(self, request_url=None, fields=None, page=None, per_page=None, extra_params=None):
         params = extra_params or {}
         params["fields"] = fields and ",".join(fields) or None
         params["page"] = page
@@ -341,9 +319,7 @@ class Auth0API(object):
     def get(self, id, fields=None, include_fields=True):
         params = {"fields": fields and ",".join(fields) or None}
         if include_fields:
-            params.update(dict(
-                include_fields=str(include_fields).lower()
-            ))
+            params.update(dict(include_fields=str(include_fields).lower()))
 
         return self.client.get(self._url(id), params=params)
 
@@ -379,9 +355,7 @@ class ExtendedAPIMethods(object):
         class_endpoint = None
         if hasattr(self, "endpoint"):
             class_endpoint = self.endpoint
-        return (
-            endpoint or class_endpoint or "{}".format(self.__class__.__name__.lower())
-        )
+        return endpoint or class_endpoint or "{}".format(self.__class__.__name__.lower())
 
     def _has_pagination_option(self):
         return not (hasattr(self, "no_pagination") and self.no_pagination)
@@ -488,9 +462,7 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
         connection_names.extend(ExtendedConnections.custom_connections())
         return connection_names
 
-    def _get_default_settings_for_custom_connection(
-        self, connection_name, input_values
-    ):
+    def _get_default_settings_for_custom_connection(self, connection_name, input_values):
         input_values["gateway_url"] = ""
         if hasattr(settings, "{}_gateway_url".format(connection_name).upper()):
             input_values["gateway_url"] = getattr(
@@ -511,8 +483,7 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
         template_path = self._get_template_path_for_custom_connection(connection_name)
         scripts = template_path.glob("*.js")
         script_templates = {
-            x.stem: jinja_env.from_string(x.open(encoding="utf8").read())
-            for x in scripts
+            x.stem: jinja_env.from_string(x.open(encoding="utf8").read()) for x in scripts
         }
         scripts_rendered = {}
         self._get_default_settings_for_custom_connection(connection_name, input_values)
@@ -521,9 +492,7 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
 
         # render the main connection template
         with (template_path / Path("config.yaml")).open("r") as config_yaml_file:
-            yaml_rendered = jinja_env.from_string(config_yaml_file.read()).render(
-                **input_values
-            )
+            yaml_rendered = jinja_env.from_string(config_yaml_file.read()).render(**input_values)
             body = yaml.safe_load(yaml_rendered) or defaultdict(dict)
             body["options"]["scripts"] = scripts_rendered
 
@@ -548,20 +517,14 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         telemetry=True,
         timeout=5.0,
     ):
-        super(ExtendedUsers, self).__init__(
-            domain, token, telemetry=telemetry, timeout=timeout
-        )
-        self.auth_extension_users = AuthExtensionUsers(
-            auth_extension_url, auth_extension_token
-        )
+        super(ExtendedUsers, self).__init__(domain, token, telemetry=telemetry, timeout=timeout)
+        self.auth_extension_users = AuthExtensionUsers(auth_extension_url, auth_extension_token)
 
     def create_user(self, email, email_verified=False, **kwargs):
         if "nickname" not in kwargs:
             kwargs["nickname"], _, _ = email.partition("@")
 
-        response = self.create(
-            {"email": email, "email_verified": email_verified, **kwargs}
-        )
+        response = self.create({"email": email, "email_verified": email_verified, **kwargs})
         if "error" in response:
             raise Auth0Error("create_user", response)
         return response
@@ -595,16 +558,14 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         user_ids_to_add = []
 
         for email in emails:
-            lookup_response = self.get_users_email_search(
-                email=email, connection="email"
-            )
+            lookup_response = self.get_users_email_search(email=email, connection="email")
             if lookup_response:
                 user_ids_to_add.append(lookup_response[0]["user_id"])
             else:
                 user_ids_to_add.append(
-                    self.create_user(
-                        email=email, email_verified=True, **user_options
-                    ).get("user_id")
+                    self.create_user(email=email, email_verified=True, **user_options).get(
+                        "user_id"
+                    )
                 )
         return user_ids_to_add
 
@@ -699,9 +660,7 @@ class Groups(Auth0API, ExtendedAPIMethods):
 
     def get_group_roles(self, group_name=None, group_id=None):
         if group_id is None and group_name is None:
-            raise Auth0Error(
-                "get_group_roles", "Please specify either group_id or group_name."
-            )
+            raise Auth0Error("get_group_roles", "Please specify either group_id or group_name.")
 
         if group_id is None:
             group_id = self.get_group_id(group_name)

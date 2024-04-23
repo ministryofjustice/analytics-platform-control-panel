@@ -6,6 +6,8 @@ import uuid
 from auth0.exceptions import Auth0Error
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -90,7 +92,8 @@ class App(TimeStampedModel):
 
     def customers(self, env_name=None):
         return (
-            auth0.ExtendedAuth0().groups.get_group_members(group_id=self.get_group_id(env_name)) or []
+            auth0.ExtendedAuth0().groups.get_group_members(group_id=self.get_group_id(env_name))
+            or []
         )
 
     def customer_paginated(self, page, group_id, per_page=25):
@@ -110,53 +113,50 @@ class App(TimeStampedModel):
         connections = {}
         client_ids = []
         client_env_mapping = {}
-        for env_name, client_info in ((self.app_conf or {}).get(
-                self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
-            connections[env_name] = dict(client_id=client_info.get('client_id'))
-            if client_info.get('client_id'):
+        for env_name, client_info in (
+            (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}
+        ).items():
+            connections[env_name] = dict(client_id=client_info.get("client_id"))
+            if client_info.get("client_id"):
                 client_env_mapping[client_info["client_id"]] = env_name
-                client_ids.append(client_info.get('client_id'))
+                client_ids.append(client_info.get("client_id"))
         returned_connections = auth0.ExtendedAuth0().get_client_enabled_connections(client_ids)
         for client_id, client_connections in returned_connections.items():
             env_name = client_env_mapping.get(client_id)
             if env_name:
-                connections[env_name].update(dict(
-                    connections=returned_connections.get(client_id)
-                ))
+                connections[env_name].update(dict(connections=returned_connections.get(client_id)))
         return connections
 
     def auth0_clients_status(self):
-        """ Check the status of the auth0-clients stored in the app_conf field"""
+        """Check the status of the auth0-clients stored in the app_conf field"""
         status = {}
-        for env_name, client_info in ((self.app_conf or {}).get(
-                self.KEY_WORD_FOR_AUTH_SETTINGS) or {}).items():
-            if client_info.get('client_id'):
+        for env_name, client_info in (
+            (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}
+        ).items():
+            if client_info.get("client_id"):
                 try:
-                    auth0.ExtendedAuth0().clients.get(client_info.get('client_id'))
-                    status[env_name] ={
-                        "client_id": client_info.get('client_id'),
-                        "ok": True
-                    }
+                    auth0.ExtendedAuth0().clients.get(client_info.get("client_id"))
+                    status[env_name] = {"client_id": client_info.get("client_id"), "ok": True}
                 except Auth0Error as error:
-                    status[env_name] ={
-                        "client_id": client_info.get('client_id'),
+                    status[env_name] = {
+                        "client_id": client_info.get("client_id"),
                         "ok": False,
-                        "error_msg": error.__str__()
+                        "error_msg": error.__str__(),
                     }
         return status
 
     @property
     def app_allowed_ip_ranges(self):
-        allowed_ip_ranges = self.ip_allowlists.values_list(
-            "allowed_ip_ranges", flat=True
-        ).order_by("pk")
+        allowed_ip_ranges = self.ip_allowlists.values_list("allowed_ip_ranges", flat=True).order_by(
+            "pk"
+        )
         cleaned_ip_ranges = ",".join(list(set(allowed_ip_ranges))).replace(" ", "")
         return cleaned_ip_ranges
 
     def env_allowed_ip_ranges(self, env_name):
-        related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name
-        ).values_list("ip_allowlist_id", flat=True)
+        related_item_ids = self.appipallowlists.filter(deployment_env=env_name).values_list(
+            "ip_allowlist_id", flat=True
+        )
         allowed_ip_ranges = (
             IPAllowlist.objects.filter(pk__in=list(related_item_ids))
             .values_list("allowed_ip_ranges", flat=True)
@@ -166,9 +166,9 @@ class App(TimeStampedModel):
         return cleaned_ip_ranges
 
     def env_allowed_ip_ranges_names(self, env_name):
-        related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name
-        ).values_list("ip_allowlist_id", flat=True)
+        related_item_ids = self.appipallowlists.filter(deployment_env=env_name).values_list(
+            "ip_allowlist_id", flat=True
+        )
         allowed_ip_ranges = (
             IPAllowlist.objects.filter(pk__in=list(related_item_ids))
             .values_list("name", flat=True)
@@ -177,9 +177,9 @@ class App(TimeStampedModel):
         return ", ".join(list(allowed_ip_ranges))
 
     def env_allow_ip_ranges_ids(self, env_name):
-        related_item_ids = self.appipallowlists.filter(
-            deployment_env=env_name
-        ).values_list("ip_allowlist_id", flat=True)
+        related_item_ids = self.appipallowlists.filter(deployment_env=env_name).values_list(
+            "ip_allowlist_id", flat=True
+        )
         return list(related_item_ids)
 
     def add_customers(self, emails, env_name=None, group_id=None):
@@ -226,13 +226,9 @@ class App(TimeStampedModel):
 
         for group in auth0_client.users.get_user_groups(user_id=user["user_id"]):
             if group_id == group["_id"]:
-                return self.delete_customers(
-                    user_ids=[user["user_id"]], group_id=group_id
-                )
+                return self.delete_customers(user_ids=[user["user_id"]], group_id=group_id)
 
-        raise DeleteCustomerError(
-            f"User {email} cannot be found in this application group"
-        )
+        raise DeleteCustomerError(f"User {email} cannot be found in this application group")
 
     @property
     def status(self):
@@ -248,9 +244,8 @@ class App(TimeStampedModel):
     def auth0_client_name(self, env_name=None):
         """Truncate the length of the name to meet the group_name limit from auth0"""
         allowed_length = settings.AUTH0_CLIENT_NAME_LIMIT - len(env_name or "")
-        client_name = self.slug[0:allowed_length-1]
-        return settings.AUTH0_CLIENT_NAME_PATTERN.format(
-            app_name=client_name, env=env_name)
+        client_name = self.slug[0 : allowed_length - 1]
+        return settings.AUTH0_CLIENT_NAME_PATTERN.format(app_name=client_name, env=env_name)
 
     def app_url_name(self, env_name):
         format_pattern = settings.APP_URL_NAME_PATTERN.get(env_name.upper())
@@ -282,8 +277,7 @@ class App(TimeStampedModel):
             auth_client_info.update(dict(group_id=group.get("_id")))
         if auth_client_info:
             self._init_app_conf(env_name)
-            self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name].update(
-                auth_client_info)
+            self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name].update(auth_client_info)
             self.save()
 
     def clear_auth_settings(self, env_name):
@@ -295,9 +289,9 @@ class App(TimeStampedModel):
     def get_auth0_group_list(self):
         groups_dict = {}
         for env_name, auth_info in self.auth_settings.items():
-            if not auth_info.get('group_id'):
+            if not auth_info.get("group_id"):
                 continue
-            groups_dict[auth_info.get('group_id')] = env_name
+            groups_dict[auth_info.get("group_id")] = env_name
         return groups_dict
 
     @property
@@ -317,11 +311,6 @@ App.AddCustomerError = AddCustomerError
 App.DeleteCustomerError = DeleteCustomerError
 
 
-# Third-party
-from django.db.models.signals import post_delete, post_save
-from django.dispatch import receiver
-
-
 @receiver(post_save, sender=App)
 def trigger_app_create_related_messages(sender, instance, created, **kwargs):
     if not created:
@@ -330,18 +319,23 @@ def trigger_app_create_related_messages(sender, instance, created, **kwargs):
 
     # TODO this could be removed as part of a review of task queue usage
     if instance.deployment_envs:
-        tasks.AppCreateAuth(instance, instance.current_user, extra_data=dict(
-            deployment_envs=instance.deployment_envs,
-            disable_authentication=instance.disable_authentication,
-            connections=instance.connections,
-            has_ip_ranges=instance.has_ip_ranges,
-        )).create_task()
+        tasks.AppCreateAuth(
+            instance,
+            instance.current_user,
+            extra_data=dict(
+                deployment_envs=instance.deployment_envs,
+                disable_authentication=instance.disable_authentication,
+                connections=instance.connections,
+                has_ip_ranges=instance.has_ip_ranges,
+            ),
+        ).create_task()
 
 
 @receiver(post_delete, sender=App)
 def remove_app_related_tasks(sender, instance, **kwargs):
     # First-party/Local
     from controlpanel.api.models import Task
+
     related_app_tasks = Task.objects.filter(entity_class="App", entity_id=instance.id)
     for task in related_app_tasks:
         task.delete()

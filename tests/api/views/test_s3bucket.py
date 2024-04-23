@@ -23,8 +23,10 @@ def bucket():
 
 @pytest.fixture(autouse=True)
 def models(bucket):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.aws.AWSBucket.create"):
+    with (
+        patch("controlpanel.api.aws.AWSRole.grant_bucket_access"),
+        patch("controlpanel.api.aws.AWSBucket.create"),
+    ):
         baker.make("api.S3Bucket")
         baker.make("api.S3Bucket", is_data_warehouse=True)
         baker.make("api.AppS3Bucket", s3bucket=bucket)

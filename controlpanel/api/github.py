@@ -66,24 +66,18 @@ class GithubAPI:
             headers=self.headers,
         )
         if response.status_code == 404:
-            raise RepositoryNotFound(
-                f"Repository '{repo_name}' not found, it may be private"
-            )
+            raise RepositoryNotFound(f"Repository '{repo_name}' not found, it may be private")
 
         return self._process_response(response)
 
     def read_app_deploy_info(self, repo_name: str, deploy_file="deploy.json"):
         response = requests.get(
-            self._get_repo_api_url(
-                repo_name=repo_name, api_call=f"contents/{deploy_file}"
-            ),
+            self._get_repo_api_url(repo_name=repo_name, api_call=f"contents/{deploy_file}"),
             headers=self.headers,
         )
         result_content = self._process_response(response)
         if result_content:
-            content = base64.b64decode(
-                bytearray(result_content.get("content", "{}"), "utf-8")
-            )
+            content = base64.b64decode(bytearray(result_content.get("content", "{}"), "utf-8"))
             return json.loads(content)
         else:
             return {}
@@ -123,10 +117,7 @@ class GithubAPI:
             self._get_repo_api_url(repo_name, api_call="environments"),
             headers=self.headers,
         )
-        return [
-            item["name"]
-            for item in self._process_response(response).get("environments", [])
-        ]
+        return [item["name"] for item in self._process_response(response).get("environments", [])]
 
     def get_repo_all_env_secrets(self, repo_name: str):
         secrets = []
@@ -145,9 +136,7 @@ class GithubAPI:
 
     def get_repo_env_public_key(self, repo_name: str, env_name: str):
         response = requests.get(
-            self._get_repo_env_api_url(
-                repo_name, env_name, api_call="secrets/public-key"
-            ),
+            self._get_repo_env_api_url(repo_name, env_name, api_call="secrets/public-key"),
             headers=self.headers,
         )
         return self._process_response(response)
@@ -164,22 +153,16 @@ class GithubAPI:
         if not public_key:
             public_key = self.get_repo_env_public_key(repo_name, env_name)
         secret_data = {
-            "encrypted_value": encrypt_data_by_using_public_key(
-                public_key["key"], secret_value
-            ),
+            "encrypted_value": encrypt_data_by_using_public_key(public_key["key"], secret_value),
             "key_id": public_key["key_id"],
         }
         repo_secret_url = self._get_repo_env_api_url(
             repo_name, env_name, api_call=f"secrets/{secret_name}", repo_id=repo_id
         )
-        response = requests.put(
-            repo_secret_url, data=json.dumps(secret_data), headers=self.headers
-        )
+        response = requests.put(repo_secret_url, data=json.dumps(secret_data), headers=self.headers)
         return self._process_response(response)
 
-    def create_or_update_repo_env_secrets(
-        self, repo_name: str, env_name: str, secret_data: dict
-    ):
+    def create_or_update_repo_env_secrets(self, repo_name: str, env_name: str, secret_data: dict):
         repo_info = self.get_repository(repo_name)
         repo_id = repo_info.get("id", "")
         public_key = self.get_repo_env_public_key(repo_name, env_name)
@@ -195,9 +178,7 @@ class GithubAPI:
 
     def delete_repo_env_secret(self, repo_name, env_name, secret_name):
         response = requests.delete(
-            self._get_repo_env_api_url(
-                repo_name, env_name, api_call=f"secrets/{secret_name}"
-            ),
+            self._get_repo_env_api_url(repo_name, env_name, api_call=f"secrets/{secret_name}"),
             headers=self.headers,
         )
         return self._process_response(response)
@@ -212,9 +193,7 @@ class GithubAPI:
 
     def get_repo_env_var(self, repo_name: str, env_name: str, var_name: str):
         response = requests.get(
-            self._get_repo_env_api_url(
-                repo_name, env_name, api_call=f"variables/{var_name}"
-            ),
+            self._get_repo_env_api_url(repo_name, env_name, api_call=f"variables/{var_name}"),
             headers=self.headers,
         )
         return self._process_response(response)
@@ -233,9 +212,7 @@ class GithubAPI:
         repo_var_url = self._get_repo_env_api_url(
             repo_name, env_name, api_call="variables", repo_id=repo_id
         )
-        response = requests.post(
-            repo_var_url, data=json.dumps(data), headers=self.headers
-        )
+        response = requests.post(repo_var_url, data=json.dumps(data), headers=self.headers)
         return self._process_response(response)
 
     def update_repo_env_var(
@@ -245,14 +222,10 @@ class GithubAPI:
         repo_var_url = self._get_repo_env_api_url(
             repo_name, env_name, api_call=f"variables/{key_name}", repo_id=repo_id
         )
-        response = requests.patch(
-            repo_var_url, data=json.dumps(data), headers=self.headers
-        )
+        response = requests.patch(repo_var_url, data=json.dumps(data), headers=self.headers)
         return self._process_response(response)
 
-    def delete_repo_env_var(
-        self, repo_name: str, env_name: str, key_name: str, repo_id=None
-    ):
+    def delete_repo_env_var(self, repo_name: str, env_name: str, key_name: str, repo_id=None):
         repo_var_url = self._get_repo_env_api_url(
             repo_name, env_name, api_call=f"variables/{key_name}", repo_id=repo_id
         )
@@ -264,14 +237,10 @@ class GithubAPI:
         repo_id = repo_info.get("id", "")
         for env_key, env_value in env_data.items():
             try:
-                self.create_repo_env_var(
-                    repo_name, env_name, env_key, env_value, repo_id=repo_id
-                )
+                self.create_repo_env_var(repo_name, env_name, env_key, env_value, repo_id=repo_id)
             except Exception as error:
                 log.warn("Error from creating variable: {}".format(str(error)))
-                self.update_repo_env_var(
-                    repo_name, env_name, env_key, env_value, repo_id=repo_id
-                )
+                self.update_repo_env_var(repo_name, env_name, env_key, env_value, repo_id=repo_id)
 
     def create_or_update_env_var(
         self, repo_name: str, env_name: str, key_name: str, key_value: str
@@ -279,11 +248,7 @@ class GithubAPI:
         repo_info = self.get_repository(repo_name)
         repo_id = repo_info.get("id", "")
         try:
-            self.create_repo_env_var(
-                repo_name, env_name, key_name, key_value, repo_id=repo_id
-            )
+            self.create_repo_env_var(repo_name, env_name, key_name, key_value, repo_id=repo_id)
         except Exception as error:
             log.warn("Error from creating variable: {}".format(str(error)))
-            self.update_repo_env_var(
-                repo_name, env_name, key_name, key_value, repo_id=repo_id
-            )
+            self.update_repo_env_var(repo_name, env_name, key_name, key_value, repo_id=repo_id)
