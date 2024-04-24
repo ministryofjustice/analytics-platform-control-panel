@@ -2,6 +2,9 @@
 
 This guide describes how to run Control Panel locally with a Dev Container. This requires Docker and an IDE that can work with Dev Containers (VSCode advised). This will setup the majority of things for you, including your database, Redis, and AWS credentials.
 
+## Prerequisites
+VSCode with Python and Dev Container extensions and Docker Desktop are recommended. You will also need to be able to access AWS.
+
 ## 1. Building the Dev Container
 You will need Docker Desktop along with VSCode and the Dev Container extension installed to build the container.
 
