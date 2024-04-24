@@ -78,3 +78,9 @@ serve-sso:
 
 celery-sso:
 	aws-sso exec --profile analytical-platform-development:AdministratorAccess -- celery -A controlpanel worker --loglevel=info
+
+db-migrate:
+	python manage.py migrate
+
+db-drop:
+	python manage.py reset_db

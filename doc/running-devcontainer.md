@@ -9,7 +9,7 @@ To build the dev container, ensure docker desktop is running, then open the AP C
 
 If you are using a workspace with multiple applications, search for ```Dev Containers: Open folder in Container…``` instead, then select the Control Panel folder. Once the dev container has finished building, it should install all the required Python and npm dependencies, as well as run the migrations and install the helm charts.
 
-As part of the install, it will also try and create your AWS and Kubernetes config. Be sure to keep an eye on your terminal and navigate to the AWS SSO site when prompted. Once this has finished, your dev container will have finished building.
+As part of the install, it will also try and create your AWS and Kubernetes config. Be sure to keep an eye on your terminal and navigate to the AWS SSO site when prompted. Once this has finished, select yes on the second prompt then your dev container will have finished building.
 
 ## 2. Local Environment
 
