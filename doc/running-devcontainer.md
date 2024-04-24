@@ -8,9 +8,9 @@ VSCode with Python and Dev Container extensions and Docker Desktop are recommend
 ## 1. Building the Dev Container
 You will need Docker Desktop along with VSCode and the Dev Container extension installed to build the container.
 
-To build the dev container, ensure docker desktop is running, then open the AP Control Panel project in VSCode. Open the command pallet by hitting command+shift+p and search for ```Dev Containers: Reopen in container``` and hit enter. This will build the dev container.
+To build the dev container, ensure docker desktop is running, then open the AP Control Panel project in VSCode. Open the command pallet by hitting command+shift+p and search for `Dev Containers: Reopen in container` and hit enter. This will build the dev container.
 
-If you are using a workspace with multiple applications, search for ```Dev Containers: Open folder in Container…``` instead, then select the Control Panel folder. Once the dev container has finished building, it should install all the required Python and npm dependencies, as well as run the migrations and install the helm charts.
+If you are using a workspace with multiple applications, search for `Dev Containers: Open folder in Container…` instead, then select the Control Panel folder. Once the dev container has finished building, it should install all the required Python and npm dependencies, as well as run the migrations and install the helm charts.
 
 As part of the install, it will also try and create your AWS and Kubernetes config. Be sure to keep an eye on your terminal and navigate to the AWS SSO site when prompted. Once this has finished, select yes on the second prompt then your dev container will have finished building.
 
@@ -28,7 +28,7 @@ The Control Panel uses a message queue to run some tasks. For local development,
 is recommended as the message broker rather than SQS (which is used in the development
 and production environments). To run the message broker, use the following make command
 
-```
+```sh
 make celery-sso
 ```
 
@@ -67,15 +67,14 @@ kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/co
 #### General checks
 
 Check whether you have the following 2 in the env file and make sure they are correct
-- ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
+- ```HELM_REPOSITORY_CACHE```:  the directory for helm repository cache folder.
 
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
 the default value is ```/tmp/helm/cache/repository```
 
-```
-export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"
-```
+`export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"`
+
 if you are not sure, can use the following command to find it out
 
 ```shell
@@ -113,7 +112,7 @@ Open another terminal to run the following line
 python manage.py runworker background_tasks
 ```
 
-Go to http://localhost:8000/, sign in via github through Auth0 and marvel at your locally
+Go to `http://localhost:8000/`, sign in via GitHub through Auth0 and marvel at your locally
 running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
@@ -124,7 +123,8 @@ which is normal.
 
 When you load up your local Control Panel for the first time, there will be no tools available on the Tools page.
 To pre-populate the database, run the following management command:
-```
+
+```sh
 python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
 ```
 You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
