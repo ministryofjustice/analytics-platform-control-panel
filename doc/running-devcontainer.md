@@ -3,7 +3,16 @@
 This guide describes how to run Control Panel locally with a Dev Container. This requires Docker and an IDE that can work with Dev Containers (VSCode advised). This will setup the majority of things for you, including your database, Redis, and AWS credentials.
 
 ## Prerequisites
+
+### Programs
 VSCode with Python and Dev Container extensions and Docker Desktop are recommended. You will also need to be able to access AWS.
+
+### Git
+In order to get git to recognise your SSH key while working in the dev container:
+- Add your SSH keys to your ssh agent by running `ssh-add <.ssh-location>/<ssh-key-filename-without-extension>` e.g. `ssh-add ~/.ssh/id_ed25519`
+- Set your signing key in your `.gitconfig` file to the contents of your public key by running `git config --global user.signingkey key::<your-key-here>`
+
+This will allow you to use git while working in the container.
 
 ## 1. Building the Dev Container
 You will need Docker Desktop along with VSCode and the Dev Container extension installed to build the container.
