@@ -14,6 +14,12 @@ In order to get git to recognise your SSH key while working in the dev container
 
 This will allow you to use git while working in the container.
 
+### Environment variables
+
+Download a copy of a working `.env` file from [1Password](https://ministryofjustice.1password.eu/vaults/skgdudwgk3ojqiwigoxrmpngle/tags/fioo45n5zohrdsf6mkdikito4d/osqkxdboemvpsgl4g2zt3kyuia). Copy the contents into a `.env` file in the root directory of the project.
+
+See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
+
 ## 1. Building the Dev Container
 You will need Docker Desktop along with VSCode and the Dev Container extension installed to build the container.
 
@@ -24,12 +30,6 @@ If you are using a workspace with multiple applications, search for `Dev Contain
 As part of the install, it will also try and create your AWS and Kubernetes config. Be sure to keep an eye on your terminal and navigate to the AWS SSO site when prompted. Once this has finished, select yes on the second prompt then your dev container will have finished building.
 
 ## 2. Local Environment
-
-### Environment variables
-
-Download the copy of the working `.env` file from [1Password](https://ministryofjustice.1password.eu/vaults/skgdudwgk3ojqiwigoxrmpngle/tags/fioo45n5zohrdsf6mkdikito4d/osqkxdboemvpsgl4g2zt3kyuia). Copy the contents into a `.env` file in the root directory of the project.
-
-See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
 
 ### Running the Message broker
 
@@ -67,29 +67,11 @@ and then ask a colleague for help.
 
 ### Check Kubernetes current context
 
-Please check the current context and make sure it is pointing to the `dev` cluster
+Please check the current context and make sure it is pointing to the `dev` cluster. This should be done for you automatically. You can manually set the cluster by using:
 
 ```sh
 kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/config file
 ```
-
-#### General checks
-
-Check whether you have the following 2 in the env file and make sure they are correct
-- ```HELM_REPOSITORY_CACHE```:  the directory for helm repository cache folder.
-
-
-if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
-the default value is ```/tmp/helm/cache/repository```
-
-`export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"`
-
-if you are not sure, can use the following command to find it out
-
-```shell
-helm env
-```
-Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
 
 ### Create superuser (on first run only)
 
