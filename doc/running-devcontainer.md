@@ -114,6 +114,8 @@ make serve-sso
 
 Then navigate to `localhost:8000`
 
+On first run of the application, after logging in, you will likely run into a HelmError with the message `UPGRADE FAILED: failed to replace object: Job.batch "config-git-<user>-jupyter" is invalid`. See the troubleshooting section for a workaround to this issue.
+
 ### Run the worker of the app
 Open another terminal to run the following line
 
