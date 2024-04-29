@@ -22,10 +22,12 @@ class Tool(TimeStampedModel):
     # Defines how a matching chart name is put into a named tool bucket.
     # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
     # chart name match: tool bucket
-    TOOL_BOX_CHART_LOOKUP = {"jupyter": "jupyter-lab",
-                             "rstudio": "rstudio",
-                             "visual-studio-code": "visual-studio-code",
-                             "vscode": "vscode"}
+    TOOL_BOX_CHART_LOOKUP = {
+        "jupyter": "jupyter-lab",
+        "rstudio": "rstudio",
+        "visual-studio-code": "visual-studio-code",
+        "vscode": "vscode",
+    }
 
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
@@ -65,9 +67,7 @@ class Tool(TimeStampedModel):
         helm.update_helm_repository(force=True)
 
         if not self.description:
-            self.description = (
-                helm.get_chart_app_version(self.chart_name, self.version) or ""
-            )
+            self.description = helm.get_chart_app_version(self.chart_name, self.version) or ""
 
         super().save(*args, **kwargs)
         return self

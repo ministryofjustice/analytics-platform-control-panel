@@ -28,7 +28,7 @@ Lx/2ZP4lqKqHYrYle4qaU1GSws6ZTFAqH1oJ/fkSDOBxbDslq/+I3ws0LQJAIFAK
 tkupJd4VQMbmPBVw5P1tYNtNSWu0edQSjC2JgYXI3So1NyAR+okkWtKdm777Aj78
 P0tb3rTcNtcdF65w7QJBAIlfLWXrnjuJP4xdsJpubct+VoPZpEkojXp16zdEPSni
 Tk1/Hf+kxTTBR5xfmgtLCPmOU8d+qodjxI6JmZtfvVU=
------END RSA PRIVATE KEY-----"""
+-----END RSA PRIVATE KEY-----"""  # gitleaks:allow
 
 TEST_PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCo/FYLtMEuzwVf5n0ml+znmXF3
@@ -96,12 +96,12 @@ def token(claims={}, headers={}):
     "auth_header, status",
     [
         (None, 403),
-        (f'Bearer {token()}', 403),
+        (f"Bearer {token()}", 403),
         (f'Bearer {token(claims={"scope": "list:app"})}', 403),
         (f'Bearer {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
         (f'JWT {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
-        (f'FOO {token()}', 403),
-        (f'Bearer invalid_token', 403),
+        (f"FOO {token()}", 403),
+        ("Bearer invalid_token", 403),
         (f'Bearer {token(headers={"kid": "no_match"})}', 403),
     ],
     ids=[

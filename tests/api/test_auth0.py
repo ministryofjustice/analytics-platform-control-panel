@@ -1,11 +1,11 @@
 # Standard library
 import json
-from unittest.mock import call, patch, ANY
+from unittest.mock import ANY, call, patch
 
 # Third-party
 import pytest
-from django.conf import settings
 from auth0 import exceptions
+from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import auth0
@@ -13,9 +13,7 @@ from controlpanel.api import auth0
 
 @pytest.fixture()
 def ExtendedAuth0():
-    with patch(
-        "auth0.authentication.GetToken.client_credentials"
-    ) as client_credentials:
+    with patch("auth0.authentication.GetToken.client_credentials") as client_credentials:
         client_credentials.return_value = {"access_token": "access_token_testing"}
         yield auth0.ExtendedAuth0()
 
@@ -123,9 +121,7 @@ def test_clear_up_group(
 
     fixture_groups_delete.assert_called_with("foo-id")
     fixture_roles_delete.assert_has_calls([call("role1"), call("role2")])
-    fixture_permission_delete.assert_has_calls(
-        [call("permission1"), call("permission2")]
-    )
+    fixture_permission_delete.assert_has_calls([call("permission1"), call("permission2")])
 
 
 def test_create_user(ExtendedAuth0):
@@ -148,9 +144,7 @@ def test_create_user(ExtendedAuth0):
             "user_id": "email|61f9b45470ad3d31400c8cec",
         }
 
-        ExtendedAuth0.users.create_user(
-            email=email, email_verified=True, connection="email"
-        )
+        ExtendedAuth0.users.create_user(email=email, email_verified=True, connection="email")
 
         request.assert_has_calls(
             [
@@ -168,18 +162,14 @@ def test_create_user(ExtendedAuth0):
 
 @pytest.fixture
 def fixture_get_users_email_search_empty(ExtendedAuth0):
-    with patch.object(
-        ExtendedAuth0.users, "get_users_email_search"
-    ) as get_users_email_search:
+    with patch.object(ExtendedAuth0.users, "get_users_email_search") as get_users_email_search:
         get_users_email_search.return_value = []
         yield get_users_email_search
 
 
 @pytest.fixture
 def fixture_get_users_email_search(ExtendedAuth0):
-    with patch.object(
-        ExtendedAuth0.users, "get_users_email_search"
-    ) as get_users_email_search:
+    with patch.object(ExtendedAuth0.users, "get_users_email_search") as get_users_email_search:
         get_users_email_search.return_value = [
             {
                 "email": "new@test.com",
@@ -287,18 +277,14 @@ def fixture_connection_search_first_match(ExtendedAuth0):
 
 @pytest.fixture
 def fixture_connection_disable_client(ExtendedAuth0):
-    with patch.object(
-        ExtendedAuth0.connections, "disable_client"
-    ) as connection_disable_client:
+    with patch.object(ExtendedAuth0.connections, "disable_client") as connection_disable_client:
         connection_disable_client.return_value = {}
         yield connection_disable_client
 
 
 @pytest.fixture
 def fixture_connection_enable_client(ExtendedAuth0):
-    with patch.object(
-        ExtendedAuth0.connections, "enable_client"
-    ) as connection_enable_client:
+    with patch.object(ExtendedAuth0.connections, "enable_client") as connection_enable_client:
         connection_enable_client.return_value = {}
         yield connection_enable_client
 
@@ -387,26 +373,10 @@ def test_setup_auth0_client(
 
     new_client_name = "new_client"
     new_client_id = "new_client_id"
-    app_url = "https://{}.{}".format(new_client_name, ExtendedAuth0.app_domain)
-    connection1 = {
-        "name": "connection 1",
-        "id": "con_0000000000000002",
-        "enabled_clients": ["new_client_id"],
-    }
-    connection2 = {
-        "name": "connection 2",
-        "id": "con_0000000000000003",
-        "enabled_clients": ["new_client_id"],
-    }
-
     ExtendedAuth0.setup_auth0_client(client_name=new_client_name)
 
-    fixture_permission_create.assert_called_with(
-        dict(name="view:app", applicationId=new_client_id)
-    )
-    fixture_role_create.assert_called_with(
-        dict(name="app-viewer", applicationId=new_client_id)
-    )
+    fixture_permission_create.assert_called_with(dict(name="view:app", applicationId=new_client_id))
+    fixture_role_create.assert_called_with(dict(name="app-viewer", applicationId=new_client_id))
     fixture_group_create.assert_called_with(dict(name=new_client_name))
 
     fixture_role_add_permission.assert_called_with(
@@ -420,9 +390,7 @@ def test_setup_auth0_client(
         },
     )
     domain = settings.AUTH0["authorization_extension_url"]
-    fixture_group_add_role.assert_called_with(
-        f"{domain}/groups/group_001/roles", data=["role_001"]
-    )
+    fixture_group_add_role.assert_called_with(f"{domain}/groups/group_001/roles", data=["role_001"])
 
 
 @pytest.fixture
@@ -517,9 +485,7 @@ def test_group_member_more_than_100(ExtendedAuth0, fixture_group_members_200):
 
 @pytest.fixture
 def fixture_client_search_first_match(ExtendedAuth0):
-    with patch.object(
-        ExtendedAuth0.clients, "search_first_match"
-    ) as client_search_first_match:
+    with patch.object(ExtendedAuth0.clients, "search_first_match") as client_search_first_match:
         client_search_first_match.return_value = {"client_id": "new_client_id"}
         yield client_search_first_match
 
@@ -579,7 +545,7 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
         input_values={
             "name": "test_nomis_connection",
             "client_id": "test_nomis_connection_id",
-            "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+            "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
         },
     )
     fixture_connection_create.assert_called_once_with(ANY)
@@ -610,7 +576,7 @@ def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
             input_values={
                 "name": "test_nomis_connection",
                 "client_id": "test_nomis_connection_id",
-                "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+                "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
             },
         )
         connection_create.assert_called_once_with(ANY)
@@ -625,7 +591,7 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                 input_values={
                     "name": "test_nomis_connection",
                     "client_id": "test_nomis_connection_id",
-                    "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",
+                    "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
                 },
             )
         connection_create.assert_called_once_with(ANY)

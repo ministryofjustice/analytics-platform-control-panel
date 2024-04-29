@@ -14,9 +14,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "group_name",
-            type=str,
-            help="input: The auth0 group name to get customers emails for"
+            "group_name", type=str, help="input: The auth0 group name to get customers emails for"
         )
 
     def handle(self, *args, **options):

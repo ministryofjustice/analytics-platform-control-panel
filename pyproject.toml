@@ -1,10 +1,13 @@
 [tool.black]
-line-length = 88
-target-version = ['py39']
+line-length = 100
+target-version = ['py312']
 include = '\.pyi?$'
-exclude = '''
+extend-exclude = '''
 /(
     \.git
+    env
+    venv
+    | migrations
 )/
 '''
 
@@ -14,6 +17,8 @@ import_heading_firstparty = 'First-party/Local'
 import_heading_future = 'Future'
 import_heading_stdlib = 'Standard library'
 import_heading_thirdparty = 'Third-party'
-line_length = 88
+line_length = 100
 multi_line_output = 3
 no_lines_before = 'LOCALFOLDER'
+skip = "migrations,venv"
+virtual_env = "venv"

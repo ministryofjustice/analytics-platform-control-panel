@@ -84,17 +84,13 @@ def test_detail(client, users):
 
 def test_delete(client, helm, users, ExtendedAuth0):
     with patch("controlpanel.api.aws.AWSRole.delete_role") as delete_role:
-        response = client.delete(
-            reverse("user-detail", (users["normal_user"].auth0_id,))
-        )
+        response = client.delete(reverse("user-detail", (users["normal_user"].auth0_id,)))
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         delete_role.assert_called()
         helm.delete.assert_called()
 
-        ExtendedAuth0.clear_up_user.assert_called_with(
-            user_id=users["normal_user"].auth0_id
-        )
+        ExtendedAuth0.clear_up_user.assert_called_with(user_id=users["normal_user"].auth0_id)
 
         response = client.get(reverse("user-detail", (users["normal_user"].auth0_id,)))
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -150,9 +146,7 @@ def test_update_grants_superuser_access(client, users, slack, superuser):
         content_type="application/json",
     )
     assert response.status_code == status.HTTP_200_OK
-    slack.notify_superuser_created.assert_called_with(
-        user.username, by_username=superuser.username
-    )
+    slack.notify_superuser_created.assert_called_with(user.username, by_username=superuser.username)
 
 
 def test_aws_error_and_transaction(client, helm):

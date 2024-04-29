@@ -20,8 +20,8 @@ class S3BucketCreate(TaskBase):
     def _get_args_list(self):
         return [
             self.entity.id,
-            self.user.id if self.user else 'None',
-            self.extra_data.get('bucket_owner'),
+            self.user.id if self.user else "None",
+            self.extra_data.get("bucket_owner"),
         ]
 
 
@@ -46,15 +46,13 @@ class S3AccessMixin:
     @property
     def task_name(self):
         return "{action}_{role}_s3bucket_access".format(
-            action=self.ACTION.lower(),
-            role=self.ROLE.lower()
+            action=self.ACTION.lower(), role=self.ROLE.lower()
         )
 
     @property
     def task_description(self):
         return "{action} access to the {role}".format(
-            action=self.ACTION.lower(),
-            role=self.ROLE.lower()
+            action=self.ACTION.lower(), role=self.ROLE.lower()
         )
 
     @property
@@ -127,5 +125,5 @@ class S3BucketArchiveObject(TaskBase):
 
     def _get_args_list(self):
         args = super()._get_args_list()
-        args.append(self.extra_data.get('s3obj_key'))
+        args.append(self.extra_data.get("s3obj_key"))
         return args

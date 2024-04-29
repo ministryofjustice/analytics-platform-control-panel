@@ -29,10 +29,10 @@ class AppCreateAuth(AppCreateRole):
     def _get_args_list(self):
         return [
             self.entity.id,
-            self.user.id if self.user else 'None',
-            self.extra_data.get('deployment_envs'),
-            self.extra_data.get('disable_authentication'),
-            self.extra_data.get('connections'),
+            self.user.id if self.user else "None",
+            self.extra_data.get("deployment_envs"),
+            self.extra_data.get("disable_authentication"),
+            self.extra_data.get("connections"),
         ]
 
     @property

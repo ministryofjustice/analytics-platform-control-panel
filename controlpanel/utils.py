@@ -1,9 +1,8 @@
 # Standard library
-import time
-from base64 import b64encode
 import os
 import re
-
+import time
+from base64 import b64encode
 
 # Third-party
 import structlog
@@ -126,13 +125,8 @@ class FeatureSet:
             enabled = False
             if feature_settings.get(_ENV_DEFAULT_) is not None:
                 enabled = feature_settings.get(_ENV_DEFAULT_)
-            if (
-                feature_settings.get("{}_{}".format(_ENV_PREFIX_, current_env))
-                is not None
-            ):
-                enabled = feature_settings.get(
-                    "{}_{}".format(_ENV_PREFIX_, current_env)
-                )
+            if feature_settings.get("{}_{}".format(_ENV_PREFIX_, current_env)) is not None:
+                enabled = feature_settings.get("{}_{}".format(_ENV_PREFIX_, current_env))
             setattr(self, feature_flag, FeatureFlag(enabled))
 
 
@@ -170,13 +164,8 @@ class SettingLoader:
             actual_value = os.environ.get(setting_key)
         else:
             if self._has_env_related_value(original_value, current_env):
-                if (
-                    original_value.get("{}_{}".format(_ENV_PREFIX_, current_env))
-                    is not None
-                ):
-                    actual_value = original_value.get(
-                        "{}_{}".format(_ENV_PREFIX_, current_env)
-                    )
+                if original_value.get("{}_{}".format(_ENV_PREFIX_, current_env)) is not None:
+                    actual_value = original_value.get("{}_{}".format(_ENV_PREFIX_, current_env))
                 else:
                     actual_value = original_value.get(_ENV_DEFAULT_)
         return actual_value
@@ -213,9 +202,7 @@ def load_app_conf_from_file(yaml_file=None):
 
 def encrypt_data_by_using_public_key(public_key: str, data: str) -> str:
     """Encrypt a Unicode string using the public key."""
-    public_key = public.PublicKey(
-        public_key.encode("utf-8"), encoding.Base64Encoder()
-    )
+    public_key = public.PublicKey(public_key.encode("utf-8"), encoding.Base64Encoder())
     sealed_box = public.SealedBox(public_key)
     encrypted = sealed_box.encrypt(data.encode("utf-8"))
     return b64encode(encrypted).decode("utf-8")
@@ -227,6 +214,7 @@ def time_it(func):
     @time_it
     def my_func():
     """
+
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)

@@ -1,28 +1,39 @@
+# Standard library
+from unittest.mock import MagicMock, patch
+
 # Third-party
 import pytest
 from django.http import HttpResponse
 from django.urls import reverse
-from unittest.mock import MagicMock, patch
 
 
 class TestAccess:
 
-    @pytest.mark.parametrize("method, status_code", [
-        ("get", 302),
-        ("post", 302),
-
-    ])
+    @pytest.mark.parametrize(
+        "method, status_code",
+        [
+            ("get", 302),
+            ("post", 302),
+        ],
+    )
     def test_not_logged_in_redirects(self, method, status_code, client):
         response = getattr(client, method)("/")
         assert response.status_code == status_code
 
     @patch("django.conf.settings.features.justice_auth.enabled", False)
-    @pytest.mark.parametrize("method, status_code", [
-        ("get", 302),
-        ("post", 405),
-    ])
+    @pytest.mark.parametrize(
+        "method, status_code",
+        [
+            ("get", 302),
+            ("post", 405),
+        ],
+    )
     def test_justice_auth_feature_flag_disabled_for_normal_user(
-        self, method, status_code, client, users,
+        self,
+        method,
+        status_code,
+        client,
+        users,
     ):
         client.force_login(users["normal_user"])
         response = getattr(client, method)("/")
@@ -77,10 +88,7 @@ class TestGetAsNormalUser:
 class TestPost:
 
     @patch("controlpanel.frontend.views.get_code_challenge", new=MagicMock(return_value="codeabc"))
-    @pytest.mark.parametrize("user", [
-        "superuser",
-        "normal_user"
-    ])
+    @pytest.mark.parametrize("user", ["superuser", "normal_user"])
     def test_superuser_authorize_redirect_called(self, user, client, users):
         user = users[user]
         client.force_login(user)

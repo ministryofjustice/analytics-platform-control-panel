@@ -23,7 +23,7 @@ class CreateS3Bucket(BaseModelTaskHandler):
 
 class GrantAppS3BucketAccess(BaseModelTaskHandler):
     model = AppS3Bucket
-    name = 'grant_app_s3bucket_access'
+    name = "grant_app_s3bucket_access"
 
     def handle(self):
         cluster.App(self.object.app).grant_bucket_access(

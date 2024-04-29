@@ -24,7 +24,7 @@ class JWTTokenResourcePermissions(BasePermission):
 
     def has_permission(self, request, view):
         if hasattr(view, "resource") and hasattr(request.user, "scope"):
-            return f'{view.action}:{view.resource}' in request.user.scope
+            return f"{view.action}:{view.resource}" in request.user.scope
         else:
             return False
 

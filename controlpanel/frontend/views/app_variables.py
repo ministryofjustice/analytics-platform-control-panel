@@ -12,11 +12,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import App
-from controlpanel.frontend.forms import (
-    AppVariableForm,
-    AppVariableUpdateForm,
-    DisableAuthForm,
-)
+from controlpanel.frontend.forms import AppVariableForm, AppVariableUpdateForm, DisableAuthForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 log = structlog.getLogger(__name__)
@@ -37,12 +33,13 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         kwargs["initial"]["env_name"] = data.get("env_name")
         kwargs["initial"]["key"] = self.kwargs.get("var_name")
         kwargs["initial"]["display_key"] = cluster.App.get_github_key_display_name(
-            self.kwargs.get("var_name", ""))
+            self.kwargs.get("var_name", "")
+        )
         if kwargs["initial"]["key"]:
             try:
                 var_info = cluster.App(
-                    self.get_object(),
-                    self.request.user.github_api_token).get_env_var(
+                    self.get_object(), self.request.user.github_api_token
+                ).get_env_var(
                     env_name=kwargs["initial"]["env_name"],
                     key_name=kwargs["initial"]["key"],
                 )

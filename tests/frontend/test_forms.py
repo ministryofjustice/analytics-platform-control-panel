@@ -155,7 +155,7 @@ def test_create_app_form_clean_new_datasource(create_app_request_superuser):
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "namespace": "my-repo"
+            "namespace": "my-repo",
         },
         request=create_app_request_superuser,
     )
@@ -171,7 +171,7 @@ def test_create_app_form_clean_new_datasource(create_app_request_superuser):
             "deployment_envs": ["test"],
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
-            "namespace": "my-repo"
+            "namespace": "my-repo",
         },
         request=create_app_request_superuser,
     )
@@ -193,7 +193,9 @@ def test_create_app_form_clean_new_datasource(create_app_request_superuser):
     mock_s3 = mock.MagicMock()
     with mock.patch("controlpanel.frontend.forms.S3Bucket.objects", mock_s3):
         assert f.is_valid() is False
-        assert "Datasource named test-bucketname already exists" in f.errors["new_datasource_name"][0]
+        assert (
+            "Datasource named test-bucketname already exists" in f.errors["new_datasource_name"][0]
+        )
 
 
 def test_create_app_form_clean_existing_datasource(create_app_request_superuser):
@@ -247,10 +249,8 @@ def test_create_new_datasource_but_bucket_existed():
 
 
 def test_create_new_datasource_folder_exists(root_folder_bucket):
-    root_folder_bucket.put_object(Key='test-folder/')
-    form = forms.CreateDatasourceFolderForm(
-        data={"name": "test-folder"}
-    )
+    root_folder_bucket.put_object(Key="test-folder/")
+    form = forms.CreateDatasourceFolderForm(data={"name": "test-folder"})
 
     assert form.is_valid() is False
     assert "Folder 'test-folder' already exists" in form.errors["name"]
@@ -262,12 +262,10 @@ def test_create_new_datasource_folder_exists(root_folder_bucket):
         ("noslash", "Enter paths prefixed with a forward slash"),
         ("/trailingslash/", "Enter paths without a trailing forward slash"),
         ("/valid", None),
-    ]
+    ],
 )
 def test_grant_access_form_clean_paths(path, expected_error):
-    data = {
-        "paths": [path]
-    }
+    data = {"paths": [path]}
     form = forms.GrantAccessForm()
     form.cleaned_data = data
 
@@ -289,7 +287,7 @@ def test_create_app_form_clean_repo_url(create_app_request_superuser):
             "repo_url": "https://github.com/ministryofjustice/my_repo",
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
-            "namespace": "my-repo"
+            "namespace": "my-repo",
         },
         request=create_app_request_superuser,
     )
@@ -299,10 +297,10 @@ def test_create_app_form_clean_repo_url(create_app_request_superuser):
     mock_app.objects.filter().exists.return_value = False
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
-    with mock.patch(
-        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
-    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
-        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    with (
+        mock.patch("controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo),
+        mock.patch("controlpanel.frontend.forms.App", mock_app),
+        mock.patch("controlpanel.frontend.forms.S3Bucket.objects", mock_s3),
     ):
         assert f.is_valid() is True
 
@@ -313,17 +311,17 @@ def test_create_app_form_clean_repo_url(create_app_request_superuser):
             "connect_bucket": "new",
             "new_datasource_name": "test-bucketname",
         },
-        request=create_app_request_superuser
+        request=create_app_request_superuser,
     )
     f.request = mock.MagicMock()
     mock_app = mock.MagicMock()
     mock_app.objects.filter().exists.return_value = True
     mock_s3 = mock.MagicMock()
     mock_s3.get.side_effect = S3Bucket.DoesNotExist("Boom")
-    with mock.patch(
-        "controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo
-    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
-        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    with (
+        mock.patch("controlpanel.frontend.forms.GithubAPI.get_repository", mock_get_repo),
+        mock.patch("controlpanel.frontend.forms.App", mock_app),
+        mock.patch("controlpanel.frontend.forms.S3Bucket.objects", mock_s3),
     ):
         assert f.is_valid() is False
         assert f.errors["repo_url"][0] == "App already exists for this repository URL"
@@ -340,11 +338,12 @@ def test_create_app_form_clean_repo_url(create_app_request_superuser):
     f.request = mock.MagicMock()
     mock_app = mock.MagicMock()
     mock_app.objects.filter().exists.return_value = False
-    with mock.patch(
-            "controlpanel.frontend.forms.GithubAPI.get_repository",
-            side_effect=RepositoryNotFound
-    ), mock.patch("controlpanel.frontend.forms.App", mock_app), mock.patch(
-        "controlpanel.frontend.forms.S3Bucket.objects", mock_s3
+    with (
+        mock.patch(
+            "controlpanel.frontend.forms.GithubAPI.get_repository", side_effect=RepositoryNotFound
+        ),
+        mock.patch("controlpanel.frontend.forms.App", mock_app),
+        mock.patch("controlpanel.frontend.forms.S3Bucket.objects", mock_s3),
     ):
         assert f.is_valid() is False
         error = f.errors["repo_url"][0]
@@ -374,7 +373,7 @@ def test_create_app_form_get_datasource_queryset(users, rf, user):
     expected_buckets = {
         "superuser": [superuser_bucket, user_bucket],
         "normal_user": [user_bucket],
-        "other_user": []
+        "other_user": [],
     }
 
     request = rf.post(reverse("create-app"))

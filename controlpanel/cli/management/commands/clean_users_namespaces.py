@@ -61,25 +61,17 @@ class Command(BaseCommand):
         for counter, user in enumerate(user_list):
             cluster_user_instance = cluster.User(user)
             if cluster_user_instance.has_required_installation_charts():
-                self.stdout.write(
-                    f"{str(counter)} - Removing namespace for username: {user.slug}"
-                )
+                self.stdout.write(f"{str(counter)} - Removing namespace for username: {user.slug}")
                 try:
                     cluster_user_instance.delete_user_helm_charts(dry_run=dry_run)
                     self._log_info(
                         f"{user.slug}, {str(user.last_login)} : namespace has been removed"  # noqa: E501
                     )
                 except Exception as ex:
-                    self.stdout.write(
-                        f"{str(counter)} - Encountered error for username: {str(ex)}"
-                    )
+                    self.stdout.write(f"{str(counter)} - Encountered error for username: {str(ex)}")
             else:
-                self._log_info(
-                    f"{user.slug}, {str(user.last_login)} : no namespace exist"
-                )
-                self.stdout.write(
-                    f"{str(counter)} - Removing namespace for username: {user.slug}"
-                )
+                self._log_info(f"{user.slug}, {str(user.last_login)} : no namespace exist")
+                self.stdout.write(f"{str(counter)} - Removing namespace for username: {user.slug}")
 
     def _read_user_from_csv(self, user_csv_file):
         user_list = []
@@ -100,9 +92,7 @@ class Command(BaseCommand):
     def _print_out_user_list(self, user_list):
         self.stdout.write("Please check the following user list")
         for user in user_list:
-            self.stdout.write(
-                f"username: {user.slug}, last_login: {str(user.last_login)}"
-            )
+            self.stdout.write(f"username: {user.slug}, last_login: {str(user.last_login)}")
 
     def handle(self, *args, **options):
         if not options.get("months") and not options.get("users"):
@@ -111,9 +101,9 @@ class Command(BaseCommand):
                 "provide the csv file which has the list of users"
             )
 
-        self._log_file_name = options.get(
-            "log"
-        ) or "./cleaning_namespaces_{}.log".format(int(time()))
+        self._log_file_name = options.get("log") or "./cleaning_namespaces_{}.log".format(
+            int(time())
+        )
 
         if options.get("users"):
             user_list = self._read_user_from_csv(options.get("users"))
@@ -121,10 +111,6 @@ class Command(BaseCommand):
             user_list = self._read_scope_of_the_users(options.get("months"))
 
         self._print_out_user_list(user_list)
-        choice = input(
-            "Are you sure to clean the namespace for the following users?(Y/N)"
-        )
+        choice = input("Are you sure to clean the namespace for the following users?(Y/N)")
         if choice.lower() == "y":
-            self._clear_users_namespaces(
-                user_list, dry_run=options.get("dry_run", False)
-            )
+            self._clear_users_namespaces(user_list, dry_run=options.get("dry_run", False))

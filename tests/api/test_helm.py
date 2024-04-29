@@ -32,9 +32,7 @@ def test_helm_repository(helm_repository_index):
         entries = helm.get_helm_entries()
         rstudio_info = entries.get("rstudio")
 
-        rstudio_2_2_5_app_version = (
-            "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
-        )
+        rstudio_2_2_5_app_version = "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
 
         assert len(rstudio_info) == 2
         assert "2.2.5" in rstudio_info[0]["version"]
@@ -78,8 +76,9 @@ def test_helm_repository_get_chart_app_version(
 def test_helm_upgrade_release():
     mock_execute = MagicMock()
     mock_update = MagicMock()
-    with patch("controlpanel.api.helm._execute", mock_execute), patch(
-        "controlpanel.api.helm.update_helm_repository", mock_update
+    with (
+        patch("controlpanel.api.helm._execute", mock_execute),
+        patch("controlpanel.api.helm.update_helm_repository", mock_update),
     ):
         upgrade_args = (
             "release-name",
@@ -114,8 +113,9 @@ def test_execute_ignores_debug():
     mock_Popen = MagicMock(return_value=mock_proc)
     mock_environ = MagicMock()
     mock_environ.copy.return_value = {"DEBUG": "1"}
-    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen), patch(
-        "controlpanel.api.helm.os.environ", mock_environ
+    with (
+        patch("controlpanel.api.helm.subprocess.Popen", mock_Popen),
+        patch("controlpanel.api.helm.os.environ", mock_environ),
     ):
         helm._execute("delete", "foo")
     mock_Popen.assert_called_once_with(
@@ -147,9 +147,7 @@ def test_execute_with_failing_process():
     """
     mock_stderr = MagicMock()
     mock_stderr.read.return_value = "boom"
-    mock_Popen = MagicMock(
-        side_effect=subprocess.CalledProcessError(1, "boom", stderr=mock_stderr)
-    )
+    mock_Popen = MagicMock(side_effect=subprocess.CalledProcessError(1, "boom", stderr=mock_stderr))
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
             helm._execute("delete", "foo")
@@ -183,12 +181,11 @@ def test_update_helm_repository_non_existent_cache(helm_repository_index):
     ensure the function updates the helm repository, then returns the YAML
     parsed helm repository cache.
     """
-    with patch("builtins.open", helm_repository_index), patch(
-        "controlpanel.api.helm._execute"
-    ) as mock_execute, patch(
-        "controlpanel.api.helm.os.path.getmtime", return_value=time.time()
-    ), patch(
-        "controlpanel.api.helm.os.path.exists", return_value=False
+    with (
+        patch("builtins.open", helm_repository_index),
+        patch("controlpanel.api.helm._execute") as mock_execute,
+        patch("controlpanel.api.helm.os.path.getmtime", return_value=time.time()),
+        patch("controlpanel.api.helm.os.path.exists", return_value=False),
     ):
         helm.update_helm_repository()
         mock_execute.assert_called_once_with("repo", "update", timeout=None)
@@ -200,12 +197,11 @@ def test_update_helm_repository_valid_cache(helm_repository_index):
     cache is still within the valid age, then returns the YAML
     parsed helm repository cache.
     """
-    with patch("builtins.open", helm_repository_index), patch(
-        "controlpanel.api.helm._execute"
-    ) as mock_execute, patch(
-        "controlpanel.api.helm.os.path.getmtime", return_value=time.time() - 1
-    ), patch(
-        "controlpanel.api.helm.os.path.exists", return_value=True
+    with (
+        patch("builtins.open", helm_repository_index),
+        patch("controlpanel.api.helm._execute") as mock_execute,
+        patch("controlpanel.api.helm.os.path.getmtime", return_value=time.time() - 1),
+        patch("controlpanel.api.helm.os.path.exists", return_value=True),
     ):
         helm.update_helm_repository()
         assert mock_execute.call_count == 0

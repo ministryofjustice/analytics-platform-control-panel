@@ -2,8 +2,8 @@
 import json
 
 # Third-party
-from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 
 # First-party/Local
 from controlpanel.api.models import App, AppIPAllowList, IPAllowlist
@@ -34,8 +34,8 @@ class Command(BaseCommand):
         migration_json = dict(
             app_name=app.slug,
             repo_url=app_item["repo_url"],
-            app_url=f"https://{ app.slug }.{settings.APP_DOMAIN_BEFORE_MIGRATION}",
-            status="in_progress"
+            app_url=f"https://{app.slug}.{settings.APP_DOMAIN_BEFORE_MIGRATION}",
+            status="in_progress",
         )
         app_info = dict(migration=migration_json)
         app.description = json.dumps(app_info)
@@ -52,23 +52,22 @@ class Command(BaseCommand):
 
     def _update_app_ip_allow_list(self, app, app_detail):
         # update the ip allow list
-        if not app_detail.get('ip_ranges'):
+        if not app_detail.get("ip_ranges"):
             return
-        ip_allow_list = IPAllowlist.objects.filter(
-            name__in=app_detail.get('ip_ranges'))
+        ip_allow_list = IPAllowlist.objects.filter(name__in=app_detail.get("ip_ranges"))
         for env_name in app_detail["envs"]:
             AppIPAllowList.objects.update_records(
-                app=app,
-                env_name=env_name,
-                ip_allowlists=ip_allow_list
+                app=app, env_name=env_name, ip_allowlists=ip_allow_list
             )
 
     def _update_app_with_migration_info(self, apps_info, app_conf):
         for cnt, app_item in enumerate(apps_info):
-            self.stdout.write(f"{cnt+1}: start to process app {app_item['app_name']}")
+            self.stdout.write(f"{cnt + 1}: start to process app {app_item['app_name']}")
             app = App.objects.filter(name=app_item["app_name"]).first()
             if not app:
-                self.stdout.write(f"App: {app_item['app_name']} failed to be found in the cpanel DB")
+                self.stdout.write(
+                    f"App: {app_item['app_name']} failed to be found in the cpanel DB"
+                )
                 continue
 
             self._update_app_data_records(app, app_item)
@@ -86,10 +85,7 @@ class Command(BaseCommand):
                     existing_ip_item.allowed_ip_ranges = ip_ranges
                     existing_ip_item.save()
             else:
-                IPAllowlist.objects.create(
-                    name=name,
-                    allowed_ip_ranges=ip_ranges
-                )
+                IPAllowlist.objects.create(name=name, allowed_ip_ranges=ip_ranges)
 
     def handle(self, *args, **options):
         try:
@@ -99,4 +95,3 @@ class Command(BaseCommand):
             raise CommandError("Failed to load inputs file")
         self._create_update_ip_allowlist_records(app_conf["ip_range_lookup_table"])
         self._update_app_with_migration_info(apps_info, app_conf)
-

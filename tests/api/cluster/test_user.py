@@ -26,15 +26,17 @@ def test_create(helm, settings, users):
             call(
                 f"bootstrap-user-{user.slug}",
                 "mojanalytics/bootstrap-user",
-                f"--namespace=cpanel",
+                "--namespace=cpanel",
                 f"--set=Username={user.slug}",
             ),
             call(
                 f"provision-user-{user.slug}",
                 "mojanalytics/provision-user",
                 f"--namespace=user-{user.slug}",
-                (f"--set=Username={user.slug},Efsvolume={settings.EFS_VOLUME},"
-                 "OidcDomain=oidc.idp.example.com,Email=,Fullname="),
+                (
+                    f"--set=Username={user.slug},Efsvolume={settings.EFS_VOLUME},"
+                    "OidcDomain=oidc.idp.example.com,Email=,Fullname="
+                ),
             ),
         ]
 
@@ -59,9 +61,7 @@ def test_reset_home(helm, users):
 
 @pytest.fixture
 def aws_delete_role():
-    with patch(
-        "controlpanel.api.cluster.AWSRole.delete_role"
-    ) as aws_delete_role_action:
+    with patch("controlpanel.api.cluster.AWSRole.delete_role") as aws_delete_role_action:
         yield aws_delete_role_action
 
 
@@ -76,7 +76,7 @@ def test_delete(aws_delete_role, helm, users):
     cluster.User(user).delete()
     aws_delete_role.assert_called_with(user.iam_role_name)
     expected_calls = [
-        call('user-bob', 'chart-release', dry_run=False),
+        call("user-bob", "chart-release", dry_run=False),
     ]
     helm.delete.assert_has_calls(expected_calls)
 

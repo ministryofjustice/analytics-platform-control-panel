@@ -18,7 +18,6 @@ from controlpanel.api.models import App, Parameter
 
 
 class Command(BaseCommand):
-
     """ "
     This command line tool is to retrieve full information about an app
     hosted on AP, the steps will be
@@ -120,7 +119,7 @@ class Command(BaseCommand):
                 "has_repo": False,
                 "auth0_client": {},
                 "parameters": {},
-                "migration": {"envs":{}, "connections":[]},
+                "migration": {"envs": {}, "connections": []},
             }
 
     def _init_app_info(self, app_scope):
@@ -144,14 +143,8 @@ class Command(BaseCommand):
             if "Any" in app_item.get("ip_ranges"):
                 ip_ranges = [""]
             else:
-                ip_ranges = [
-                    lookup[item]
-                    for item in app_item["ip_ranges"]
-                    if item in lookup
-                ]
-            not_found = [
-                item for item in app_item.get("ip_ranges") if item not in lookup
-            ]
+                ip_ranges = [lookup[item] for item in app_item["ip_ranges"] if item in lookup]
+            not_found = [item for item in app_item.get("ip_ranges") if item not in lookup]
             if not_found:
                 self._log_error(
                     "{}: Warning: Couldn't find ip_range for {}".format(
@@ -165,9 +158,7 @@ class Command(BaseCommand):
                 )
             app_item["normalised_ip_ranges"] = ",".join(ip_ranges)
 
-    def _collect_apps_deploy_info(
-        self, github_token, apps_info, audit_data_keys, app_conf
-    ):
+    def _collect_apps_deploy_info(self, github_token, apps_info, audit_data_keys, app_conf):
         """
         To gain access to the github repo proves difficult than I thought,
         for now I will use the id_token from my login account, unless there is
@@ -200,27 +191,17 @@ class Command(BaseCommand):
                 apps_info[repo.name]["has_repo"] = True
                 apps_info[repo.name]["deployment"] = deployment_json
                 apps_info[repo.name]["auth"] = deepcopy(deployment_json)
-                self._normalize_ip_ranges(
-                    repo.name, apps_info[repo.name]["auth"], app_conf
-                )
+                self._normalize_ip_ranges(repo.name, apps_info[repo.name]["auth"], app_conf)
                 audit_data_keys.extend(
-                    [
-                        key
-                        for key in deployment_json.keys()
-                        if key not in audit_data_keys
-                    ]
+                    [key for key in deployment_json.keys() if key not in audit_data_keys]
                 )
             except Exception as ex:
                 self._log_error(
                     f"{repo.name}: Failed to load deploy.json due to the error: {str(ex)}"  # noqa: E501
                 )
-                self.stdout.write(
-                    f"Failed to load deploy.json due to the error: {str(ex)}"
-                )
+                self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
 
-    def _collect_apps_deployment_info(
-        self, github_token, apps_info, audit_data_keys, app_conf
-    ):
+    def _collect_apps_deployment_info(self, github_token, apps_info, audit_data_keys, app_conf):
         github_api = GithubAPI(github_token, None)
         for app_name, app_info in apps_info.items():
             self.stdout.write("Reading repo {}....".format(app_info["repo_url"]))
@@ -234,23 +215,18 @@ class Command(BaseCommand):
                 app_info["has_repo"] = True
                 app_info["deployment"] = deployment_json
                 app_info["migration"]["ip_ranges"] = deployment_json.get("allowed_ip_ranges")
-                app_info["migration"]["disable_authentication"] = \
+                app_info["migration"]["disable_authentication"] = (
                     deployment_json.get("disable_authentication") or False
+                )
                 self._normalize_ip_ranges(app_name, app_info["migration"], app_conf)
                 audit_data_keys.extend(
-                    [
-                        key
-                        for key in deployment_json.keys()
-                        if key not in audit_data_keys
-                    ]
+                    [key for key in deployment_json.keys() if key not in audit_data_keys]
                 )
             except Exception as ex:
                 self._log_error(
                     f"{repo_name}: Failed to load deploy.json due to the error: {str(ex)}"  # noqa: E501
                 )
-                self.stdout.write(
-                    f"Failed to load deploy.json due to the error: {str(ex)}"
-                )
+                self.stdout.write(f"Failed to load deploy.json due to the error: {str(ex)}")
 
     def _process_urls(self, callback_urls, domains_mapping):
         """A new set of callbacks will be added based on the domains_mappings,
@@ -323,17 +299,13 @@ class Command(BaseCommand):
 
             if app_name_key is None:
                 continue
-            self.stdout.write(
-                "Reading app({})'s auth0 information....".format(client["name"])
-            )
+            self.stdout.write("Reading app({})'s auth0 information....".format(client["name"]))
             self._remove_sensitive_fields(client)
             apps_info[app_name_key]["auth0_client"] = client
             clients_id_name_map[client["client_id"]] = app_name_key
         return clients_id_name_map
 
-    def _collection_apps_auth0_connections(
-        self, auth0_instance, apps_info, clients_id_name_map
-    ):
+    def _collection_apps_auth0_connections(self, auth0_instance, apps_info, clients_id_name_map):
         connections = auth0_instance.connections.get_all()
         for connection in connections:
             for enabled_client_id in connection["enabled_clients"] or []:
@@ -343,12 +315,8 @@ class Command(BaseCommand):
 
                 if not apps_info[client_name]["auth0_client"].get("connections"):
                     apps_info[client_name]["auth0_client"]["connections"] = []
-                apps_info[client_name]["auth0_client"]["connections"].append(
-                    connection["name"]
-                )
-                apps_info[client_name]["migration"]["connections"].append(
-                    connection["name"]
-                )
+                apps_info[client_name]["auth0_client"]["connections"].append(connection["name"])
+                apps_info[client_name]["migration"]["connections"].append(connection["name"])
 
     def _collection_app_parameters_store_info(self, apps_info, apps_conf):
         """
@@ -366,9 +334,7 @@ class Command(BaseCommand):
                 continue
 
             self.stdout.write(
-                "Reading parameter, {}, for the app - {}".format(
-                    parameter.name, app_name_key
-                )
+                "Reading parameter, {}, for the app - {}".format(parameter.name, app_name_key)
             )
 
             para_response = aws_param_service.get_parameter(parameter.name)
@@ -380,9 +346,7 @@ class Command(BaseCommand):
             else:
                 self._log_error(f"{app_name_key}: Couldn't find {parameter.name} from aws")
 
-    def _gather_apps_full_info(
-        self, github_token, app_conf, apps_info, audit_data_keys
-    ):
+    def _gather_apps_full_info(self, github_token, app_conf, apps_info, audit_data_keys):
         auth0_instance = ExtendedAuth0()
 
         # self.stdout.write("1. Collecting the deployment information of each app from github")  # noqa: E501
@@ -396,16 +360,10 @@ class Command(BaseCommand):
             auth0_instance, apps_info, app_conf
         )
 
-        self.stdout.write(
-            "3. Collecting the connections information of each app from auth0"
-        )
-        self._collection_apps_auth0_connections(
-            auth0_instance, apps_info, clients_id_name_map
-        )
+        self.stdout.write("3. Collecting the connections information of each app from auth0")
+        self._collection_apps_auth0_connections(auth0_instance, apps_info, clients_id_name_map)
 
-        self.stdout.write(
-            "4. Collecting the parameters of each from AWS parameter store"
-        )
+        self.stdout.write("4. Collecting the parameters of each from AWS parameter store")
         self._collection_app_parameters_store_info(apps_info, app_conf)
 
     def _load_json_file(self, file_name):
@@ -445,9 +403,7 @@ class Command(BaseCommand):
                     pods_list.append(app_name)
         return pods_list
 
-    def _save_app_info_as_csv(
-        self, csv_file, deployed_pods_list, apps_info, audit_data_keys
-    ):
+    def _save_app_info_as_csv(self, csv_file, deployed_pods_list, apps_info, audit_data_keys):
         with open(csv_file, "w") as f:
             writer = csv.writer(f)
             writer.writerow(audit_data_keys)
@@ -458,14 +414,10 @@ class Command(BaseCommand):
                         data_row.append(self._convert_list_to_str(app_item[data_key]))
                     elif data_key in (app_item.get("auth0_client") or []):
                         data_row.append(
-                            self._convert_list_to_str(
-                                app_item["auth0_client"][data_key]
-                            )
+                            self._convert_list_to_str(app_item["auth0_client"][data_key])
                         )
                     elif data_key in (app_item.get("deployment") or []):
-                        data_row.append(
-                            self._convert_list_to_str(app_item["deployment"][data_key])
-                        )
+                        data_row.append(self._convert_list_to_str(app_item["deployment"][data_key]))
                     elif data_key == "has_auth0":
                         data_row.append("Y" if app_item.get("auth0_client") else "N")
                     elif data_key == "has_deployment":
@@ -474,9 +426,7 @@ class Command(BaseCommand):
                         data_row.append("Y" if app_item.get("parameters") else "N")
                     elif data_key == "deployed_on_alpha":
                         data_row.append(
-                            "Y"
-                            if app_name.lower().replace("_", "-") in deployed_pods_list
-                            else "N"
+                            "Y" if app_name.lower().replace("_", "-") in deployed_pods_list else "N"
                         )
                     elif data_key == "auth_connections":
                         auth_conn_str = self._convert_list_to_str(
@@ -492,9 +442,7 @@ class Command(BaseCommand):
     def _sanity_check_for_deployed_apps(self, apps_info, deployed_pods_list):
         app_names = list(apps_info.keys())
         app_names.extend([app_name.lower() for app_name in apps_info.keys()])
-        app_names.extend(
-            [app_name.lower().replace("_", "-") for app_name in apps_info.keys()]
-        )
+        app_names.extend([app_name.lower().replace("_", "-") for app_name in apps_info.keys()])
         mysterious_apps = set(deployed_pods_list) - set(app_names)
         if list(mysterious_apps):
             self._log_error(
@@ -506,7 +454,7 @@ class Command(BaseCommand):
         return "./migration_script_errors_{}.log".format(int(time()))
 
     def _get_pre_defined_app_list(self, chosen_apps_file):
-        """ assumption the csv include app_name and list of envs we want to initialise"""
+        """assumption the csv include app_name and list of envs we want to initialise"""
         apps_scope = {}
         with open(chosen_apps_file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
@@ -532,9 +480,7 @@ class Command(BaseCommand):
         apps_scope = self._get_pre_defined_app_list(options.get("chosen_apps"))
         self._error_log_file_name = options.get("log") or self._default_log_file()
         apps_info = self._init_app_info(apps_scope)
-        self._gather_apps_full_info(
-            options["token"], app_conf, apps_info, self.AUDIT_DATA_KEYS
-        )
+        self._gather_apps_full_info(options["token"], app_conf, apps_info, self.AUDIT_DATA_KEYS)
         self._save_to_file(list(apps_info.values()), options["file"])
 
         # Process the pod csv to extract the list of apps which has been

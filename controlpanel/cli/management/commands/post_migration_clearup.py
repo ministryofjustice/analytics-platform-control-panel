@@ -1,30 +1,32 @@
-
 # Third-party
 from django.core.management.base import BaseCommand
 
 # First-party/Local
-from controlpanel.api.models import App, AppS3Bucket
 from controlpanel.api import auth0
+from controlpanel.api.models import App, AppS3Bucket
 
 
 class Command(BaseCommand):
-    help = "Clear up the redundant resources for migrated apps " \
-           "- remove the old auth0 related resources " \
-           "- remove old auth0 information from control db" \
-           "- remove the apps which are not required any more"
+    help = (
+        "Clear up the redundant resources for migrated apps "
+        "- remove the old auth0 related resources "
+        "- remove old auth0 information from control db"
+        "- remove the apps which are not required any more"
+    )
 
     SCRIPT_LOG_FILE_NAME = "./clear_up_auth0_resources_log.txt"
 
     EXCEPTION_APPS = ["gold-scorecard-form"]
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "-a", "--apply", action="store_true", help="Apply the actions"
-        )
+        parser.add_argument("-a", "--apply", action="store_true", help="Apply the actions")
 
     def _remove_old_auth0_clients(self, app, auth0_instance):
-        old_client_info = (app.app_conf or {}).get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}).\
-            get(App.DEFAULT_AUTH_CATEGORY, {})
+        old_client_info = (
+            (app.app_conf or {})
+            .get(App.KEY_WORD_FOR_AUTH_SETTINGS, {})
+            .get(App.DEFAULT_AUTH_CATEGORY, {})
+        )
         if not old_client_info:
             self._log_info(f"No old client for {app.slug} - {app.repo_url}")
             return
@@ -34,9 +36,13 @@ class Command(BaseCommand):
             auth0_instance.clear_up_app(old_client_info)
 
     def _update_db(self, app):
-        self._log_info(f"Removing the migration info and old clients for {app.slug} - {app.repo_url}")
+        self._log_info(
+            f"Removing the migration info and old clients for {app.slug} - {app.repo_url}"
+        )
         app.description = ""
-        if App.DEFAULT_AUTH_CATEGORY in (app.app_conf or {}).get(App.KEY_WORD_FOR_AUTH_SETTINGS, {}):
+        if App.DEFAULT_AUTH_CATEGORY in (app.app_conf or {}).get(
+            App.KEY_WORD_FOR_AUTH_SETTINGS, {}
+        ):
             del app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY]
         if self.apply_action:
             app.save()
@@ -85,7 +91,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("start to scan the apps from database.")
         auth0_instance = auth0.ExtendedAuth0()
-        self.apply_action = options.get('apply') or False
+        self.apply_action = options.get("apply") or False
         self._clear_up_resources(auth0_instance)
         self.stdout.write("Clean up action has completed.")
-

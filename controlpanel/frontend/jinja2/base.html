@@ -9,6 +9,7 @@
 {% set home_url = url("index") %}
 {% set signout_url = url("oidc_logout") %}
 
+
 {% block page_title %}
   {{ page_title }} | {{ service_name }}
 {% endblock %}
@@ -83,7 +84,6 @@
         "text": "Home",
         "href": home_url,
         "active": page_name == "home",
-        "admin": request.user.is_superuser,
       },
       {
         "hide": not request.user.is_staff,
@@ -116,7 +116,6 @@
         "text": "Groups",
         "href": url("list-policies"),
         "active": page_name == "groups",
-        "admin": request.user.is_superuser,
       },
       {
         "text": "Training",

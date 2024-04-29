@@ -1,3 +1,4 @@
+# checkov:skip=CKV_DOCKER_2:Healthcheck instructions have not been added to container images
 FROM public.ecr.aws/docker/library/node:20.11.1 AS build-node
 COPY package.json package-lock.json ./
 COPY jest.config.js controlpanel/frontend/static /src/

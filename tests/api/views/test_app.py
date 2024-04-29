@@ -2,7 +2,9 @@
 from unittest.mock import patch
 
 # Third-party
+import pytest
 from botocore.exceptions import ClientError
+from django.conf import settings
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
@@ -24,8 +26,10 @@ def app():
 
 @pytest.fixture(autouse=True)  # noqa: F405
 def models(app, users):
-    with patch("controlpanel.api.aws.AWSRole.grant_bucket_access"), \
-            patch("controlpanel.api.aws.AWSBucket.create"):
+    with (
+        patch("controlpanel.api.aws.AWSRole.grant_bucket_access"),
+        patch("controlpanel.api.aws.AWSBucket.create"),
+    ):
         baker.make("api.App")
         baker.make("api.AppS3Bucket", app=app)
         baker.make("api.UserApp", app=app, user=users["superuser"])
@@ -96,7 +100,6 @@ def test_detail(client, app):
         "email",
     }
     assert set(userapp["user"]) == expected_fields
-
 
 
 def test_app_detail_by_name(client, app):
@@ -176,7 +179,9 @@ def test_create(client, users, sqs, helpers):
 
     app = App.objects.get(repo_url="https://github.com/ministryofjustice/new-example")
     messages = helpers.retrieve_messages(sqs, queue_name=settings.IAM_QUEUE_NAME)
-    helpers.validate_task_with_sqs_messages(messages, App.__name__, app.id, queue_name=settings.IAM_QUEUE_NAME)
+    helpers.validate_task_with_sqs_messages(
+        messages, App.__name__, app.id, queue_name=settings.IAM_QUEUE_NAME
+    )
 
 
 def test_update(client, app):
@@ -192,8 +197,8 @@ def test_update(client, app):
 
 
 @pytest.mark.skip(
-    reason="The step of creating aws role has been moved "
-           "out but keep test for future reference")
+    reason="The step of creating aws role has been moved " "out but keep test for future reference"
+)
 def test_aws_error_and_transaction(client):
     with patch("controlpanel.api.aws.AWSRole.create_role") as create_app_role:
         create_app_role.side_effect = ClientError({}, "CreateRole")
@@ -206,13 +211,16 @@ def test_aws_error_and_transaction(client):
             App.objects.get(name=data["name"])
 
 
-@pytest.mark.parametrize("url, valid", [
-    ("https://example.com/repo", False),
-    ("https://github.com/someorg/repo", False),
-    ("https://github.com/ministryofjustice", False),
-    ("http://github.com/ministryofjustice/nothttps", False),
-    ("https://github.com/ministryofjustice/success", True),
-])
+@pytest.mark.parametrize(
+    "url, valid",
+    [
+        ("https://example.com/repo", False),
+        ("https://github.com/someorg/repo", False),
+        ("https://github.com/ministryofjustice", False),
+        ("http://github.com/ministryofjustice/nothttps", False),
+        ("https://github.com/ministryofjustice/success", True),
+    ],
+)
 def test_validate_repo_url(url, valid):
     serializer = AppSerializer()
     if valid:

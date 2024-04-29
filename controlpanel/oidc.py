@@ -118,7 +118,4 @@ def get_code_challenge():
 
 
 oauth = OAuth()
-oauth.register(
-    name="azure",
-    **settings.AUTHLIB_OAUTH_CLIENTS["azure"]
-)
+oauth.register(name="azure", **settings.AUTHLIB_OAUTH_CLIENTS["azure"])

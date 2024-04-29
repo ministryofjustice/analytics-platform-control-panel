@@ -103,7 +103,7 @@ BASE_S3_ACCESS_STATEMENT = {
         "Sid": "rootFolderBucketMeta",
         "Action": LIST_BUCKET_META_ACTIONS,
         "Effect": "Allow",
-    }
+    },
 }
 
 BUCKET_TLS_STATEMENT = {
@@ -134,6 +134,7 @@ BASE_S3_ACCESS_POLICY = {
 
 class S3AccessPolicy:
     """Provides a convenience wrapper around a RolePolicy object"""
+
     SID_SUFFIX_LEN = 32
 
     def __init__(self, policy):
@@ -161,10 +162,8 @@ class S3AccessPolicy:
                 continue
 
             # check for the SID without md5 suffix
-            if sid[:-self.SID_SUFFIX_LEN] in self.base_s3_access_sids:
-                stmt.update(
-                    deepcopy(BASE_S3_ACCESS_STATEMENT[sid[:-self.SID_SUFFIX_LEN]])
-                )
+            if sid[: -self.SID_SUFFIX_LEN] in self.base_s3_access_sids:
+                stmt.update(deepcopy(BASE_S3_ACCESS_STATEMENT[sid[: -self.SID_SUFFIX_LEN]]))
                 stmt["Sid"] = sid
                 self.statements[sid] = stmt
 
@@ -217,10 +216,7 @@ class S3AccessPolicy:
         sid = self._construct_sid(base_sid, suffix)
         statement = self.statements.get(sid, None)
         if not statement:
-            statement = self._build_statement(
-                base_sid=base_sid,
-                sid=sid
-            )
+            statement = self._build_statement(base_sid=base_sid, sid=sid)
 
         return statement
 
@@ -278,9 +274,7 @@ class S3AccessPolicy:
             prefixes = []
 
         # remove access to the folder
-        prefixes[:] = [
-            prefix for prefix in prefixes if not prefix.startswith(folder)
-        ]
+        prefixes[:] = [prefix for prefix in prefixes if not prefix.startswith(folder)]
 
         # remove the resource if no prefixes left so that the statement is removed
         if prefixes == [] or prefixes == [""]:
@@ -326,12 +320,7 @@ class S3AccessPolicy:
         if folder not in prefixes:
             prefixes.append(folder)
 
-        statement["Condition"] = {
-            "StringEquals": {
-                "s3:prefix": prefixes,
-                "s3:delimiter": ["/"]
-            }
-        }
+        statement["Condition"] = {"StringEquals": {"s3:prefix": prefixes, "s3:delimiter": ["/"]}}
 
     def _add_folder_to_list_sub_folders_prefixes(self, folder, bucket_name):
         statement = self.statement("listSubFolders", suffix=bucket_name)
@@ -349,11 +338,7 @@ class S3AccessPolicy:
         if folder_wildcard not in prefixes:
             prefixes.append(folder_wildcard)
 
-        statement["Condition"] = {
-            "StringLike": {
-                "s3:prefix": prefixes
-            }
-        }
+        statement["Condition"] = {"StringLike": {"s3:prefix": prefixes}}
 
     @staticmethod
     def get_bucket_and_path(folder_path):
@@ -460,7 +445,7 @@ class AWSService:
         return self.aws_sessions.get_session(
             assume_role_name=self.assume_role_name,
             profile_name=self.profile_name,
-            region_name=self.region_name
+            region_name=self.region_name,
         )
 
 
@@ -624,13 +609,8 @@ class AWSFolder(AWSService):
 
     def archive_object(self, key, source_bucket_name=None, delete_original=True):
         source_bucket_name = source_bucket_name or settings.S3_FOLDER_BUCKET_NAME
-        copy_source = {
-            'Bucket': source_bucket_name,
-            'Key': key
-        }
-        archive_bucket = self.boto3_session.resource("s3").Bucket(
-            settings.S3_ARCHIVE_BUCKET_NAME
-        )
+        copy_source = {"Bucket": source_bucket_name, "Key": key}
+        archive_bucket = self.boto3_session.resource("s3").Bucket(settings.S3_ARCHIVE_BUCKET_NAME)
         new_key = f"{archive_bucket.name}/{key}"
 
         archive_bucket.copy(copy_source, new_key)
@@ -721,9 +701,7 @@ class AWSBucket(AWSService):
     def _apply_tls_restrictions(self, client, bucket_name):
         """it assumes that this is a new bucket with no policies & creates it"""
         tls_statement = deepcopy(BUCKET_TLS_STATEMENT)
-        arns: list(str) = [
-            arn.format(bucket_arn=bucket_name) for arn in tls_statement["Resource"]
-        ]
+        arns: list(str) = [arn.format(bucket_arn=bucket_name) for arn in tls_statement["Resource"]]
         tls_statement["Resource"] = arns
         bucket_policy = dict(Version="2012-10-17", Statement=[tls_statement])
         client.put_bucket_policy(Bucket=bucket_name, Policy=json.dumps(bucket_policy))
@@ -831,9 +809,7 @@ class AWSPolicy(AWSService):
 
         policy.delete()
 
-    def grant_folder_access(
-        self, policy_arn, root_folder_path, access_level, paths=None
-    ):
+    def grant_folder_access(self, policy_arn, root_folder_path, access_level, paths=None):
 
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
@@ -848,9 +824,7 @@ class AWSPolicy(AWSService):
         )
         policy.put()
 
-    def grant_policy_bucket_access(
-        self, policy_arn, bucket_arn, access_level, path_arns=None
-    ):
+    def grant_policy_bucket_access(self, policy_arn, bucket_arn, access_level, path_arns=None):
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be 'readonly' or 'readwrite'")
 
@@ -887,9 +861,7 @@ class AWSParameterStore(AWSService):
         super(AWSParameterStore, self).__init__(
             assume_role_name=assume_role_name, profile_name=profile_name
         )
-        self.client = self.boto3_session.client(
-            "ssm", region_name=settings.AWS_DEFAULT_REGION
-        )
+        self.client = self.boto3_session.client("ssm", region_name=settings.AWS_DEFAULT_REGION)
 
     def create_parameter(self, name, value, role_name, description=""):
         try:
@@ -902,9 +874,7 @@ class AWSParameterStore(AWSService):
             )
         except self.client.exceptions.ParameterAlreadyExists:
             # TODO do parameter names need to be unique across the platform?
-            log.warning(
-                f"Skipping creating Parameter {name} for {role_name}: Already exists"
-            )
+            log.warning(f"Skipping creating Parameter {name} for {role_name}: Already exists")
 
     def delete_parameter(self, name):
         try:
@@ -1051,7 +1021,7 @@ class AWSSQS(AWSService):
         super(AWSSQS, self).__init__(
             assume_role_name=assume_role_name,
             profile_name=profile_name,
-            region_name=settings.SQS_REGION
+            region_name=settings.SQS_REGION,
         )
         self.client = self.boto3_session.resource("sqs")
 
@@ -1087,8 +1057,7 @@ class AWSSQS(AWSService):
         queue = self.get_queue(name=queue_name)
         try:
             response = queue.send_message(
-                MessageBody=message_body,
-                MessageAttributes=message_attributes
+                MessageBody=message_body, MessageAttributes=message_attributes
             )
         except botocore.exceptions.ClientError as error:
             log.exception("Send message failed: %s", message_body)
@@ -1112,9 +1081,9 @@ class AWSSQS(AWSService):
         queue = self.get_queue(name=queue_name)
         try:
             messages = queue.receive_messages(
-                MessageAttributeNames=['All'],
+                MessageAttributeNames=["All"],
                 MaxNumberOfMessages=max_number,
-                WaitTimeSeconds=wait_time
+                WaitTimeSeconds=wait_time,
             )
             for msg in messages:
                 log.info("Received message: %s: %s", msg.message_id, msg.body)
@@ -1134,20 +1103,17 @@ class AWSSQS(AWSService):
                  message deletions.
         """
         try:
-            entries = [{
-                'Id': str(ind),
-                'ReceiptHandle': msg.receipt_handle
-            } for ind, msg in enumerate(messages)]
+            entries = [
+                {"Id": str(ind), "ReceiptHandle": msg.receipt_handle}
+                for ind, msg in enumerate(messages)
+            ]
             response = queue.delete_messages(Entries=entries)
-            if 'Successful' in response:
-                for msg_meta in response['Successful']:
-                    log.info("Deleted %s", messages[int(msg_meta['Id'])].receipt_handle)
-            if 'Failed' in response:
-                for msg_meta in response['Failed']:
-                    log.warning(
-                        "Could not delete %s",
-                        messages[int(msg_meta['Id'])].receipt_handle
-                    )
+            if "Successful" in response:
+                for msg_meta in response["Successful"]:
+                    log.info("Deleted %s", messages[int(msg_meta["Id"])].receipt_handle)
+            if "Failed" in response:
+                for msg_meta in response["Failed"]:
+                    log.warning("Could not delete %s", messages[int(msg_meta["Id"])].receipt_handle)
         except botocore.exceptions.ClientError:
             log.exception("Couldn't delete messages from queue %s", queue)
         else:

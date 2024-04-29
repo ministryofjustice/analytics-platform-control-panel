@@ -19,8 +19,8 @@ from controlpanel.api.helm import (
     get_helm_entries,
 )
 from controlpanel.api.models import Tool, ToolDeployment
-from controlpanel.utils import start_background_task
 from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.utils import start_background_task
 
 log = structlog.getLogger(__name__)
 
@@ -103,12 +103,8 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         # Get list of deployed tools
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
-            chart_name, chart_version = deployment.metadata.labels["chart"].rsplit(
-                "-", 1
-            )
-            image_tag = self._get_tool_deployed_image_tag(
-                deployment.spec.template.spec.containers
-            )
+            chart_name, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            image_tag = self._get_tool_deployed_image_tag(deployment.spec.template.spec.containers)
             tool_box = self._locate_tool_box_by_chart_name(chart_name)
             tool_box = tool_box or "Unknown"
             tool = self._find_related_tool_record(chart_name, chart_version, image_tag)
@@ -119,9 +115,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                     )
                 )
             else:
-                self._add_new_item_to_tool_box(
-                    user, tool_box, tool, tools_info, charts_info
-                )
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
             if tool_box not in tools_info:
                 # up to this stage, if the tool_box is still empty, it means
                 # there is no tool release available in db
@@ -132,9 +126,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "chart_version": chart_version,
                 "image_tag": image_tag,
                 "description": tool.description if tool else "Not available",
-                "status": ToolDeployment(tool, user).get_status(
-                    id_token, deployment=deployment
-                ),
+                "status": ToolDeployment(tool, user).get_status(id_token, deployment=deployment),
             }
 
     def _retrieve_detail_tool_info(self, user, tools, charts_info):
@@ -144,9 +136,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             tool_box = self._locate_tool_box_by_chart_name(tool.chart_name)
             # No matching tool bucket for the given chart. So ignore.
             if tool_box:
-                self._add_new_item_to_tool_box(
-                    user, tool_box, tool, tools_info, charts_info
-                )
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
         return tools_info
 
     def _get_charts_info(self, tool_list):
@@ -157,7 +147,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         for tool in tool_list:
             if tool.version in charts_info:
                 continue
-                
+
             image_tag = tool.image_tag
             if image_tag:
                 continue
@@ -165,9 +155,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             if chart_entries is None:
                 # load the potential massive helm chart yaml only it is necessary
                 chart_entries = get_helm_entries()
-            chart_app_version = get_chart_version_info(
-                chart_entries, tool.chart_name, tool.version
-            )
+            chart_app_version = get_chart_version_info(chart_entries, tool.chart_name, tool.version)
             if chart_app_version:
                 image_tag = get_default_image_tag_from_helm_chart(
                     chart_app_version.chart_url, tool.chart_name
@@ -233,25 +221,21 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "destination": f"mwaa/home?region={settings.AIRFLOW_REGION}#/environments/prod/sso",  # noqa: E501
             }
         )
-        context[
-            "managed_airflow_dev_url"
-        ] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_dev_url}"
-        context[
-            "managed_airflow_prod_url"
-        ] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_prod_url}"
+        context["managed_airflow_dev_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_dev_url}"
+        context["managed_airflow_prod_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_prod_url}"
 
         # Arrange tools information
         charts_info = self._get_charts_info(context["tools"])
-        tools_info = self._retrieve_detail_tool_info(
-            user, context["tools"], charts_info
-        )
-        if 'visual-studio-code' in tools_info:
-            url = tools_info['visual-studio-code']['url']
-            tools_info['visual-studio-code']['url'] = f"{url}?folder=/home/analyticalplatform/workspace"
+        tools_info = self._retrieve_detail_tool_info(user, context["tools"], charts_info)
+        if "visual-studio-code" in tools_info:
+            url = tools_info["visual-studio-code"]["url"]
+            tools_info["visual-studio-code"][
+                "url"
+            ] = f"{url}?folder=/home/analyticalplatform/workspace"
 
-        if 'vscode' in tools_info:
-            url = tools_info['vscode']['url']
-            tools_info['vscode']['url'] = f"{url}?folder=/home/analyticalplatform/workspace"
+        if "vscode" in tools_info:
+            url = tools_info["vscode"]["url"]
+            tools_info["vscode"]["url"] = f"{url}?folder=/home/analyticalplatform/workspace"
 
         self._add_deployed_charts_info(tools_info, user, id_token, charts_info)
         context["tools_info"] = tools_info
