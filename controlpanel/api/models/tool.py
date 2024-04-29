@@ -25,7 +25,6 @@ class Tool(TimeStampedModel):
     TOOL_BOX_CHART_LOOKUP = {
         "jupyter": "jupyter-lab",
         "rstudio": "rstudio",
-        "visual-studio-code": "visual-studio-code",
         "vscode": "vscode",
     }
 
