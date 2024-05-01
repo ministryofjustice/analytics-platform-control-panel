@@ -74,10 +74,10 @@ build-js:
   -o static/app.js -s
 
 serve-sso:
-	aws-sso exec --profile analytical-platform-development:AdministratorAccess -- python manage.py runserver
+	aws-sso exec --profile analytical-platform-development:AdministratorAccess --no-region -- python manage.py runserver
 
 celery-sso:
-	aws-sso exec --profile analytical-platform-development:AdministratorAccess -- celery -A controlpanel worker --loglevel=info
+	aws-sso exec --profile analytical-platform-development:AdministratorAccess --no-region -- celery -A controlpanel worker --loglevel=info
 
 db-migrate:
 	python manage.py migrate
