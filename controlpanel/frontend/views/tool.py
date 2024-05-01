@@ -227,11 +227,10 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         # Arrange tools information
         charts_info = self._get_charts_info(context["tools"])
         tools_info = self._retrieve_detail_tool_info(user, context["tools"], charts_info)
-        if "visual-studio-code" in tools_info:
-            url = tools_info["visual-studio-code"]["url"]
-            tools_info["visual-studio-code"][
-                "url"
-            ] = f"{url}?folder=/home/analyticalplatform/workspace"
+
+        if "vscode" in tools_info:
+            url = tools_info["vscode"]["url"]
+            tools_info["vscode"]["url"] = f"{url}?folder=/home/analyticalplatform/workspace"
 
         self._add_deployed_charts_info(tools_info, user, id_token, charts_info)
         context["tools_info"] = tools_info

@@ -456,7 +456,7 @@ class ToolReleaseForm(forms.ModelForm):
 
         Hence the path of least resistance with this custom form validation.
         """
-        valid_charts = ["airflow-sqlite", "jupyter-", "rstudio", "visual-studio-code"]
+        valid_charts = ["airflow-sqlite", "jupyter-", "rstudio", "vscode"]
         value = self.cleaned_data["chart_name"]
         is_valid = False
         for chart_name in valid_charts:
