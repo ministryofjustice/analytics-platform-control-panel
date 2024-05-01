@@ -26,3 +26,9 @@ make build-static
 
 # Run migrations
 python manage.py migrate
+
+# create aws and kube configs
+aws-sso config-profiles --force
+
+aws-sso exec --profile analytical-platform-development:AdministratorAccess -- aws eks --region eu-west-1 update-kubeconfig --name development-aWrhyc0m --alias dev-eks-cluster
+kubectl config use-context dev-eks-cluster
