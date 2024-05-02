@@ -100,6 +100,23 @@ Then navigate to `localhost:8000`
 
 On first run of the application, after logging in, you will likely run into a HelmError with the message `UPGRADE FAILED: failed to replace object: Job.batch "config-git-<user>-jupyter" is invalid`. See the troubleshooting section for a workaround to this issue.
 
+### VSCode debugger setup
+
+You can configure VSCode to run the Django server and Celery together, with AWS credentials for the
+analytical-platform-development environment sourced. You can configure this and other debugger
+configurations yourself following the [VSCode documentation](https://code.visualstudio.com/docs/editor/debugging)
+or use the included example files to get started immediately by following these steps:
+
+- In the project root create a `.vscode` folder if it does not already exist.
+- Copy the [`launch.json.example`](./launch.json.example) and [`tasks.json.example`](./tasks.json.example)
+files to the `.vscode` directory, removing the `.example` suffix.
+- In the VSCode sidebar select the "Run and debug" icon, choose the `Runserver/Celery`
+configuration and click the start button or use the F5 shortcut. Note: if you are not already logged
+in with `aws-sso` check the terminal output for a link to do so.
+
+The Django server and Celery should now both be running, and you can set breakpoints to help debug
+your code. [See the VSCode documentation for more details about using the debugger.](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
+
 ### Run the worker of the app
 Open another terminal to run the following line
 
