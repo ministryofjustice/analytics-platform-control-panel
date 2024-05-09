@@ -1,0 +1,18 @@
+---
+version: '3.8'
+
+services:
+  postgres:
+    image: public.ecr.aws/docker/library/postgres:15.4
+    restart: always
+    environment:
+      POSTGRES_USER: controlpanel
+      POSTGRES_PASSWORD: controlpanel
+      POSTGRES_DB: controlpanel
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U controlpanel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

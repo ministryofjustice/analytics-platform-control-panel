@@ -1,0 +1,29 @@
+{
+  "name": "analytics-platform-control-panel",
+  "image": "ghcr.io/ministryofjustice/devcontainer-base:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20.11.1"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "./features/src/postgresql": {},
+    "./features/src/redis": {},
+    "ghcr.io/ministryofjustice/devcontainer-feature/aws:0": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+  },
+  "postCreateCommand": "bash scripts/devcontainer/post-create.sh",
+  "postStartCommand": "bash scripts/devcontainer/post-start.sh",
+  "runArgs": ["--name=analytics-platform-control-panel-devcontainer"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "EditorConfig.EditorConfig",
+        "GitHub.vscode-github-actions",
+        "GitHub.vscode-codeql"
+      ]
+    }
+  }
+}

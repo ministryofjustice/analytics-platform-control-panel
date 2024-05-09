@@ -1,0 +1,47 @@
+{
+    "configurations": [
+        {
+            "name": "celery",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A",
+                "controlpanel",
+                "worker",
+                "--loglevel=info",
+            ],
+        },
+        {
+            "name": "runserver",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "runserver"
+            ],
+            "django": true,
+            "autoStartBrowser": false,
+            "program": "${workspaceFolder}/manage.py",
+        },
+        {
+            "name": "Python: Debug Tests",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "purpose": ["debug-test"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "DJANGO_SETTINGS_MODULE": "controlpanel.settings.test"
+            }
+        }
+    ],
+    "compounds": [
+        {
+          "name": "Runserver/Celery",
+          "configurations": ["runserver", "celery"],
+          "preLaunchTask": "aws-sso-process",
+          "stopAll": true
+        }
+      ]
+    }

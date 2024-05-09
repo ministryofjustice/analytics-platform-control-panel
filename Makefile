@@ -50,3 +50,37 @@ help: Makefile
 	@echo
 	@sed -n 's/^##//p' $< Makefile.local.mk | column -t -s ':' | sed -e 's/^/ /'
 	@echo
+
+build-static:
+	make build-css
+	make build-js
+	python3 manage.py collectstatic
+
+build-css:
+	mkdir static
+	cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
+	cp -R node_modules/govuk-frontend/ static/govuk-frontend
+	cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
+	cp -R node_modules/html5shiv/dist/ static/html5-shiv
+	./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
+
+build-js:
+	cp -R node_modules/jquery/dist/ static/jquery
+	cp -R node_modules/jquery-ui/dist/ static/jquery-ui
+	./node_modules/.bin/babel \
+  controlpanel/frontend/static/module-loader.js \
+  controlpanel/frontend/static/components \
+  controlpanel/frontend/static/javascripts \
+  -o static/app.js -s
+
+serve-sso:
+	aws-sso exec --profile analytical-platform-development:AdministratorAccess --no-region -- python manage.py runserver
+
+celery-sso:
+	aws-sso exec --profile analytical-platform-development:AdministratorAccess --no-region -- celery -A controlpanel worker --loglevel=info
+
+db-migrate:
+	python manage.py migrate
+
+db-drop:
+	python manage.py reset_db

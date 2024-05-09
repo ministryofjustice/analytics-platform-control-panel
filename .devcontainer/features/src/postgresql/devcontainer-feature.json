@@ -1,0 +1,6 @@
+{
+  "id": "postgresql",
+  "version": "1.0.0",
+  "name": "postgresql",
+  "description": "PostgreSQL"
+}
