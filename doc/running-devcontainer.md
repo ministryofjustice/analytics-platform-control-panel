@@ -117,9 +117,12 @@ your code. [See the Visual Studio Code documentation for more details about usin
 
 ### Visual Studio Code - Debugging Unit Tests
 
-Visual Studio Code also allows you to debug individual unit tests. Select the `Python: Debug Tests` configuration from the Run and Debug icon. Then select the testing icon (it looks like a beaker). Hit the `Configure Python Tests` button. Select `Pytest` then the `tests` folder in the command pallete. This will then load all the tests in that window. From here you can run all tests, run individual tests and debug tests.
+Visual Studio Code also allows you to debug individual unit tests. Select the `Python: Debug Tests` configuration from the Run and Debug icon. Then select the testing icon (it looks like a beaker). To configure the tests:
 
-To debug an individual test, find the test you want to debug and click the debug icon to the right of the test. This will run through the test with the debugger attached.
+- Hit the `Configure Python Tests` button.
+- Select `Pytest` then the `tests` folder in the command pallete.
+
+This will then load all the tests in that window. From here you can run all tests, run individual tests and debug tests. To debug an individual test, find the test you want to debug and click the debug icon to the right of the test. This will run through the test with the debugger attached.
 
 ### Run the worker of the app
 Open another terminal to run the following line
