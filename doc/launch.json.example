@@ -24,6 +24,16 @@
             "program": "${workspaceFolder}/manage.py",
         },
         {
+            "name": "background_tasks",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "runworker",
+                "background_tasks"
+            ],
+            "program": "${workspaceFolder}/manage.py",
+        },
+        {
             "name": "Python: Debug Tests",
             "type": "debugpy",
             "request": "launch",
@@ -38,10 +48,16 @@
     ],
     "compounds": [
         {
-          "name": "Runserver/Celery",
-          "configurations": ["runserver", "celery"],
-          "preLaunchTask": "aws-sso-process",
-          "stopAll": true
+            "name": "Runserver/Celery",
+            "configurations": ["runserver", "celery"],
+            "preLaunchTask": "aws-sso-process",
+            "stopAll": true
+        },
+        {
+            "name": "Runserver/Celery/Background Tasks",
+            "configurations": ["runserver", "celery", "background_tasks"],
+            "preLaunchTask": "aws-sso-process",
+            "stopAll": true
         }
-      ]
-    }
+    ]
+}

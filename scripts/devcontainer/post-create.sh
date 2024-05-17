@@ -27,6 +27,9 @@ make build-static
 # Run migrations
 python manage.py migrate
 
+# Add tooling
+python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
+
 # create aws and kube configs
 aws-sso config-profiles --force
 

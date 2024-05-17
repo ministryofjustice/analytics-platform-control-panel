@@ -79,6 +79,9 @@ serve-sso:
 celery-sso:
 	aws-sso exec --profile analytical-platform-development:AdministratorAccess --no-region -- celery -A controlpanel worker --loglevel=info
 
+background-sso:
+	aws-sso exec --profile analytical-platform-development:AdministratorAccess --no-region -- python manage.py runworker background_tasks
+
 db-migrate:
 	python manage.py migrate
 

@@ -1,6 +1,6 @@
 - model: api.tool
   pk: null
-  fields: 
+  fields:
     created: 2022-01-01T00:00:00Z
     modified: 2022-01-01T00:00:00Z
     description: RStudio (dev 1)
@@ -19,7 +19,7 @@
     target_users: []
 - model: api.tool
   pk: null
-  fields: 
+  fields:
     created: 2022-01-01T00:00:00Z
     modified: 2022-01-01T00:00:00Z
     description: RStudio (dev 2)
@@ -38,7 +38,7 @@
     target_users: []
 - model: api.tool
   pk: null
-  fields: 
+  fields:
     created: 2022-01-01T00:00:00Z
     modified: 2022-01-01T00:00:00Z
     description: Jupyter Lab Data Science (dev 1)
@@ -55,7 +55,7 @@
     target_users: []
 - model: api.tool
   pk: null
-  fields: 
+  fields:
     created: 2022-01-01T00:00:00Z
     modified: 2022-01-01T00:00:00Z
     description: Jupyter Lab Data Science (dev 2)
@@ -72,7 +72,7 @@
     target_users: []
 - model: api.tool
   pk: null
-  fields: 
+  fields:
     created: 2022-01-01T00:00:00Z
     modified: 2022-01-01T00:00:00Z
     description: Jupyter Lab Data Science (dev 3)
@@ -86,4 +86,22 @@
     version: 3.0.14
     is_restricted: false
     tool_domain: jupyter-lab
+    target_users: []
+- model: api.tool
+  pk: null
+  fields:
+    created: 2024-05-10T00:00:00Z
+    modified: 2024-05-10T00:00:00Z
+    description: Visual Studio Code (dev 1)
+    chart_name: vscode
+    name: Visual Studio Code
+    values:
+      proxy.auth0.domain:
+      authProxy.cookieSecret: <SECRET_TOKEN>
+      proxy.auth0.clientId:
+      proxy.auth0.clientSecret:
+      proxy.tool: -vscode.
+    version: 1.0.0
+    is_restricted: false
+    tool_domain: vscode
     target_users: []

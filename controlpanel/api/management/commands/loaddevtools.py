@@ -11,6 +11,12 @@ from django.core.management.commands import loaddata
 # First-party/Local
 from controlpanel.api.models import Tool
 
+chart_to_prefix = {
+    "rstudio": "RSTUDIO",
+    "jupyter": "JUPYTER_LAB",
+    "vscode": "VSCODE",
+}
+
 
 class Command(loaddata.Command):
     help = "Load examples of RStudio and JupyterLab tools into the database"
@@ -50,14 +56,18 @@ class Command(loaddata.Command):
                         fixture_skip_inds.append(ind)
                         continue
 
-                if tool["fields"]["chart_name"] == "rstudio":
-                    env_var_prefix = "RSTUDIO"
-                elif tool["fields"]["chart_name"].startswith("jupyter-"):
-                    env_var_prefix = "JUPYTER_LAB"
-                else:
+                tool_name = (
+                    "jupyter"
+                    if tool["fields"]["chart_name"].startswith("jupyter")
+                    else tool["fields"]["chart_name"]
+                )
+
+                if tool_name not in chart_to_prefix:
                     raise CommandError(
-                        "Tool name should begin with either 'rstudio' or 'jupyter-*'"
+                        "Tool name should begin with either 'rstudio', 'jupyter' or 'vscode'"
                     )
+
+                env_var_prefix = chart_to_prefix.get(tool_name)
 
                 tool["fields"]["values"]["proxy.auth0.domain"] = os.environ[
                     f"{env_var_prefix}_AUTH_CLIENT_DOMAIN"
