@@ -1118,3 +1118,35 @@ class AWSSQS(AWSService):
             log.exception("Couldn't delete messages from queue %s", queue)
         else:
             return response
+
+
+class AWSLakeFormation(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name)
+        self.client = self.boto3_session.client("lakeformation")
+
+    def grant_permissions(
+        self, database_name, table_name, principal_arn, permissions=None, source_catalog_id=None
+    ):
+        permissions = permissions or ["DESCRIBE", "SELECT"]
+        catalog_id = source_catalog_id or settings.AWS_DATA_ACCOUNT_ID
+
+        try:
+            response = self.client.grant_permissions(
+                CatalogId=settings.AWS_DATA_ACCOUNT_ID,
+                Permissions=permissions,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+                Resource={
+                    "Table": {
+                        "CatalogId": catalog_id,
+                        "DatabaseName": database_name,
+                        "Name": table_name,
+                    },
+                },
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
