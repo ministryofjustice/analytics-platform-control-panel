@@ -1126,27 +1126,34 @@ class AWSLakeFormation(AWSService):
         super().__init__(assume_role_name, profile_name, region_name)
         self.client = self.boto3_session.client("lakeformation")
 
-    def grant_permissions(
-        self, database_name, table_name, principal_arn, permissions=None, source_catalog_id=None
-    ):
-        permissions = permissions or ["DESCRIBE", "SELECT"]
-        catalog_id = source_catalog_id or settings.AWS_DATA_ACCOUNT_ID
-
+    def grant_permissions(self, resource, principal_arn, permissions):
+        permissions = permissions
         try:
             response = self.client.grant_permissions(
                 CatalogId=settings.AWS_DATA_ACCOUNT_ID,
                 Permissions=permissions,
                 Principal={"DataLakePrincipalIdentifier": principal_arn},
-                Resource={
-                    "Table": {
-                        "CatalogId": catalog_id,
-                        "DatabaseName": database_name,
-                        "Name": table_name,
-                    },
-                },
+                Resource=resource,
             )
         except botocore.exceptions.ClientError as error:
             log.exception(error.response["Error"]["Message"])
             raise error
 
         return response
+
+    def grant_table_permission(
+        self, database_name, table_name, principal_arn, permissions, catalog_id=None
+    ):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+        return self.grant_permissions(
+            resource=resource,
+            principal_arn=principal_arn,
+            permissions=permissions,
+        )
