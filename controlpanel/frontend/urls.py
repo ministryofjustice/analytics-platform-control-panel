@@ -209,5 +209,9 @@ urlpatterns = [
     ),
     path("accessibility/", views.Accessibility.as_view(), name="accessibility"),
     path("tasks/", views.TaskList.as_view(), name="list-tasks"),
-    path("databases/", views.DatabasesListView.as_view(), name="databases-list"),
+    path("databases/", views.DatabasesListView.as_view(), name="list-databases"),
+    path("databases/<slug:dbname>/", views.TablesListView.as_view(), name="list-tables"),
+    path(
+        "databases/<slug:dbname>/<slug:tablename>", views.ManageTable.as_view(), name="manage-table"
+    ),
 ]

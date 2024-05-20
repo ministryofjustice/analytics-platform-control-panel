@@ -1,32 +1,29 @@
 {% extends "base.html" %}
 
-{% set page_title = "All Databases" %}
+{% set page_title = "Table " + tablename %}
 
 {% block content %}
 
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-{% if databases %}
+{% if table %}
   <table class="govuk-table">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th scope="col" class="govuk-table__header">Name</th>
+        <th scope="col" class="govuk-table__header">Lake Formation Registration</th>
         <th scope="col" class="govuk-table__header">Actions</th>
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-      {% for database in databases %}
-        <tr class="govuk-table__row">
-          <td class="govuk-table__cell">{{ database.Name }}</td>
-          <td class="govuk-table__cell">
-            <a href="{{ url('list-tables', kwargs={"dbname": database.Name})}}" class="govuk-link">View</a>
-          </td>
-        </tr>
-      {% endfor %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">{{ table.Name }}</td>
+        <td class="govuk-table__cell">{{ table.IsRegisteredWithLakeFormation }}</td>
+      </tr>
     </tbody>
   </table>
 {% else %}
-  <p class="govuk-body">No databases found.</p>
+  <p class="govuk-body">No table found.</p>
 {% endif %}
 
 {% endblock %}

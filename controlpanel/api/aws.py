@@ -1157,3 +1157,45 @@ class AWSLakeFormation(AWSService):
             principal_arn=principal_arn,
             permissions=permissions,
         )
+
+
+class AWSGlue(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name)
+        self.client = self.boto3_session.client("glue")
+
+    def get_databases(self, catalog_id=None):
+        try:
+            response = self.client.get_databases(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def get_tables(self, database_name, catalog_id=None):
+        try:
+            response = self.client.get_tables(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID, DatabaseName=database_name
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def get_table(self, database_name, table_name, catalog_id=None):
+        try:
+            response = self.client.get_table(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID,
+                DatabaseName=database_name,
+                Name=table_name,
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
