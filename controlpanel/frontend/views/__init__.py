@@ -33,6 +33,7 @@ from controlpanel.frontend.views.app import (
 
 # isort: on
 # First-party/Local
+from controlpanel.frontend.views.databases import DatabasesListView
 from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,

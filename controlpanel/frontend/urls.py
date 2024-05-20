@@ -209,4 +209,5 @@ urlpatterns = [
     ),
     path("accessibility/", views.Accessibility.as_view(), name="accessibility"),
     path("tasks/", views.TaskList.as_view(), name="list-tasks"),
+    path("databases/", views.DatabasesListView.as_view(), name="databases-list"),
 ]
