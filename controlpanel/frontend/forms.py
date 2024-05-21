@@ -332,6 +332,39 @@ class GrantAccessForm(forms.Form):
         return paths
 
 
+class TableGrantAccessForm(forms.Form):
+    access_level = forms.ChoiceField(
+        choices=[
+            ("describe", "Describe"),
+            ("select", "Select"),
+        ],
+        required=True,
+    )
+    entity_id = forms.CharField(max_length=128)
+    entity_type = forms.ChoiceField(
+        choices=[
+            ("group", "group"),
+            ("user", "user"),
+        ],
+        widget=forms.HiddenInput(),
+        required=True,
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        access_level = cleaned_data.get("access_level")
+        if access_level == "admin":
+            cleaned_data["access_level"] = "readwrite"
+            cleaned_data["is_admin"] = True
+
+        if cleaned_data["entity_type"] == "user":
+            cleaned_data["user_id"] = cleaned_data.get("entity_id")
+        elif cleaned_data["entity_type"] == "group":
+            cleaned_data["policy_id"] = cleaned_data.get("entity_id")
+
+        return cleaned_data
+
+
 class GrantAppAccessForm(forms.Form):
     access_level = forms.ChoiceField(
         choices=[

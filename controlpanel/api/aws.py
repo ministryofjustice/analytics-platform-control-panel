@@ -1158,6 +1158,51 @@ class AWSLakeFormation(AWSService):
             permissions=permissions,
         )
 
+    def revoke_permissions(self, resource, principal_arn, permissions):
+        permissions = permissions
+        try:
+            response = self.client.revoke_permissions(
+                CatalogId=settings.AWS_DATA_ACCOUNT_ID,
+                Permissions=permissions,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+                Resource=resource,
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def revoke_table_permission(
+        self, database_name, table_name, principal_arn, permissions, catalog_id=None
+    ):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+        return self.revoke_permissions(
+            resource=resource,
+            principal_arn=principal_arn,
+            permissions=permissions,
+        )
+
+    def list_permissions(self, database_name, table_name, catalog_id=None):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+        return self.client.list_permissions(
+            Resource=resource,
+        )
+
 
 class AWSGlue(AWSService):
 

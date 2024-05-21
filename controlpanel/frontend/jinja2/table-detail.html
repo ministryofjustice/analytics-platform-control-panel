@@ -11,17 +11,51 @@
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th scope="col" class="govuk-table__header">Name</th>
-        <th scope="col" class="govuk-table__header">Lake Formation Registration</th>
+        <th scope="col" class="govuk-table__header">Registered in Lake Formation</th>
         <th scope="col" class="govuk-table__header">Actions</th>
       </tr>
     </thead>
     <tbody class="govuk-table__body">
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">{{ table.Name }}</td>
-        <td class="govuk-table__cell">{{ table.IsRegisteredWithLakeFormation }}</td>
+        <td class="govuk-table__cell">{{ "Yes" if table.IsRegisteredWithLakeFormation else "No" }}</td>
       </tr>
     </tbody>
   </table>
+
+  <h2 class="govuk-heading-l">User Permissions</h1>
+
+  {% if permissions %}
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">User</th>
+        <th scope="col" class="govuk-table__header">Permissions</th>
+        <th scope="col" class="govuk-table__header">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% for permission in permissions %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">{{ permission.user }}</td>
+        <td class="govuk-table__cell">{{ ", ".join(permission.permissions) }}</td>
+        <td class="govuk-table__cell">
+          <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": table.Name, "user": permission.user }) }}" method="post">
+            {{ csrf_input }}
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+                    data-confirm-message="Are you sure you want to revoke access for user?">
+              Revoke Access
+            </button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+  </table>
+  {% endif %}
+
+  <a class="govuk-button" href="{{ url('grant-table-permissions', kwargs={ "dbname": dbname, "tablename": table.Name}) }}">
+    Grant User Permissions
+  </a>
 {% else %}
   <p class="govuk-body">No table found.</p>
 {% endif %}
