@@ -335,38 +335,35 @@ class GrantAccessForm(forms.Form):
 class TableGrantAccessForm(forms.Form):
     access_level = forms.ChoiceField(
         choices=[
-            ("read", "Read Only"),
-            ("write", "Read/Write"),
+            ("readonly", "Read Only"),
+            ("readwrite", "Read/Write"),
             ("admin", "Admin"),
         ],
         required=True,
     )
     entity_id = forms.CharField(max_length=128)
-    entity_type = forms.ChoiceField(
-        choices=[
-            ("group", "group"),
-            ("user", "user"),
-        ],
-        widget=forms.HiddenInput(),
-        required=True,
-    )
+
+    def clean_entity_id(self):
+        entity_id = self.cleaned_data["entity_id"]
+        user = User.objects.filter(auth0_id=entity_id).first()
+
+        if not user:
+            raise ValidationError(f"User {entity_id} does not exist")
+
+        return user
 
     def clean(self):
 
         permissions = {
-            "read": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
-            "write": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
+            "readonly": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
+            "readwrite": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
             "admin": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
         }
 
         cleaned_data = super().clean()
         access_level = cleaned_data.get("access_level")
         cleaned_data["access_level"] = permissions[access_level]
-
-        if cleaned_data["entity_type"] == "user":
-            cleaned_data["user_id"] = cleaned_data.get("entity_id")
-        elif cleaned_data["entity_type"] == "group":
-            cleaned_data["policy_id"] = cleaned_data.get("entity_id")
+        cleaned_data["user"] = cleaned_data.get("entity_id")
 
         return cleaned_data
 

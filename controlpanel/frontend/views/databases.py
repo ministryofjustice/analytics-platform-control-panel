@@ -2,8 +2,9 @@
 import structlog
 from django.conf import settings
 from django.contrib import messages
+from django.http import HttpResponse
 from django.http.response import HttpResponseRedirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, View
 from django.views.generic.edit import FormView
 from rules.contrib.views import PermissionRequiredMixin
@@ -120,11 +121,55 @@ class TableGrantView(
         table_name = self.kwargs["tablename"]
         context_data["dbname"] = db_name
         context_data["tablename"] = table_name
-        context_data["entity_type"] = "user"
         context_data["entity_options"] = User.objects.exclude(auth0_id__isnull=True)
-        context_data["grant_url"] = f"databases/{db_name}/{table_name}/grant/"
+        context_data["grant_url"] = reverse(
+            viewname="grant-table-permissions", kwargs={"dbname": db_name, "tablename": table_name}
+        )
 
         return context_data
+
+    def get_success_url(self):
+        db_name = self.kwargs["dbname"]
+        table_name = self.kwargs["tablename"]
+        return reverse(viewname="manage-table", kwargs={"dbname": db_name, "tablename": table_name})
+
+    def form_valid(self, form):
+
+        user = form.cleaned_data["user"]
+        permissions = form.cleaned_data["access_level"]
+        user_arn = iam_arn(f"role/{user.iam_role_name}")
+        database_name = self.kwargs["dbname"]
+        resource_link_name = self.kwargs["tablename"]
+
+        try:
+            lake_formation = AWSLakeFormation()
+            glue = AWSGlue()
+            table_data = glue.get_table(database_name=database_name, table_name=resource_link_name)
+            remote_catalog_id = table_data["Table"]["TargetTable"]["CatalogId"]
+            remote_database_name = table_data["Table"]["TargetTable"]["DatabaseName"]
+            remote_table_name = table_data["Table"]["TargetTable"]["Name"]
+
+            lake_formation.grant_table_permission(
+                database_name=database_name,
+                table_name=resource_link_name,
+                principal_arn=user_arn,
+                permissions=permissions["resource_link"],
+            )
+
+            lake_formation.grant_table_permission(
+                database_name=remote_database_name,
+                table_name=remote_table_name,
+                principal_arn=user_arn,
+                catalog_id=remote_catalog_id,
+                permissions=permissions["table"],
+            )
+
+            messages.success(self.request, f"Successfully granted access for user {user.username}")
+        except Exception as e:
+            log.error(f"Could not grant access for user {user.username}", error=str(e))
+            messages.error(self.request, f"Could not grant access for user {user.username}")
+
+        return super().form_valid(form)
 
 
 class RevokeTableAccessView(

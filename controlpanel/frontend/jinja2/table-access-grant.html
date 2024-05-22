@@ -5,7 +5,7 @@
 
 {% extends "base.html" %}
 
-{% set page_title = "Grant " + entity_type + " access to table" %}
+{% set page_title = "Grant user access to table" %}
 
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
@@ -13,17 +13,12 @@
 <section class="cpanel-section">
   <form action="{{ grant_url }}" method="post">
     {{ csrf_input }}
-    <input type="hidden" name="entity_type" value="{{ entity_type }}">
     <div class="govuk-form-group{% if form.entity_id.errors %} govuk-form-group--error{% endif %}">
-      <label class="govuk-label" for="entity_id">Grant access to this data to other {{ entity_type }}s</label>
+      <label class="govuk-label" for="entity_id">Grant access to this data to other users</label>
       <select class="govuk-form-control no-blank autocomplete-select" id="entity_id" name="entity_id">
         <option value="">Select a user</option>
         {% for entity in entity_options %}
-          {% if entity_type == "user" %}
             <option value="{{ entity.auth0_id }}">{{ user_name(entity) }}</option>
-          {% else %}
-            <option value="{{ entity.id }}">{{ entity.name }}</option>
-          {% endif %}
         {% endfor %}
       </select>
     </div>
