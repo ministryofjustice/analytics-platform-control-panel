@@ -335,8 +335,9 @@ class GrantAccessForm(forms.Form):
 class TableGrantAccessForm(forms.Form):
     access_level = forms.ChoiceField(
         choices=[
-            ("describe", "Describe"),
-            ("select", "Select"),
+            ("read", "Read Only"),
+            ("write", "Read/Write"),
+            ("admin", "Admin"),
         ],
         required=True,
     )
@@ -351,11 +352,16 @@ class TableGrantAccessForm(forms.Form):
     )
 
     def clean(self):
+
+        permissions = {
+            "read": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
+            "write": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
+            "admin": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
+        }
+
         cleaned_data = super().clean()
         access_level = cleaned_data.get("access_level")
-        if access_level == "admin":
-            cleaned_data["access_level"] = "readwrite"
-            cleaned_data["is_admin"] = True
+        cleaned_data["access_level"] = permissions[access_level]
 
         if cleaned_data["entity_type"] == "user":
             cleaned_data["user_id"] = cleaned_data.get("entity_id")

@@ -1190,7 +1190,7 @@ class AWSLakeFormation(AWSService):
             permissions=permissions,
         )
 
-    def list_permissions(self, database_name, table_name, catalog_id=None):
+    def list_permissions(self, database_name, table_name, principal_arn=None, catalog_id=None):
         catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
         resource = {
             "Table": {
@@ -1199,9 +1199,14 @@ class AWSLakeFormation(AWSService):
                 "Name": table_name,
             },
         }
-        return self.client.list_permissions(
-            Resource=resource,
-        )
+
+        if principal_arn:
+            return self.client.list_permissions(
+                Resource=resource,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+            )
+
+        return self.client.list_permissions(Resource=resource)
 
 
 class AWSGlue(AWSService):

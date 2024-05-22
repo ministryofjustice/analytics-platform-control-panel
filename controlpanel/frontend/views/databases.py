@@ -116,10 +116,13 @@ class TableGrantView(
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
-        context_data["dbname"] = self.kwargs["dbname"]
-        context_data["tablename"] = self.kwargs["tablename"]
+        db_name = self.kwargs["dbname"]
+        table_name = self.kwargs["tablename"]
+        context_data["dbname"] = db_name
+        context_data["tablename"] = table_name
         context_data["entity_type"] = "user"
         context_data["entity_options"] = User.objects.exclude(auth0_id__isnull=True)
+        context_data["grant_url"] = f"databases/{db_name}/{table_name}/grant/"
 
         return context_data
 
@@ -145,20 +148,34 @@ class RevokeTableAccessView(
             remote_database_name = table_data["Table"]["TargetTable"]["DatabaseName"]
             remote_table_name = table_data["Table"]["TargetTable"]["Name"]
 
+            resource_link_permissions = self._get_resource_permissions(
+                lake_formation, database_name, table_name, principal_arn
+            )
+
+            table_permissions = self._get_resource_permissions(
+                lake_formation,
+                remote_database_name,
+                remote_table_name,
+                principal_arn,
+                remote_catalog_id,
+            )
+
             # Revoke access to resource link and linked table here
-            lake_formation.revoke_table_permission(
-                database_name=database_name,
-                table_name=table_name,
-                principal_arn=principal_arn,
-                permissions=["DESCRIBE"],
-            )
-            lake_formation.revoke_table_permission(
-                database_name=remote_database_name,
-                table_name=remote_table_name,
-                principal_arn=principal_arn,
-                catalog_id=remote_catalog_id,
-                permissions=["SELECT"],
-            )
+            if resource_link_permissions:
+                lake_formation.revoke_table_permission(
+                    database_name=database_name,
+                    table_name=table_name,
+                    principal_arn=principal_arn,
+                    permissions=resource_link_permissions,
+                )
+            if table_permissions:
+                lake_formation.revoke_table_permission(
+                    database_name=remote_database_name,
+                    table_name=remote_table_name,
+                    principal_arn=principal_arn,
+                    catalog_id=remote_catalog_id,
+                    permissions=table_permissions,
+                )
 
             messages.success(self.request, f"Successfully revoked access for user {kwargs['user']}")
             return HttpResponseRedirect(
@@ -174,3 +191,25 @@ class RevokeTableAccessView(
                     "manage-table", kwargs={"dbname": database_name, "tablename": table_name}
                 )
             )
+
+    def _get_resource_permissions(
+        self, lake_formation, database_name, table_name, principal_arn, catalog_id=None
+    ):
+        permissions = lake_formation.list_permissions(
+            database_name=database_name,
+            table_name=table_name,
+            principal_arn=principal_arn,
+            catalog_id=catalog_id,
+        )["PrincipalResourcePermissions"]
+
+        if len(permissions) == 1:
+            return permissions[0]["Permissions"]
+
+        if len(permissions) > 1:
+            result = []
+            for permission in permissions:
+                result = result + permission["Permissions"]
+
+            return result
+
+        return None
