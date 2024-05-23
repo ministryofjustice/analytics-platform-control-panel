@@ -22,41 +22,42 @@
     </tbody>
   </table>
 
-  <h2 class="govuk-heading-l">User Permissions</h1>
-
-  {% if permissions %}
-  <table class="govuk-table">
-    <thead class="govuk-table__head">
-      <tr class="govuk-table__row">
-        <th scope="col" class="govuk-table__header">User</th>
-        <th class="govuk-table__header">
-          <span class="govuk-visually-hidden">Actions</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody class="govuk-table__body">
-      {% for permission in permissions %}
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell">{{ permission.user }}</td>
-        <td class="govuk-table__cell align-right no-wrap">
-          <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": table.Name, "user": permission.user }) }}" method="post">
-            {{ csrf_input }}
-            <button class="govuk-button cpanel-button--destructive js-confirm"
-                    data-confirm-message="Are you sure you want to revoke access for user?">
-              Revoke Access
-            </button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-  </table>
-  {% endif %}
-
   {% if table.IsRegisteredWithLakeFormation %}
+    <h2 class="govuk-heading-l">User Permissions</h1>
+
+    {% if permissions %}
+    <table class="govuk-table">
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header">User</th>
+          <th class="govuk-table__header">
+            <span class="govuk-visually-hidden">Actions</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for permission in permissions %}
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ permission.user }}</td>
+          <td class="govuk-table__cell align-right no-wrap">
+            <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": table.Name, "user": permission.user }) }}" method="post">
+              {{ csrf_input }}
+              <button class="govuk-button cpanel-button--destructive js-confirm"
+                      data-confirm-message="Are you sure you want to revoke access for user?">
+                Revoke Access
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+
     <a class="govuk-button" href="{{ url('grant-table-permissions', kwargs={ "dbname": dbname, "tablename": table.Name}) }}">
       Grant User Permissions
     </a>
-    {% endif %}
+  {% endif %}
 {% else %}
   <p class="govuk-body">No table found.</p>
 {% endif %}
