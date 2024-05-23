@@ -4,7 +4,8 @@
 
 {% block content %}
 
-<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+<span class="govuk-caption-xl">Table</span>
+<h1 class="govuk-heading-xl">{{ tablename }}</h1>
 
 {% if table %}
   <table class="govuk-table">
@@ -23,7 +24,7 @@
   </table>
 
   {% if table.IsRegisteredWithLakeFormation %}
-    <h2 class="govuk-heading-l">User Permissions</h1>
+    <h2 class="govuk-heading-l">User Access</h1>
 
     {% if permissions %}
     <table class="govuk-table">
