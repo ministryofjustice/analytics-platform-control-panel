@@ -14,7 +14,7 @@ django-filter==24.1
 django-prometheus==2.3.1
 django-redis==5.4.0
 django-simple-history==3.4.0
-django-structlog==7.1.0
+django-structlog==8.1.0
 djangorestframework==3.14.0
 djproxy==2.3.6
 elasticsearch-dsl==7.4.1
