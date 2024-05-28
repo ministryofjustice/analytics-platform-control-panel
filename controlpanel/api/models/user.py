@@ -139,7 +139,10 @@ class User(AbstractUser):
 
     def set_quicksight_access(self, enable):
         action = "attach" if enable else "remove"
-        return cluster.User(self).set_quicksight_access(action=action)
+        return cluster.User(self).update_policy_attachment(
+            policy=cluster.User.QUICKSIGHT_POLICY_NAME,
+            action=action,
+        )
 
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
