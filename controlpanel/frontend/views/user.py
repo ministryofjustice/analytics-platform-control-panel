@@ -120,7 +120,7 @@ class EnableQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, Vi
 
     def post(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=kwargs["pk"])
-        user.set_quicksight_access(enable=request.POST.get("is_quicksight_enabled", False))
+        user.set_quicksight_access(enable="enable_quicksight" in request.POST)
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 

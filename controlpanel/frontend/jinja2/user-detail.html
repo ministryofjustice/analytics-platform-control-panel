@@ -98,7 +98,7 @@
   <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
     {{ govukCheckboxes({
-      "name": "is_quicksight_enabled",
+      "name": "enable_quicksight",
       "fieldset": {
         "legend": {
           "text": "Enable Quicksight",

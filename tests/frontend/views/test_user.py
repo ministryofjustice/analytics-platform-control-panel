@@ -6,6 +6,9 @@ import pytest
 from django.urls import reverse
 from rest_framework import status
 
+# First-party/Local
+from controlpanel.api import cluster
+
 
 @pytest.fixture(autouse=True)
 def auth0():
@@ -105,4 +108,28 @@ def test_grant_superuser_access(client, users, slack):
     slack.notify_superuser_created.assert_called_with(
         user.username,
         by_username=request_user.username,
+    )
+
+
+@pytest.mark.parametrize(
+    "data, action",
+    [
+        ({"enable_quicksight": True}, "attach"),
+        ({}, "remove"),
+    ],
+    ids=["enable", "disable"],
+)
+@patch("controlpanel.api.models.user.cluster.User.update_policy_attachment")
+def test_enable_quicksight_access(update_policy_attachment, data, action, client, users):
+    request_user = users["superuser"]
+    user = users["other_user"]
+    url = reverse("set-quicksight", kwargs={"pk": user.auth0_id})
+
+    client.force_login(request_user)
+    response = client.post(url, data=data)
+
+    assert response.status_code == status.HTTP_302_FOUND
+    update_policy_attachment.assert_called_once_with(
+        policy=cluster.User.QUICKSIGHT_POLICY_NAME,
+        action=action,
     )
