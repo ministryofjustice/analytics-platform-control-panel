@@ -192,6 +192,7 @@ class User(EntityResource):
 
     READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
     BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
+    QUICKSIGHT_POLICY_NAME = "analytical-platform-quicksight-user"
 
     ATTACH_POLICIES = [
         READ_INLINE_POLICIES,
@@ -370,6 +371,27 @@ class User(EntityResource):
             self.aws_role_service.attach_policy(self.iam_role_name, bedrock_policy)
         else:
             self.aws_role_service.remove_policy(self.iam_role_name, bedrock_policy)
+
+    def list_attached_policy_names(self):
+        policies = self.aws_role_service.list_attached_policies(self.iam_role_name)
+        return [policy.policy_name for policy in policies]
+
+    def has_policy_attached(self, policy_name):
+        return policy_name in self.list_attached_policy_names()
+
+    def is_quicksight_enabled(self):
+        return self.has_policy_attached(self.QUICKSIGHT_POLICY_NAME)
+
+    def set_quicksight_access(self, action):
+        return self.update_policy_attachment(policy=self.QUICKSIGHT_POLICY_NAME, action=action)
+
+    def update_policy_attachment(self, policy, action):
+        match action:
+            case "attach":
+                return self.aws_role_service.attach_policy(self.iam_role_name, [policy])
+            case "remove":
+                return self.aws_role_service.remove_policy(self.iam_role_name, [policy])
+        return "Invalid action"
 
 
 class App(EntityResource):

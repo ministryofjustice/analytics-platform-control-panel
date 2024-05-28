@@ -579,6 +579,16 @@ class AWSRole(AWSService):
         policy.revoke_folder_access(root_folder_path=root_folder_path)
         policy.put()
 
+    def list_attached_policies(self, role_name):
+        try:
+            role = self.boto3_session.resource("iam").Role(role_name)
+            return list(role.attached_policies.all())
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{role_name}' doesn't exist")
+                return []
+            raise e
+
 
 class AWSFolder(AWSService):
     @staticmethod

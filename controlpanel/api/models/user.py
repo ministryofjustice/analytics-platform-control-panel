@@ -133,6 +133,14 @@ class User(AbstractUser):
             != 0
         )
 
+    @property
+    def is_quicksight_enabled(self):
+        return cluster.User(self).is_quicksight_enabled()
+
+    def set_quicksight_access(self, enable):
+        action = "attach" if enable else "remove"
+        return cluster.User(self).set_quicksight_access(action=action)
+
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
