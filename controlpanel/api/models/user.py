@@ -135,7 +135,9 @@ class User(AbstractUser):
 
     @property
     def is_quicksight_enabled(self):
-        return cluster.User(self).is_quicksight_enabled()
+        return cluster.User(self).has_policy_attached(
+            policy_name=cluster.User.QUICKSIGHT_POLICY_NAME
+        )
 
     def set_quicksight_access(self, enable):
         action = "attach" if enable else "remove"

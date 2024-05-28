@@ -379,9 +379,6 @@ class User(EntityResource):
     def has_policy_attached(self, policy_name):
         return policy_name in self.list_attached_policy_names()
 
-    def is_quicksight_enabled(self):
-        return self.has_policy_attached(self.QUICKSIGHT_POLICY_NAME)
-
     def update_policy_attachment(self, policy, action):
         match action:
             case "attach":
