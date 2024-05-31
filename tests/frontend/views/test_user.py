@@ -112,15 +112,15 @@ def test_grant_superuser_access(client, users, slack):
 
 
 @pytest.mark.parametrize(
-    "data, action",
+    "data, attach",
     [
-        ({"enable_quicksight": True}, "attach"),
-        ({}, "remove"),
+        ({"enable_quicksight": True}, True),
+        ({}, False),
     ],
-    ids=["enable", "disable"],
+    ids=["attach", "remove"],
 )
 @patch("controlpanel.api.models.user.cluster.User.update_policy_attachment")
-def test_enable_quicksight_access(update_policy_attachment, data, action, client, users):
+def test_enable_quicksight_access(update_policy_attachment, data, attach, client, users):
     request_user = users["superuser"]
     user = users["other_user"]
     url = reverse("set-quicksight", kwargs={"pk": user.auth0_id})
@@ -131,5 +131,5 @@ def test_enable_quicksight_access(update_policy_attachment, data, action, client
     assert response.status_code == status.HTTP_302_FOUND
     update_policy_attachment.assert_called_once_with(
         policy=cluster.User.QUICKSIGHT_POLICY_NAME,
-        action=action,
+        attach=attach,
     )

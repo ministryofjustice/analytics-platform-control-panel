@@ -140,20 +140,18 @@ class User(AbstractUser):
         )
 
     def set_quicksight_access(self, enable):
-        action = "attach" if enable else "remove"
         return cluster.User(self).update_policy_attachment(
             policy=cluster.User.QUICKSIGHT_POLICY_NAME,
-            action=action,
+            attach=enable,
         )
 
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
     def set_bedrock_access(self):
-        action = "attach" if self.is_bedrock_enabled else "remove"
         return cluster.User(self).update_policy_attachment(
             policy=cluster.User.BEDROCK_POLICY_NAME,
-            action=action,
+            attach=self.is_bedrock_enabled,
         )
 
     def save(self, *args, **kwargs):

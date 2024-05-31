@@ -371,13 +371,10 @@ class User(EntityResource):
                 return True
         return False
 
-    def update_policy_attachment(self, policy, action):
-        match action:
-            case "attach":
-                return self.aws_role_service.attach_policy(self.iam_role_name, [policy])
-            case "remove":
-                return self.aws_role_service.remove_policy(self.iam_role_name, [policy])
-        return "Invalid action"
+    def update_policy_attachment(self, policy, attach: bool):
+        if not attach:
+            return self.aws_role_service.remove_policy(self.iam_role_name, [policy])
+        return self.aws_role_service.attach_policy(self.iam_role_name, [policy])
 
 
 class App(EntityResource):
