@@ -372,12 +372,11 @@ class User(EntityResource):
         else:
             self.aws_role_service.remove_policy(self.iam_role_name, bedrock_policy)
 
-    def list_attached_policy_names(self):
-        policies = self.aws_role_service.list_attached_policies(self.iam_role_name)
-        return [policy.policy_name for policy in policies]
-
     def has_policy_attached(self, policy_name):
-        return policy_name in self.list_attached_policy_names()
+        for policy in self.aws_role_service.list_attached_policies(self.iam_role_name):
+            if policy_name == policy.policy_name:
+                return True
+        return False
 
     def update_policy_attachment(self, policy, action):
         match action:
