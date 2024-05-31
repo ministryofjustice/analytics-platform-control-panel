@@ -2,7 +2,6 @@
 import structlog
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponse
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, View
@@ -24,17 +23,26 @@ class DatabasesListView(
     TemplateView,
 ):
     template_name = "databases-list.html"
-    permission_required = "api.is_superuser"
+    permission_required = "api.is_database_admin"
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
 
-        glue = AWSGlue()
-
-        database_data = glue.get_databases()
-        context_data["databases"] = database_data["DatabaseList"]
+        context_data["databases"] = self._get_database_list("julia-lake-formation-eu-west-1")
 
         return context_data
+
+    def _get_database_list(self, database_name=None):
+        glue = AWSGlue()
+
+        if not database_name:
+            database_data = glue.get_databases()
+            return database_data["DatabaseList"]
+
+        result = []
+        database_data = glue.get_database(database_name=database_name)
+        result.append(database_data["Database"])
+        return result
 
 
 class TablesListView(
@@ -43,7 +51,7 @@ class TablesListView(
     TemplateView,
 ):
     template_name = "tables-list.html"
-    permission_required = "api.is_superuser"
+    permission_required = "api.is_database_admin"
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -63,7 +71,7 @@ class ManageTable(
     TemplateView,
 ):
     template_name = "table-detail.html"
-    permission_required = "api.is_superuser"
+    permission_required = "api.is_database_admin"
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
@@ -112,7 +120,7 @@ class TableGrantView(
     FormView,
 ):
     template_name = "table-access-grant.html"
-    permission_required = "api.is_superuser"
+    permission_required = "api.is_database_admin"
     form_class = TableGrantAccessForm
 
     def get_context_data(self, **kwargs):
@@ -177,7 +185,7 @@ class RevokeTableAccessView(
     PermissionRequiredMixin,
     View,
 ):
-    permission_required = "api.is_superuser"
+    permission_required = "api.is_database_admin"
 
     def post(self, request, *args, **kwargs):
 

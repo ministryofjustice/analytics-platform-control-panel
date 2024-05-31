@@ -1226,6 +1226,17 @@ class AWSGlue(AWSService):
 
         return response
 
+    def get_database(self, database_name, catalog_id=None):
+        try:
+            response = self.client.get_database(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID, Name=database_name
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
     def get_tables(self, database_name, catalog_id=None):
         try:
             response = self.client.get_tables(

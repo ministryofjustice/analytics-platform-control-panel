@@ -112,6 +112,12 @@
         "active": page_name == "webapps",
       },
       {
+        "hide": not request.user.is_superuser and not request.user.is_database_admin,
+        "text": "Databases",
+        "href": url("list-databases"),
+        "active": page_name == "list-databases",
+      },
+      {
         "hide": not request.user.is_superuser,
         "text": "Groups",
         "href": url("list-policies"),
