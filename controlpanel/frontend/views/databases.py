@@ -28,7 +28,7 @@ class DatabasesListView(
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
 
-        context_data["databases"] = self._get_database_list("julia-lake-formation-eu-west-1")
+        context_data["databases"] = self._get_database_list(settings.DPR_DATABASE_NAME)
 
         return context_data
 

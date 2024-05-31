@@ -48,6 +48,14 @@ def set_bedrock(client, users, *args):
     return client.post(reverse("set-bedrock", kwargs=kwargs), data)
 
 
+def set_database_admin(client, users, *args):
+    data = {
+        "is_database_admin": True,
+    }
+    kwargs = {"pk": users["other_user"].auth0_id}
+    return client.post(reverse("set-database-admin", kwargs=kwargs), data)
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -68,6 +76,9 @@ def set_bedrock(client, users, *args):
         (set_bedrock, "superuser", status.HTTP_302_FOUND),
         (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
         (set_bedrock, "other_user", status.HTTP_403_FORBIDDEN),
+        (set_database_admin, "superuser", status.HTTP_302_FOUND),
+        (set_database_admin, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_database_admin, "other_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permission(client, users, view, user, expected_status):
@@ -81,7 +92,7 @@ def test_permission(client, users, view, user, expected_status):
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list, "superuser", 3),
+        (list, "superuser", 4),
     ],
 )
 def test_list(client, users, view, user, expected_count):
