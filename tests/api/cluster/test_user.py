@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import pytest
@@ -92,3 +92,21 @@ def test_delete_eks_with_no_releases(aws_delete_role, helm, users):
 
     aws_delete_role.assert_called_with(user.iam_role_name)
     assert not helm.delete.called
+
+
+@pytest.mark.parametrize(
+    "attach, method", [(True, "attach_policy"), (False, "remove_policy")], ids=["attach", "remove"]
+)
+def test_update_policy_attachment(users, attach, method):
+    user = cluster.User(users["normal_user"])
+    with patch.object(user.aws_role_service, method) as mock:
+        user.update_policy_attachment("policy_name", attach=attach)
+        mock.assert_called_once_with(user.iam_role_name, ["policy_name"])
+
+
+def test_has_policy_attached(users):
+    user = cluster.User(users["normal_user"])
+    with patch.object(user.aws_role_service, "list_attached_policies") as mock:
+        mock.return_value = [MagicMock(policy_name="expected_policy")]
+        assert user.has_policy_attached("expected_policy") is True
+        assert user.has_policy_attached("unexpected_policy") is False
