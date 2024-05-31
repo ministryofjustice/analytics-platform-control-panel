@@ -97,6 +97,12 @@ class User(AbstractUser):
     def slug(self):
         return sanitize_dns_label(self.username)
 
+    @property
+    def is_quicksight_enabled(self):
+        return cluster.User(self).has_policy_attached(
+            policy_name=cluster.User.QUICKSIGHT_POLICY_NAME
+        )
+
     @cached_property
     def show_webapp_data_link(self):
         """
@@ -133,18 +139,6 @@ class User(AbstractUser):
             != 0
         )
 
-    @property
-    def is_quicksight_enabled(self):
-        return cluster.User(self).has_policy_attached(
-            policy_name=cluster.User.QUICKSIGHT_POLICY_NAME
-        )
-
-    def set_quicksight_access(self, enable):
-        return cluster.User(self).update_policy_attachment(
-            policy=cluster.User.QUICKSIGHT_POLICY_NAME,
-            attach=enable,
-        )
-
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
@@ -152,6 +146,12 @@ class User(AbstractUser):
         return cluster.User(self).update_policy_attachment(
             policy=cluster.User.BEDROCK_POLICY_NAME,
             attach=self.is_bedrock_enabled,
+        )
+
+    def set_quicksight_access(self, enable):
+        return cluster.User(self).update_policy_attachment(
+            policy=cluster.User.QUICKSIGHT_POLICY_NAME,
+            attach=enable,
         )
 
     def save(self, *args, **kwargs):
