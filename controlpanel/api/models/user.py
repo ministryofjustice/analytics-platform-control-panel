@@ -150,7 +150,11 @@ class User(AbstractUser):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
     def set_bedrock_access(self):
-        cluster.User(self).set_bedrock_access()
+        action = "attach" if self.is_bedrock_enabled else "remove"
+        return cluster.User(self).update_policy_attachment(
+            policy=cluster.User.BEDROCK_POLICY_NAME,
+            action=action,
+        )
 
     def save(self, *args, **kwargs):
         existing = User.objects.filter(pk=self.pk).first()

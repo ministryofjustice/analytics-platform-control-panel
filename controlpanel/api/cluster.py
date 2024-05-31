@@ -365,13 +365,6 @@ class User(EntityResource):
                 return False
         return True
 
-    def set_bedrock_access(self):
-        bedrock_policy = [self.BEDROCK_POLICY_NAME]
-        if self.user.is_bedrock_enabled:
-            self.aws_role_service.attach_policy(self.iam_role_name, bedrock_policy)
-        else:
-            self.aws_role_service.remove_policy(self.iam_role_name, bedrock_policy)
-
     def has_policy_attached(self, policy_name):
         for policy in self.aws_role_service.list_attached_policies(self.iam_role_name):
             if policy_name == policy.policy_name:
