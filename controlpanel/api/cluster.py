@@ -192,7 +192,7 @@ class User(EntityResource):
 
     READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
     BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
-    QUICKSIGHT_POLICY_NAME = "analytical-platform-quicksight-user"
+    QUICKSIGHT_POLICY_NAME = f"{settings.ENV}-quicksight-author-access"
 
     ATTACH_POLICIES = [
         READ_INLINE_POLICIES,
