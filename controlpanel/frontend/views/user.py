@@ -114,13 +114,14 @@ class EnableBedrockUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateV
         return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
 
 
-class EnableQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
+class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = "api.add_superuser"
     http_method_names = ["post"]
 
     def post(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=kwargs["pk"])
         user.set_quicksight_access(enable="enable_quicksight" in request.POST)
+        messages.success(self.request, "Successfully updated Quicksight access")
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 

@@ -510,7 +510,13 @@ class AWSRole(AWSService):
                 raise e
 
         for policy in remove_policies or []:
-            role.detach_policy(PolicyArn=iam_arn(f"policy/{policy}"))
+            try:
+                role.detach_policy(PolicyArn=iam_arn(f"policy/{policy}"))
+            except botocore.exceptions.ClientError as e:
+                if e.response["Error"]["Code"] == "NoSuchEntity":
+                    log.warning(f"Policy {policy}: Not attached, skipping")
+                    continue
+                raise e
 
     def list_role_names(self, prefix="/"):
         roles = self.boto3_session.resource("iam").roles.filter(PathPrefix=prefix).all()

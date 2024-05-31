@@ -75,8 +75,8 @@ from controlpanel.frontend.views.task import TaskList
 from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
     EnableBedrockUser,
-    EnableQuicksightAccess,
     ResetMFA,
+    SetQuicksightAccess,
     SetSuperadmin,
     UserDelete,
     UserDetail,
