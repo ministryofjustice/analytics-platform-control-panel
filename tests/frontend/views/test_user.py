@@ -51,6 +51,11 @@ def set_bedrock(client, users, *args):
     return client.post(reverse("set-bedrock", kwargs=kwargs), data)
 
 
+def set_quicksight(client, users, *args):
+    kwargs = {"pk": users["other_user"].auth0_id}
+    return client.post(reverse("set-bedrock", kwargs=kwargs))
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -71,6 +76,9 @@ def set_bedrock(client, users, *args):
         (set_bedrock, "superuser", status.HTTP_302_FOUND),
         (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
         (set_bedrock, "other_user", status.HTTP_403_FORBIDDEN),
+        (set_quicksight, "superuser", status.HTTP_302_FOUND),
+        (set_quicksight, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_quicksight, "other_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permission(client, users, view, user, expected_status):
