@@ -4,8 +4,11 @@ from datetime import datetime, timedelta
 # Third-party
 from django.contrib import messages
 from django.forms import BaseModelForm
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import FormView
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import DeleteView, UpdateView
@@ -109,6 +112,17 @@ class EnableBedrockUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateV
     def get_success_url(self):
         messages.success(self.request, "Successfully updated bedrock status")
         return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
+
+
+class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "api.add_superuser"
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+        user.set_quicksight_access(enable="enable_quicksight" in request.POST)
+        messages.success(self.request, "Successfully updated Quicksight access")
+        return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
 class ResetMFA(
