@@ -106,3 +106,15 @@ def test_bulk_migration_update(users):
     User.bulk_migration_update(usernames, new_state)
     user = User.objects.get(username="bob")
     assert user.migration_state == new_state
+
+
+@pytest.mark.parametrize("enable", [True, False], ids=["enable", "disable"])
+def test_set_quicksight_access(users, enable):
+
+    user = users["other_user"]
+    with patch.object(cluster.User, "update_policy_attachment") as mock_update_policy_attachment:
+        user.set_quicksight_access(enable=enable)
+        mock_update_policy_attachment.assert_called_once_with(
+            policy=cluster.User.QUICKSIGHT_POLICY_NAME,
+            attach=enable,
+        )

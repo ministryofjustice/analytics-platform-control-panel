@@ -1121,3 +1121,16 @@ def test_revoke_access_doesnt_remove_prefixes(s3_access_policy):
         ]
         != []
     )  # noqa
+
+
+def test_list_attached_policies_returns_empty_list():
+    assert aws.AWSRole().list_attached_policies("no-role") == []
+
+
+def test_list_attached_policies_returns_list_of_policies(iam, roles, test_policy):
+    iam.Role("test_user_normal-user").attach_policy(PolicyArn=test_policy["Arn"])
+
+    policies = aws.AWSRole().list_attached_policies(role_name="test_user_normal-user")
+
+    assert len(policies) == 1
+    assert policies[0].arn == test_policy["Arn"]

@@ -84,6 +84,7 @@ from controlpanel.frontend.views.user import (
     EnableBedrockUser,
     EnableDatabaseAdmin,
     ResetMFA,
+    SetQuicksightAccess,
     SetSuperadmin,
     UserDelete,
     UserDetail,

@@ -95,6 +95,36 @@
 
 {% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
+  <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "enable_quicksight",
+      "fieldset": {
+        "legend": {
+          "text": "Enable Quicksight",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Toggle access to Quicksight for a user."
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Quicksight Enabled",
+          "checked": user.is_quicksight_enabled
+        },
+      ]
+    }) }}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% endif %}
+
+{% if request.user.has_perm('api.add_superuser') %}
+<section class="cpanel-section">
   <form action="{{ url('set-database-admin', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
     {{ govukCheckboxes({
