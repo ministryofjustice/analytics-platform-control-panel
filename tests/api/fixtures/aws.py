@@ -63,7 +63,34 @@ def glue(aws_creds):
 @pytest.fixture(autouse=True)
 def lake_formation(aws_creds):
     with moto.mock_aws():
-        yield boto3.client("lakeformation")
+        lake_formation = boto3.client("lakeformation")
+        lake_formation.grant_permissions(
+            Permissions=["DESCRIBE"],
+            Principal={
+                "DataLakePrincipalIdentifier": "arn:aws:iam::123456789012:role/test_user_carol"
+            },
+            Resource={
+                "Table": {
+                    "CatalogId": "123456789012",
+                    "DatabaseName": "test_database",
+                    "Name": "test_table",
+                },
+            },
+        )
+        lake_formation.grant_permissions(
+            Permissions=["SELECT"],
+            Principal={
+                "DataLakePrincipalIdentifier": "arn:aws:iam::123456789012:role/test_user_carol"
+            },
+            Resource={
+                "Table": {
+                    "CatalogId": "123",
+                    "DatabaseName": "external_db",
+                    "Name": "external_test_table",
+                },
+            },
+        )
+        yield lake_formation
 
 
 @pytest.fixture(autouse=True)
