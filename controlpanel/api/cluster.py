@@ -192,6 +192,7 @@ class User(EntityResource):
 
     READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
     BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
+    QUICKSIGHT_POLICY_NAME = f"{settings.ENV}-quicksight-author-access"
 
     ATTACH_POLICIES = [
         READ_INLINE_POLICIES,
@@ -364,12 +365,16 @@ class User(EntityResource):
                 return False
         return True
 
-    def set_bedrock_access(self):
-        bedrock_policy = [self.BEDROCK_POLICY_NAME]
-        if self.user.is_bedrock_enabled:
-            self.aws_role_service.attach_policy(self.iam_role_name, bedrock_policy)
-        else:
-            self.aws_role_service.remove_policy(self.iam_role_name, bedrock_policy)
+    def has_policy_attached(self, policy_name):
+        for policy in self.aws_role_service.list_attached_policies(self.iam_role_name):
+            if policy_name == policy.policy_name:
+                return True
+        return False
+
+    def update_policy_attachment(self, policy, attach: bool):
+        if not attach:
+            return self.aws_role_service.remove_policy(self.iam_role_name, [policy])
+        return self.aws_role_service.attach_policy(self.iam_role_name, [policy])
 
 
 class App(EntityResource):

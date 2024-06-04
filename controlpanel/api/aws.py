@@ -510,7 +510,13 @@ class AWSRole(AWSService):
                 raise e
 
         for policy in remove_policies or []:
-            role.detach_policy(PolicyArn=iam_arn(f"policy/{policy}"))
+            try:
+                role.detach_policy(PolicyArn=iam_arn(f"policy/{policy}"))
+            except botocore.exceptions.ClientError as e:
+                if e.response["Error"]["Code"] == "NoSuchEntity":
+                    log.warning(f"Policy {policy}: Not attached, skipping")
+                    continue
+                raise e
 
     def list_role_names(self, prefix="/"):
         roles = self.boto3_session.resource("iam").roles.filter(PathPrefix=prefix).all()
@@ -578,6 +584,16 @@ class AWSRole(AWSService):
         policy = S3AccessPolicy(role.Policy("s3-access"))
         policy.revoke_folder_access(root_folder_path=root_folder_path)
         policy.put()
+
+    def list_attached_policies(self, role_name):
+        try:
+            role = self.boto3_session.resource("iam").Role(role_name)
+            return list(role.attached_policies.all())
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{role_name}' doesn't exist")
+                return []
+            raise e
 
 
 class AWSFolder(AWSService):
