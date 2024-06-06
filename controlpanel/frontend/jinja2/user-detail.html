@@ -123,6 +123,36 @@
 </section>
 {% endif %}
 
+{% if request.user.has_perm('api.add_superuser') %}
+<section class="cpanel-section">
+  <form action="{{ url('set-database-admin', kwargs={ "pk": user.auth0_id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "is_database_admin",
+      "fieldset": {
+        "legend": {
+          "text": "Set Database Admin",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Toggle to enable database management functions for user."
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Database Admin",
+          "checked": user.is_database_admin
+        },
+      ]
+    }) }}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% endif %}
+
 {% if request.user.has_perm('api.reset_mfa') %}
 <section class="cpanel-section">
   <form action="{{ url('reset-mfa', kwargs={ "pk": user.auth0_id }) }}" method="post">

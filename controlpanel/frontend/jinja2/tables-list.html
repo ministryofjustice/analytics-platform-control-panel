@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% set page_title = "All Tables for " + dbname %}
+
+{% block content %}
+
+<span class="govuk-caption-xl">Database</span>
+<h1 class="govuk-heading-xl">{{ dbname }}</h1>
+
+{% if tables %}
+  <table class="govuk-table">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th scope="col" class="govuk-table__header">Name</th>
+        <th scope="col" class="govuk-table__header">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% for table in tables %}
+        <tr class="govuk-table__row">
+          <td class="govuk-table__cell">{{ table.Name }}</td>
+          <td class="govuk-table__cell">
+            <a href="{{ url('manage-table', kwargs={"dbname": dbname, "tablename": table.Name})}}" class="govuk-link">View</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="govuk-body">No tables found.</p>
+{% endif %}
+
+{% endblock %}
