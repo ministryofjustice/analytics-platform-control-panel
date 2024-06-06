@@ -54,6 +54,8 @@ BASE_ASSUME_ROLE_POLICY = {
     ],
 }
 
+BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
+
 
 class AWSRoleCategory(str, Enum):
     app = "APP"
@@ -191,7 +193,6 @@ class User(EntityResource):
     }
 
     READ_INLINE_POLICIES = f"{settings.ENV}-read-user-roles-inline-policies"
-    BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
     QUICKSIGHT_POLICY_NAME = f"{settings.ENV}-quicksight-author-access"
 
     ATTACH_POLICIES = [
@@ -694,6 +695,11 @@ class App(EntityResource):
     def remove_redundant_env(self, env_name):
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
         self.app.clear_auth_settings(env_name)
+
+    def update_policy_attachment(self, policy, attach: bool):
+        if not attach:
+            return self.aws_role_service.remove_policy(self.iam_role_name, [policy])
+        return self.aws_role_service.attach_policy(self.iam_role_name, [policy])
 
 
 class S3Bucket(EntityResource):

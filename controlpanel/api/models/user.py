@@ -144,7 +144,7 @@ class User(AbstractUser):
 
     def set_bedrock_access(self):
         return cluster.User(self).update_policy_attachment(
-            policy=cluster.User.BEDROCK_POLICY_NAME,
+            policy=cluster.BEDROCK_POLICY_NAME,
             attach=self.is_bedrock_enabled,
         )
 

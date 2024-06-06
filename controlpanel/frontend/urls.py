@@ -74,7 +74,7 @@ urlpatterns = [
     path("users/", views.UserList.as_view(), name="list-users"),
     path("users/<str:pk>/", views.UserDetail.as_view(), name="manage-user"),
     path("users/<str:pk>/delete/", views.UserDelete.as_view(), name="delete-user"),
-    path("users/<str:pk>/bedrock/", views.EnableBedrockUser.as_view(), name="set-bedrock"),
+    path("users/<str:pk>/bedrock/", views.EnableBedrockUser.as_view(), name="set-bedrock-user"),
     path("users/<str:pk>/quicksight/", views.SetQuicksightAccess.as_view(), name="set-quicksight"),
     path("users/<str:pk>/edit/", views.SetSuperadmin.as_view(), name="set-superadmin"),
     path("users/<str:pk>/reset-mfa/", views.ResetMFA.as_view(), name="reset-mfa"),
@@ -165,6 +165,11 @@ urlpatterns = [
         "webapps/<int:pk>/vars/<str:var_name>/delete/",
         app_variables.AppVariableDelete.as_view(),
         name="delete-app-var",
+    ),
+    path(
+        "webapps/<int:pk>/bedrock/",
+        views.EnableBedrockApp.as_view(),
+        name="set-bedrock-app",
     ),
     path(
         "webapps/<int:pk>/update-ip-allowlists/",

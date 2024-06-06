@@ -295,6 +295,21 @@ class GrantAppAccess(
         raise Exception(form.errors)
 
 
+class EnableBedrockApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    fields = ["is_bedrock_enabled"]
+    http_method_names = ["post"]
+    model = App
+    permission_required = "api.add_superuser"
+
+    def form_valid(self, form):
+        self.object.set_bedrock_access()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully updated bedrock status")
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
+
+
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = AppS3Bucket
     permission_required = "api.remove_app_bucket"

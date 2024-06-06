@@ -31,6 +31,7 @@ class App(TimeStampedModel):
         blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    enable_bedrock_access = models.BooleanField(default=False)
 
     # The app_conf mainly for storing the auth settings related and those information
     # are not within the fields which will be searched frequently
@@ -256,6 +257,12 @@ class App(TimeStampedModel):
             return format_pattern.format(app_name=namespace, env=env_name)
         else:
             return namespace
+
+    def set_bedrock_access(self):
+        return cluster.App(self).update_policy_attachment(
+            policy=cluster.BEDROCK_POLICY_NAME,
+            attach=self.is_bedrock_enabled,
+        )
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY
