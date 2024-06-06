@@ -16,7 +16,6 @@ class Command(BaseCommand):
     """
 
     READER_ROLES = ["READER"]
-    ADMIN_ROLES = [""]
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -44,16 +43,19 @@ class Command(BaseCommand):
         try:
             response = self.quicksight.client.describe_user(**kwargs)
         except botocore.exceptions.ClientError as e:
-            return self.stderr.write(str(e))
+            self.stderr.write(str(e))
+            return False
 
         role = response.get("User", {}).get("Role")
         if role not in self.READER_ROLES:
-            return self.stdout.write(f"User {username} is a {role} not a READER, skipping")
+            self.stdout.write(f"User {username} is a {role} not a READER, skipping")
+            return False
 
         if delete:
             self.quicksight.client.delete_user(**kwargs)
 
         self.stdout.write(f"User {username} deleted: {delete}")
+        return True
 
     def handle(self, *args, **options):
         self.quicksight = aws.AWSQuicksight()
@@ -62,7 +64,8 @@ class Command(BaseCommand):
 
         count = 0
         for username in self.usernames_from_file(filename=options["file"]):
-            self.delete_user(username=username, delete=delete)
-            count += 1
+            deleted = self.delete_user(username=username, delete=delete)
+            if deleted:
+                count += 1
 
         self.stdout.write(f"{count} users deleted: {delete}")
