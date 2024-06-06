@@ -115,6 +115,15 @@ def is_bucket_admin(user, obj):
     return False
 
 
+@predicate
+def is_database_admin(user):
+
+    if is_superuser(user):
+        return True
+
+    return user.is_database_admin
+
+
 add_perm("api.list_s3bucket", is_authenticated)
 add_perm("api.create_s3bucket", is_authenticated)
 add_perm("api.retrieve_s3bucket", is_authenticated & has_bucket_access)
@@ -124,6 +133,7 @@ add_perm("api.add_s3bucket_admin", is_authenticated & is_bucket_admin)
 add_perm("api.remove_s3bucket_admin", is_authenticated & is_bucket_admin)
 add_perm("api.grant_s3bucket_access", is_authenticated & is_bucket_admin)
 add_perm("api.view_s3bucket_logs", is_authenticated & is_bucket_admin)
+add_perm("api.is_database_admin", is_authenticated & is_database_admin)
 
 
 @predicate

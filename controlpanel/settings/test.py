@@ -32,5 +32,6 @@ SLACK = {
     "channel": "test-slack-channel",
 }
 
+DPR_DATABASE_NAME = "test_database"
 SQS_REGION = "eu-west-1"
 USE_LOCAL_MESSAGE_BROKER = False

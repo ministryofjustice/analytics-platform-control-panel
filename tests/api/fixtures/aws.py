@@ -42,6 +42,58 @@ def ssm(aws_creds):
 
 
 @pytest.fixture(autouse=True)
+def glue(aws_creds):
+    with moto.mock_aws():
+        glue = boto3.client("glue")
+        glue.create_database(DatabaseInput={"Name": settings.DPR_DATABASE_NAME})
+        glue.create_table(
+            DatabaseName=settings.DPR_DATABASE_NAME,
+            TableInput={
+                "Name": "test_table",
+                "TargetTable": {
+                    "CatalogId": "123",
+                    "DatabaseName": "external_db",
+                    "Name": "external_test_table",
+                },
+            },
+        )
+        yield glue
+
+
+@pytest.fixture(autouse=True)
+def lake_formation(aws_creds):
+    with moto.mock_aws():
+        lake_formation = boto3.client("lakeformation")
+        lake_formation.grant_permissions(
+            Permissions=["DESCRIBE"],
+            Principal={
+                "DataLakePrincipalIdentifier": "arn:aws:iam::123456789012:role/test_user_carol"
+            },
+            Resource={
+                "Table": {
+                    "CatalogId": "123456789012",
+                    "DatabaseName": "test_database",
+                    "Name": "test_table",
+                },
+            },
+        )
+        lake_formation.grant_permissions(
+            Permissions=["SELECT"],
+            Principal={
+                "DataLakePrincipalIdentifier": "arn:aws:iam::123456789012:role/test_user_carol"
+            },
+            Resource={
+                "Table": {
+                    "CatalogId": "123",
+                    "DatabaseName": "external_db",
+                    "Name": "external_test_table",
+                },
+            },
+        )
+        yield lake_formation
+
+
+@pytest.fixture(autouse=True)
 def sqs(aws_creds):
     with moto.mock_aws():
         sqs = boto3.resource("sqs")

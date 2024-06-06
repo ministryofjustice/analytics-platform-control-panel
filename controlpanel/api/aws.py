@@ -1142,3 +1142,145 @@ class AWSQuicksight(AWSService):
         super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
 
         self.client = self.boto3_session.client("quicksight")
+
+
+class AWSLakeFormation(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name)
+        self.client = self.boto3_session.client("lakeformation")
+
+    def grant_permissions(self, resource, principal_arn, permissions):
+        permissions = permissions
+        try:
+            response = self.client.grant_permissions(
+                CatalogId=settings.AWS_DATA_ACCOUNT_ID,
+                Permissions=permissions,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+                Resource=resource,
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def grant_table_permission(
+        self, database_name, table_name, principal_arn, permissions, catalog_id=None
+    ):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+        return self.grant_permissions(
+            resource=resource,
+            principal_arn=principal_arn,
+            permissions=permissions,
+        )
+
+    def revoke_permissions(self, resource, principal_arn, permissions):
+        permissions = permissions
+        try:
+            response = self.client.revoke_permissions(
+                CatalogId=settings.AWS_DATA_ACCOUNT_ID,
+                Permissions=permissions,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+                Resource=resource,
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def revoke_table_permission(
+        self, database_name, table_name, principal_arn, permissions, catalog_id=None
+    ):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+        return self.revoke_permissions(
+            resource=resource,
+            principal_arn=principal_arn,
+            permissions=permissions,
+        )
+
+    def list_permissions(self, database_name, table_name, principal_arn=None, catalog_id=None):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+
+        if principal_arn:
+            return self.client.list_permissions(
+                Resource=resource,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+            )
+
+        return self.client.list_permissions(Resource=resource)
+
+
+class AWSGlue(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name)
+        self.client = self.boto3_session.client("glue")
+
+    def get_databases(self, catalog_id=None):
+        try:
+            response = self.client.get_databases(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def get_database(self, database_name, catalog_id=None):
+        try:
+            response = self.client.get_database(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID, Name=database_name
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def get_tables(self, database_name, catalog_id=None):
+        try:
+            response = self.client.get_tables(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID, DatabaseName=database_name
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
+    def get_table(self, database_name, table_name, catalog_id=None):
+        try:
+            response = self.client.get_table(
+                CatalogId=catalog_id or settings.AWS_DATA_ACCOUNT_ID,
+                DatabaseName=database_name,
+                Name=table_name,
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response

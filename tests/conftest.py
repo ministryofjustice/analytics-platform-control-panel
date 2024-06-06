@@ -113,6 +113,13 @@ def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_p
             username="carol",
             auth0_id="github|user_3",
         ),
+        "database_user": baker.make(
+            "api.User",
+            auth0_id="github|user_4",
+            username="dave",
+            is_superuser=False,
+            is_database_admin=True,
+        ),
     }
 
 

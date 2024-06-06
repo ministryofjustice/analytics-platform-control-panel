@@ -30,7 +30,7 @@ def ExtendedAuth0():
 def test_list(client, users):
     response = client.get(reverse("user-list"))
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.data["results"]) == 3
+    assert len(response.data["results"]) == 4
 
 
 def test_detail(client, users):

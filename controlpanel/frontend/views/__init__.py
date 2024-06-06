@@ -33,6 +33,13 @@ from controlpanel.frontend.views.app import (
 
 # isort: on
 # First-party/Local
+from controlpanel.frontend.views.databases import (
+    DatabasesListView,
+    ManageTable,
+    RevokeTableAccessView,
+    TableGrantView,
+    TablesListView,
+)
 from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,
@@ -75,6 +82,7 @@ from controlpanel.frontend.views.task import TaskList
 from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
     EnableBedrockUser,
+    EnableDatabaseAdmin,
     ResetMFA,
     SetQuicksightAccess,
     SetSuperadmin,
