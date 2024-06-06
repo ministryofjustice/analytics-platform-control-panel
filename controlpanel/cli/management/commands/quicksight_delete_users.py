@@ -7,20 +7,26 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 # First-party/Local
-from controlpanel.api.aws import AWSQuicksight
+from controlpanel.api import aws
 
 
 class Command(BaseCommand):
+    """
+    This command will delete users from Quicksight based on the csv file provided.
+    """
 
     READER_ROLES = ["READER"]
     ADMIN_ROLES = [""]
 
     def add_arguments(self, parser):
-        parser.add_argument("file", type=str, help="input: File of usernames", default=None)
+        parser.add_argument(
+            "file", type=str, help="input: csv of Quicksight usernames", default=None
+        )
         parser.add_argument(
             "--delete",
             required=False,
             action="store_true",
+            help="Deletes users when provided, otherwise will be a dry run.",
         )
         parser.add_argument(
             "-a", "--awsaccountid", required=False, type=str, default=settings.AWS_DATA_ACCOUNT_ID
@@ -42,7 +48,7 @@ class Command(BaseCommand):
 
         role = response.get("User", {}).get("Role")
         if role not in self.READER_ROLES:
-            return self.stdout(f"User {username} is a {role} not a READER, skipping")
+            return self.stdout.write(f"User {username} is a {role} not a READER, skipping")
 
         if delete:
             self.quicksight.client.delete_user(**kwargs)
@@ -50,7 +56,7 @@ class Command(BaseCommand):
         self.stdout.write(f"User {username} deleted: {delete}")
 
     def handle(self, *args, **options):
-        self.quicksight = AWSQuicksight()
+        self.quicksight = aws.AWSQuicksight()
         self.account_id = options["awsaccountid"]
         delete = options["delete"]
 
@@ -59,4 +65,4 @@ class Command(BaseCommand):
             self.delete_user(username=username, delete=delete)
             count += 1
 
-        self.stdout(f"{count} users deleted: {delete}")
+        self.stdout.write(f"{count} users deleted: {delete}")

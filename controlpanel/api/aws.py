@@ -1142,15 +1142,3 @@ class AWSQuicksight(AWSService):
         super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
 
         self.client = self.boto3_session.client("quicksight")
-
-    def list_users(self, aws_account_id=None, next_token=""):
-        response = self.client.list_users(
-            AwsAccountId=aws_account_id or settings.AWS_DATA_ACCOUNT_ID,
-            NextToken=next_token,
-            Namespace="default",
-        )
-        users = response["UserList"]
-        if response.get("NextToken", None):
-            users += self.list_users(next_token=response["NextToken"])
-
-        return users
