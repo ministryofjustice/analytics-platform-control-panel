@@ -307,7 +307,7 @@ class EnableBedrockApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateVi
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated bedrock status")
-        return reverse_lazy("manage-app", kwargs={"pk": self.object.app.id})
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
 
 
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

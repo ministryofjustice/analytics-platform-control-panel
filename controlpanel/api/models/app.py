@@ -31,7 +31,7 @@ class App(TimeStampedModel):
         blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
-    enable_bedrock_access = models.BooleanField(default=False)
+    is_bedrock_enabled = models.BooleanField(default=False)
 
     # The app_conf mainly for storing the auth settings related and those information
     # are not within the fields which will be searched frequently
