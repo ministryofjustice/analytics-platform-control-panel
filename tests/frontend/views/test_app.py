@@ -263,6 +263,14 @@ def update_ip_allowlists(client, app, *args):
     return client.post(reverse("update-app-ip-allowlists", kwargs={"pk": app.id}))
 
 
+def set_bedrock(client, app, *args):
+    data = {
+        "is_bedrock_enabled": True,
+    }
+    kwargs = {"pk": app.id}
+    return client.post(reverse("set-bedrock-app", kwargs=kwargs), data)
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -305,6 +313,9 @@ def update_ip_allowlists(client, app, *args):
         (update_ip_allowlists, "superuser", status.HTTP_302_FOUND),
         (update_ip_allowlists, "app_admin", status.HTTP_302_FOUND),
         (update_ip_allowlists, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_bedrock, "superuser", status.HTTP_302_FOUND),
+        (set_bedrock, "app_admin", status.HTTP_403_FORBIDDEN),
+        (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(

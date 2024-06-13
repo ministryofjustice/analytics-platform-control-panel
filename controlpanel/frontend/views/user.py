@@ -125,6 +125,17 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View)
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
+class EnableDatabaseAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    fields = ["is_database_admin"]
+    http_method_names = ["post"]
+    model = User
+    permission_required = "api.add_superuser"
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully updated database admin status")
+        return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
+
+
 class ResetMFA(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
