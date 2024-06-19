@@ -1136,6 +1136,14 @@ class AWSSQS(AWSService):
             return response
 
 
+class AWSQuicksight(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
+
+        self.client = self.boto3_session.client("quicksight")
+
+
 class AWSLakeFormation(AWSService):
 
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
