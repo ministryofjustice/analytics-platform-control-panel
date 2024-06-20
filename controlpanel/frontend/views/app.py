@@ -39,6 +39,7 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
     UpdateAppAuth0ConnectionsForm,
 )
+from controlpanel.frontend.mixins import BedrockAccessMixin
 from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -295,19 +296,8 @@ class GrantAppAccess(
         raise Exception(form.errors)
 
 
-class EnableBedrockApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    fields = ["is_bedrock_enabled"]
-    http_method_names = ["post"]
+class EnableBedrockApp(BedrockAccessMixin, UpdateView):
     model = App
-    permission_required = "api.add_superuser"
-
-    def form_valid(self, form):
-        self.object.set_bedrock_access()
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        messages.success(self.request, "Successfully updated bedrock status")
-        return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
 
 
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

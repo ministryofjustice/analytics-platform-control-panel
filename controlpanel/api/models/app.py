@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.urls import reverse
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -304,6 +305,9 @@ class App(TimeStampedModel):
     @property
     def auth_settings(self):
         return (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS, {})
+
+    def get_absolute_url(self):
+        return reverse("manage-app", kwargs={"pk": self.id})
 
 
 class AddCustomerError(Exception):
