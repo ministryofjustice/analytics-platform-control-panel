@@ -265,3 +265,9 @@ def root_folder_bucket(s3):
             "LocationConstraint": settings.BUCKET_REGION,  # noqa: F405
         },
     )
+
+
+@pytest.fixture(autouse=True)
+def quicksight(aws_creds):
+    with moto.mock_aws():
+        yield boto3.client("quicksight", region_name="eu-west-1")
