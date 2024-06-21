@@ -307,7 +307,7 @@ class App(TimeStampedModel):
         return (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS, {})
 
     def get_absolute_url(self):
-        return reverse("manage-app", kwargs={"pk": self.id})
+        return reverse("manage-app", kwargs={"pk": self.pk})
 
 
 class AddCustomerError(Exception):

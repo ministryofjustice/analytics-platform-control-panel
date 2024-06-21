@@ -194,7 +194,7 @@ class User(AbstractUser):
             )
 
     def get_absolute_url(self):
-        return reverse("manage-user", kwargs={"pk": self.auth0_id})
+        return reverse("manage-user", kwargs={"pk": self.pk})
 
 
 user_logged_in.connect(prometheus_login_event)
