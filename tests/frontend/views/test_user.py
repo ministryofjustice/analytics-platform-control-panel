@@ -48,12 +48,12 @@ def set_bedrock(client, users, *args):
         "is_bedrock_enabled": True,
     }
     kwargs = {"pk": users["other_user"].auth0_id}
-    return client.post(reverse("set-bedrock", kwargs=kwargs), data)
+    return client.post(reverse("set-bedrock-user", kwargs=kwargs), data)
 
 
 def set_quicksight(client, users, *args):
     kwargs = {"pk": users["other_user"].auth0_id}
-    return client.post(reverse("set-bedrock", kwargs=kwargs))
+    return client.post(reverse("set-quicksight", kwargs=kwargs))
 
 
 def set_database_admin(client, users, *args):

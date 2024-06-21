@@ -39,6 +39,7 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
     UpdateAppAuth0ConnectionsForm,
 )
+from controlpanel.frontend.mixins import BedrockAccessMixin
 from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -293,6 +294,10 @@ class GrantAppAccess(
         # return as little information as possible
         log.warning("Received suspicious invalid grant app access request")
         raise Exception(form.errors)
+
+
+class EnableBedrockApp(BedrockAccessMixin, UpdateView):
+    model = App
 
 
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

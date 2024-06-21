@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
 {% from "autocomplete/macro.html" import autocomplete %}
 {% from "error-message/macro.html" import govukErrorMessage %}
 {% from "label/macro.html" import govukLabel %}
@@ -271,6 +272,36 @@
   {% endif %}
 {% endif %}
 </section>
+
+{% if request.user.has_perm('api.add_superuser') %}
+<section class="cpanel-section">
+  <form action="{{ url('set-bedrock-app', kwargs={ "pk": app.id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "is_bedrock_enabled",
+      "fieldset": {
+        "legend": {
+          "text": "Enable Bedrock",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Toggle access to Bedrock for this application."
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Bedrock Enabled",
+          "checked": app.is_bedrock_enabled
+        },
+      ]
+    }) }}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% endif %}
 
 {% if request.user.has_perm('api.destroy_app', app) %}
 <section class="cpanel-section">

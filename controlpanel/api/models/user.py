@@ -3,6 +3,7 @@ from crequest.middleware import CrequestMiddleware
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.signals import user_logged_in
 from django.db import models
+from django.urls import reverse
 from django.utils.functional import cached_property
 
 # First-party/Local
@@ -145,7 +146,7 @@ class User(AbstractUser):
 
     def set_bedrock_access(self):
         return cluster.User(self).update_policy_attachment(
-            policy=cluster.User.BEDROCK_POLICY_NAME,
+            policy=cluster.BEDROCK_POLICY_NAME,
             attach=self.is_bedrock_enabled,
         )
 
@@ -191,6 +192,9 @@ class User(AbstractUser):
                     "migration_state",
                 ],
             )
+
+    def get_absolute_url(self):
+        return reverse("manage-user", kwargs={"pk": self.pk})
 
 
 user_logged_in.connect(prometheus_login_event)

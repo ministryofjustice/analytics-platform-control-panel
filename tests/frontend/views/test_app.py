@@ -263,6 +263,19 @@ def update_ip_allowlists(client, app, *args):
     return client.post(reverse("update-app-ip-allowlists", kwargs={"pk": app.id}))
 
 
+def set_bedrock(client, app, *args):
+    iam = args[2]
+    iam.meta.client.create_role(
+        RoleName=app.iam_role_name,
+        AssumeRolePolicyDocument="some_policy",
+    )
+    data = {
+        "is_bedrock_enabled": True,
+    }
+    kwargs = {"pk": app.id}
+    return client.post(reverse("set-bedrock-app", kwargs=kwargs), data)
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -305,17 +318,20 @@ def update_ip_allowlists(client, app, *args):
         (update_ip_allowlists, "superuser", status.HTTP_302_FOUND),
         (update_ip_allowlists, "app_admin", status.HTTP_302_FOUND),
         (update_ip_allowlists, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_bedrock, "superuser", status.HTTP_302_FOUND),
+        (set_bedrock, "app_admin", status.HTTP_403_FORBIDDEN),
+        (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
-    client, app, s3buckets, users, view, user, expected_status, fixture_get_group_id
+    client, app, s3buckets, users, iam, view, user, expected_status, fixture_get_group_id
 ):
     with (
         patch("controlpanel.api.aws.AWSRole.grant_bucket_access"),
         patch("controlpanel.api.cluster.App.create_or_update_secret"),
     ):
         client.force_login(users[user])
-        response = view(client, app, users, s3buckets)
+        response = view(client, app, users, s3buckets, iam)
         assert response.status_code == expected_status
 
 

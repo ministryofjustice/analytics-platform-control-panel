@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.urls import reverse
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
 
@@ -31,6 +32,7 @@ class App(TimeStampedModel):
         blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    is_bedrock_enabled = models.BooleanField(default=False)
 
     # The app_conf mainly for storing the auth settings related and those information
     # are not within the fields which will be searched frequently
@@ -257,6 +259,12 @@ class App(TimeStampedModel):
         else:
             return namespace
 
+    def set_bedrock_access(self):
+        return cluster.App(self).update_policy_attachment(
+            policy=cluster.BEDROCK_POLICY_NAME,
+            attach=self.is_bedrock_enabled,
+        )
+
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY
         return self.auth_settings.get(env_name, {})
@@ -297,6 +305,9 @@ class App(TimeStampedModel):
     @property
     def auth_settings(self):
         return (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS, {})
+
+    def get_absolute_url(self):
+        return reverse("manage-app", kwargs={"pk": self.pk})
 
 
 class AddCustomerError(Exception):

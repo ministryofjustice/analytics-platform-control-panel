@@ -65,7 +65,7 @@
 
 {% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
-  <form action="{{ url('set-bedrock', kwargs={ "pk": user.auth0_id }) }}" method="post">
+  <form action="{{ url('set-bedrock-user', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
     {{ govukCheckboxes({
       "name": "is_bedrock_enabled",

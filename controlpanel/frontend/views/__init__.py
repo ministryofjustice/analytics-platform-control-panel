@@ -18,6 +18,7 @@ from controlpanel.frontend.views.app import (
     AppList,
     CreateApp,
     DeleteApp,
+    EnableBedrockApp,
     GrantAppAccess,
     RemoveCustomer,
     RemoveCustomerByEmail,
