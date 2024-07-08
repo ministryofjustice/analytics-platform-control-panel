@@ -1,0 +1,22 @@
+{% from "radios/macro.html" import govukRadios %}
+
+{% macro table_access_level_options() %}
+  {{ govukRadios({
+    "name": "access_level",
+    "fieldset": {
+      "legend": {
+        "text": "Data access level",
+        "classes": "govuk-fieldset__legend--m",
+      },
+    },
+    "hint": {
+      "html": "<strong>NOTE:</strong> Making a user an admin will allow them to confer access rights on additional users." if not hide_admin else "",
+    },
+    "items": [
+      {
+        "value": "readonly",
+        "text": "Read only (Select, Describe)",
+      }
+    ]
+  }) }}
+{% endmacro %}

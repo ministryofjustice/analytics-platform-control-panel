@@ -334,11 +334,7 @@ class GrantAccessForm(forms.Form):
 
 class TableGrantAccessForm(forms.Form):
     access_level = forms.ChoiceField(
-        choices=[
-            ("readonly", "Read Only"),
-            ("readwrite", "Read/Write"),
-            ("admin", "Admin"),
-        ],
+        choices=[("readonly", "Read Only")],
         required=True,
     )
     entity_id = forms.CharField(max_length=128)
@@ -356,8 +352,6 @@ class TableGrantAccessForm(forms.Form):
 
         permissions = {
             "readonly": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
-            "readwrite": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
-            "admin": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
         }
 
         cleaned_data = super().clean()

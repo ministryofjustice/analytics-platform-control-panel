@@ -1,6 +1,6 @@
 {% from "radios/macro.html" import govukRadios %}
 {% from "user/macro.html" import user_name %}
-{% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+{% from "includes/table-access-level-options.html" import table_access_level_options with context %}
 {% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
 
 {% extends "base.html" %}
@@ -24,7 +24,7 @@
     </div>
 
     <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
-      {{ data_access_level_options() }}
+      {{ table_access_level_options() }}
     </div>
 
     <div class="govuk-form-group">
