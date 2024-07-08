@@ -1232,6 +1232,19 @@ class AWSLakeFormation(AWSService):
 
         return self.client.list_permissions(Resource=resource)
 
+    def register_bucket(self, bucket_arn, hybrid_mode=True):
+        try:
+            response = self.client.register_resource(
+                ResourceArn=bucket_arn,
+                UseServiceLinkedRole=True,
+                HybridAccessEnabled=hybrid_mode,
+            )
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
 
 class AWSGlue(AWSService):
 

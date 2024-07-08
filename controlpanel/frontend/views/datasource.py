@@ -17,6 +17,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import cluster, tasks
+from controlpanel.api.aws import AWSLakeFormation
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
 from controlpanel.api.models import IAMManagedPolicy, PolicyS3Bucket, S3Bucket, User, UserS3Bucket
 from controlpanel.api.serializers import ESBucketHitsSerializer
@@ -179,6 +180,11 @@ class CreateDatasource(
                 created_by=self.request.user,
                 is_data_warehouse=datasource_type == "warehouse",
             )
+
+            # register bucket in lake formation here
+            bucket_arn = self.object.arn
+            AWSLakeFormation().register_bucket(bucket_arn)
+
             messages.success(
                 self.request,
                 f"Successfully created {name} {datasource_type} data source",
