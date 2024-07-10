@@ -41,3 +41,7 @@ def test_feature_flag_env_True():
     test_json = {"enabled_features": {"test_feature": {"_DEFAULT": False, "_HOST_test": True}}}
     SettingLoader(test_json)
     assert settings.features.test_feature.enabled
+
+
+def add_bucket_as_resource(lake_formation, bucket):
+    lake_formation.register_resource(ResourceArn=bucket.arn, UseServiceLinkedRole=True)

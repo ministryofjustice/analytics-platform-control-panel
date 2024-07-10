@@ -2,6 +2,7 @@
 from itertools import chain
 
 # Third-party
+import structlog
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
@@ -32,6 +33,8 @@ DATASOURCE_TYPES = [
     "warehouse",
     "webapp",
 ]
+
+log = structlog.getLogger(__name__)
 
 
 class DatasourceMixin(ContextMixin):
@@ -181,10 +184,6 @@ class CreateDatasource(
                 is_data_warehouse=datasource_type == "warehouse",
             )
 
-            # register bucket in lake formation here
-            bucket_arn = self.object.arn
-            AWSLakeFormation().register_bucket(bucket_arn)
-
             messages.success(
                 self.request,
                 f"Successfully created {name} {datasource_type} data source",
@@ -212,6 +211,7 @@ class DeleteDatasource(
     def form_valid(self, *args, **kwargs):
         self.object = self.get_object()
         self.object.soft_delete(deleted_by=self.request.user)
+
         messages.success(self.request, "Successfully deleted data source")
         return HttpResponseRedirect(self.get_success_url())
 

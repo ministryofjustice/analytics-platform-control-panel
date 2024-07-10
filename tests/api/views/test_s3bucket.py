@@ -13,6 +13,7 @@ from rest_framework.reverse import reverse
 # First-party/Local
 from controlpanel.api.models import S3Bucket, UserS3Bucket
 from tests.api.fixtures.es import BUCKET_HITS_AGGREGATION
+from tests.test_utils import add_bucket_as_resource
 
 
 @pytest.fixture
@@ -92,7 +93,8 @@ def test_detail(client, bucket):
     assert set(users3bucket["user"]) == expected_user_fields
 
 
-def test_delete(client, bucket):
+def test_delete(client, bucket, lake_formation):
+    add_bucket_as_resource(lake_formation, bucket)
     response = client.delete(reverse("s3bucket-detail", (bucket.id,)))
     assert response.status_code == status.HTTP_204_NO_CONTENT
 

@@ -10,6 +10,7 @@ from model_bakery import baker
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import S3Bucket, UserS3Bucket
+from tests.test_utils import add_bucket_as_resource
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +23,7 @@ def bucket():
     return S3Bucket.objects.create(name="test-bucket-1")
 
 
-def test_delete_revokes_permissions(bucket):
+def test_delete_revokes_permissions(lake_formation, bucket):
     with (
         patch(
             "controlpanel.api.models.AppS3Bucket.revoke_bucket_access"
@@ -31,6 +32,7 @@ def test_delete_revokes_permissions(bucket):
             "controlpanel.api.models.UserS3Bucket.revoke_bucket_access"
         ) as user_revoke_user_bucket_access,
     ):
+        add_bucket_as_resource(lake_formation, bucket)
         # link the bucket with an UserS3Bucket and AppS3Bucket
         baker.make("api.UserS3Bucket", s3bucket=bucket)
         baker.make("api.AppS3Bucket", s3bucket=bucket)
@@ -41,8 +43,9 @@ def test_delete_revokes_permissions(bucket):
         user_revoke_user_bucket_access.assert_called_once()
 
 
-def test_delete_marks_bucket_for_archival(bucket):
+def test_delete_marks_bucket_for_archival(lake_formation, bucket):
     with patch("controlpanel.api.cluster.AWSBucket.tag_bucket") as tag_bucket:
+        add_bucket_as_resource(lake_formation, bucket)
         bucket.delete()
         tag_bucket.assert_called_once_with(bucket.name, {"to-archive": "true"})
 

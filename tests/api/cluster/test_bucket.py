@@ -9,6 +9,7 @@ from model_bakery import baker
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.cluster import AWSRoleCategory
+from tests.test_utils import add_bucket_as_resource
 
 
 @pytest.fixture(autouse=True)
@@ -56,7 +57,8 @@ def test_aws_create(cluster_class, aws_service_fixture, bucket, request):
     aws_bucket_service.assert_called_with(bucket.name, False)
 
 
-def test_mark_for_archival(aws_tag_bucket, bucket):
+def test_mark_for_archival(lake_formation, aws_tag_bucket, bucket):
+    add_bucket_as_resource(lake_formation, bucket)
     cluster.S3Bucket(bucket).mark_for_archival()
     aws_tag_bucket.assert_called_with(bucket.name, {"to-archive": "true"})
 

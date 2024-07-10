@@ -17,6 +17,7 @@ from controlpanel.api import auth0, helm
 from controlpanel.api.aws import (
     AWSBucket,
     AWSFolder,
+    AWSLakeFormation,
     AWSParameterStore,
     AWSPolicy,
     AWSRole,
@@ -727,13 +728,16 @@ class S3Bucket(EntityResource):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             self.aws_service_class, aws_role_category=owner
         )
-        return self.aws_bucket_service.create(self.bucket.name, self.bucket.is_data_warehouse)
+        bucket = self.aws_bucket_service.create(self.bucket.name, self.bucket.is_data_warehouse)
+        AWSLakeFormation().register_bucket(self.arn)
+        return bucket
 
     def mark_for_archival(self):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             self.aws_service_class, aws_role_category=self._get_assume_role_category()
         )
         self.aws_bucket_service.tag_bucket(self.bucket.name, {"to-archive": "true"})
+        AWSLakeFormation().deregister_bucket(self.arn)
 
     def exists(self, bucket_name, bucket_owner):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(

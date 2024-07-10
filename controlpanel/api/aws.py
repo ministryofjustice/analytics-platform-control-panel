@@ -1245,6 +1245,15 @@ class AWSLakeFormation(AWSService):
 
         return response
 
+    def deregister_bucket(self, bucket_arn):
+        try:
+            response = self.client.deregister_resource(ResourceArn=bucket_arn)
+        except botocore.exceptions.ClientError as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+        return response
+
 
 class AWSGlue(AWSService):
 

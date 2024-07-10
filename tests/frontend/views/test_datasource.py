@@ -12,6 +12,7 @@ from rest_framework import status
 from controlpanel.api.models import S3Bucket, UserS3Bucket
 from controlpanel.frontend.forms import CreateDatasourceFolderForm, CreateDatasourceForm
 from controlpanel.frontend.views import CreateDatasource
+from tests.test_utils import add_bucket_as_resource
 
 
 @pytest.fixture(autouse=True)
@@ -117,6 +118,8 @@ def create(client, *args, **kwargs):
 
 def delete(client, buckets, *args, bucket=None):
     bucket = bucket or buckets["warehouse1"]
+    lake_formation = args[0]
+    add_bucket_as_resource(lake_formation, bucket)
     return client.post(reverse("delete-datasource", kwargs={"pk": bucket.id}))
 
 
@@ -143,9 +146,9 @@ def delete(client, buckets, *args, bucket=None):
         (delete, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
-def test_bucket_permissions(client, buckets, users, view, user, expected_status):
+def test_bucket_permissions(client, buckets, lake_formation, users, view, user, expected_status):
     client.force_login(users[user])
-    response = view(client, buckets, users)
+    response = view(client, buckets, lake_formation)
     assert response.status_code == expected_status
 
 
@@ -400,6 +403,7 @@ def test_grant_access_invalid_form(client, users3buckets, users, kwargs):
 def test_delete_calls_soft_delete(
     client,
     buckets,
+    lake_formation,
     users,
     bucket,
     success_url,
@@ -410,7 +414,7 @@ def test_delete_calls_soft_delete(
     bucket = buckets[bucket]
 
     client.force_login(admin)
-    response = delete(client, buckets, bucket=bucket)
+    response = delete(client, buckets, lake_formation, bucket=bucket)
     bucket.refresh_from_db()
 
     assert bucket.pk is not None
@@ -448,9 +452,12 @@ def test_delete_calls_soft_delete(
         ("bucket_admin", "other", status.HTTP_404_NOT_FOUND),
     ],
 )
-def test_detail_for_deleted_datasource(client, buckets, users, user, bucket, expected_status):
+def test_detail_for_deleted_datasource(
+    client, buckets, lake_formation, users, user, bucket, expected_status
+):
     user = users[user]
     bucket = buckets[bucket]
+    add_bucket_as_resource(lake_formation, bucket)
     bucket.soft_delete(deleted_by=user)
 
     client.force_login(user)

@@ -12,6 +12,7 @@ from rest_framework.reverse import reverse
 # First-party/Local
 import controlpanel.api.rules  # noqa: F401
 from controlpanel.api.models import S3Bucket, UserS3Bucket
+from tests.test_utils import add_bucket_as_resource
 
 
 @pytest.fixture
@@ -116,7 +117,8 @@ def bucket_update(client, bucket, users, *args):
     ],
 )
 @pytest.mark.django_db
-def test_permission(client, bucket, users, view, user, expected_status):
+def test_permission(client, bucket, users, lake_formation, view, user, expected_status):
+    add_bucket_as_resource(lake_formation, bucket)
     client.force_login(users[user])
     response = view(client, bucket, users)
     assert response.status_code == expected_status
