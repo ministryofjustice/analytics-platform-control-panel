@@ -158,7 +158,7 @@ LOGOUT_REDIRECT_URL = "/"
 LOGIN_REDIRECT_URL_FAILURE = "/login-fail/"
 
 # Length of time it takes for an OIDC ID token to expire (default 1 hour)
-OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 60 * 60 * 12 # 12 hours
 
 # Gracefully handle state mismatch
 OIDC_CALLBACK_CLASS = "controlpanel.oidc.StateMismatchHandler"
