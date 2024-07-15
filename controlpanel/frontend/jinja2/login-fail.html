@@ -8,11 +8,9 @@
         <h2 class="govuk-heading-l">Your session has expired</h2>
 
         <p>
-            Click the link to
             <a href="{{ auth0_logout_url }}?returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2Foidc%2Flogout%2F">
-                refresh your session
+                Click this link to refresh your session
             </a>
-            .
         </p>
 
         <p>
