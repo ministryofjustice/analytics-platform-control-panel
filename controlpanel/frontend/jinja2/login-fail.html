@@ -5,18 +5,16 @@
 {% block content %}
 <div class="govuk-grid-row" id="reset-container">
     <div class="govuk-grid-column-two-thirds">
-        <h2 class="govuk-heading-l">There is a problem with your session</h2>
+        <h2 class="govuk-heading-l">Your session has expired</h2>
 
         <p>
-            It might have timed out in which case you can
             <a href="{{ auth0_logout_url }}?returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2Foidc%2Flogout%2F">
-                reset your session
+                Click here to refresh your session
             </a>
-            , and login again.
         </p>
 
         <p>
-            If resetting your session doesn't help, it's possible that
+            If refreshing your session fails
 
         <ul class="govuk-list govuk-list--bullet">
             <li>You may need to ensure you are in the <a href="https://github.com/moj-analytical-services">MoJ
