@@ -35,7 +35,7 @@
   <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('ministryofjustice-frontend/assets/images/moj-opengraph-image.png') }}">
 </head>
 
-<body class="app-body {{ bodyClasses or "" }}">
+<body class="app-body govuk-frontend-supported {{ bodyClasses or "" }}">
   <script>document.body.className = ((document.body.className) ? document.body.className + ' js-enabled' : 'js-enabled');</script>
   <div class="app-pane">
   {% block bodyStart %}{% endblock %}

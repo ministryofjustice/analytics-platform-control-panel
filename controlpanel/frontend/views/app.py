@@ -214,10 +214,14 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
         context["env_name"] = self.request.GET.get("env_name")
+
         context["app_ip_allowlists"] = [
             {
                 "text": ip_allowlist.name,
                 "value": ip_allowlist.pk,
+                "hint": {
+                    "text": ip_allowlist.allowed_ip_ranges,
+                },
                 "checked": ip_allowlist.pk
                 in context["app"].env_allow_ip_ranges_ids(context["env_name"]),
             }
