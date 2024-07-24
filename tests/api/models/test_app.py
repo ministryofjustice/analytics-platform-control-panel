@@ -222,3 +222,21 @@ def test_iam_role_arn():
 def test_app_url_name(namespace, env, expected):
     app = App(namespace=namespace)
     assert app.app_url_name(env_name=env) == expected
+
+
+@pytest.mark.parametrize("env", ["dev", "prod"], ids=["dev", "prod"])
+def test_get_logs_url(env):
+    expected = (
+        "https://kibana.cloud-platform.service.justice.gov.uk/_plugin/kibana/app/discover#/?_g=("
+        "filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h,to:now))&_a=(columns:!"
+        "(log),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'"
+        "167701b0-f8c0-11ec-b95c-1d65c3682287',key:kubernetes.namespace_name,negate:!f,params:("
+        f"query:example-namespace-{env}),type:phrase),query:(match_phrase:(kubernetes."
+        f"namespace_name:example-namespace-{env}))),('$state':(store:appState),meta:(alias:!n"
+        ",disabled:!f,index:'167701b0-f8c0-11ec-b95c-1d65c3682287',key:kubernetes.container_name,"
+        "negate:!f,params:(query:webapp),type:phrase),query:(match_phrase:(kubernetes."
+        "container_name:webapp)))),index:'167701b0-f8c0-11ec-b95c-1d65c3682287',interval:auto,query"
+        ":(language:kuery,query:''),sort:!())"
+    )
+    app = App(namespace="example-namespace")
+    assert app.get_logs_url(env=env) == expected

@@ -8,6 +8,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django_extensions.db.fields import AutoSlugField
 from django_extensions.db.models import TimeStampedModel
@@ -308,6 +309,16 @@ class App(TimeStampedModel):
 
     def get_absolute_url(self):
         return reverse("manage-app", kwargs={"pk": self.pk})
+
+    def get_logs_url(self, container="webapp", env="dev"):
+        return render_to_string(
+            "includes/app-kibana-logs-url.html",
+            context={
+                "namespace": self.namespace,
+                "container_name": container,
+                "env": env,
+            },
+        )
 
 
 class AddCustomerError(Exception):

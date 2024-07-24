@@ -66,7 +66,10 @@
 
   <h2 class="govuk-heading-m">App logs</h2>
   <p class="govuk-body">
-    <a href="{{ settings.KIBANA_BASE_URL }}">{{ settings.KIBANA_BASE_URL }}</a>
+    Logs are viewable in Kibana. Click the link below to view application logs for each environment:
+    {% for env, url in app_log_urls.items() %}
+      <p><a href="{{ url }}">{{ env.title() }}</a>
+    {% endfor %}
   </p>
 
   <h2 class="govuk-heading-m">App resources usage dashboard</h2>

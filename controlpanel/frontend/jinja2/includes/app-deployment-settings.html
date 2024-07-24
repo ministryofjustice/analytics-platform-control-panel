@@ -2,6 +2,8 @@
 
 {% macro app_deployment_settings(app, env_name, app_domain, deployment_setting, request, csrf_input) %}
   {% set app_full_url = "https://" + app.app_url_name(env_name)+ "." + app_domain %}
+  <h3 class="govuk-heading-s">Namespace</h2>
+  <p class="govuk-body">{{ app.namespace }}-{{ env_name }}</p>
   <p><b>If the app has been successfully deployed onto Cloud Platform, it can be accessed here:</b><a href="{{ app_full_url }}">{{ app_full_url }}</a></p>
   <hr style="height:5px;border:none;color:#333;background-color:#333;"/>
   <section class="{{ env_name }}-settings-panel">

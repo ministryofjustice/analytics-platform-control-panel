@@ -130,6 +130,10 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
 
+        context["app_log_urls"] = {}
+        for env_name in context["deployments_settings"].keys():
+            context["app_log_urls"].update({env_name: app.get_logs_url(env=env_name)})
+
         return context
 
 
