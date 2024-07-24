@@ -311,6 +311,9 @@ class App(TimeStampedModel):
         return reverse("manage-app", kwargs={"pk": self.pk})
 
     def get_logs_url(self, container="webapp", env="dev"):
+        """
+        Builds a deep link to Kibana logs for the given container and environment.
+        """
         return render_to_string(
             "includes/app-kibana-logs-url.html",
             context={
