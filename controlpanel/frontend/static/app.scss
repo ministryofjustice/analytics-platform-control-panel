@@ -4,10 +4,10 @@ $govuk-global-styles: true;
 $govuk-font-family-nta: "Arial";
 $govuk-font-family-nta-tabular: "Arial";
 
-$govuk-assets-path: "/static/govuk-frontend/govuk/assets/";
+$govuk-assets-path: "/static/govuk-frontend/dist/govuk/assets/";
 
 // GOV.UK Frontend
-@import "govuk-frontend/govuk/all";
+@import "govuk-frontend/dist/govuk/all";
 
 // MOJ Frontend
 @import "@ministryofjustice/frontend/moj/all";

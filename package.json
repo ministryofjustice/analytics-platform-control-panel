@@ -8,7 +8,7 @@
     "@ministryofjustice/frontend": "0.0.17-alpha",
     "accessible-autocomplete": "2.0.4",
     "core-js": "3.26.1",
-    "govuk-frontend": "3.0.0",
+    "govuk-frontend": "5.4.0",
     "html5shiv": "3.7.3",
     "jquery": "3.6.1",
     "jquery-ui": "1.13.2",

@@ -57,6 +57,7 @@ build-static:
 	python3 manage.py collectstatic
 
 build-css:
+	rm -rf static
 	mkdir static
 	cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 	cp -R node_modules/govuk-frontend/ static/govuk-frontend
