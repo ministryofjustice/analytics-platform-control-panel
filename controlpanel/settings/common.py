@@ -586,6 +586,6 @@ for queue in PRE_DEFINED_QUEUES:
     }
 
 CELERY_IMPORTS = ["controlpanel.api.tasks.handlers"]
-DPR_DATABASE_NAME = os.environ.get("DPR_DATABASE_NAME")
+DPR_DATABASE_NAME = os.environ.get("DPR_DATABASE_NAME", None)
 
 S3_ARCHIVE_BUCKET_NAME = "dev-archive-folder"

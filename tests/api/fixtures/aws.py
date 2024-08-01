@@ -54,6 +54,7 @@ def glue(aws_creds):
                     "CatalogId": "123",
                     "DatabaseName": "external_db",
                     "Name": "external_test_table",
+                    "Region": "eu-west-2",
                 },
             },
         )
