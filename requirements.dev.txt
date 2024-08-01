@@ -4,7 +4,7 @@ django-debug-toolbar-requests==1.0.5
 django-elasticsearch-debug-toolbar==3.0.2
 flake8==7.0.0
 ipdb==0.13.13
-ipython==8.21.0
+ipython==8.26.0
 isort==5.13.2
 pandas==2.2.0
 pre-commit==3.7.1
