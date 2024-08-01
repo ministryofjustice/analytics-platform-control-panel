@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, View
+from django.views.generic.base import ContextMixin
 from django.views.generic.edit import FormView
 from rules.contrib.views import PermissionRequiredMixin
 
@@ -67,9 +68,51 @@ class TablesListView(
         return context_data
 
 
+class GetTableDataMixin(ContextMixin):
+
+    def get_table_data(self):
+        glue = AWSGlue()
+        # check if the database is a resource link to make sure we use the correct details when we
+        # get the table data
+        database_data = glue.get_database(database_name=self.kwargs["dbname"])["Database"]
+
+        database_name = database_data.get("TargetDatabase", {}).get(
+            "DatabaseName", self.kwargs["dbname"]
+        )
+        region = database_data.get("TargetDatabase", {}).get("Region", None)
+        catalog_id = database_data.get("TargetDatabase", {}).get("CatalogId", None)
+
+        if region:
+            glue = AWSGlue(region_name=region)
+
+        table_data = glue.get_table(
+            database_name=database_name, table_name=self.kwargs["tablename"], catalog_id=catalog_id
+        )["Table"]
+
+        cleaned_table_data = {
+            "IsRegisteredWithLakeFormation": table_data["IsRegisteredWithLakeFormation"],
+            "database_name": database_name,
+            "table_name": table_data["Name"],
+            "region": region,
+            "catalog_id": catalog_id,
+        }
+        # check if the table a RL
+        if "TargetTable" in table_data:
+            cleaned_table_data.update(
+                {
+                    "database_name": table_data["TargetTable"]["DatabaseName"],
+                    "table_name": table_data["TargetTable"]["Name"],
+                    "region": table_data["TargetTable"]["Region"],
+                    "catalog_id": table_data["TargetTable"]["CatalogId"],
+                }
+            )
+        return cleaned_table_data
+
+
 class ManageTable(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
+    GetTableDataMixin,
     TemplateView,
 ):
     template_name = "table-detail.html"
@@ -77,32 +120,15 @@ class ManageTable(
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
-        database_name = kwargs["dbname"]
-        table_name = kwargs["tablename"]
-        region = None
-        glue = AWSGlue()
-        database_data = glue.get_database(database_name=database_name)["Database"]
-        if "TargetDatabase" in database_data:
-            database_name = database_data["TargetDatabase"]["DatabaseName"]
-            region = database_data["TargetDatabase"]["Region"]
-            catalog_id = database_data["TargetDatabase"]["CatalogId"]
-            glue = AWSGlue(region_name=region)
-
-        table_data = glue.get_table(database_name=database_name, table_name=table_name)["Table"]
-        if "TargetTable" in table_data:
-            table_name = table_data["TargetTable"]["Name"]
-            database_name = table_data["TargetTable"]["DatabaseName"]
-            region = table_data["TargetTable"]["Region"]
-            catalog_id = table_data["TargetTable"]["CatalogId"]
-
+        table_data = self.get_table_data()
         context_data["table"] = table_data
 
         if context_data["table"]["IsRegisteredWithLakeFormation"]:
             permissions = self._get_permissions(
-                database_name=database_name,
-                table_name=table_name,
-                region_name=region,
-                catalog_id=catalog_id,
+                database_name=table_data["database_name"],
+                table_name=table_data["table_name"],
+                region_name=table_data["region"],
+                catalog_id=table_data["catalog_id"],
             )
             context_data["permissions"] = permissions
 
@@ -138,6 +164,7 @@ class ManageTable(
 class TableGrantView(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
+    GetTableDataMixin,
     FormView,
 ):
     template_name = "table-access-grant.html"
@@ -161,39 +188,6 @@ class TableGrantView(
         db_name = self.kwargs["dbname"]
         table_name = self.kwargs["tablename"]
         return reverse(viewname="manage-table", kwargs={"dbname": db_name, "tablename": table_name})
-
-    def get_table_data(self):
-        glue = AWSGlue()
-        database_data = glue.get_database(database_name=self.kwargs["dbname"])["Database"]
-
-        database_name = database_data.get("TargetDatabase", {}).get(
-            "DatabaseName", self.kwargs["dbname"]
-        )
-        region = database_data.get("TargetDatabase", {}).get("Region", None)
-        catalog_id = database_data.get("TargetDatabase", {}).get("CatalogId", None)
-
-        if region:
-            glue = AWSGlue(region_name=region)
-
-        table_data = glue.get_table(
-            database_name=database_name, table_name=self.kwargs["tablename"], catalog_id=catalog_id
-        )["Table"]
-
-        # check if the table a RL
-        if "TargetTable" in table_data:
-            return {
-                "database_name": table_data["TargetTable"]["DatabaseName"],
-                "table_name": table_data["TargetTable"]["Name"],
-                "region": table_data["TargetTable"]["Region"],
-                "catalog_id": table_data["TargetTable"]["CatalogId"],
-            }
-
-        return {
-            "database_name": database_name,
-            "table_name": table_data["Name"],
-            "region": region,
-            "catalog_id": catalog_id,
-        }
 
     def form_valid(self, form):
 
@@ -226,42 +220,10 @@ class TableGrantView(
 class RevokeTableAccessView(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
+    GetTableDataMixin,
     View,
 ):
     permission_required = "api.is_database_admin"
-
-    def get_table_data(self):
-        glue = AWSGlue()
-        database_data = glue.get_database(database_name=self.kwargs["dbname"])["Database"]
-
-        database_name = database_data.get("TargetDatabase", {}).get(
-            "DatabaseName", self.kwargs["dbname"]
-        )
-        region = database_data.get("TargetDatabase", {}).get("Region", None)
-        catalog_id = database_data.get("TargetDatabase", {}).get("CatalogId", None)
-
-        if region:
-            glue = AWSGlue(region_name=region)
-
-        table_data = glue.get_table(
-            database_name=database_name, table_name=self.kwargs["tablename"], catalog_id=catalog_id
-        )["Table"]
-
-        # check if the table a RL
-        if "TargetTable" in table_data:
-            return {
-                "database_name": table_data["TargetTable"]["DatabaseName"],
-                "table_name": table_data["TargetTable"]["Name"],
-                "region": table_data["TargetTable"]["Region"],
-                "catalog_id": table_data["TargetTable"]["CatalogId"],
-            }
-
-        return {
-            "database_name": database_name,
-            "table_name": table_data["Name"],
-            "region": region,
-            "catalog_id": catalog_id,
-        }
 
     def post(self, request, *args, **kwargs):
         table_data = self.get_table_data()

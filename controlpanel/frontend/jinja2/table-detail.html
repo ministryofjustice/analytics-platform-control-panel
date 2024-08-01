@@ -39,7 +39,7 @@
         <tr class="govuk-table__row">
           <td class="govuk-table__cell">{{ permission.user }}</td>
           <td class="govuk-table__cell align-right no-wrap">
-            <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": table.Name, "user": permission.user }) }}" method="post">
+            <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": tablename, "user": permission.user }) }}" method="post">
               {{ csrf_input }}
               <button class="govuk-button cpanel-button--destructive js-confirm"
                       data-confirm-message="Are you sure you want to revoke access for user?">
@@ -55,7 +55,7 @@
     {% endif %}
 
 
-    <a class="govuk-button" href="{{ url('grant-table-permissions', kwargs={ "dbname": dbname, "tablename": table.Name}) }}">
+    <a class="govuk-button" href="{{ url('grant-table-permissions', kwargs={ "dbname": dbname, "tablename": tablename}) }}">
       Grant User Permissions
     </a>
   {% endif %}
