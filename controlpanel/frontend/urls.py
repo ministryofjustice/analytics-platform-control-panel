@@ -223,17 +223,17 @@ urlpatterns = [
     path("databases/", views.DatabasesListView.as_view(), name="list-databases"),
     path("databases/<str:dbname>/", views.TablesListView.as_view(), name="list-tables"),
     path(
-        "databases/<slug:dbname>/<slug:tablename>/grant/",
+        "databases/<str:dbname>/<slug:tablename>/grant/",
         views.TableGrantView.as_view(),
         name="grant-table-permissions",
     ),
     path(
-        "databases/<slug:dbname>/<slug:tablename>/<str:user>/revoke/",
+        "databases/<str:dbname>/<str:tablename>/<str:user>/revoke/",
         views.RevokeTableAccessView.as_view(),
         name="revoke-table-permissions",
     ),
     path(
-        "databases/<slug:dbname>/<slug:tablename>/",
+        "databases/<str:dbname>/<str:tablename>/",
         views.ManageTable.as_view(),
         name="manage-table",
     ),
