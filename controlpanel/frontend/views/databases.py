@@ -30,9 +30,7 @@ class DatabasesListView(
 
     def get_context_data(self, **kwargs):
         context_data = super().get_context_data(**kwargs)
-
-        context_data["databases"] = self._get_database_list()
-
+        context_data["databases"] = self._get_database_list(settings.DPR_DATABASE_NAME)
         return context_data
 
     def _get_database_list(self, database_name=None):
