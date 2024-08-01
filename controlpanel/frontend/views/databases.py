@@ -1,4 +1,6 @@
 # Third-party
+import botocore
+import sentry_sdk
 import structlog
 from django.conf import settings
 from django.contrib import messages
@@ -201,43 +203,23 @@ class TableGrantView(
 
         table_data = self.get_table_data()
 
-        lake_formation = AWSLakeFormation(region_name=table_data["region"])
-        lake_formation.grant_table_permission(
-            database_name=table_data["database_name"],
-            table_name=table_data["table_name"],
-            catalog_id=table_data["catalog_id"],
-            permissions=permissions["table"],
-            principal_arn=user_arn,
-        )
+        # only grants access on the shared table, not the resource link. As it is assumed that
+        # all users will have DESCRIBE access to the resource link
+        try:
+            lake_formation = AWSLakeFormation(region_name=table_data["region"])
+            lake_formation.grant_table_permission(
+                database_name=table_data["database_name"],
+                table_name=table_data["table_name"],
+                catalog_id=table_data["catalog_id"],
+                permissions=permissions["table"],
+                principal_arn=user_arn,
+            )
+        except botocore.exceptions.ClientError as e:
+            messages.error(self.request, f"Could not grant access for user {user.username}")
+            sentry_sdk.capture_exception(e)
+            return super().form_invalid(form)
 
-        # try:
-        #     lake_formation = AWSLakeFormation()
-        #     glue = AWSGlue()
-        #     table_data = glue.get_table(database_name=database_name, table_name=resource_link_name)
-        #     remote_catalog_id = table_data["Table"]["TargetTable"]["CatalogId"]
-        #     remote_database_name = table_data["Table"]["TargetTable"]["DatabaseName"]
-        #     remote_table_name = table_data["Table"]["TargetTable"]["Name"]
-
-        #     lake_formation.grant_table_permission(
-        #         database_name=database_name,
-        #         table_name=resource_link_name,
-        #         principal_arn=user_arn,
-        #         permissions=permissions["resource_link"],
-        #     )
-
-        #     lake_formation.grant_table_permission(
-        #         database_name=remote_database_name,
-        #         table_name=remote_table_name,
-        #         principal_arn=user_arn,
-        #         catalog_id=remote_catalog_id,
-        #         permissions=permissions["table"],
-        #     )
-
-        #     messages.success(self.request, f"Successfully granted access for user {user.username}")
-        # except Exception as e:
-        #     log.error(f"Could not grant access for user {user.username}", error=str(e))
-        #     messages.error(self.request, f"Could not grant access for user {user.username}")
-
+        messages.success(self.request, f"Successfully granted access for user {user.username}")
         return super().form_valid(form)
 
 
@@ -282,79 +264,30 @@ class RevokeTableAccessView(
         }
 
     def post(self, request, *args, **kwargs):
-
         table_data = self.get_table_data()
         lake_formation = AWSLakeFormation(region_name=table_data["region"])
         principal_arn = iam_arn(f'role/{settings.ENV}_user_{kwargs["user"]}')
-        lake_formation.revoke_table_permission(
-            database_name=table_data["database_name"],
-            table_name=table_data["table_name"],
-            principal_arn=principal_arn,
-            catalog_id=table_data["catalog_id"],
-            permissions=["SELECT"],
-        )
+
+        try:
+            # only revokes access on the shared table, not the resource link
+            lake_formation.revoke_table_permission(
+                database_name=table_data["database_name"],
+                table_name=table_data["table_name"],
+                principal_arn=principal_arn,
+                catalog_id=table_data["catalog_id"],
+                permissions=["SELECT"],
+            )
+            messages.success(self.request, f"Successfully revoked access for user {kwargs['user']}")
+        except botocore.exceptions.ClientError as e:
+            sentry_sdk.capture_exception(e)
+            messages.error(self.request, f"Could not revoke access for user {kwargs['user']}")
+
         return HttpResponseRedirect(
             reverse_lazy(
                 "manage-table",
                 kwargs={"dbname": self.kwargs["dbname"], "tablename": self.kwargs["tablename"]},
             )
         )
-
-        # try:
-        #     lake_formation = AWSLakeFormation()
-        #     glue = AWSGlue()
-        #     database_name = kwargs["dbname"]
-        #     table_name = kwargs["tablename"]
-        #     principal_arn = iam_arn(f'role/{settings.ENV}_user_{kwargs["user"]}')
-
-        #     table_data = glue.get_table(database_name=database_name, table_name=table_name)
-        #     remote_catalog_id = table_data["Table"]["TargetTable"]["CatalogId"]
-        #     remote_database_name = table_data["Table"]["TargetTable"]["DatabaseName"]
-        #     remote_table_name = table_data["Table"]["TargetTable"]["Name"]
-
-        #     resource_link_permissions = self._get_resource_permissions(
-        #         lake_formation, database_name, table_name, principal_arn
-        #     )
-
-        #     table_permissions = self._get_resource_permissions(
-        #         lake_formation,
-        #         remote_database_name,
-        #         remote_table_name,
-        #         principal_arn,
-        #         remote_catalog_id,
-        #     )
-
-        #     # Revoke access to resource link and linked table here
-        #     if resource_link_permissions:
-        #         lake_formation.revoke_table_permission(
-        #             database_name=database_name,
-        #             table_name=table_name,
-        #             principal_arn=principal_arn,
-        #             permissions=resource_link_permissions,
-        #         )
-        #     if table_permissions:
-        #         lake_formation.revoke_table_permission(
-        #             database_name=remote_database_name,
-        #             table_name=remote_table_name,
-        #             principal_arn=principal_arn,
-        #             catalog_id=remote_catalog_id,
-        #             permissions=table_permissions,
-        #         )
-
-        #     messages.success(self.request, f"Successfully revoked access for user {kwargs['user']}")
-        #     return HttpResponseRedirect(
-        #         reverse_lazy(
-        #             "manage-table", kwargs={"dbname": database_name, "tablename": table_name}
-        #         )
-        #     )
-        # except Exception as e:
-        #     log.error(f"Could not revoke access for user {kwargs['user']}", error=str(e))
-        #     messages.error(self.request, f"Could not revoke access for user {kwargs['user']}")
-        #     return HttpResponseRedirect(
-        #         reverse_lazy(
-        #             "manage-table", kwargs={"dbname": database_name, "tablename": table_name}
-        #         )
-        #     )
 
     def _get_resource_permissions(
         self, lake_formation, database_name, table_name, principal_arn, catalog_id=None
