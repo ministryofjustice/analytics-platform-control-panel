@@ -210,25 +210,11 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
     permission_required = "api.update_app_ip_allowlists"
     fields = ["ip_allowlists"]
 
-    def format_ip_allowlists(self, allowlist, num_ips_per_line=6):
+    def format_ip_allowlists(self, allowlist):
         # splits larger ip allowlists into multiple lines
 
-        result = ""
-        ips = allowlist.split(",")
-        num_ips = len(ips)
-
-        if num_ips <= num_ips_per_line:
-            return allowlist
-
-        num_loops = int(num_ips / num_ips_per_line)
-
-        if num_ips % num_ips_per_line > 0:
-            num_loops += 1
-
-        for i in range(num_loops):
-            result += ",".join(ips[i * num_ips_per_line : num_ips_per_line * (i + 1)]) + "<br/>"
-
-        return result
+        allowlist = allowlist.replace(",", ", ")
+        return allowlist
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
