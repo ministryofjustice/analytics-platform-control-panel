@@ -86,11 +86,11 @@ class GetTableDataMixin(ContextMixin):
             table_data.update(
                 {
                     "database_name": database["TargetDatabase"]["DatabaseName"],
-                    "region": database["TargetDatabase"]["Region"],
+                    "region": database["TargetDatabase"].get("Region"),
                     "catalog_id": database["TargetDatabase"]["CatalogId"],
                 }
             )
-            glue = AWSGlue(region_name=database["TargetDatabase"]["Region"])
+            glue = AWSGlue(region_name=database["TargetDatabase"].get("Region"))
 
         table = glue.get_table(
             database_name=table_data["database_name"],
@@ -104,7 +104,7 @@ class GetTableDataMixin(ContextMixin):
                 {
                     "database_name": table["TargetTable"]["DatabaseName"],
                     "table_name": table["TargetTable"]["Name"],
-                    "region": table["TargetTable"]["Region"],
+                    "region": table["TargetTable"].get("Region"),
                     "catalog_id": table["TargetTable"]["CatalogId"],
                 }
             )
