@@ -69,44 +69,57 @@ class TablesListView(
 
 
 class GetTableDataMixin(ContextMixin):
+    table_lookup_kwargs = None
+
+    @property
+    def get_table_lookup_kwargs(self):
+        if self.table_lookup_kwargs is not None:
+            return self.table_lookup_kwargs
+
+        self.table_lookup_kwargs = {
+            "database_name": self.kwargs["dbname"],
+            "table_name": self.kwargs["tablename"],
+            "region": settings.AWS_DEFAULT_REGION,
+            "catalog_id": settings.AWS_DATA_ACCOUNT_ID,
+        }
+        return self.table_lookup_kwargs
 
     def get_table_data(self):
         glue = AWSGlue()
         # check if the database is a resource link to make sure we use the correct details when we
         # get the table data
         database_data = glue.get_database(database_name=self.kwargs["dbname"])["Database"]
-
-        database_name = database_data.get("TargetDatabase", {}).get(
-            "DatabaseName", self.kwargs["dbname"]
-        )
-        region = database_data.get("TargetDatabase", {}).get("Region", None)
-        catalog_id = database_data.get("TargetDatabase", {}).get("CatalogId", None)
-
-        if region:
-            glue = AWSGlue(region_name=region)
+        if "TargetDatabase" in database_data:
+            self.get_table_lookup_kwargs.update(
+                {
+                    "database_name": database_data["TargetDatabase"]["DatabaseName"],
+                    "region": database_data["TargetDatabase"]["Region"],
+                    "catalog_id": database_data["TargetDatabase"]["CatalogId"],
+                }
+            )
+            glue = AWSGlue(region_name=database_data["TargetDatabase"]["Region"])
 
         table_data = glue.get_table(
-            database_name=database_name, table_name=self.kwargs["tablename"], catalog_id=catalog_id
+            database_name=self.get_table_lookup_kwargs["database_name"],
+            table_name=self.kwargs["tablename"],
+            catalog_id=self.get_table_lookup_kwargs["catalog_id"],
         )["Table"]
 
-        cleaned_table_data = {
-            "IsRegisteredWithLakeFormation": table_data["IsRegisteredWithLakeFormation"],
-            "database_name": database_name,
-            "table_name": table_data["Name"],
-            "region": region,
-            "catalog_id": catalog_id,
-        }
+        self.get_table_lookup_kwargs["IsRegisteredWithLakeFormation"] = table_data.get(
+            "IsRegisteredWithLakeFormation", False
+        )
+
         # check if the table a RL
         if "TargetTable" in table_data:
-            cleaned_table_data.update(
+            self.get_table_lookup_kwargs.update(
                 {
                     "database_name": table_data["TargetTable"]["DatabaseName"],
                     "table_name": table_data["TargetTable"]["Name"],
-                    "region": table_data["TargetTable"]["Region"],
+                    "region": table_data["TargetTable"].get("Region"),
                     "catalog_id": table_data["TargetTable"]["CatalogId"],
                 }
             )
-        return cleaned_table_data
+        return self.get_table_lookup_kwargs
 
 
 class ManageTable(
