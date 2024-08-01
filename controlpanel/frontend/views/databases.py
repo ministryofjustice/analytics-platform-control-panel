@@ -104,7 +104,7 @@ class GetTableDataMixin(ContextMixin):
                 {
                     "database_name": table["TargetTable"]["DatabaseName"],
                     "table_name": table["TargetTable"]["Name"],
-                    "region": table["TargetTable"].get("Region"),
+                    "region": table["TargetTable"]["Region"],
                     "catalog_id": table["TargetTable"]["CatalogId"],
                 }
             )
@@ -199,8 +199,7 @@ class TableGrantView(
 
         table_data = self.get_table_data()
 
-        # only grants access on the shared table, not the resource link. As it is assumed that
-        # all users will have DESCRIBE access to the resource link
+        # only grants access on the shared table, not the resource link
         try:
             lake_formation = AWSLakeFormation(region_name=table_data["region"])
             lake_formation.grant_table_permission(
