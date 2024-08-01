@@ -16,12 +16,12 @@
     </thead>
     <tbody class="govuk-table__body">
       <tr class="govuk-table__row">
-        <td class="govuk-table__cell">{{ "Yes" if table.IsRegisteredWithLakeFormation else "No" }}</td>
+        <td class="govuk-table__cell">{{ "Yes" if table.is_registered_with_lake_formation else "No" }}</td>
       </tr>
     </tbody>
   </table>
 
-  {% if table.IsRegisteredWithLakeFormation %}
+  {% if table.is_registered_with_lake_formation %}
     <h2 class="govuk-heading-l">User Access</h1>
 
     {% if permissions %}

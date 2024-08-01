@@ -67,57 +67,48 @@ class TablesListView(
 
 
 class GetTableDataMixin(ContextMixin):
-    table_lookup_kwargs = None
 
     @property
-    def get_table_lookup_kwargs(self):
-        if self.table_lookup_kwargs is not None:
-            return self.table_lookup_kwargs
-
-        self.table_lookup_kwargs = {
+    def base_table_data(self):
+        return {
             "database_name": self.kwargs["dbname"],
             "table_name": self.kwargs["tablename"],
             "region": settings.AWS_DEFAULT_REGION,
             "catalog_id": settings.AWS_DATA_ACCOUNT_ID,
         }
-        return self.table_lookup_kwargs
 
     def get_table_data(self):
+        table_data = self.base_table_data.copy()
+        # check if the db is a resource link to ensurewe use the correct details when getting table
         glue = AWSGlue()
-        # check if the database is a resource link to make sure we use the correct details when we
-        # get the table data
-        database_data = glue.get_database(database_name=self.kwargs["dbname"])["Database"]
-        if "TargetDatabase" in database_data:
-            self.get_table_lookup_kwargs.update(
+        database = glue.get_database(database_name=self.kwargs["dbname"])["Database"]
+        if "TargetDatabase" in database:
+            table_data.update(
                 {
-                    "database_name": database_data["TargetDatabase"]["DatabaseName"],
-                    "region": database_data["TargetDatabase"]["Region"],
-                    "catalog_id": database_data["TargetDatabase"]["CatalogId"],
+                    "database_name": database["TargetDatabase"]["DatabaseName"],
+                    "region": database["TargetDatabase"]["Region"],
+                    "catalog_id": database["TargetDatabase"]["CatalogId"],
                 }
             )
-            glue = AWSGlue(region_name=database_data["TargetDatabase"]["Region"])
+            glue = AWSGlue(region_name=database["TargetDatabase"]["Region"])
 
-        table_data = glue.get_table(
-            database_name=self.get_table_lookup_kwargs["database_name"],
+        table = glue.get_table(
+            database_name=table_data["database_name"],
             table_name=self.kwargs["tablename"],
-            catalog_id=self.get_table_lookup_kwargs["catalog_id"],
+            catalog_id=table_data["catalog_id"],
         )["Table"]
-
-        self.get_table_lookup_kwargs["IsRegisteredWithLakeFormation"] = table_data.get(
-            "IsRegisteredWithLakeFormation", False
-        )
-
-        # check if the table a RL
-        if "TargetTable" in table_data:
-            self.get_table_lookup_kwargs.update(
+        table_data["is_registered_with_lake_formation"] = table.get("IsRegisteredWithLakeFormation")
+        # check if the table a resource link and update table data with the correct details
+        if "TargetTable" in table:
+            table_data.update(
                 {
-                    "database_name": table_data["TargetTable"]["DatabaseName"],
-                    "table_name": table_data["TargetTable"]["Name"],
-                    "region": table_data["TargetTable"].get("Region"),
-                    "catalog_id": table_data["TargetTable"]["CatalogId"],
+                    "database_name": table["TargetTable"]["DatabaseName"],
+                    "table_name": table["TargetTable"]["Name"],
+                    "region": table["TargetTable"].get("Region"),
+                    "catalog_id": table["TargetTable"]["CatalogId"],
                 }
             )
-        return self.get_table_lookup_kwargs
+        return table_data
 
 
 class ManageTable(
@@ -134,15 +125,15 @@ class ManageTable(
         table_data = self.get_table_data()
         context_data["table"] = table_data
 
-        if context_data["table"]["IsRegisteredWithLakeFormation"]:
-            permissions = self._get_permissions(
-                database_name=table_data["database_name"],
-                table_name=table_data["table_name"],
-                region_name=table_data["region"],
-                catalog_id=table_data["catalog_id"],
-            )
-            context_data["permissions"] = permissions
+        if not table_data["is_registered_with_lake_formation"]:
+            return context_data
 
+        context_data["permissions"] = self._get_permissions(
+            database_name=table_data["database_name"],
+            table_name=table_data["table_name"],
+            region_name=table_data["region"],
+            catalog_id=table_data["catalog_id"],
+        )
         return context_data
 
     def _get_permissions(self, database_name, table_name, region_name=None, catalog_id=None):
