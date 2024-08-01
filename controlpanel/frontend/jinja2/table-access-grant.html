@@ -1,11 +1,11 @@
 {% from "radios/macro.html" import govukRadios %}
 {% from "user/macro.html" import user_name %}
-{% from "includes/data-access-level-options.html" import data_access_level_options with context %}
+{% from "includes/table-access-level-options.html" import table_access_level_options with context %}
 {% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
 
 {% extends "base.html" %}
 
-{% set page_title = "Grant user access to table" %}
+{% set page_title = "Grant user access to " + tablename %}
 
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
@@ -24,7 +24,7 @@
     </div>
 
     <div class="govuk-form-group panel panel-border-narrow js-hidden" id="data-access-level-panel">
-      {{ data_access_level_options() }}
+      {{ table_access_level_options() }}
     </div>
 
     <div class="govuk-form-group">

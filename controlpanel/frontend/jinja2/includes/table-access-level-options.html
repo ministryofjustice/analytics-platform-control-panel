@@ -1,0 +1,19 @@
+{% from "radios/macro.html" import govukRadios %}
+
+{% macro table_access_level_options() %}
+  {{ govukRadios({
+    "name": "access_level",
+    "fieldset": {
+      "legend": {
+        "text": "Data access level",
+        "classes": "govuk-fieldset__legend--m",
+      },
+    },
+    "items": [
+      {
+        "value": "readonly",
+        "text": "Read only (Select, Describe)",
+      }
+    ]
+  }) }}
+{% endmacro %}
