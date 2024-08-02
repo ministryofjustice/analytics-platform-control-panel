@@ -12,7 +12,7 @@
 
 {% set new_datasource_html %}
   Create a new webapp data source
-  <div class="cpanel-subform" data-show-if-selected="connect_bucket-1">
+  <div class="radio-subform" data-show-if-selected="connect_bucket-1">
   {{ govukInput({
     "name": "new_datasource_name",
     "classes": "govuk-!-width-one-half",
@@ -35,7 +35,7 @@
 
 {% set existing_datasource_html %}
   Connect an existing webapp data source
-  <div class="cpanel-subform" data-show-if-selected="connect_bucket-2">
+  <div class="radio-subform" data-show-if-selected="connect_bucket-2">
     <div class="govuk-form-group
                 {%- if form.existing_datasource_id.errors %} govuk-form-group--error{% endif %}">
       {{ govukLabel({"text": "Select webapp data source"}) }}

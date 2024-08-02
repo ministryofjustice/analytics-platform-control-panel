@@ -32,12 +32,12 @@
         {{ ip_allowlist.description }}
       </td>
       <td class="govuk-table__cell">
-        {{ ip_allowlist.allowed_ip_ranges }}
+        {{ ip_allowlist.allowed_ip_ranges.replace(",", ", ") }}
       </td>
       <td class="govuk-table__cell align-right no-wrap">
         <a href="{{ url('manage-ip-allowlist', kwargs={ "pk": ip_allowlist.pk }) }}"
            class="govuk-button govuk-button--secondary">
-          Manage IP allowlist 
+          Manage IP allowlist
         </a>
       </td>
     </tr>

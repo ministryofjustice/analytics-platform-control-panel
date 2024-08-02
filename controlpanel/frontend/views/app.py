@@ -210,14 +210,24 @@ class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
     permission_required = "api.update_app_ip_allowlists"
     fields = ["ip_allowlists"]
 
+    def format_ip_allowlists(self, allowlist):
+        # splits larger ip allowlists into multiple lines
+
+        allowlist = allowlist.replace(",", ", ")
+        return allowlist
+
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context["app"] = self.get_object()
         context["env_name"] = self.request.GET.get("env_name")
+
         context["app_ip_allowlists"] = [
             {
                 "text": ip_allowlist.name,
                 "value": ip_allowlist.pk,
+                "hint": {
+                    "text": self.format_ip_allowlists(ip_allowlist.allowed_ip_ranges),
+                },
                 "checked": ip_allowlist.pk
                 in context["app"].env_allow_ip_ranges_ids(context["env_name"]),
             }

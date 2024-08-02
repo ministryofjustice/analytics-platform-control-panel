@@ -145,7 +145,7 @@
     <div class="govuk-warning-text">
       <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
       <strong class="govuk-warning-text__text">
-        <span class="govuk-warning-text__assistive">Warning</span>
+        <span class="govuk-visually-hidden">Warning</span>
         {% for message in broadcast_messages %}
         {{ message }} <br/>
         {% endfor %}
@@ -194,8 +194,11 @@
 
 {% block body_end %}
   {% block scripts %}
-    <script src="{{ static('govuk-frontend/govuk/all.js') }}"></script>
-    <script>window.GOVUKFrontend.initAll()</script>
+    <script type="module" src="{{ static('assets/js/govuk-frontend.min.js') }}"></script>
+    <script type="module">
+      import { initAll } from "{{ static('assets/js/govuk-frontend.min.js') }}"
+      initAll()
+    </script>
     <script src="{{ static('accessible-autocomplete/accessible-autocomplete.min.js') }}"></script>
     <script src="{{ static('jquery/jquery.min.js') }}"></script>
     <script src="{{ static('jquery-ui/jquery-ui.min.js') }}"></script>

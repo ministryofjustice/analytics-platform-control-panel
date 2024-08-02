@@ -22,26 +22,31 @@
     {% set name = "connections" %}
     {% set itemHintId = id + '-item-hint' %}
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ item[1] }}"
-      {{-" checked" if item[0] in params.selected_values else "" }}>
-      {{ govukLabel({
-        "text": item[0],
-        "classes": 'govuk-checkboxes__label' + (' ' + (item.label|default({})).classes|default("")),
-        "attributes": (item.label|default({})).attributes|default(""),
-        "for": id
-      }) }}
       {% set client_id_field_name = item[1] + '_auth0_client_id' %}
       {% set client_secret_field_name = item[1] + '_auth0_client_secret' %}
       {% set conn_name_field_name = item[1] + '_auth0_conn_name' %}
       {% set has_linked_client_fields = (form.fields.get(client_id_field_name, None)) %}
+      {% set label_text = item[0] + " (Please provide the client credential from the provider)" if has_linked_client_fields else item[0] %}
 
-      {% if has_linked_client_fields %}
-          {% set client_id_field = form.fields.get(client_id_field_name) %}
-          {% set client_secret_field = form.fields.get(client_secret_field_name) %}
-          {% set conn_name_field = form.fields.get(conn_name_field_name) %}
-          (Please provide the client credential from the provider)
-          <div class="cpanel-subform" data-show-if-selected="{{ item[0] }}">
-            <br/>
+      <input class="govuk-checkboxes__input" id="{{ id }}" name="{{ name }}" type="checkbox" value="{{ item[1] }}"
+      {{-" checked" if item[0] in params.selected_values else "" }}>
+      {{ govukLabel({
+        "text": label_text,
+        "classes": 'govuk-checkboxes__label' + (' ' + (item.label|default({})).classes|default("")),
+        "attributes": (item.label|default({})).attributes|default(""),
+        "for": id
+      }) }}
+
+    </div>
+
+    {% if has_linked_client_fields %}
+      {% set client_id_field = form.fields.get(client_id_field_name) %}
+      {% set client_secret_field = form.fields.get(client_secret_field_name) %}
+      {% set conn_name_field = form.fields.get(conn_name_field_name) %}
+
+      <div class="govuk-grid-row checkbox-subform" data-show-if-selected="{{ item[0] }}">
+        <div class="govuk-grid-column-full">
+          <br/>
           {{ govukInput({
             "name": conn_name_field_name,
             "classes": "govuk-!-width-one-half",
@@ -77,9 +82,9 @@
               "errorMessage": {"text": params.errors[client_secret_field_name]|join(". ")} if params.errors.get(client_secret_field_name) else {},
             })
           }}
-          </div>
-      {% endif %}
-    </div>
+        </div>
+      </div>
+    {% endif %}
     {% endfor %}
   </div>
 {% endset -%}

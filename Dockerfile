@@ -6,7 +6,7 @@ COPY jest.config.js controlpanel/frontend/static /src/
 RUN npm install
 RUN mkdir -p dist &&\
   ./node_modules/.bin/babel src/module-loader.js src/components src/javascripts -o dist/app.js -s
-RUN ./node_modules/.bin/sass --load-path=node_modules/ --style=compressed src/app.scss:dist/app.css
+RUN ./node_modules/.bin/sass --load-path=./ --style=compressed src/app.scss:dist/app.css
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
@@ -69,6 +69,10 @@ COPY tests tests
 
 # install javascript dependencies
 COPY --from=build-node dist/app.css dist/app.js static/
+COPY --from=build-node node_modules/govuk-frontend/dist/govuk/assets/fonts/. static/assets/fonts
+COPY --from=build-node node_modules/govuk-frontend/dist/govuk/assets/images/. static/assets/images
+COPY --from=build-node node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js static/assets/js/govuk-frontend.min.js
+COPY --from=build-node node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js.map static/assets/js/govuk-frontend.min.js.map
 COPY --from=build-node node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 COPY --from=build-node node_modules/govuk-frontend static/govuk-frontend
 COPY --from=build-node node_modules/@ministryofjustice/frontend/moj static/ministryofjustice-frontend
