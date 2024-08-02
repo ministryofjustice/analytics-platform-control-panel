@@ -44,7 +44,7 @@
       {% set client_secret_field = form.fields.get(client_secret_field_name) %}
       {% set conn_name_field = form.fields.get(conn_name_field_name) %}
 
-      <div class="govuk-grid-row" data-show-if-selected="{{ item[0] }}">
+      <div class="govuk-grid-row checkbox-subform" data-show-if-selected="{{ item[0] }}">
         <div class="govuk-grid-column-full">
           <br/>
           {{ govukInput({
