@@ -1,7 +1,3 @@
-# Standard library
-import json
-from unittest.mock import patch
-
 # Third-party
 import pytest
 from django.conf import settings
