@@ -18,7 +18,7 @@
   {# Ensure that older IE versions always render with the correct rendering engine #}
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {% block headIcons %}
-  <link rel="shortcut icon" href="{{ static('govuk-frontend/govuk/assets/images/favicon.ico') }}" type="image/x-icon">
+  <link rel="shortcut icon" href="{{ static('assets/images/favicon.ico') }}" type="image/x-icon">
   <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-180x180.png') }}" sizes="180x180">
   <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-167x167.png') }}" sizes="167x167">
   <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-152x152.png') }}" sizes="152x152">
@@ -35,7 +35,7 @@
   <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('ministryofjustice-frontend/assets/images/moj-opengraph-image.png') }}">
 </head>
 
-<body class="app-body {{ bodyClasses or "" }}">
+<body class="app-body govuk-frontend-supported {{ bodyClasses or "" }}">
   <script>document.body.className = ((document.body.className) ? document.body.className + ' js-enabled' : 'js-enabled');</script>
   <div class="app-pane">
   {% block bodyStart %}{% endblock %}

@@ -11,19 +11,17 @@
   <table class="govuk-table">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
-        <th scope="col" class="govuk-table__header">Name</th>
         <th scope="col" class="govuk-table__header">Registered in Lake Formation</th>
       </tr>
     </thead>
     <tbody class="govuk-table__body">
       <tr class="govuk-table__row">
-        <td class="govuk-table__cell">{{ table.Name }}</td>
-        <td class="govuk-table__cell">{{ "Yes" if table.IsRegisteredWithLakeFormation else "No" }}</td>
+        <td class="govuk-table__cell">{{ "Yes" if table.is_registered_with_lake_formation else "No" }}</td>
       </tr>
     </tbody>
   </table>
 
-  {% if table.IsRegisteredWithLakeFormation %}
+  {% if table.is_registered_with_lake_formation %}
     <h2 class="govuk-heading-l">User Access</h1>
 
     {% if permissions %}
@@ -41,7 +39,7 @@
         <tr class="govuk-table__row">
           <td class="govuk-table__cell">{{ permission.user }}</td>
           <td class="govuk-table__cell align-right no-wrap">
-            <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": table.Name, "user": permission.user }) }}" method="post">
+            <form action="{{ url("revoke-table-permissions", kwargs={ "dbname": dbname, "tablename": tablename, "user": permission.user }) }}" method="post">
               {{ csrf_input }}
               <button class="govuk-button cpanel-button--destructive js-confirm"
                       data-confirm-message="Are you sure you want to revoke access for user?">
@@ -52,10 +50,12 @@
         </tr>
         {% endfor %}
     </table>
+    {% else %}
+      <p class="govuk-body">No users have access to this table.</p>
     {% endif %}
 
 
-    <a class="govuk-button" href="{{ url('grant-table-permissions', kwargs={ "dbname": dbname, "tablename": table.Name}) }}">
+    <a class="govuk-button" href="{{ url('grant-table-permissions', kwargs={ "dbname": dbname, "tablename": tablename}) }}">
       Grant User Permissions
     </a>
   {% endif %}

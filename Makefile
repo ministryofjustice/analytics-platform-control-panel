@@ -59,13 +59,21 @@ build-static:
 
 build-css:
 	mkdir static
+	mkdir -p static/assets/fonts
+	mkdir -p static/assets/images
+	cp -R node_modules/govuk-frontend/dist/govuk/assets/fonts/. static/assets/fonts
+	cp -R node_modules/govuk-frontend/dist/govuk/assets/images/. static/assets/images
 	cp -R node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 	cp -R node_modules/govuk-frontend/ static/govuk-frontend
 	cp -R node_modules/@ministryofjustice/frontend/ static/ministryofjustice-frontend
 	cp -R node_modules/html5shiv/dist/ static/html5-shiv
-	./node_modules/.bin/sass --load-path=node_modules/ --style=compressed controlpanel/frontend/static/app.scss:static/app.css
+	npm run css --load
 
 build-js:
+	mkdir -p static/assets/js
+	cp node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js static/assets/js/govuk-frontend.min.js
+	cp node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js.map static/assets/js/govuk-frontend.min.js.map
+
 	cp -R node_modules/jquery/dist/ static/jquery
 	cp -R node_modules/jquery-ui/dist/ static/jquery-ui
 	./node_modules/.bin/babel \
