@@ -1250,10 +1250,13 @@ class AWSLakeFormation(AWSService):
             },
         }
 
-        self.client.create_lake_formation_opt_in(
-            Resource=database_resource,
-            Principal={"DataLakePrincipalIdentifier": principal_arn},
-        )
+        opt_ins = self.list_lf_opt_ins(database_name, principal_arn, catalog_id)
+
+        if opt_ins["database"] is None:
+            self.client.create_lake_formation_opt_in(
+                Resource=database_resource,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+            )
 
         self.client.create_lake_formation_opt_in(
             Resource=table_resource,
@@ -1277,15 +1280,39 @@ class AWSLakeFormation(AWSService):
             },
         }
 
-        self.client.delete_lake_formation_opt_in(
-            Resource=database_resource,
-            Principal={"DataLakePrincipalIdentifier": principal_arn},
-        )
+        opt_ins = self.list_lf_opt_ins(database_name, principal_arn, catalog_id)
+
+        if len(opt_ins["tables"]) == 1:
+            self.client.delete_lake_formation_opt_in(
+                Resource=database_resource,
+                Principal={"DataLakePrincipalIdentifier": principal_arn},
+            )
 
         self.client.delete_lake_formation_opt_in(
             Resource=table_resource,
             Principal={"DataLakePrincipalIdentifier": principal_arn},
         )
+
+    def list_lf_opt_ins(self, database_name, principal_arn, catalog_id=None):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        result = {
+            "database": None,
+            "tables": [],
+        }
+
+        response = self.client.list_lake_formation_opt_ins(
+            Principal={"DataLakePrincipalIdentifier": principal_arn}
+        )["LakeFormationOptInsInfoList"]
+
+        for resource_object in response:
+            resource = resource_object["Resource"]
+            if "Database" in resource and resource["Database"]["Name"] == database_name:
+                result["database"] = resource
+            elif "Table" in resource:
+                if resource["Table"]["DatabaseName"] == database_name:
+                    result["tables"].append(resource)
+
+        return result
 
 
 class AWSGlue(AWSService):
