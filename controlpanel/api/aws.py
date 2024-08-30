@@ -1236,7 +1236,7 @@ class AWSLakeFormation(AWSService):
         catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
 
         database_resource = {
-            "Table": {
+            "Database": {
                 "CatalogId": catalog_id,
                 "Name": database_name,
             },
@@ -1263,7 +1263,7 @@ class AWSLakeFormation(AWSService):
     def delete_lf_opt_in(self, database_name, table_name, principal_arn, catalog_id=None):
         catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
         database_resource = {
-            "Table": {
+            "Database": {
                 "CatalogId": catalog_id,
                 "Name": database_name,
             },
