@@ -4,7 +4,6 @@ import os
 
 # Third-party
 import boto3
-import botocore
 import moto
 import pytest
 from django.conf import settings
