@@ -14,8 +14,16 @@ orig = botocore.client.BaseClient._make_api_call
 
 # Mocked botocore _make_api_call function
 def mock_make_api_call(self, operation_name, kwarg):
-    if operation_name == "CreateLakeFormationOptIn":
-        return {}
+    op_names = [
+        {"CreateLakeFormationOptIn": {}},
+        {"DeleteLakeFormationOptIn": {}},
+        {"ListLakeFormationOptIns": {"LakeFormationOptInsInfoList": []}},
+    ]
+
+    for operation in op_names:
+        if operation_name in operation:
+            return operation[operation_name]
+
     # If we don't want to patch the API call
     return orig(self, operation_name, kwarg)
 
