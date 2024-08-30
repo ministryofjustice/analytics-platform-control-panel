@@ -209,6 +209,14 @@ class TableGrantView(
                 permissions=permissions["table"],
                 principal_arn=user_arn,
             )
+
+            lake_formation.create_lf_opt_in(
+                database_name=table_data["database_name"],
+                table_name=table_data["table_name"],
+                principal_arn=user_arn,
+                catalog_id=table_data["catalog_id"],
+            )
+
         except botocore.exceptions.ClientError as e:
             messages.error(self.request, f"Could not grant access for user {user.username}")
             sentry_sdk.capture_exception(e)
@@ -240,6 +248,14 @@ class RevokeTableAccessView(
                 catalog_id=table_data["catalog_id"],
                 permissions=["SELECT"],
             )
+
+            lake_formation.delete_lf_opt_in(
+                database_name=table_data["database_name"],
+                table_name=table_data["table_name"],
+                principal_arn=principal_arn,
+                catalog_id=table_data["catalog_id"],
+            )
+
             messages.success(self.request, f"Successfully revoked access for user {kwargs['user']}")
         except botocore.exceptions.ClientError as e:
             sentry_sdk.capture_exception(e)

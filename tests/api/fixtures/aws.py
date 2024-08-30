@@ -91,6 +91,7 @@ def lake_formation(aws_creds):
                 },
             },
         )
+
         yield lake_formation
 
 

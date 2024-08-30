@@ -1,8 +1,23 @@
+# Standard library
+from unittest.mock import patch
+
 # Third-party
+import botocore
 import pytest
 from django.conf import settings
 from django.urls import reverse
 from rest_framework import status
+
+# Original botocore _make_api_call function
+orig = botocore.client.BaseClient._make_api_call
+
+
+# Mocked botocore _make_api_call function
+def mock_make_api_call(self, operation_name, kwarg):
+    if operation_name == "CreateLakeFormationOptIn":
+        return {}
+    # If we don't want to patch the API call
+    return orig(self, operation_name, kwarg)
 
 
 def database_list(client):
@@ -50,5 +65,6 @@ def test_permission(client, users, view, user, expected_status):
     for key, val in users.items():
         client.force_login(val)
     client.force_login(users[user])
-    response = view(client)
-    assert response.status_code == expected_status
+    with patch("botocore.client.BaseClient._make_api_call", new=mock_make_api_call):
+        response = view(client)
+        assert response.status_code == expected_status

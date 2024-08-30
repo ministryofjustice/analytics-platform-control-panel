@@ -1232,6 +1232,61 @@ class AWSLakeFormation(AWSService):
 
         return self.client.list_permissions(Resource=resource)
 
+    def create_lf_opt_in(self, database_name, table_name, principal_arn, catalog_id=None):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+
+        database_resource = {
+            "Database": {
+                "CatalogId": catalog_id,
+                "Name": database_name,
+            },
+        }
+
+        table_resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+
+        self.client.create_lake_formation_opt_in(
+            Resource=database_resource,
+            Principal={"DataLakePrincipalIdentifier": principal_arn},
+        )
+
+        self.client.create_lake_formation_opt_in(
+            Resource=table_resource,
+            Principal={"DataLakePrincipalIdentifier": principal_arn},
+        )
+
+    def delete_lf_opt_in(self, database_name, table_name, principal_arn, catalog_id=None):
+        catalog_id = catalog_id or settings.AWS_DATA_ACCOUNT_ID
+        database_resource = {
+            "Database": {
+                "CatalogId": catalog_id,
+                "Name": database_name,
+            },
+        }
+
+        table_resource = {
+            "Table": {
+                "CatalogId": catalog_id,
+                "DatabaseName": database_name,
+                "Name": table_name,
+            },
+        }
+
+        self.client.delete_lake_formation_opt_in(
+            Resource=database_resource,
+            Principal={"DataLakePrincipalIdentifier": principal_arn},
+        )
+
+        self.client.delete_lake_formation_opt_in(
+            Resource=table_resource,
+            Principal={"DataLakePrincipalIdentifier": principal_arn},
+        )
+
 
 class AWSGlue(AWSService):
 
