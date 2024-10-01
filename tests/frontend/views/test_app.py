@@ -730,6 +730,31 @@ def test_register_app_with_creating_datasource(client, users):
     assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
 
 
+def test_register_app_with_existing_datasource(client, users, s3buckets):
+    test_app_name = "test_app_with_existing_datasource"
+    existing_bucket = s3buckets["not_connected"]
+    user = users["superuser"]
+    assert App.objects.filter(name=test_app_name).count() == 0
+    client.force_login(user)
+    data = dict(
+        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
+        connect_bucket="existing",
+        existing_datasource_id=existing_bucket.id,
+        namespace="test-app-namespace",
+    )
+    response = client.post(reverse("create-app"), data)
+
+    assert response.status_code == 302
+    assert App.objects.filter(name=test_app_name).count() == 1
+    assert S3Bucket.objects.filter(name=existing_bucket.name).count() == 1
+    created_app = App.objects.filter(name=test_app_name).first()
+    bucket = S3Bucket.objects.filter(name=existing_bucket.name).first()
+    related_bucket_ids = [a.s3bucket_id for a in created_app.apps3buckets.all()]
+    assert len(related_bucket_ids) == 1
+    assert bucket.id in related_bucket_ids
+    assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
+
+
 def test_register_app_invalid_organisation(client, users):
     client.force_login(users["superuser"])
     app_name = "example-app-old-org"
