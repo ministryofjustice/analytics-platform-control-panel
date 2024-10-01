@@ -102,3 +102,25 @@ def test_validate_github_repository_url(url, error):
         with pytest.raises(ValidationError) as exc:
             validators.validate_github_repository_url(url)
             assert exc.value.args[0] == error
+
+
+@pytest.mark.parametrize(
+    "name, error",
+    [
+        ("example_bucket", ValidationError),
+        ("ExampleBucket", ValidationError),
+        ("example-bucket-", ValidationError),
+    ],
+    ids=["underscore", "capitalised", "ending_hyphen"],
+)
+def test_invalid_s3_bucket_names(name, error):
+    with pytest.raises(error):
+        validators.validate_s3_bucket_labels(name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["example-bucket", "examplebucket", "example.bucket"],
+)
+def test_valid_s3_bucket_names(name):
+    assert validators.validate_s3_bucket_labels(name) is None

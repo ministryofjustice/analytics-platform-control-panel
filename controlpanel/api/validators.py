@@ -48,7 +48,7 @@ class ValidatorS3Bucket(object):
 # An S3 bucket name starts with a label, it can have more than one label
 # separated by a dot.
 validate_s3_bucket_labels = RegexValidator(
-    regex="^([a-z][a-z0-9-]*[a-z0-9])(.[a-z][a-z0-9-]*[a-z0-9])*$",
+    regex="^([a-z][a-z0-9-]*[a-z0-9])(\\.[a-z][a-z0-9-]*[a-z0-9])*\\Z",
     message="is invalid, check AWS S3 bucket names restrictions (for example, "
     "can only contains letters, digits, dots and hyphens)",
 )

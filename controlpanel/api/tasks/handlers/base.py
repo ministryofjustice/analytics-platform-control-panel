@@ -51,7 +51,7 @@ class BaseModelTaskHandler(BaseTaskHandler):
             # added back to the queue as could be due to a race condition
             raise exc
 
-    def run(self, obj_pk, task_user_pk, *args, **kwargs):
+    def run(self, obj_pk, task_user_pk=None, *args, **kwargs):
         """
         Default method that a celery Task object requires to be defined, and will be
         called by the worker when a message is received by the queue. This will look up
