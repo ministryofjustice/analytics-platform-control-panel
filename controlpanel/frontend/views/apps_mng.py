@@ -100,6 +100,7 @@ class AppManager:
                 app=app,
                 s3bucket=bucket_data["existing_datasource_id"],
                 access_level="readonly",
+                current_user=user,
             )
 
     def _add_app_to_users(self, app, user):
