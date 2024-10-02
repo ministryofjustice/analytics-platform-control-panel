@@ -254,9 +254,9 @@ urlpatterns = [
         name="parameters-list-roles",
     ),
     path(
-        "parameters/new/<int:app_id>/",
+        "parameters/new/",
         views.ParameterCreate.as_view(),
         name="create-parameter",
     ),
-    path("parameters/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
+    path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
 ]

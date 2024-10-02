@@ -16,6 +16,7 @@ from controlpanel.api.models import App, S3Bucket, Tool, User, UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
+from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -580,17 +581,46 @@ class IPAllowlistForm(forms.ModelForm):
         ]
 
 
+# class CreateParameterForm(forms.Form):
+#     app_id = forms.CharField(widget=forms.HiddenInput)
+#     key = forms.CharField(
+#         validators=[
+#             RegexValidator(
+#                 r"[a-zA-Z0-9_]",
+#                 message=("Must contain only alphanumeric characters and underscores"),
+#             ),
+#         ],
+#     )
+#     value = forms.CharField(
+#         max_length=65536,
+#         widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
+#     )
+
+
 class CreateParameterForm(forms.Form):
-    app_id = forms.CharField(widget=forms.HiddenInput)
     key = forms.CharField(
+        max_length=50,
         validators=[
             RegexValidator(
-                r"[a-zA-Z0-9_]",
-                message=("Must contain only alphanumeric characters and underscores"),
+                r"[a-zA-Z0-9_]{1,50}",
+                message=(
+                    "Must be 50 characters or fewer and contain only alphanumeric "
+                    "characters and underscores"
+                ),
             ),
         ],
     )
-    value = forms.CharField(
-        max_length=65536,
-        widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
+    role_name = forms.CharField(
+        max_length=60,
+        validators=[
+            RegexValidator(
+                r"[a-zA-Z0-9_-]{1,60}",
+                message=(
+                    "Must be 60 characters or fewer and contain only alphanumeric "
+                    "characters, underscores and hyphens"
+                ),
+            ),
+        ],
     )
+    value = forms.CharField(widget=forms.PasswordInput)
+    app_type = forms.ChoiceField(choices=APP_TYPE_CHOICES)
