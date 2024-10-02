@@ -1,0 +1,70 @@
+{% from "autocomplete/macro.html" import autocomplete %}
+{% from "input/macro.html" import govukInput %}
+{% from "fieldset/macro.html" import govukFieldset %}
+{% from "radios/macro.html" import govukRadios %}
+
+{% extends "base.html" %}
+
+{% set page_title = "Create a secret parameter for your app" %}
+{% set legend -%}
+  Create a secret parameter for your app
+{%- endset %}
+
+{% set page_name = "parameters" %}
+
+{% block content %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if form.error %}
+    <div class="error">{{ form.error }}</div>
+  {% endif %}
+
+  <form action="{{ url('create-parameter', kwargs={'app_id': app.id }) }}" method="post">
+    {{ csrf_input }}
+    {{ form.app_id }}
+
+    {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
+
+      {{
+        govukInput({
+          "label": {
+            "text": "Key",
+            "classes": "govuk-label--m",
+          },
+          "classes": "govuk-!-width-two-thirds",
+          "hint": {
+            "text": '60 chars max, only letters, numbers and underscores'
+          },
+          "name": "key",
+          "attributes": {
+            "pattern": "[a-zA-Z0-9_]{1,60}",
+            "maxlength": "60",
+          },
+          "value": form.key.value(),
+          "errorMessage": { "html": form.key.errors|join(". ") } if form.key.errors else {}
+        })
+      }}
+
+      {{
+        govukInput({
+          "type":"password",
+          "label": {
+            "text": "Value",
+            "classes": "govuk-label--m",
+          },
+          "classes": "govuk-!-width-two-thirds",
+          "name": "value",
+          "attributes": {
+          },
+          "value": form.value.value(),
+          "errorMessage": { "html": form.value.errors|join(". ") } if form.value.errors else {}
+        })
+      }}
+      {% if form.key.value() %}
+      <button class="govuk-button">Update parameter</button>
+      {% else %}
+      <button class="govuk-button">Create parameter</button>
+      {% endif %}
+    {% endcall %}
+  </form>
+{% endblock %}

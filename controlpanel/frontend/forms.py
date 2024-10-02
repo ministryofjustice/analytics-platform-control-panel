@@ -578,3 +578,19 @@ class IPAllowlistForm(forms.ModelForm):
             "allowed_ip_ranges",
             "is_recommended",
         ]
+
+
+class CreateParameterForm(forms.Form):
+    app_id = forms.CharField(widget=forms.HiddenInput)
+    key = forms.CharField(
+        validators=[
+            RegexValidator(
+                r"[a-zA-Z0-9_]",
+                message=("Must contain only alphanumeric characters and underscores"),
+            ),
+        ],
+    )
+    value = forms.CharField(
+        max_length=65536,
+        widget=forms.PasswordInput(attrs={"class": "govuk-input cpanel-input--1-3"}),
+    )
