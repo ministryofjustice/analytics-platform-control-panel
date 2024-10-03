@@ -266,7 +266,7 @@ class App(TimeStampedModel):
             policy=cluster.BEDROCK_POLICY_NAME,
             attach=self.is_bedrock_enabled,
         )
-    
+
     def set_textract_access(self):
         return cluster.App(self).update_policy_attachment(
             policy=cluster.TEXTRACT_POLICY_NAME,

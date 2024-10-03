@@ -20,7 +20,7 @@ class BedrockAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     def get_success_url(self):
         messages.success(self.request, "Successfully updated bedrock status")
         return super().get_success_url()
-    
+
 
 class TextractAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     """Updates textract access for a given model instance."""
