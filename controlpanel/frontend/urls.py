@@ -177,6 +177,11 @@ urlpatterns = [
         name="set-bedrock-app",
     ),
     path(
+        "webapps/<int:pk>/textract/",
+        views.EnableTextractApp.as_view(),
+        name="set-textract-app",
+    ),
+    path(
         "webapps/<int:pk>/update-ip-allowlists/",
         views.UpdateAppIPAllowlists.as_view(),
         name="update-app-ip-allowlists",

@@ -39,7 +39,7 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
     UpdateAppAuth0ConnectionsForm,
 )
-from controlpanel.frontend.mixins import BedrockAccessMixin
+from controlpanel.frontend.mixins import BedrockAccessMixin, TextractAccessMixin
 from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -311,6 +311,10 @@ class GrantAppAccess(
 
 
 class EnableBedrockApp(BedrockAccessMixin, UpdateView):
+    model = App
+
+
+class EnableTextractApp(TextractAccessMixin, UpdateView):
     model = App
 
 
