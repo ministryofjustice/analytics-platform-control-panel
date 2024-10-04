@@ -16,7 +16,6 @@ from controlpanel.api.models import App, S3Bucket, Tool, User, UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
-from controlpanel.api.models.parameter import APP_TYPE_CHOICES
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -623,4 +622,3 @@ class CreateParameterForm(forms.Form):
         ],
     )
     value = forms.CharField(widget=forms.PasswordInput)
-    app_type = forms.ChoiceField(choices=APP_TYPE_CHOICES)

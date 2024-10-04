@@ -5,9 +5,9 @@
 
 {% extends "base.html" %}
 
-{% set page_title = "Create a secret parameter for your webapp or airflow task" %}
+{% set page_title = "Create a secret parameter for your Airflow task" %}
 {% set legend -%}
-  Create a secret parameter for your webapp or airflow task
+  Create a secret parameter for your Airflow task
 {%- endset %}
 
 {% set page_name = "parameters" %}
@@ -22,23 +22,6 @@
   <form action="{{ url('create-parameter') }}" method="post" class="appRoles">
     {{ csrf_input }}
     {% call govukFieldset({ "legend": { "html": legend|safe } }) %}
-      {{
-        govukRadios({
-          "label": {
-            "text": "Airflow or Web app",
-            "classes": "govuk-label--m",
-          },
-          "classes": "govuk-!-width-two-thirds",
-          "hint": {
-            "text": 'Will the secret param be used in Airflow or in a Web app?'
-          },
-          "name": "app_type",
-          "attributes": {},
-          "items": app_type_choices,
-          "value": form.app_type.value(),
-          "errorMessage": { "html": form.app_type.errors|join(". ") } if form.app_type.errors else {}
-        })
-      }}
 
       {% call(role_name) autocomplete({
         "name": "role_name",

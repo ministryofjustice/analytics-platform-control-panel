@@ -4,8 +4,8 @@
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Key</th>
-      <th class="govuk-table__header">Arn</th>
       <th class="govuk-table__header">Role name</th>
+      <th class="govuk-table__header">Name</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -14,9 +14,9 @@
   <tbody class="govuk-table__body">
   {%- for parameter in parameters %}
     <tr class="govuk-table__row">
-      <td class="govuk-table__cell">{{ parameter.key }}</td>
-      <td class="govuk-table__cell">{{ parameter.arn }}</td>
       <td class="govuk-table__cell">{{ parameter.role_name }}</td>
+      <td class="govuk-table__cell">{{ parameter.key }}</td>
+      <td class="govuk-table__cell">{{ parameter.name }}</td>
       <td class="govuk-table__cell">
         <form method="POST" action="{{ url("delete-parameter", kwargs={ "pk": parameter.id }) }}">
             {{ csrf_input }}

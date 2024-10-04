@@ -50,7 +50,6 @@ class ParameterCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateVie
         self.object = Parameter(
             key=form.cleaned_data["key"],
             role_name=form.cleaned_data["role_name"],
-            app_type=form.cleaned_data["app_type"],
             description="",
             created_by=self.request.user,
         )
@@ -87,5 +86,6 @@ class ParameterFormRoleList(OIDCLoginRequiredMixin, View):
 
     def get(self, *args, **kwargs):
         roles = cluster.App(None).list_role_names()
-        data = [r for r in roles if r.startswith("airflow") or r.startswith(f"{settings.ENV}_app")]
+        prefixes = tuple(choice[0] for choice in APP_TYPE_CHOICES)
+        data = [r for r in roles if r.startswith(prefixes)]
         return JsonResponse(data, safe=False)
