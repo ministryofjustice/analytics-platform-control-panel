@@ -22,13 +22,15 @@ class ParameterList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Parameter
     permission_required = "api.list_parameter"
     template_name = "parameter-list.html"
+    extra_context = {"page_title": "Your Airflow Parameters"}
 
     def get_queryset(self):
-        return Parameter.objects.filter(created_by=self.request.user)
+        return Parameter.objects.filter(created_by=self.request.user).airflow()
 
 
 class AdminParameterList(ParameterList):
     permission_required = "api.is_superuser"
+    extra_context = {"page_title": "All Parameters"}
 
     def get_queryset(self):
         return Parameter.objects.all()
@@ -79,7 +81,7 @@ class ParameterDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
         queryset = Parameter.objects.all()
         if is_superuser(self.request.user):
             return queryset
-        return queryset.filter(created_by=self.request.user)
+        return queryset.filter(created_by=self.request.user).airflow()
 
 
 class ParameterFormRoleList(OIDCLoginRequiredMixin, View):
