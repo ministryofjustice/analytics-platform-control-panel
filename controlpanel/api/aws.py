@@ -873,6 +873,8 @@ class AWSPolicy(AWSService):
 
 
 class AWSParameterStore(AWSService):
+    TYPE_SECURE_STRING = "SecureString"
+
     def __init__(self, assume_role_name=None, profile_name=None):
         super(AWSParameterStore, self).__init__(
             assume_role_name=assume_role_name, profile_name=profile_name
@@ -885,7 +887,7 @@ class AWSParameterStore(AWSService):
                 Name=name,
                 Value=value,
                 Description=description,
-                Type="SecureString",
+                Type=self.TYPE_SECURE_STRING,
                 Tags=[{"Key": "role", "Value": role_name}],
             )
         except self.client.exceptions.ParameterAlreadyExists:
