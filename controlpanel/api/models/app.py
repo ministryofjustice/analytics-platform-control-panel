@@ -34,6 +34,7 @@ class App(TimeStampedModel):
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     is_bedrock_enabled = models.BooleanField(default=False)
+    is_textract_enabled = models.BooleanField(default=False)
 
     # The app_conf mainly for storing the auth settings related and those information
     # are not within the fields which will be searched frequently
@@ -264,6 +265,12 @@ class App(TimeStampedModel):
         return cluster.App(self).update_policy_attachment(
             policy=cluster.BEDROCK_POLICY_NAME,
             attach=self.is_bedrock_enabled,
+        )
+
+    def set_textract_access(self):
+        return cluster.App(self).update_policy_attachment(
+            policy=cluster.TEXTRACT_POLICY_NAME,
+            attach=self.is_textract_enabled,
         )
 
     def get_auth_client(self, env_name):

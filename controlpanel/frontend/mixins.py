@@ -6,17 +6,25 @@ from rules.contrib.views import PermissionRequiredMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class BedrockAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
-    """Updates bedrock access for a given model instance."""
+class PolicyAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
+    """
+    Updates policy access for a model instance.
+    Assumes updating a boolean field and updating a policy based on it.
+    Must set success_message and method_name attributes on view.
+    """
 
-    fields = ["is_bedrock_enabled"]
     http_method_names = ["post"]
     permission_required = "api.add_superuser"
+    success_message = ""
+    method_name = ""
 
     def form_valid(self, form):
-        self.object.set_bedrock_access()
+        if not hasattr(self.object, self.method_name):
+            raise AttributeError(f"Method {self.method_name} not found on {self.object}")
+
+        getattr(self.object, self.method_name)()
         return super().form_valid(form)
 
     def get_success_url(self):
-        messages.success(self.request, "Successfully updated bedrock status")
+        messages.success(self.request, self.success_message)
         return super().get_success_url()

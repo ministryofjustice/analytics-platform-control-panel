@@ -55,6 +55,7 @@ BASE_ASSUME_ROLE_POLICY = {
 }
 
 BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
+TEXTRACT_POLICY_NAME = "analytical-platform-textract-integration"
 
 
 class AWSRoleCategory(str, Enum):

@@ -306,6 +306,36 @@
 </section>
 {% endif %}
 
+{% if request.user.has_perm('api.add_superuser') %}
+<section class="cpanel-section">
+  <form action="{{ url('set-textract-app', kwargs={ "pk": app.id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "is_textract_enabled",
+      "fieldset": {
+        "legend": {
+          "text": "Enable Textract",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Toggle access to Textract for this application."
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Textract Enabled",
+          "checked": app.is_textract_enabled
+        },
+      ]
+    }) }}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% endif %}
+
 {% if request.user.has_perm('api.destroy_app', app) %}
 <section class="cpanel-section">
   <form action="{{ url('delete-app', kwargs={ "pk": app.id }) }}" method="post">

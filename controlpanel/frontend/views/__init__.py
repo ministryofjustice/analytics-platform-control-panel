@@ -19,6 +19,7 @@ from controlpanel.frontend.views.app import (
     CreateApp,
     DeleteApp,
     EnableBedrockApp,
+    EnableTextractApp,
     GrantAppAccess,
     RemoveCustomer,
     RemoveCustomerByEmail,

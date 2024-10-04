@@ -39,7 +39,7 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
     UpdateAppAuth0ConnectionsForm,
 )
-from controlpanel.frontend.mixins import BedrockAccessMixin
+from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -310,8 +310,18 @@ class GrantAppAccess(
         raise Exception(form.errors)
 
 
-class EnableBedrockApp(BedrockAccessMixin, UpdateView):
+class EnableBedrockApp(PolicyAccessMixin, UpdateView):
     model = App
+    fields = ["is_bedrock_enabled"]
+    success_message = "Successfully updated bedrock status"
+    method_name = "set_bedrock_access"
+
+
+class EnableTextractApp(PolicyAccessMixin, UpdateView):
+    model = App
+    fields = ["is_textract_enabled"]
+    success_message = "Successfully updated textract status"
+    method_name = "set_textract_access"
 
 
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
