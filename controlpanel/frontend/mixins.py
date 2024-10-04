@@ -6,33 +6,26 @@ from rules.contrib.views import PermissionRequiredMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
-class BedrockAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
-    """Updates bedrock access for a given model instance."""
+class PolicyAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
+    """Updates policy access for a model instance. Assumes updating a boolean field and updating a policy based on it."""
 
-    fields = ["is_bedrock_enabled"]
     http_method_names = ["post"]
     permission_required = "api.add_superuser"
+    success_message = ""
+    method_name = ""
 
     def form_valid(self, form):
-        self.object.set_bedrock_access()
-        return super().form_valid(form)
+
+        try:
+            if not hasattr(self.object, self.method_name):
+                raise AttributeError(f"Method {self.method_name} not found on {self.object}")
+
+            getattr(self.object, self.method_name)()
+            return super().form_valid(form)
+        except Exception as e:
+            messages.error(self.request, "An error occurred while updating the policy access level")
+            return super().form_invalid(form)
 
     def get_success_url(self):
-        messages.success(self.request, "Successfully updated bedrock status")
-        return super().get_success_url()
-
-
-class TextractAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
-    """Updates textract access for a given model instance."""
-
-    fields = ["is_textract_enabled"]
-    http_method_names = ["post"]
-    permission_required = "api.add_superuser"
-
-    def form_valid(self, form):
-        self.object.set_textract_access()
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        messages.success(self.request, "Successfully updated textract status")
+        messages.success(self.request, self.success_message)
         return super().get_success_url()

@@ -17,7 +17,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api.models import User
-from controlpanel.frontend.mixins import BedrockAccessMixin
+from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
 
@@ -100,8 +100,11 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
 
 
-class EnableBedrockUser(BedrockAccessMixin, UpdateView):
+class EnableBedrockUser(PolicyAccessMixin, UpdateView):
     model = User
+    fields = ["is_bedrock_enabled"]
+    success_message = "Successfully updated bedrock status"
+    method_name = "set_bedrock_access"
 
 
 class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):

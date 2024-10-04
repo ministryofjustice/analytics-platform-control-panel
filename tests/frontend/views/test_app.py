@@ -276,6 +276,19 @@ def set_bedrock(client, app, *args):
     return client.post(reverse("set-bedrock-app", kwargs=kwargs), data)
 
 
+def set_textract(client, app, *args):
+    iam = args[2]
+    iam.meta.client.create_role(
+        RoleName=app.iam_role_name,
+        AssumeRolePolicyDocument="some_policy",
+    )
+    data = {
+        "is_textract_enabled": True,
+    }
+    kwargs = {"pk": app.id}
+    return client.post(reverse("set-textract-app", kwargs=kwargs), data)
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -321,6 +334,9 @@ def set_bedrock(client, app, *args):
         (set_bedrock, "superuser", status.HTTP_302_FOUND),
         (set_bedrock, "app_admin", status.HTTP_403_FORBIDDEN),
         (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_textract, "superuser", status.HTTP_302_FOUND),
+        (set_textract, "app_admin", status.HTTP_403_FORBIDDEN),
+        (set_textract, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
