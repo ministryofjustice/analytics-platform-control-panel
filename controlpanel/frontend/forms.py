@@ -578,3 +578,31 @@ class IPAllowlistForm(forms.ModelForm):
             "allowed_ip_ranges",
             "is_recommended",
         ]
+
+
+class CreateParameterForm(forms.Form):
+    key = forms.CharField(
+        max_length=50,
+        validators=[
+            RegexValidator(
+                r"[a-zA-Z0-9_]{1,50}",
+                message=(
+                    "Must be 50 characters or fewer and contain only alphanumeric "
+                    "characters and underscores"
+                ),
+            ),
+        ],
+    )
+    role_name = forms.CharField(
+        max_length=60,
+        validators=[
+            RegexValidator(
+                r"[a-zA-Z0-9_-]{1,60}",
+                message=(
+                    "Must be 60 characters or fewer and contain only alphanumeric "
+                    "characters, underscores and hyphens"
+                ),
+            ),
+        ],
+    )
+    value = forms.CharField(widget=forms.PasswordInput)

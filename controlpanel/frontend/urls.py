@@ -242,4 +242,21 @@ urlpatterns = [
         views.ManageTable.as_view(),
         name="manage-table",
     ),
+    path("parameters/", views.ParameterList.as_view(), name="list-parameters"),
+    path(
+        "parameters/all/",
+        views.AdminParameterList.as_view(),
+        name="list-all-parameters",
+    ),
+    path(
+        "parameters/form/role-list.js",
+        views.ParameterFormRoleList.as_view(),
+        name="parameters-list-roles",
+    ),
+    path(
+        "parameters/new/",
+        views.ParameterCreate.as_view(),
+        name="create-parameter",
+    ),
+    path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
 ]

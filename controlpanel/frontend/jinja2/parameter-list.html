@@ -3,10 +3,13 @@
 {% extends "base.html" %}
 
 {% set page_name = "parameters" %}
-{% set page_title = "Your parameters" %}
 
 {% block content %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  <p class="govuk-body">
+    Lists secrets that you have created in AWS Parameter Store for use with Airflow tasks. See our <a href="https://user-guidance.analytical-platform.service.justice.gov.uk/parameters.html" target="_blank">User Guidance page about parameters</a> for further information</a>.
+  </p>
 
   {% if request.user.has_perm('api.list_parameter') %}
   {{ parameter_list(parameters) }}
