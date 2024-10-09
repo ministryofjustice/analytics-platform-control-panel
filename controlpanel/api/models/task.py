@@ -27,7 +27,7 @@ class Task(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_task"
-        ordering = ("entity_class", "entity_id")
+        ordering = ("-created",)
 
     def __repr__(self):
         return f"<Task: {self.entity_class}|{self.entity_id}|{self.task_name}|{self.task_id}>"

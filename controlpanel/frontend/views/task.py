@@ -18,4 +18,3 @@ class TaskList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = "api.list_task"
     queryset = Task.objects.filter(completed=False)
     template_name = "task-list.html"
-    ordering = ["entity_class", "entity_description", "created"]
