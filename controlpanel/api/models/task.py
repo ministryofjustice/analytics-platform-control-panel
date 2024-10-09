@@ -1,8 +1,11 @@
 # Standard library
+import base64
 import json
 
 # Third-party
 from django.db import models
+from django.urls import reverse
+from django.utils import timezone
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
@@ -23,6 +26,7 @@ class Task(TimeStampedModel):
     task_description = models.CharField(max_length=128)
     queue_name = models.CharField(max_length=60)
     completed = models.BooleanField(default=False)
+    cancelled = models.BooleanField(default=False)
     message_body = models.CharField(max_length=4000)
 
     class Meta:
@@ -31,6 +35,38 @@ class Task(TimeStampedModel):
 
     def __repr__(self):
         return f"<Task: {self.entity_class}|{self.entity_id}|{self.task_name}|{self.task_id}>"
+
+    @property
+    def decoded_message_body(self):
+        try:
+            decoded = base64.b64decode(self.message_body)
+            return json.loads(decoded)
+        except Exception:
+            return "Cannot decode message body"
+
+    @property
+    def decoded_task_body(self):
+        try:
+            decoded = base64.b64decode(self.decoded_message_body["body"])
+            return json.loads(decoded)
+        except Exception:
+            return "Cannot decode task body"
+
+    @property
+    def status(self):
+        if self.cancelled:
+            return "CANCELLED"
+
+        if self.completed:
+            return "COMPLETED"
+
+        if self.created < timezone.now() - timezone.timedelta(days=4):
+            return "FAILED"
+
+        return "RETRYING"
+
+    def get_absolute_url(self):
+        return reverse("task-detail", kwargs={"pk": self.pk})
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

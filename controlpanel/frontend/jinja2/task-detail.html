@@ -1,0 +1,74 @@
+{% from "user/macro.html" import user_name %}
+
+
+{% extends "base.html" %}
+
+{% set page_title = "Incomplete Task Detail" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl track_task">{{ page_title }}</h1>
+
+<table class="govuk-table">
+  <tbody class="govuk-table__body">
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Entity</th>
+        <td class="govuk-table__cell">{{ task.entity_class }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Entity ID</th>
+        <td class="govuk-table__cell">{{ task.entity_id }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Entity description</th>
+        <td class="govuk-table__cell">{{ task.entity_description }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Task ID</th>
+        <td class="govuk-table__cell">{{ task.task_id }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Task description</th>
+        <td class="govuk-table__cell">{{ task.task_description }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Task created</th>
+        <td class="govuk-table__cell">{{ task.created }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Message body</th>
+        <td class="govuk-table__cell">{{ task.decoded_message_body }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Task body</th>
+        <td class="govuk-table__cell">{{ task.decoded_task_body }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Task status</th>
+        <td class="govuk-table__cell">{{ task.status }}</td>
+    </tr>
+    <tr class="govuk-table__row">
+        <th scope="row" class="govuk-table__header">Actions</th>
+      <td class="govuk-table__cell">
+        <form style="display: inline;" id="form-task" action="" method="post">
+          {{ csrf_input }}
+          <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-form-url="{{ url('tasks', kwargs={'task_id': task.task_id, 'action': 'send_message'}) }}"
+              data-form-target="form-task"
+              id="task-{{ task_name }}"
+              data-confirm-message="Do you wish to re-trigger the task again?">
+            Re-trigger task
+          </button>
+          <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-form-url="{{ url('tasks', kwargs={'task_id': task.task_id, 'action': 'cancel_task'}) }}"
+              data-form-target="form-task"
+              id="task-{{ task_name }}"
+              data-confirm-message="Do you wish to cancel this task?">
+            Cancel task
+          </button>
+        </form>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+{% endblock %}

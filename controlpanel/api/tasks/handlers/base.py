@@ -21,12 +21,17 @@ class BaseTaskHandler(CeleryTask):
             self.task_obj.save()
 
     def get_task_obj(self):
-        return Task.objects.filter(task_id=self.request.id).first()
+        return Task.objects.filter(
+            completed=False,
+            cancelled=False,
+            task_id=self.request.id,
+        ).first()
 
     def run(self, *args, **kwargs):
         self.task_obj = self.get_task_obj()
-        if self.task_obj and self.task_obj.completed:
+        if not self.task_obj:
             return
+
         self.handle(*args, **kwargs)
 
     def handle(self, *args, **kwargs):

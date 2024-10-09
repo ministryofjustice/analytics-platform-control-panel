@@ -16,11 +16,21 @@ class TaskAPIView(GenericAPIView):
 
     def _send_message(self, task_id):
         task = Task.objects.filter(task_id=task_id).first()
-        if task:
-            message_client = MessageBrokerClient()
-            message_client.client.send_message(
-                queue_name=task.queue_name, message_body=task.message_body
-            )
+
+        if not task:
+            return
+
+        if task.cancelled:
+            task.cancelled = False
+            task.save()
+
+        message_client = MessageBrokerClient()
+        message_client.client.send_message(
+            queue_name=task.queue_name, message_body=task.message_body
+        )
+
+    def _cancel_task(self, task_id):
+        Task.objects.filter(task_id=task_id).update(cancelled=True)
 
     def post(self, request, *args, **kwargs):
         task_id = self.kwargs["task_id"]

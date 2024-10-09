@@ -1,5 +1,5 @@
 # Third-party
-from django.views.generic.list import ListView
+from django.views.generic import DetailView, ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
@@ -16,5 +16,12 @@ class TaskList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "tasks"
     model = Task
     permission_required = "api.list_task"
-    queryset = Task.objects.filter(completed=False)
+    queryset = Task.objects.exclude(completed=True)
     template_name = "task-list.html"
+
+
+class TaskDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
+    model = Task
+    permission_required = "api.list_task"
+    context_object_name = "task"
+    template_name = "task-detail.html"
