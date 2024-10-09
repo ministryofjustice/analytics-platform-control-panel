@@ -21,15 +21,11 @@ class BaseTaskHandler(CeleryTask):
             self.task_obj.save()
 
     def get_task_obj(self):
-        return Task.objects.filter(
-            completed=False,
-            cancelled=False,
-            task_id=self.request.id,
-        ).first()
+        return Task.objects.filter(task_id=self.request.id).first()
 
     def run(self, *args, **kwargs):
         self.task_obj = self.get_task_obj()
-        if not self.task_obj:
+        if self.task_obj and (self.task_obj.completed or self.task_obj.cancelled):
             return
 
         self.handle(*args, **kwargs)
@@ -65,7 +61,7 @@ class BaseModelTaskHandler(BaseTaskHandler):
         with any other args and kwargs sent.
         """
         self.task_obj = self.get_task_obj()
-        if self.task_obj and self.task_obj.completed:
+        if self.task_obj and (self.task_obj.completed or self.task_obj.cancelled):
             return
         self.object = self.get_object(obj_pk)
         self.task_user_pk = task_user_pk
