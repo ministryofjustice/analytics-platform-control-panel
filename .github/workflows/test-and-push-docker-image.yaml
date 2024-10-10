@@ -54,7 +54,7 @@ jobs:
               TAG=edge
             fi
           elif [[ $GITHUB_REF == refs/pull/* ]]; then
-            TAG=pr-${{ github.event.number }}
+            TAG="sha-${GITHUB_SHA::8}"
           elif [ "${{ github.event_name }}" = "push" ]; then
             TAG="sha-${GITHUB_SHA::8}"
           fi
