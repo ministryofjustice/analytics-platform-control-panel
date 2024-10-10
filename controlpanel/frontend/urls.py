@@ -259,4 +259,5 @@ urlpatterns = [
         name="create-parameter",
     ),
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
+    path("quicksight/", views.QuicksightView.as_view(), name="quicksight"),
 ]

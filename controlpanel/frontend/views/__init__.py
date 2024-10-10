@@ -80,6 +80,7 @@ from controlpanel.frontend.views.policy import (
     IAMManagedPolicyList,
     IAMManagedPolicyRemoveUser,
 )
+from controlpanel.frontend.views.quicksight import QuicksightView
 from controlpanel.frontend.views.release import (
     ReleaseCreate,
     ReleaseDelete,
