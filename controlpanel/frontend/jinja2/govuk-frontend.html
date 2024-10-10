@@ -53,7 +53,7 @@
 
   {% block main %}
     {% block beforeContent %}{% endblock %}
-    <div class="govuk-width-container">
+    <div class="{% block container_class_names %}govuk-width-container{% endblock container_class_names %}">
       <main class="govuk-main-wrapper {{ mainClasses or "" }}" id="main-content" role="main">
         {% block content %}{% endblock %}
       </main>
