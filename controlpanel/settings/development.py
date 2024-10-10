@@ -9,6 +9,7 @@ DEBUG = True
 
 # Allow all hostnames to access the server
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+QUICKSIGHT_DOMAINS = ["http://localhost:8000"]
 
 # Enable Django debug toolbar
 if os.environ.get("ENABLE_DJANGO_DEBUG_TOOLBAR"):
