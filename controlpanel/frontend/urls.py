@@ -225,6 +225,7 @@ urlpatterns = [
     ),
     path("accessibility/", views.Accessibility.as_view(), name="accessibility"),
     path("tasks/", views.TaskList.as_view(), name="list-tasks"),
+    path("tasks/<uuid:pk>/", views.TaskDetail.as_view(), name="task-detail"),
     path("databases/", views.DatabasesListView.as_view(), name="list-databases"),
     path("databases/<str:dbname>/", views.TablesListView.as_view(), name="list-tables"),
     path(
