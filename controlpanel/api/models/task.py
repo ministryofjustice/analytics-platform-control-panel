@@ -28,6 +28,7 @@ class Task(TimeStampedModel):
     completed = models.BooleanField(default=False)
     cancelled = models.BooleanField(default=False)
     message_body = models.CharField(max_length=4000)
+    retried_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "control_panel_api_task"
@@ -42,12 +43,16 @@ class Task(TimeStampedModel):
             decoded = base64.b64decode(self.message_body)
             return json.loads(decoded)
         except Exception:
-            return "Cannot decode message body"
+            return f"Cannot decode message body: {self.message_body}"
 
     @property
     def decoded_task_body(self):
         try:
             decoded = base64.b64decode(self.decoded_message_body["body"])
+        except TypeError:
+            return "No task body to decode"
+
+        try:
             return json.loads(decoded)
         except Exception:
             return "Cannot decode task body"
@@ -60,10 +65,16 @@ class Task(TimeStampedModel):
         if self.completed:
             return "COMPLETED"
 
-        if self.created < timezone.now() - timezone.timedelta(days=4):
+        if self.created > timezone.now() - timezone.timedelta(days=4):
+            return "PENDING"
+
+        if self.retried_at is None:
             return "FAILED"
 
-        return "RETRYING"
+        if self.retried_at > timezone.now() - timezone.timedelta(days=4):
+            return "RETRYING"
+
+        return "FAILED"
 
     def get_absolute_url(self):
         return reverse("task-detail", kwargs={"pk": self.pk})

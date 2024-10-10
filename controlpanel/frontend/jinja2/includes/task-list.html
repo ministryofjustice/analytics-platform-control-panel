@@ -4,11 +4,9 @@
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Task ID</th>
-      <th class="govuk-table__header">Entity class</th>
-      <th class="govuk-table__header">Entity ID</th>
-      <th class="govuk-table__header">Entity description</th>
-      <th class="govuk-table__header">Task description</th>
+      <th class="govuk-table__header">Task name</th>
       <th class="govuk-table__header">Create time</th>
+      <th class="govuk-table__header">Retried at</th>
       <th class="govuk-table__header">Task status</th>
     </tr>
   </thead>
@@ -16,11 +14,9 @@
   {%- for task in tasks %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell"><a href="{{ task.get_absolute_url() }}">{{ task.task_id }}</a></td>
-      <td class="govuk-table__cell">{{ task.entity_class }}</td>
-      <td class="govuk-table__cell">{{ task.entity_id }}</td>
-      <td class="govuk-table__cell">{{ task.entity_description }}</td>
-      <td class="govuk-table__cell">{{ task.task_description }}</td>
+      <td class="govuk-table__cell">{{ task.task_name }}</td>
       <td class="govuk-table__cell">{{ task.created }}</td>
+      <td class="govuk-table__cell">{{ task.retried_at|default("N/A", True) }}</td>
       <td class="govuk-table__cell">{{ task.status }}</td>
     </tr>
   {% endfor %}

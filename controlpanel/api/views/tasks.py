@@ -5,8 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 # First-party/Local
-from controlpanel.api.message_broker import MessageBrokerClient
 from controlpanel.api.models import Task
+from controlpanel.api.tasks.utils import send_task
 
 
 class TaskAPIView(GenericAPIView):
@@ -24,13 +24,7 @@ class TaskAPIView(GenericAPIView):
             task.cancelled = False
             task.save()
 
-        message_client = MessageBrokerClient()
-        message_client.client.send_message(
-            queue_name=task.queue_name, message_body=task.message_body
-        )
-
-    def _cancel_task(self, task_id):
-        Task.objects.filter(task_id=task_id).update(cancelled=True)
+        send_task(task=self.object)
 
     def post(self, request, *args, **kwargs):
         task_id = self.kwargs["task_id"]
