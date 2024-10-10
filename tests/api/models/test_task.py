@@ -7,7 +7,7 @@ from controlpanel.api.models.task import Task
 
 
 def four_days_ago():
-    return timezone.now() - timezone.timedelta(days=4, seconds=1)
+    return timezone.now() - timezone.timedelta(days=4)
 
 
 @pytest.mark.parametrize(
@@ -27,7 +27,7 @@ def four_days_ago():
             Task(
                 completed=False,
                 cancelled=False,
-                created=four_days_ago() + timezone.timedelta(minutes=1),
+                created=four_days_ago() + timezone.timedelta(hours=1),
             ),
             "PENDING",
         ),
@@ -41,8 +41,8 @@ def four_days_ago():
             Task(
                 completed=False,
                 cancelled=False,
-                created=four_days_ago() - timezone.timedelta(minutes=1),
-                retried_at=four_days_ago() - timezone.timedelta(minutes=1),
+                created=four_days_ago() - timezone.timedelta(hours=1),
+                retried_at=four_days_ago() - timezone.timedelta(hours=1),
             ),
             "FAILED",
         ),
