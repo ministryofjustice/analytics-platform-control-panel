@@ -1148,12 +1148,23 @@ class AWSQuicksight(AWSService):
         self.client = self.boto3_session.client("quicksight")
 
     def get_embed_url(self, user):
+
+        if not user.justice_email:
+            return None
+
         user_arn = arn(
             service=self.service_name,
-            resource=f"user/default/{user.username}",
+            resource=f"user/default/{user.justice_email}",
             region=settings.QUICKSIGHT_ACCOUNT_REGION,
             account=settings.QUICKSIGHT_ACCOUNT_ID,
         )
+
+        response = self.client.list_group_memberships(
+            GroupName="analytical-platform",
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            Namespace="default",
+        )
+
         response = self.client.generate_embed_url_for_registered_user(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
             UserArn=user_arn,
