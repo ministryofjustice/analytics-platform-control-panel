@@ -1159,12 +1159,6 @@ class AWSQuicksight(AWSService):
             account=settings.QUICKSIGHT_ACCOUNT_ID,
         )
 
-        response = self.client.list_group_memberships(
-            GroupName="analytical-platform",
-            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
-            Namespace="default",
-        )
-
         response = self.client.generate_embed_url_for_registered_user(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
             UserArn=user_arn,
