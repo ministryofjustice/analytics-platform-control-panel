@@ -88,7 +88,7 @@ from controlpanel.frontend.views.release import (
     ReleaseList,
 )
 from controlpanel.frontend.views.reset import ResetHome
-from controlpanel.frontend.views.task import TaskList
+from controlpanel.frontend.views.task import TaskDetail, TaskList
 from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
     EnableBedrockUser,
