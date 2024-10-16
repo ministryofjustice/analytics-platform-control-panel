@@ -2,6 +2,7 @@
 import os
 import sys
 from os.path import abspath, dirname, join
+from socket import gaierror, gethostbyname, gethostname
 
 # Third-party
 import structlog
@@ -248,6 +249,19 @@ MANAGERS = []
 # Whitelist values for the HTTP Host header, to prevent certain attacks
 ALLOWED_HOSTS = [host for host in os.environ.get("ALLOWED_HOSTS", "").split() if host]
 
+
+# set this before adding the IP address below
+# TODO We may be able to set this in terraform instead, we should check this
+QUICKSIGHT_DOMAINS = []
+for host in ALLOWED_HOSTS:
+    prefix = "*" if host.startswith(".") else ""
+    QUICKSIGHT_DOMAINS.append(f"https://{prefix}{host}")
+
+try:
+    ALLOWED_HOSTS.append(gethostbyname(gethostname()))
+except gaierror:
+    pass
+
 # Sets the X-XSS-Protection: 1; mode=block header
 SECURE_BROWSER_XSS_FILTER = True
 
@@ -486,6 +500,10 @@ ELASTICSEARCH = {
 
 # -- AWS
 AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
+QUICKSIGHT_ACCOUNT_ID = os.environ.get("QUICKSIGHT_ACCOUNT_ID")
+QUICKSIGHT_ACCOUNT_REGION = os.environ.get("QUICKSIGHT_ACCOUNT_REGION")
+QUICKSIGHT_DOMAINS = os.environ.get("QUICKSIGHT_DOMAINS")
+QUICKSIGHT_ASSUMED_ROLE = os.environ.get("QUICKSIGHT_ASSUMED_ROLE")
 
 # The EKS OIDC provider, referenced in user policies to allow service accounts
 # to grant AWS permissions.

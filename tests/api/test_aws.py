@@ -2,7 +2,7 @@
 import hashlib
 import json
 import uuid
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 # Third-party
 import pytest
@@ -1134,3 +1134,24 @@ def test_list_attached_policies_returns_list_of_policies(iam, roles, test_policy
 
     assert len(policies) == 1
     assert policies[0].arn == test_policy["Arn"]
+
+
+@pytest.fixture
+def quicksight_service():
+    yield aws.AWSQuicksight()
+
+
+def test_get_embed_url(quicksight_service):
+    """
+    Patching client as no way to get url from moto.
+    Should return some URL anyway
+    """
+
+    embedded_url = "https://embedded-url.com"
+    client = Mock()
+    client.generate_embed_url_for_registered_user.return_value = {"EmbedUrl": embedded_url}
+
+    with patch.object(quicksight_service, "client", client):
+        mock_user = Mock(email="user@email.com")
+        url = quicksight_service.get_embed_url(mock_user)
+        assert url == embedded_url

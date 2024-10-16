@@ -1140,10 +1140,40 @@ class AWSSQS(AWSService):
 
 class AWSQuicksight(AWSService):
 
+    service_name = "quicksight"
+
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
 
         self.client = self.boto3_session.client("quicksight")
+
+    def get_embed_url(self, user):
+
+        if not user.justice_email:
+            return None
+
+        user_arn = arn(
+            service=self.service_name,
+            resource=f"user/default/{user.justice_email}",
+            region=settings.QUICKSIGHT_ACCOUNT_REGION,
+            account=settings.QUICKSIGHT_ACCOUNT_ID,
+        )
+
+        response = self.client.generate_embed_url_for_registered_user(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            UserArn=user_arn,
+            ExperienceConfiguration={
+                "QuickSightConsole": {
+                    "InitialPath": "/start",
+                    "FeatureConfigurations": {"StatePersistence": {"Enabled": True}},
+                },
+            },
+            AllowedDomains=settings.QUICKSIGHT_DOMAINS,
+        )
+        if response:
+            return response["EmbedUrl"]
+
+        return response
 
 
 class AWSLakeFormation(AWSService):
