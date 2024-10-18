@@ -60,6 +60,7 @@ add_perm("api.add_app_bucket", is_authenticated & is_app_admin)
 add_perm("api.remove_app_bucket", is_authenticated & is_superuser)  # TODO change to is_app_admin
 add_perm("api.view_app_logs", is_authenticated & is_app_admin)
 add_perm("api.manage_groups", is_authenticated & is_superuser)
+add_perm("api.quicksight_embed_access", is_authenticated & is_superuser)
 add_perm("api.create_policys3bucket", is_authenticated & is_superuser)
 add_perm("api.update_app_settings", is_authenticated & is_app_admin)
 add_perm("api.update_app_ip_allowlists", is_authenticated & is_app_admin)

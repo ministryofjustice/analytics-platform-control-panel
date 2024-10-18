@@ -124,6 +124,12 @@
       },
       {
         "hide": not request.user.is_superuser,
+        "text": "QuickSight",
+        "href": url("quicksight"),
+        "active": page_name == "quicksight",
+      },
+      {
+        "hide": not request.user.is_superuser,
         "text": "Groups",
         "href": url("list-policies"),
         "active": page_name == "groups",

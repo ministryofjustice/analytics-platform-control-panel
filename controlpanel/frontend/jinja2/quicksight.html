@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% set page_name = "quicksight" %}
+{% set page_title = "Quicksight" %}
+
+{% block container_class_names %}govuk-grid-column-full{% endblock container_class_names %}
+
+{% block content %}
+    {% if embed_url %}
+        <body onload="embedConsole()">
+            <div id="experience-container"></div>
+        </body>
+    {% else %}
+    <div class="govuk-width-container">
+        <h2 class="govuk-heading-m">Something went wrong, try refreshing the page</h2>
+        <p class="govuk-body">If the problem persists, please contact the AP support team.</p>
+    </div>
+    {% endif %}
+{% endblock content %}
+
+{% block body_end %}
+    <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.6.0/dist/quicksight-embedding-js-sdk.min.js"></script>
+    <script type="text/javascript">
+        const embedConsole = async() => {
+            const {
+                createEmbeddingContext,
+            } = QuickSightEmbedding;
+
+            const embeddingContext = await createEmbeddingContext({
+                onChange: (changeEvent, metadata) => {
+                    console.log('Context received a change', changeEvent, metadata);
+                },
+            });
+
+            const frameOptions = {
+                url: "{{ embed_url|safe }}", // replace this value with the url generated via embedding API
+                container: '#experience-container',
+                height: "700px",
+                width: "100%",
+                onChange: (changeEvent, metadata) => {
+                    switch (changeEvent.eventName) {
+                        case 'FRAME_MOUNTED': {
+                            console.log("Do something when the experience frame is mounted.");
+                            break;
+                        }
+                        case 'FRAME_LOADED': {
+                            console.log("Do something when the experience frame is loaded.");
+                            break;
+                        }
+                    }
+                },
+            };
+
+            const contentOptions = {
+                onMessage: async (messageEvent, experienceMetadata) => {
+                    switch (messageEvent.eventName) {
+                        case 'ERROR_OCCURRED': {
+                            console.log("Do something when the embedded experience fails loading.");
+                            break;
+                        }
+                    }
+                }
+            };
+            const embeddedConsoleExperience = await embeddingContext.embedConsole(frameOptions, contentOptions);
+        };
+    </script>
+{% endblock body_end %}
