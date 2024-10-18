@@ -13,12 +13,12 @@ from controlpanel.oidc import OIDCLoginRequiredMixin
 
 class QuicksightView(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = "quicksight.html"
-    permission_required = "is_superuser"
+    permission_required = "api.quicksight_embed_access"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         profile_name = f"quicksight_user_{self.request.user.justice_email}"
-
+        context["broadcast_messages"] = None
         context["embed_url"] = AWSQuicksight(
             assume_role_name=settings.QUICKSIGHT_ASSUMED_ROLE,
             profile_name=profile_name,
