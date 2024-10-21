@@ -247,7 +247,9 @@ ADMINS = []
 MANAGERS = []
 
 # Whitelist values for the HTTP Host header, to prevent certain attacks
-ALLOWED_HOSTS = [host for host in os.environ.get("ALLOWED_HOSTS", "").split() if host]
+ALLOWED_HOSTS = [host for host in os.environ.get("ALLOWED_HOSTS", "").split() if host] + [
+    "cpanel.cpanel"
+]
 
 
 # set this before adding the IP address below
@@ -502,7 +504,6 @@ ELASTICSEARCH = {
 AWS_DATA_ACCOUNT_ID = os.environ.get("AWS_DATA_ACCOUNT_ID")
 QUICKSIGHT_ACCOUNT_ID = os.environ.get("QUICKSIGHT_ACCOUNT_ID")
 QUICKSIGHT_ACCOUNT_REGION = os.environ.get("QUICKSIGHT_ACCOUNT_REGION")
-QUICKSIGHT_DOMAINS = os.environ.get("QUICKSIGHT_DOMAINS")
 QUICKSIGHT_ASSUMED_ROLE = os.environ.get("QUICKSIGHT_ASSUMED_ROLE")
 
 # The EKS OIDC provider, referenced in user policies to allow service accounts
