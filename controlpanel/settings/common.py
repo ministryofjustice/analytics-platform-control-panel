@@ -247,7 +247,7 @@ ADMINS = []
 MANAGERS = []
 
 # Whitelist values for the HTTP Host header, to prevent certain attacks
-ALLOWED_HOSTS = [host for host in os.environ.get("ALLOWED_HOSTS", "").split() if host]
+ALLOWED_HOSTS = [host for host in os.environ.get("ALLOWED_HOSTS", "").split() if host] + ["cpanel.cpanel"]
 
 
 # set this before adding the IP address below
