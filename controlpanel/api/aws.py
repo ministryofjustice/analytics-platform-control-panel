@@ -37,6 +37,7 @@ def iam_arn(resource, account=settings.AWS_DATA_ACCOUNT_ID):
 
 READ_ACTIONS = [
     "s3:GetObject",
+    "s3:GetObjectTagging",
     "s3:GetObjectAcl",
     "s3:GetObjectVersion",
     "s3:GetObjectVersionAcl",
