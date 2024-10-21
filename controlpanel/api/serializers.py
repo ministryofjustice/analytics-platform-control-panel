@@ -268,6 +268,7 @@ class UserSerializer(serializers.ModelSerializer):
             "users3buckets",
             "is_superuser",
             "email_verified",
+            "justice_email",
         )
 
 
