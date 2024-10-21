@@ -35,7 +35,7 @@
             const frameOptions = {
                 url: "{{ embed_url|safe }}", // replace this value with the url generated via embedding API
                 container: '#experience-container',
-                height: "700px",
+                height: window.screen.availHeight * 0.85,
                 width: "100%",
                 onChange: (changeEvent, metadata) => {
                     switch (changeEvent.eventName) {
