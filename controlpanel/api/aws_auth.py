@@ -38,7 +38,7 @@ class BotoSession:
         self.profile_name = profile_name
 
     def _get_credential_by_default(self):
-        log.info(f"Creating default session")
+        log.info("Creating default session")
         boto3_ini_session = boto3.Session(
             region_name=self.region_name, profile_name=self.profile_name
         )
