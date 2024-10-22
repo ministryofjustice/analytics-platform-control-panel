@@ -43,6 +43,7 @@ def test_detail(client, users):
         "username",
         "name",
         "email",
+        "justice_email",
         "groups",
         "userapps",
         "users3buckets",
