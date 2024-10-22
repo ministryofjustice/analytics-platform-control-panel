@@ -263,6 +263,7 @@ class UserSerializer(serializers.ModelSerializer):
             "username",
             "name",
             "email",
+            "justice_email",
             "groups",
             "userapps",
             "users3buckets",
