@@ -38,6 +38,7 @@ class BotoSession:
         self.profile_name = profile_name
 
     def _get_credential_by_default(self):
+        log.info("Creating default session")
         boto3_ini_session = boto3.Session(
             region_name=self.region_name, profile_name=self.profile_name
         )
@@ -51,11 +52,16 @@ class BotoSession:
         log.warn("(for monitoring purpose) Refreshing AWS token....")
         boto3_ini_session = boto3.Session(region_name=self.region_name)
         sts_client = boto3_ini_session.client("sts", region_name=self.region_name)
+        log.info(f"Attempting to assume role: {self.assume_role_name}")
         response = sts_client.assume_role(
             RoleArn=self.assume_role_name,
             RoleSessionName=self.session_name,
             DurationSeconds=TTL,
         ).get("Credentials")
+
+        identity = sts_client.get_caller_identity()
+
+        log.info(f"sts_client caller identity: {identity}")
 
         return {
             "access_key": response.get("AccessKeyId"),

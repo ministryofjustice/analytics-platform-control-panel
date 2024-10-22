@@ -1146,6 +1146,11 @@ class AWSQuicksight(AWSService):
     service_name = "quicksight"
 
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        log.info(
+            f"assume_role_name: {assume_role_name}, \
+            profile_name: {profile_name}, \
+            region_name: {region_name}"
+        )
         super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
         log.info(
             f"Init QuicksightService with assume_role_name: {assume_role_name}, profile_name: {profile_name}, region_name: {region_name}"  # noqa
