@@ -38,6 +38,7 @@ class BotoSession:
         self.profile_name = profile_name
 
     def _get_credential_by_default(self):
+        log.info("Creating default session")
         boto3_ini_session = boto3.Session(
             region_name=self.region_name, profile_name=self.profile_name
         )
@@ -51,11 +52,16 @@ class BotoSession:
         log.warn("(for monitoring purpose) Refreshing AWS token....")
         boto3_ini_session = boto3.Session(region_name=self.region_name)
         sts_client = boto3_ini_session.client("sts", region_name=self.region_name)
+        log.info(f"Attempting to assume role: {self.assume_role_name}")
         response = sts_client.assume_role(
             RoleArn=self.assume_role_name,
             RoleSessionName=self.session_name,
             DurationSeconds=TTL,
         ).get("Credentials")
+        log.info(f"STS response: {response}")
+        identity = sts_client.get_caller_identity()
+
+        log.info(f"sts_client caller identity: {identity}")
 
         return {
             "access_key": response.get("AccessKeyId"),
@@ -70,17 +76,19 @@ class BotoSession:
         """
         try:
             if self.assume_role_name:
+                log.warn(f"Refresh credentials with assume role ({self.assume_role_name})")
                 refreshable_credentials = RefreshableCredentials.create_from_metadata(
                     metadata=self._get_session_credentials_by_sts(),
                     refresh_using=self._get_session_credentials_by_sts,
                     method="sts-assume-role",
                 )
             else:
+                log.warn("Refresh credentials by default, as no assume role provided")
                 refreshable_credentials = self._get_credential_by_default()
 
+            log.info(f"Refreshable credentials created successfully: {refreshable_credentials}")
             # attach refreshable credentials current session
             session = get_session()
-
             session._credentials = refreshable_credentials
             session.set_config_variable("region", self.region_name)
             auto_refresh_session = boto3.Session(botocore_session=session)
@@ -115,6 +123,8 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
         self, profile_name: str = None, assume_role_name: str = None, region_name: str = None
     ):
         credential_session_key = "{}_{}_{}".format(profile_name, assume_role_name, region_name)
+        log.warn(f"Looking for {credential_session_key} in credential_sessions")
+        log.warn(f"Existing credential_sessions: {self.credential_sessions}")
         if credential_session_key not in self.credential_sessions:
             log.warn(
                 "(for monitoring purpose) Initialising the session ({})".format(
@@ -126,4 +136,5 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
                 profile_name=profile_name,
                 assume_role_name=assume_role_name,
             ).refreshable_session()
+        log.info(f"Session found: {self.credential_sessions[credential_session_key]}")
         return self.credential_sessions[credential_session_key]
