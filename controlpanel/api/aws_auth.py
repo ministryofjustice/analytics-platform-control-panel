@@ -59,7 +59,9 @@ class BotoSession:
             DurationSeconds=TTL,
         ).get("Credentials")
 
-        log.info(f"Response to sts_client.assume_role: {response}")
+        identity = sts_client.get_caller_identity()
+
+        log.info(f"sts_client caller identity: {identity}")
 
         return {
             "access_key": response.get("AccessKeyId"),
