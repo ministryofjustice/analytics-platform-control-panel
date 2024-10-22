@@ -58,7 +58,7 @@ class BotoSession:
             RoleSessionName=self.session_name,
             DurationSeconds=TTL,
         ).get("Credentials")
-
+        log.info(f"STS response: {response}")
         identity = sts_client.get_caller_identity()
 
         log.info(f"sts_client caller identity: {identity}")
