@@ -118,6 +118,7 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
     ):
         credential_session_key = "{}_{}_{}".format(profile_name, assume_role_name, region_name)
         log.warn(f"Looking for {credential_session_key} in credential_sessions")
+        log.warn(f"Existing credential_sessions: {self.credential_sessions}")
         if credential_session_key not in self.credential_sessions:
             log.warn(
                 "(for monitoring purpose) Initialising the session ({})".format(
