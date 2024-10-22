@@ -70,17 +70,19 @@ class BotoSession:
         """
         try:
             if self.assume_role_name:
+                log.warn(f"Refresh credentials with assume role ({self.assume_role_name})")
                 refreshable_credentials = RefreshableCredentials.create_from_metadata(
                     metadata=self._get_session_credentials_by_sts(),
                     refresh_using=self._get_session_credentials_by_sts,
                     method="sts-assume-role",
                 )
             else:
+                log.warn("Refresh credentials by default, as no assume role provided")
                 refreshable_credentials = self._get_credential_by_default()
 
+            log.info(f"Refreshable credentials created successfully: {refreshable_credentials}")
             # attach refreshable credentials current session
             session = get_session()
-
             session._credentials = refreshable_credentials
             session.set_config_variable("region", self.region_name)
             auto_refresh_session = boto3.Session(botocore_session=session)
@@ -115,6 +117,7 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
         self, profile_name: str = None, assume_role_name: str = None, region_name: str = None
     ):
         credential_session_key = "{}_{}_{}".format(profile_name, assume_role_name, region_name)
+        log.warn(f"Looking for {credential_session_key} in credential_sessions")
         if credential_session_key not in self.credential_sessions:
             log.warn(
                 "(for monitoring purpose) Initialising the session ({})".format(
@@ -126,4 +129,5 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
                 profile_name=profile_name,
                 assume_role_name=assume_role_name,
             ).refreshable_session()
+        log.info(f"Session found: {self.credential_sessions[credential_session_key]}")
         return self.credential_sessions[credential_session_key]
