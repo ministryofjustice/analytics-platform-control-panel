@@ -30,7 +30,7 @@ class QuicksightView(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateVi
             region_name=quicksight_region,
         )
 
-        log.info(
+        log.warn(
             f"client.assume_role_name: {quicksight_client.assume_role_name}, \
             client.region_name: {quicksight_client.region_name}, \
             client.profile_name: {quicksight_client.profile_name}"
