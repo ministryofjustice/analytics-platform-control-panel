@@ -52,16 +52,16 @@ class BotoSession:
         log.warn("(for monitoring purpose) Refreshing AWS token....")
         boto3_ini_session = boto3.Session(region_name=self.region_name)
         sts_client = boto3_ini_session.client("sts", region_name=self.region_name)
-        log.warn(f"Attempting to assume role: {self.assume_role_name}")
+        log.info(f"Attempting to assume role: {self.assume_role_name}")
         response = sts_client.assume_role(
             RoleArn=self.assume_role_name,
             RoleSessionName=self.session_name,
             DurationSeconds=TTL,
         ).get("Credentials")
-        log.warn(f"STS response: {response}")
+        log.info(f"STS response: {response}")
         identity = sts_client.get_caller_identity()
 
-        log.warn(f"sts_client caller identity: {identity}")
+        log.info(f"sts_client caller identity: {identity}")
 
         return {
             "access_key": response.get("AccessKeyId"),
@@ -86,7 +86,7 @@ class BotoSession:
                 log.warn("Refresh credentials by default, as no assume role provided")
                 refreshable_credentials = self._get_credential_by_default()
 
-            log.warn(f"Refreshable credentials created successfully: {refreshable_credentials}")
+            log.info(f"Refreshable credentials created successfully: {refreshable_credentials}")
             # attach refreshable credentials current session
             session = get_session()
             session._credentials = refreshable_credentials
@@ -136,5 +136,5 @@ class AWSCredentialSessionSet(metaclass=SingletonMeta):
                 profile_name=profile_name,
                 assume_role_name=assume_role_name,
             ).refreshable_session()
-        log.warn(f"Session found: {self.credential_sessions[credential_session_key]}")
+        log.info(f"Session found: {self.credential_sessions[credential_session_key]}")
         return self.credential_sessions[credential_session_key]
