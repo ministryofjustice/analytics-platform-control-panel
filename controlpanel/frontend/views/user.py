@@ -128,7 +128,7 @@ class ReinitialiseUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         cluster_user = ClusterUser(user)
 
         try:
-            cluster_user._init_user()
+            cluster_user.create()
             messages.success(self.request, "Reinitialised user successfully")
             return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
         except Exception:
