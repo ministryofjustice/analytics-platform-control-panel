@@ -93,6 +93,7 @@ from controlpanel.frontend.views.tool import RestartTool, ToolList
 from controlpanel.frontend.views.user import (
     EnableBedrockUser,
     EnableDatabaseAdmin,
+    ReinitialiseUser,
     ResetMFA,
     SetQuicksightAccess,
     SetSuperadmin,

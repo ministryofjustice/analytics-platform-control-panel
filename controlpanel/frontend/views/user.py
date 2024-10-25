@@ -16,6 +16,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
+from controlpanel.api.cluster import User as ClusterUser
 from controlpanel.api.models import User
 from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -116,6 +117,23 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View)
         user.set_quicksight_access(enable="enable_quicksight" in request.POST)
         messages.success(self.request, "Successfully updated Quicksight access")
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
+
+class ReinitialiseUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "api.add_superuser"
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+        cluster_user = ClusterUser(user)
+
+        try:
+            cluster_user._init_user()
+            messages.success(self.request, "Reinitialised user successfully")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+        except Exception:
+            messages.error(self.request, f"Failed to reinitialise user")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
 class EnableDatabaseAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):

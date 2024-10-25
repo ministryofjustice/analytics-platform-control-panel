@@ -76,6 +76,7 @@ urlpatterns = [
     path("users/<str:pk>/delete/", views.UserDelete.as_view(), name="delete-user"),
     path("users/<str:pk>/bedrock/", views.EnableBedrockUser.as_view(), name="set-bedrock-user"),
     path("users/<str:pk>/quicksight/", views.SetQuicksightAccess.as_view(), name="set-quicksight"),
+    path("users/<str:pk>/reinituser/", views.ReinitialiseUser.as_view(), name="reinit-user"),
     path(
         "users/<str:pk>/database-admin/",
         views.EnableDatabaseAdmin.as_view(),

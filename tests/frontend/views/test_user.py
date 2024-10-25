@@ -56,6 +56,11 @@ def set_quicksight(client, users, *args):
     return client.post(reverse("set-quicksight", kwargs=kwargs))
 
 
+def reinitialise_user(client, users, *args):
+    kwargs = {"pk": users["other_user"].auth0_id}
+    return client.post(reverse("reinit-user", kwargs=kwargs))
+
+
 def set_database_admin(client, users, *args):
     data = {
         "is_database_admin": True,
@@ -90,6 +95,9 @@ def set_database_admin(client, users, *args):
         (set_database_admin, "superuser", status.HTTP_302_FOUND),
         (set_database_admin, "normal_user", status.HTTP_403_FORBIDDEN),
         (set_database_admin, "other_user", status.HTTP_403_FORBIDDEN),
+        (reinitialise_user, "superuser", status.HTTP_302_FOUND),
+        (reinitialise_user, "normal_user", status.HTTP_403_FORBIDDEN),
+        (reinitialise_user, "other_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permission(client, users, view, user, expected_status):
