@@ -13,6 +13,14 @@
 <span class="govuk-caption-xl">User</span>
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+<h2 class="govuk-heading-m">
+  Date Registered
+</h2>
+
+<p class="govuk-body">
+  {{ user.date_joined.strftime('%d-%m-%Y') }}
+</p>
+
 {% if unused %}
 <div class="govuk-grid-row">
   <div class="govuk-column-two-thirds">
@@ -53,7 +61,7 @@
           "value": "True",
           "text": "Super Admin",
           "checked": user.is_superuser
-        },
+        }
       ]
     }) }}
     <button class="govuk-button govuk-button--secondary">

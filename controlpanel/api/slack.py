@@ -9,7 +9,7 @@ def notify_superuser_created(username, by_username=None):
     message = CREATE_SUPERUSER_MESSAGE.format(username=username)
     if by_username:
         message = f"{message} by `{by_username}`"
-    send_notification(message)
+    # send_notification(message)
 
 
 def send_notification(message):

@@ -90,15 +90,18 @@ class UserDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    fields = ["is_superuser"]
-    http_method_names = ["post"]
-    model = User
+class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = "api.add_superuser"
+    http_method_names = ["post"]
 
-    def get_success_url(self):
-        messages.success(self.request, "Successfully updated superadmin status")
-        return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+        is_superuser = "is_superuser" in request.POST
+        user.is_superuser = is_superuser
+        user.is_staff = is_superuser
+        user.save()
+        messages.success(self.request, "Successfully updated super admin status")
+        return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
 class EnableBedrockUser(PolicyAccessMixin, UpdateView):
