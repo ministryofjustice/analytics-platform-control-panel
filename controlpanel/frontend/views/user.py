@@ -132,7 +132,7 @@ class ReinitialiseUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
             messages.success(self.request, "Reinitialised user successfully")
             return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
         except Exception:
-            messages.error(self.request, f"Failed to reinitialise user")
+            messages.error(self.request, "Failed to reinitialise user")
             return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
