@@ -13,6 +13,14 @@
 <span class="govuk-caption-xl">User</span>
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+<h2 class="govuk-heading-m">
+  Date Registered
+</h2>
+
+<p class="govuk-body">
+  {{ user.date_joined.strftime('%d-%m-%Y') }}
+</p>
+
 {% if unused %}
 <div class="govuk-grid-row">
   <div class="govuk-column-two-thirds">
@@ -53,7 +61,7 @@
           "value": "True",
           "text": "Super Admin",
           "checked": user.is_superuser
-        },
+        }
       ]
     }) }}
     <button class="govuk-button govuk-button--secondary">
@@ -153,23 +161,21 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.reset_mfa') %}
+{% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
-  <form action="{{ url('reset-mfa', kwargs={ "pk": user.auth0_id }) }}" method="post">
+  <h2 class="govuk-heading-m">
+    Reinitialise User's Namespace
+  </h2>
+
+  <p class="govuk-hint">
+    Re-initialises a user's kubernetes namespace if they have been pruned but still exist in control panel. This will fail if the user's namespace already exists.
+  </p>
+
+  <form action="{{ url('reinit-user', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
-    {% call govukFieldset({
-      "legend": {
-        "text": "Reset MFA",
-        "classes": "govuk-fieldset__legend--m",
-      },
-      "describedBy": "reset-hint"
-    }) %}
-      <span id="reset-hint" class="govuk-hint">
-        Reset the user's multi-factor authentication settings, forcing them to
-        reconfigure.
-      </span>
-      <button class="govuk-button govuk-button--secondary">Reset MFA</button>
-    {%- endcall %}
+    <button class="govuk-button govuk-button--secondary js-confirm" data-confirm-message="Are you sure you want to reinitialise this user?">
+      Reinitialise User
+    </button>
   </form>
 </section>
 {% endif %}

@@ -16,6 +16,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
+from controlpanel.api.cluster import User as ClusterUser
 from controlpanel.api.models import User
 from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -89,15 +90,18 @@ class UserDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         return context
 
 
-class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-    fields = ["is_superuser"]
-    http_method_names = ["post"]
-    model = User
+class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
     permission_required = "api.add_superuser"
+    http_method_names = ["post"]
 
-    def get_success_url(self):
-        messages.success(self.request, "Successfully updated superadmin status")
-        return reverse_lazy("manage-user", kwargs={"pk": self.object.auth0_id})
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+        is_superuser = "is_superuser" in request.POST
+        user.is_superuser = is_superuser
+        user.is_staff = is_superuser
+        user.save()
+        messages.success(self.request, "Successfully updated super admin status")
+        return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
 class EnableBedrockUser(PolicyAccessMixin, UpdateView):
@@ -116,6 +120,23 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View)
         user.set_quicksight_access(enable="enable_quicksight" in request.POST)
         messages.success(self.request, "Successfully updated Quicksight access")
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
+
+class ReinitialiseUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = "api.add_superuser"
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+        cluster_user = ClusterUser(user)
+
+        try:
+            cluster_user.create()
+            messages.success(self.request, "Reinitialised user successfully")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+        except Exception:
+            messages.error(self.request, "Failed to reinitialise user")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
 class EnableDatabaseAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
