@@ -782,9 +782,11 @@ class AWSBucket(AWSService):
         try:
             s3_client = self.boto3_session.client("s3")
             s3_client.head_bucket(Bucket=bucket_name)
-            return True
-        except botocore.exceptions.ClientError:
-            return False
+        except botocore.exceptions.ClientError as error:
+            if error.response["Error"]["Code"] == "404":
+                return False
+
+        return True
 
 
 class AWSPolicy(AWSService):

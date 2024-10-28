@@ -2,9 +2,10 @@
 import hashlib
 import json
 import uuid
-from unittest.mock import MagicMock, Mock, call, patch
+from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
 
 # Third-party
+import botocore
 import pytest
 
 # First-party/Local
@@ -281,6 +282,36 @@ def test_tag_bucket(s3):
         "test-update": "new-value",
         "to-archive": "true",
     }
+
+
+@pytest.mark.parametrize(
+    "error_code, expected",
+    [
+        ("400", True),
+        ("403", True),
+        ("404", False),
+    ],
+    ids=["bad_request", "forbidden", "not_found"],
+)
+def test_bucket_exists_raises_error(s3, error_code, expected):
+    mock_client = MagicMock()
+    mock_client.head_bucket.side_effect = botocore.exceptions.ClientError(
+        error_response={"Error": {"Code": error_code}}, operation_name="HeadBucket"
+    )
+    with patch(
+        "controlpanel.api.aws.AWSBucket.boto3_session", new_callable=PropertyMock
+    ) as session:
+        session.return_value.client.return_value = mock_client
+        assert aws.AWSBucket().exists("example") is expected
+
+
+def test_bucket_exists(s3):
+    s3.Bucket("example").create(
+        CreateBucketConfiguration={
+            "LocationConstraint": settings.BUCKET_REGION,  # noqa: F405
+        }
+    )
+    assert aws.AWSBucket().exists("example") is True
 
 
 def test_create_parameter(ssm):
