@@ -11,29 +11,35 @@
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Name</th>
-      <th class="govuk-table__header">Chart</th>
-      <th class="govuk-table__header">Version</th>
+      <th class="govuk-table__header">Chart Version</th>
+      <th class="govuk-table__header">Image tag</th>
       <th class="govuk-table__header">Description</th>
-      <th class="govuk-table__header">Is Restricted Release?</th>
+      <th class="govuk-table__header">Created</th>
+      <th class="govuk-table__header">Restricted Release?</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
     </tr>
   </thead>
   <tbody class="govuk-table__body">
-  {% for release in releases%}
+  {% for release in releases %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}">
           {{ release.name }}<br/>
         </a>
       </td>
-      <td class="govuk-table__cell">{{ release.chart_name}}</td>
       <td class="govuk-table__cell">
         {{ release.version }}
       </td>
       <td class="govuk-table__cell">
+        {{ release.image_tag }}
+      </td>
+      <td class="govuk-table__cell">
         {{ release.description }}
+      </td>
+      <td class="govuk-table__cell no-wrap">
+        {{ release.created.strftime('%d-%m-%Y') }}
       </td>
       <td class="govuk-table__cell">
         {{ release.is_restricted }}
@@ -41,7 +47,7 @@
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"
            class="govuk-button govuk-button--secondary">
-          Manage Release 
+          Manage Release
         </a>
       </td>
     </tr>
