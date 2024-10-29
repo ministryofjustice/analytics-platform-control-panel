@@ -20,7 +20,7 @@ class ReleaseFilter(django_filters.FilterSet):
         ).distinct()
         self.filters["chart_name"].field.widget.attrs = {"class": "govuk-select"}
         self.filters["is_restricted"].field.widget.choices = [
-            ("all", "All"),
+            ("all", "---------"),
             ("true", "Yes"),
             ("false", "No"),
         ]

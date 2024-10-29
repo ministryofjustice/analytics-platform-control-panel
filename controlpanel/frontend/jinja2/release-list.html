@@ -24,7 +24,6 @@
           <label class="govuk-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
           {{ field }}
         </p>
-
       {% endfor %}
 
       <button class="govuk-button" type="submit">Apply filters</button>
@@ -48,7 +47,7 @@
     </tr>
   </thead>
   <tbody class="govuk-table__body">
-  {% for release in filter.qs %}
+  {% for release in releases %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}">

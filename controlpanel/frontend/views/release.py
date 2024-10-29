@@ -23,11 +23,12 @@ class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = Tool
     permission_required = "api.list_tool_release"
     template_name = "release-list.html"
-    ordering = ["name", "version", "created"]
+    ordering = ["name", "-version", "-created"]
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context["filter"] = ReleaseFilter(self.request.GET, queryset=self.get_queryset())
+        context[self.context_object_name] = context["filter"].qs.distinct()
         return context
 
 
