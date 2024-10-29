@@ -15,9 +15,9 @@ class ReleaseFilter(django_filters.FilterSet):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.filters["chart_name"].extra["choices"] = Tool.objects.values_list(
-            "chart_name", "chart_name"
-        ).distinct()
+        self.filters["chart_name"].extra["choices"] = (
+            Tool.objects.values_list("chart_name", "chart_name").order_by().distinct()
+        )
         self.filters["chart_name"].field.widget.attrs = {"class": "govuk-select"}
         self.filters["is_restricted"].field.widget.choices = [
             ("all", "---------"),
