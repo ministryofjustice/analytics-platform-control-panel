@@ -8,6 +8,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api.models import Tool
+from controlpanel.frontend.filters import ReleaseFilter
 from controlpanel.frontend.forms import ToolReleaseForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -21,9 +22,14 @@ class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "releases"
     model = Tool
     permission_required = "api.list_tool_release"
-    queryset = Tool.objects.all()
     template_name = "release-list.html"
-    ordering = ["name", "version"]
+    ordering = ["name", "-version", "-created"]
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["filter"] = ReleaseFilter(self.request.GET, queryset=self.get_queryset())
+        context[self.context_object_name] = context["filter"].qs.distinct()
+        return context
 
 
 class ReleaseDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

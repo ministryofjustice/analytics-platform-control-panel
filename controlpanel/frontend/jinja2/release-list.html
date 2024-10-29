@@ -7,33 +7,69 @@
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+<div class="moj-filter">
+  <div class="moj-filter__header">
+
+    <div class="moj-filter__header-title">
+      <h2 class="govuk-heading-m">Filter</h2>
+    </div>
+
+  </div>
+
+  <div class="moj-filter__options">
+
+    <form method="get">
+      <p class="govuk-body">
+        {% for field in filter.form %}
+          <span class="govuk-!-padding-right-6">
+            {{ field.label_tag() }}
+            {{ field }}
+          </span>
+        {% endfor %}
+      </p>
+
+
+      <div class="govuk-button-group">
+        <button class="govuk-button" type="submit">Apply filters</button>
+        <a class="govuk-button govuk-button--secondary" href="{{ url('list-tool-releases') }}">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
 <table class="govuk-table">
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Name</th>
-      <th class="govuk-table__header">Chart</th>
-      <th class="govuk-table__header">Version</th>
+      <th class="govuk-table__header">Chart Version</th>
+      <th class="govuk-table__header">Image tag</th>
       <th class="govuk-table__header">Description</th>
-      <th class="govuk-table__header">Is Restricted Release?</th>
+      <th class="govuk-table__header">Created</th>
+      <th class="govuk-table__header">Restricted Release?</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
     </tr>
   </thead>
   <tbody class="govuk-table__body">
-  {% for release in releases%}
+  {% for release in releases %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}">
           {{ release.name }}<br/>
         </a>
       </td>
-      <td class="govuk-table__cell">{{ release.chart_name}}</td>
       <td class="govuk-table__cell">
         {{ release.version }}
       </td>
       <td class="govuk-table__cell">
+        {{ release.image_tag }}
+      </td>
+      <td class="govuk-table__cell">
         {{ release.description }}
+      </td>
+      <td class="govuk-table__cell no-wrap">
+        {{ release.created.strftime('%d-%m-%Y') }}
       </td>
       <td class="govuk-table__cell">
         {{ release.is_restricted }}
@@ -41,7 +77,7 @@
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"
            class="govuk-button govuk-button--secondary">
-          Manage Release 
+          Manage Release
         </a>
       </td>
     </tr>
