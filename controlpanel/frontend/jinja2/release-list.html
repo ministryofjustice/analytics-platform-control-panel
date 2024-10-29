@@ -19,15 +19,20 @@
   <div class="moj-filter__options">
 
     <form method="get">
-      {% for field in filter.form %}
-        <p>
-          <label class="govuk-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-        </p>
-      {% endfor %}
+      <p class="govuk-body">
+        {% for field in filter.form %}
+          <span class="govuk-!-padding-right-6">
+            {{ field.label_tag() }}
+            {{ field }}
+          </span>
+        {% endfor %}
+      </p>
 
-      <button class="govuk-button" type="submit">Apply filters</button>
-      <a class="govuk-button govuk-button--secondary" href="{{ url('list-tool-releases') }}">Clear</a>
+
+      <div class="govuk-button-group">
+        <button class="govuk-button" type="submit">Apply filters</button>
+        <a class="govuk-button govuk-button--secondary" href="{{ url('list-tool-releases') }}">Clear</a>
+      </div>
     </form>
   </div>
 </div>
