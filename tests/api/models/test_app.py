@@ -227,16 +227,15 @@ def test_app_url_name(namespace, env, expected):
 @pytest.mark.parametrize("env", ["dev", "prod"], ids=["dev", "prod"])
 def test_get_logs_url(env):
     expected = (
-        "https://kibana.cloud-platform.service.justice.gov.uk/_plugin/kibana/app/discover#/?_g=("
-        "filters:!(),refreshInterval:(pause:!t,value:0),time:(from:now-24h,to:now))&_a=(columns:!"
-        "(log),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:'"
-        "167701b0-f8c0-11ec-b95c-1d65c3682287',key:kubernetes.namespace_name,negate:!f,params:("
-        f"query:example-namespace-{env}),type:phrase),query:(match_phrase:(kubernetes."
-        f"namespace_name:example-namespace-{env}))),('$state':(store:appState),meta:(alias:!n"
-        ",disabled:!f,index:'167701b0-f8c0-11ec-b95c-1d65c3682287',key:kubernetes.container_name,"
-        "negate:!f,params:(query:webapp),type:phrase),query:(match_phrase:(kubernetes."
-        "container_name:webapp)))),index:'167701b0-f8c0-11ec-b95c-1d65c3682287',interval:auto,query"
-        ":(language:kuery,query:''),sort:!())"
+        "https://app-logs.cloud-platform.service.justice.gov.uk/_dashboards/app/data-explorer/discover#?_a=(discover:"
+        "(columns:!(kubernetes.container_name,kubernetes.namespace_name,log),isDirty:!f,sort:!()),metadata:"
+        "(indexPattern:bb90f230-0d2e-11ef-bf63-53113938c53a,view:discover))&_g=(filters:!(),refreshInterval:(pause:!t,"
+        "value:0),time:(from:now-60m,to:now))&_q=(filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,"
+        "index:bb90f230-0d2e-11ef-bf63-53113938c53a,key:kubernetes.namespace_name,negate:!f,params:(query:"
+        f"example-namespace-{env}),type:phrase),query:(match_phrase:(kubernetes.namespace_name:example-namespace-"
+        f"{env}))),('$state':(store:appState),meta:(alias:!n,disabled:!f,index:bb90f230-0d2e-11ef-bf63-53113938c53a,"
+        "key:kubernetes.container_name,negate:!f,params:(query:webapp),type:phrase),query:(match_phrase:"
+        "(kubernetes.container_name:webapp)))),query:(language:kuery,query:''))"
     )
     app = App(namespace="example-namespace")
     assert app.get_logs_url(env=env) == expected
