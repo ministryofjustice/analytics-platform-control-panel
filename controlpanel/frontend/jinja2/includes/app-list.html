@@ -43,10 +43,10 @@
       </td>
       {% if request.user.has_perm('api.add_superuser') -%}
       <td class="govuk-table__cell">
-        {%- for admin in app.admins %}
-          <a class="{% if request.user.auth0_id == admin.auth0_id %}highlight-current{% endif %}"
-              href="{{ url('manage-user', kwargs={ "pk": admin.auth0_id }) }}">
-            {{ admin.username }}
+        {%- for admin in app.app_admins %}
+        <a class="{% if request.user.auth0_id == admin.user.auth0_id %}highlight-current{% endif %}"
+              href="{{ url('manage-user', kwargs={ "pk": admin.user.auth0_id }) }}">
+            {{ admin.user.username }}
           </a>
           {% if not loop.last %}
             {{', '}}

@@ -8,6 +8,7 @@ import structlog
 from auth0.rest import Auth0Error
 from django.conf import settings
 from django.contrib import messages
+from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
@@ -66,7 +67,10 @@ class AdminAppList(AppList):
         return context
 
     def get_queryset(self):
-        return App.objects.all().prefetch_related("userapps")
+        userapps = UserApp.objects.filter(is_admin=True).select_related("user")
+        return App.objects.all().prefetch_related(
+            Prefetch("userapps", queryset=userapps, to_attr="app_admins")
+        )
 
 
 class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
