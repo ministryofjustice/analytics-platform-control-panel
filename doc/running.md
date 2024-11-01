@@ -224,12 +224,12 @@ Now when tasks are sent to the message queue by Control Panel they will bypass S
 making sure that tasks are only received by your locally running celery worker.
 
 
-### Compile Sass and Javascript
+### Compile Sass and JavaScript
 
 Before the first run (or after changes to static assets), you need to compile
 and collate the static assets.
 
-Static assets are compiled with Node.JS v18.12.0+
+Static assets are compiled with Node.js v18.12.0+
 
 ```sh
 npm install
@@ -323,7 +323,7 @@ kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/co
 #### General checks
 
 Check whether you have the following 2 in the env file and make sure they are correct
-- ```HELM_REPOSITORY_CACHE```:  the directory for helm repo cache folder.
+- ```HELM_REPOSITORY_CACHE```:  the directory for helm repository cache folder.
 
 
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
@@ -409,7 +409,7 @@ Open another terminal to run the following line
 python manage.py runworker background_tasks
 ```
 
-Go to <http://localhost:8000/>, sign in via github through Auth0 and marvel at your locally
+Go to <http://localhost:8000/>, sign in via GitHub through Auth0 and marvel at your locally
 running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
