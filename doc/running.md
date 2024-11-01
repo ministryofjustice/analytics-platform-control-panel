@@ -6,8 +6,8 @@
 ---
 
 This guide describes how to run Control Panel locally without Docker, and so that it can interact with the following remote AWS resources:
- - AWS Dev account
- - AWS EKS cluster on Dev account
+- AWS Dev account
+- AWS EKS cluster on Dev account
 
 There are essentially three aspects to getting the Control Panel in a state for
 development on your local machine:
@@ -52,12 +52,12 @@ In addition, you must have:
 We recommend installing these tools via Homebrew.
 
 You may want to set Postgres and Redis to start up automatically, in which case run
-```
+```sh
 brew services start postgres
 brew services start redis
 ```
 and you can check their status with
-```
+```sh
 brew services list
 ```
 Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
@@ -174,7 +174,7 @@ createdb -U controlpanel controlpanel
 ```
 
 Alternatively, if you prefer to use `psql` the following should work:
-```
+```sh
 sudo -u postgres psql
 postgres=# create database controlpanel;
 postgres=# create user controlpanel with encrypted password 'password';
@@ -204,7 +204,7 @@ is recommended as the message broker rather than SQS (which is used in the devel
 and production environments). To use Redis as the message broker you need to ensure that
 the following environment variables are set in your local .env file:
 
-```
+```sh
 USE_LOCAL_MESSAGE_BROKER=True
 BROKER_URL=redis://localhost:6379/0
 ```
@@ -212,12 +212,12 @@ BROKER_URL=redis://localhost:6379/0
 You will need to ensure that you have Redis running locally (see steps above), and then
 start the celery worker with the following command from your terminal:
 
-```
+```sh
 celery -A controlpanel worker --loglevel=info
 ```
 
 Note, if using aws vault you will need to prefix the command with
-`aws-vault exec admin-dev-sso -- `.
+`aws-vault exec admin-dev-sso -- <command>`.
 
 When running correctly you will see the output `Connected to redis://localhost:6379/0`.
 Now when tasks are sent to the message queue by Control Panel they will bypass SQS,
@@ -292,7 +292,7 @@ Check your `.aws/config`, the profile `admin-dev-sso` should look like below
     sso_region=eu-west-2
     sso_role_name=AdministratorAccess
  ```
-__NOTES__ boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
+*NOTES* boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
 `.aws/sso/cache` folder if you mix above setting with `sso_session` together.
 
 #### using aws-vault
@@ -329,7 +329,7 @@ Check whether you have the following 2 in the env file and make sure they are co
 if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
 the default value is ```/tmp/helm/cache/repository```
 
-```
+```sh
 export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"
 ```
 if you are not sure, can use the following command to find it out
@@ -385,7 +385,7 @@ Or with Gunicorn WSGI server:
 ```sh
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
-if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- `
+if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- <command>`
 before the above command e.g.
 ```sh
 aws-vault exec admin-dev-sso -- python3 manage.py runserver
@@ -409,7 +409,7 @@ Open another terminal to run the following line
 python manage.py runworker background_tasks
 ```
 
-Go to http://localhost:8000/, sign in via github through Auth0 and marvel at your locally
+Go to <http://localhost:8000/>, sign in via github through Auth0 and marvel at your locally
 running control panel.
 
 NOTES: if you use aws-vault to manage your AWS credentials, during the running process of the app,
@@ -420,7 +420,7 @@ which is normal.
 
 When you load up your local Control Panel for the first time, there will be no tools available on the Tools page.
 To pre-populate the database, run the following management command:
-```
+```sh
 python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
 ```
 You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
