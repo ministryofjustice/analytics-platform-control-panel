@@ -14,9 +14,7 @@ QUICKSIGHT_DOMAINS = ["http://localhost:8000"]
 # Enable Django debug toolbar
 if os.environ.get("ENABLE_DJANGO_DEBUG_TOOLBAR"):
     MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")  # noqa: F405, E501
-    INSTALLED_APPS.extend(  # noqa: F405, E501
-        ["debug_toolbar", "requests_toolbar", "elastic_panel"]
-    )
+    INSTALLED_APPS.extend(["debug_toolbar"])  # noqa: F405, E501
     DEBUG_TOOLBAR_PANELS = [
         "debug_toolbar.panels.versions.VersionsPanel",
         "debug_toolbar.panels.timer.TimerPanel",
@@ -31,8 +29,6 @@ if os.environ.get("ENABLE_DJANGO_DEBUG_TOOLBAR"):
         "debug_toolbar.panels.signals.SignalsPanel",
         "debug_toolbar.panels.logging.LoggingPanel",
         "debug_toolbar.panels.redirects.RedirectsPanel",
-        "requests_toolbar.panels.RequestsDebugPanel",
-        "elastic_panel.panel.ElasticDebugPanel",
     ]
 
 INTERNAL_IPS = ["127.0.0.1"]

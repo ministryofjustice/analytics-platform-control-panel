@@ -398,6 +398,10 @@ debugging, make sure you run the following command in advance
 aws sso login --profile <profile_name e.g. admin-dev-sso>
 ```
 
+### Django Debug Toolbar
+
+To run with Django Debug Toolbar, add `ENABLE_DJANGO_DEBUG_TOOLBAR=True` to your local .env file.
+
 ### Run the worker of the app
 Open another terminal to run the following line
 

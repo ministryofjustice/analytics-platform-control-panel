@@ -21,3 +21,9 @@ urlpatterns = [
 ]
 
 urlpatterns += staticfiles_urlpatterns()
+
+if settings.DEBUG:
+    # Third-party
+    from debug_toolbar.toolbar import debug_toolbar_urls  # noqa
+
+    urlpatterns += debug_toolbar_urls()
