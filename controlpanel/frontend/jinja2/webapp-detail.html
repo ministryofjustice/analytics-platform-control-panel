@@ -66,7 +66,7 @@
 
   <h2 class="govuk-heading-m">App logs</h2>
   <p class="govuk-body">
-    Logs are viewable in Kibana. Click the link below to view application logs for each environment:
+    Logs are viewable in OpenSearch. Click the link below to view application logs for each environment:
     {% for env, url in app_log_urls.items() %}
       <p><a href="{{ url }}">{{ env.title() }}</a>
     {% endfor %}

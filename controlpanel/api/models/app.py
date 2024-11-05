@@ -319,10 +319,10 @@ class App(TimeStampedModel):
 
     def get_logs_url(self, container="webapp", env="dev"):
         """
-        Builds a deep link to Kibana logs for the given container and environment.
+        Builds a deep link to OpenSearch logs for the given container and environment.
         """
         return render_to_string(
-            "includes/app-kibana-logs-url.html",
+            "includes/app-opensearch-logs-url.html",
             context={
                 "namespace": self.namespace,
                 "container_name": container,
