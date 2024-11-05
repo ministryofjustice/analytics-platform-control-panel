@@ -67,7 +67,7 @@ class AdminAppList(AppList):
         return context
 
     def get_queryset(self):
-        userapps = UserApp.objects.filter(is_admin=True).select_related("user")
+        userapps = UserApp.objects.filter(is_admin=True).exclude(user_id="").select_related("user")
         return App.objects.all().prefetch_related(
             Prefetch("userapps", queryset=userapps, to_attr="app_admins")
         )
