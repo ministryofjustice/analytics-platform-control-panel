@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
+from pytest_django.asserts import assertQuerySetEqual
 from rest_framework import status
 
 # First-party/Local
@@ -786,3 +787,26 @@ def test_register_app_invalid_organisation(client, users):
     assert response.status_code == 200
     assert "repo_url" in response.context_data["form"].errors
     assert App.objects.filter(name=app_name).count() == 0
+
+
+def test_update_app_ip_allowlist_fails(app):
+    original_app_allowlists = app.appipallowlists.all()
+    new_allowlist = baker.make("api.IPAllowlist", allowed_ip_ranges="1.2.3.4")
+
+    with patch("controlpanel.api.cluster.App.create_or_update_secret") as create_or_update_secret:
+        create_or_update_secret.side_effect = requests.exceptions.HTTPError(
+            "Error updating secret in GitHub"
+        )
+
+        with pytest.raises(requests.exceptions.HTTPError):
+            AppIPAllowList.objects.update_ip_allowlist(
+                app=app, env_name="dev_env", ip_allowlists=[new_allowlist]
+            )
+
+    assertQuerySetEqual(app.appipallowlists.all(), original_app_allowlists)
+    assert (
+        app.appipallowlists.filter(
+            ip_allowlist__allowed_ip_ranges=new_allowlist.allowed_ip_ranges
+        ).exists()
+        is False
+    )
