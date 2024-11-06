@@ -1,5 +1,5 @@
 # Third-party
-from django.db import models
+from django.db import models, transaction
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -19,13 +19,14 @@ class AppIPAllowListManager(models.Manager):
         github_api_token = kwargs.get("github_api_token")
         env_name = kwargs.get("env_name")
         ip_allowlists = kwargs.get("ip_allowlists")
-        self.update_records(app, env_name, ip_allowlists)
+        with transaction.atomic():
+            self.update_records(app, env_name, ip_allowlists)
 
-        cluster.App(app, github_api_token).create_or_update_secret(
-            env_name=env_name,
-            secret_key=cluster.App.IP_RANGES,
-            secret_value=app.env_allowed_ip_ranges(env_name=env_name),
-        )
+            cluster.App(app, github_api_token).create_or_update_secret(
+                env_name=env_name,
+                secret_key=cluster.App.IP_RANGES,
+                secret_value=app.env_allowed_ip_ranges(env_name=env_name),
+            )
 
 
 class AppIPAllowList(models.Model):
