@@ -1,5 +1,6 @@
 # Standard library
 import csv
+from datetime import datetime
 from typing import List
 
 # Third-party
@@ -9,6 +10,7 @@ import structlog
 from auth0.rest import Auth0Error
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.postgres.aggregates import StringAgg
 from django.db.models import F, Prefetch
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse, HttpResponseRedirect
@@ -83,22 +85,27 @@ class AppAdminCSV(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         apps = (
             App.objects.filter(userapps__is_admin=True)
             .annotate(
-                username=F("userapps__user__username"),
-                email=Coalesce("userapps__user__justice_email", "userapps__user__email"),
+                users=StringAgg("userapps__user__username", delimiter=", "),
+                emails=StringAgg(
+                    Coalesce("userapps__user__justice_email", "userapps__user__email"),
+                    delimiter=", ",
+                ),
             )
-            .values("name", "username", "email")
+            .values("name", "users", "emails")
             .order_by("name")
         )
 
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
         response = HttpResponse(
             content_type="text/csv",
-            headers={"Content-Disposition": 'attachment; filename="app_admins.csv"'},
+            headers={"Content-Disposition": f'attachment; filename="app_admins_{timestamp}.csv"'},
         )
 
         writer = csv.writer(response)
-        writer.writerow(["App Name", "Username", "Email"])
+        writer.writerow(["App Name", "Admins", "Emails"])
         for app in apps:
-            writer.writerow([app["name"], app["username"], app["email"]])
+            writer.writerow([app["name"], app["users"], app["emails"]])
 
         return response
 
