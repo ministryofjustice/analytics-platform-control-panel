@@ -1,4 +1,5 @@
 # Standard library
+import csv
 from typing import List
 
 # Third-party
@@ -8,13 +9,14 @@ import structlog
 from auth0.rest import Auth0Error
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Prefetch
-from django.http import HttpResponseRedirect
+from django.db.models import F, Prefetch
+from django.db.models.functions import Coalesce
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
 from django.utils.http import urlencode
-from django.views.generic.base import RedirectView
+from django.views.generic.base import RedirectView, View
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
@@ -72,6 +74,34 @@ class AdminAppList(AppList):
         return App.objects.all().prefetch_related(
             Prefetch("userapps", queryset=userapps, to_attr="app_admins")
         )
+
+
+class AppAdminCSV(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
+    context_object_name = "apps"
+    permission_required = "api.is_superuser"
+
+    def post(self, request, *args, **kwargs):
+        apps = (
+            App.objects.filter(userapps__is_admin=True)
+            .annotate(
+                username=F("userapps__user__username"),
+                email=Coalesce("userapps__user__justice_email", "userapps__user__email"),
+            )
+            .values("name", "username", "email")
+            .order_by("name")
+        )
+
+        response = HttpResponse(
+            content_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="app_admins.csv"'},
+        )
+
+        writer = csv.writer(response)
+        writer.writerow(["App Name", "Username", "Email"])
+        for app in apps:
+            writer.writerow([app["name"], app["username"], app["email"]])
+
+        return response
 
 
 class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):

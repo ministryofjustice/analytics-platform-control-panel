@@ -12,12 +12,17 @@
   {% if request.user.has_perm('api.list_app') %}
   {{ app_list(apps, request.user) }}
 
-    {% if request.user.has_perm('api.create_app') %}
-    <p class="govuk-body">
-      <a class="govuk-button" href="{{ url('create-app') }}">
-        Register an app
-      </a>
-    </p>
+    {% if request.user.has_perm('api.is_superuser') %}
+    <h2 class="govuk-heading-l">Export app admins</h2>
+    <p class="govuk-body">Export a list of app admins to a CSV file.</p>
+
+    <form action="{{ url("app-admin-csv") }}" method="post">
+      {{ csrf_input }}
+      <button class="govuk-button js-confirm"
+              data-confirm-message="Are you sure you want to export a list of app admins?">
+              Export Admins
+      </button>
+    </form>
     {% endif %}
   {% endif %}
 {% endblock %}

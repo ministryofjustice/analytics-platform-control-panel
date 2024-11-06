@@ -197,6 +197,10 @@ def list_all(client, *args):
     return client.get(reverse("list-all-apps"))
 
 
+def admin_csv(client, app, *args):
+    return client.post(reverse("app-admin-csv"))
+
+
 def detail(client, app, *args):
     return client.get(reverse("manage-app", kwargs={"pk": app.id}))
 
@@ -299,6 +303,9 @@ def set_textract(client, app, *args):
         (list_all, "superuser", status.HTTP_200_OK),
         (list_all, "app_admin", status.HTTP_403_FORBIDDEN),
         (list_all, "normal_user", status.HTTP_403_FORBIDDEN),
+        (admin_csv, "superuser", status.HTTP_200_OK),
+        (admin_csv, "app_admin", status.HTTP_403_FORBIDDEN),
+        (admin_csv, "normal_user", status.HTTP_403_FORBIDDEN),
         (detail, "superuser", status.HTTP_200_OK),
         (detail, "app_admin", status.HTTP_200_OK),
         (detail, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -350,6 +357,14 @@ def test_permissions(
         client.force_login(users[user])
         response = view(client, app, users, s3buckets, iam)
         assert response.status_code == expected_status
+
+
+def test_admin_csv(client, app, users):
+    client.force_login(users["superuser"])
+    response = admin_csv(client, app)
+    content = response.content.decode("utf-8")
+    assert "App Name,Username,Email" in content
+    assert app.name in content
 
 
 def disconnect_bucket(client, apps3bucket, *args, **kwargs):
