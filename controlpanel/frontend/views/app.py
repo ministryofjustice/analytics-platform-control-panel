@@ -77,7 +77,6 @@ class AdminAppList(AppList):
 
 
 class AppAdminCSV(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
-    context_object_name = "apps"
     permission_required = "api.is_superuser"
 
     def post(self, request, *args, **kwargs):
