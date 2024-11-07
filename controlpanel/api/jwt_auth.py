@@ -31,6 +31,11 @@ class AuthenticatedServiceClient:
         return False
 
     @property
+    def is_active(self):
+        # TODO remove this - it was added to test using _user_has_perm below
+        return False
+
+    @property
     def pk(self):
         return self.jwt_payload["sub"]
 
@@ -51,6 +56,10 @@ class AuthenticatedServiceClient:
 
     def has_perm(self, perm, obj=None):
         return False
+        # TODO dont think we should do the below as if it passed, it
+        # means checking scopes doesnt occur in JWTTokenResourcePermissions
+        # from django.contrib.auth.models import _user_has_perm
+        # return _user_has_perm(self, perm, obj)
 
 
 class JWTAuthentication(authentication.BaseAuthentication):

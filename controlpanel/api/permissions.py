@@ -29,6 +29,9 @@ class JWTTokenResourcePermissions(BasePermission):
             return False
 
     def has_object_permission(self, request, view, obj):
+        # TODO think this is the way to go - we can subclass this for apps
+        # and define our check e.g. compare the PK (client_id) with the M2M client_id
+        # stored against the app obj
         return hasattr(request.user, "is_client") and request.user.is_client
 
 
