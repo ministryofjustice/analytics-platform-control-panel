@@ -88,6 +88,7 @@ urlpatterns = [
     path("webapp-data/", views.WebappBucketList.as_view(), name="list-webapp-datasources"),
     path("webapps/", views.AppList.as_view(), name="list-apps"),
     path("webapps/all/", views.AdminAppList.as_view(), name="list-all-apps"),
+    path("webapps/all/admin-csv", views.AppAdminCSV.as_view(), name="app-admin-csv"),
     path("webapps/new/", views.CreateApp.as_view(), name="create-app"),
     path("webapps/<int:pk>/", views.AppDetail.as_view(), name="manage-app"),
     path("webapps/<int:pk>/delete/", views.DeleteApp.as_view(), name="delete-app"),

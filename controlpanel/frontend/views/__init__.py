@@ -14,6 +14,7 @@ from controlpanel.frontend.views.app import (
     AddAdmin,
     AddCustomers,
     AdminAppList,
+    AppAdminCSV,
     AppDetail,
     AppList,
     CreateApp,
