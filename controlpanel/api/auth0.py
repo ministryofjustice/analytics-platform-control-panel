@@ -46,6 +46,8 @@ class ExtendedAuth0(Auth0):
 
     DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
     DEFAULT_APP_TYPE = "regular_web"
+    M2M_APP_TYPE = "non_interactive"
+    M2M_GRANT_TYPES = ["client_credentials"]
 
     DEFAULT_CONNECTION_OPTION = "email"
 
@@ -159,7 +161,7 @@ class ExtendedAuth0(Auth0):
                 allowed_origins=[app_url],
                 app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
                 web_origins=[app_url],
-                grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
+                grant_types=ExtendedAuth0.M2M_APP_TYPE,
                 allowed_logout_urls=[app_url],
             )
         )
@@ -184,6 +186,23 @@ class ExtendedAuth0(Auth0):
 
         self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client, group
+
+    def setup_m2m_client(self, client_name, audience=None, scopes=None):
+        client = self.clients.create(
+            dict(
+                name=client_name,
+                app_type=ExtendedAuth0.M2M_APP_TYPE,
+                grant_types=ExtendedAuth0.M2M_GRANT_TYPES,
+            )
+        )
+        # authorise the client with the Control panel API
+        # TODO - decide how to pass audience and scopes
+        audience = audience or "urn:control-panel-dev-api"
+        scopes = scopes or ["retrieve:app"]
+        self.client_grants.create(
+            dict(client_id=client["client_id"], audience=audience, scope=scopes)
+        )
+        return client
 
     def add_group_members_by_emails(self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
