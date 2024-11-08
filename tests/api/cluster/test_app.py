@@ -210,7 +210,7 @@ def test_get_github_key_display_name(key, expected):
 
 @patch("controlpanel.api.cluster.App.remove_auth_settings")
 @patch("controlpanel.api.cluster.App.get_deployment_envs")
-def test_delete(get_deployment_envs_mock, remove_auth_settings_mock, app):
+def test_delete_http_error(get_deployment_envs_mock, remove_auth_settings_mock, app):
     app_cluster = cluster.App(app, github_api_token="testing")
     get_deployment_envs_mock.side_effect = requests.exceptions.HTTPError()
 
@@ -220,7 +220,7 @@ def test_delete(get_deployment_envs_mock, remove_auth_settings_mock, app):
 
 @patch("controlpanel.api.cluster.App.delete_env_var")
 @patch("controlpanel.api.cluster.App.delete_secret")
-def test_remove_auth_settings(delete_secret_mock, delete_env_var_mock, app):
+def test_remove_auth_settings_repo_error(delete_secret_mock, delete_env_var_mock, app):
     app_cluster = cluster.App(app)
     delete_secret_mock.side_effect = RepositoryNotFound("test")
 
