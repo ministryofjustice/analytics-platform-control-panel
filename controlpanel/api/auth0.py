@@ -194,18 +194,20 @@ class ExtendedAuth0(Auth0):
         # or if the audience is not valid
         # or if the scopes are not valid
         # or other failures
-        client = self.clients.create(
-            dict(
-                name=client_name,
-                app_type=ExtendedAuth0.M2M_APP_TYPE,
-                grant_types=ExtendedAuth0.M2M_GRANT_TYPES,
-            )
+        client, created = self.clients.get_or_create(
+            {
+                "name": client_name,
+                "app_type": ExtendedAuth0.M2M_APP_TYPE,
+                "grant_types": ExtendedAuth0.M2M_GRANT_TYPES,
+            }
         )
+        if not created:
+            return client
         # authorise the client with the Control panel API
         # TODO - decide how to pass audience
         audience = audience or settings.OIDC_CPANEL_API_AUDIENCE
         self.client_grants.create(
-            dict(client_id=client["client_id"], scope=scopes, audience=audience)
+            {"client_id": client["client_id"], "scope": scopes, "audience": audience}
         )
         return client
 
@@ -441,9 +443,11 @@ class ExtendedAPIMethods(object):
 
     def get_or_create(self, resource):
         result = self.search_first_match(resource)
+        created = False
         if result is None:
             result = self.create(resource)
-        return result
+            created = True
+        return result, created
 
 
 class ExtendedClients(ExtendedAPIMethods, Clients):
