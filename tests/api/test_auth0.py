@@ -42,7 +42,7 @@ def fixture_users_200(ExtendedAuth0):
 def fixture_users_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "create") as request:
         request.side_effect = [{"name": "create-testing-bob"}]
-        yield
+        yield request
 
 
 def test_get_all_with_more_than_100(ExtendedAuth0, fixture_users_200):
@@ -51,23 +51,27 @@ def test_get_all_with_more_than_100(ExtendedAuth0, fixture_users_200):
 
 
 def test_search_first_match_by_name_exist(ExtendedAuth0, fixture_users_200):
-    user = ExtendedAuth0.users.search_first_match(dict(name="Test User 1"))
+    user = ExtendedAuth0.users.search_first_match({"name": "Test User 1"})
     assert user["name"] == "Test User 1"
 
 
 def test_search_first_match_by_name_not(ExtendedAuth0, fixture_users_200):
-    user = ExtendedAuth0.users.search_first_match(dict(name="Different User"))
+    user = ExtendedAuth0.users.search_first_match({"name": "Different User"})
     assert user is None
 
 
 def test_get_or_create_new(ExtendedAuth0, fixture_users_200, fixture_users_create):
-    user = ExtendedAuth0.users.get_or_create(dict(name="bob"))
+    user, created = ExtendedAuth0.users.get_or_create({"name": "bob"})
     assert user["name"] == "create-testing-bob"
+    assert created is True
+    fixture_users_create.assert_called_once_with({"name": "bob"})
 
 
 def test_get_or_create_existed(ExtendedAuth0, fixture_users_200, fixture_users_create):
-    user = ExtendedAuth0.users.search_first_match(dict(name="Test User 1"))
+    user, created = ExtendedAuth0.users.get_or_create({"name": "Test User 1"})
     assert user["name"] == "Test User 1"
+    assert created is False
+    fixture_users_create.assert_not_called()
 
 
 @pytest.fixture
