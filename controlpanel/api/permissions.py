@@ -41,7 +41,8 @@ class AppJwtTokenResourcePermissions(JWTTokenResourcePermissions):
         if not super().has_object_permission(request, view, obj):
             return False
 
-        return request.user.pk == obj.m2m_client_id
+        client_id = request.user.pk.removesuffix("@clients")
+        return client_id == obj.m2m_client_id
 
 
 class IsSuperuser(BasePermission):
