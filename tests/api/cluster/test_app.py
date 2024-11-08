@@ -218,15 +218,21 @@ def test_delete_http_error(get_deployment_envs_mock, remove_auth_settings_mock, 
     assert remove_auth_settings_mock.call_count == 2
 
 
+@patch("controlpanel.api.cluster.App._get_auth0_instance")
 @patch("controlpanel.api.cluster.App.delete_env_var")
 @patch("controlpanel.api.cluster.App.delete_secret")
-def test_remove_auth_settings_repo_error(delete_secret_mock, delete_env_var_mock, app):
+def test_remove_auth_settings_repo_error(
+    delete_secret_mock, delete_env_var_mock, get_auth0_mock, app
+):
+    auth0_instance = MagicMock()
     app_cluster = cluster.App(app)
     delete_secret_mock.side_effect = RepositoryNotFound("test")
+    get_auth0_mock.return_value = auth0_instance
 
     app_cluster.remove_auth_settings(env_name="dev")
     delete_secret_mock.assert_called_once()
     delete_env_var_mock.assert_not_called()
+    auth0_instance.clear_up_app.assert_called_once()
 
 
 # TODO can this be removed?
