@@ -27,6 +27,7 @@ from controlpanel.frontend.views.app import (
     RevokeAdmin,
     RevokeAppAccess,
     SetupAppAuth0,
+    SetupM2MClient,
     RemoveAppAuth0,
     UpdateAppAccess,
     UpdateAppAuth0Connections,

@@ -1,0 +1,19 @@
+<section class="cpanel-section">
+    <h2 class="govuk-heading-m">Create API access</h2>
+
+    {% if not app.m2m_client_id %}
+        <p class="govuk-body">If you need to access the Control Panel API from your application, you can create a machine-to-machine client using the button below.</p>
+        <p class="govuk-body">See our user guidance for full details about access to the Control Panel API.</p>
+        <form action="{{ url('create-m2m-client', kwargs={ 'pk': app.id }) }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="env_name" value="{{ env_name }}">
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+                    data-confirm-message="Are you sure you want to create auth0 a client for this app?">
+            Create M2M client
+            </button>
+        </form>
+    {% else %}
+        <p>{{ app.m2m_client_id }}</p>
+    {% endif %}
+
+</section>

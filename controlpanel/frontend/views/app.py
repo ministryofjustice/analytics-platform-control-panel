@@ -455,6 +455,25 @@ class SetupAppAuth0(
         return super().post(request, *args, **kwargs)
 
 
+class SetupM2MClient(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    SingleObjectMixin,
+    RedirectView,
+):
+    http_method_names = ["post"]
+    permission_required = "api.update_app_settings"
+    model = App
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        cluster.App(app, self.request.user.github_api_token).create_m2m_client()
+        return super().post(request, *args, **kwargs)
+
+
 class RemoveAppAuth0(
     OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, RedirectView
 ):

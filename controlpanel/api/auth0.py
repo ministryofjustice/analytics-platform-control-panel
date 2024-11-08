@@ -161,7 +161,7 @@ class ExtendedAuth0(Auth0):
                 allowed_origins=[app_url],
                 app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
                 web_origins=[app_url],
-                grant_types=ExtendedAuth0.M2M_APP_TYPE,
+                grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
                 allowed_logout_urls=[app_url],
             )
         )
@@ -187,7 +187,13 @@ class ExtendedAuth0(Auth0):
         self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client, group
 
-    def setup_m2m_client(self, client_name, audience=None, scopes=None):
+    def setup_m2m_client(self, client_name, scopes, audience=None):
+        # TODO add exeption handling
+        # for example, if the client already exists
+        # or if the client grant already exists
+        # or if the audience is not valid
+        # or if the scopes are not valid
+        # or other failures
         client = self.clients.create(
             dict(
                 name=client_name,
@@ -196,11 +202,10 @@ class ExtendedAuth0(Auth0):
             )
         )
         # authorise the client with the Control panel API
-        # TODO - decide how to pass audience and scopes
-        audience = audience or "urn:control-panel-dev-api"
-        scopes = scopes or ["retrieve:app"]
+        # TODO - decide how to pass audience
+        audience = audience or settings.OIDC_CPANEL_API_AUDIENCE
         self.client_grants.create(
-            dict(client_id=client["client_id"], audience=audience, scope=scopes)
+            dict(client_id=client["client_id"], scope=scopes, audience=audience)
         )
         return client
 

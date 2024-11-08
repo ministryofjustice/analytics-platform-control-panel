@@ -276,6 +276,10 @@
 {% endif %}
 </section>
 
+{% if request.user.has_perm('api.update_app', app) %}
+  {% include "includes/webapp-create-api-client.html" %}
+{% endif %}
+
 {% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
   <form action="{{ url('set-bedrock-app', kwargs={ "pk": app.id }) }}" method="post">

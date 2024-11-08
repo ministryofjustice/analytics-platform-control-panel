@@ -392,6 +392,7 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"  # gitleaks:allow
     APP_ROLE_ARN = "APP_ROLE_ARN"
+    API_SCOPES = ["retrieve:app"]
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
@@ -692,6 +693,21 @@ class App(EntityResource):
             client=client,
         )
         return client, group
+
+    def create_m2m_client(self):
+        m2m_client = self._get_auth0_instance().setup_m2m_client(
+            client_name=self.app.auth0_client_name("m2m"),
+            scopes=self.API_SCOPES,
+        )
+        if not self.app.app_conf:
+            self.app.app_conf = {}
+
+        # save the client ID, which we can use to retrieve the client secret
+        self.app.app_conf["m2m"] = {
+            "client_id": m2m_client["client_id"],
+        }
+        self.app.save()
+        return m2m_client
 
     def remove_auth_settings(self, env_name):
         try:

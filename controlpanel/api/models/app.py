@@ -98,6 +98,10 @@ class App(TimeStampedModel):
     def iam_role_arn(self):
         return cluster.iam_arn(f"role/{self.iam_role_name}")
 
+    @property
+    def m2m_client_id(self):
+        return self.app_conf.get("m2m", {}).get("client_id")
+
     def get_group_id(self, env_name):
         return self.get_auth_client(env_name).get("group_id")
 
