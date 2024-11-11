@@ -23,7 +23,7 @@ from controlpanel.api.aws import (
     iam_arn,
     s3_arn,
 )
-from controlpanel.api.github import GithubAPI, extract_repo_info_from_url
+from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
 from controlpanel.api.kubernetes import KubernetesClient
 
 log = structlog.getLogger(__name__)
@@ -519,7 +519,13 @@ class App(EntityResource):
     def delete(self):
         self.aws_role_service.delete_role(self.iam_role_name)
         if self.github_api_token:
-            for env_name in self.get_deployment_envs():
+            try:
+                deployment_envs = self.get_deployment_envs()
+            except requests.exceptions.HTTPError:
+                # if repo doesn't exist, assume dev and prod exist in Auth0
+                deployment_envs = ["dev", "prod"]
+
+            for env_name in deployment_envs:
                 self.remove_auth_settings(env_name)
 
     def list_role_names(self):
@@ -670,12 +676,17 @@ class App(EntityResource):
         return client, group
 
     def remove_auth_settings(self, env_name):
-        secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
-        for secret_name in secrets_require_remove:
-            self.delete_secret(env_name, secret_name)
-        envs_require_remove = [App.AUTH0_DOMAIN]
-        for app_env_name in envs_require_remove:
-            self.delete_env_var(env_name, app_env_name)
+        try:
+            secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
+            for secret_name in secrets_require_remove:
+                self.delete_secret(env_name, secret_name)
+
+            envs_require_remove = [App.AUTH0_DOMAIN]
+            for app_env_name in envs_require_remove:
+                self.delete_env_var(env_name, app_env_name)
+        except RepositoryNotFound:
+            log.info("Repository not found. Skipping deletion of secrets and env vars")
+
         self._get_auth0_instance().clear_up_app(self.app.get_auth_client(env_name))
         self.app.clear_auth_settings(env_name)
 

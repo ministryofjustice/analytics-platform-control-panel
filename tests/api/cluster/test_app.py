@@ -4,10 +4,12 @@ from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import pytest
+import requests
 
 # First-party/Local
 from controlpanel.api import cluster, models
 from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY
+from controlpanel.api.github import RepositoryNotFound
 
 
 @pytest.fixture
@@ -204,6 +206,38 @@ def test_format_github_key_name(key, expected):
 )
 def test_get_github_key_display_name(key, expected):
     assert cluster.App(None).get_github_key_display_name(key) == expected
+
+
+@patch("controlpanel.api.cluster.App.remove_auth_settings")
+@patch("controlpanel.api.cluster.App.get_deployment_envs")
+def test_delete_http_error(get_deployment_envs_mock, remove_auth_settings_mock, app):
+    app_cluster = cluster.App(app, github_api_token="testing")
+    get_deployment_envs_mock.side_effect = requests.exceptions.HTTPError()
+
+    app_cluster.delete()
+    remove_auth_settings_mock.assert_has_calls(
+        [
+            call("dev"),
+            call("prod"),
+        ]
+    )
+
+
+@patch("controlpanel.api.cluster.App._get_auth0_instance")
+@patch("controlpanel.api.cluster.App.delete_env_var")
+@patch("controlpanel.api.cluster.App.delete_secret")
+def test_remove_auth_settings_repo_error(
+    delete_secret_mock, delete_env_var_mock, get_auth0_mock, app
+):
+    auth0_instance = MagicMock()
+    app_cluster = cluster.App(app)
+    delete_secret_mock.side_effect = RepositoryNotFound("test")
+    get_auth0_mock.return_value = auth0_instance
+
+    app_cluster.remove_auth_settings(env_name="dev")
+    delete_secret_mock.assert_called_once()
+    delete_env_var_mock.assert_not_called()
+    auth0_instance.clear_up_app.assert_called_once()
 
 
 # TODO can this be removed?
