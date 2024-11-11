@@ -215,10 +215,12 @@ def test_delete_http_error(get_deployment_envs_mock, remove_auth_settings_mock, 
     get_deployment_envs_mock.side_effect = requests.exceptions.HTTPError()
 
     app_cluster.delete()
-    remove_auth_settings_mock.assert_has_calls([
-        call("dev"),
-        call("prod"),
-    ])
+    remove_auth_settings_mock.assert_has_calls(
+        [
+            call("dev"),
+            call("prod"),
+        ]
+    )
 
 
 @patch("controlpanel.api.cluster.App._get_auth0_instance")
