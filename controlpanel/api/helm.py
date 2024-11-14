@@ -122,20 +122,22 @@ def _execute(*args, **kwargs):
 
 
 def should_raise_error(stderr, stdout):
+    lower_error_string = stderr.lower()
+    lower_out_string = stdout.lower()
+    if "error" not in lower_error_string and "error" not in lower_out_string:
+        return False
 
-    if should_ignore_error(stderr) or should_ignore_error(stdout):
+    if should_ignore_error(lower_error_string) or should_ignore_error(lower_out_string):
         return False
 
     return True
 
 
 def should_ignore_error(error_string):
-    lower_error_string = error_string.lower()
 
-    if "error" in lower_error_string:
-        for error in ERRORS_TO_IGNORE:
-            if error in lower_error_string:
-                return True
+    for error in ERRORS_TO_IGNORE:
+        if error in error_string:
+            return True
 
     return False
 

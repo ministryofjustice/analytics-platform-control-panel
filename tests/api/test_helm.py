@@ -263,11 +263,12 @@ def test_list_releases_with_namespace():
 
 
 @pytest.mark.parametrize(
-    "stderr, stdout, expected",
+    "stderr, stdout, raise_error",
     [
         ("Error: release: already exists", "All good", False),
         ("Error: Something that should throw", "All good", True),
-        ("", "Error: Something that should throw", True),
+        ("All good", "Error: Something that should throw", True),
+        ("All good", "All good", False),
         (
             (
                 "Error: uninstallation completed with 1 error(s): "
@@ -278,6 +279,6 @@ def test_list_releases_with_namespace():
         ),
     ],
 )
-def test_should_raise_error(stderr, stdout, expected):
+def test_should_raise_error(stderr, stdout, raise_error):
     result = helm.should_raise_error(stderr, stdout)
-    assert result == expected
+    assert result == raise_error
