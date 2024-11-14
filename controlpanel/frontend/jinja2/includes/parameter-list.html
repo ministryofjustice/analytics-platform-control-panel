@@ -14,8 +14,8 @@
   <tbody class="govuk-table__body">
   {%- for parameter in parameters %}
     <tr class="govuk-table__row">
-      <td class="govuk-table__cell">{{ parameter.role_name }}</td>
       <td class="govuk-table__cell">{{ parameter.key }}</td>
+      <td class="govuk-table__cell">{{ parameter.role_name }}</td>
       <td class="govuk-table__cell">{{ parameter.name }}</td>
       <td class="govuk-table__cell">
         <form method="POST" action="{{ url("delete-parameter", kwargs={ "pk": parameter.id }) }}">
