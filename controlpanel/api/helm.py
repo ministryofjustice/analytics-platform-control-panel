@@ -123,10 +123,7 @@ def _execute(*args, **kwargs):
 
 def should_raise_error(stderr, stdout):
 
-    if should_ignore_error(stderr):
-        return False
-
-    if should_ignore_error(stdout):
+    if should_ignore_error(stderr) or should_ignore_error(stdout):
         return False
 
     return True
