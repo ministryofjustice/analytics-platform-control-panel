@@ -14,6 +14,10 @@ log = structlog.getLogger(__name__)
 
 # Cache helm repository metadata for 5 minutes (expressed as seconds).
 CACHE_FOR_MINUTES = 5 * 60
+ERRORS_TO_IGNORE = [
+    "release: already exists",
+    "uninstallation completed with 1 error(s): uninstall: failed to purge the release",
+]
 
 
 def get_repo_path():
@@ -87,7 +91,7 @@ def _execute(*args, **kwargs):
             stderr = proc.stderr.read()
             log.warning(stderr)
             log.warning(stdout)
-            if "error" in stderr.lower() or "error" in stdout.lower():
+            if should_raise_error(stderr, stdout):
                 raise HelmError(stderr)
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
@@ -115,6 +119,28 @@ def _execute(*args, **kwargs):
         log.warning(stdout)
         raise HelmError(stderr)
     return proc
+
+
+def should_raise_error(stderr, stdout):
+
+    if should_ignore_error(stderr):
+        return False
+
+    if should_ignore_error(stdout):
+        return False
+
+    return True
+
+
+def should_ignore_error(error_string):
+    lower_error_string = error_string.lower()
+
+    if "error" in lower_error_string:
+        for error in ERRORS_TO_IGNORE:
+            if error in lower_error_string:
+                return True
+
+    return False
 
 
 def update_helm_repository(force=False):
