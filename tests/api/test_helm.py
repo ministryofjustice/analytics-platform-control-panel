@@ -270,7 +270,7 @@ def test_list_releases_with_namespace():
         ("", "Error: Something that should throw", True),
         (
             (
-                "Error: uninstallation completed with 1 error(s): " 
+                "Error: uninstallation completed with 1 error(s): "
                 "uninstall: Failed to purge the release"
             ),
             "All good",
