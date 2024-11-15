@@ -260,3 +260,25 @@ def test_list_releases_with_namespace():
             "qux",
         ]
         mock_execute.assert_called_once_with("list", "-aq", "--namespace", "some-ns")
+
+
+@pytest.mark.parametrize(
+    "stderr, stdout, raise_error",
+    [
+        ("Error: release: already exists", "All good", False),
+        ("Error: Something that should throw", "All good", True),
+        ("All good", "Error: Something that should throw", True),
+        ("All good", "All good", False),
+        (
+            (
+                "Error: uninstallation completed with 1 error(s): "
+                "uninstall: Failed to purge the release"
+            ),
+            "All good",
+            False,
+        ),
+    ],
+)
+def test_should_raise_error(stderr, stdout, raise_error):
+    result = helm.should_raise_error(stderr, stdout)
+    assert result == raise_error
