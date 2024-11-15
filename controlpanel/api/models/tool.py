@@ -35,6 +35,8 @@ class Tool(TimeStampedModel):
     version = models.CharField(max_length=100, blank=False)
     # The release is restricted to only certain users.
     is_restricted = models.BooleanField(default=False)
+    # The release is not visible to users.
+    is_deprecated = models.BooleanField(default=False)
     # The users for whom this release is visible
     target_users = models.ManyToManyField("User")
 

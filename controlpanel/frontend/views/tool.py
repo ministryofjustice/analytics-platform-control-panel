@@ -45,7 +45,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         * The current user is in the beta tester group for the tool.
         """
-        return Tool.objects.filter(Q(is_restricted=False) | Q(target_users=self.request.user.id))
+        return Tool.objects.exclude(is_deprecated=True).filter(
+            Q(is_restricted=False) | Q(target_users=self.request.user.id)
+        )
 
     def _locate_tool_box_by_chart_name(self, chart_name):
         tool_box = None

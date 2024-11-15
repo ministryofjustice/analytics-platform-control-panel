@@ -143,6 +143,27 @@ Create a new release of a tool in the analytical platform.
       "value": target_users if target_users else "",
       "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
     }) }}
+    {{ govukCheckboxes({
+      "fieldset": {
+        "legend": {
+          "text": "Deprecated",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'A flag to indicate a release is deprecated. This will make it unavailable for new users to deploy'
+      },
+      "name": "is_deprecated",
+      "items": [
+        {
+          "value": "True",
+          "text": "This release is deprecated",
+          "checked": form.is_deprecated.value(),
+        },
+      ],
+      "errorMessage": { "html": form.is_deprecated.errors|join(". ") } if form.is_deprecated.errors else {}
+    }) }}
     <button class="govuk-button">Update tool release</button>
   </form>
   {% endcall %}
