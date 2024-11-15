@@ -100,6 +100,8 @@ class App(TimeStampedModel):
 
     @property
     def m2m_client_id(self):
+        if self.app_conf is None:
+            return None
         return self.app_conf.get("m2m", {}).get("client_id")
 
     def get_group_id(self, env_name):

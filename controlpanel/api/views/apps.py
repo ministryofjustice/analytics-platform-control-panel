@@ -13,7 +13,7 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = App.objects.all()
 
     serializer_class = serializers.AppSerializer
-    permission_classes = (permissions.AppPermissions | permissions.JWTTokenResourcePermissions,)
+    permission_classes = (permissions.AppPermissions | permissions.AppJwtTokenResourcePermissions,)
     filter_backends = (DjangoFilterBackend,)
     http_method_names = ["get"]
     lookup_field = "name"
