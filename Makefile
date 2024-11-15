@@ -58,7 +58,7 @@ build-static:
 	python3 manage.py collectstatic
 
 build-css:
-	mkdir static
+	mkdir -p static
 	mkdir -p static/assets/fonts
 	mkdir -p static/assets/images
 	cp -R node_modules/govuk-frontend/dist/govuk/assets/fonts/. static/assets/fonts

@@ -23,6 +23,7 @@ $govuk-assets-path: "/static/assets/";
 @import "local/utilities";
 @import "local/secrets";
 @import "local/pagination";
+@import "local/tables";
 
 body {
     margin: 0;
