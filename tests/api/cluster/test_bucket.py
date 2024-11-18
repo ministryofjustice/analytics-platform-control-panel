@@ -61,6 +61,12 @@ def test_mark_for_archival(aws_tag_bucket, bucket):
     aws_tag_bucket.assert_called_with(bucket.name, {"to-archive": "true"})
 
 
+def test_apply_lifecycle_config(bucket):
+    with patch("controlpanel.api.aws.AWSBucket.apply_lifecycle_config") as apply_lifecycle_config:
+        cluster.S3Bucket(bucket).apply_lifecycle_config(bucket.name)
+        apply_lifecycle_config.assert_called_with(bucket.name)
+
+
 def test_aws_folder_exists(bucket):
     with patch("controlpanel.api.aws.AWSFolder.exists") as mock_exists:
         mock_exists.return_value = False

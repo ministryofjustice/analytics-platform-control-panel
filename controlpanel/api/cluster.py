@@ -741,6 +741,12 @@ class S3Bucket(EntityResource):
         )
         return self.aws_bucket_service.create(self.bucket.name, self.bucket.is_data_warehouse)
 
+    def apply_lifecycle_config(self, owner=AWSRoleCategory.user):
+        self.aws_bucket_service.assume_role_name = self.get_assume_role(
+            self.aws_service_class, aws_role_category=owner
+        )
+        return self.aws_bucket_service.apply_lifecycle_config(self.bucket.name)
+
     def mark_for_archival(self):
         self.aws_bucket_service.assume_role_name = self.get_assume_role(
             self.aws_service_class, aws_role_category=self._get_assume_role_category()

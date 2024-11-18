@@ -10,6 +10,11 @@ urlpatterns = [
     path("oidc/entraid/auth/", views.EntraIdAuthView.as_view(), name="entraid-auth"),
     path("oidc/logout/", views.LogoutView.as_view(), name="oidc_logout"),
     path("datasources/", views.AdminBucketList.as_view(), name="list-all-datasources"),
+    path(
+        "datasources/update-lifecycle-config",
+        views.UpdateDatasourceLifecycleConfig.as_view(),
+        name="update-lifecycle",
+    ),
     path("datasources/<int:pk>/", views.BucketDetail.as_view(), name="manage-datasource"),
     path(
         "datasources/<int:pk>/access/",
