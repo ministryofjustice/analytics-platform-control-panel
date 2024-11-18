@@ -501,6 +501,19 @@ class App(EntityResource):
         )
         return json.loads(statement)
 
+    @property
+    def xacct_trust_statement(self):
+        """
+        Builds an assume role statement for a Cloud Platform IAM role
+        """
+        statement = render_to_string(
+            template_name="assume_roles/cloud_platform_xacct.json",
+            context={
+                "app_role": self.app.role
+            },
+        )
+        return json.loads(statement)
+
     def create_iam_role(self):
         assume_role_policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
         assume_role_policy["Statement"].append(self.oidc_provider_statement)
