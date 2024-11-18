@@ -508,9 +508,7 @@ class App(EntityResource):
         """
         statement = render_to_string(
             template_name="assume_roles/cloud_platform_xacct.json",
-            context={
-                "app_role": self.app.role
-            },
+            context={"app_role": self.app.role},
         )
         return json.loads(statement)
 
