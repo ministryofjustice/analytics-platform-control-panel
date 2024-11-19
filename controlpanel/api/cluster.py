@@ -392,7 +392,7 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"  # gitleaks:allow
     APP_ROLE_ARN = "APP_ROLE_ARN"
-    API_SCOPES = ["retrieve:app"]
+    API_SCOPES = ["retrieve:app", "customers:app", "add_customers:app"]
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
