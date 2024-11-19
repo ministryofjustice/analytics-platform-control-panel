@@ -187,13 +187,7 @@ class ExtendedAuth0(Auth0):
         self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client, group
 
-    def setup_m2m_client(self, client_name, scopes, audience=None):
-        # TODO add exeption handling
-        # for example, if the client already exists
-        # or if the client grant already exists
-        # or if the audience is not valid
-        # or if the scopes are not valid
-        # or other failures
+    def setup_m2m_client(self, client_name, scopes):
         client, created = self.clients.get_or_create(
             {
                 "name": client_name,
@@ -203,12 +197,21 @@ class ExtendedAuth0(Auth0):
         )
         if not created:
             return client
-        # authorise the client with the Control panel API
-        # TODO - decide how to pass audience
-        audience = audience or settings.OIDC_CPANEL_API_AUDIENCE
-        self.client_grants.create(
-            {"client_id": client["client_id"], "scope": scopes, "audience": audience}
-        )
+
+        try:
+            body = {
+                "client_id": client["client_id"],
+                "scope": scopes,
+                "audience": settings.OIDC_CPANEL_API_AUDIENCE,
+            }
+            self.client_grants.create(body=body)
+        except exceptions.Auth0Error as error:
+            # if the client grant already exists, it will raise 409 error, so we can ignore it.
+            # otherwise, raise the error
+            if error.status_code != 409:
+                self.clients.delete(client["client_id"])
+                raise Auth0Error(error.__str__(), code=error.status_code)
+
         return client
 
     def rotate_m2m_client_secret(self, client_id):

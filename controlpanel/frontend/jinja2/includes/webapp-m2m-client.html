@@ -1,7 +1,7 @@
 <section class="cpanel-section">
     <h2 class="govuk-heading-m">Machine-to-machine API access</h2>
 
-    {% if app.m2m_client_id %}
+    {% if not app.m2m_client_id %}
         <p class="govuk-body">If your app needs access to the Control Panel API, you can create a machine-to-machine client using the button below.</p>
         <form action="{{ url('create-m2m-client', kwargs={ 'pk': app.id }) }}" method="post">
             {{ csrf_input }}
