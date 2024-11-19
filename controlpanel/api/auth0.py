@@ -211,6 +211,9 @@ class ExtendedAuth0(Auth0):
         )
         return client
 
+    def rotate_m2m_client_secret(self, client_id):
+        return self.clients.rotate_secret(client_id)
+
     def add_group_members_by_emails(self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
         self.groups.add_group_members(user_ids=user_ids, group_id=group_id, group_name=group_name)

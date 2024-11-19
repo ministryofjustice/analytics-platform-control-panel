@@ -103,9 +103,14 @@ urlpatterns = [
         name="create-auth0-client",
     ),
     path(
-        "webapps/<int:pk>/create_m2m_client/",
+        "webapps/<int:pk>/create-m2m-client/",
         views.SetupM2MClient.as_view(),
         name="create-m2m-client",
+    ),
+    path(
+        "webapps/<int:pk>/refresh-m2m-client/",
+        views.RotateM2MCredentials.as_view(),
+        name="rotate-m2m-credentials",
     ),
     path(
         "webapps/<int:pk>/remove_auth0_client/",

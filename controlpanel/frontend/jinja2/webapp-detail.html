@@ -277,7 +277,7 @@
 </section>
 
 {% if request.user.has_perm('api.update_app', app) %}
-  {% include "includes/webapp-create-api-client.html" %}
+  {% include "includes/webapp-m2m-client.html" %}
 {% endif %}
 
 {% if request.user.has_perm('api.add_superuser') %}

@@ -709,6 +709,12 @@ class App(EntityResource):
         self.app.save()
         return m2m_client
 
+    def rotate_m2m_client_secret(self):
+        m2m_client = self._get_auth0_instance().rotate_m2m_client_secret(
+            client_id=self.app.app_conf["m2m"]["client_id"]
+        )
+        return m2m_client
+
     def remove_auth_settings(self, env_name):
         try:
             secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]
