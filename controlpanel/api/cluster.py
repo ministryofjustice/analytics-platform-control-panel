@@ -718,6 +718,14 @@ class App(EntityResource):
             self.app.save()
         return m2m_client
 
+    def delete_m2m_client(self):
+        response = self._get_auth0_instance().clients.delete(
+            id=self.app.app_conf["m2m"]["client_id"]
+        )
+        self.app.app_conf.pop("m2m", None)
+        self.app.save()
+        return response
+
     def remove_auth_settings(self, env_name):
         try:
             secrets_require_remove = [App.AUTH0_CLIENT_ID, App.AUTH0_CLIENT_SECRET]

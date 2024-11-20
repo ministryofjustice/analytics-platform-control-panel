@@ -501,6 +501,15 @@ class RotateM2MCredentials(SetupM2MClient):
         return self.get(request, *args, **kwargs)
 
 
+class DeleteM2MClient(SetupM2MClient):
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        cluster.App(app, self.request.user.github_api_token).delete_m2m_client()
+        messages.success(self.request, "Successfully deleted machine-to-machine client")
+        return self.get(request, *args, **kwargs)
+
+
 class RemoveAppAuth0(
     OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, RedirectView
 ):

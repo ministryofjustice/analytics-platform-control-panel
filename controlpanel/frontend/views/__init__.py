@@ -29,6 +29,7 @@ from controlpanel.frontend.views.app import (
     SetupAppAuth0,
     SetupM2MClient,
     RotateM2MCredentials,
+    DeleteM2MClient,
     RemoveAppAuth0,
     UpdateAppAccess,
     UpdateAppAuth0Connections,

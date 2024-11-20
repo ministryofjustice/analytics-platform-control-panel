@@ -113,6 +113,11 @@ urlpatterns = [
         name="rotate-m2m-credentials",
     ),
     path(
+        "webapps/<int:pk>/delete-m2m-client/",
+        views.DeleteM2MClient.as_view(),
+        name="delete-m2m-client",
+    ),
+    path(
         "webapps/<int:pk>/remove_auth0_client/",
         views.RemoveAppAuth0.as_view(),
         name="remove-auth0-client",
