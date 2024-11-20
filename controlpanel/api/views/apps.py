@@ -22,14 +22,13 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = App.objects.all()
 
     serializer_class = serializers.AppSerializer
-    permission_classes = (permissions.AppPermissions | permissions.AppJwtTokenResourcePermissions,)
+    permission_classes = (permissions.AppPermissions | permissions.AppJwtPermissions,)
     filter_backends = (DjangoFilterBackend,)
     lookup_field = "name"
 
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
-    # TODO need to add extra permissions app:customers for these to work
     @action(detail=True, methods=["get"])
     def customers(self, request, *args, **kwargs):
         app = self.get_object()

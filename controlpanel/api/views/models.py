@@ -26,7 +26,7 @@ class AppViewSet(viewsets.ModelViewSet):
 
     serializer_class = serializers.AppSerializer
     filter_backends = (DjangoFilterBackend,)
-    permission_classes = (permissions.AppPermissions | permissions.AppJwtTokenResourcePermissions,)
+    permission_classes = (permissions.AppPermissions | permissions.AppJwtPermissions,)
     filterset_fields = ("name", "repo_url", "slug")
     lookup_field = "res_id"
 
