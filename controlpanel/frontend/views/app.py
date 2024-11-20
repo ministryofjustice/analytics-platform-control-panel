@@ -455,32 +455,39 @@ class SetupAppAuth0(
         return super().post(request, *args, **kwargs)
 
 
-class SetupM2MClient(
+class M2MClientMixin(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     SingleObjectMixin,
-    RedirectView,
 ):
     http_method_names = ["post"]
     permission_required = "api.update_app_settings"
     model = App
 
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return super().get_queryset()
+        return self.model.objects.filter(userapps__user=self.request.user, userapps__is_admin=True)
+
     def get_redirect_url(self, *args, **kwargs):
         return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
+
+
+class SetupM2MClient(M2MClientMixin, RedirectView):
 
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         client = cluster.App(app, self.request.user.github_api_token).create_m2m_client()
         messages.success(
             self.request,
-            f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely.",  # noqa
+            f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again..",  # noqa
         )
         messages.info(self.request, f"Client ID: {client['client_id']}")
         messages.info(self.request, f"Client Secret: {client['client_secret']}")
         return super().post(request, *args, **kwargs)
 
 
-class RotateM2MCredentials(SetupM2MClient):
+class RotateM2MCredentials(M2MClientMixin, RedirectView):
 
     def post(self, request, *args, **kwargs):
         app = self.get_object()
@@ -498,16 +505,16 @@ class RotateM2MCredentials(SetupM2MClient):
         )
         messages.info(self.request, f"Client ID: {client['client_id']}")
         messages.info(self.request, f"Client Secret: {client['client_secret']}")
-        return self.get(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
 
 
-class DeleteM2MClient(SetupM2MClient):
+class DeleteM2MClient(M2MClientMixin, RedirectView):
 
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         cluster.App(app, self.request.user.github_api_token).delete_m2m_client()
         messages.success(self.request, "Successfully deleted machine-to-machine client")
-        return self.get(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
 
 
 class RemoveAppAuth0(
