@@ -464,11 +464,6 @@ class M2MClientMixin(
     permission_required = "api.update_app_settings"
     model = App
 
-    def get_queryset(self):
-        if self.request.user.is_superuser:
-            return super().get_queryset()
-        return self.model.objects.filter(userapps__user=self.request.user, userapps__is_admin=True)
-
     def get_redirect_url(self, *args, **kwargs):
         return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
 

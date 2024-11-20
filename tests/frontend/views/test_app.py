@@ -363,13 +363,13 @@ def delete_m2m_client(client, app, *args):
         (set_textract, "normal_user", status.HTTP_403_FORBIDDEN),
         (setup_m2m_client, "superuser", status.HTTP_302_FOUND),
         (setup_m2m_client, "app_admin", status.HTTP_302_FOUND),
-        (setup_m2m_client, "normal_user", status.HTTP_404_NOT_FOUND),
+        (setup_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
         (rotate_m2m_credentials, "superuser", status.HTTP_302_FOUND),
         (rotate_m2m_credentials, "app_admin", status.HTTP_302_FOUND),
-        (rotate_m2m_credentials, "normal_user", status.HTTP_404_NOT_FOUND),
+        (rotate_m2m_credentials, "normal_user", status.HTTP_403_FORBIDDEN),
         (delete_m2m_client, "superuser", status.HTTP_302_FOUND),
         (delete_m2m_client, "app_admin", status.HTTP_302_FOUND),
-        (delete_m2m_client, "normal_user", status.HTTP_404_NOT_FOUND),
+        (delete_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
