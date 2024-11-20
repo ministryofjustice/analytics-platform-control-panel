@@ -475,7 +475,7 @@ class SetupM2MClient(M2MClientMixin, RedirectView):
         client = cluster.App(app, self.request.user.github_api_token).create_m2m_client()
         messages.success(
             self.request,
-            f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again..",  # noqa
+            f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
         )
         messages.info(self.request, f"Client ID: {client['client_id']}")
         messages.info(self.request, f"Client Secret: {client['client_secret']}")

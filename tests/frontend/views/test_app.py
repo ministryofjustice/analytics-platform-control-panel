@@ -8,10 +8,10 @@ import pytest
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
-from django.contrib.messages import get_messages
+from django.contrib.messages import Message, constants, get_messages
 from django.urls import reverse
 from model_bakery import baker
-from pytest_django.asserts import assertQuerySetEqual
+from pytest_django.asserts import assertMessages, assertQuerySetEqual
 from rest_framework import status
 
 # First-party/Local
@@ -869,4 +869,34 @@ def test_update_app_ip_allowlist_fails(app):
             ip_allowlist__allowed_ip_ranges=new_allowlist.allowed_ip_ranges
         ).exists()
         is False
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_create_m2m_client_success(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("create-m2m-client", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.create_m2m_client") as m2m_client:
+        m2m_client.return_value = {
+            "client_id": "test-client-id",
+            "client_secret": "test-client-secret",
+        }
+        response = client.post(url)
+
+    m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.SUCCESS,
+                message="Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
+            ),
+            Message(level=constants.INFO, message="Client ID: test-client-id"),
+            Message(level=constants.INFO, message="Client Secret: test-client-secret"),
+        ],
+        ordered=True,
     )
