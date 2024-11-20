@@ -711,7 +711,7 @@ class App(EntityResource):
 
     def rotate_m2m_client_secret(self):
         m2m_client = self._get_auth0_instance().rotate_m2m_client_secret(
-            client_id=self.app.app_conf["m2m"]["client_id"]
+            client_id=self.app.m2m_client_id
         )
         if not m2m_client:
             self.app.app_conf.pop("m2m", None)
@@ -719,9 +719,7 @@ class App(EntityResource):
         return m2m_client
 
     def delete_m2m_client(self):
-        response = self._get_auth0_instance().clients.delete(
-            id=self.app.app_conf["m2m"]["client_id"]
-        )
+        response = self._get_auth0_instance().clients.delete(id=self.app.m2m_client_id)
         self.app.app_conf.pop("m2m", None)
         self.app.save()
         return response

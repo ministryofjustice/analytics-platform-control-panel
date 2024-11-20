@@ -294,6 +294,22 @@ def set_textract(client, app, *args):
     return client.post(reverse("set-textract-app", kwargs=kwargs), data)
 
 
+@patch("controlpanel.api.cluster.App.create_m2m_client")
+def setup_m2m_client(client, app, *args):
+    kwargs = {"pk": app.id}
+    return client.post(reverse("create-m2m-client", kwargs=kwargs))
+
+
+def rotate_m2m_credentials(client, app, *args):
+    kwargs = {"pk": app.id}
+    return client.post(reverse("rotate-m2m-credentials", kwargs=kwargs))
+
+
+def delete_m2m_client(client, app, *args):
+    kwargs = {"pk": app.id}
+    return client.post(reverse("delete-m2m-client", kwargs=kwargs))
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -345,6 +361,15 @@ def set_textract(client, app, *args):
         (set_textract, "superuser", status.HTTP_302_FOUND),
         (set_textract, "app_admin", status.HTTP_403_FORBIDDEN),
         (set_textract, "normal_user", status.HTTP_403_FORBIDDEN),
+        (setup_m2m_client, "superuser", status.HTTP_302_FOUND),
+        (setup_m2m_client, "app_admin", status.HTTP_302_FOUND),
+        (setup_m2m_client, "normal_user", status.HTTP_404_NOT_FOUND),
+        (rotate_m2m_credentials, "superuser", status.HTTP_302_FOUND),
+        (rotate_m2m_credentials, "app_admin", status.HTTP_302_FOUND),
+        (rotate_m2m_credentials, "normal_user", status.HTTP_404_NOT_FOUND),
+        (delete_m2m_client, "superuser", status.HTTP_302_FOUND),
+        (delete_m2m_client, "app_admin", status.HTTP_302_FOUND),
+        (delete_m2m_client, "normal_user", status.HTTP_404_NOT_FOUND),
     ],
 )
 def test_permissions(
