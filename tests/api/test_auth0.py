@@ -633,3 +633,70 @@ def test_setup_m2m_client(ExtendedAuth0):
             "audience": "test-audience",
         }
     )
+
+
+def test_setup_m2m_client_already_exists(ExtendedAuth0):
+    client_name = "test_m2m_client"
+    client_id = "test_m2m_client_id"
+    scopes = ["test:scope"]
+
+    with (
+        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
+        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+    ):
+        client_create.return_value = (
+            {
+                "client_id": client_id,
+                "name": client_name,
+            },
+            False,
+        )
+        ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
+
+    client_create.assert_called_once_with(
+        {
+            "name": client_name,
+            "app_type": "non_interactive",
+            "grant_types": ["client_credentials"],
+        }
+    )
+    client_grants_create.assert_not_called()
+
+
+def test_setup_m2m_client_grant_error(ExtendedAuth0):
+    client_name = "test_m2m_client"
+    client_id = "test_m2m_client_id"
+    scopes = ["test:scope"]
+
+    with (
+        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
+        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+        patch.object(ExtendedAuth0.clients, "delete") as client_delete,
+    ):
+        client_create.return_value = (
+            {
+                "client_id": client_id,
+                "name": client_name,
+            },
+            True,
+        )
+        client_grants_create.side_effect = exceptions.Auth0Error(400, 400, "Error")
+
+        with pytest.raises(auth0.Auth0Error, match="400: Error"):
+            ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
+
+    client_create.assert_called_once_with(
+        {
+            "name": client_name,
+            "app_type": "non_interactive",
+            "grant_types": ["client_credentials"],
+        }
+    )
+    client_grants_create.assert_called_once_with(
+        body={
+            "client_id": client_id,
+            "scope": scopes,
+            "audience": "test-audience",
+        }
+    )
+    client_delete.assert_called_once_with(client_id)
