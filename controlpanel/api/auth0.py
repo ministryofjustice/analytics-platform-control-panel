@@ -191,7 +191,7 @@ class ExtendedAuth0(Auth0):
         client, created = self.clients.get_or_create(
             {
                 "name": client_name,
-                "app_type": ExtendedAuth0.M2M_APP_TYPE,
+                "app_type": "non_interactive",
                 "grant_types": ExtendedAuth0.M2M_GRANT_TYPES,
             }
         )

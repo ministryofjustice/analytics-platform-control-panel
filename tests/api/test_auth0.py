@@ -599,3 +599,37 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                 },
             )
         connection_create.assert_called_once_with(ANY)
+
+
+def test_setup_m2m_client(ExtendedAuth0):
+    client_name = "test_m2m_client"
+    client_id = "test_m2m_client_id"
+    scopes = ["test:scope"]
+
+    with (
+        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
+        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+    ):
+        client_create.return_value = (
+            {
+                "client_id": client_id,
+                "name": client_name,
+            },
+            True,
+        )
+        ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
+
+    client_create.assert_called_once_with(
+        {
+            "name": client_name,
+            "app_type": "non_interactive",
+            "grant_types": ["client_credentials"],
+        }
+    )
+    client_grants_create.assert_called_once_with(
+        body={
+            "client_id": client_id,
+            "scope": scopes,
+            "audience": "test-audience",
+        }
+    )
