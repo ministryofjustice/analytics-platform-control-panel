@@ -508,7 +508,7 @@ class DeleteM2MClient(M2MClientMixin, RedirectView):
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         cluster.App(app, self.request.user.github_api_token).delete_m2m_client()
-        messages.success(self.request, "Successfully deleted machine-to-machine client")
+        messages.success(self.request, "Successfully deleted machine-to-machine client.")
         return super().post(request, *args, **kwargs)
 
 

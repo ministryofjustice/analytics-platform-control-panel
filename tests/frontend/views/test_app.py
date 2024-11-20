@@ -900,3 +900,82 @@ def test_create_m2m_client_success(app, users, client, user):
         ],
         ordered=True,
     )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_rotate_m2m_credentials_success(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("rotate-m2m-credentials", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.rotate_m2m_client_secret") as m2m_client:
+        m2m_client.return_value = {
+            "client_id": "test-client-id",
+            "client_secret": "test-client-secret",
+        }
+        response = client.post(url)
+
+    m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.SUCCESS,
+                message="Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
+            ),
+            Message(level=constants.INFO, message="Client ID: test-client-id"),
+            Message(level=constants.INFO, message="Client Secret: test-client-secret"),
+        ],
+        ordered=True,
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_rotate_m2m_credentials_fails(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("rotate-m2m-credentials", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.rotate_m2m_client_secret") as m2m_client:
+        m2m_client.return_value = None
+        response = client.post(url)
+
+    m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.ERROR,
+                message="Failed to find a machine-to-machine client for this app, please try creating a new one.",  # noqa
+            ),
+        ],
+        ordered=True,
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_delete_m2m_client_success(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("delete-m2m-client", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.delete_m2m_client") as delete_m2m_client:
+        response = client.post(url)
+
+    delete_m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.SUCCESS,
+                message="Successfully deleted machine-to-machine client.",  # noqa
+            ),
+        ],
+        ordered=True,
+    )
