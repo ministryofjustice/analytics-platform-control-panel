@@ -713,6 +713,9 @@ class App(EntityResource):
         m2m_client = self._get_auth0_instance().rotate_m2m_client_secret(
             client_id=self.app.app_conf["m2m"]["client_id"]
         )
+        if not m2m_client:
+            self.app.app_conf.pop("m2m", None)
+            self.app.save()
         return m2m_client
 
     def remove_auth_settings(self, env_name):

@@ -485,9 +485,16 @@ class RotateM2MCredentials(SetupM2MClient):
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         client = cluster.App(app, self.request.user.github_api_token).rotate_m2m_client_secret()
+        if not client:
+            messages.error(
+                self.request,
+                "Failed to find a machine-to-machine client for this app, please try creating a new one.",  # noqa
+            )
+            return self.get(request, *args, **kwargs)
+
         messages.success(
             self.request,
-            f"Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely.",  # noqa
+            f"Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
         )
         messages.info(self.request, f"Client ID: {client['client_id']}")
         messages.info(self.request, f"Client Secret: {client['client_secret']}")

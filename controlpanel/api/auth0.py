@@ -215,7 +215,12 @@ class ExtendedAuth0(Auth0):
         return client
 
     def rotate_m2m_client_secret(self, client_id):
-        return self.clients.rotate_secret(client_id)
+        try:
+            return self.clients.rotate_secret(client_id)
+        except exceptions.Auth0Error as error:
+            if error.status_code == 404:
+                return None
+            raise Auth0Error(error.__str__(), code=error.status_code)
 
     def add_group_members_by_emails(self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)

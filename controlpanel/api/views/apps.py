@@ -35,7 +35,6 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         customers = app.customers(request.GET.get("env_name", ""))
         serializer = self.get_serializer(data=customers, many=True)
         serializer.is_valid()
-
         return Response(serializer.data)
 
     @customers.mapping.post
