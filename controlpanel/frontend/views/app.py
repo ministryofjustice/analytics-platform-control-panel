@@ -214,6 +214,13 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
+    
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["show_cloud_platform_assume_role"] = (
+            settings.features.cloud_platform_assume_role.enabled
+        )
+        return context
 
 
 class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
@@ -255,13 +262,6 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
             form.add_error("connections", str(ex))
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
-
-    def get_context_data(self, *args, **kwargs):
-        context = super().get_context_data(*args, **kwargs)
-        context["show_cloud_platform_assume_role"] = (
-            settings.features.cloud_platform_assume_role.enabled
-        )
-        return context
 
 
 class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
