@@ -1,6 +1,6 @@
 # Standard library
 import json
-from unittest.mock import ANY, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 # Third-party
 import pytest
@@ -700,3 +700,26 @@ def test_setup_m2m_client_grant_error(ExtendedAuth0):
         }
     )
     client_delete.assert_called_once_with(client_id)
+
+
+@pytest.mark.parametrize(
+    "side_effect, expected",
+    [
+        (MagicMock(return_value=None), None),
+        (exceptions.Auth0Error(404, 404, "Error"), None),
+        (exceptions.Auth0Error(400, 400, "Error"), "400: Error"),
+        (exceptions.Auth0Error(401, 401, "Error"), "401: Error"),
+        (exceptions.Auth0Error(403, 403, "Error"), "403: Error"),
+        (exceptions.Auth0Error(429, 429, "Error"), "429: Error"),
+    ],
+)
+def test_rotate_m2m_client_secret(ExtendedAuth0, side_effect, expected):
+
+    with patch.object(ExtendedAuth0.clients, "rotate_secret") as rotate_secret:
+        rotate_secret.side_effect = side_effect
+
+        if expected is None:
+            assert ExtendedAuth0.rotate_m2m_client_secret("test_m2m_client_id") is None
+        else:
+            with pytest.raises(auth0.Auth0Error, match=expected):
+                ExtendedAuth0.rotate_m2m_client_secret("test_m2m_client_id")
