@@ -256,6 +256,13 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["show_cloud_platform_assume_role"] = (
+            settings.features.cloud_platform_assume_role.enabled
+        )
+        return context
+
 
 class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
