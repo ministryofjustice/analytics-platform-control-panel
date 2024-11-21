@@ -69,7 +69,10 @@ validate_auth0_client_id = RegexValidator(
 
 validate_aws_role_arn = RegexValidator(
     regex=r"^arn:aws:iam::[0-9]{12}:role/[a-zA-Z0-9-_]+$",
-    message="ARN is invalid. Check AWS ARN format (for example, 'arn:aws:iam::123456789012:role/role_name')",
+    message=(
+        "ARN is invalid. Check AWS ARN format " 
+        "(for example, 'arn:aws:iam::123456789012:role/role_name')"
+    )
 )
 
 
