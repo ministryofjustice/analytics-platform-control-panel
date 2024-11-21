@@ -139,6 +139,10 @@ class CreateAppForm(forms.Form):
         required=False,
     )
     namespace = forms.CharField(required=True, max_length=63)
+    allow_cloud_platform_assume_role = forms.BooleanField(initial=False, required=False)
+    cloud_platform_role_arn = forms.CharField(
+        required=False, max_length=130, validators=[validators.validate_aws_role_arn]
+    )
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)

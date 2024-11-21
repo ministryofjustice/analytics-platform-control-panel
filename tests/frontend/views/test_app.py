@@ -738,6 +738,26 @@ def test_app_settings_permission(client, app, users, repos_with_auth, user, can_
             assert "Edit" not in auth_item_ui.text
 
 
+def test_register_app_with_xacct_policy(client, users):
+    test_app_name = "test_app_with_xacct_policy"
+    assert App.objects.filter(name=test_app_name).count() == 0
+    client.force_login(users["superuser"])
+    data = dict(
+        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
+        namespace="test-app-namespace",
+        connect_bucket="later",
+        allow_cloud_platform_assume_role=True,
+        cloud_platform_role_arn="arn:aws:iam::123456789012:role/test_role",
+    )
+    response = client.post(reverse("create-app"), data)
+
+    assert response.status_code == 302
+    assert App.objects.filter(name=test_app_name).count() == 1
+    created_app = App.objects.filter(name=test_app_name).first()
+    assert created_app.cloud_platform_role_arn == "arn:aws:iam::123456789012:role/test_role"
+    assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
+
+
 def test_register_app_with_creating_datasource(client, users):
     test_app_name = "test_app_with_creating_datasource"
     test_bucket_name = "test-bucket"
