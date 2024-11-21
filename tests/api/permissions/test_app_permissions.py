@@ -10,11 +10,16 @@ from django.contrib.auth import get_user
 from model_bakery import baker
 from rest_framework import status
 from rest_framework.reverse import reverse
+from rest_framework.test import APIClient
 from rules import perm_exists
+
+# First-party/Local
+from controlpanel.api.jwt_auth import AuthenticatedServiceClient
+from controlpanel.api.permissions import AppJwtPermissions
 
 
 @pytest.fixture
-def users(users):
+def users(users, authenticated_client, invalid_client_sub, invalid_client_scope):
     users.update(
         {
             "app_admin": baker.make(
@@ -27,6 +32,9 @@ def users(users):
                 username="testing",
                 auth0_id="github|user_5",
             ),
+            "authenticated_client": authenticated_client,
+            "invalid_client_sub": invalid_client_sub,
+            "invalid_client_scope": invalid_client_scope,
         }
     )
     return users
@@ -34,7 +42,7 @@ def users(users):
 
 @pytest.fixture(autouse=True)
 def app(users):
-    app = baker.make("api.App", name="Test App 1")
+    app = baker.make("api.App", name="Test App 1", app_conf={"m2m": {"client_id": "abc123"}})
     user = users["app_admin"]
     baker.make("api.UserApp", user=user, app=app, is_admin=True)
 
@@ -47,6 +55,33 @@ def app(users):
 def authz():
     with patch("controlpanel.api.auth0.ExtendedAuth0") as authz:
         yield authz()
+
+
+@pytest.fixture
+def authenticated_client():
+    payload = {
+        "sub": "abc123@clients",
+        "scope": "retrieve:app customers:app add_customers:app",
+    }
+    return AuthenticatedServiceClient(jwt_payload=payload)
+
+
+@pytest.fixture
+def invalid_client_sub():
+    payload = {
+        "sub": "invalid@clients",
+        "scope": "retrieve:app customers:app add_customers:app",
+    }
+    return AuthenticatedServiceClient(jwt_payload=payload)
+
+
+@pytest.fixture
+def invalid_client_scope():
+    payload = {
+        "sub": "invalid@clients",
+        "scope": "foo:app bar:app",
+    }
+    return AuthenticatedServiceClient(jwt_payload=payload)
 
 
 def app_list(client, *args):
@@ -72,6 +107,22 @@ def app_update(client, app, *args):
         reverse("app-detail", (app.res_id,)),
         json.dumps(data),
         content_type="application/json",
+    )
+
+
+def app_by_name_detail(client, app, *args):
+    return client.get(reverse("apps-by-name-detail", kwargs={"name": app.name}))
+
+
+def app_by_name_customers(client, app, *args):
+    return client.get(reverse("apps-by-name-customers", kwargs={"name": app.name}))
+
+
+def app_by_name_add_customers(client, app, *args):
+    data = {"name": app.name, "repo_url": app.repo_url, "emails": []}
+    return client.post(
+        reverse("apps-by-name-customers", kwargs={"name": app.name}),
+        data,
     )
 
 
@@ -105,12 +156,20 @@ def test_authenticated_user_has_basic_perms(client, users):
         (app_delete, "app_admin", status.HTTP_403_FORBIDDEN),
         (app_create, "app_admin", status.HTTP_201_CREATED),
         (app_update, "app_admin", status.HTTP_200_OK),
+        (app_by_name_detail, "app_admin", status.HTTP_200_OK),
+        (app_by_name_detail, "authenticated_client", status.HTTP_200_OK),
+        (app_by_name_detail, "invalid_client_sub", status.HTTP_403_FORBIDDEN),
+        (app_by_name_detail, "invalid_client_scope", status.HTTP_403_FORBIDDEN),
+        (app_by_name_customers, "authenticated_client", status.HTTP_200_OK),
+        (app_by_name_customers, "invalid_client_sub", status.HTTP_403_FORBIDDEN),
+        (app_by_name_customers, "invalid_client_scope", status.HTTP_403_FORBIDDEN),
     ],
 )
 @pytest.mark.django_db
-def test_permission(client, app, users, view, user, expected_status, authz):
+def test_permission(app, users, view, user, expected_status, authz):
     u = users[user]
-    client.force_login(u)
+    client = APIClient()
+    client.force_authenticate(u)
 
     with patch("controlpanel.api.views.models.App.delete"):
         response = view(client, app)
@@ -137,3 +196,14 @@ def test_apps_by_name_permission(client, app, users, view, user, expected_status
 
     response = view(client, app)
     assert response.status_code == expected_status
+
+
+@pytest.mark.parametrize(
+    "sub, expected", [("abc123", True), ("abc123@clients", True), ("abc1234", False)]
+)
+def test_app_jwt_permissions_has_object_permissions(rf, authenticated_client, app, sub, expected):
+    authenticated_client.jwt_payload["sub"] = sub
+    request = rf.get(reverse("apps-by-name-customers", kwargs={"name": app.name}))
+    request.user = authenticated_client
+
+    assert AppJwtPermissions().has_object_permission(request, None, app) is expected

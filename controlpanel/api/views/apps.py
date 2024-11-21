@@ -40,10 +40,10 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     @customers.mapping.post
     def add_customers(self, request, *args, **kwargs):
         # TODO check this to see if can be refactored
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
         app = self.get_object()
+
+        serializer = self.get_serializer(instance=app, data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         delimiters = re.compile(r"[,; ]+")
         emails = delimiters.split(serializer.validated_data["email"])

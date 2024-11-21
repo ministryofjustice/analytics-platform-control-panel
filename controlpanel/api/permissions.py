@@ -37,7 +37,6 @@ class AppJwtPermissions(JWTTokenResourcePermissions):
     def has_object_permission(self, request, view, obj):
         if not super().has_object_permission(request, view, obj):
             return False
-
         client_id = request.user.pk.removesuffix("@clients")
         return client_id == obj.m2m_client_id
 

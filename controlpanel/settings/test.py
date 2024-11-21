@@ -8,10 +8,6 @@ AWS_DATA_ACCOUNT_ID = "123456789012"  # XXX DO NOT CHANGE - it will break moto t
 LOGGING["loggers"]["django_structlog"]["level"] = "WARNING"  # noqa: F405
 LOGGING["loggers"]["controlpanel"]["level"] = "WARNING"  # noqa: F405
 
-AUTHENTICATION_BACKENDS = [
-    "rules.permissions.ObjectPermissionBackend",
-    "django.contrib.auth.backends.ModelBackend",
-]
 MIDDLEWARE.remove("mozilla_django_oidc.middleware.SessionRefresh")  # noqa: F405
 REST_FRAMEWORK["DEFAULT_AUTHENTICATION_CLASSES"].remove(  # noqa: F405
     "mozilla_django_oidc.contrib.drf.OIDCAuthentication",
