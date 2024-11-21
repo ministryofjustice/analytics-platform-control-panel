@@ -119,11 +119,12 @@ def app_by_name_customers(client, app, *args):
 
 
 def app_by_name_add_customers(client, app, *args):
-    data = {"name": app.name, "repo_url": app.repo_url, "emails": []}
-    return client.post(
-        reverse("apps-by-name-customers", kwargs={"name": app.name}),
-        data,
-    )
+    data = {"email": "example@email.com"}
+    with patch("controlpanel.api.models.App.add_customers"):
+        return client.post(
+            reverse("apps-by-name-customers", kwargs={"name": app.name}),
+            data,
+        )
 
 
 def test_perm_rules_setup():
@@ -163,6 +164,9 @@ def test_authenticated_user_has_basic_perms(client, users):
         (app_by_name_customers, "authenticated_client", status.HTTP_200_OK),
         (app_by_name_customers, "invalid_client_sub", status.HTTP_403_FORBIDDEN),
         (app_by_name_customers, "invalid_client_scope", status.HTTP_403_FORBIDDEN),
+        (app_by_name_add_customers, "authenticated_client", status.HTTP_201_CREATED),
+        (app_by_name_add_customers, "invalid_client_sub", status.HTTP_403_FORBIDDEN),
+        (app_by_name_add_customers, "invalid_client_scope", status.HTTP_403_FORBIDDEN),
     ],
 )
 @pytest.mark.django_db

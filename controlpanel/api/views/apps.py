@@ -29,6 +29,11 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def dispatch(self, request, *args, **kwargs):
         return super().dispatch(request, *args, **kwargs)
 
+    def get_serializer_class(self, *args, **kwargs):
+        if "customers" in self.action:
+            return serializers.AppCustomerSerializer
+        return super().get_serializer_class(*args, **kwargs)
+
     @action(detail=True, methods=["get"])
     def customers(self, request, *args, **kwargs):
         app = self.get_object()
@@ -40,14 +45,13 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     @customers.mapping.post
     def add_customers(self, request, *args, **kwargs):
         # TODO check this to see if can be refactored
-        app = self.get_object()
-
-        serializer = self.get_serializer(instance=app, data=request.data)
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        app = self.get_object()
 
         delimiters = re.compile(r"[,; ]+")
         emails = delimiters.split(serializer.validated_data["email"])
-
         errors = []
         for email in emails:
             validator = EmailValidator(message=f"{email} is not a valid email address")
