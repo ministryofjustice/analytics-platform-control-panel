@@ -102,6 +102,52 @@ def test_detail(client, app):
     assert set(userapp["user"]) == expected_fields
 
 
+@pytest.fixture
+def customer():
+    return {
+        "email": "a.user@digital.justice.gov.uk",
+        "user_id": "email|5955f7ee86da0c1d55foobar",
+        "nickname": "a.user",
+        "name": "a.user@digital.justice.gov.uk",
+        "foo": "bar",
+        "baz": "bat",
+    }
+
+
+@pytest.mark.parametrize("env_name", ["", "dev", "prod"])
+def test_app_by_name_get_customers(client, app, customer, env_name):
+    with patch("controlpanel.api.models.App.customers") as get_customers:
+        get_customers.return_value = [customer]
+
+        response = client.get(
+            reverse("apps-by-name-customers", kwargs={"name": app.name}),
+            query_string=f"env_name={env_name}",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        app.customers.assert_called_once()
+
+        expected_fields = {
+            "email",
+            "user_id",
+            "nickname",
+            "name",
+        }
+        assert set(response.data[0]) == expected_fields
+
+
+@pytest.mark.parametrize("env_name", ["", "dev", "prod"])
+def test_app_by_name_add_customers(client, app, env_name):
+    emails = ["test1@example.com", "test2@example.com"]
+    data = {"email": ", ".join(emails)}
+
+    with patch("controlpanel.api.models.App.add_customers") as add_customers:
+        url = reverse("apps-by-name-customers", kwargs={"name": app.name})
+        response = client.post(f"{url}?env_name={env_name}", data=data)
+
+        add_customers.assert_called_once_with(emails, env_name=env_name)
+        assert response.status_code == status.HTTP_201_CREATED
+
+
 def test_app_detail_by_name(client, app):
     response = client.get(reverse("apps-by-name-detail", (app.name,)))
     assert response.status_code == status.HTTP_200_OK

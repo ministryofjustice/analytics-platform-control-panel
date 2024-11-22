@@ -37,14 +37,13 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     @action(detail=True, methods=["get"])
     def customers(self, request, *args, **kwargs):
         app = self.get_object()
-        customers = app.customers(request.GET.get("env_name", ""))
+        customers = app.customers(request.query_params.get("env_name", ""))
         serializer = self.get_serializer(data=customers, many=True)
         serializer.is_valid()
         return Response(serializer.data)
 
     @customers.mapping.post
     def add_customers(self, request, *args, **kwargs):
-        # TODO check this to see if can be refactored
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -62,6 +61,6 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         if errors:
             raise ValidationError(errors)
 
-        app.add_customers(emails, env_name=request.GET.get("env_name", ""))
+        app.add_customers(emails, env_name=request.query_params.get("env_name", ""))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
