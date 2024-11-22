@@ -9,7 +9,7 @@ from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic.base import ContextMixin
+from django.views.generic.base import ContextMixin, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
@@ -402,3 +402,23 @@ class GrantPolicyAccess(
             "paths": form.cleaned_data["paths"],
             "policy_id": form.cleaned_data["policy_id"],
         }
+
+
+class UpdateDatasourceLifecycleConfig(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    View,
+):
+    permission_required = "api.is_superuser"
+
+    def get_success_url(self):
+        return reverse_lazy("list-all-datasources")
+
+    def post(self, *args, **kwargs):
+        buckets = S3Bucket.objects.all()
+
+        for bucket in buckets:
+            bucket.cluster.apply_lifecycle_config(bucket.name)
+
+        messages.success(self.request, "Successfully updated bucket lifecycle configurations")
+        return HttpResponseRedirect(self.get_success_url())

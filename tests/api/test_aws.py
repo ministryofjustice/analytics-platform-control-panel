@@ -246,8 +246,8 @@ def test_create_bucket(logs_bucket, s3):
     rule = versioning.rules[0]
     assert rule["ID"].endswith("_lifecycle_configuration")
     assert rule["Status"] == "Enabled"
-    assert rule["NoncurrentVersionTransitions"][0]["NoncurrentDays"] == 30
-    assert rule["NoncurrentVersionTransitions"][0]["StorageClass"] == "GLACIER"
+    assert rule["Transitions"][0]["Days"] == 0
+    assert rule["Transitions"][0]["StorageClass"] == "INTELLIGENT_TIERING"
 
     # Check logging
     assert (

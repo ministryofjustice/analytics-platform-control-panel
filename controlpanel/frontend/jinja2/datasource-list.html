@@ -19,6 +19,18 @@
 {% block content %}
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
+{% if all_datasources and request.user.has_perm('api.is_superuser') %}
+<h2 class="govuk-heading-m">Update all bucket lifecycle configurations</h2>
+
+<form action="{{ url("update-lifecycle") }}" method="post">
+  {{ csrf_input }}
+  <button class="govuk-button js-confirm"
+          data-confirm-message="Are you sure you want to update all bucket lifecycle configurations?">
+          Update configurations
+  </button>
+</form>
+{% endif %}
+
 {% if request.user.has_perm('api.list_s3bucket') %}
   {{ datasource_list(buckets, datasource_type|default(""), request.user) }}
 

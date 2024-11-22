@@ -54,6 +54,7 @@ from controlpanel.frontend.views.datasource import (
     RevokeAccess,
     RevokeIAMManagedPolicyAccess,
     UpdateAccessLevel,
+    UpdateDatasourceLifecycleConfig,
     UpdateIAMManagedPolicyAccessLevel,
     WebappBucketList,
 )

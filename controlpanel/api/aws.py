@@ -659,25 +659,7 @@ class AWSBucket(AWSService):
             # Set bucket lifecycle. Send non-current versions of files to glacier
             # storage after 30 days.
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration  # noqa: E501
-            lifecycle_id = f"{bucket_name}_lifecycle_configuration"
-            s3_client.put_bucket_lifecycle_configuration(
-                Bucket=bucket_name,
-                LifecycleConfiguration={
-                    "Rules": [
-                        {
-                            "ID": lifecycle_id,
-                            "Status": "Enabled",
-                            "Prefix": "",
-                            "NoncurrentVersionTransitions": [
-                                {
-                                    "NoncurrentDays": 30,
-                                    "StorageClass": "GLACIER",
-                                },
-                            ],
-                        },
-                    ]
-                },
-            )
+            self.apply_lifecycle_config(bucket_name, s3_client)
             if is_data_warehouse:
                 self._tag_bucket(bucket, {"buckettype": "datawarehouse"})
 
@@ -717,6 +699,35 @@ class AWSBucket(AWSService):
 
         self._apply_tls_restrictions(s3_client, bucket_name)
         return bucket
+
+    def apply_lifecycle_config(self, bucket_name, s3_client=None):
+        if not s3_client:
+            s3_client = self.boto3_session.client("s3")
+        lifecycle_id = f"{bucket_name}_lifecycle_configuration"
+
+        try:
+            s3_client.put_bucket_lifecycle_configuration(
+                Bucket=bucket_name,
+                LifecycleConfiguration={
+                    "Rules": [
+                        {
+                            "ID": lifecycle_id,
+                            "Status": "Enabled",
+                            "Prefix": "",
+                            "Transitions": [
+                                {
+                                    "Days": 0,
+                                    "StorageClass": "INTELLIGENT_TIERING",
+                                },
+                            ],
+                        },
+                    ]
+                },
+            )
+        except s3_client.exceptions.NoSuchBucket:
+            log.warning(
+                f"Skipping creating lifecycle configuration for {bucket_name}: Does not exist"
+            )
 
     def _apply_tls_restrictions(self, client, bucket_name):
         """it assumes that this is a new bucket with no policies & creates it"""
