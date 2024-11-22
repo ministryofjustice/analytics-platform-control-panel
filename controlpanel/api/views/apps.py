@@ -14,7 +14,7 @@ from rest_framework.response import Response
 # First-party/Local
 from controlpanel.api import permissions, serializers
 from controlpanel.api.models import App
-from controlpanel.api.pagination import Auth0ApiPaginator
+from controlpanel.api.pagination import Auth0ApiPagination
 
 
 class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -57,7 +57,7 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         )
         serializer = self.get_serializer(data=customers["users"], many=True)
         serializer.is_valid()
-        paginator = Auth0ApiPaginator(
+        paginator = Auth0ApiPagination(
             request,
             page_number,
             object_list=serializer.validated_data,

@@ -1,5 +1,6 @@
 # Third-party
-from django.core.paginator import Paginator
+from django.core.paginator import InvalidPage, Paginator
+from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination, _positive_int
 from rest_framework.response import Response
 
@@ -56,13 +57,16 @@ class Auth0Paginator(Paginator):
         return self.total_count
 
 
-class Auth0ApiPaginator(Auth0Paginator):
+class Auth0ApiPagination:
 
     def __init__(self, request, page_number, *args, **kwargs):
         self.request = request
         self.page_number = page_number
-        super().__init__(*args, **kwargs)
-        self._page = self.page(page_number)
+        self.paginator = Auth0Paginator(*args, **kwargs)
+        try:
+            self._page = self.paginator.page(page_number)
+        except InvalidPage:
+            raise serializers.ValidationError({"page": "Invalid page."})
 
     def get_next_link(self):
         if not self._page.has_next():
@@ -77,7 +81,7 @@ class Auth0ApiPaginator(Auth0Paginator):
     def get_paginated_response(self, object_list):
         return Response(
             {
-                "count": self.count,
+                "count": self.paginator.count,
                 "next": self.get_next_link(),
                 "previous": self.get_previous_link(),
                 "results": object_list,
