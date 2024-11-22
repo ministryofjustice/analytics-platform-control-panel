@@ -30,8 +30,14 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         return super().dispatch(request, *args, **kwargs)
 
     def get_serializer_class(self, *args, **kwargs):
-        if "customers" in self.action:
-            return serializers.AppCustomerSerializer
+        mapping = {
+            "customers": serializers.AppCustomerSerializer,
+            "add_customers": serializers.AppCustomerSerializer,
+            "delete_customers": serializers.DeleteAppCustomerSerializer,
+        }
+        serializer = mapping.get(self.action)
+        if serializer:
+            return serializer
         return super().get_serializer_class(*args, **kwargs)
 
     @action(detail=True, methods=["get"])
@@ -64,3 +70,21 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         app.add_customers(emails, env_name=request.query_params.get("env_name", ""))
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @customers.mapping.delete
+    def delete_customers(self, request, *args, **kwargs):
+        """
+        Delete a customer from an environment. Requires the customers email and the env name.
+        """
+        app = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            app.delete_customer_by_email(
+                serializer.validated_data["email"], env_name=serializer.validated_data["env_name"]
+            )
+        except app.DeleteCustomerError as error:
+            raise ValidationError({"email": error.args[0]})
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
