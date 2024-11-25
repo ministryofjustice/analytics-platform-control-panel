@@ -2,6 +2,8 @@
 from itertools import chain
 
 # Third-party
+import botocore.exceptions
+import structlog
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
@@ -31,6 +33,8 @@ DATASOURCE_TYPES = [
     "warehouse",
     "webapp",
 ]
+
+log = structlog.getLogger(__name__)
 
 
 class DatasourceMixin(ContextMixin):
@@ -415,10 +419,16 @@ class UpdateDatasourceLifecycleConfig(
         return reverse_lazy("list-all-datasources")
 
     def post(self, *args, **kwargs):
-        buckets = S3Bucket.objects.all()
-
-        for bucket in buckets:
-            bucket.cluster.apply_lifecycle_config(bucket.name)
+        buckets = S3Bucket.objects.filter(is_deleted=False)
+        try:
+            for bucket in buckets:
+                bucket.cluster.apply_lifecycle_config(bucket.name)
+        except botocore.exceptions.ClientError as e:
+            log.warning(f"Error updating lifecycle configurations: {e}")
+        except Exception as e:
+            log.error(f"Error updating lifecycle configurations: {e}")
+            messages.error(self.request, "Failed to update bucket lifecycle configurations")
+            return HttpResponseRedirect(self.get_success_url())
 
         messages.success(self.request, "Successfully updated bucket lifecycle configurations")
         return HttpResponseRedirect(self.get_success_url())
