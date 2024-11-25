@@ -48,7 +48,10 @@ def app(users):
 
     user = users["app_user"]
     baker.make("api.UserApp", user=user, app=app, is_admin=False)
-    return app
+    with patch(
+        "controlpanel.api.models.App.customer_paginated", return_value={"users": [], "total": 0}
+    ):
+        yield app
 
 
 @pytest.fixture  # noqa: F405
@@ -115,7 +118,10 @@ def app_by_name_detail(client, app, *args):
 
 
 def app_by_name_customers(client, app, *args):
-    return client.get(reverse("apps-by-name-customers", kwargs={"name": app.name}))
+    return client.get(
+        reverse("apps-by-name-customers", kwargs={"name": app.name}),
+        query_params={"env_name": "test"},
+    )
 
 
 def app_by_name_add_customers(client, app, *args):
@@ -124,6 +130,7 @@ def app_by_name_add_customers(client, app, *args):
         return client.post(
             reverse("apps-by-name-customers", kwargs={"name": app.name}),
             data,
+            query_params={"env_name": "test"},
         )
 
 

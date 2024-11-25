@@ -155,7 +155,7 @@ def test_delete_customer_by_email_user_missing_group(auth0):
     app = baker.prepare("api.App")
     with pytest.raises(
         app.DeleteCustomerError,
-        match="User foo@email.com cannot be found in this application group",
+        match="User foo@email.com not found for this application and environment",
     ):
         app.delete_customer_by_email("foo@email.com", group_id="123")
 
