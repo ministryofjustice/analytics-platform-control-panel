@@ -49,33 +49,28 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         app = self.get_object()
         group_id = app.get_group_id(request.query_params.get("env_name", ""))
         page_number = request.query_params.get("page", 1)
-        per_page = request.query_params.get("per_page", 1)
+        per_page = request.query_params.get("per_page", 25)
         customers = app.customer_paginated(
             page=page_number,
             group_id=group_id,
-            per_page=request.query_params.get("per_page", 1),
+            per_page=per_page,
         )
         serializer = self.get_serializer(data=customers["users"], many=True)
         serializer.is_valid()
-        paginator = Auth0ApiPagination(
+        pagination = Auth0ApiPagination(
             request,
             page_number,
             object_list=serializer.validated_data,
-            per_page=per_page,
             total_count=customers["total"],
+            per_page=per_page,
         )
-        return paginator.get_paginated_response(serializer.validated_data)
-        # page = paginator.page(page_number)
-
-        # data = serializer.data
-        # next_url = None
-        # previous_url = None
-        # if page.has_next():
-        # next_url = f"{request.build_absolute_uri()}&page={page.next_page_number()}"
-        # return Response({"next": next_url, "results": data, "total": paginator.count})
+        return pagination.get_paginated_response()
 
     @customers.mapping.post
     def add_customers(self, request, *args, **kwargs):
+        if "env_name" not in request.query_params:
+            raise ValidationError({"env_name": "This field is required."})
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
