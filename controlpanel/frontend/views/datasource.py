@@ -419,11 +419,10 @@ class UpdateDatasourceLifecycleConfig(
         return reverse_lazy("list-all-datasources")
 
     def post(self, *args, **kwargs):
-        buckets = S3Bucket.objects.all()
+        buckets = S3Bucket.objects.filter(is_deleted=False)
         try:
             for bucket in buckets:
-                if not bucket.is_deleted:
-                    bucket.cluster.apply_lifecycle_config(bucket.name)
+                bucket.cluster.apply_lifecycle_config(bucket.name)
         except botocore.exceptions.ClientError as e:
             log.warning(f"Error updating lifecycle configurations: {e}")
         except Exception as e:
