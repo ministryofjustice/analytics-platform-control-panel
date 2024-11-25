@@ -276,7 +276,7 @@
 {% endif %}
 </section>
 
-{% if request.user.has_perm('api.update_app', app) %}
+{% if settings.features.app_m2m_client.enabled and request.user.has_perm('api.update_app', app) %}
   {% include "includes/webapp-m2m-client.html" %}
 {% endif %}
 
