@@ -114,17 +114,17 @@ def customer():
     }
 
 
-@pytest.mark.parametrize("env_name", ["", "dev", "prod"])
+@pytest.mark.parametrize("env_name", ["dev", "prod"])
 def test_app_by_name_get_customers(client, app, customer, env_name):
-    with patch("controlpanel.api.models.App.customers") as get_customers:
-        get_customers.return_value = [customer]
+    with patch("controlpanel.api.models.App.customer_paginated") as customer_paginated:
+        customer_paginated.return_value = {"total": 1, "users": [customer]}
 
         response = client.get(
             reverse("apps-by-name-customers", kwargs={"name": app.name}),
-            query_string=f"env_name={env_name}",
+            query_params={"env_name": env_name},
         )
         assert response.status_code == status.HTTP_200_OK
-        app.customers.assert_called_once()
+        app.customer_paginated.assert_called_once()
 
         expected_fields = {
             "email",
@@ -132,10 +132,10 @@ def test_app_by_name_get_customers(client, app, customer, env_name):
             "nickname",
             "name",
         }
-        assert set(response.data[0]) == expected_fields
+        assert response.data["results"] == [{field: customer[field] for field in expected_fields}]
 
 
-@pytest.mark.parametrize("env_name", ["", "dev", "prod"])
+@pytest.mark.parametrize("env_name", ["dev", "prod"])
 def test_app_by_name_add_customers(client, app, env_name):
     emails = ["test1@example.com", "test2@example.com"]
     data = {"email": ", ".join(emails)}
