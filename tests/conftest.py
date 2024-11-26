@@ -6,6 +6,7 @@ from unittest.mock import mock_open, patch
 import pytest
 import yaml
 from django.conf import settings
+from django.contrib.auth.models import Permission
 from model_bakery import baker
 
 # First-party/Local
@@ -99,7 +100,21 @@ def superuser(db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airf
 
 
 @pytest.fixture
-def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
+def quicksight_user(db):
+    user = baker.make(
+        "api.User",
+        auth0_id="github|user_5",
+        username="foobar",
+        is_superuser=False,
+    )
+    user.user_permissions.add(Permission.objects.get(codename="quicksight_embed_access"))
+    return user
+
+
+@pytest.fixture
+def users(
+    db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_policy, quicksight_user
+):
     return {
         "superuser": superuser,
         "normal_user": baker.make(
@@ -120,6 +135,7 @@ def users(db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_p
             is_superuser=False,
             is_database_admin=True,
         ),
+        "quicksight_user": quicksight_user,
     }
 
 

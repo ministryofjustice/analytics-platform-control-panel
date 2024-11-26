@@ -22,11 +22,10 @@ def quicksight(client):
         (quicksight, "superuser", status.HTTP_200_OK),
         (quicksight, "database_user", status.HTTP_403_FORBIDDEN),
         (quicksight, "normal_user", status.HTTP_403_FORBIDDEN),
+        (quicksight, "quicksight_user", status.HTTP_200_OK),
     ],
 )
 def test_permission(client, users, view, user, expected_status):
-    for key, val in users.items():
-        client.force_login(val)
     client.force_login(users[user])
     response = view(client)
     assert response.status_code == expected_status
