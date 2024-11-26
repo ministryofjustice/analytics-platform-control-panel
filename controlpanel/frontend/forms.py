@@ -3,6 +3,7 @@ import re
 
 # Third-party
 from django import forms
+from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
@@ -606,3 +607,31 @@ class CreateParameterForm(forms.Form):
         ],
     )
     value = forms.CharField(widget=forms.PasswordInput)
+
+
+class QuicksightAccessForm(forms.Form):
+    QUICKSIGHT_LEGACY = "quicksight_legacy"
+    QUICKSIGHT_COMPUTE = "quicksight_compute"
+
+    enable_quicksight = forms.MultipleChoiceField(
+        choices=[
+            (QUICKSIGHT_LEGACY, "Legacy"),
+            (QUICKSIGHT_COMPUTE, "Compute"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+
+    def grant_access(self):
+        quicksight_access = self.cleaned_data["enable_quicksight"]
+        self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
+
+        permission = Permission.objects.get(codename="quicksight_embed_access")
+        if self.QUICKSIGHT_COMPUTE in quicksight_access:
+            self.user.user_permissions.add(permission)
+        else:
+            self.user.user_permissions.remove(permission)
