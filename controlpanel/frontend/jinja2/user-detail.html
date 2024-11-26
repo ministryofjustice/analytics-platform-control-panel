@@ -126,10 +126,12 @@
         {
           "value": "quicksight_compute",
           "text": "Embedded Quicksight enabled (running in the compute-" + env + " account)",
-          "checked": user.has_perm("api.quicksight_embed_access")
+          "checked": user.has_perm("api.quicksight_embed_access"),
+          "disabled": user.is_superuser
         },
       ]
     }) }}
+    <p class="govuk-body">Note: all super admins have access to the embedded Quicksight.</p>
     <button class="govuk-button govuk-button--secondary">
       Save changes
     </button>
