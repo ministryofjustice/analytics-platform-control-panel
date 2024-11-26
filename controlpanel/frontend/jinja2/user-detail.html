@@ -8,6 +8,7 @@
 
 {% set page_title = user_name(user) %}
 {% set pronoun = "Your" if user == request.user else "User's" %}
+{% set env = settings.ENV %}
 
 {% block content %}
 <span class="govuk-caption-xl">User</span>
@@ -109,18 +110,23 @@
       "name": "enable_quicksight",
       "fieldset": {
         "legend": {
-          "text": "Enable Quicksight",
+          "text": "Quicksight access",
           "classes": "govuk-fieldset__legend--m",
         },
       },
       "hint": {
-        "text": "Toggle access to Quicksight for a user."
+        "text": "Update Quicksight access for a user."
       },
       "items": [
         {
-          "value": "True",
-          "text": "Quicksight Enabled",
+          "value": "quicksight_legacy",
+          "text": "Legacy Quicksight access enabled (running in the data-" + env + " account)",
           "checked": user.is_quicksight_enabled
+        },
+        {
+          "value": "quicksight_compute",
+          "text": "Embedded Quicksight enabled (running in the compute-" + env + " account)",
+          "checked": user.has_perm("api.quicksight_embed_access")
         },
       ]
     }) }}

@@ -123,7 +123,7 @@
         "active": page_name == "parameters",
       },
       {
-        "hide": not request.user.is_superuser,
+        "hide": not request.user.has_perm("api.quicksight_embed_access"),
         "text": "QuickSight",
         "href": url("quicksight"),
         "active": page_name == "quicksight",

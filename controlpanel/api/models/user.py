@@ -48,6 +48,7 @@ class User(AbstractUser):
     class Meta:
         db_table = "control_panel_api_user"
         ordering = ("username",)
+        permissions = [("quicksight_embed_access", "Can access the embedded Quicksight")]
 
     def __repr__(self):
         return f"<User: {self.username} ({self.auth0_id})>"

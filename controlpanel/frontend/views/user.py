@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 # Third-party
 from django.contrib import messages
+from django.contrib.auth.models import Permission
 from django.forms import BaseModelForm
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -117,7 +118,15 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View)
 
     def post(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=kwargs["pk"])
-        user.set_quicksight_access(enable="enable_quicksight" in request.POST)
+        quicksight_access = request.POST.getlist("enable_quicksight", [])
+        legacy_enabled = "quicksight_legacy" in quicksight_access
+        compute_enabled = "quicksight_compute" in quicksight_access
+        user.set_quicksight_access(enable=legacy_enabled)
+        perm = Permission.objects.get(codename="quicksight_embed_access")
+        if compute_enabled:
+            user.user_permissions.add(perm)
+        else:
+            user.user_permissions.remove(perm)
         messages.success(self.request, "Successfully updated Quicksight access")
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 

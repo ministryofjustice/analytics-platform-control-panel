@@ -139,15 +139,19 @@ def test_grant_superuser_access(client, users, slack):
 
 
 @pytest.mark.parametrize(
-    "data, attach",
+    "data, legacy_access, compute_access",
     [
-        ({"enable_quicksight": True}, True),
-        ({}, False),
+        ({"enable_quicksight": ["quicksight_legacy"]}, True, False),
+        ({"enable_quicksight": ["quicksight_compute"]}, False, True),
+        ({"enable_quicksight": ["quicksight_legacy", "quicksight_compute"]}, True, True),
+        ({}, False, False),
     ],
-    ids=["attach", "remove"],
+    ids=["legacy enabled", "compute enabled", "both enabled", "no access"],
 )
 @patch("controlpanel.api.models.user.cluster.User.update_policy_attachment")
-def test_enable_quicksight_access(update_policy_attachment, data, attach, client, users):
+def test_enable_quicksight_access(
+    update_policy_attachment, data, legacy_access, compute_access, client, users
+):
     request_user = users["superuser"]
     user = users["other_user"]
     url = reverse("set-quicksight", kwargs={"pk": user.auth0_id})
@@ -158,5 +162,8 @@ def test_enable_quicksight_access(update_policy_attachment, data, attach, client
     assert response.status_code == status.HTTP_302_FOUND
     update_policy_attachment.assert_called_once_with(
         policy=cluster.User.QUICKSIGHT_POLICY_NAME,
-        attach=attach,
+        attach=legacy_access,
+    )
+    assert (
+        user.user_permissions.filter(codename="quicksight_embed_access").exists() is compute_access
     )
