@@ -11,6 +11,7 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import auth0
+from controlpanel.api.models import QUICKSIGHT_EMBED_PERMISSION
 from controlpanel.utils import load_app_conf_from_file
 from tests.api.fixtures.aws import *
 from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
@@ -107,7 +108,7 @@ def quicksight_user(db):
         username="foobar",
         is_superuser=False,
     )
-    user.user_permissions.add(Permission.objects.get(codename="quicksight_embed_access"))
+    user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_PERMISSION))
     return user
 
 

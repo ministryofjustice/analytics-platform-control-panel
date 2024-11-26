@@ -13,7 +13,14 @@ from controlpanel.api import validators
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
 from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
-from controlpanel.api.models import App, S3Bucket, Tool, User, UserS3Bucket
+from controlpanel.api.models import (
+    QUICKSIGHT_EMBED_PERMISSION,
+    App,
+    S3Bucket,
+    Tool,
+    User,
+    UserS3Bucket,
+)
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
@@ -630,7 +637,7 @@ class QuicksightAccessForm(forms.Form):
         quicksight_access = self.cleaned_data["enable_quicksight"]
         self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
 
-        permission = Permission.objects.get(codename="quicksight_embed_access")
+        permission = Permission.objects.get(codename=QUICKSIGHT_EMBED_PERMISSION)
         if self.QUICKSIGHT_COMPUTE in quicksight_access:
             self.user.user_permissions.add(permission)
         else:

@@ -8,6 +8,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api import cluster
+from controlpanel.api.models import QUICKSIGHT_EMBED_PERMISSION
 
 
 @pytest.fixture(autouse=True)
@@ -111,7 +112,7 @@ def test_permission(client, users, view, user, expected_status):
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list, "superuser", 4),
+        (list, "superuser", 5),
     ],
 )
 def test_list(client, users, view, user, expected_count):
@@ -165,5 +166,6 @@ def test_enable_quicksight_access(
         attach=legacy_access,
     )
     assert (
-        user.user_permissions.filter(codename="quicksight_embed_access").exists() is compute_access
+        user.user_permissions.filter(codename=QUICKSIGHT_EMBED_PERMISSION).exists()
+        is compute_access
     )
