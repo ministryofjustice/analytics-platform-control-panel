@@ -6,7 +6,6 @@ moj.Modules.toggleCheckboxForm = {
   init() {
     const panels = document.querySelectorAll(`.${this.subFormClass}`);
     if (panels) {
-      console.log(panels);
       this.bindEvents(panels);
     }
   },
@@ -14,12 +13,8 @@ moj.Modules.toggleCheckboxForm = {
   bindEvents(panels) {
 
     panels.forEach(panel => {
-      console.log(panel);
-      console.log(this.selector);
       const attribute = panel.getAttribute(this.selector);
-      console.log(attribute);
       var formItem = document.querySelector(`[value=${attribute}]`);
-      console.log(formItem);
 
       this.setVisibility(panel, formItem.checked);
 
