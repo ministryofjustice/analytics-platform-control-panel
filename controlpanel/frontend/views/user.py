@@ -3,21 +3,22 @@ from datetime import datetime, timedelta
 
 # Third-party
 from django.contrib import messages
+from django.contrib.auth.models import Permission
 from django.forms import BaseModelForm
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import FormView
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
-from django.views.generic.edit import DeleteView, UpdateView
+from django.views.generic.edit import DeleteView, FormView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api.cluster import User as ClusterUser
 from controlpanel.api.models import User
+from controlpanel.frontend import forms
 from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -111,15 +112,25 @@ class EnableBedrockUser(PolicyAccessMixin, UpdateView):
     method_name = "set_bedrock_access"
 
 
-class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
+class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
     permission_required = "api.add_superuser"
     http_method_names = ["post"]
+    form_class = forms.QuicksightAccessForm
 
-    def post(self, request, *args, **kwargs):
-        user = get_object_or_404(User, pk=kwargs["pk"])
-        user.set_quicksight_access(enable="enable_quicksight" in request.POST)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+        kwargs.update({"user": user})
+        return kwargs
+
+    def form_valid(self, form):
+        form.grant_access()
         messages.success(self.request, "Successfully updated Quicksight access")
-        return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+        return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Failed to update Quicksight access")
+        return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
 
 
 class ReinitialiseUser(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):

@@ -3,6 +3,7 @@ import re
 
 # Third-party
 from django import forms
+from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
@@ -12,7 +13,14 @@ from controlpanel.api import validators
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
 from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
-from controlpanel.api.models import App, S3Bucket, Tool, User, UserS3Bucket
+from controlpanel.api.models import (
+    QUICKSIGHT_EMBED_PERMISSION,
+    App,
+    S3Bucket,
+    Tool,
+    User,
+    UserS3Bucket,
+)
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
@@ -606,3 +614,31 @@ class CreateParameterForm(forms.Form):
         ],
     )
     value = forms.CharField(widget=forms.PasswordInput)
+
+
+class QuicksightAccessForm(forms.Form):
+    QUICKSIGHT_LEGACY = "quicksight_legacy"
+    QUICKSIGHT_COMPUTE = "quicksight_compute"
+
+    enable_quicksight = forms.MultipleChoiceField(
+        choices=[
+            (QUICKSIGHT_LEGACY, "Legacy"),
+            (QUICKSIGHT_COMPUTE, "Compute"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+
+    def grant_access(self):
+        quicksight_access = self.cleaned_data["enable_quicksight"]
+        self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
+
+        permission = Permission.objects.get(codename=QUICKSIGHT_EMBED_PERMISSION)
+        if self.QUICKSIGHT_COMPUTE in quicksight_access:
+            self.user.user_permissions.add(permission)
+        else:
+            self.user.user_permissions.remove(permission)
