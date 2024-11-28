@@ -3,8 +3,10 @@ VIRTUAL_ENV ?= venv
 BIN=${VIRTUAL_ENV}/bin
 IMAGE_TAG ?= local
 DOCKER_BUILDKIT?=1
-REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
+# REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
 MAKEFLAGS += -j2
+IMAGE_NAME ?= ghcr.io/ministryofjustice/analytical-platform-control-panel
+
 
 include Makefile.local.mk
 export
