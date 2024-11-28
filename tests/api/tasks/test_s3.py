@@ -98,6 +98,30 @@ def test_revoke_user_access(cluster, complete, bucket_name, is_folder):
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize(
+    "bucket_name, is_folder",
+    [
+        ("example-bucket", False),
+        ("example-bucket/folder", True),
+    ],
+)
+@patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
+@patch("controlpanel.api.tasks.handlers.s3.cluster")
+def test_revoke_user_access_user_does_not_exist(cluster, complete, bucket_name, is_folder):
+    user_bucket_access = baker.make("api.UserS3Bucket", s3bucket__name=bucket_name)
+    s3bucket = user_bucket_access.s3bucket
+    bucket_identifier = s3bucket.name if is_folder else s3bucket.arn
+    revoke_user_s3bucket_access(
+        bucket_identifier=bucket_identifier,
+        bucket_user_pk="ShouldFail",
+        is_folder=is_folder,
+    )
+
+    cluster.User.assert_not_called()
+    complete.assert_called_once()
+
+
+@pytest.mark.django_db
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.s3.cluster")
 def test_revoke_app_access(cluster, complete):
