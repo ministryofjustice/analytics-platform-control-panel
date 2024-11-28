@@ -1,0 +1,39 @@
+---
+name: 🧪 Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # - name: Set Up Container Structure Test
+      #   id: setup_container_structure_test
+      #   uses: ministryofjustice/github-actions/setup-container-structure-test@ccf9e3a4a828df1ec741f6c8e6ed9d0acaef3490 # v18.5.0
+
+      - name: Test
+        id: test
+        shell: bash
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          make test
+      
+      - name: Run Python tests (docker-compose)
+        run: make clean && make test
+        env:
+         NETWORK: default
+         IMAGE_NAME: ghcr.io/${{ github.repository }}
+         IMAGE_TAG: ${{ github.sha }}
