@@ -26,7 +26,7 @@ jobs:
         id: build
         shell: bash
         env:
-          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          IMAGE_NAME: ${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker compose build
@@ -38,6 +38,6 @@ jobs:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
         with:
-          image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          image-ref: ${{ github.repository }}:${{ github.sha }}
           severity: HIGH,CRITICAL
           exit-code: 1
