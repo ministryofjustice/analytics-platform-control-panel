@@ -20,6 +20,7 @@ from controlpanel.utils import github_repository_name, s3_slugify, webapp_releas
 
 
 class App(TimeStampedModel):
+
     name = models.CharField(max_length=100, blank=False)
     description = models.TextField(blank=True)
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
@@ -31,6 +32,12 @@ class App(TimeStampedModel):
         related_name="apps",
         related_query_name="app",
         blank=True,
+    )
+    cloud_platform_role_arn = models.CharField(
+        help_text="The cloud platform arn for the app",
+        max_length=130,
+        null=True,
+        default=None,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     is_bedrock_enabled = models.BooleanField(default=False)
