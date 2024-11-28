@@ -501,12 +501,30 @@ class App(EntityResource):
         )
         return json.loads(statement)
 
+    @property
+    def xacct_trust_statement(self):
+        """
+        Builds an assume role statement for a Cloud Platform IAM role
+        """
+        statement = render_to_string(
+            template_name="assume_roles/cloud_platform_xacct.json",
+            context={"app_role": self.app.cloud_platform_role_arn},
+        )
+        return json.loads(statement)
+
     def create_iam_role(self):
+        statement = self._get_statement()
         assume_role_policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-        assume_role_policy["Statement"].append(self.oidc_provider_statement)
+        assume_role_policy["Statement"].append(statement)
         self.aws_role_service.create_role(self.iam_role_name, assume_role_policy)
         for env in self.get_deployment_envs():
             self._create_secrets(env_name=env)
+
+    def _get_statement(self):
+        if self.app.cloud_platform_role_arn:
+            return self.xacct_trust_statement
+
+        return self.oidc_provider_statement
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         self.aws_role_service.grant_bucket_access(

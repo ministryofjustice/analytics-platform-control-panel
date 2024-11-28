@@ -11,6 +11,11 @@ enabled_features:
     _HOST_dev: true
     _HOST_test: true
     _HOST_prod: true
+  cloud_platform_assume_role:
+    _DEFAULT: false
+    _HOST_dev: true
+    _HOST_prod: false
+    _HOST_alpha: false
 
 AWS_SERVICE_URL:
   _HOST_dev: "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
