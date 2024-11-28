@@ -19,14 +19,17 @@ jobs:
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Build
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build with Docker Compose
         id: build
         shell: bash
         env:
           IMAGE_NAME: ghcr.io/${{ github.repository }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          make build
+          docker compose build
 
       - name: Scan
         id: scan
