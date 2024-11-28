@@ -189,6 +189,15 @@ class CreateAppForm(forms.Form):
         if connect_data_source == "existing" and not existing_datasource:
             self.add_error("existing_datasource_id", "This field is required.")
 
+        assume_role = cleaned_data.get("allow_cloud_platform_assume_role")
+        role_arn = cleaned_data.get("cloud_platform_role_arn")
+
+        if assume_role and not role_arn:
+            self.add_error("cloud_platform_role_arn", "Role ARN is required")
+
+        if not assume_role and role_arn:
+            cleaned_data.pop("cloud_platform_role_arn")
+
         return cleaned_data
 
     def clean_repo_url(self):

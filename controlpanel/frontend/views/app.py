@@ -200,15 +200,6 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
     def form_valid(self, form):
         try:
-            assume_role = form.cleaned_data.get("allow_cloud_platform_assume_role")
-            role_arn = form.cleaned_data.get("cloud_platform_role_arn")
-            if assume_role and not role_arn:
-                form.add_error("cloud_platform_role_arn", "Role ARN is required")
-                return FormMixin.form_invalid(self, form)
-
-            if not assume_role and role_arn:
-                form.cleaned_data.pop("cloud_platform_role_arn")
-
             self.object = AppManager().register_app(self.request.user, form.cleaned_data)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
