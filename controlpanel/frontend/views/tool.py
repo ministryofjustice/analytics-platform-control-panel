@@ -45,7 +45,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         * The current user is in the beta tester group for the tool.
         """
-        return Tool.objects.filter(Q(is_restricted=False) | Q(target_users=self.request.user.id))
+        return Tool.objects.filter(
+            Q(is_restricted=False) | Q(target_users=self.request.user.id)
+        ).exclude(is_deprecated=True)
 
     def _locate_tool_box_by_chart_name(self, chart_name):
         tool_box = None
@@ -67,7 +69,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         memory, CPU etc, then the linkage will be confused although it
         won't affect people usage.
         """
-        tool_set = Tool.objects.filter(chart_name=chart_name, version=chart_version)
+        tool_set = Tool.objects.filter(
+            chart_name=chart_name, version=chart_version, is_restricted=False
+        )
         for item in tool_set:
             if item.image_tag == image_tag:
                 return item
