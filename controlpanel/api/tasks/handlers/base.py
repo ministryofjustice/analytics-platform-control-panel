@@ -19,9 +19,12 @@ class BaseTaskHandler(CeleryTask):
     task_obj = None
 
     def complete(self):
-        if self.task_obj:
-            self.task_obj.completed = True
-            self.task_obj.save()
+        if not self.task_obj:
+            return log.warn("Task completed, but no object to mark as completed.")
+
+        self.task_obj.completed = True
+        self.task_obj.save()
+        log.info(f"Task object completed: {self.task_obj.task_id}")
 
     def get_task_obj(self):
         task_id = self.request.id
