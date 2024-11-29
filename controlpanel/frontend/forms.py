@@ -543,6 +543,7 @@ class ToolReleaseForm(forms.ModelForm):
             "is_restricted",
             "tool_domain",
             "description",
+            "is_deprecated",
         ]
 
 
