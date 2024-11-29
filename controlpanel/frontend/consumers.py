@@ -196,7 +196,7 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.debug(f"Restarted {tool.name} for {user}")
 
     def get_tool_and_user(self, message):
-        tool = Tool.objects.get(pk=message["tool_id"])
+        tool = Tool.objects.get(is_deprecated=False, pk=message["tool_id"])
         if not tool:
             raise Exception(f"no Tool record found for query {message['tool_id']}")
         user = User.objects.get(auth0_id=message["user_id"])

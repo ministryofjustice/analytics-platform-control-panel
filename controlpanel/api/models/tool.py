@@ -51,6 +51,8 @@ class Tool(TimeStampedModel):
         default=None,
     )
 
+    is_deprecated = models.BooleanField(default=False)
+
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
         ordering = ("name",)
