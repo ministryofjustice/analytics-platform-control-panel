@@ -98,6 +98,12 @@ class App(TimeStampedModel):
     def iam_role_arn(self):
         return cluster.iam_arn(f"role/{self.iam_role_name}")
 
+    @property
+    def m2m_client_id(self):
+        if self.app_conf is None:
+            return None
+        return self.app_conf.get("m2m", {}).get("client_id")
+
     def get_group_id(self, env_name):
         return self.get_auth_client(env_name).get("group_id")
 
@@ -218,12 +224,14 @@ class App(TimeStampedModel):
         except auth0.Auth0Error as e:
             raise DeleteCustomerError from e
 
-    def delete_customer_by_email(self, email, group_id):
+    def delete_customer_by_email(self, email, group_id=None, env_name=None):
         """
         Attempt to find a customer by email and delete them from the group.
         If the user is not found, or the user does not belong to the given group, raise
         an error.
         """
+        if not group_id:
+            group_id = self.get_auth_client(env_name).get("group_id")
         auth0_client = auth0.ExtendedAuth0()
         try:
             user = auth0_client.users.get_users_email_search(
@@ -239,7 +247,7 @@ class App(TimeStampedModel):
             if group_id == group["_id"]:
                 return self.delete_customers(user_ids=[user["user_id"]], group_id=group_id)
 
-        raise DeleteCustomerError(f"User {email} cannot be found in this application group")
+        raise DeleteCustomerError(f"User {email} not found for this application and environment")
 
     @property
     def status(self):

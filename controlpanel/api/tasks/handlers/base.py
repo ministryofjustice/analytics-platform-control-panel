@@ -1,8 +1,11 @@
 # Third-party
+import structlog
 from celery import Task as CeleryTask
 
 # First-party/Local
 from controlpanel.api.models import Task
+
+log = structlog.getLogger(__name__)
 
 
 class BaseTaskHandler(CeleryTask):
@@ -16,12 +19,20 @@ class BaseTaskHandler(CeleryTask):
     task_obj = None
 
     def complete(self):
-        if self.task_obj:
-            self.task_obj.completed = True
-            self.task_obj.save()
+        if not self.task_obj:
+            return log.warn("Task completed, but no object to mark as completed.")
+
+        self.task_obj.completed = True
+        self.task_obj.save()
+        log.info(f"Task object completed: {self.task_obj.task_id}")
 
     def get_task_obj(self):
-        return Task.objects.filter(task_id=self.request.id).first()
+        task_id = self.request.id
+        log.info(f"Getting task object with ID: {task_id}")
+        task = Task.objects.filter(task_id=task_id).first()
+        if not task:
+            log.warn(f"Task object not found with ID: {task_id}. Continuing...")
+        return task
 
     def run(self, *args, **kwargs):
         self.task_obj = self.get_task_obj()

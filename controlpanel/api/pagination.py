@@ -1,6 +1,9 @@
 # Third-party
-from django.core.paginator import Paginator
+from django.core.paginator import InvalidPage, Paginator
+from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination, _positive_int
+from rest_framework.response import Response
+from rest_framework.utils.urls import replace_query_param
 
 
 class CustomPageNumberPagination(PageNumberPagination):
@@ -53,3 +56,35 @@ class Auth0Paginator(Paginator):
     def count(self):
         """Return the total number of objects, across all pages."""
         return self.total_count
+
+
+class Auth0ApiPagination(Auth0Paginator):
+
+    def __init__(self, request, page_number, *args, **kwargs):
+        self.request = request
+        super().__init__(*args, **kwargs)
+        self._page = self.get_page(page_number)
+
+    def get_page_url(self, page_number):
+        url = self.request.build_absolute_uri()
+        return replace_query_param(url, "page", page_number)
+
+    def get_next_link(self):
+        if not self._page.has_next():
+            return None
+        return self.get_page_url(self._page.next_page_number())
+
+    def get_previous_link(self):
+        if not self._page.has_previous():
+            return None
+        return self.get_page_url(self._page.previous_page_number())
+
+    def get_paginated_response(self):
+        return Response(
+            {
+                "count": self.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": self.object_list,
+            }
+        )

@@ -1,6 +1,6 @@
 # Standard library
 import json
-from unittest.mock import ANY, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 # Third-party
 import pytest
@@ -42,7 +42,7 @@ def fixture_users_200(ExtendedAuth0):
 def fixture_users_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "create") as request:
         request.side_effect = [{"name": "create-testing-bob"}]
-        yield
+        yield request
 
 
 def test_get_all_with_more_than_100(ExtendedAuth0, fixture_users_200):
@@ -51,23 +51,27 @@ def test_get_all_with_more_than_100(ExtendedAuth0, fixture_users_200):
 
 
 def test_search_first_match_by_name_exist(ExtendedAuth0, fixture_users_200):
-    user = ExtendedAuth0.users.search_first_match(dict(name="Test User 1"))
+    user = ExtendedAuth0.users.search_first_match({"name": "Test User 1"})
     assert user["name"] == "Test User 1"
 
 
 def test_search_first_match_by_name_not(ExtendedAuth0, fixture_users_200):
-    user = ExtendedAuth0.users.search_first_match(dict(name="Different User"))
+    user = ExtendedAuth0.users.search_first_match({"name": "Different User"})
     assert user is None
 
 
 def test_get_or_create_new(ExtendedAuth0, fixture_users_200, fixture_users_create):
-    user = ExtendedAuth0.users.get_or_create(dict(name="bob"))
+    user, created = ExtendedAuth0.users.get_or_create({"name": "bob"})
     assert user["name"] == "create-testing-bob"
+    assert created is True
+    fixture_users_create.assert_called_once_with({"name": "bob"})
 
 
 def test_get_or_create_existed(ExtendedAuth0, fixture_users_200, fixture_users_create):
-    user = ExtendedAuth0.users.search_first_match(dict(name="Test User 1"))
+    user, created = ExtendedAuth0.users.get_or_create({"name": "Test User 1"})
     assert user["name"] == "Test User 1"
+    assert created is False
+    fixture_users_create.assert_not_called()
 
 
 @pytest.fixture
@@ -595,3 +599,127 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                 },
             )
         connection_create.assert_called_once_with(ANY)
+
+
+def test_setup_m2m_client(ExtendedAuth0):
+    client_name = "test_m2m_client"
+    client_id = "test_m2m_client_id"
+    scopes = ["test:scope"]
+
+    with (
+        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
+        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+    ):
+        client_create.return_value = (
+            {
+                "client_id": client_id,
+                "name": client_name,
+            },
+            True,
+        )
+        ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
+
+    client_create.assert_called_once_with(
+        {
+            "name": client_name,
+            "app_type": "non_interactive",
+            "grant_types": ["client_credentials"],
+        }
+    )
+    client_grants_create.assert_called_once_with(
+        body={
+            "client_id": client_id,
+            "scope": scopes,
+            "audience": "test-audience",
+        }
+    )
+
+
+def test_setup_m2m_client_already_exists(ExtendedAuth0):
+    client_name = "test_m2m_client"
+    client_id = "test_m2m_client_id"
+    scopes = ["test:scope"]
+
+    with (
+        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
+        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+    ):
+        client_create.return_value = (
+            {
+                "client_id": client_id,
+                "name": client_name,
+            },
+            False,
+        )
+        ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
+
+    client_create.assert_called_once_with(
+        {
+            "name": client_name,
+            "app_type": "non_interactive",
+            "grant_types": ["client_credentials"],
+        }
+    )
+    client_grants_create.assert_not_called()
+
+
+def test_setup_m2m_client_grant_error(ExtendedAuth0):
+    client_name = "test_m2m_client"
+    client_id = "test_m2m_client_id"
+    scopes = ["test:scope"]
+
+    with (
+        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
+        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+        patch.object(ExtendedAuth0.clients, "delete") as client_delete,
+    ):
+        client_create.return_value = (
+            {
+                "client_id": client_id,
+                "name": client_name,
+            },
+            True,
+        )
+        client_grants_create.side_effect = exceptions.Auth0Error(400, 400, "Error")
+
+        with pytest.raises(auth0.Auth0Error, match="400: Error"):
+            ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
+
+    client_create.assert_called_once_with(
+        {
+            "name": client_name,
+            "app_type": "non_interactive",
+            "grant_types": ["client_credentials"],
+        }
+    )
+    client_grants_create.assert_called_once_with(
+        body={
+            "client_id": client_id,
+            "scope": scopes,
+            "audience": "test-audience",
+        }
+    )
+    client_delete.assert_called_once_with(client_id)
+
+
+@pytest.mark.parametrize(
+    "side_effect, expected",
+    [
+        (MagicMock(return_value=None), None),
+        (exceptions.Auth0Error(404, 404, "Error"), None),
+        (exceptions.Auth0Error(400, 400, "Error"), "400: Error"),
+        (exceptions.Auth0Error(401, 401, "Error"), "401: Error"),
+        (exceptions.Auth0Error(403, 403, "Error"), "403: Error"),
+        (exceptions.Auth0Error(429, 429, "Error"), "429: Error"),
+    ],
+)
+def test_rotate_m2m_client_secret(ExtendedAuth0, side_effect, expected):
+
+    with patch.object(ExtendedAuth0.clients, "rotate_secret") as rotate_secret:
+        rotate_secret.side_effect = side_effect
+
+        if expected is None:
+            assert ExtendedAuth0.rotate_m2m_client_secret("test_m2m_client_id") is None
+        else:
+            with pytest.raises(auth0.Auth0Error, match=expected):
+                ExtendedAuth0.rotate_m2m_client_secret("test_m2m_client_id")

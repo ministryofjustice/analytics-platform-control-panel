@@ -286,6 +286,11 @@ class AppCustomerSerializer(serializers.Serializer):
         )
 
 
+class DeleteAppCustomerSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    env_name = serializers.CharField(max_length=64, required=True)
+
+
 class ToolDeploymentSerializer(serializers.Serializer):
     old_chart_name = serializers.CharField(max_length=64, required=False)
     version = serializers.CharField(max_length=64, required=True)
