@@ -91,7 +91,10 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         if errors:
             raise ValidationError(errors)
 
-        app.add_customers(emails, env_name=request.query_params.get("env_name", ""))
+        try:
+            app.add_customers(emails, env_name=request.query_params.get("env_name", ""))
+        except app.AddCustomerError:
+            raise ValidationError({"env_name": "Invalid environment name."})
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

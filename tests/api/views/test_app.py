@@ -160,6 +160,20 @@ def test_app_by_name_add_customers(client, app, env_name):
         assert response.status_code == status.HTTP_201_CREATED
 
 
+@pytest.mark.parametrize("env_name", ["", "foo"])
+def test_app_by_name_add_customers_invalid(client, app, env_name):
+    emails = ["test1@example.com", "test2@example.com"]
+    data = {"email": ", ".join(emails)}
+
+    with patch("controlpanel.api.models.App.add_customers") as add_customers:
+        add_customers.side_effect = app.AddCustomerError
+        url = reverse("apps-by-name-customers", kwargs={"name": app.name})
+        response = client.post(f"{url}?env_name={env_name}", data=data)
+
+        add_customers.assert_called_once_with(emails, env_name=env_name)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 def test_app_detail_by_name(client, app):
     response = client.get(reverse("apps-by-name-detail", (app.name,)))
     assert response.status_code == status.HTTP_200_OK
