@@ -16,6 +16,7 @@ from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_
 from controlpanel.api.models import (
     QUICKSIGHT_EMBED_PERMISSION,
     App,
+    Feedback,
     S3Bucket,
     Tool,
     User,
@@ -655,3 +656,12 @@ class QuicksightAccessForm(forms.Form):
             self.user.user_permissions.add(permission)
         else:
             self.user.user_permissions.remove(permission)
+
+
+class FeedbackForm(forms.ModelForm):
+    class Meta:
+        model = Feedback
+        fields = [
+            "satisfaction_rating",
+            "suggestions",
+        ]
