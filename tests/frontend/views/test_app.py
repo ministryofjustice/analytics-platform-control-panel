@@ -8,10 +8,10 @@ import pytest
 import requests
 from bs4 import BeautifulSoup
 from django.conf import settings
-from django.contrib.messages import get_messages
+from django.contrib.messages import Message, constants, get_messages
 from django.urls import reverse
 from model_bakery import baker
-from pytest_django.asserts import assertQuerySetEqual
+from pytest_django.asserts import assertMessages, assertQuerySetEqual
 from rest_framework import status
 
 # First-party/Local
@@ -294,6 +294,22 @@ def set_textract(client, app, *args):
     return client.post(reverse("set-textract-app", kwargs=kwargs), data)
 
 
+@patch("controlpanel.api.cluster.App.create_m2m_client")
+def setup_m2m_client(client, app, *args):
+    kwargs = {"pk": app.id}
+    return client.post(reverse("create-m2m-client", kwargs=kwargs))
+
+
+def rotate_m2m_credentials(client, app, *args):
+    kwargs = {"pk": app.id}
+    return client.post(reverse("rotate-m2m-credentials", kwargs=kwargs))
+
+
+def delete_m2m_client(client, app, *args):
+    kwargs = {"pk": app.id}
+    return client.post(reverse("delete-m2m-client", kwargs=kwargs))
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -345,6 +361,15 @@ def set_textract(client, app, *args):
         (set_textract, "superuser", status.HTTP_302_FOUND),
         (set_textract, "app_admin", status.HTTP_403_FORBIDDEN),
         (set_textract, "normal_user", status.HTTP_403_FORBIDDEN),
+        (setup_m2m_client, "superuser", status.HTTP_302_FOUND),
+        (setup_m2m_client, "app_admin", status.HTTP_302_FOUND),
+        (setup_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
+        (rotate_m2m_credentials, "superuser", status.HTTP_302_FOUND),
+        (rotate_m2m_credentials, "app_admin", status.HTTP_302_FOUND),
+        (rotate_m2m_credentials, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_m2m_client, "superuser", status.HTTP_302_FOUND),
+        (delete_m2m_client, "app_admin", status.HTTP_302_FOUND),
+        (delete_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
@@ -844,4 +869,113 @@ def test_update_app_ip_allowlist_fails(app):
             ip_allowlist__allowed_ip_ranges=new_allowlist.allowed_ip_ranges
         ).exists()
         is False
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_create_m2m_client_success(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("create-m2m-client", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.create_m2m_client") as m2m_client:
+        m2m_client.return_value = {
+            "client_id": "test-client-id",
+            "client_secret": "test-client-secret",
+        }
+        response = client.post(url)
+
+    m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.SUCCESS,
+                message="Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
+            ),
+            Message(level=constants.INFO, message="Client ID: test-client-id"),
+            Message(level=constants.INFO, message="Client Secret: test-client-secret"),
+        ],
+        ordered=True,
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_rotate_m2m_credentials_success(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("rotate-m2m-credentials", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.rotate_m2m_client_secret") as m2m_client:
+        m2m_client.return_value = {
+            "client_id": "test-client-id",
+            "client_secret": "test-client-secret",
+        }
+        response = client.post(url)
+
+    m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.SUCCESS,
+                message="Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
+            ),
+            Message(level=constants.INFO, message="Client ID: test-client-id"),
+            Message(level=constants.INFO, message="Client Secret: test-client-secret"),
+        ],
+        ordered=True,
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_rotate_m2m_credentials_fails(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("rotate-m2m-credentials", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.rotate_m2m_client_secret") as m2m_client:
+        m2m_client.return_value = None
+        response = client.post(url)
+
+    m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.ERROR,
+                message="Failed to find a machine-to-machine client for this app, please try creating a new one.",  # noqa
+            ),
+        ],
+        ordered=True,
+    )
+
+
+@pytest.mark.parametrize("user", ["superuser", "app_admin"])
+def test_delete_m2m_client_success(app, users, client, user):
+    user = users[user]
+    client.force_login(user)
+    url = reverse("delete-m2m-client", kwargs={"pk": app.id})
+
+    with patch("controlpanel.api.cluster.App.delete_m2m_client") as delete_m2m_client:
+        response = client.post(url)
+
+    delete_m2m_client.assert_called_once()
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    assertMessages(
+        response,
+        [
+            Message(
+                level=constants.SUCCESS,
+                message="Successfully deleted machine-to-machine client.",  # noqa
+            ),
+        ],
+        ordered=True,
     )

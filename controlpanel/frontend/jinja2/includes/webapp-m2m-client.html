@@ -1,0 +1,38 @@
+<section class="cpanel-section">
+    <h2 class="govuk-heading-m">Machine-to-machine API access</h2>
+
+    {% if not app.m2m_client_id %}
+        <p class="govuk-body">If your app needs access to the Control Panel API, you can create a machine-to-machine client using the button below.</p>
+        <form action="{{ url('create-m2m-client', kwargs={ 'pk': app.id }) }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="env_name" value="{{ env_name }}">
+            <button class="govuk-button cpanel-button js-confirm"
+                    data-confirm-message="Are you sure you want to create a machine-to-machine client for this app?">
+            Create machine-to-machine client
+            </button>
+        </form>
+    {% else %}
+        <p class="govuk-body">Use the button below to rotate your machine-to-machine client secret. Your client ID will remain the same.</p>
+        <form action="{{ url('rotate-m2m-credentials', kwargs={ 'pk': app.id }) }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="env_name" value="{{ env_name }}">
+            <button class="govuk-button cpanel-button js-confirm"
+                    data-confirm-message="Are you sure you want to rotate your machine-to-machine client credentials?">
+            Rotate client secret
+            </button>
+        </form>
+
+        <p class="govuk-body">If you no longer require API access you can delete your machine-to-machine client using the button below. If you delete your client, you will have the option of creating a new one.</p>
+        <form action="{{ url('delete-m2m-client', kwargs={ 'pk': app.id }) }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="env_name" value="{{ env_name }}">
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+                    data-confirm-message="Are you sure you want to delete your machine-to-machine client?">
+            Delete machine-to-machine client
+            </button>
+        </form>
+
+    {% endif %}
+    <p class="govuk-body">See our user guidance for full details about access to the Control Panel API.</p>
+
+</section>
