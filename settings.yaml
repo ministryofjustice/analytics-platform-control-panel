@@ -12,10 +12,10 @@ enabled_features:
     _HOST_test: true
     _HOST_prod: true
   cloud_platform_assume_role:
-    _DEFAULT: false
+    _DEFAULT: true
     _HOST_dev: true
-    _HOST_prod: false
-    _HOST_alpha: false
+    _HOST_prod: true
+    _HOST_alpha: true
   app_m2m_client:
     _DEFAULT: false
     _HOST_dev: true
