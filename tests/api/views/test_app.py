@@ -135,6 +135,18 @@ def test_app_by_name_get_customers(client, app, customer, env_name):
         assert response.data["results"] == [{field: customer[field] for field in expected_fields}]
 
 
+@pytest.mark.parametrize("env_name", ["", "foo"])
+def test_app_by_name_get_customers_invalid(client, app, env_name):
+    with patch("controlpanel.api.models.App.customer_paginated") as customer_paginated:
+
+        response = client.get(
+            reverse("apps-by-name-customers", kwargs={"name": app.name}),
+            query_params={"env_name": env_name},
+        )
+        customer_paginated.assert_not_called()
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 @pytest.mark.parametrize("env_name", ["dev", "prod"])
 def test_app_by_name_add_customers(client, app, env_name):
     emails = ["test1@example.com", "test2@example.com"]

@@ -47,7 +47,10 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             raise ValidationError({"env_name": "This field is required."})
 
         app = self.get_object()
-        group_id = app.get_group_id(request.query_params.get("env_name", ""))
+        env_name = request.query_params.get("env_name")
+        group_id = app.get_group_id(env_name)
+        if not group_id:
+            raise ValidationError({"env_name": f"No envorinment with name {env_name} found."})
         page_number = request.query_params.get("page", 1)
         per_page = request.query_params.get("per_page", 25)
         customers = app.customer_paginated(
