@@ -24,8 +24,7 @@ test-python: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-python:
 	@echo
 	@echo "> Running Python Tests (In Docker)..."
-	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig \
-		frontend sh -c "pytest tests --color=yes"
+	@docker-compose run --rm -e KUBECONFIG=tests/kubeconfig frontend sh -c "pytest tests --color=yes"
 
 ## test: Run tests in Docker container
 test: test-python
