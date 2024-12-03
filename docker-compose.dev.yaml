@@ -11,7 +11,7 @@ services:
       ./tests:/home/controlpanel/tests
     ]
   migration:
-    image: ${IMAGE_NAME}:${IMAGE_TAG}
+    image: ${IMAGE_NAME}:${IMAGE_TAG-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: "python manage.py migrate"
   worker:
