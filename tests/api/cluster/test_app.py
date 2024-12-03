@@ -16,7 +16,7 @@ from controlpanel.api.github import RepositoryNotFound
 def app():
     return models.App(
         slug="test-app",
-        repo_url="https://gitpub.example.com/test-repo",
+        repo_url="https://gitpub.example.com/test-app",
         namespace="test-namespace",
     )
 
@@ -240,6 +240,67 @@ def test_remove_auth_settings_repo_error(
     auth0_instance.clear_up_app.assert_called_once()
 
 
-# TODO can this be removed?
-mock_ingress = MagicMock(name="Ingress")
-mock_ingress.spec.rules = [MagicMock(name="Rule", host="test-app.example.com")]
+def test_create_m2m_client(app, authz):
+    """
+    Test that the client_id is stored against the app
+    """
+    assert app.app_conf is None
+    with (
+        patch.object(authz, "setup_m2m_client") as setup_m2m_client,
+        patch.object(app, "save"),
+    ):
+        m2mclient = {"client_id": "test-client-id", "client_secret": "test-client-secret"}
+        setup_m2m_client.return_value = m2mclient
+
+        assert cluster.App(app).create_m2m_client() == m2mclient
+        setup_m2m_client.assert_called_once_with(
+            client_name=app.auth0_client_name("m2m"),
+            scopes=["retrieve:app", "customers:app", "add_customers:app"],
+        )
+        app.save.assert_called_once()
+        assert app.app_conf["m2m"] == {"client_id": "test-client-id"}
+
+
+@pytest.mark.parametrize(
+    "client, save_called",
+    [
+        ({"client_id": "old-client-id", "client_secret": "new-client-secret"}, False),
+        (None, True),
+    ],
+    ids=["secret_rotated", "secret_not_rotated"],
+)
+def test_rotate_m2m_client(app, authz, client, save_called):
+    """
+    Test that the client_id is stored against the app
+    """
+    app.app_conf = {"m2m": {"client_id": "old-client-id"}}
+
+    with (
+        patch.object(authz, "rotate_m2m_client_secret") as rotate_m2m_client_secret,
+        patch.object(app, "save"),
+    ):
+        rotate_m2m_client_secret.return_value = client
+
+        result = cluster.App(app).rotate_m2m_client_secret()
+
+        assert result == client
+        app.save.called is save_called
+        if save_called:
+            assert "m2m" not in app.app_conf
+        else:
+            assert app.app_conf["m2m"] == {"client_id": "old-client-id"}
+
+
+def test_delete_m2m_client(app, authz):
+    app.app_conf = {"m2m": {"client_id": "test-client-id"}}
+
+    with (
+        patch.object(authz.clients, "delete") as delete_client,
+        patch.object(app, "save"),
+    ):
+        response = cluster.App(app).delete_m2m_client()
+
+        delete_client.assert_called_once_with(id="test-client-id")
+        assert "m2m" not in app.app_conf
+        app.save.assert_called_once()
+        assert response is delete_client.return_value

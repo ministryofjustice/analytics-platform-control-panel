@@ -11,6 +11,16 @@ enabled_features:
     _HOST_dev: true
     _HOST_test: true
     _HOST_prod: true
+  cloud_platform_assume_role:
+    _DEFAULT: true
+    _HOST_dev: true
+    _HOST_prod: true
+    _HOST_alpha: true
+  app_m2m_client:
+    _DEFAULT: false
+    _HOST_dev: true
+    _HOST_prod: false
+    _HOST_alpha: false
 
 AWS_SERVICE_URL:
   _HOST_dev: "https://aws.services.dev.analytical-platform.service.justice.gov.uk"
@@ -84,7 +94,7 @@ AUTH0_NOMIS_GATEWAY_URL: "https://testing.com"
 
 
 BROADCAST_MESSAGE: >
-  AWS have increased the S3 bucket limit from one thousand to one million. | While this means that the restriction on creating new buckets has been lifted, we still recommend that you use buckets efficiently. 
+  AWS have increased the S3 bucket limit from one thousand to one million. | While this means that the restriction on creating new buckets has been lifted, we still recommend that you use buckets efficiently.
 
 GITHUB_VERSION: "2022-11-28"
 

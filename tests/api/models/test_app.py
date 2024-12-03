@@ -155,7 +155,7 @@ def test_delete_customer_by_email_user_missing_group(auth0):
     app = baker.prepare("api.App")
     with pytest.raises(
         app.DeleteCustomerError,
-        match="User foo@email.com cannot be found in this application group",
+        match="User foo@email.com not found for this application and environment",
     ):
         app.delete_customer_by_email("foo@email.com", group_id="123")
 
@@ -241,3 +241,17 @@ def test_get_logs_url(env):
     )
     app = App(namespace="example-namespace")
     assert app.get_logs_url(env=env) == expected
+
+
+@pytest.mark.parametrize(
+    "app_conf, expected",
+    [
+        (None, None),
+        ({}, None),
+        ({"m2m": {}}, None),
+        ({"m2m": {"client_id": "test-client-id"}}, "test-client-id"),
+    ],
+)
+def test_m2m_client_id(app_conf, expected):
+    app = App(app_conf=app_conf)
+    assert app.m2m_client_id == expected

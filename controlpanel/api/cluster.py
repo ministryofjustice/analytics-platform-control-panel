@@ -392,6 +392,7 @@ class App(EntityResource):
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTH0_PASSWORDLESS = "AUTH0_PASSWORDLESS"  # gitleaks:allow
     APP_ROLE_ARN = "APP_ROLE_ARN"
+    API_SCOPES = ["retrieve:app", "customers:app", "add_customers:app"]
 
     def __init__(self, app, github_api_token=None, auth0_instance=None):
         super(App, self).__init__()
@@ -501,12 +502,30 @@ class App(EntityResource):
         )
         return json.loads(statement)
 
+    @property
+    def xacct_trust_statement(self):
+        """
+        Builds an assume role statement for a Cloud Platform IAM role
+        """
+        statement = render_to_string(
+            template_name="assume_roles/cloud_platform_xacct.json",
+            context={"app_role": self.app.cloud_platform_role_arn},
+        )
+        return json.loads(statement)
+
     def create_iam_role(self):
+        statement = self._get_statement()
         assume_role_policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-        assume_role_policy["Statement"].append(self.oidc_provider_statement)
+        assume_role_policy["Statement"].append(statement)
         self.aws_role_service.create_role(self.iam_role_name, assume_role_policy)
         for env in self.get_deployment_envs():
             self._create_secrets(env_name=env)
+
+    def _get_statement(self):
+        if self.app.cloud_platform_role_arn:
+            return self.xacct_trust_statement
+
+        return self.oidc_provider_statement
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         self.aws_role_service.grant_bucket_access(
@@ -674,6 +693,36 @@ class App(EntityResource):
             client=client,
         )
         return client, group
+
+    def create_m2m_client(self):
+        m2m_client = self._get_auth0_instance().setup_m2m_client(
+            client_name=self.app.auth0_client_name("m2m"),
+            scopes=self.API_SCOPES,
+        )
+        if not self.app.app_conf:
+            self.app.app_conf = {}
+
+        # save the client ID, which we can use to retrieve the client secret
+        self.app.app_conf["m2m"] = {
+            "client_id": m2m_client["client_id"],
+        }
+        self.app.save()
+        return m2m_client
+
+    def rotate_m2m_client_secret(self):
+        m2m_client = self._get_auth0_instance().rotate_m2m_client_secret(
+            client_id=self.app.m2m_client_id
+        )
+        if not m2m_client:
+            self.app.app_conf.pop("m2m", None)
+            self.app.save()
+        return m2m_client
+
+    def delete_m2m_client(self):
+        response = self._get_auth0_instance().clients.delete(id=self.app.m2m_client_id)
+        self.app.app_conf.pop("m2m", None)
+        self.app.save()
+        return response
 
     def remove_auth_settings(self, env_name):
         try:
