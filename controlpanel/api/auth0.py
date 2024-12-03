@@ -46,6 +46,8 @@ class ExtendedAuth0(Auth0):
 
     DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
     DEFAULT_APP_TYPE = "regular_web"
+    M2M_APP_TYPE = "non_interactive"
+    M2M_GRANT_TYPES = ["client_credentials"]
 
     DEFAULT_CONNECTION_OPTION = "email"
 
@@ -184,6 +186,41 @@ class ExtendedAuth0(Auth0):
 
         self._enable_connections_for_new_client(client_id, chosen_connections=new_connections)
         return client, group
+
+    def setup_m2m_client(self, client_name, scopes):
+        client, created = self.clients.get_or_create(
+            {
+                "name": client_name,
+                "app_type": "non_interactive",
+                "grant_types": ExtendedAuth0.M2M_GRANT_TYPES,
+            }
+        )
+        if not created:
+            return client
+
+        try:
+            body = {
+                "client_id": client["client_id"],
+                "scope": scopes,
+                "audience": settings.OIDC_CPANEL_API_AUDIENCE,
+            }
+            self.client_grants.create(body=body)
+        except exceptions.Auth0Error as error:
+            # if the client grant already exists, it will raise 409 error, so we can ignore it.
+            # otherwise, raise the error
+            if error.status_code != 409:
+                self.clients.delete(client["client_id"])
+                raise Auth0Error(error.__str__(), code=error.status_code)
+
+        return client
+
+    def rotate_m2m_client_secret(self, client_id):
+        try:
+            return self.clients.rotate_secret(client_id)
+        except exceptions.Auth0Error as error:
+            if error.status_code == 404:
+                return None
+            raise Auth0Error(error.__str__(), code=error.status_code)
 
     def add_group_members_by_emails(self, emails, user_options={}, group_id=None, group_name=None):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
@@ -417,9 +454,11 @@ class ExtendedAPIMethods(object):
 
     def get_or_create(self, resource):
         result = self.search_first_match(resource)
+        created = False
         if result is None:
             result = self.create(resource)
-        return result
+            created = True
+        return result, created
 
 
 class ExtendedClients(ExtendedAPIMethods, Clients):

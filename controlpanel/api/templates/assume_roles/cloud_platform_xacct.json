@@ -1,0 +1,9 @@
+{
+    "Sid": "AllowCloudPlatformCrossAccountIAM",
+    "Effect": "Allow",
+    "Action": "sts:AssumeRole",
+    "Principal": {
+        "AWS": "{{ app_role }}"
+    },
+    "Condition": {}
+}

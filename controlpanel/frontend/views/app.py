@@ -206,6 +206,13 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             return FormMixin.form_invalid(self, form)
         return FormMixin.form_valid(self, form)
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["show_cloud_platform_assume_role"] = (
+            settings.features.cloud_platform_assume_role.enabled
+        )
+        return context
+
 
 class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
 
@@ -445,6 +452,63 @@ class SetupAppAuth0(
         app = self.get_object()
         env_name = dict(self.request.POST).get("env_name")[0]
         cluster.App(app, self.request.user.github_api_token).create_auth_settings(env_name=env_name)
+        return super().post(request, *args, **kwargs)
+
+
+class M2MClientMixin(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    SingleObjectMixin,
+):
+    http_method_names = ["post"]
+    permission_required = "api.update_app_settings"
+    model = App
+
+    def get_redirect_url(self, *args, **kwargs):
+        return reverse_lazy("manage-app", kwargs={"pk": kwargs["pk"]})
+
+
+class SetupM2MClient(M2MClientMixin, RedirectView):
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        client = cluster.App(app, self.request.user.github_api_token).create_m2m_client()
+        messages.success(
+            self.request,
+            f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
+        )
+        messages.info(self.request, f"Client ID: {client['client_id']}")
+        messages.info(self.request, f"Client Secret: {client['client_secret']}")
+        return super().post(request, *args, **kwargs)
+
+
+class RotateM2MCredentials(M2MClientMixin, RedirectView):
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        client = cluster.App(app, self.request.user.github_api_token).rotate_m2m_client_secret()
+        if not client:
+            messages.error(
+                self.request,
+                "Failed to find a machine-to-machine client for this app, please try creating a new one.",  # noqa
+            )
+            return self.get(request, *args, **kwargs)
+
+        messages.success(
+            self.request,
+            f"Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
+        )
+        messages.info(self.request, f"Client ID: {client['client_id']}")
+        messages.info(self.request, f"Client Secret: {client['client_secret']}")
+        return super().post(request, *args, **kwargs)
+
+
+class DeleteM2MClient(M2MClientMixin, RedirectView):
+
+    def post(self, request, *args, **kwargs):
+        app = self.get_object()
+        cluster.App(app, self.request.user.github_api_token).delete_m2m_client()
+        messages.success(self.request, "Successfully deleted machine-to-machine client.")
         return super().post(request, *args, **kwargs)
 
 

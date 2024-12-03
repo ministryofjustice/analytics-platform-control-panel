@@ -58,7 +58,14 @@ class S3BucketRevokeUserAccess(BaseTaskHandler):
     name = "revoke_user_s3bucket_access"
 
     def handle(self, bucket_identifier, bucket_user_pk, is_folder):
-        bucket_user = User.objects.get(pk=bucket_user_pk)
+        try:
+            bucket_user = User.objects.get(pk=bucket_user_pk)
+        except User.DoesNotExist:
+            # if the user doesnt exist, nothing to revoke, so mark completed
+            log.warn("User does not exist. Skipping...")
+            self.complete()
+            return
+
         if is_folder:
             cluster.User(bucket_user).revoke_folder_access(bucket_identifier)
         else:
