@@ -1,7 +1,7 @@
 REPOSITORY?=controlpanel
 VIRTUAL_ENV ?= venv
 BIN=${VIRTUAL_ENV}/bin
-IMAGE_TAG ?= local
+IMAGE_TAG ?= latest
 DOCKER_BUILDKIT?=1
 # REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
 MAKEFLAGS += -j2

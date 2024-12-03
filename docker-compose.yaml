@@ -18,7 +18,7 @@ services:
     command: sh -c "exec redis-server --requirepass \"$${REDIS_PASSWORD}\""
 
   migration:
-    image: ${IMAGE_NAME}:${IMAGE_TAG}
+    image: ${IMAGE_NAME}_eks:${IMAGE_TAG}
     depends_on:
       db:
         condition: service_healthy
