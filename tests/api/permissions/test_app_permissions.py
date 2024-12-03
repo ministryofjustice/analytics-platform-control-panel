@@ -15,6 +15,7 @@ from rules import perm_exists
 
 # First-party/Local
 from controlpanel.api.jwt_auth import AuthenticatedServiceClient
+from controlpanel.api.models import App
 from controlpanel.api.permissions import AppJwtPermissions
 
 
@@ -42,7 +43,16 @@ def users(users, authenticated_client, invalid_client_sub, invalid_client_scope)
 
 @pytest.fixture(autouse=True)
 def app(users):
-    app = baker.make("api.App", name="Test App 1", app_conf={"m2m": {"client_id": "abc123"}})
+    app = baker.make(
+        "api.App",
+        name="Test App 1",
+        app_conf={
+            "m2m": {"client_id": "abc123"},
+            App.KEY_WORD_FOR_AUTH_SETTINGS: {
+                "test": {"group_id": "test_group_id"},
+            },
+        },
+    )
     user = users["app_admin"]
     baker.make("api.UserApp", user=user, app=app, is_admin=True)
 
@@ -125,12 +135,11 @@ def app_by_name_customers(client, app, *args):
 
 
 def app_by_name_add_customers(client, app, *args):
-    data = {"email": "example@email.com"}
+    data = {"emails": "example@email.com", "env_name": "test"}
     with patch("controlpanel.api.models.App.add_customers"):
         return client.post(
             reverse("apps-by-name-customers", kwargs={"name": app.name}),
             data,
-            query_params={"env_name": "test"},
         )
 
 
