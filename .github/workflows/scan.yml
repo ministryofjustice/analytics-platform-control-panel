@@ -38,6 +38,6 @@ jobs:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db:2
           TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db:1
         with:
-          image-ref: ${{ github.repository }}:${{ github.sha }}
+          image-ref: ${{ github.repository }}_eks:${{ github.sha }}
           severity: HIGH,CRITICAL
           exit-code: 1
