@@ -5,11 +5,12 @@ IMAGE_TAG ?= local
 DOCKER_BUILDKIT?=1
 # REGISTRY?=593291632749.dkr.ecr.eu-west-1.amazonaws.com
 MAKEFLAGS += -j2
-IMAGE_NAME ?= ghcr.io/ministryofjustice/analytical-platform-control-panel
+IMAGE_NAME ?= ghcr.io/ministryofjustice/analytics-platform-control-panel
 
 
 include Makefile.local.mk
 export
+
 
 .PHONY: clean build help test test-python dev-up
 
