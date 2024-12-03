@@ -2,13 +2,10 @@
 import re
 
 # Third-party
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import EmailValidator
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import get_error_detail
 from rest_framework.response import Response
 
 # First-party/Local
@@ -43,32 +40,29 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
     @action(detail=True, methods=["get"])
     def customers(self, request, *args, **kwargs):
-        if "env_name" not in request.query_params:
-            raise ValidationError({"env_name": "This field is required."})
-
         app = self.get_object()
-        env_name = request.query_params.get("env_name")
-        group_id = app.get_group_id(env_name)
-        if not group_id:
-            raise ValidationError({"env_name": f"{env_name} not found."})
+        serializer = serializers.AppCustomersQueryParamsSerializer(
+            data=request.query_params, app=app
+        )
+        serializer.is_valid(raise_exception=True)
+        validated_params = serializer.validated_data
 
-        page_number = request.query_params.get("page", 1)
-        per_page = request.query_params.get("per_page", 25)
+        group_id = app.get_group_id(validated_params["env_name"])
         customers = app.customer_paginated(
-            page=page_number,
+            page=validated_params["page"],
             group_id=group_id,
-            per_page=per_page,
+            per_page=validated_params["per_page"],
         )
-        serializer = self.get_serializer(data=customers["users"], many=True)
-        serializer.is_valid()
-        pagination = Auth0ApiPagination(
-            request,
-            page_number,
-            object_list=serializer.validated_data,
+        customers_serializer = self.get_serializer(data=customers["users"], many=True)
+        customers_serializer.is_valid(raise_exception=True)
+
+        return Auth0ApiPagination(
+            request=request,
+            page_number=validated_params["page"],
+            object_list=customers_serializer.validated_data,
             total_count=customers["total"],
-            per_page=per_page,
-        )
-        return pagination.get_paginated_response()
+            per_page=validated_params["per_page"],
+        ).get_paginated_response()
 
     @customers.mapping.post
     def add_customers(self, request, *args, **kwargs):

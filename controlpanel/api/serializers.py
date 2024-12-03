@@ -287,6 +287,21 @@ class AppCustomerSerializer(serializers.Serializer):
         )
 
 
+class AppCustomersQueryParamsSerializer(serializers.Serializer):
+    env_name = serializers.CharField(max_length=64, required=True)
+    page = serializers.IntegerField(min_value=1, required=False, default=1)
+    per_page = serializers.IntegerField(min_value=1, required=False, default=25)
+
+    def __init__(self, *args, **kwargs):
+        self.app = kwargs.pop("app")
+        super().__init__(*args, **kwargs)
+
+    def validate_env_name(self, env_name):
+        if not self.app.get_group_id(env_name):
+            raise serializers.ValidationError(f"{env_name} is invalid for this app.")
+        return env_name
+
+
 class AddAppCustomersSerializer(serializers.Serializer):
     emails = serializers.CharField(max_length=None, required=True)
     env_name = serializers.CharField(max_length=64, required=True)
