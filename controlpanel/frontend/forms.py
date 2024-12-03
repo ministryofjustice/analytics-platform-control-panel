@@ -545,6 +545,8 @@ class ToolReleaseForm(forms.ModelForm):
             "tool_domain",
             "description",
             "is_deprecated",
+            "deprecated_message",
+            "is_retired",
         ]
 
 

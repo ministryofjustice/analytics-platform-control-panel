@@ -52,6 +52,8 @@ class Tool(TimeStampedModel):
     )
 
     is_deprecated = models.BooleanField(default=False)
+    deprecated_message = models.TextField(blank=True)
+    is_retired = models.BooleanField(default=False)
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
