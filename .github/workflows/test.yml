@@ -24,10 +24,7 @@ jobs:
       #   uses: ministryofjustice/github-actions/setup-container-structure-test@ccf9e3a4a828df1ec741f6c8e6ed9d0acaef3490 # v18.5.0
 
       - name: Install Docker Compose
-        id: docker-compose-test
-        shell: bash
-        env:
-          IMAGE_TAG: ${{ github.sha }}
+
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
