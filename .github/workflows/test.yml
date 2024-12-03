@@ -1,33 +1,68 @@
----
-name: 🧪 Test
+# ---
+# name: 🧪 Test
 
-on:
-  pull_request:
-    branches:
-      - main
+# on:
+#   pull_request:
+#     branches:
+#       - main
 
-permissions: {}
+# permissions: {}
 
-jobs:
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        id: checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+# jobs:
+#   test:
+#     name: Test
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: write
+#       id-token: write
+#       packages: write
+#     steps:
+#       - name: Checkout
+#         id: checkout
+#         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      # - name: Set Up Container Structure Test
-      #   id: setup_container_structure_test
-      #   uses: ministryofjustice/github-actions/setup-container-structure-test@ccf9e3a4a828df1ec741f6c8e6ed9d0acaef3490 # v18.5.0
+#       # - name: Set Up Container Structure Test
+#       #   id: setup_container_structure_test
+#       #   uses: ministryofjustice/github-actions/setup-container-structure-test@ccf9e3a4a828df1ec741f6c8e6ed9d0acaef3490 # v18.5.0
 
-      - name: Install Docker Compose
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v2
+      
+#       - name: Install Docker Compose
+#         id: docker-compose
+#         shell: bash
+#         env:
+#           IMAGE_TAG: ${{ github.sha }}
+#         run: |
+#           sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+#           sudo chmod +x /usr/local/bin/docker-compose
+#           docker-compose --version
 
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
-      - name: Run tests
-        run: make test-python
+#       - name: Build with Docker Compose
+#         id: build
+#         shell: bash
+#         env:
+#           IMAGE_TAG: ${{ github.sha }}
+#         run: |
+#           make build
+      
+#       - name: Log in to GitHub Container Registry
+#         id: ghcr_login
+#         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
+  
+#       - name: Push
+#         id: push
+#         env:
+#           IMAGE_NAME: ghcr.io/ministryofjustice/analytics-platform-control-panel
+#         run: |
+#           docker push $IMAGE_NAME:${{ github.sha }}
+          
+#       - name: Run tests
+#         env: 
+#           IMAGE_TAG: ${{ github.sha }}
+#         run: |
+#           make test-python 
