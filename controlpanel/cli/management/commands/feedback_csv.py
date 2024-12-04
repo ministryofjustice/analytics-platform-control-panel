@@ -32,7 +32,7 @@ class Command(BaseCommand):
         if options["all"]:
             feedback_items = Feedback.objects.all()
         else:
-            self.stdout.write(f"num_weeks: {options["num_weeks"]}")
+            self.stdout.write(f"num_weeks: {options['num_weeks']}")
             timeframe = today - timedelta(weeks=options["num_weeks"])
             feedback_items = Feedback.objects.filter(date_added__gte=timeframe)
 
