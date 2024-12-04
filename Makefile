@@ -30,21 +30,21 @@ test-python:
 test: test-python
 
 prepare-up:
-	@docker-compose up -d db
-	@docker-compose run --rm --no-deps frontend sh -c "do sleep 2;done"
-	@docker-compose up migration
-	@docker-compose run --rm --no-deps frontend sh -c "do sleep 2;done"
+	@docker compose up -d db
+	@docker compose run --rm --no-deps frontend sh -c "do sleep 2;done"
+	@docker compose up migration
+	@docker compose run --rm --no-deps frontend sh -c "do sleep 2;done"
 
 up: prepare-up
-	@docker-compose up -d frontend
-	@docker-compose logs -f
+	@docker compose up -d frontend
+	@docker compose logs -f
 
 enter:
-	docker-compose run --rm --no-deps --entrypoint sh worker
+	docker compose run --rm --no-deps --entrypoint sh worker
 logs:
-	@docker-compose logs -f
+	@docker compose logs -f
 push:
-	docker-compose push frontend
+	docker compose push frontend
 
 help: Makefile
 	@echo

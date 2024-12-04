@@ -2,15 +2,15 @@ all: help
 
 ## dev-prepare-up: Run migration before doing up
 dev-prepare-up:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml run migration
 
 ## dev-daemon: Startup with docker process in background (to stop afterwards use make clean)
 dev-daemon: dev-prepare-up
-	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
+	docker compose -f docker-compose.yaml -f  docker-compose.dev.yaml up -d frontend
 
 ## dev-fg: Startup with docker process in foreground
 dev-fg: dev-prepare-up
-	docker-compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
+	docker compose -f docker-compose.yaml -f  docker-compose.dev.yaml up frontend
 
 ## dev-debug: Startup clean docker process in background, and docker attach to foreground for debugging
 dev-debug: clean dev-daemon
@@ -22,15 +22,15 @@ dev-attach:
 
 ## dev-py: Start django shell (in the dev-packages context) in new container
 dev-py:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python manage.py shell"
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml run frontend sh -c "dev-packages/bin/python manage.py shell"
 
 ## dev-run: Start shell in new copy of container
 dev-run:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend bash
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml run --rm frontend bash
 
 ## dev-exec: Exec into shell of existing container
 dev-exec:
-	docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend bash
+	docker compose -f docker-compose.yaml -f docker-compose.dev.yaml exec frontend bash
 
 test-wip: DJANGO_SETTINGS_MODULE=controlpanel.settings.test
 test-wip:
