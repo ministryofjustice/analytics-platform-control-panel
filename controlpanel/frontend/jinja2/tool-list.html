@@ -61,7 +61,7 @@
   <div class="govuk-grid-column-one-third">
   <p class="govuk-!-margin-bottom-1">Status:
   <span class="govuk-!-font-weight-bold tool-status-label">
-    {% if deployment %}
+    {% if deployment and deployment.tool_id != -1 %}
       {{ deployment.status | default("") }}
     {% else %}
     Not deployed
@@ -86,7 +86,7 @@
     onclick="window.open('{{ tool_info['url'] }}', '_blank');"
     rel="noopener"
     target="_blank"
-    {% if not deployment %} disabled {% endif %}>
+    {% if not deployment or deployment.tool_id == -1 %} disabled {% endif %}>
       Open
   </button>
 
@@ -108,11 +108,11 @@
 </div>
 
 {% if deployment and deployment.tool_id == -1 %}
+
 <div>
   <p class="govuk-body">
-    Your current deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
-    is not recognised as a current maintained tool release. You can still use it,
-    but it is recommended to switch to a new version from the dropdown list.
+    Your previous deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
+    is no longer maintained. You will need to deploy a new version from the dropdown list.
   </p>
 </div>
 {% endif %}
