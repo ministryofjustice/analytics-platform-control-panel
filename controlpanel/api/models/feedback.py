@@ -1,5 +1,6 @@
 # Third-party
 from django.db import models
+from django.utils import timezone
 
 
 class Feedback(models.Model):
@@ -18,6 +19,7 @@ class Feedback(models.Model):
     )
 
     suggestions = models.TextField()
+    date_added = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "control_panel_api_feedback"

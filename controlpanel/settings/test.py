@@ -38,3 +38,5 @@ QUICKSIGHT_DOMAINS = "http://localhost:8000"
 QUICKSIGHT_ASSUMED_ROLE = "arn:aws:iam::123456789012:role/quicksight_test"
 
 OIDC_CPANEL_API_AUDIENCE = "test-audience"
+
+FEEDBACK_BUCKET_NAME = "test-feedback-bucket"
