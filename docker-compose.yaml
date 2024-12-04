@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 services:
   db:
     image: "postgres:13.3"
@@ -85,7 +85,7 @@ services:
       ALLOWED_HOSTS: "localhost 127.0.0.1 0.0.0.0"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_DATA_ACCOUNT_ID: ${AWS_DATA_ACCOUNT_ID}
-      AWS_DEFAULT_REGION:
+      AWS_DEFAULT_REGION: ${AWS_REGION:-eu-west-1}
       AWS_REGION: ${AWS_REGION:-eu-west-1}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
