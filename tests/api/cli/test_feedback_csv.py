@@ -7,7 +7,7 @@ from django.core.management import call_command
 
 @patch("controlpanel.cli.management.commands.feedback_csv.AWSBucket")
 def test_feedback_csv_no_feedback(mock_bucket, db):
-    call_command("feedback_csv", "--num_weeks", "2")
+    call_command("feedback_csv", "--weeks", "2")
 
     # Assert that with no feedback present, the following methods aren't called
     mock_bucket.return_value.exists.assert_not_called()
@@ -18,7 +18,7 @@ def test_feedback_csv_no_feedback(mock_bucket, db):
 @patch("controlpanel.cli.management.commands.feedback_csv.AWSBucket")
 def test_feedback_csv_no_bucket(mock_bucket, db, feedback):
     mock_bucket.return_value.exists.return_value = False
-    call_command("feedback_csv", "--num_weeks", "2")
+    call_command("feedback_csv", "--weeks", "2")
 
     # Assert that with feedback present, the following methods aren't called
     mock_bucket.return_value.exists.assert_called_with("test-feedback-bucket")
@@ -29,7 +29,7 @@ def test_feedback_csv_no_bucket(mock_bucket, db, feedback):
 @patch("controlpanel.cli.management.commands.feedback_csv.AWSBucket")
 def test_feedback_csv_bucket_exists(mock_bucket, db, feedback):
     mock_bucket.return_value.exists.return_value = True
-    call_command("feedback_csv", "--num_weeks", "2")
+    call_command("feedback_csv", "--weeks", "2")
 
     # Assert that with feedback present, the following methods aren't called
     mock_bucket.return_value.exists.assert_called_with("test-feedback-bucket")

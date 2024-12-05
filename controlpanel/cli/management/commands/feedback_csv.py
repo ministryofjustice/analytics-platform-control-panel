@@ -19,7 +19,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--num_weeks",
+            "--weeks",
+            "-w",
             type=int,
             default=2,
             help="Get feedback over an x week period from today's date",
