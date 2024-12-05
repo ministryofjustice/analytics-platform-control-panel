@@ -33,12 +33,12 @@ class Command(BaseCommand):
         if options["all"]:
             feedback_items = Feedback.objects.all()
         else:
-            self.stdout.write(f"num_weeks: {options['num_weeks']}")
-            timeframe = today - timedelta(weeks=options["num_weeks"])
+            self.stdout.write(f"weeks: {options['weeks']}")
+            timeframe = today - timedelta(weeks=options["weeks"])
             feedback_items = Feedback.objects.filter(date_added__gte=timeframe)
 
         if not feedback_items:
-            self.stdout.write(f"No feedback found for the past {options['num_weeks']} weeks")
+            self.stdout.write(f"No feedback found for the past {options['weeks']} weeks")
             return
 
         filename = f"feedback_{today}.csv"
