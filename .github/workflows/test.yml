@@ -1,0 +1,45 @@
+name: Run tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      LOGS_BUCKET_NAME: moj-analytics-s3-logs
+    permissions:
+      actions: read
+      attestations: write
+      contents: write
+      id-token: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      
+      # - name: Install Docker Compose
+      #   id: docker-compose
+      #   shell: bash
+      #   env:
+      #     IMAGE_TAG: ${{ github.sha }}
+      #   run: |
+      #     sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      #     sudo chmod +x /usr/local/bin/docker-compose
+      #     docker compose version
+
+      - name: Build image
+        run: make build
+        env:
+          NETWORK: host
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Run Python tests (docker compose)
+        run: make clean && make test
+        env:
+          NETWORK: default
+          IMAGE_TAG: ${{ github.sha }}
