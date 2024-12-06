@@ -22,15 +22,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       
-      - name: Install Docker Compose
-        id: docker-compose
-        shell: bash
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
+      # - name: Install Docker Compose
+      #   id: docker-compose
+      #   shell: bash
+      #   env:
+      #     IMAGE_TAG: ${{ github.sha }}
+      #   run: |
+      #     sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      #     sudo chmod +x /usr/local/bin/docker-compose
+      #     docker compose version
 
       - name: Build image
         run: make build
@@ -38,20 +38,9 @@ jobs:
           NETWORK: host
           IMAGE_TAG: ${{ github.sha }}
 
-      - name: Run Python tests (docker-compose)
+      - name: Run Python tests (docker compose)
         run: make clean && make test
         env:
           NETWORK: default
           IMAGE_TAG: ${{ github.sha }}
-      
-      - name: Log in to GitHub Container Registry
-        id: ghcr_login
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push
-        run: |
-          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+          
