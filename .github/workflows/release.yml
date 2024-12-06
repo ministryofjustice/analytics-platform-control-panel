@@ -23,17 +23,6 @@ jobs:
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
-      - name: Set up Docker Context for Buildx
-        id: buildx-context
-        run: docker context use builders || docker context create builders
-
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 #v3.7.1
-        with:
-          version: latest
-          endpoint: builders
-
       - name: Install cosign
         id: install_cosign
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
@@ -100,3 +89,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh attestation verify oci://ghcr.io/${{ github.repository }}:${{ github.ref_name }} --repo ${{ github.repository }}
+          
