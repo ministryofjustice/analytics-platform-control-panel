@@ -43,4 +43,3 @@ jobs:
         env:
           NETWORK: default
           IMAGE_TAG: ${{ github.sha }}
-          
