@@ -89,4 +89,3 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh attestation verify oci://ghcr.io/${{ github.repository }}:${{ github.ref_name }} --repo ${{ github.repository }}
-          
