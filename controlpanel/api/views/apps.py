@@ -2,13 +2,10 @@
 import re
 
 # Third-party
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import EmailValidator
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import get_error_detail
 from rest_framework.response import Response
 
 # First-party/Local
@@ -33,7 +30,7 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def get_serializer_class(self, *args, **kwargs):
         mapping = {
             "customers": serializers.AppCustomerSerializer,
-            "add_customers": serializers.AppCustomerSerializer,
+            "add_customers": serializers.AddAppCustomersSerializer,
             "delete_customers": serializers.DeleteAppCustomerSerializer,
         }
         serializer = mapping.get(self.action)
@@ -43,54 +40,48 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
     @action(detail=True, methods=["get"])
     def customers(self, request, *args, **kwargs):
-        if "env_name" not in request.query_params:
-            raise ValidationError({"env_name": "This field is required."})
-
         app = self.get_object()
-        group_id = app.get_group_id(request.query_params.get("env_name", ""))
-        page_number = request.query_params.get("page", 1)
-        per_page = request.query_params.get("per_page", 25)
+        serializer = serializers.AppCustomersQueryParamsSerializer(
+            data=request.query_params, app=app
+        )
+        serializer.is_valid(raise_exception=True)
+        validated_params = serializer.validated_data
+
+        group_id = app.get_group_id(validated_params["env_name"])
         customers = app.customer_paginated(
-            page=page_number,
+            page=validated_params["page"],
             group_id=group_id,
-            per_page=per_page,
+            per_page=validated_params["per_page"],
         )
-        serializer = self.get_serializer(data=customers["users"], many=True)
-        serializer.is_valid()
-        pagination = Auth0ApiPagination(
-            request,
-            page_number,
-            object_list=serializer.validated_data,
+        customers_serializer = self.get_serializer(data=customers["users"], many=True)
+        customers_serializer.is_valid(raise_exception=True)
+
+        return Auth0ApiPagination(
+            request=request,
+            page_number=validated_params["page"],
+            object_list=customers_serializer.validated_data,
             total_count=customers["total"],
-            per_page=per_page,
-        )
-        return pagination.get_paginated_response()
+            per_page=validated_params["per_page"],
+        ).get_paginated_response()
 
     @customers.mapping.post
     def add_customers(self, request, *args, **kwargs):
-        if "env_name" not in request.query_params:
-            raise ValidationError({"env_name": "This field is required."})
-
-        serializer = self.get_serializer(data=request.data)
+        app = self.get_object()
+        serializer = self.get_serializer(data=request.data, app=app)
         serializer.is_valid(raise_exception=True)
 
-        app = self.get_object()
+        try:
+            app.add_customers(
+                serializer.validated_data["emails"], env_name=serializer.validated_data["env_name"]
+            )
+        except app.AddCustomerError:
+            raise ValidationError(
+                "An error occurred trying to add customers, check that the environment exists."
+            )
 
-        delimiters = re.compile(r"[,; ]+")
-        emails = delimiters.split(serializer.validated_data["email"])
-        errors = []
-        for email in emails:
-            validator = EmailValidator(message=f"{email} is not a valid email address")
-            try:
-                validator(email)
-            except DjangoValidationError as error:
-                errors.extend(get_error_detail(error))
-        if errors:
-            raise ValidationError(errors)
-
-        app.add_customers(emails, env_name=request.query_params.get("env_name", ""))
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(
+            {"message": "Successfully added customers."}, status=status.HTTP_201_CREATED
+        )
 
     @customers.mapping.delete
     def delete_customers(self, request, *args, **kwargs):
