@@ -44,7 +44,7 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
     UpdateAppAuth0ConnectionsForm,
 )
-from controlpanel.frontend.mixins import PolicyAccessMixin
+from controlpanel.frontend.mixins import CsvWriterMixin, PolicyAccessMixin
 from controlpanel.frontend.views.apps_mng import AppManager
 from controlpanel.oidc import OIDCLoginRequiredMixin
 
@@ -78,8 +78,10 @@ class AdminAppList(AppList):
         )
 
 
-class AppAdminCSV(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = "api.is_superuser"
+class AppAdminCSV(CsvWriterMixin, View):
+    filename = "app_admins"
+    csv_headings = ["App Name", "Admins", "Emails"]
+    model_attributes = ["name", "users", "emails"]
 
     def post(self, request, *args, **kwargs):
         apps = (
@@ -95,19 +97,7 @@ class AppAdminCSV(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
             .order_by("name")
         )
 
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-
-        response = HttpResponse(
-            content_type="text/csv",
-            headers={"Content-Disposition": f'attachment; filename="app_admins_{timestamp}.csv"'},
-        )
-
-        writer = csv.writer(response)
-        writer.writerow(["App Name", "Admins", "Emails"])
-        for app in apps:
-            writer.writerow([app["name"], app["users"], app["emails"]])
-
-        return response
+        return self.write_csv(apps)
 
 
 class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):

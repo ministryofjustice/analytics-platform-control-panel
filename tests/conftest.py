@@ -186,3 +186,14 @@ class Helpers:
 @pytest.fixture
 def helpers():
     return Helpers
+
+
+@pytest.fixture
+def feedback(db):
+    feedback = baker.make(
+        "api.Feedback",
+        satisfaction_rating="5",
+        suggestions="Great software!",
+    )
+
+    return feedback

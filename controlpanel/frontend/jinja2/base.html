@@ -75,6 +75,14 @@
 {% endblock %}
 
 {% block beforeContent %}
+  <div class="govuk-phase-banner govuk-width-container">
+    <p class="govuk-phase-banner__content">
+      <span class="govuk-phase-banner__text">
+        Provide your <a class="govuk-link" href="{{url("feedback-create")}}">Feedback</a> to help us improve this service.
+      </span>
+    </p>
+  </div>
+
   {% if not hide_nav and request.user.is_authenticated %}
   {{ mojPrimaryNavigation({
     "label": "Primary navigation",
