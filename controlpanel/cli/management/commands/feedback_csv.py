@@ -15,7 +15,6 @@ from controlpanel.api.models import Feedback
 class Command(BaseCommand):
     help = "Writes a csv file with the feedback data to an S3 Bucket"
     csv_headings = ["Satisfaction Rating", "Suggestions", "Date Added"]
-    attributes = ["satisfaction_rating", "suggestions", "date_added"]
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -55,9 +54,6 @@ class Command(BaseCommand):
 
         try:
             csv_value = csv_buffer.getvalue()
-            self.stdout.write(f"csv_value: {csv_value}")
-            self.stdout.write(f"bucket name: {settings.FEEDBACK_BUCKET_NAME}")
-            self.stdout.write(f"filename: {filename}")
             bucket = AWSBucket()
 
             if not bucket.exists(settings.FEEDBACK_BUCKET_NAME):
