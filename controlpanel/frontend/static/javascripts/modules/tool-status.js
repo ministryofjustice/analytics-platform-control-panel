@@ -166,11 +166,11 @@ moj.Modules.toolStatus = {
     const deprecationMessage = selected.attributes["data-deprecated-message"].value;
 
     if (isDeprecated) {
-      deprecationMessageElement.firstChild.innerText = deprecationMessage;
+      deprecationMessageElement.lastChild.innerText = deprecationMessage;
       deprecationMessageElement.classList.remove(this.hidden);
     } else {
       deprecationMessageElement.classList.add(this.hidden);
-      deprecationMessageElement.firstChild.innerText = "";
+      deprecationMessageElement.lastChild.innerText = "";
     }
   }
 };
