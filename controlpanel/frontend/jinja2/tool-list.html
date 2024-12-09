@@ -113,14 +113,14 @@
   </div>
 </div>
 
-<div id="{{ chart_name }}-deprecation-message" {% if not deployment or deployment.deprecated_message == "" %}class="govuk-visually-hidden"{% endif %}><p class="govuk-body">{{ deployment.deprecated_message }}</p></div>
+<div id="{{ chart_name }}-deprecation-message" class="govuk-warning-text{% if not deployment or not deployment.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{{ deployment.deprecated_message }}</strong></div>
 
 {% if deployment and deployment.tool_id == -1 %}
 
 <div>
   <p class="govuk-body">
     Your previous deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
-    is no longer maintained. You will need to deploy a new version from the dropdown list.
+    has been retired. You will need to deploy a new version from the dropdown list.
   </p>
 </div>
 {% endif %}
