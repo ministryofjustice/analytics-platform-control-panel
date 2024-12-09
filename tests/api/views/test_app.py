@@ -21,6 +21,12 @@ def app():
     return baker.make(
         "api.App",
         repo_url="https://github.com/ministryofjustice/example.git",
+        app_conf={
+            App.KEY_WORD_FOR_AUTH_SETTINGS: {
+                "dev": {"group_id": "dev_group_id"},
+                "prod": {"group_id": "prod_group_id"},
+            }
+        },
     )
 
 
@@ -114,7 +120,7 @@ def customer():
     }
 
 
-@pytest.mark.parametrize("env_name", ["dev", "prod"])
+@pytest.mark.parametrize("env_name", ["dev", "prod"], ids=["dev", "prod"])
 def test_app_by_name_get_customers(client, app, customer, env_name):
     with patch("controlpanel.api.models.App.customer_paginated") as customer_paginated:
         customer_paginated.return_value = {"total": 1, "users": [customer]}
@@ -135,17 +141,43 @@ def test_app_by_name_get_customers(client, app, customer, env_name):
         assert response.data["results"] == [{field: customer[field] for field in expected_fields}]
 
 
+@pytest.mark.parametrize("env_name", ["", "foo"])
+def test_app_by_name_get_customers_invalid(client, app, env_name):
+    with patch("controlpanel.api.models.App.customer_paginated") as customer_paginated:
+
+        response = client.get(
+            reverse("apps-by-name-customers", kwargs={"name": app.name}),
+            query_params={"env_name": env_name},
+        )
+        customer_paginated.assert_not_called()
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 @pytest.mark.parametrize("env_name", ["dev", "prod"])
 def test_app_by_name_add_customers(client, app, env_name):
     emails = ["test1@example.com", "test2@example.com"]
-    data = {"email": ", ".join(emails)}
+    data = {"emails": ", ".join(emails), "env_name": env_name}
 
     with patch("controlpanel.api.models.App.add_customers") as add_customers:
         url = reverse("apps-by-name-customers", kwargs={"name": app.name})
-        response = client.post(f"{url}?env_name={env_name}", data=data)
+        response = client.post(url, data=data)
 
-        add_customers.assert_called_once_with(emails, env_name=env_name)
         assert response.status_code == status.HTTP_201_CREATED
+        add_customers.assert_called_once_with(emails, env_name=env_name)
+
+
+@pytest.mark.parametrize("env_name", ["", "foo"])
+def test_app_by_name_add_customers_invalid(client, app, env_name):
+    emails = ["test1@example.com", "test2@example.com"]
+    data = {"emails": ", ".join(emails)}
+
+    with patch("controlpanel.api.models.App.add_customers") as add_customers:
+        add_customers.side_effect = app.AddCustomerError
+        url = reverse("apps-by-name-customers", kwargs={"name": app.name})
+        response = client.post(url, data=data)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        add_customers.assert_not_called()
 
 
 def test_app_detail_by_name(client, app):
