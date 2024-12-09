@@ -67,7 +67,7 @@
   <div class="govuk-grid-column-one-third">
   <p class="govuk-!-margin-bottom-1">Status:
   <span class="govuk-!-font-weight-bold tool-status-label">
-    {% if deployment and deployment.tool_id != -1 %}
+    {% if deployment and not deployment.is_retired %}
       {{ deployment.status | default("") }}
     {% else %}
     Not deployed
