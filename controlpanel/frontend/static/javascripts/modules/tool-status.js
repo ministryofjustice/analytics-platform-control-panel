@@ -152,10 +152,18 @@ moj.Modules.toolStatus = {
 
     const targetTool = target.attributes["data-action-target"];
     const deployButton = document.getElementById("deploy-" + targetTool.value);
+    const openButton = document.getElementById("open-" + targetTool.value);
+    const restartButton = document.getElementById("restart-" + targetTool.value);
+
+    // if (!installedSelected) {
+    //   openButton.disabled = true;
+    // };
 
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled
     deployButton.disabled = notInstalledSelected || installedSelected;
+    openButton.disabled = !installedSelected;
+    restartButton.disabled = !installedSelected;
 
     this.toggleDeprecationMessage(selected, targetTool);
   },
