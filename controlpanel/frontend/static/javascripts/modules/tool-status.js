@@ -161,16 +161,28 @@ moj.Modules.toolStatus = {
   },
 
   toggleDeprecationMessage(selected, targetTool) {
-    const isDeprecated = selected.attributes["data-is-deprecated"].value === "True";
+    const isDeprecated = selected.attributes["data-is-deprecated"];
     const deprecationMessageElement = document.getElementById(targetTool.value + "-deprecation-message");
+    if (isDeprecated === undefined) {
+      this.hideDeprecationMessage(deprecationMessageElement);
+      return;
+    }
     const deprecationMessage = selected.attributes["data-deprecated-message"].value;
 
-    if (isDeprecated) {
-      deprecationMessageElement.lastChild.innerText = deprecationMessage;
-      deprecationMessageElement.classList.remove(this.hidden);
+    if (isDeprecated.value === "True") {
+      this.showDeprecationMessage(deprecationMessageElement, deprecationMessage);
     } else {
-      deprecationMessageElement.classList.add(this.hidden);
-      deprecationMessageElement.lastChild.innerText = "";
+      this.hideDeprecationMessage(deprecationMessageElement);
     }
+  },
+
+  showDeprecationMessage(element, message) {
+    element.classList.remove(this.hidden);
+    element.lastChild.innerText = message;
+  },
+
+  hideDeprecationMessage(element) {
+    element.classList.add(this.hidden);
+    element.lastChild.innerText = "";
   }
 };

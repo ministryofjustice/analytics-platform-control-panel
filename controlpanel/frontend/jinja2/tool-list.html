@@ -92,7 +92,7 @@
     onclick="window.open('{{ tool_info['url'] }}', '_blank');"
     rel="noopener"
     target="_blank"
-    {% if not deployment or deployment.tool_id == -1 %} disabled {% endif %}>
+    {% if not deployment or deployment.is_retired %} disabled {% endif %}>
       Open
   </button>
 
@@ -106,7 +106,7 @@
     {{ csrf_input }}
     <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
       data-action-name="restart"
-      {% if not deployment or deployment.tool_id == -1 %} disabled {% endif %}>
+      {% if not deployment or deployment.is_retired %} disabled {% endif %}>
       Restart
     </button>
   </form>
@@ -115,13 +115,14 @@
 
 <div id="{{ chart_name }}-deprecation-message" class="govuk-warning-text{% if not deployment or not deployment.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{{ deployment.deprecated_message }}</strong></div>
 
-{% if deployment and deployment.tool_id == -1 %}
+{% if deployment and deployment.is_retired %}
 
-<div>
-  <p class="govuk-body">
-    Your previous deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
+<div class="govuk-warning-text">
+  <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+  <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>
+    Your previous deployment ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }})
     has been retired. You will need to deploy a new version from the dropdown list.
-  </p>
+  </strong>
 </div>
 {% endif %}
 <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
