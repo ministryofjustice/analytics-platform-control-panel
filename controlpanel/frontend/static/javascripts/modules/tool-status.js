@@ -156,5 +156,21 @@ moj.Modules.toolStatus = {
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled
     deployButton.disabled = notInstalledSelected || installedSelected;
+
+    this.toggleDeprecationMessage(selected, targetTool);
   },
+
+  toggleDeprecationMessage(selected, targetTool) {
+    const isDeprecated = selected.attributes["data-is-deprecated"].value === "True";
+    const deprecationMessageElement = document.getElementById(targetTool.value + "-deprecation-message");
+    const deprecationMessage = selected.attributes["data-deprecated-message"].value;
+
+    if (isDeprecated) {
+      deprecationMessageElement.firstChild.innerText = deprecationMessage;
+      deprecationMessageElement.classList.remove(this.hidden);
+    } else {
+      deprecationMessageElement.classList.add(this.hidden);
+      deprecationMessageElement.firstChild.innerText = "";
+    }
+  }
 };

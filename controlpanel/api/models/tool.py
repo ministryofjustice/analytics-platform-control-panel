@@ -27,6 +27,7 @@ class Tool(TimeStampedModel):
         "rstudio": "rstudio",
         "vscode": "vscode",
     }
+    DEFAULT_DEPRECATED_MESSAGE = "The selected release has been deprecated and will be retired soon. Please update to a more recent version."  # noqa
 
     description = models.TextField(blank=True)
     chart_name = models.CharField(max_length=100, blank=False)
@@ -52,7 +53,9 @@ class Tool(TimeStampedModel):
     )
 
     is_deprecated = models.BooleanField(default=False)
-    deprecated_message = models.TextField(blank=True)
+    deprecated_message = models.TextField(
+        blank=True, help_text="If no message is provided, a default message will be used."
+    )
     is_retired = models.BooleanField(default=False)
 
     class Meta(TimeStampedModel.Meta):
@@ -82,6 +85,16 @@ class Tool(TimeStampedModel):
         return values.get("{}.tag".format(chart_image_key_name)) or values.get(
             "{}.image.tag".format(chart_image_key_name)
         )
+
+    @property
+    def get_deprecated_message(self):
+        if not self.is_deprecated:
+            return ""
+
+        if self.is_retired:
+            return ""
+
+        return self.deprecated_message or self.DEFAULT_DEPRECATED_MESSAGE
 
 
 class ToolDeploymentManager:
