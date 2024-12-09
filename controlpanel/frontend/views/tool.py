@@ -71,13 +71,15 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         """
         tool_set = Tool.objects.filter(
             chart_name=chart_name, version=chart_version, is_restricted=False
-        )
-        for item in tool_set:
-            if item.image_tag == image_tag:
-                return item
-        return tool_set.first()
+        ).exclude(is_retired=True)
+        for tool in tool_set:
+            if tool.image_tag == image_tag:
+                return tool
+        # If we cant find a tool with the same image tag, this must mean that it was retired or
+        # deleted. So return none, and let the calling function handle it
+        return None
 
-    def _add_new_item_to_tool_box(self, user, tool_box, tool, tools_info, charts_info):
+    def _add_new_item_to_tool_box(self, user, tool_box, tool, tools_info):
         if tool_box not in tools_info:
             tools_info[tool_box] = {
                 "name": tool.name,
@@ -85,16 +87,19 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "deployment": None,
                 "releases": {},
             }
-        image_tag = tool.image_tag
-        if not image_tag:
-            image_tag = charts_info.get(tool.version, {}) or "unknown"
+        # TODO We should update model to always store an image tag
+        # image_tag = tool.image_tag
+        # if not image_tag:
+        #     image_tag = charts_info.get(tool.version, {}) or "unknown"
         if tool.id not in tools_info[tool_box]["releases"]:
             tools_info[tool_box]["releases"][tool.id] = {
                 "tool_id": tool.id,
                 "chart_name": tool.chart_name,
                 "description": tool.description,
                 "chart_version": tool.version,
-                "image_tag": image_tag,
+                "image_tag": tool.image_tag,
+                "is_deprecated": tool.is_deprecated,
+                "deprecated_message": tool.get_deprecated_message,
             }
 
     def _get_tool_deployed_image_tag(self, containers):
@@ -103,8 +108,10 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 return container.image.split(":")[1]
         return None
 
-    def _add_deployed_charts_info(self, tools_info, user, id_token, charts_info):
+    def _add_deployed_charts_info(self, tools_info, user, id_token):
         # Get list of deployed tools
+        # TODO this sets what tool the user currently has deployed. If we were to refactor to store
+        # deployed tools in the database, we could remove a lot of this logic
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
             chart_name, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
@@ -119,7 +126,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                     )
                 )
             else:
-                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
             if tool_box not in tools_info:
                 # up to this stage, if the tool_box is still empty, it means
                 # there is no tool release available in db
@@ -131,21 +138,26 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "image_tag": image_tag,
                 "description": tool.description if tool else "Not available",
                 "status": ToolDeployment(tool, user).get_status(id_token, deployment=deployment),
+                "is_deprecated": tool.is_deprecated if tool else False,
+                "deprecated_message": tool.get_deprecated_message if tool else "",
+                "is_retired": tool is None,
             }
 
-    def _retrieve_detail_tool_info(self, user, tools, charts_info):
+    def _retrieve_detail_tool_info(self, user, tools):
+        # TODO why do we need this? We could change so that all information required about available tools comes from the DB  # noqa: E501
         tools_info = {}
         for tool in tools:
             # Work out which bucket the chart should be in
             tool_box = self._locate_tool_box_by_chart_name(tool.chart_name)
             # No matching tool bucket for the given chart. So ignore.
             if tool_box:
-                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
         return tools_info
 
     def _get_charts_info(self, tool_list):
         # We may need the default image_tag from helm chart
         # unless we configure it specifically in parameters of tool release
+        # TODO if we make sure that we always have an image_tag for a tool, then building charts_info is redundant and could be removed  # noqa: E501
         charts_info = {}
         chart_entries = None
         for tool in tool_list:
@@ -229,14 +241,14 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context["managed_airflow_prod_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_prod_url}"
 
         # Arrange tools information
-        charts_info = self._get_charts_info(context["tools"])
-        tools_info = self._retrieve_detail_tool_info(user, context["tools"], charts_info)
+        # charts_info = self._get_charts_info(context["tools"])
+        tools_info = self._retrieve_detail_tool_info(user, context["tools"])
 
         if "vscode" in tools_info:
             url = tools_info["vscode"]["url"]
             tools_info["vscode"]["url"] = f"{url}?folder=/home/analyticalplatform/workspace"
 
-        self._add_deployed_charts_info(tools_info, user, id_token, charts_info)
+        self._add_deployed_charts_info(tools_info, user, id_token)
         context["tools_info"] = tools_info
         return context
 

@@ -153,7 +153,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'A flag to indicate the release is deprecated and will soon become unavailable to deploy'
+        "text": 'Checking this will display a deprecation message to users when they select this release'
       },
       "name": "is_deprecated",
       "items": [
@@ -172,7 +172,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'A message to display to users if they select this tool'
+        "text": form.deprecated_message.help_text
       },
       "name": "deprecated_message",
       "value": form.deprecated_message.value(),
@@ -188,7 +188,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'A flag to indicate the release is retired. Users will not be able to deploy this release.'
+        "text": 'Checking this will remove this release from all users dropdown options on the Your Tools page.'
       },
       "name": "is_retired",
       "items": [
