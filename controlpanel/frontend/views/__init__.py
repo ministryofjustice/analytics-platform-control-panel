@@ -61,6 +61,7 @@ from controlpanel.frontend.views.datasource import (
     UpdateIAMManagedPolicyAccessLevel,
     WebappBucketList,
 )
+from controlpanel.frontend.views.feedback import CreateFeedback, FeedbackThanks
 from controlpanel.frontend.views.help import Help
 from controlpanel.frontend.views.ip_allowlist import (
     IPAllowlistCreate,
