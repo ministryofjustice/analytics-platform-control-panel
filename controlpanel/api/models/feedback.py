@@ -18,7 +18,7 @@ class Feedback(models.Model):
         blank=False,
     )
 
-    suggestions = models.TextField()
+    suggestions = models.TextField(blank=True)
     date_added = models.DateTimeField(default=timezone.now)
 
     class Meta:

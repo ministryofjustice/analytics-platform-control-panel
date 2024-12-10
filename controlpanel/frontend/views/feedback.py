@@ -17,10 +17,6 @@ class CreateFeedback(OIDCLoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy("feedback-thanks")
 
-    def form_valid(self, form):
-        form.save()
-        return FormMixin.form_valid(self, form)
-
 
 class FeedbackThanks(OIDCLoginRequiredMixin, TemplateView):
     template_name = "feedback-thanks.html"

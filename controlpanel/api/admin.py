@@ -3,7 +3,7 @@ from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
 # First-party/Local
-from controlpanel.api.models import App, IPAllowlist, S3Bucket, User
+from controlpanel.api.models import App, Feedback, IPAllowlist, S3Bucket, User
 
 
 def make_migration_pending(modeladmin, request, queryset):
@@ -58,7 +58,12 @@ class IPAllowlistAdmin(SimpleHistoryAdmin):
     history_list_display = ("description", "contact", "allowed_ip_ranges")
 
 
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ("satisfaction_rating", "suggestions", "date_added")
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
 admin.site.register(IPAllowlist, IPAllowlistAdmin)
+admin.site.register(Feedback, FeedbackAdmin)
