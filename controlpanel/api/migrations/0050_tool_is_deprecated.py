@@ -19,7 +19,9 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="tool",
             name="deprecated_message",
-            field=models.TextField(blank=True, help_text="If no message is provided, a default message will be used."),
+            field=models.TextField(
+                blank=True, help_text="If no message is provided, a default message will be used."
+            ),
         ),
         migrations.AddField(
             model_name="tool",
