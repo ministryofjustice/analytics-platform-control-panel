@@ -10,6 +10,8 @@ permissions: {}
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      LOGS_BUCKET_NAME: moj-analytics-s3-logs
     permissions:
       contents: read
     
