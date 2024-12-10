@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("api", "0050_alter_tool_deprecated_message"),
+        ("api", "0050_tool_is_deprecated"),
     ]
 
     operations = [
