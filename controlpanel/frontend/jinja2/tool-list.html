@@ -44,7 +44,7 @@
               <option class="installed" value="{{ deployment.chart_name }}__{{ installed_chart_version }}__{{ deployment.tool_id }}"
                 data-is-deprecated="{{ deployment.is_deprecated }}"
                 data-deprecated-message="{{ deployment.deprecated_message }}">
-                {% if deployment.is_deprecated %}DEPRECATED {% endif %}[{{ deployment.chart_name }} {{ deployment.image_tag }}]  {{ installed_chart_version or "Unknown" }} (installed)
+                [{{ deployment.chart_name }} {{ deployment.image_tag }}]  {{ installed_chart_version or "Unknown" }} (installed)
               </option>
             {% else %}
               <option class="not-installed">Not deployed - select a tool from this list and click "Deploy" to start</option>
@@ -56,7 +56,7 @@
                 data-is-deprecated="{{ release_detail.is_deprecated }}"
                 data-deprecated-message="{{ release_detail.deprecated_message }}">
                   <!-- TODO rather than build this info up manually in the view we could read it from the tool object itself -->
-                  {% if release_detail.is_deprecated %}DEPRECATED {% endif %}[{{ release_detail.chart_name }} {{ release_detail.image_tag }}]  {{ release_detail.description or "Unknown" }}
+                  [{{ release_detail.chart_name }} {{ release_detail.image_tag }}]  {{ release_detail.description or "Unknown" }}
                 </option>
               {% endif %}
             {% endfor %}
