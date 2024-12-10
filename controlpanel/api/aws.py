@@ -656,8 +656,7 @@ class AWSBucket(AWSService):
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html?highlight=s3#S3.BucketVersioning  # noqa: E501
             versioning = bucket.Versioning()
             versioning.enable()
-            # Set bucket lifecycle. Send non-current versions of files to glacier
-            # storage after 30 days.
+            # Set bucket lifecycle. Set to intelligent tiering
             # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3.html#S3.Client.put_bucket_lifecycle_configuration  # noqa: E501
             self.apply_lifecycle_config(bucket_name, s3_client)
             if is_data_warehouse:
@@ -799,6 +798,10 @@ class AWSBucket(AWSService):
                 return False
 
         return True
+
+    def write_to_bucket(self, bucket_name, key, data):
+        s3_client = self.boto3_session.client("s3")
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body=data)
 
 
 class AWSPolicy(AWSService):
