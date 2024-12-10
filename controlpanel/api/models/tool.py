@@ -57,6 +57,7 @@ class Tool(TimeStampedModel):
         blank=True, help_text="If no message is provided, a default message will be used."
     )
     is_retired = models.BooleanField(default=False)
+    image_tag = models.CharField(max_length=100)
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
@@ -77,14 +78,6 @@ class Tool(TimeStampedModel):
 
         super().save(*args, **kwargs)
         return self
-
-    @property
-    def image_tag(self):
-        chart_image_key_name = self.chart_name.split("-")[0]
-        values = self.values or {}
-        return values.get("{}.tag".format(chart_image_key_name)) or values.get(
-            "{}.image.tag".format(chart_image_key_name)
-        )
 
     @property
     def get_deprecated_message(self):
