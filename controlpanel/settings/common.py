@@ -608,4 +608,4 @@ CELERY_IMPORTS = ["controlpanel.api.tasks.handlers"]
 DPR_DATABASE_NAME = os.environ.get("DPR_DATABASE_NAME", None)
 
 S3_ARCHIVE_BUCKET_NAME = "dev-archive-folder"
-FEEDBACK_BUCKET_NAME = os.environ.get("FEEDBACK_BUCKET_NAME")
+FEEDBACK_BUCKET_NAME = f"{ENV}-{os.environ.get('FEEDBACK_BUCKET_NAME')}"
