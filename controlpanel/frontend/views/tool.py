@@ -69,10 +69,8 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         memory, CPU etc, then the linkage will be confused although it
         won't affect people usage.
         """
-        tool_set = Tool.objects.filter(
-            chart_name=chart_name, version=chart_version, is_restricted=False
-        ).exclude(is_retired=True)
-        for tool in tool_set:
+        tools = self.get_queryset().filter(chart_name=chart_name, version=chart_version)
+        for tool in tools:
             if tool.image_tag == image_tag:
                 return tool
         # If we cant find a tool with the same image tag, this must mean that it was retired or
