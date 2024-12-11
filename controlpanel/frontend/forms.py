@@ -540,6 +540,7 @@ class ToolReleaseForm(forms.ModelForm):
             "name",
             "chart_name",
             "version",
+            "image_tag",
             "values",
             "is_restricted",
             "tool_domain",

@@ -93,6 +93,23 @@ Create a new release of a tool in the analytical platform.
     }) }}
     {{ govukInput({
       "label": {
+        "text": "Image Tag",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Image tag for this release.'
+      },
+      "name": "image_tag",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.image_tag.value(),
+      "errorMessage": { "html": form.image_tag.errors|join(". ") } if form.image_tag.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
         "text": "Custom Domain Name",
         "classes": "govuk-label--m",
       },

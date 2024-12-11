@@ -970,6 +970,13 @@ class ToolDeployment:
         if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
             helm.delete(self.k8s_namespace, old_release_name)
 
+    @property
+    def get_image_tag_helm_value(self):
+        """
+        Return the image tag to be used in the helm chart values
+        """
+        return {self.tool.image_tag_key: self.tool.image_tag}
+
     def _set_values(self, **kwargs):
         """
         Return the list of `--set KEY=VALUE` helm upgrade arguments
@@ -991,6 +998,8 @@ class ToolDeployment:
 
         values.update(self.tool.values)
         values.update(kwargs)
+        # override the tool image tag with the value stored in the DB
+        values.update(self.get_image_tag_helm_value)
         set_values = []
         for key, val in values.items():
             if val:
