@@ -29,7 +29,7 @@ class Tool(TimeStampedModel):
     }
     DEFAULT_DEPRECATED_MESSAGE = "The selected release has been deprecated and will be retired soon. Please update to a more recent version."  # noqa
 
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=False)
     chart_name = models.CharField(max_length=100, blank=False)
     name = models.CharField(max_length=100, blank=False)
     values = JSONField(default=dict)
