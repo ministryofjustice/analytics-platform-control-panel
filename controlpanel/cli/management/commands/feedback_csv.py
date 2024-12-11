@@ -42,7 +42,7 @@ class Command(BaseCommand):
 
         filename = f"feedback_{today}.csv"
         csv_buffer = StringIO()
-        writer = csv.writer(csv_buffer, delimiter=",", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(csv_buffer, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(self.csv_headings)
         for feedback in feedback_items:
             row = [
