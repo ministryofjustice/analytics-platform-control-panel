@@ -89,6 +89,17 @@ class Tool(TimeStampedModel):
 
         return self.deprecated_message or self.DEFAULT_DEPRECATED_MESSAGE
 
+    @property
+    def image_tag_key(self):
+        mapping = {
+            "jupyter-lab-datascience-notebook": "jupyter.tag",
+            "jupyter-lab-all-spark": "jupyter.tag",
+            "jupyter-lab": "jupyterlab.image.tag",
+            "rstudio": "rstudio.image.tag",
+            "vscode": "vscode.image.tag",
+        }
+        return mapping["chart_name"]
+
 
 class ToolDeploymentManager:
     """
