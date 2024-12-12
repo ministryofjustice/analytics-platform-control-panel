@@ -73,6 +73,8 @@ class Tool(TimeStampedModel):
     def save(self, *args, **kwargs):
         helm.update_helm_repository(force=True)
 
+        # TODO description is now required when creating a release, so this is unlikely to be called
+        # Consider removing
         if not self.description:
             self.description = helm.get_chart_app_version(self.chart_name, self.version) or ""
 

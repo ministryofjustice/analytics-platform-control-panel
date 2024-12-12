@@ -13,11 +13,6 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.helm import (
-    get_chart_version_info,
-    get_default_image_tag_from_helm_chart,
-    get_helm_entries,
-)
 from controlpanel.api.models import Tool, ToolDeployment
 from controlpanel.oidc import OIDCLoginRequiredMixin
 from controlpanel.utils import start_background_task
@@ -85,10 +80,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "deployment": None,
                 "releases": {},
             }
-        # TODO We should update model to always store an image tag
-        # image_tag = tool.image_tag
-        # if not image_tag:
-        #     image_tag = charts_info.get(tool.version, {}) or "unknown"
         if tool.id not in tools_info[tool_box]["releases"]:
             tools_info[tool_box]["releases"][tool.id] = {
                 "tool_id": tool.id,
@@ -110,6 +101,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         # Get list of deployed tools
         # TODO this sets what tool the user currently has deployed. If we were to refactor to store
         # deployed tools in the database, we could remove a lot of this logic
+        # See https://github.com/ministryofjustice/analytical-platform/issues/6266
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
             chart_name, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
@@ -142,7 +134,8 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             }
 
     def _retrieve_detail_tool_info(self, user, tools):
-        # TODO why do we need this? We could change so that all information required about available tools comes from the DB  # noqa: E501
+        # TODO when deployed tools are tracked in the DB this will not be needed
+        # see https://github.com/ministryofjustice/analytical-platform/issues/6266 # noqa: E501
         tools_info = {}
         for tool in tools:
             # Work out which bucket the chart should be in
@@ -151,31 +144,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             if tool_box:
                 self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
         return tools_info
-
-    def _get_charts_info(self, tool_list):
-        # We may need the default image_tag from helm chart
-        # unless we configure it specifically in parameters of tool release
-        # TODO if we make sure that we always have an image_tag for a tool, then building charts_info is redundant and could be removed  # noqa: E501
-        charts_info = {}
-        chart_entries = None
-        for tool in tool_list:
-            if tool.version in charts_info:
-                continue
-
-            image_tag = tool.image_tag
-            if image_tag:
-                continue
-
-            if chart_entries is None:
-                # load the potential massive helm chart yaml only it is necessary
-                chart_entries = get_helm_entries()
-            chart_app_version = get_chart_version_info(chart_entries, tool.chart_name, tool.version)
-            if chart_app_version:
-                image_tag = get_default_image_tag_from_helm_chart(
-                    chart_app_version.chart_url, tool.chart_name
-                )
-            charts_info[tool.version] = image_tag
-        return charts_info
 
     def get_context_data(self, *args, **kwargs):
         """
@@ -238,8 +206,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context["managed_airflow_dev_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_dev_url}"
         context["managed_airflow_prod_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_prod_url}"
 
-        # Arrange tools information
-        # charts_info = self._get_charts_info(context["tools"])
         tools_info = self._retrieve_detail_tool_info(user, context["tools"])
 
         if "vscode" in tools_info:
