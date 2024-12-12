@@ -115,3 +115,13 @@ def test_home_directory_get_status():
 def test_image_tag_key(tool, chart_name, expected):
     tool.chart_name = chart_name
     assert tool.image_tag_key == expected
+
+
+def test_get_deprecated_message(tool):
+    assert tool.get_deprecated_message == ""
+    tool.is_deprecated = True
+    assert tool.get_deprecated_message == tool.DEFAULT_DEPRECATED_MESSAGE
+    tool.deprecated_message = "This tool is deprecated"
+    assert tool.get_deprecated_message == "This tool is deprecated"
+    tool.is_retired = True
+    assert tool.get_deprecated_message == ""

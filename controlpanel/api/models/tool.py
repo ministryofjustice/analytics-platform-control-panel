@@ -28,6 +28,11 @@ class Tool(TimeStampedModel):
         "vscode": "vscode",
     }
     DEFAULT_DEPRECATED_MESSAGE = "The selected release has been deprecated and will be retired soon. Please update to a more recent version."  # noqa
+    JUPYTER_DATASCIENCE_CHART_NAME = "jupyter-lab-datascience-notebook"
+    JUPYTER_ALL_SPARK_CHART_NAME = "jupyter-lab-all-spark"
+    JUPYTER_LAB_CHART_NAME = "jupyter-lab"
+    RSTUDIO_CHART_NAME = "rstudio"
+    VSCODE_CHART_NAME = "vscode"
 
     description = models.TextField(blank=False)
     chart_name = models.CharField(max_length=100, blank=False)
@@ -94,11 +99,11 @@ class Tool(TimeStampedModel):
     @property
     def image_tag_key(self):
         mapping = {
-            "jupyter-lab-datascience-notebook": "jupyter.tag",
-            "jupyter-lab-all-spark": "jupyter.tag",
-            "jupyter-lab": "jupyterlab.image.tag",
-            "rstudio": "rstudio.image.tag",
-            "vscode": "vscode.image.tag",
+            self.JUPYTER_DATASCIENCE_CHART_NAME: "jupyter.tag",
+            self.JUPYTER_ALL_SPARK_CHART_NAME: "jupyter.tag",
+            self.JUPYTER_LAB_CHART_NAME: "jupyterlab.image.tag",
+            self.RSTUDIO_CHART_NAME: "rstudio.image.tag",
+            self.VSCODE_CHART_NAME: "vscode.image.tag",
         }
         return mapping[self.chart_name]
 

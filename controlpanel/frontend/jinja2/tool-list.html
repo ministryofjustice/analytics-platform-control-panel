@@ -38,7 +38,7 @@
             id="tools-{{ chart_name }}" name="version">
             {% set installed_chart_version = None %}
             {% set installed_release_version = None %}
-            {% if deployment and deployment.tool_id > -1 %}
+            {% if deployment and not deployment.is_retired %}
               {% set installed_chart_version = deployment.description %}
               {% set installed_release_version = deployment.tool_id %}
               <option class="installed" value="{{ deployment.chart_name }}__{{ installed_chart_version }}__{{ deployment.tool_id }}"

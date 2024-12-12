@@ -155,10 +155,6 @@ moj.Modules.toolStatus = {
     const openButton = document.getElementById("open-" + targetTool.value);
     const restartButton = document.getElementById("restart-" + targetTool.value);
 
-    // if (!installedSelected) {
-    //   openButton.disabled = true;
-    // };
-
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled
     deployButton.disabled = notInstalledSelected || installedSelected;
