@@ -1,0 +1,80 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "label/macro.html" import govukLabel %}
+{% from "radios/macro.html" import govukRadios %}
+{% from "includes/auth0-connections-form.html" import auth0_connections_form with context %}
+
+
+{% extends "base.html" %}
+
+{% set page_title = "Feedback" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">Give feedback on the Analytical Platform</h1>
+
+
+<form method="post" id="feedback" action="{{ url("feedback-create") }}">
+  {{ csrf_input }}
+
+    {{ govukRadios({
+      "name": "satisfaction_rating",
+      "fieldset": {
+        "legend": {
+          "text": "Satisfaction survey",
+          "classes": "govuk-fieldset__legend--l",
+        },
+      },
+      "items": [
+        {
+          "value": 5,
+          "text": "Very satisfied",
+          "checked": form.satisfaction_rating.value() == "5"
+        },
+        {
+          "value": 4,
+          "text": "Satisfied",
+          "checked": form.satisfaction_rating.value() == "4"
+        },
+        {
+          "value": 3,
+          "text": "Neither satisfied or dissatisfied",
+          "checked": form.satisfaction_rating.value() == "3"
+        },
+        {
+          "value": 2,
+          "text": "Dissatisfied",
+          "checked": form.satisfaction_rating.value() == "2"
+        },
+        {
+          "value": 1,
+          "text": "Very dissatisfied",
+          "checked": form.satisfaction_rating.value() == "1"
+        },
+      ],
+      "errorMessage": { "text": form.errors.get("satisfaction_rating") } if form.errors.get("satisfaction_rating") else {}
+    }) }}
+
+
+
+  <div class="govuk-form-group {%- if form.errors.get("suggestions") %} govuk-form-group--error{% endif %}">
+    <h2 class="govuk-label-wrapper">
+      <label class="govuk-label govuk-label--l" for="{{form.suggestions.id_for_label}}">
+        How can we improve this service?
+      </label>
+    </h2>
+    <div id="more-detail-hint" class="govuk-hint">
+      Do not include personal or financial information, like your National Insurance number or credit card details.
+    </div>
+
+    {% if form.errors.get("suggestions") %}
+      {{ govukErrorMessage({"text": form.errors.get("suggestions")}) }}
+    {% endif %}
+
+    <textarea class="govuk-textarea" id="{{form.suggestions.id_for_label}}" name="{{form.suggestions.html_name}}" rows="5" aria-describedby="more-detail-hint"></textarea>
+  </div>
+
+
+  <div class="govuk-form-group">
+    <button class="govuk-button">Send feedback</button>
+  </div>
+</form>
+{% endblock %}

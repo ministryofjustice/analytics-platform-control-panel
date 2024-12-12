@@ -1,0 +1,12 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "includes/auth0-connections-form.html" import auth0_connections_form with context %}
+
+
+{% extends "base.html" %}
+
+{% set page_title = "Thank you" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">Thank you for your feedback</h1>
+<p class="govuk-body">Your feedback will help us improve the service.</p>
+{% endblock %}
