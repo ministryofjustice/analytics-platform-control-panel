@@ -98,7 +98,7 @@ class Tool(TimeStampedModel):
             "rstudio": "rstudio.image.tag",
             "vscode": "vscode.image.tag",
         }
-        return mapping["chart_name"]
+        return mapping[self.chart_name]
 
 
 class ToolDeploymentManager:
