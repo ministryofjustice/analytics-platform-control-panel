@@ -54,3 +54,37 @@ def test_image_tag_in_set_values(chart_name):
     tool_deployment = cluster.ToolDeployment(tool=tool, user=user)
     assert f"{tool.image_tag_key}=0.2" in tool_deployment._set_values()
     assert f"{tool.image_tag_key}=0.1" not in tool_deployment._set_values()
+
+
+@pytest.mark.parametrize(
+    "chart, expected",
+    [
+        (f"{Tool.RSTUDIO_CHART_NAME}-1.0.0", (Tool.RSTUDIO_CHART_NAME, "1.0.0")),
+        (f"{Tool.RSTUDIO_CHART_NAME}-1.0.0-rc1", (Tool.RSTUDIO_CHART_NAME, "1.0.0-rc1")),
+        (
+            f"{Tool.JUPYTER_DATASCIENCE_CHART_NAME}-1.0.0",
+            (Tool.JUPYTER_DATASCIENCE_CHART_NAME, "1.0.0"),
+        ),
+        (
+            f"{Tool.JUPYTER_DATASCIENCE_CHART_NAME}-1.0.0-rc1",
+            (Tool.JUPYTER_DATASCIENCE_CHART_NAME, "1.0.0-rc1"),
+        ),
+        (f"{Tool.JUPYTER_LAB_CHART_NAME}-1.0.0", (Tool.JUPYTER_LAB_CHART_NAME, "1.0.0")),
+        (f"{Tool.JUPYTER_LAB_CHART_NAME}-1.0.0-rc1", (Tool.JUPYTER_LAB_CHART_NAME, "1.0.0-rc1")),
+        (
+            f"{Tool.JUPYTER_ALL_SPARK_CHART_NAME}-1.0.0",
+            (Tool.JUPYTER_ALL_SPARK_CHART_NAME, "1.0.0"),
+        ),
+        (
+            f"{Tool.JUPYTER_ALL_SPARK_CHART_NAME}-1.0.0-rc1",
+            (Tool.JUPYTER_ALL_SPARK_CHART_NAME, "1.0.0-rc1"),
+        ),
+        (f"{Tool.VSCODE_CHART_NAME}-1.0.0", (Tool.VSCODE_CHART_NAME, "1.0.0")),
+        (f"{Tool.VSCODE_CHART_NAME}-1.0.0-rc1", (Tool.VSCODE_CHART_NAME, "1.0.0-rc1")),
+    ],
+)
+def test_get_chart_details(chart, expected):
+    """
+    Ensures the chart details are correctly extracted from the chart name.
+    """
+    assert cluster.ToolDeployment.get_chart_details(chart) == expected

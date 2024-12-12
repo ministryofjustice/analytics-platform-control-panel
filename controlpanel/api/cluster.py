@@ -1069,6 +1069,22 @@ class ToolDeployment:
             deployments.append(deployment)
         return deployments
 
+    @classmethod
+    def get_chart_details(cls, chart: str) -> tuple[str, str]:
+        """
+        This is a bit of a hack to safely extract the chart version when it includes an 'rc' tag.
+        This wont be necessary anymore when we track deployed tools in the database.
+        See https://github.com/ministryofjustice/analytical-platform/issues/6266
+        """
+        chart_name, chart_version = chart.rsplit("-", 1)
+        if "rc" not in chart_version:
+            return chart_name, chart_version
+
+        rc_tag = chart_version
+        chart_name, chart_version = chart_name.rsplit("-", 1)
+        chart_version = f"{chart_version}-{rc_tag}"
+        return chart_name, chart_version
+
     def get_deployment(self, id_token):
         deployments = self.__class__.get_deployments(
             self.user,

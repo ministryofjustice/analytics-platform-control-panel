@@ -104,7 +104,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         # See https://github.com/ministryofjustice/analytical-platform/issues/6266
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
-            chart_name, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            chart_name, chart_version = cluster.ToolDeployment.get_chart_details(
+                deployment.metadata.labels["chart"]
+            )
             image_tag = self._get_tool_deployed_image_tag(deployment.spec.template.spec.containers)
             tool_box = self._locate_tool_box_by_chart_name(chart_name)
             tool_box = tool_box or "Unknown"
