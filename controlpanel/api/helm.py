@@ -158,6 +158,7 @@ def update_helm_repository(force=False):
             _execute("repo", "update", timeout=None)  # timeout = infinity.
 
 
+# TODO no longer used, remove
 def get_default_image_tag_from_helm_chart(chart_url, chart_name):
     proc = _execute("show", "values", chart_url)
     if proc:
@@ -171,6 +172,8 @@ def get_default_image_tag_from_helm_chart(chart_url, chart_name):
         return None
 
 
+# TODO this is no longer called from the Your Tools page
+# consider removing as part of further refactoring
 def get_helm_entries():
     # Update repository metadata.
     update_helm_repository()
