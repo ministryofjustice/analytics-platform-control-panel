@@ -12,7 +12,7 @@ from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
 
 @pytest.fixture
 def tool(db):
-    return baker.make("api.Tool")
+    return baker.make("api.Tool", chart_name="rstudio", version="1.0.0", image_tag="0.0.1")
 
 
 def test_deploy_for_generic(helm, tool, users):
@@ -46,6 +46,8 @@ def test_deploy_for_generic(helm, tool, users):
         f"aws.iamRole={user.iam_role_name}",
         "--set",
         f"toolsDomain={settings.TOOLS_DOMAIN}",
+        "--set",
+        f"rstudio.image.tag={tool.image_tag}",
     )
 
 
@@ -91,3 +93,25 @@ def test_home_directory_get_status():
     hd._poll = MagicMock(return_value=cluster.HOME_RESETTING)
     hd._subprocess = True
     assert hd.get_status() == cluster.HOME_RESETTING
+
+
+@pytest.mark.parametrize(
+    "chart_name, expected",
+    [
+        ("jupyter-lab-datascience-notebook", "jupyter.tag"),
+        ("jupyter-lab-all-spark", "jupyter.tag"),
+        ("jupyter-lab", "jupyterlab.image.tag"),
+        ("rstudio", "rstudio.image.tag"),
+        ("vscode", "vscode.image.tag"),
+    ],
+    ids=[
+        "jupyter-lab-datascience-notebook",
+        "jupyter-lab-all-spark",
+        "jupyter-lab",
+        "rstudio",
+        "vscode",
+    ],
+)
+def test_image_tag_key(tool, chart_name, expected):
+    tool.chart_name = chart_name
+    assert tool.image_tag_key == expected
