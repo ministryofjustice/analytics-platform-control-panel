@@ -13,112 +13,53 @@ from controlpanel.api.models import S3Bucket
 from controlpanel.frontend import forms
 
 
-def test_tool_release_form_check_release_name():
+@pytest.fixture
+def release_data():
+    return {
+        "name": "Test Release",
+        "chart_name": "jupyter-lab",
+        "version": "1.2.3",
+        "values": {"foo": "bar"},
+        "is_restricted": False,
+        "image_tag": "1.0.0",
+        "description": "Test release description",
+    }
+
+
+@pytest.mark.parametrize(
+    "chart_name, expected",
+    [
+        ("jupyter-lab", True),
+        ("rstudio", True),
+        ("jupyter-lab-all-spark", True),
+        ("vscode", True),
+        ("jupyter-lab-datascience-notebook", True),
+        ("invalid-chartname", False),
+    ],
+)
+def test_tool_release_form_check_chart_name(release_data, chart_name, expected):
     """
     Ensure valid chart names work, while invalid ones cause a helpful
     exception.
     """
-    data = {
-        "name": "Test Release",
-        "chart_name": "jupyter-lab",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "jupyter-lab-all-spark",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "rstudio",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "airflow-sqlite",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "vscode",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "invalid-chartname",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid() is False
+    release_data["chart_name"] = chart_name
+    f = forms.ToolReleaseForm(release_data)
+    assert f.is_valid() is expected
 
 
-def test_tool_release_form_check_tool_domain():
+@pytest.mark.parametrize(
+    "tool_domain, expected",
+    [("jupyter-lab", True), ("rstudio", True), ("vscode", True), ("invalid-tool-domain", False)],
+)
+def test_tool_release_form_check_tool_domain(release_data, tool_domain, expected):
     """
     Ensure ONLY valid chart names work, while invalid ones cause a helpful
     exception.
     """
-    data = {
-        "name": "Test Release",
-        "chart_name": "jupyter-lab",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-        "tool_domain": "jupyter-lab",
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "jupyter-lab-all-spark",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-        "tool_domain": "jupyter-lab",
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "vscode",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-        "tool_domain": "vscode",
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid()
-    data = {
-        "name": "Test Release",
-        "chart_name": "jupyter-lab-all-spark",
-        "version": "1.2.3",
-        "values": {"foo": "bar"},
-        "is_restricted": False,
-        "tool_domain": "invalid-tool-domain",
-    }
-    f = forms.ToolReleaseForm(data)
-    assert f.is_valid() is False
+    release_data["tool_domain"] = tool_domain
+
+    f = forms.ToolReleaseForm(release_data)
+    assert f.is_valid() is expected
 
 
 def test_tool_release_form_get_target_users():

@@ -65,7 +65,7 @@ Create a new release of a tool in the analytical platform.
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'The description about this version, if leave blank, the info from helm repo will be pulled out'
+        "text": 'A brief description of this version. This is displayed to users in the dropdown selections.'
       },
       "name": "description",
       "attributes": {
@@ -90,6 +90,23 @@ Create a new release of a tool in the analytical platform.
       },
       "value": form.version.value(),
       "errorMessage": { "html": form.version.errors|join(". ") } if form.version.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Image Tag",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Image tag for this release.'
+      },
+      "name": "image_tag",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.image_tag.value(),
+      "errorMessage": { "html": form.image_tag.errors|join(". ") } if form.image_tag.errors else {}
     }) }}
     {{ govukInput({
       "label": {
@@ -143,6 +160,64 @@ Create a new release of a tool in the analytical platform.
       "value": target_users if target_users else "",
       "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
     }) }}
+
+    {{ govukCheckboxes({
+      "fieldset": {
+        "legend": {
+          "text": "Deprecate release",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Checking this will display a deprecation message to users when they select this release'
+      },
+      "name": "is_deprecated",
+      "items": [
+        {
+          "value": "True",
+          "text": "Release is deprecated",
+          "checked": form.is_deprecated.value(),
+        },
+      ],
+      "errorMessage": { "html": form.is_deprecated.errors|join(". ") } if form.is_deprecated.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Deprecation message",
+        "classes": "govuk-label--s",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": form.deprecated_message.help_text
+      },
+      "name": "deprecated_message",
+      "value": form.deprecated_message.value(),
+      "errorMessage": { "html": form.deprecated_message.errors|join(". ") } if form.deprecated_message.errors else {}
+    }) }}
+
+    {{ govukCheckboxes({
+      "fieldset": {
+        "legend": {
+          "text": "Retire release",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Checking this will remove this release from all users dropdown options on the Your Tools page.'
+      },
+      "name": "is_retired",
+      "items": [
+        {
+          "value": "True",
+          "text": "Release is retired",
+          "checked": form.is_retired.value(),
+        },
+      ],
+      "errorMessage": { "html": form.is_retired.errors|join(". ") } if form.is_retired.errors else {}
+    }) }}
+
     <button class="govuk-button">Update tool release</button>
   </form>
   {% endcall %}
