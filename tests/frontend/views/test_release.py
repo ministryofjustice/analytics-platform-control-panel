@@ -35,8 +35,8 @@ def test_release_detail_context_data():
         ({}, 2),
         ({"chart_name": "rstudio"}, 1),
         ({"chart_name": "jupyter-lab"}, 1),
-        ({"is_restricted": "true"}, 0),
-        ({"is_restricted": "false"}, 2),
+        ({"status": "restricted"}, 0),
+        ({"status": "active"}, 2),
     ],
 )
 def test_release_list_get_context_data(rf, data, count):

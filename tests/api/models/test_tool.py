@@ -125,3 +125,25 @@ def test_get_deprecated_message(tool):
     assert tool.get_deprecated_message == "This tool is deprecated"
     tool.is_retired = True
     assert tool.get_deprecated_message == ""
+
+
+def test_tool_status():
+    tool = Tool(is_restricted=False, is_deprecated=False, is_retired=False)
+    assert tool.status == "Active"
+    tool.is_restricted = True
+    assert tool.status == "Restricted"
+    tool.is_deprecated = True
+    assert tool.status == "Deprecated"
+    tool.is_retired = True
+    assert tool.status == "Retired"
+
+
+def test_status_colour():
+    tool = Tool(is_restricted=False, is_deprecated=False, is_retired=False)
+    assert tool.status_colour == "green"
+    tool.is_restricted = True
+    assert tool.status_colour == "yellow"
+    tool.is_deprecated = True
+    assert tool.status_colour == "grey"
+    tool.is_retired = True
+    assert tool.status_colour == "red"

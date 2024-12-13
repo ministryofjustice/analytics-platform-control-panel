@@ -33,6 +33,10 @@ class Tool(TimeStampedModel):
     JUPYTER_LAB_CHART_NAME = "jupyter-lab"
     RSTUDIO_CHART_NAME = "rstudio"
     VSCODE_CHART_NAME = "vscode"
+    STATUS_RETIRED = "retired"
+    STATUS_DEPRECATED = "deprecated"
+    STATUS_ACTIVE = "active"
+    STATUS_RESTRICTED = "restricted"
 
     description = models.TextField(blank=False)
     chart_name = models.CharField(max_length=100, blank=False)
@@ -106,6 +110,26 @@ class Tool(TimeStampedModel):
             self.VSCODE_CHART_NAME: "vscode.image.tag",
         }
         return mapping[self.chart_name]
+
+    @property
+    def status(self):
+        if self.is_retired:
+            return self.STATUS_RETIRED.capitalize()
+        if self.is_deprecated:
+            return self.STATUS_DEPRECATED.capitalize()
+        if self.is_restricted:
+            return self.STATUS_RESTRICTED.capitalize()
+        return self.STATUS_ACTIVE.capitalize()
+
+    @property
+    def status_colour(self):
+        mapping = {
+            self.STATUS_RETIRED: "red",
+            self.STATUS_DEPRECATED: "grey",
+            self.STATUS_RESTRICTED: "yellow",
+            self.STATUS_ACTIVE: "green",
+        }
+        return mapping[self.status.lower()]
 
 
 class ToolDeploymentManager:

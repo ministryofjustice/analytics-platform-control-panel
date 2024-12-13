@@ -29,15 +29,14 @@ class ReleaseFilter(InitialFilterSetMixin):
     # is_restricted = django_filters.BooleanFilter(label="Restricted release?")
     status = django_filters.ChoiceFilter(
         choices=[
-            ("active", "Active"),
-            ("unrestricted", "Unrestricted"),
-            ("restricted", "Restricted"),
-            ("deprecated", "Deprecated"),
-            ("retired", "Retired"),
+            (Tool.STATUS_ACTIVE, Tool.STATUS_ACTIVE.capitalize()),
+            (Tool.STATUS_RESTRICTED, Tool.STATUS_RESTRICTED.capitalize()),
+            (Tool.STATUS_DEPRECATED, Tool.STATUS_DEPRECATED.capitalize()),
+            (Tool.STATUS_RETIRED, Tool.STATUS_RETIRED.capitalize()),
             ("all", "All"),
         ],
         method="filter_status",
-        label="Availability",
+        label="Status",
         empty_label=None,
         initial="active",
     )
@@ -59,10 +58,12 @@ class ReleaseFilter(InitialFilterSetMixin):
     def filter_status(self, queryset, name, value):
         if value == "all":
             return queryset
+        if value == "retired":
+            return queryset.filter(is_retired=True)
+        # remove retired tools from the list
+        queryset = queryset.filter(is_retired=False)
         if value == "active":
-            return queryset.filter(is_retired=False)
-        if value == "unrestricted":
-            return queryset.filter(is_restricted=False)
+            return queryset.filter(is_restricted=False, is_deprecated=False)
         return queryset.filter(
             **{
                 f"is_{value}": True,
