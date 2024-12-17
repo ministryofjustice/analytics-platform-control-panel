@@ -93,8 +93,7 @@ CUSTOM_AUTH_CONNECTIONS: "auth0_nomis"
 AUTH0_NOMIS_GATEWAY_URL: "https://testing.com"
 
 
-BROADCAST_MESSAGE: >
-  AWS have increased the S3 bucket limit from one thousand to one million. | While this means that the restriction on creating new buckets has been lifted, we still recommend that you use buckets efficiently.
+BROADCAST_MESSAGE:
 
 GITHUB_VERSION: "2022-11-28"
 
