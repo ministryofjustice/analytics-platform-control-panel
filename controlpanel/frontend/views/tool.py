@@ -13,11 +13,6 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.helm import (
-    get_chart_version_info,
-    get_default_image_tag_from_helm_chart,
-    get_helm_entries,
-)
 from controlpanel.api.models import Tool, ToolDeployment
 from controlpanel.oidc import OIDCLoginRequiredMixin
 from controlpanel.utils import start_background_task
@@ -45,7 +40,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         * The current user is in the beta tester group for the tool.
         """
-        return Tool.objects.filter(Q(is_restricted=False) | Q(target_users=self.request.user.id))
+        return Tool.objects.filter(
+            Q(is_restricted=False) | Q(target_users=self.request.user.id)
+        ).exclude(is_retired=True)
 
     def _locate_tool_box_by_chart_name(self, chart_name):
         tool_box = None
@@ -67,13 +64,15 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         memory, CPU etc, then the linkage will be confused although it
         won't affect people usage.
         """
-        tool_set = Tool.objects.filter(chart_name=chart_name, version=chart_version)
-        for item in tool_set:
-            if item.image_tag == image_tag:
-                return item
-        return tool_set.first()
+        tools = self.get_queryset().filter(chart_name=chart_name, version=chart_version)
+        for tool in tools:
+            if tool.image_tag == image_tag:
+                return tool
+        # If we cant find a tool with the same image tag, this must mean that it was retired or
+        # deleted. So return none, and let the calling function handle it
+        return None
 
-    def _add_new_item_to_tool_box(self, user, tool_box, tool, tools_info, charts_info):
+    def _add_new_item_to_tool_box(self, user, tool_box, tool, tools_info):
         if tool_box not in tools_info:
             tools_info[tool_box] = {
                 "name": tool.name,
@@ -81,16 +80,15 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "deployment": None,
                 "releases": {},
             }
-        image_tag = tool.image_tag
-        if not image_tag:
-            image_tag = charts_info.get(tool.version, {}) or "unknown"
         if tool.id not in tools_info[tool_box]["releases"]:
             tools_info[tool_box]["releases"][tool.id] = {
                 "tool_id": tool.id,
                 "chart_name": tool.chart_name,
                 "description": tool.description,
                 "chart_version": tool.version,
-                "image_tag": image_tag,
+                "image_tag": tool.image_tag,
+                "is_deprecated": tool.is_deprecated,
+                "deprecated_message": tool.get_deprecated_message,
             }
 
     def _get_tool_deployed_image_tag(self, containers):
@@ -99,11 +97,16 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 return container.image.split(":")[1]
         return None
 
-    def _add_deployed_charts_info(self, tools_info, user, id_token, charts_info):
+    def _add_deployed_charts_info(self, tools_info, user, id_token):
         # Get list of deployed tools
+        # TODO this sets what tool the user currently has deployed. If we were to refactor to store
+        # deployed tools in the database, we could remove a lot of this logic
+        # See https://github.com/ministryofjustice/analytical-platform/issues/6266
         deployments = cluster.ToolDeployment.get_deployments(user, id_token)
         for deployment in deployments:
-            chart_name, chart_version = deployment.metadata.labels["chart"].rsplit("-", 1)
+            chart_name, chart_version = cluster.ToolDeployment.get_chart_details(
+                deployment.metadata.labels["chart"]
+            )
             image_tag = self._get_tool_deployed_image_tag(deployment.spec.template.spec.containers)
             tool_box = self._locate_tool_box_by_chart_name(chart_name)
             tool_box = tool_box or "Unknown"
@@ -115,7 +118,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                     )
                 )
             else:
-                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
             if tool_box not in tools_info:
                 # up to this stage, if the tool_box is still empty, it means
                 # there is no tool release available in db
@@ -127,41 +130,22 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "image_tag": image_tag,
                 "description": tool.description if tool else "Not available",
                 "status": ToolDeployment(tool, user).get_status(id_token, deployment=deployment),
+                "is_deprecated": tool.is_deprecated if tool else False,
+                "deprecated_message": tool.get_deprecated_message if tool else "",
+                "is_retired": tool is None,
             }
 
-    def _retrieve_detail_tool_info(self, user, tools, charts_info):
+    def _retrieve_detail_tool_info(self, user, tools):
+        # TODO when deployed tools are tracked in the DB this will not be needed
+        # see https://github.com/ministryofjustice/analytical-platform/issues/6266 # noqa: E501
         tools_info = {}
         for tool in tools:
             # Work out which bucket the chart should be in
             tool_box = self._locate_tool_box_by_chart_name(tool.chart_name)
             # No matching tool bucket for the given chart. So ignore.
             if tool_box:
-                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info, charts_info)
+                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
         return tools_info
-
-    def _get_charts_info(self, tool_list):
-        # We may need the default image_tag from helm chart
-        # unless we configure it specifically in parameters of tool release
-        charts_info = {}
-        chart_entries = None
-        for tool in tool_list:
-            if tool.version in charts_info:
-                continue
-
-            image_tag = tool.image_tag
-            if image_tag:
-                continue
-
-            if chart_entries is None:
-                # load the potential massive helm chart yaml only it is necessary
-                chart_entries = get_helm_entries()
-            chart_app_version = get_chart_version_info(chart_entries, tool.chart_name, tool.version)
-            if chart_app_version:
-                image_tag = get_default_image_tag_from_helm_chart(
-                    chart_app_version.chart_url, tool.chart_name
-                )
-            charts_info[tool.version] = image_tag
-        return charts_info
 
     def get_context_data(self, *args, **kwargs):
         """
@@ -224,15 +208,13 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context["managed_airflow_dev_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_dev_url}"
         context["managed_airflow_prod_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_prod_url}"
 
-        # Arrange tools information
-        charts_info = self._get_charts_info(context["tools"])
-        tools_info = self._retrieve_detail_tool_info(user, context["tools"], charts_info)
+        tools_info = self._retrieve_detail_tool_info(user, context["tools"])
 
         if "vscode" in tools_info:
             url = tools_info["vscode"]["url"]
             tools_info["vscode"]["url"] = f"{url}?folder=/home/analyticalplatform/workspace"
 
-        self._add_deployed_charts_info(tools_info, user, id_token, charts_info)
+        self._add_deployed_charts_info(tools_info, user, id_token)
         context["tools_info"] = tools_info
         return context
 

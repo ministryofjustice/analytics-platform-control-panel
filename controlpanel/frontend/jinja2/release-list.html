@@ -45,7 +45,7 @@
       <th class="govuk-table__header">Image tag</th>
       <th class="govuk-table__header">Description</th>
       <th class="govuk-table__header">Created</th>
-      <th class="govuk-table__header">Restricted Release?</th>
+      <th class="govuk-table__header">Status</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -72,7 +72,9 @@
         {{ release.created.strftime('%d-%m-%Y') }}
       </td>
       <td class="govuk-table__cell">
-        {{ release.is_restricted }}
+        <strong class="govuk-tag govuk-tag--{{ release.status_colour }}">
+          {{ release.status }}
+        </strong>
       </td>
       <td class="govuk-table__cell">
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"

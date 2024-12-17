@@ -38,18 +38,24 @@
             id="tools-{{ chart_name }}" name="version">
             {% set installed_chart_version = None %}
             {% set installed_release_version = None %}
-            {% if deployment and deployment.tool_id > -1 %}
+            {% if deployment and not deployment.is_retired %}
               {% set installed_chart_version = deployment.description %}
               {% set installed_release_version = deployment.tool_id %}
-              <option class="installed" value="{{ deployment.chart_name }}__{{ installed_chart_version }}__{{ deployment.tool_id }}">
-              [{{ deployment.chart_name }} {{ deployment.image_tag }}]  {{ installed_chart_version or "Unknown" }} (installed)
+              <option class="installed" value="{{ deployment.chart_name }}__{{ installed_chart_version }}__{{ deployment.tool_id }}"
+                data-is-deprecated="{{ deployment.is_deprecated }}"
+                data-deprecated-message="{{ deployment.deprecated_message }}">
+                [{{ deployment.chart_name }} {{ deployment.image_tag }}]  {{ installed_chart_version or "Unknown" }} (installed)
               </option>
             {% else %}
               <option class="not-installed">Not deployed - select a tool from this list and click "Deploy" to start</option>
             {% endif %}
             {% for release_version, release_detail in tool_info["releases"].items(): %}
               {% if release_version != installed_release_version: %}
-                <option value="{{ release_detail.chart_name }}__{{ release_detail.chart_version }}__{{ release_detail.tool_id }}">
+                <option
+                value="{{ release_detail.chart_name }}__{{ release_detail.chart_version }}__{{ release_detail.tool_id }}"
+                data-is-deprecated="{{ release_detail.is_deprecated }}"
+                data-deprecated-message="{{ release_detail.deprecated_message }}">
+                  <!-- TODO rather than build this info up manually in the view we could read it from the tool object itself -->
                   [{{ release_detail.chart_name }} {{ release_detail.image_tag }}]  {{ release_detail.description or "Unknown" }}
                 </option>
               {% endif %}
@@ -61,7 +67,7 @@
   <div class="govuk-grid-column-one-third">
   <p class="govuk-!-margin-bottom-1">Status:
   <span class="govuk-!-font-weight-bold tool-status-label">
-    {% if deployment %}
+    {% if deployment and not deployment.is_retired %}
       {{ deployment.status | default("") }}
     {% else %}
     Not deployed
@@ -86,7 +92,8 @@
     onclick="window.open('{{ tool_info['url'] }}', '_blank');"
     rel="noopener"
     target="_blank"
-    {% if not deployment %} disabled {% endif %}>
+    id="open-{{ chart_name }}"
+    {% if not deployment or deployment.is_retired %} disabled {% endif %}>
       Open
   </button>
 
@@ -96,24 +103,29 @@
     {% endif %}
     data-action-name="restart"
     method="post"
-    style="display: inline;">
+    style="display: inline;"
+    >
     {{ csrf_input }}
     <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
       data-action-name="restart"
-      {% if not deployment or deployment.tool_id == -1 %} disabled {% endif %}>
+      id="restart-{{ chart_name }}"
+      {% if not deployment or deployment.is_retired %} disabled {% endif %}>
       Restart
     </button>
   </form>
   </div>
 </div>
 
-{% if deployment and deployment.tool_id == -1 %}
-<div>
-  <p class="govuk-body">
-    Your current deployment <b> ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }}) </b>
-    is not recognised as a current maintained tool release. You can still use it,
-    but it is recommended to switch to a new version from the dropdown list.
-  </p>
+<div id="{{ chart_name }}-deprecation-message" class="govuk-warning-text{% if not deployment or not deployment.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{{ deployment.deprecated_message }}</strong></div>
+
+{% if deployment and deployment.is_retired %}
+
+<div class="govuk-warning-text">
+  <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+  <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>
+    Your previous deployment ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }})
+    has been retired. You will need to deploy a new version from the dropdown list.
+  </strong>
 </div>
 {% endif %}
 <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">

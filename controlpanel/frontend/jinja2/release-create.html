@@ -29,7 +29,7 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'Human readable name. 60 chars max'
+        "text": 'Human readable name. Only used in the Tool Releases admin page, not to standard users.'
       },
       "name": "name",
       "attributes": {
@@ -62,7 +62,7 @@
       },
       "classes": "govuk-!-width-two-thirds",
       "hint": {
-        "text": 'The description for this version, if you leave it blank, the info from helm repo will be used instead'
+        "text": 'A brief description of this version. This is displayed to users in the dropdown selections.'
       },
       "name": "description",
       "attributes": {
@@ -87,6 +87,23 @@
       },
       "value": form.version.value(),
       "errorMessage": { "html": form.version.errors|join(". ") } if form.version.errors else {}
+    }) }}
+    {{ govukInput({
+      "label": {
+        "text": "Image Tag",
+        "classes": "govuk-label--m",
+      },
+      "classes": "govuk-!-width-two-thirds",
+      "hint": {
+        "text": 'Docker image tag for this release. It will be passed to helm as a value when the tool is deployed.'
+      },
+      "name": "image_tag",
+      "attributes": {
+        "pattern": "[a-z0-9.-]{1,60}",
+        "maxlength": "60",
+      },
+      "value": form.image_tag.value(),
+      "errorMessage": { "html": form.image_tag.errors|join(". ") } if form.image_tag.errors else {}
     }) }}
     {{ govukInput({
       "label": {

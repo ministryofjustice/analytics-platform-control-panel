@@ -27,8 +27,18 @@ class Tool(TimeStampedModel):
         "rstudio": "rstudio",
         "vscode": "vscode",
     }
+    DEFAULT_DEPRECATED_MESSAGE = "The selected release has been deprecated and will be retired soon. Please update to a more recent version."  # noqa
+    JUPYTER_DATASCIENCE_CHART_NAME = "jupyter-lab-datascience-notebook"
+    JUPYTER_ALL_SPARK_CHART_NAME = "jupyter-lab-all-spark"
+    JUPYTER_LAB_CHART_NAME = "jupyter-lab"
+    RSTUDIO_CHART_NAME = "rstudio"
+    VSCODE_CHART_NAME = "vscode"
+    STATUS_RETIRED = "retired"
+    STATUS_DEPRECATED = "deprecated"
+    STATUS_ACTIVE = "active"
+    STATUS_RESTRICTED = "restricted"
 
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=False)
     chart_name = models.CharField(max_length=100, blank=False)
     name = models.CharField(max_length=100, blank=False)
     values = JSONField(default=dict)
@@ -51,6 +61,13 @@ class Tool(TimeStampedModel):
         default=None,
     )
 
+    is_deprecated = models.BooleanField(default=False)
+    deprecated_message = models.TextField(
+        blank=True, help_text="If no message is provided, a default message will be used."
+    )
+    is_retired = models.BooleanField(default=False)
+    image_tag = models.CharField(max_length=100)
+
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
         ordering = ("name",)
@@ -65,6 +82,8 @@ class Tool(TimeStampedModel):
     def save(self, *args, **kwargs):
         helm.update_helm_repository(force=True)
 
+        # TODO description is now required when creating a release, so this is unlikely to be called
+        # Consider removing
         if not self.description:
             self.description = helm.get_chart_app_version(self.chart_name, self.version) or ""
 
@@ -72,12 +91,45 @@ class Tool(TimeStampedModel):
         return self
 
     @property
-    def image_tag(self):
-        chart_image_key_name = self.chart_name.split("-")[0]
-        values = self.values or {}
-        return values.get("{}.tag".format(chart_image_key_name)) or values.get(
-            "{}.image.tag".format(chart_image_key_name)
-        )
+    def get_deprecated_message(self):
+        if not self.is_deprecated:
+            return ""
+
+        if self.is_retired:
+            return ""
+
+        return self.deprecated_message or self.DEFAULT_DEPRECATED_MESSAGE
+
+    @property
+    def image_tag_key(self):
+        mapping = {
+            self.JUPYTER_DATASCIENCE_CHART_NAME: "jupyter.tag",
+            self.JUPYTER_ALL_SPARK_CHART_NAME: "jupyter.tag",
+            self.JUPYTER_LAB_CHART_NAME: "jupyterlab.image.tag",
+            self.RSTUDIO_CHART_NAME: "rstudio.image.tag",
+            self.VSCODE_CHART_NAME: "vscode.image.tag",
+        }
+        return mapping[self.chart_name]
+
+    @property
+    def status(self):
+        if self.is_retired:
+            return self.STATUS_RETIRED.capitalize()
+        if self.is_deprecated:
+            return self.STATUS_DEPRECATED.capitalize()
+        if self.is_restricted:
+            return self.STATUS_RESTRICTED.capitalize()
+        return self.STATUS_ACTIVE.capitalize()
+
+    @property
+    def status_colour(self):
+        mapping = {
+            self.STATUS_RETIRED: "red",
+            self.STATUS_DEPRECATED: "grey",
+            self.STATUS_RESTRICTED: "yellow",
+            self.STATUS_ACTIVE: "green",
+        }
+        return mapping[self.status.lower()]
 
 
 class ToolDeploymentManager:

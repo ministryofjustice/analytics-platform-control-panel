@@ -152,9 +152,41 @@ moj.Modules.toolStatus = {
 
     const targetTool = target.attributes["data-action-target"];
     const deployButton = document.getElementById("deploy-" + targetTool.value);
+    const openButton = document.getElementById("open-" + targetTool.value);
+    const restartButton = document.getElementById("restart-" + targetTool.value);
 
     // If "(not installed)" or "(installed)" version selected
     // the "Deploy" button needs to be disabled
     deployButton.disabled = notInstalledSelected || installedSelected;
+    openButton.disabled = !installedSelected;
+    restartButton.disabled = !installedSelected;
+
+    this.toggleDeprecationMessage(selected, targetTool);
   },
+
+  toggleDeprecationMessage(selected, targetTool) {
+    const isDeprecated = selected.attributes["data-is-deprecated"];
+    const deprecationMessageElement = document.getElementById(targetTool.value + "-deprecation-message");
+    if (isDeprecated === undefined) {
+      this.hideDeprecationMessage(deprecationMessageElement);
+      return;
+    }
+    const deprecationMessage = selected.attributes["data-deprecated-message"].value;
+
+    if (isDeprecated.value === "True") {
+      this.showDeprecationMessage(deprecationMessageElement, deprecationMessage);
+    } else {
+      this.hideDeprecationMessage(deprecationMessageElement);
+    }
+  },
+
+  showDeprecationMessage(element, message) {
+    element.classList.remove(this.hidden);
+    element.lastChild.innerText = message;
+  },
+
+  hideDeprecationMessage(element) {
+    element.classList.add(this.hidden);
+    element.lastChild.innerText = "";
+  }
 };
