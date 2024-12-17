@@ -97,7 +97,9 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context["broadcast_messages"] = settings.BROADCAST_MESSAGE.split("|")
+        context["broadcast_messages"] = (
+            settings.BROADCAST_MESSAGE.split("|") if settings.BROADCAST_MESSAGE else []
+        )
         context["settings"] = settings
         return context
 
