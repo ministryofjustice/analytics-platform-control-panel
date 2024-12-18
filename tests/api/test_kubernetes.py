@@ -40,8 +40,7 @@ def test_kubernetes_client_constructor_when_id_token_passed(k8s_config):
     client = KubernetesClient(id_token=id_token)
 
     config = client.api_client.configuration
-    assert config.api_key_prefix["authorization"] == "Bearer"
-    assert config.api_key["authorization"] == id_token
+    assert config.api_key == {"authorization": f"Bearer {id_token}"}
 
 
 def test_kubernetes_client_constructor_when_use_cpanel_creds_true(k8s_config):
