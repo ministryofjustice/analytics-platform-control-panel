@@ -93,7 +93,12 @@ CUSTOM_AUTH_CONNECTIONS: "auth0_nomis"
 AUTH0_NOMIS_GATEWAY_URL: "https://testing.com"
 
 
-BROADCAST_MESSAGE:
+BROADCAST_MESSAGE: >
+  We are currently rolling out additional releases to Analytical Platform Tooling (Jupyter
+  Lab All Spark, Jupyter Lab Data Science, and RStudio) that enabled a new proxy (referred
+  to as CDE NGINX). If you experience a 502 Bad Gateway when trying to open a tool, please
+  deploy the CDE NGINX variant.
+
 
 GITHUB_VERSION: "2022-11-28"
 
