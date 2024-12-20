@@ -7,7 +7,7 @@ from rest_framework import authentication, exceptions
 
 # First-party/Local
 from controlpanel.api.models import User
-from controlpanel.jwt import JWT, JWTDecodeError
+from controlpanel.jwt import JWT, DecodeError
 
 M2M_CLAIM_FLAG = "client-credentials"
 
@@ -69,7 +69,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
         else:
             try:
                 jwt.validate()
-            except JWTDecodeError:
+            except DecodeError:
                 return None
 
         return self._get_client(jwt), None
@@ -89,7 +89,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
                 return AuthenticatedServiceClient(jwt.payload)
             else:
                 raise exceptions.AuthenticationFailed()
-        except JWTDecodeError:
+        except DecodeError:
             raise exceptions.AuthenticationFailed(
                 "Failed to be authenticated due to JWT decoder error!"
             )
