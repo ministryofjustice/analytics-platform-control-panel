@@ -1,17 +1,11 @@
 # Third-party
-import requests
+import jwt
 import structlog
 from django.conf import settings
-from jose import jwt
-from jose.exceptions import JWTError
-from requests.exceptions import RequestException
+from jwt.exceptions import DecodeError, InvalidTokenError, PyJWKClientError
 from rest_framework import HTTP_HEADER_ENCODING
 
 log = structlog.getLogger(__name__)
-
-
-class JWTDecodeError(Exception):
-    pass
 
 
 class JWT:
@@ -25,7 +19,7 @@ class JWT:
             "algorithms": [settings.OIDC_RP_SIGN_ALGO],
             "audience": settings.OIDC_CPANEL_API_AUDIENCE,
             "options": {
-                "require_sub": True,
+                "require": ["sub"],
             },
         }
 
@@ -37,7 +31,7 @@ class JWT:
         if not self._header:
             try:
                 self._header = jwt.get_unverified_header(self._raw_token)
-            except jwt.JWTError:
+            except (DecodeError, InvalidTokenError):
                 return None
         return self._header
 
@@ -45,22 +39,19 @@ class JWT:
     def jwk(self):
         if not self._jwk and self.header:
             try:
-                response = requests.get(self.jwks_url, verify=False)
-                response.raise_for_status()
-            except RequestException as error:
-                raise JWTDecodeError(f"Failed fetching JWK: {error}")
+                jwks_client = jwt.PyJWKClient(self.jwks_url)
+                jwk = jwks_client.get_signing_key_from_jwt(self._raw_token)
 
-            jwks = response.json()
+                if jwk.key_id != self.header["kid"]:
+                    raise DecodeError(
+                        f'No JWK with id {self.header["kid"]} found at {self.jwks_url} '
+                        f"while decoding {self._raw_token}"
+                    )
 
-            for jwk in jwks.get("keys", []):
-                if jwk["kid"] == self.header["kid"]:
-                    self._jwk = jwk
-                    return self._jwk
+                self._jwk = jwk.key
 
-            raise JWTDecodeError(
-                f'No JWK with id {self.header["kid"]} found at {self.jwks_url} '
-                f"while decoding {self._raw_token}"
-            )
+            except PyJWKClientError as error:
+                raise DecodeError(f"Failed fetching JWK: {error}")
 
         return self._jwk
 
@@ -73,8 +64,8 @@ class JWT:
                     key=self.jwk,
                     **self.decode_options,
                 )
-            except (JWTError, KeyError) as error:
-                raise JWTDecodeError(f"Failed decoding JWT: {error}")
+            except (DecodeError, KeyError) as error:
+                raise DecodeError(f"Failed decoding JWT: {error}")
         return self._payload
 
     def validate(self):
@@ -84,8 +75,8 @@ class JWT:
                 key=self.jwk,
                 **self.decode_options,
             )
-        except (JWTError, KeyError) as error:
-            raise JWTDecodeError(f"Failed decoding JWT: {error}")
+        except (DecodeError, KeyError) as error:
+            raise DecodeError(f"Failed decoding JWT: {error}")
 
     @classmethod
     def from_auth_header(cls, request):
