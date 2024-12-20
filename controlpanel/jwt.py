@@ -40,7 +40,12 @@ class JWT:
         if not self._jwk and self.header:
             try:
                 jwks_client = jwt.PyJWKClient(self.jwks_url)
-                self._jwk = jwks_client.get_signing_key_from_jwt(self._raw_token).key
+                jwk = jwks_client.get_signing_key_from_jwt(self._raw_token)
+
+                if jwk.key_id != self.header["kid"]:
+                    raise DecodeError("Key ID mismatch")
+
+                self._jwk = jwk.key
 
             except PyJWKClientError as error:
                 raise DecodeError(f"Failed fetching JWK: {error}")
