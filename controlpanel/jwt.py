@@ -43,7 +43,10 @@ class JWT:
                 jwk = jwks_client.get_signing_key_from_jwt(self._raw_token)
 
                 if jwk.key_id != self.header["kid"]:
-                    raise DecodeError("Key ID mismatch")
+                    raise DecodeError(
+                        f'No JWK with id {self.header["kid"]} found at {self.jwks_url} '
+                        f"while decoding {self._raw_token}"
+                    )
 
                 self._jwk = jwk.key
 
