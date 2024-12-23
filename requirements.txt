@@ -5,7 +5,7 @@ beautifulsoup4==4.12.3
 boto3==1.35.39
 botocore==1.35.44  # noqa temporarily pinning this to try to resolve an issue with failing tests
 celery[sqs]==5.3.6
-channels==4.1.0
+channels==4.2.0
 channels-redis==4.2.0
 daphne==4.1.2
 Django==5.1.2
