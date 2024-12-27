@@ -67,6 +67,9 @@ class Tool(TimeStampedModel):
     )
     is_retired = models.BooleanField(default=False)
     image_tag = models.CharField(max_length=100)
+    users_deployed = models.ManyToManyField(
+        "User", through="ToolDeployment", related_name="deployed_tools"
+    )
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
@@ -131,43 +134,51 @@ class Tool(TimeStampedModel):
         }
         return mapping[self.status.lower()]
 
-
-class ToolDeploymentManager:
-    """
-    Emulates a Django model manager
-    """
-
-    def create(self, *args, **kwargs):
-        tool_deployment = ToolDeployment(*args, **kwargs)
-        tool_deployment.save()
-        return tool_deployment
+    @property
+    def tool_type(self):
+        return self.chart_name.split("-")[0]
 
 
-class ToolDeployment:
+class ToolDeployment(TimeStampedModel):
     """
     Represents a deployed Tool in the cluster
     """
 
-    DoesNotExist = django.core.exceptions.ObjectDoesNotExist
+    class ToolType(models.TextChoices):
+        JUPYTER = "jupyter", "Jupyter"
+        RSTUDIO = "rstudio", "RStudio"
+        VSCODE = "vscode", "VSCode"
+
+    user = models.ForeignKey(to="User", on_delete=models.CASCADE)
+    tool = models.ForeignKey(to="Tool", on_delete=models.CASCADE)
+    tool_type = models.CharField(max_length=100, choices=ToolType.choices)
+
     Error = cluster.ToolDeploymentError
-    MultipleObjectsReturned = django.core.exceptions.MultipleObjectsReturned
 
-    objects = ToolDeploymentManager()
-
-    def __init__(self, tool, user, old_chart_name=None):
+    def __init__(self, *args, **kwargs):
+        # TODO these may not be necessary but leaving for now
         self._subprocess = None
-        self.tool = tool
-        self.user = user
-        self.old_chart_name = old_chart_name
+        # this is used to delete the old helm release before deploying the new one
+        self._old_chart_name = kwargs.pop("old_chart_name", None)
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
+
+    @property
+    def old_chart_name(self):
+        return self._old_chart_name
+
+    @old_chart_name.setter
+    def old_chart_name(self, value):
+        self._old_chart_name = value
 
     def delete(self, id_token):
         """
         Remove the release from the cluster
         """
-        cluster.ToolDeployment(self.user, self.tool).uninstall(id_token)
+        cluster.ToolDeployment().uninstall(id_token)
+        super().delete()
 
     @property
     def host(self):
@@ -177,6 +188,7 @@ class ToolDeployment:
         """
         Deploy the tool to the cluster (asynchronous)
         """
+        super().save(*args, **kwargs)
         self._subprocess = cluster.ToolDeployment(
             self.user, self.tool, self.old_chart_name
         ).install()

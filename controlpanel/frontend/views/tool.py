@@ -123,13 +123,21 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 # up to this stage, if the tool_box is still empty, it means
                 # there is no tool release available in db
                 tools_info[tool_box] = {"releases": {}}
+
+            # TODO temporary fix to get the status of the tool
+            try:
+                status = ToolDeployment.objects.get(tool=tool, user=user).get_status(
+                    id_token, deployment=deployment
+                )
+            except ToolDeployment.DoesNotExist:
+                status = None
             tools_info[tool_box]["deployment"] = {
                 "tool_id": tool.id if tool else -1,
                 "chart_name": chart_name,
                 "chart_version": chart_version,
                 "image_tag": image_tag,
                 "description": tool.description if tool else "Not available",
-                "status": ToolDeployment(tool, user).get_status(id_token, deployment=deployment),
+                "status": status,
                 "is_deprecated": tool.is_deprecated if tool else False,
                 "deprecated_message": tool.get_deprecated_message if tool else "",
                 "is_retired": tool is None,
