@@ -1007,7 +1007,9 @@ class ToolDeployment:
         return set_values
 
     def install(self, **kwargs):
-        self._delete_legacy_release()
+        # TODO remove as should no longer be necessary as we uninstall the previous release before
+        # installing the new one
+        # self._delete_legacy_release()
 
         try:
             set_values = self._set_values(**kwargs)
@@ -1026,9 +1028,12 @@ class ToolDeployment:
         except helm.HelmError as error:
             raise ToolDeploymentError(error)
 
-    def uninstall(self, id_token):
-        deployment = self.get_deployment(id_token)
-        helm.delete(self.k8s_namespace, deployment.metadata.name)
+    def uninstall(self):
+        try:
+            return helm.delete(self.k8s_namespace, self.release_name)
+        except helm.HelmError as error:
+            # TODO make this less generic
+            raise ToolDeploymentError(error)
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

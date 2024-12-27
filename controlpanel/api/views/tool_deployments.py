@@ -22,11 +22,6 @@ class ToolDeploymentAPIView(GenericAPIView):
         attempts to redirect to the target url. I'm sure there's a good
         reason why.
         """
-        # If there's already a tool deployed, we need to get this from a
-        # hidden field posted back in the form. This is used by helm to delete
-        # the currently installed chart for the tool before installing the
-        # new chart.
-        old_chart_name = data.get("deployed_chart_name", None)
         # The selected option from the "version" select control contains the
         # data we need.
         chart_info = data.get("version")
@@ -45,7 +40,6 @@ class ToolDeploymentAPIView(GenericAPIView):
                 "tool_id": tool_id,
                 "user_id": self.request.user.id,
                 "id_token": self.request.user.get_id_token(),
-                "old_chart_name": old_chart_name,
             },
         )
 

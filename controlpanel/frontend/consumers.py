@@ -150,20 +150,31 @@ class BackgroundTaskConsumer(SyncConsumer):
 
         tool, user = self.get_tool_and_user(message)
         id_token = message["id_token"]
-        # TODO may be able to update this to delete the old ToolDeployment first and then deploy
-        # the new one?
-        old_chart_name = message.get("old_chart_name", None)
+        previous_deployment = user.tool_deployments.filter(
+            tool_type=tool.tool_type, is_active=True
+        ).first()
+        if previous_deployment:
+            try:
+                previous_deployment.uninstall()
+            except ToolDeployment.Error as err:
+                log.error(err)
+                pass
+            previous_deployment.is_active = False
+            previous_deployment.save()
+
+        tool_deployment = ToolDeployment(
+            tool_type=tool.tool_type, user=user, tool=tool, is_active=True
+        )
+        tool_deployment.save()
         try:
-            tool_deployment, _ = ToolDeployment.objects.update_or_create(
-                tool_type=tool.tool_type,
-                user=user,
-                defaults={"tool": tool, "old_chart_name": old_chart_name},
-            )
             update_tool_status(tool_deployment, id_token, TOOL_DEPLOYING)
+            tool_deployment.deploy()
         except ToolDeployment.Error as err:
             self._send_to_sentry(err)
             update_tool_status(tool_deployment, id_token, TOOL_DEPLOY_FAILED)
             log.error(err)
+            tool_deployment.is_active = False
+            tool_deployment.save()
             return
 
         status = wait_for_deployment(tool_deployment, id_token)

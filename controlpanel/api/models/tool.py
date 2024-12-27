@@ -139,6 +139,14 @@ class Tool(TimeStampedModel):
         return self.chart_name.split("-")[0]
 
 
+class ToolDeploymentQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_active=True)
+
+    def inactive(self):
+        return self.filter(is_active=False)
+
+
 class ToolDeployment(TimeStampedModel):
     """
     Represents a deployed Tool in the cluster
@@ -149,49 +157,48 @@ class ToolDeployment(TimeStampedModel):
         RSTUDIO = "rstudio", "RStudio"
         VSCODE = "vscode", "VSCode"
 
-    user = models.ForeignKey(to="User", on_delete=models.CASCADE)
-    tool = models.ForeignKey(to="Tool", on_delete=models.CASCADE)
+    user = models.ForeignKey(to="User", on_delete=models.CASCADE, related_name="tool_deployments")
+    tool = models.ForeignKey(to="Tool", on_delete=models.CASCADE, related_name="tool_deployments")
     tool_type = models.CharField(max_length=100, choices=ToolType.choices)
+    is_active = models.BooleanField(default=False)
 
     Error = cluster.ToolDeploymentError
+
+    objects = ToolDeploymentQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["-created"]
 
     def __init__(self, *args, **kwargs):
         # TODO these may not be necessary but leaving for now
         self._subprocess = None
-        # this is used to delete the old helm release before deploying the new one
-        self._old_chart_name = kwargs.pop("old_chart_name", None)
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
 
-    @property
-    def old_chart_name(self):
-        return self._old_chart_name
-
-    @old_chart_name.setter
-    def old_chart_name(self, value):
-        self._old_chart_name = value
-
-    def delete(self, id_token):
+    def uninstall(self):
         """
         Remove the release from the cluster
         """
-        cluster.ToolDeployment().uninstall(id_token)
-        super().delete()
+        return cluster.ToolDeployment(tool=self.tool, user=self.user).uninstall()
+
+    def delete(self, *args, **kwargs):
+        """
+        Remove the release from the cluster
+        """
+        self.uninstall()
+        super().delete(*args, **kwargs)
 
     @property
     def host(self):
         return f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
 
-    def save(self, *args, **kwargs):
+    def deploy(self):
         """
         Deploy the tool to the cluster (asynchronous)
         """
-        super().save(*args, **kwargs)
-        self._subprocess = cluster.ToolDeployment(
-            self.user, self.tool, self.old_chart_name
-        ).install()
+        self._subprocess = cluster.ToolDeployment(self.user, self.tool).install()
 
     def get_status(self, id_token, deployment=None):
         """

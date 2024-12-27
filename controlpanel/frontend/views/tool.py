@@ -126,9 +126,9 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
             # TODO temporary fix to get the status of the tool
             try:
-                status = ToolDeployment.objects.get(tool=tool, user=user).get_status(
-                    id_token, deployment=deployment
-                )
+                status = ToolDeployment.objects.get(
+                    tool=tool, user=user, is_active=True
+                ).get_status(id_token, deployment=deployment)
             except ToolDeployment.DoesNotExist:
                 status = None
             tools_info[tool_box]["deployment"] = {
