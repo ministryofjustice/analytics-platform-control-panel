@@ -44,44 +44,48 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             Q(is_restricted=False) | Q(target_users=self.request.user.id)
         ).exclude(is_retired=True)
 
-    def _locate_tool_box_by_chart_name(self, chart_name):
-        tool_box = None
-        for key, bucket_name in Tool.TOOL_BOX_CHART_LOOKUP.items():
-            if key in chart_name:
-                tool_box = bucket_name
-                break
-        return tool_box
-
-    def _find_related_tool_record(self, chart_name, chart_version, image_tag):
-        """
-        The current logic is to link the deployment back to the tool-release
-        record is based
-        - chart_name
-        - chart_version
-        - image_tag
-        if somehow we make a tool-release with duplicated 3 above fields but
-        different other parameters e.g.
-        memory, CPU etc, then the linkage will be confused although it
-        won't affect people usage.
-        """
-        tools = self.get_queryset().filter(chart_name=chart_name, version=chart_version)
-        for tool in tools:
-            if tool.image_tag == image_tag:
-                return tool
-        # If we cant find a tool with the same image tag, this must mean that it was retired or
-        # deleted. So return none, and let the calling function handle it
+    def _get_tool_deployed_image_tag(self, containers):
+        for container in containers:
+            if "auth" not in container.name:
+                return container.image.split(":")[1]
         return None
 
-    def _add_new_item_to_tool_box(self, user, tool_box, tool, tools_info):
-        if tool_box not in tools_info:
-            tools_info[tool_box] = {
-                "name": tool.name,
-                "url": tool.url(user),
-                "deployment": None,
-                "releases": {},
+    def _add_deployed_charts_info(self, tools_info, user, id_token):
+        # TODO this is left in place simply to determine the status of a tool. Not sure if it is
+        # necessary or worth it - we could store the status of the tool on the ToolDeployment model
+        # instead
+        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
+        # build an index using the chart name as the key for easy lookup later
+        deployments = {deployment.metadata.labels["app"]: deployment for deployment in deployments}
+        for tool_deployment in user.tool_deployments.active():
+            deployment = deployments.get(tool_deployment.tool.chart_name)
+            tool = tool_deployment.tool
+            tools_info[tool_deployment.tool_type]["deployment"] = {
+                "tool_id": tool.id,
+                "chart_name": tool.chart_name,
+                "chart_version": tool.version,
+                "image_tag": tool.image_tag,
+                "description": tool.description,
+                "status": tool_deployment.get_status(id_token=id_token, deployment=deployment),
+                "is_deprecated": tool.is_deprecated,
+                "deprecated_message": tool.get_deprecated_message,
+                "is_retired": tool.is_retired,
             }
-        if tool.id not in tools_info[tool_box]["releases"]:
-            tools_info[tool_box]["releases"][tool.id] = {
+
+    def _retrieve_detail_tool_info(self, user, tools):
+        # TODO when deployed tools are tracked in the DB this will not be needed
+        # see https://github.com/ministryofjustice/analytical-platform/issues/6266 # noqa: E501
+        tools_info = {}
+        for tool in tools:
+            if tool.tool_type not in tools_info:
+                tools_info[tool.tool_type] = {
+                    "name": tool.tool_type_name,
+                    "url": tool.url(user),
+                    "deployment": None,
+                    "releases": {},
+                }
+
+            tools_info[tool.tool_type]["releases"][tool.id] = {
                 "tool_id": tool.id,
                 "chart_name": tool.chart_name,
                 "description": tool.description,
@@ -90,69 +94,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
                 "is_deprecated": tool.is_deprecated,
                 "deprecated_message": tool.get_deprecated_message,
             }
-
-    def _get_tool_deployed_image_tag(self, containers):
-        for container in containers:
-            if "auth" not in container.name:
-                return container.image.split(":")[1]
-        return None
-
-    def _add_deployed_charts_info(self, tools_info, user, id_token):
-        # Get list of deployed tools
-        # TODO this sets what tool the user currently has deployed. If we were to refactor to store
-        # deployed tools in the database, we could remove a lot of this logic
-        # See https://github.com/ministryofjustice/analytical-platform/issues/6266
-        deployments = cluster.ToolDeployment.get_deployments(user, id_token)
-        for deployment in deployments:
-            chart_name, chart_version = cluster.ToolDeployment.get_chart_details(
-                deployment.metadata.labels["chart"]
-            )
-            image_tag = self._get_tool_deployed_image_tag(deployment.spec.template.spec.containers)
-            tool_box = self._locate_tool_box_by_chart_name(chart_name)
-            tool_box = tool_box or "Unknown"
-            tool = self._find_related_tool_record(chart_name, chart_version, image_tag)
-            if not tool:
-                log.warn(
-                    "this chart({}-{}) has not available from DB. ".format(
-                        chart_name, chart_version
-                    )
-                )
-            else:
-                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
-            if tool_box not in tools_info:
-                # up to this stage, if the tool_box is still empty, it means
-                # there is no tool release available in db
-                tools_info[tool_box] = {"releases": {}}
-
-            # TODO temporary fix to get the status of the tool
-            try:
-                status = ToolDeployment.objects.get(
-                    tool=tool, user=user, is_active=True
-                ).get_status(id_token, deployment=deployment)
-            except ToolDeployment.DoesNotExist:
-                status = None
-            tools_info[tool_box]["deployment"] = {
-                "tool_id": tool.id if tool else -1,
-                "chart_name": chart_name,
-                "chart_version": chart_version,
-                "image_tag": image_tag,
-                "description": tool.description if tool else "Not available",
-                "status": status,
-                "is_deprecated": tool.is_deprecated if tool else False,
-                "deprecated_message": tool.get_deprecated_message if tool else "",
-                "is_retired": tool is None,
-            }
-
-    def _retrieve_detail_tool_info(self, user, tools):
-        # TODO when deployed tools are tracked in the DB this will not be needed
-        # see https://github.com/ministryofjustice/analytical-platform/issues/6266 # noqa: E501
-        tools_info = {}
-        for tool in tools:
-            # Work out which bucket the chart should be in
-            tool_box = self._locate_tool_box_by_chart_name(tool.chart_name)
-            # No matching tool bucket for the given chart. So ignore.
-            if tool_box:
-                self._add_new_item_to_tool_box(user, tool_box, tool, tools_info)
         return tools_info
 
     def get_context_data(self, *args, **kwargs):

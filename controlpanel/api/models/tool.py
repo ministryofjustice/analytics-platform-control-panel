@@ -19,14 +19,6 @@ class Tool(TimeStampedModel):
     instance of a tool.
     """
 
-    # Defines how a matching chart name is put into a named tool bucket.
-    # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
-    # chart name match: tool bucket
-    TOOL_BOX_CHART_LOOKUP = {
-        "jupyter": "jupyter-lab",
-        "rstudio": "rstudio",
-        "vscode": "vscode",
-    }
     DEFAULT_DEPRECATED_MESSAGE = "The selected release has been deprecated and will be retired soon. Please update to a more recent version."  # noqa
     JUPYTER_DATASCIENCE_CHART_NAME = "jupyter-lab-datascience-notebook"
     JUPYTER_ALL_SPARK_CHART_NAME = "jupyter-lab-all-spark"
@@ -138,6 +130,15 @@ class Tool(TimeStampedModel):
     def tool_type(self):
         return self.chart_name.split("-")[0]
 
+    @property
+    def tool_type_name(self):
+        mapping = {
+            "jupyter": "JupyterLab",
+            "rstudio": "RStudio",
+            "vscode": "Visual Studio Code",
+        }
+        return mapping[self.tool_type]
+
 
 class ToolDeploymentQuerySet(models.QuerySet):
     def active(self):
@@ -153,7 +154,7 @@ class ToolDeployment(TimeStampedModel):
     """
 
     class ToolType(models.TextChoices):
-        JUPYTER = "jupyter", "Jupyter"
+        JUPYTER = "jupyter", "JupyterLab"
         RSTUDIO = "rstudio", "RStudio"
         VSCODE = "vscode", "VSCode"
 

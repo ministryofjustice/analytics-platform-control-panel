@@ -1124,6 +1124,8 @@ class ToolDeployment:
 
         if "Available" in conditions:
             if conditions["Available"].status == "True":
+                # TODO to save us having to call the KubeAPI to get deployments we  could use the
+                # ToolDeployment created/modified timestamp to determine if the tool is idle
                 if deployment.spec.replicas == 0:
                     return TOOL_IDLED
                 return TOOL_READY
