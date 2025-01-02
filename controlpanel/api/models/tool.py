@@ -70,6 +70,9 @@ class Tool(TimeStampedModel):
     def __repr__(self):
         return f"<Tool: {self.chart_name} {self.version}>"
 
+    def __str__(self):
+        return f"[{self.chart_name} {self.image_tag}] {self.description}"
+
     def url(self, user):
         tool = self.tool_domain or self.chart_name
         return f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
@@ -201,7 +204,7 @@ class ToolDeployment(TimeStampedModel):
         """
         self._subprocess = cluster.ToolDeployment(self.user, self.tool).install()
 
-    def get_status(self, id_token, deployment=None):
+    def get_status(self, id_token=None, deployment=None):
         """
         Get the current status of the deployment.
         Polls the subprocess if running, otherwise returns idled status.
@@ -214,8 +217,12 @@ class ToolDeployment(TimeStampedModel):
                 log.info(status)
                 return status
         return cluster.ToolDeployment(self.user, self.tool).get_status(
-            id_token, deployment=deployment
+            id_token or self.user.get_id_token(), deployment=deployment
         )
+
+    def url(self):
+        tool = self.tool.tool_domain or self.tool.chart_name
+        return f"https://{self.user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
 
     def _poll(self):
         """

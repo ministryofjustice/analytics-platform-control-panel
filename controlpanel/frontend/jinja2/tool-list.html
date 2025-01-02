@@ -168,4 +168,97 @@
 {% endif %}
 
 
+{{ jupyter_form.as_p() }}
+
+{{ rstudio_form.as_p() }}
+
+{{ vscode_form.as_p() }}
+
+
+{% for tool_form in tool_forms %}
+  <h2 class="govuk-heading-m">{{ tool_form.tool_type }}</h2>
+  <div class="govuk-grid-row tool sse-listener" data-tool-name="{{ tool_form.tool_type }}">
+    <div class="govuk-grid-column-two-thirds">
+      <form action="{{ url('tool-deployments', kwargs={'tool_name': tool_form.tool_type, 'action': 'deploy'}) }}"
+          data-action-name="deploy"
+          class="tool-action"
+          id="form-{{ tool_form.tool_type }}"
+          method="post">
+          {{ csrf_input }}
+        <div class="govuk-form-group">
+            <label class="govuk-label" for="version">
+              Version
+            </label>
+            {{ tool_form.tool_release }}
+        </div>
+      </form>
+    </div>
+    <div class="govuk-grid-column-one-third">
+    <p class="govuk-!-margin-bottom-1">Status:
+    <span class="govuk-!-font-weight-bold tool-status-label">
+      {% if tool_form.deployment and not tool_form.deployment.tool.is_retired %}
+       {{ tool_form.deployment.get_status() }}
+      {% else %}
+      Not deployed
+      {% endif %}
+    </span>
+    </p>
+
+    <form style="display: inline;">
+      <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 js-confirm tool-action"
+          data-action-name="deploy"
+          data-form-target="form-{{ tool_form.tool_type }}"
+          data-form-url="{{ url('tool-deployments', kwargs={'tool_name': tool_form.tool_type, 'action': 'deploy'}) }}"
+          id="deploy-{{ tool_form.tool_type }}"
+          data-confirm-message="Do you wish to install this version of {{ tool_form.tool_type }}?"
+          disabled>
+        Deploy
+      </button>
+    </form>
+
+    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
+      data-action-name="open"
+      onclick="window.open('{{ tool_form.deployment.url }}', '_blank');"
+      rel="noopener"
+      target="_blank"
+      id="open-{{ tool_form.tool_type }}"
+      {% if not tool_form.deployment or tool_form.deployment.tool.is_retired %} disabled {% endif %}>
+        Open
+    </button>
+
+    <form
+      {% if tool_form.deployment %}
+      action="{{ url('restart-tool', kwargs={'name': tool_form.deployment.tool.chart_name, 'tool_id': tool_form.deployment.tool.id }) }}"
+      {% endif %}
+      data-action-name="restart"
+      method="post"
+      style="display: inline;"
+      >
+      {{ csrf_input }}
+      <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
+        data-action-name="restart"
+        id="restart-{{ tool_form.tool_type }}"
+        {% if not tool_form.deployment or tool_form.deployment.tool.is_retired %} disabled {% endif %}>
+        Restart
+      </button>
+    </form>
+    </div>
+  </div>
+
+  <div id="{{ tool_form.tool_type }}-deprecation-message" class="govuk-warning-text{% if not tool_form.deployment or not tool_form.deployment.tool.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{{ tool_form.deployment.tool.deprecated_message }}</strong></div>
+
+  {% if tool_form.deployment and tool_form.deployment.tool.is_retired %}
+
+  <div class="govuk-warning-text">
+    <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+    <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>
+      Your previous deployment ({{ tool_form.deployment.tool.chart_name}}-{{ tool_form.deployment.tool.chart_version }}: {{ tool_form.deployment.tool.image_tag }})
+      has been retired. You will need to deploy a new version from the dropdown list.
+    </strong>
+  </div>
+  {% endif %}
+  <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
+{% endfor %}
+
+
 {% endblock %}

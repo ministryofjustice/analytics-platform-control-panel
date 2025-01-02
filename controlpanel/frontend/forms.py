@@ -4,6 +4,7 @@ import re
 # Third-party
 from django import forms
 from django.conf import settings
+from django.db.models import Q
 from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
@@ -23,7 +24,6 @@ from controlpanel.api.models import (
     S3Bucket,
     Tool,
     User,
-    UserS3Bucket,
 )
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
@@ -702,3 +702,39 @@ class FeedbackForm(forms.ModelForm):
             "satisfaction_rating",
             "suggestions",
         ]
+
+
+class ToolChoice(forms.Select):
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        if value:
+            option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
+            option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
+        return option
+
+
+class ToolForm(forms.Form):
+
+    tool_release = forms.ModelChoiceField(
+        queryset=Tool.objects.none(),
+        empty_label=None,
+        widget=ToolChoice(attrs={"class": "govuk-select govuk-!-width-full govuk-!-font-size-16"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        self.tool_type = kwargs.pop("tool_type")
+        self.deployment = kwargs.pop("deployment", None)
+        super().__init__(*args, **kwargs)
+        self.fields["tool_release"].queryset = self.get_tool_release_choices(
+            tool_type=self.tool_type
+        )
+        if self.deployment:
+            self.fields["tool_release"].initial = self.deployment.tool
+
+    def get_tool_release_choices(self, tool_type: str):
+        return Tool.objects.filter(
+            Q(is_restricted=False) | Q(target_users=self.user),
+            chart_name__startswith=tool_type,
+        ).exclude(is_retired=True)

@@ -14,6 +14,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import cluster
 from controlpanel.api.models import Tool, ToolDeployment
+from controlpanel.frontend.forms import ToolForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 from controlpanel.utils import start_background_task
 
@@ -165,7 +166,25 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
         self._add_deployed_charts_info(tools_info, user, id_token)
         context["tools_info"] = tools_info
+
+        context["tool_forms"] = []
+        for tool_type in ToolDeployment.ToolType:
+            context[f"{tool_type}_form"] = self.get_tool_release_form(tool_type=tool_type)
+
+        context["tool_forms"].append(context["jupyter_form"])
+        # context["jupyter_form"] = self.get_tool_release_form(tool_type=ToolDeployment.ToolType.JUPYTER)
+        # context["rstudio_form"] = ToolForm(user=self.request.user, tool_type=ToolDeployment.ToolType.RSTUDIO)
+        # context["vscode_form"] = ToolForm(user=self.request.user, tool_type=ToolDeployment.ToolType.VSCODE)
         return context
+
+    def get_tool_release_form(self, tool_type):
+        return ToolForm(
+            user=self.request.user,
+            tool_type=tool_type,
+            deployment=self.request.user.tool_deployments.filter(tool_type=tool_type)
+            .active()
+            .first(),
+        )
 
 
 class RestartTool(OIDCLoginRequiredMixin, RedirectView):
