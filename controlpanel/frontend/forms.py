@@ -9,6 +9,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
+from django.db.models import Q
 
 # First-party/Local
 from controlpanel.api import validators
@@ -707,13 +708,15 @@ class FeedbackForm(forms.ModelForm):
 class ToolChoice(forms.Select):
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
-        if selected:
-            label = f"{label} (installed)"
 
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
+
+        if selected:
+            option["attrs"]["label"] = f"{label} (installed)"
+            option["attrs"]["class"] = "installed"
 
         return option
 

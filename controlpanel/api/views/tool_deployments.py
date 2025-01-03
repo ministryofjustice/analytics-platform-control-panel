@@ -44,14 +44,27 @@ class ToolDeploymentAPIView(GenericAPIView):
         )
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data={"tool": request.data.get("version")})
         serializer.is_valid(raise_exception=True)
+        # tool_deployment = serializer.save()
 
-        chart_name = self.kwargs["tool_name"]
-        tool_action = self.kwargs["action"]
-        tool_action_function = getattr(self, f"_{tool_action}", None)
-        if tool_action_function and callable(tool_action_function):
-            tool_action_function(chart_name, request.data)
-            return Response(status=status.HTTP_200_OK)
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        start_background_task(
+            "tool.deploy",
+            {
+                # "tool_name": tool_deployment.tool_type,
+                # "version": tool_version,
+                "tool_id": serializer.validated_data["tool"].id,
+                "user_id": self.request.user.id,
+                "id_token": self.request.user.get_id_token(),
+            },
+        )
+        return Response(status=status.HTTP_200_OK)
+
+        # chart_name = self.kwargs["tool_name"]
+        # tool_action = self.kwargs["action"]
+        # tool_action_function = getattr(self, f"_{tool_action}", None)
+        # if tool_action_function and callable(tool_action_function):
+        # tool_action_function(chart_name, request.data)
+        # return Response(status=status.HTTP_200_OK)
+        # else:
+        # return Response(status=status.HTTP_400_BAD_REQUEST)

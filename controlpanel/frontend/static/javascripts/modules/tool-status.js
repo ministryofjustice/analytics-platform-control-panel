@@ -84,15 +84,14 @@ moj.Modules.toolStatus = {
       let oldVersionOption = selectElement.querySelector("option." + this.versionInstalledClass);
 
       if (oldVersionOption) {
-        oldVersionOption.innerText = oldVersionOption.innerText.replace(this.installedSuffix, "");
+        oldVersionOption.label = oldVersionOption.label.replace(this.installedSuffix, "");
         oldVersionOption.classList.remove(this.versionInstalledClass);
       }
 
       // 3. add "(installed)" suffix and class to new version
-      let newValue = newVersionData.toolName + "__" + newVersionData.version + "__" + newVersionData.tool_id;
-      let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newValue + "']");
+      let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newVersionData.tool_id + "']");
       if (newVersionOption) {
-        newVersionOption.innerText = newVersionOption.innerText + this.installedSuffix;
+        newVersionOption.label = newVersionOption.label + this.installedSuffix;
         newVersionOption.classList.add(this.versionInstalledClass)
 
         // set the new version as the current chosen item

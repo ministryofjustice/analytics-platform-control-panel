@@ -170,21 +170,15 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context["tool_forms"] = []
         for tool_type in ToolDeployment.ToolType:
             context["tool_forms"].append(self.get_tool_release_form(tool_type=tool_type))
-            # context[f"{tool_type}_form"] = self.get_tool_release_form(tool_type=tool_type)
 
-        # context["tool_forms"].append(context["jupyter_form"])
-        # context["jupyter_form"] = self.get_tool_release_form(tool_type=ToolDeployment.ToolType.JUPYTER)
-        # context["rstudio_form"] = ToolForm(user=self.request.user, tool_type=ToolDeployment.ToolType.RSTUDIO)
-        # context["vscode_form"] = ToolForm(user=self.request.user, tool_type=ToolDeployment.ToolType.VSCODE)
         return context
 
     def get_tool_release_form(self, tool_type):
+        deployment = self.request.user.tool_deployments.filter(tool_type=tool_type).active().first()
         return ToolForm(
             user=self.request.user,
             tool_type=tool_type,
-            deployment=self.request.user.tool_deployments.filter(tool_type=tool_type)
-            .active()
-            .first(),
+            deployment=deployment,
         )
 
 

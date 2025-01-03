@@ -194,10 +194,6 @@ class ToolDeployment(TimeStampedModel):
         self.uninstall()
         super().delete(*args, **kwargs)
 
-    @property
-    def host(self):
-        return f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
-
     def deploy(self):
         """
         Deploy the tool to the cluster (asynchronous)
@@ -220,6 +216,7 @@ class ToolDeployment(TimeStampedModel):
             id_token or self.user.get_id_token(), deployment=deployment
         )
 
+    @property
     def url(self):
         tool = self.tool.tool_domain or self.tool.chart_name
         return f"https://{self.user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
@@ -238,10 +235,6 @@ class ToolDeployment(TimeStampedModel):
         # the sake of visibility.
         log.info(self._subprocess.stdout.read().strip())
         self._subprocess = None
-
-    @property
-    def url(self):
-        return f"https://{self.host}/"
 
     def restart(self, id_token):
         """
