@@ -12,169 +12,6 @@
 <p class="govuk-body">If your tools get into an unusable state, try
 <a href="{{ url('home-reset') }}">resetting your home directory</a>.</p>
 
-{% for chart_name, tool_info in tools_info.items() %}
-{% set deployment = tool_info["deployment"] %}
-<h2 class="govuk-heading-m">{{ tool_info.name }}</h2>
-<div class="govuk-grid-row tool sse-listener" data-tool-name="{{ chart_name }}">
-  <div class="govuk-grid-column-two-thirds">
-    <form action="{{ url('tool-deployments', kwargs={'tool_name': chart_name, 'action': 'deploy'}) }}"
-        data-action-name="deploy"
-        class="tool-action"
-        id="form-{{ chart_name }}"
-        method="post">
-        {{ csrf_input }}
-        {% if deployment %}
-        <input
-            type="hidden"
-            value="{{ deployment.chart_name }}"
-            name="deployed_chart_name" />
-        {% endif%}
-      <div class="govuk-form-group">
-          <label class="govuk-label" for="version">
-            Version
-          </label>
-          <select class="govuk-select govuk-!-width-full govuk-!-font-size-16"
-            data-action-target="{{ chart_name }}"
-            id="tools-{{ chart_name }}" name="version">
-            {% set installed_chart_version = None %}
-            {% set installed_release_version = None %}
-            {% if deployment and not deployment.is_retired %}
-              {% set installed_chart_version = deployment.description %}
-              {% set installed_release_version = deployment.tool_id %}
-              <option class="installed" value="{{ deployment.chart_name }}__{{ installed_chart_version }}__{{ deployment.tool_id }}"
-                data-is-deprecated="{{ deployment.is_deprecated }}"
-                data-deprecated-message="{{ deployment.deprecated_message }}">
-                [{{ deployment.chart_name }} {{ deployment.image_tag }}]  {{ installed_chart_version or "Unknown" }} (installed)
-              </option>
-            {% else %}
-              <option class="not-installed">Not deployed - select a tool from this list and click "Deploy" to start</option>
-            {% endif %}
-            {% for release_version, release_detail in tool_info["releases"].items(): %}
-              {% if release_version != installed_release_version: %}
-                <option
-                value="{{ release_detail.chart_name }}__{{ release_detail.chart_version }}__{{ release_detail.tool_id }}"
-                data-is-deprecated="{{ release_detail.is_deprecated }}"
-                data-deprecated-message="{{ release_detail.deprecated_message }}">
-                  <!-- TODO rather than build this info up manually in the view we could read it from the tool object itself -->
-                  [{{ release_detail.chart_name }} {{ release_detail.image_tag }}]  {{ release_detail.description or "Unknown" }}
-                </option>
-              {% endif %}
-            {% endfor %}
-          </select>
-      </div>
-    </form>
-  </div>
-  <div class="govuk-grid-column-one-third">
-  <p class="govuk-!-margin-bottom-1">Status:
-  <span class="govuk-!-font-weight-bold tool-status-label">
-    {% if deployment and not deployment.is_retired %}
-      {{ deployment.status | default("") }}
-    {% else %}
-    Not deployed
-    {% endif %}
-  </span>
-  </p>
-
-  <form style="display: inline;">
-    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 js-confirm tool-action"
-        data-action-name="deploy"
-        data-form-target="form-{{ chart_name }}"
-        data-form-url="{{ url('tool-deployments', kwargs={'tool_name': chart_name, 'action': 'deploy'}) }}"
-        id="deploy-{{ chart_name }}"
-        data-confirm-message="Do you wish to install this version of {{ tool_info['name'] }}?"
-        disabled>
-      Deploy
-    </button>
-  </form>
-
-  <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
-    data-action-name="open"
-    onclick="window.open('{{ tool_info['url'] }}', '_blank');"
-    rel="noopener"
-    target="_blank"
-    id="open-{{ chart_name }}"
-    {% if not deployment or deployment.is_retired %} disabled {% endif %}>
-      Open
-  </button>
-
-  <form
-    {% if deployment %}
-    action="{{ url('restart-tool', kwargs={'name': deployment.chart_name, 'tool_id': deployment.tool_id}) }}"
-    {% endif %}
-    data-action-name="restart"
-    method="post"
-    style="display: inline;"
-    >
-    {{ csrf_input }}
-    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
-      data-action-name="restart"
-      id="restart-{{ chart_name }}"
-      {% if not deployment or deployment.is_retired %} disabled {% endif %}>
-      Restart
-    </button>
-  </form>
-  </div>
-</div>
-
-<div id="{{ chart_name }}-deprecation-message" class="govuk-warning-text{% if not deployment or not deployment.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{{ deployment.deprecated_message }}</strong></div>
-
-{% if deployment and deployment.is_retired %}
-
-<div class="govuk-warning-text">
-  <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-  <strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>
-    Your previous deployment ({{ deployment.chart_name}}-{{ deployment.chart_version }}: {{ deployment.image_tag }})
-    has been retired. You will need to deploy a new version from the dropdown list.
-  </strong>
-</div>
-{% endif %}
-<hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
-{% endfor %}
-
-<h2 class="govuk-heading-m">Airflow</h2>
-<div class="govuk-grid-row tool sse-listener" data-tool-name="airflow">
-  <div class="govuk-grid-column-two-thirds">
-    <p class="govuk-body">
-      Airflow is a tool for scheduling and monitoring workflows. Please refer to the <a href="{{ user_guidance_base_url }}/tools/airflow/#airflow-2" target="_blank" rel="noopener">user guidance</a> for more details.
-    </p>
-  </div>
-  <div class="govuk-grid-column-one-third">
-    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
-      data-action-name="open"
-      onclick="window.open('{{ managed_airflow_dev_url }}', '_blank');"
-      rel="noopener"
-      target="_blank">
-        Open dev
-    </button>
-    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
-    data-action-name="open prod"
-    onclick="window.open('{{ managed_airflow_prod_url }}', '_blank');"
-    rel="noopener"
-    target="_blank">
-      Open prod
-  </button>
-  </div>
-</div>
-<hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
-
-<p class="govuk-body">
-  You can <a href="{{ aws_service_url }}" target="_blank" rel="noopener"> access AWS services such as S3 and Athena via the AWS Console (opens in new tab).</a>
-</p>
-
-{% if ip_range_feature_enabled %}
-<p class="govuk-body">
-   ip ranges has been enabled
-</p>
-{% endif %}
-
-
-{{ jupyter_form.as_p() }}
-
-{{ rstudio_form.as_p() }}
-
-{{ vscode_form.as_p() }}
-
-
 {% for tool_form in tool_forms %}
   <h2 class="govuk-heading-m">{{ tool_form.tool_type }}</h2>
   <div class="govuk-grid-row tool sse-listener" data-tool-name="{{ tool_form.tool_type }}">
@@ -189,7 +26,7 @@
             <label class="govuk-label" for="version">
               Version
             </label>
-            {{ tool_form.tool_release }}
+            {{ tool_form.version }}
         </div>
       </form>
     </div>
@@ -259,6 +96,43 @@
   {% endif %}
   <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
 {% endfor %}
+
+
+<h2 class="govuk-heading-m">Airflow</h2>
+<div class="govuk-grid-row tool sse-listener" data-tool-name="airflow">
+  <div class="govuk-grid-column-two-thirds">
+    <p class="govuk-body">
+      Airflow is a tool for scheduling and monitoring workflows. Please refer to the <a href="{{ user_guidance_base_url }}/tools/airflow/#airflow-2" target="_blank" rel="noopener">user guidance</a> for more details.
+    </p>
+  </div>
+  <div class="govuk-grid-column-one-third">
+    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
+      data-action-name="open"
+      onclick="window.open('{{ managed_airflow_dev_url }}', '_blank');"
+      rel="noopener"
+      target="_blank">
+        Open dev
+    </button>
+    <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
+    data-action-name="open prod"
+    onclick="window.open('{{ managed_airflow_prod_url }}', '_blank');"
+    rel="noopener"
+    target="_blank">
+      Open prod
+  </button>
+  </div>
+</div>
+<hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
+
+<p class="govuk-body">
+  You can <a href="{{ aws_service_url }}" target="_blank" rel="noopener"> access AWS services such as S3 and Athena via the AWS Console (opens in new tab).</a>
+</p>
+
+{% if ip_range_feature_enabled %}
+<p class="govuk-body">
+   ip ranges has been enabled
+</p>
+{% endif %}
 
 
 {% endblock %}

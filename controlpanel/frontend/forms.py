@@ -707,16 +707,20 @@ class FeedbackForm(forms.ModelForm):
 class ToolChoice(forms.Select):
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        if selected:
+            label = f"{label} (installed)"
+
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
+
         return option
 
 
 class ToolForm(forms.Form):
 
-    tool_release = forms.ModelChoiceField(
+    version = forms.ModelChoiceField(
         queryset=Tool.objects.none(),
         empty_label=None,
         widget=ToolChoice(attrs={"class": "govuk-select govuk-!-width-full govuk-!-font-size-16"}),
@@ -727,11 +731,12 @@ class ToolForm(forms.Form):
         self.tool_type = kwargs.pop("tool_type")
         self.deployment = kwargs.pop("deployment", None)
         super().__init__(*args, **kwargs)
-        self.fields["tool_release"].queryset = self.get_tool_release_choices(
-            tool_type=self.tool_type
+        self.fields["version"].queryset = self.get_tool_release_choices(tool_type=self.tool_type)
+        self.fields["version"].widget.attrs.update(
+            {"data-action-target": self.tool_type, "id": f"tools-{self.tool_type}"}
         )
         if self.deployment:
-            self.fields["tool_release"].initial = self.deployment.tool
+            self.fields["version"].initial = self.deployment.tool
 
     def get_tool_release_choices(self, tool_type: str):
         return Tool.objects.filter(
