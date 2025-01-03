@@ -29,7 +29,7 @@ class ToolDeploymentAPIView(GenericAPIView):
         )
 
     def post(self, request, *args, **kwargs):
-        self.serializer = self.get_serializer(data={"tool": request.data.get("version")})
+        self.serializer = self.get_serializer(data=request.data)
         self.serializer.is_valid(raise_exception=True)
 
         tool_action = self.kwargs["action"]

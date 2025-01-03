@@ -6,7 +6,7 @@ moj.Modules.toolStatus = {
   listenerClass: ".tool",
   statusLabelClass: ".tool-status-label",
 
-  versionSelector: "select[name='version']",
+  versionSelector: "select[name='tool']",
   versionNotInstalledClass: "not-installed",
   versionInstalledClass: "installed",
   installedSuffix: " (installed)",
@@ -19,7 +19,7 @@ moj.Modules.toolStatus = {
       this.bindEvents(toolStatusListeners);
     }
 
-    // Bind version selects' change event listeners
+    // Bind tool selects' change event listeners
     const versionSelects = document.querySelectorAll(this.versionSelector);
     versionSelects.forEach(versionSelect => {
       versionSelect.addEventListener("change", (event) => this.versionSelectChanged(event.target));
@@ -68,7 +68,7 @@ moj.Modules.toolStatus = {
     };
   },
 
-  // Select the new version from the tool "version" select input
+  // Select the new tool from the tool select input
   updateAppVersion(listener, newVersionData) {
     const selectElement = listener.querySelector(this.versionSelector);
 
@@ -80,7 +80,7 @@ moj.Modules.toolStatus = {
         notInstalledOption.remove();
       }
 
-      // 2. remove "(installed)" suffix and class from old version
+      // 2. remove "(installed)" suffix and class from old tool version
       let oldVersionOption = selectElement.querySelector("option." + this.versionInstalledClass);
 
       if (oldVersionOption) {
@@ -88,7 +88,7 @@ moj.Modules.toolStatus = {
         oldVersionOption.classList.remove(this.versionInstalledClass);
       }
 
-      // 3. add "(installed)" suffix and class to new version
+      // 3. add "(installed)" suffix and class to new tool version
       let newVersionOption = listener.querySelector(this.versionSelector + " option[value='" + newVersionData.tool_id + "']");
       if (newVersionOption) {
         newVersionOption.label = newVersionOption.label + this.installedSuffix;
@@ -141,7 +141,7 @@ moj.Modules.toolStatus = {
     });
   },
 
-  // version select "change" event handler
+  // tool version select "change" event handler
   versionSelectChanged(target) {
     const selected = target.options[target.options.selectedIndex];
     const classes = selected.className.split(" ");

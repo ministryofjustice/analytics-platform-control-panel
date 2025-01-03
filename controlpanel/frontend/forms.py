@@ -723,7 +723,7 @@ class ToolChoice(forms.Select):
 
 class ToolForm(forms.Form):
 
-    version = forms.ModelChoiceField(
+    tool = forms.ModelChoiceField(
         queryset=Tool.objects.none(),
         empty_label=None,
         widget=ToolChoice(attrs={"class": "govuk-select govuk-!-width-full govuk-!-font-size-16"}),
@@ -734,12 +734,12 @@ class ToolForm(forms.Form):
         self.tool_type = kwargs.pop("tool_type")
         self.deployment = kwargs.pop("deployment", None)
         super().__init__(*args, **kwargs)
-        self.fields["version"].queryset = self.get_tool_release_choices(tool_type=self.tool_type)
-        self.fields["version"].widget.attrs.update(
+        self.fields["tool"].queryset = self.get_tool_release_choices(tool_type=self.tool_type)
+        self.fields["tool"].widget.attrs.update(
             {"data-action-target": self.tool_type, "id": f"tools-{self.tool_type}"}
         )
         if self.deployment:
-            self.fields["version"].initial = self.deployment.tool
+            self.fields["tool"].initial = self.deployment.tool
 
     def get_tool_release_choices(self, tool_type: str):
         return Tool.objects.filter(
