@@ -145,7 +145,7 @@ class BackgroundTaskConsumer(SyncConsumer):
     def tool_deploy(self, message):
         """
         Deploy the named tool for the specified user
-        Expects a message with `tool_name`, `version` and `user_id` values
+        Expects a message with `tool_id`, `user_id` and 'id_token' values
         """
 
         tool, user = self.get_tool_and_user(message)
