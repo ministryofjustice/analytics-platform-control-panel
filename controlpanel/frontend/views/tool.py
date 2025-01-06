@@ -109,23 +109,11 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(*args, **kwargs)
         context["user_guidance_base_url"] = settings.USER_GUIDANCE_BASE_URL
         context["aws_service_url"] = settings.AWS_SERVICE_URL
-
-        args_airflow_dev_url = urlencode(
-            {
-                "destination": f"mwaa/home?region={settings.AIRFLOW_REGION}#/environments/dev/sso",  # noqa: E501
-            }
-        )
-        args_airflow_prod_url = urlencode(
-            {
-                "destination": f"mwaa/home?region={settings.AIRFLOW_REGION}#/environments/prod/sso",  # noqa: E501
-            }
-        )
-        context["managed_airflow_dev_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_dev_url}"
-        context["managed_airflow_prod_url"] = f"{settings.AWS_SERVICE_URL}/?{args_airflow_prod_url}"
-
-        context["tool_forms"] = []
-        for tool_type in ToolDeployment.ToolType:
-            context["tool_forms"].append(self.get_tool_release_form(tool_type=tool_type))
+        context["managed_airflow_dev_url"] = self.build_airflow_url("dev")
+        context["managed_airflow_prod_url"] = self.build_airflow_url("prod")
+        context["tool_forms"] = [
+            self.get_tool_release_form(tool_type=tool_type) for tool_type in ToolDeployment.ToolType
+        ]
 
         return context
 
@@ -136,6 +124,15 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
             tool_type=tool_type,
             deployment=deployment,
         )
+
+    def build_airflow_url(self, environment):
+        destination = f"mwaa/home?region={settings.AIRFLOW_REGION}#/environments/{environment}/sso"
+        args = urlencode(
+            {
+                "destination": destination,  # noqa: E501
+            }
+        )
+        return f"{settings.AWS_SERVICE_URL}/?{args}"
 
 
 class RestartTool(OIDCLoginRequiredMixin, RedirectView):
