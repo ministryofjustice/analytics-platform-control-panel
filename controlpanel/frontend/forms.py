@@ -721,7 +721,7 @@ class ToolChoice(forms.Select):
         return option
 
 
-class ToolForm(forms.Form):
+class ToolDeploymentForm(forms.Form):
 
     tool = forms.ModelChoiceField(
         queryset=Tool.objects.none(),

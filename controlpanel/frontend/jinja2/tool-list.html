@@ -17,11 +17,11 @@
   <div class="govuk-grid-row tool sse-listener" data-tool-name="{{ tool_form.tool_type }}">
     <div class="govuk-grid-column-two-thirds">
       <form action="{{ url('tool-deployments', kwargs={'tool_name': tool_form.tool_type, 'action': 'deploy'}) }}"
-          data-action-name="deploy"
-          class="tool-action"
-          id="form-{{ tool_form.tool_type }}"
-          method="post">
-          {{ csrf_input }}
+        data-action-name="deploy"
+        class="tool-action"
+        id="form-{{ tool_form.tool_type }}"
+        method="post">
+        {{ csrf_input }}
         <div class="govuk-form-group">
             <label class="govuk-label" for="tool">
               Version
@@ -34,9 +34,9 @@
     <p class="govuk-!-margin-bottom-1">Status:
     <span class="govuk-!-font-weight-bold tool-status-label">
       {% if tool_form.deployment and not tool_form.deployment.tool.is_retired %}
-       {{ tool_form.deployment.get_status() }}
+        {{ tool_form.deployment.get_status() }}
       {% else %}
-      Not deployed
+        Not deployed
       {% endif %}
     </span>
     </p>

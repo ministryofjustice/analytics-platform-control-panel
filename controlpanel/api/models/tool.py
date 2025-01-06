@@ -73,10 +73,6 @@ class Tool(TimeStampedModel):
     def __str__(self):
         return f"[{self.chart_name} {self.image_tag}] {self.description}"
 
-    def url(self, user):
-        tool = self.tool_domain or self.chart_name
-        return f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
-
     def save(self, *args, **kwargs):
         helm.update_helm_repository(force=True)
 
@@ -219,7 +215,10 @@ class ToolDeployment(TimeStampedModel):
     @property
     def url(self):
         tool = self.tool.tool_domain or self.tool.chart_name
-        return f"https://{self.user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
+        url = f"https://{self.user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
+        if self.tool_type == self.ToolType.VSCODE:
+            url = f"{url}?folder=/home/analyticalplatform/workspace"
+        return url
 
     def _poll(self):
         """
