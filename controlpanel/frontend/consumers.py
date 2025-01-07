@@ -161,19 +161,17 @@ class BackgroundTaskConsumer(SyncConsumer):
                 pass
 
         new_deployment = ToolDeployment.objects.get(pk=message["new_deployment_id"])
-        update_tool_status(tool_deployment=new_deployment, id_token=None, status=TOOL_DEPLOYING)
+        update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
             new_deployment.deploy()
-            update_tool_status(new_deployment, None, TOOL_READY)
+            update_tool_status(new_deployment, TOOL_READY)
             log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
         except ToolDeployment.Error as err:
             # if something went wrong, log the error and unmark the deployment object as active to
             # allow the user to retry deploying the tool
             new_deployment.is_active = False
             new_deployment.save()
-            update_tool_status(
-                tool_deployment=new_deployment, id_token=None, status=TOOL_DEPLOY_FAILED
-            )
+            update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOY_FAILED)
             self._send_to_sentry(err)
             log.error(err)
             log.warning(f"Failed deploying {new_deployment.tool.name} for {new_deployment.user}")
@@ -194,7 +192,7 @@ class BackgroundTaskConsumer(SyncConsumer):
 
         # TODO this will need updating
         tool_deployment = ToolDeployment(tool, user)
-        update_tool_status(tool_deployment, id_token, TOOL_RESTARTING)
+        update_tool_status(tool_deployment, TOOL_RESTARTING)
 
         tool_deployment.restart(id_token=id_token)
 
@@ -235,7 +233,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         log.debug("Worker health ping task executed")
 
 
-def update_tool_status(tool_deployment, id_token, status):
+def update_tool_status(tool_deployment, status):
     user = tool_deployment.user
     tool = tool_deployment.tool
 
@@ -272,7 +270,7 @@ def wait_for_deployment(tool_deployment, id_token):
     status = TOOL_DEPLOYING
     while status == TOOL_DEPLOYING:
         status = tool_deployment.get_status(id_token)
-        update_tool_status(tool_deployment, id_token, status)
+        update_tool_status(tool_deployment, status)
         sleep(1)
     return status
 
