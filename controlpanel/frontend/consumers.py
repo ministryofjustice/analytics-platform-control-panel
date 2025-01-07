@@ -19,6 +19,7 @@ from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     HOME_RESETTING,
     TOOL_DEPLOY_FAILED,
     TOOL_DEPLOYING,
+    TOOL_READY,
     TOOL_RESTARTING,
 )
 from controlpanel.api.models import App, HomeDirectory, IPAllowlist, Tool, ToolDeployment, User
@@ -147,42 +148,35 @@ class BackgroundTaskConsumer(SyncConsumer):
         Deploy the named tool for the specified user
         Expects a message with `tool_id`, `user_id` and 'id_token' values
         """
-
-        tool, user = self.get_tool_and_user(message)
-        id_token = message["id_token"]
-        previous_deployment = user.tool_deployments.filter(
-            tool_type=tool.tool_type, is_active=True
+        # if we have a previous deployment, uninstall it
+        previous_deployment = ToolDeployment.objects.filter(
+            pk=message["previous_deployment_id"]
         ).first()
         if previous_deployment:
             try:
                 previous_deployment.uninstall()
             except ToolDeployment.Error as err:
+                # if something went wrong, log the error but continue to try to deploy the new tool
                 log.error(err)
                 pass
-            previous_deployment.is_active = False
-            previous_deployment.save()
 
-        tool_deployment = ToolDeployment(
-            tool_type=tool.tool_type, user=user, tool=tool, is_active=True
-        )
-        tool_deployment.save()
+        new_deployment = ToolDeployment.objects.get(pk=message["new_deployment_id"])
+        update_tool_status(tool_deployment=new_deployment, id_token=None, status=TOOL_DEPLOYING)
         try:
-            update_tool_status(tool_deployment, id_token, TOOL_DEPLOYING)
-            tool_deployment.deploy()
+            new_deployment.deploy()
+            update_tool_status(new_deployment, None, TOOL_READY)
+            log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
         except ToolDeployment.Error as err:
+            # if something went wrong, log the error and unmark the deployment object as active to
+            # allow the user to retry deploying the tool
+            new_deployment.is_active = False
+            new_deployment.save()
+            update_tool_status(
+                tool_deployment=new_deployment, id_token=None, status=TOOL_DEPLOY_FAILED
+            )
             self._send_to_sentry(err)
-            update_tool_status(tool_deployment, id_token, TOOL_DEPLOY_FAILED)
             log.error(err)
-            tool_deployment.is_active = False
-            tool_deployment.save()
-            return
-
-        status = wait_for_deployment(tool_deployment, id_token)
-
-        if status == TOOL_DEPLOY_FAILED:
-            log.warning(f"Failed deploying {tool.name} for {user}")
-        else:
-            log.debug(f"Deployed {tool.name} for {user}")
+            log.warning(f"Failed deploying {new_deployment.tool.name} for {new_deployment.user}")
 
     def _send_to_sentry(self, error):
         if os.environ.get("SENTRY_DSN"):

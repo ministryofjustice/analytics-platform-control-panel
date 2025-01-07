@@ -15,27 +15,13 @@ class ToolDeploymentAPIView(GenericAPIView):
     serializer_class = serializers.ToolDeploymentSerializer
     permission_classes = (IsAuthenticated,)
 
-    def _deploy(self):
-        """
-        Call background task to deploy the tool.
-        """
-        start_background_task(
-            "tool.deploy",
-            {
-                "tool_id": self.serializer.validated_data["tool"].id,
-                "user_id": self.request.user.id,
-                "id_token": self.request.user.get_id_token(),
-            },
-        )
-
     def post(self, request, *args, **kwargs):
-        self.serializer = self.get_serializer(data=request.data)
-        self.serializer.is_valid(raise_exception=True)
-
-        tool_action = self.kwargs["action"]
-        tool_action_function = getattr(self, f"_{tool_action}", None)
-        if tool_action_function and callable(tool_action_function):
-            tool_action_function()
-            return Response(status=status.HTTP_200_OK)
-        else:
+        # TODO this is kept for legacy reasons, where the action is passed as a URL parameter. We
+        # may want to remove to either pass the action in the POST data, or remove the action
+        # entirely as currently it is only used for deploying a tool anyway.
+        if self.kwargs["action"] != "deploy":
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        self.serializer = self.get_serializer(data=request.data, request=request)
+        self.serializer.is_valid(raise_exception=True)
+        self.serializer.save()
+        return Response(status=status.HTTP_200_OK)
