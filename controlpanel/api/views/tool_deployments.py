@@ -6,7 +6,6 @@ from rest_framework.response import Response
 
 # First-party/Local
 from controlpanel.api import serializers
-from controlpanel.utils import start_background_task
 
 
 class ToolDeploymentAPIView(GenericAPIView):
