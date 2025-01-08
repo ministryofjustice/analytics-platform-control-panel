@@ -15,6 +15,10 @@ from controlpanel.api.models.policys3bucket import PolicyS3Bucket
 from controlpanel.api.models.s3bucket import S3Bucket
 from controlpanel.api.models.task import Task
 from controlpanel.api.models.tool import HomeDirectory, Tool, ToolDeployment
-from controlpanel.api.models.user import QUICKSIGHT_EMBED_PERMISSION, User
+from controlpanel.api.models.user import (
+    QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
+    QUICKSIGHT_EMBED_READER_PERMISSION,
+    User,
+)
 from controlpanel.api.models.userapp import UserApp
 from controlpanel.api.models.users3bucket import UserS3Bucket

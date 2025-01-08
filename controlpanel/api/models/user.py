@@ -11,7 +11,8 @@ from controlpanel.api import auth0, cluster, slack
 from controlpanel.api.signals import prometheus_login_event
 from controlpanel.utils import sanitize_dns_label
 
-QUICKSIGHT_EMBED_PERMISSION = "quicksight_embed_access"
+QUICKSIGHT_EMBED_AUTHOR_PERMISSION = "quicksight_embed_author_access"
+QUICKSIGHT_EMBED_READER_PERMISSION = "quicksight_embed_reader_access"
 
 
 class User(AbstractUser):
@@ -50,7 +51,10 @@ class User(AbstractUser):
     class Meta:
         db_table = "control_panel_api_user"
         ordering = ("username",)
-        permissions = [(QUICKSIGHT_EMBED_PERMISSION, "Can access the embedded Quicksight")]
+        permissions = [
+            (QUICKSIGHT_EMBED_AUTHOR_PERMISSION, "Can access embedded Quicksight as an author"),
+            (QUICKSIGHT_EMBED_READER_PERMISSION, "Can access embedded Quicksight as a reader"),
+        ]
 
     def __repr__(self):
         return f"<User: {self.username} ({self.auth0_id})>"
