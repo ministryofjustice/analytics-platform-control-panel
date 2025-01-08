@@ -714,7 +714,7 @@ class ToolChoice(forms.Select):
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
 
-        if selected:
+        if value and selected:
             option["attrs"]["label"] = f"{label} (installed)"
             option["attrs"]["class"] = "installed"
 
@@ -725,7 +725,7 @@ class ToolDeploymentForm(forms.Form):
 
     tool = forms.ModelChoiceField(
         queryset=Tool.objects.none(),
-        empty_label=None,
+        empty_label='Select a tool from this list and click "Deploy" to start',
         widget=ToolChoice(attrs={"class": "govuk-select govuk-!-width-full govuk-!-font-size-16"}),
     )
 
@@ -742,7 +742,24 @@ class ToolDeploymentForm(forms.Form):
             self.fields["tool"].initial = self.deployment.tool
 
     def get_tool_release_choices(self, tool_type: str):
-        return Tool.objects.filter(
-            Q(is_restricted=False) | Q(target_users=self.user),
-            chart_name__startswith=tool_type,
-        ).exclude(is_retired=True)
+        """
+        Return a queryset for Tool objects where:
+
+        * The tool is not retired
+
+        AND EITHER:
+
+        * The tool is not restricted
+
+        OR
+
+        * The current user has access to the restricted tool
+        """
+        return (
+            Tool.objects.filter(
+                Q(is_restricted=False) | Q(target_users=self.user),
+                chart_name__startswith=tool_type,
+            )
+            .exclude(is_retired=True)
+            .order_by("-chart_name", "-image_tag", "-version", "-created")
+        )

@@ -82,7 +82,9 @@
     </div>
   </div>
 
-  <div id="{{ tool_form.tool_type }}-deprecation-message" class="govuk-warning-text{% if not tool_form.deployment or not tool_form.deployment.tool.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{{ tool_form.deployment.tool.deprecated_message }}</strong></div>
+
+  <div id="{{ tool_form.tool_type }}-deprecation-message" class="govuk-warning-text{% if not tool_form.deployment or not tool_form.deployment.tool.deprecated_message %} govuk-visually-hidden{% endif %}"><span class="govuk-warning-text__icon" aria-hidden="true">!</span><strong class="govuk-warning-text__text"><span class="govuk-visually-hidden">Warning</span>{% if tool_form.deployment %}{{ tool_form.deployment.tool.deprecated_message }}{% endif %}</strong></div>
+
 
   {% if tool_form.deployment and tool_form.deployment.tool.is_retired %}
 

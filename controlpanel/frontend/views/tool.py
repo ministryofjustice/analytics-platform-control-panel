@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse_lazy
+from django.views.generic import TemplateView
 from django.views.generic.base import RedirectView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
@@ -20,29 +21,9 @@ from controlpanel.utils import start_background_task
 log = structlog.getLogger(__name__)
 
 
-class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
-    context_object_name = "tools"
-    model = Tool
+class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = "api.list_tool"
     template_name = "tool-list.html"
-
-    def get_queryset(self):
-        """
-        Return a queryset for Tool objects where:
-
-        * The tool is not retired
-
-        AND EITHER:
-
-        * The tool is not restricted
-
-        OR
-
-        * The current user has access to the restricted tool
-        """
-        return Tool.objects.exclude(is_retired=True).filter(
-            Q(is_restricted=False) | Q(target_users=self.request.user.id)
-        )
 
     # def _add_deployed_charts_info(self, tools_info, user, id_token):
     #     # TODO this is left in place simply to determine the status of a tool. Not sure if it is
