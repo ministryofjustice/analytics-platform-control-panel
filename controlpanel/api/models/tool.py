@@ -155,7 +155,7 @@ class ToolDeployment(TimeStampedModel):
     class ToolType(models.TextChoices):
         JUPYTER = "jupyter", "JupyterLab"
         RSTUDIO = "rstudio", "RStudio"
-        VSCODE = "vscode", "VSCode"
+        VSCODE = "vscode", "Visual Studio Code"
 
     user = models.ForeignKey(to="User", on_delete=models.CASCADE, related_name="tool_deployments")
     tool = models.ForeignKey(to="Tool", on_delete=models.CASCADE, related_name="tool_deployments")

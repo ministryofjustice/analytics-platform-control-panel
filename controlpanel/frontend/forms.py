@@ -29,6 +29,7 @@ from controlpanel.api.models import (
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
+from controlpanel.api.models.tool import ToolDeployment
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -763,3 +764,7 @@ class ToolDeploymentForm(forms.Form):
             .exclude(is_retired=True)
             .order_by("-chart_name", "-image_tag", "-version", "-created")
         )
+
+    @property
+    def tool_type_label(self):
+        return ToolDeployment.ToolType(self.tool_type).label
