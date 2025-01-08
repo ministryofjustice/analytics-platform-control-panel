@@ -1,5 +1,6 @@
 # Third-party
 from django.contrib import messages
+from django.db.models import Count, Q
 from django.http.response import HttpResponseRedirect
 from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
@@ -24,6 +25,15 @@ class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     permission_required = "api.list_tool_release"
     template_name = "release-list.html"
     ordering = ["name", "-version", "-created"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.annotate(
+            num_users=Count(
+                "tool_deployments", distinct=True, filter=Q(tool_deployments__is_active=True)
+            )
+        )
+        return qs
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
