@@ -18,17 +18,8 @@ def tool(db):
 def test_deploy_for_generic(helm, tool, users):
     user = users["normal_user"]
 
-    # simulate release with old naming scheme installed
-    old_release_name = f"{tool.chart_name}-{user.username}"
-    helm.list_releases.return_value = [old_release_name[: settings.MAX_RELEASE_NAME_LEN]]
-
-    tool_deployment = ToolDeployment(tool, user)
-    tool_deployment.save()
-
-    # uninstall tool with old naming scheme
-    helm.delete.assert_called_with(
-        user.k8s_namespace, old_release_name[: settings.MAX_RELEASE_NAME_LEN]
-    )
+    tool_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=True)
+    tool_deployment.deploy()
 
     # install new release
     helm.upgrade_release.assert_called_with(

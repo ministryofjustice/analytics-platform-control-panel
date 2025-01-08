@@ -145,8 +145,9 @@ class BackgroundTaskConsumer(SyncConsumer):
 
     def tool_deploy(self, message):
         """
-        Deploy the named tool for the specified user
-        Expects a message with `tool_id`, `user_id` and 'id_token' values
+        Uninstall the previous tool deployment, and deploy the new one.
+        Expects a message with `previous_deployment_id`, and 'new_deployment_id' values in order
+        to identify the user and the tool to deploy.
         """
         # if we have a previous deployment, uninstall it
         previous_deployment = ToolDeployment.objects.filter(
@@ -164,7 +165,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
             new_deployment.deploy()
-            update_tool_status(new_deployment, TOOL_READY)
+            update_tool_status(tool_deployment=new_deployment, status=TOOL_READY)
             log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
         except ToolDeployment.Error as err:
             # if something went wrong, log the error and unmark the deployment object as active to

@@ -344,7 +344,6 @@ class ToolDeploymentSerializer(serializers.ModelSerializer):
         model = ToolDeployment
         fields = ("tool",)
 
-    # TODO look at implementing this
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request")
         super().__init__(*args, **kwargs)
