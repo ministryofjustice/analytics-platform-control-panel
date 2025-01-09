@@ -460,6 +460,7 @@ def test_ip_allowlist_form_missing_name():
 )
 def test_quicksight_form_add_to_groups(
     get_user_id,
+    identity_store_user_setup,
     users,
     identity_store,
     identity_store_id,
@@ -515,6 +516,7 @@ def test_quicksight_form_add_to_groups(
 def test_quicksight_form_remove_from_group(
     get_user_id,
     get_group_membership_id,
+    identity_store_user_setup,
     users,
     identity_store,
     identity_store_id,

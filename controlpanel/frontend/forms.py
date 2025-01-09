@@ -678,7 +678,7 @@ class QuicksightAccessForm(forms.Form):
         identity_store = AWSIdentityStore(
             settings.IDENTITY_CENTER_ASSUMED_ROLE,
             "APCPIdentityCenterAccess",
-            settings.QUICKSIGHT_ACCOUNT_REGION,
+            settings.IDENTITY_CENTER_ACCOUNT_REGION,
         )
         if self.user.is_superuser:
             return

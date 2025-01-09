@@ -317,7 +317,7 @@ def identity_store(aws_creds):
         yield client
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def group_ids(identity_store_id, identity_store):
     group_ids = {}
 
@@ -334,7 +334,7 @@ def group_ids(identity_store_id, identity_store):
     yield group_ids
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def identity_store_user_setup(users, identity_store_id, group_ids, identity_store):
 
     for key, user in users.items():

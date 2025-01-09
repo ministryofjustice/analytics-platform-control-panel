@@ -105,6 +105,18 @@ def superuser(db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airf
 
 
 @pytest.fixture
+def no_justice_superuser(
+    db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airflow_prod_policy
+):
+    return baker.make(
+        "api.User",
+        auth0_id="github|user_8",
+        is_superuser=True,
+        username="steve",
+    )
+
+
+@pytest.fixture
 def quicksight_author_user(db):
     user = baker.make(
         "api.User",
@@ -134,6 +146,7 @@ def quicksight_reader_user(db):
 def users(
     db,
     superuser,
+    no_justice_superuser,
     iam,
     managed_policy,
     airflow_dev_policy,
@@ -143,6 +156,7 @@ def users(
 ):
     return {
         "superuser": superuser,
+        "no_justice_superuser": no_justice_superuser,
         "normal_user": baker.make(
             "api.User",
             auth0_id="github|user_2",
@@ -163,6 +177,11 @@ def users(
             justice_email="Dave.Hoff@justice.gov.uk",
             is_superuser=False,
             is_database_admin=True,
+        ),
+        "no_justice_user": baker.make(
+            "api.User",
+            auth0_id="github|user_7",
+            username="ronnie",
         ),
         "quicksight_compute_author": quicksight_author_user,
         "quicksight_compute_reader": quicksight_reader_user,
