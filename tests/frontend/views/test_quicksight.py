@@ -22,7 +22,8 @@ def quicksight(client):
         (quicksight, "superuser", status.HTTP_200_OK),
         (quicksight, "database_user", status.HTTP_403_FORBIDDEN),
         (quicksight, "normal_user", status.HTTP_403_FORBIDDEN),
-        (quicksight, "quicksight_user", status.HTTP_200_OK),
+        (quicksight, "quicksight_author_user", status.HTTP_200_OK),
+        (quicksight, "quicksight_reader_user", status.HTTP_200_OK),
     ],
 )
 def test_permission(client, users, view, user, expected_status):

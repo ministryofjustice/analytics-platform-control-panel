@@ -675,6 +675,11 @@ class QuicksightAccessForm(forms.Form):
         self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
 
     def set_quicksight_embed_access(self, permission_name, quicksight_access):
+        identity_store = AWSIdentityStore(
+            settings.IDENTITY_CENTER_ASSUMED_ROLE,
+            "APCPIdentityCenterAccess",
+            settings.QUICKSIGHT_ACCOUNT_REGION,
+        )
         if self.user.is_superuser:
             return
 
@@ -684,31 +689,10 @@ class QuicksightAccessForm(forms.Form):
 
         if permission_name in quicksight_access and not self.user.has_perm(f"api.{codename}"):
             self.user.user_permissions.add(permission)
-            self.add_user_to_groups(group)
+            identity_store.add_user_to_group(self.user.justice_email, group)
         elif self.user.has_perm(f"api.{codename}"):
             self.user.user_permissions.remove(permission)
-            self.remove_user_from_group(group)
-
-    def add_user_to_groups(self, quicksight_group):
-        identity_store = AWSIdentityStore(
-            settings.IDENTITY_CENTER_ASSUMED_ROLE,
-            "APCPIdentityCenterAccess",
-            settings.QUICKSIGHT_ACCOUNT_REGION,
-        )
-        justice_email = self.user.justice_email
-
-        identity_store.create_user(justice_email)
-        identity_store.create_group_membership(quicksight_group, justice_email)
-        identity_store.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)
-
-    def remove_user_from_group(self, quicksight_group):
-        identity_store = AWSIdentityStore(
-            settings.IDENTITY_CENTER_ASSUMED_ROLE,
-            "APCPIdentityCenterAccess",
-            settings.QUICKSIGHT_ACCOUNT_REGION,
-        )
-        justice_email = self.user.justice_email
-        identity_store.delete_group_membership(quicksight_group, justice_email)
+            identity_store.remove_user_from_group(self.user.justice_email, group)
 
 
 class FeedbackForm(forms.ModelForm):

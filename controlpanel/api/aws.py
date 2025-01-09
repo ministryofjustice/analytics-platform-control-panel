@@ -1551,3 +1551,11 @@ class AWSIdentityStore(AWSService):
             )
         except self.client.exceptions.ResourceNotFoundException as error:
             log.info(error.response["Error"]["Message"])
+
+    def add_user_to_group(self, justice_email, quicksight_group):
+        self.create_user(justice_email)
+        self.create_group_membership(quicksight_group, justice_email)
+        self.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)
+
+    def remove_user_from_group(self, justice_email, quicksight_group):
+        self.delete_group_membership(quicksight_group, justice_email)

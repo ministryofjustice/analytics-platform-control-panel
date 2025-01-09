@@ -296,3 +296,87 @@ def root_folder_bucket(s3):
 def quicksight(aws_creds):
     with moto.mock_aws():
         yield boto3.client("quicksight", region_name="eu-west-1")
+
+
+@pytest.fixture(autouse=True)
+def sso_admin(aws_creds):
+    with moto.mock_aws():
+        yield boto3.client("sso-admin", region_name="eu-west-2")
+
+
+@pytest.fixture(autouse=True)
+def identity_store_id(sso_admin):
+    response = sso_admin.list_instances()
+    yield response["Instances"][0]["IdentityStoreId"]
+
+
+@pytest.fixture(autouse=True)
+def identity_store(aws_creds):
+    with moto.mock_aws():
+        client = boto3.client("identitystore", region_name="eu-west-2")
+        yield client
+
+
+@pytest.fixture(autouse=True)
+def group_ids(identity_store_id, identity_store):
+    group_ids = {}
+
+    group_ids["quicksight_compute_reader"] = identity_store.create_group(
+        IdentityStoreId=identity_store_id, DisplayName=settings.QUICKSIGHT_READER_GROUP_NAME
+    )["GroupId"]
+    group_ids["quicksight_compute_author"] = identity_store.create_group(
+        IdentityStoreId=identity_store_id, DisplayName=settings.QUICKSIGHT_AUTHOR_GROUP_NAME
+    )["GroupId"]
+    group_ids["azure_holding"] = identity_store.create_group(
+        IdentityStoreId=identity_store_id, DisplayName=settings.AZURE_HOLDING_GROUP_NAME
+    )["GroupId"]
+
+    yield group_ids
+
+
+@pytest.fixture(autouse=True)
+def identity_store_user_setup(users, identity_store_id, group_ids, identity_store):
+
+    for key, user in users.items():
+        forename, surname = user.justice_email.split("@")[0].split(".")
+        response = identity_store.create_user(
+            IdentityStoreId=identity_store_id,
+            UserName=user.justice_email,
+            DisplayName=user.justice_email,
+            Name={
+                "FamilyName": surname,
+                "GivenName": forename,
+            },
+            Emails=[{"Value": user.justice_email, "Type": "EntraId", "Primary": True}],
+        )
+        user.identity_center_id = response["UserId"]
+
+        if user.is_superuser:
+            identity_store.create_group_membership(
+                IdentityStoreId=identity_store_id,
+                GroupId=group_ids["azure_holding"],
+                MemberId={"UserId": user.identity_center_id},
+            )
+
+            response = identity_store.create_group_membership(
+                IdentityStoreId=identity_store_id,
+                GroupId=group_ids["quicksight_compute_author"],
+                MemberId={"UserId": user.identity_center_id},
+            )
+
+            user.group_membership_id = response["MembershipId"]
+
+        if key in group_ids:
+            identity_store.create_group_membership(
+                IdentityStoreId=identity_store_id,
+                GroupId=group_ids["azure_holding"],
+                MemberId={"UserId": user.identity_center_id},
+            )
+
+            response = identity_store.create_group_membership(
+                IdentityStoreId=identity_store_id,
+                GroupId=group_ids[key],
+                MemberId={"UserId": user.identity_center_id},
+            )
+
+            user.group_membership_id = response["MembershipId"]

@@ -11,7 +11,10 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import auth0
-from controlpanel.api.models import QUICKSIGHT_EMBED_PERMISSION
+from controlpanel.api.models import (
+    QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
+    QUICKSIGHT_EMBED_READER_PERMISSION,
+)
 from controlpanel.utils import load_app_conf_from_file
 from tests.api.fixtures.aws import *
 from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
@@ -97,24 +100,46 @@ def superuser(db, slack_WebClient, iam, managed_policy, airflow_dev_policy, airf
         auth0_id="github|user_1",
         is_superuser=True,
         username="alice",
+        justice_email="Alice.Hula@justice.gov.uk",
     )
 
 
 @pytest.fixture
-def quicksight_user(db):
+def quicksight_author_user(db):
     user = baker.make(
         "api.User",
         auth0_id="github|user_5",
-        username="foobar",
+        username="qs_author",
+        justice_email="Quicksight.Author@justice.gov.uk",
         is_superuser=False,
     )
-    user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_PERMISSION))
+    user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION))
+    return user
+
+
+@pytest.fixture
+def quicksight_reader_user(db):
+    user = baker.make(
+        "api.User",
+        auth0_id="github|user_6",
+        username="qs_reader",
+        justice_email="Quicksight.Reader@justice.gov.uk",
+        is_superuser=False,
+    )
+    user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_READER_PERMISSION))
     return user
 
 
 @pytest.fixture
 def users(
-    db, superuser, iam, managed_policy, airflow_dev_policy, airflow_prod_policy, quicksight_user
+    db,
+    superuser,
+    iam,
+    managed_policy,
+    airflow_dev_policy,
+    airflow_prod_policy,
+    quicksight_author_user,
+    quicksight_reader_user,
 ):
     return {
         "superuser": superuser,
@@ -122,21 +147,25 @@ def users(
             "api.User",
             auth0_id="github|user_2",
             username="bob",
+            justice_email="Bob.Carolgees@justice.gov.uk",
             is_superuser=False,
         ),
         "other_user": baker.make(
             "api.User",
             username="carol",
+            justice_email="Carol.Vorderman@justice.gov.uk",
             auth0_id="github|user_3",
         ),
         "database_user": baker.make(
             "api.User",
             auth0_id="github|user_4",
             username="dave",
+            justice_email="Dave.Hoff@justice.gov.uk",
             is_superuser=False,
             is_database_admin=True,
         ),
-        "quicksight_user": quicksight_user,
+        "quicksight_compute_author": quicksight_author_user,
+        "quicksight_compute_reader": quicksight_reader_user,
     }
 
 

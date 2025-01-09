@@ -127,11 +127,13 @@
           "value": "quicksight_compute_author",
           "text": "Embedded Quicksight enabled (running in the compute-" + env + " account) as an author",
           "checked": user.has_perm("api.quicksight_embed_author_access"),
+          "disabled": user.is_superuser
         },
         {
           "value": "quicksight_compute_reader",
           "text": "Embedded Quicksight enabled (running in the compute-" + env + " account) as a reader",
           "checked": user.has_perm("api.quicksight_embed_reader_access"),
+          "disabled": user.is_superuser
         },
       ]
     }) }}
