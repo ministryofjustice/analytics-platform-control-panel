@@ -7,8 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 
 # First-party/Local
-from controlpanel.api import cluster
-from controlpanel.api.models import QUICKSIGHT_EMBED_PERMISSION
+from controlpanel.api import aws, cluster
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +80,6 @@ def set_database_admin(client, users, *args):
         (retrieve, "superuser", status.HTTP_200_OK),
         (retrieve, "normal_user", status.HTTP_403_FORBIDDEN),
         (retrieve, "other_user", status.HTTP_200_OK),
-        (set_admin, "superuser", status.HTTP_302_FOUND),
         (set_admin, "normal_user", status.HTTP_403_FORBIDDEN),
         (set_admin, "other_user", status.HTTP_403_FORBIDDEN),
         (reset_mfa, "superuser", status.HTTP_302_FOUND),
@@ -104,6 +102,7 @@ def set_database_admin(client, users, *args):
 def test_permission(client, users, view, user, expected_status):
     for key, val in users.items():
         client.force_login(val)
+
     client.force_login(users[user])
     response = view(client, users)
     assert response.status_code == expected_status
@@ -112,7 +111,7 @@ def test_permission(client, users, view, user, expected_status):
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list, "superuser", 5),
+        (list, "superuser", 8),
     ],
 )
 def test_list(client, users, view, user, expected_count):
@@ -127,9 +126,20 @@ def slack():
         yield slack
 
 
-def test_grant_superuser_access(client, users, slack):
+@patch.object(aws.AWSIdentityStore, "get_user_id")
+def test_grant_superuser_access(
+    get_user_id,
+    identity_store_user_setup,
+    identity_store,
+    identity_store_id,
+    group_ids,
+    client,
+    users,
+    slack,
+):
     request_user = users["superuser"]
     user = users["other_user"]
+    get_user_id.return_value = user.identity_center_id
     client.force_login(request_user)
     response = set_admin(client, users)
     assert response.status_code == status.HTTP_302_FOUND
@@ -138,20 +148,32 @@ def test_grant_superuser_access(client, users, slack):
         by_username=request_user.username,
     )
 
+    response = identity_store.list_group_memberships_for_member(
+        IdentityStoreId=identity_store_id,
+        MemberId={"UserId": user.identity_center_id},
+    )
+
+    assert len(response["GroupMemberships"]) == 2
+    expected_groups = ["quicksight_compute_author", "azure_holding"]
+
+    groups = [group_ids[group] for group in expected_groups]
+
+    for group_membership in response["GroupMemberships"]:
+        if group_membership["GroupId"] not in groups:
+            raise AssertionError
+
 
 @pytest.mark.parametrize(
-    "data, legacy_access, compute_access",
+    "data, legacy_access",
     [
-        ({"enable_quicksight": ["quicksight_legacy"]}, True, False),
-        ({"enable_quicksight": ["quicksight_compute"]}, False, True),
-        ({"enable_quicksight": ["quicksight_legacy", "quicksight_compute"]}, True, True),
-        ({}, False, False),
+        ({"enable_quicksight": ["quicksight_legacy"]}, True),
+        ({}, False),
     ],
-    ids=["legacy enabled", "compute enabled", "both enabled", "no access"],
+    ids=["legacy enabled", "no access"],
 )
 @patch("controlpanel.api.models.user.cluster.User.update_policy_attachment")
-def test_enable_quicksight_access(
-    update_policy_attachment, data, legacy_access, compute_access, client, users
+def test_enable_quicksight_access_legacy(
+    update_policy_attachment, data, legacy_access, client, users
 ):
     request_user = users["superuser"]
     user = users["other_user"]
@@ -165,7 +187,128 @@ def test_enable_quicksight_access(
         policy=cluster.User.QUICKSIGHT_POLICY_NAME,
         attach=legacy_access,
     )
-    assert (
-        user.user_permissions.filter(codename=QUICKSIGHT_EMBED_PERMISSION).exists()
-        is compute_access
+
+
+@patch.object(aws.AWSIdentityStore, "get_user_id")
+@pytest.mark.parametrize(
+    "user, data, expected_groups, expected_result",
+    [
+        (
+            "superuser",
+            {"enable_quicksight": ["quicksight_compute_reader"]},
+            ["quicksight_compute_author", "azure_holding"],
+            2,
+        ),
+        (
+            "normal_user",
+            {"enable_quicksight": ["quicksight_compute_reader"]},
+            ["quicksight_compute_reader", "azure_holding"],
+            2,
+        ),
+        (
+            "superuser",
+            {"enable_quicksight": ["quicksight_compute_author"]},
+            ["quicksight_compute_author", "azure_holding"],
+            2,
+        ),
+        (
+            "normal_user",
+            {"enable_quicksight": ["quicksight_compute_author"]},
+            ["quicksight_compute_author", "azure_holding"],
+            2,
+        ),
+    ],
+)
+def test_quicksight_form_add_to_groups(
+    get_user_id,
+    identity_store_user_setup,
+    users,
+    identity_store,
+    identity_store_id,
+    client,
+    group_ids,
+    user,
+    data,
+    expected_groups,
+    expected_result,
+):
+    """
+    Tests adding a user to the correct group plus the azure holding group.
+    Super users should not be added to these groups as they should already be in them
+    """
+
+    test_user = users[user]
+    get_user_id.return_value = test_user.identity_center_id
+
+    request_user = users["superuser"]
+    url = reverse("set-quicksight", kwargs={"pk": test_user.auth0_id})
+
+    client.force_login(request_user)
+    response = client.post(url, data=data)
+    assert response.status_code == status.HTTP_302_FOUND
+
+    response = identity_store.list_group_memberships_for_member(
+        IdentityStoreId=identity_store_id,
+        MemberId={"UserId": test_user.identity_center_id},
     )
+
+    assert len(response["GroupMemberships"]) == expected_result
+
+    groups = [group_ids[group] for group in expected_groups]
+
+    for group_membership in response["GroupMemberships"]:
+        if group_membership["GroupId"] not in groups:
+            raise AssertionError
+
+
+@patch.object(aws.AWSIdentityStore, "get_group_membership_id")
+@patch.object(aws.AWSIdentityStore, "get_user_id")
+@pytest.mark.parametrize(
+    "user, data, expected_result",
+    [
+        (
+            "quicksight_compute_author",
+            {"enable_quicksight": []},
+            1,
+        ),
+        (
+            "quicksight_compute_reader",
+            {"enable_quicksight": []},
+            1,
+        ),
+    ],
+)
+def test_quicksight_form_remove_from_group(
+    get_user_id,
+    get_group_membership_id,
+    identity_store_user_setup,
+    client,
+    users,
+    identity_store,
+    identity_store_id,
+    group_ids,
+    user,
+    data,
+    expected_result,
+):
+    """
+    Tests removing a user from their group. Should still be part of azure holding group
+    """
+
+    test_user = users[user]
+    get_user_id.return_value = test_user.identity_center_id
+    get_group_membership_id.return_value = test_user.group_membership_id
+    request_user = users["superuser"]
+    url = reverse("set-quicksight", kwargs={"pk": test_user.auth0_id})
+
+    client.force_login(request_user)
+    response = client.post(url, data=data)
+    assert response.status_code == status.HTTP_302_FOUND
+
+    response = identity_store.list_group_memberships_for_member(
+        IdentityStoreId=identity_store_id,
+        MemberId={"UserId": test_user.identity_center_id},
+    )
+
+    assert len(response["GroupMemberships"]) == expected_result
+    assert response["GroupMemberships"][0]["GroupId"] == group_ids["azure_holding"]

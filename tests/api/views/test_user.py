@@ -30,7 +30,7 @@ def ExtendedAuth0():
 def test_list(client, users):
     response = client.get(reverse("user-list"))
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.data["results"]) == 6
+    assert len(response.data["results"]) == 8
 
 
 def test_detail(client, users):
@@ -127,7 +127,7 @@ def test_create_superuser(client, slack, superuser):
 
 
 def test_update(client, users):
-    data = {"username": "foo", "auth0_id": "github|888"}
+    data = {"username": "foo", "auth0_id": users["normal_user"].auth0_id}
     response = client.put(
         reverse("user-detail", (users["normal_user"].auth0_id,)),
         json.dumps(data),

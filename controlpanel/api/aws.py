@@ -1553,6 +1553,11 @@ class AWSIdentityStore(AWSService):
             log.info(error.response["Error"]["Message"])
 
     def add_user_to_group(self, justice_email, quicksight_group):
+        if not justice_email:
+            message = "Cannot create an Identity Center user without an associated justice email"
+            log.exception(message)
+            raise Exception(message)
+
         self.create_user(justice_email)
         self.create_group_membership(quicksight_group, justice_email)
         self.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)

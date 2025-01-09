@@ -338,45 +338,46 @@ def group_ids(identity_store_id, identity_store):
 def identity_store_user_setup(users, identity_store_id, group_ids, identity_store):
 
     for key, user in users.items():
-        forename, surname = user.justice_email.split("@")[0].split(".")
-        response = identity_store.create_user(
-            IdentityStoreId=identity_store_id,
-            UserName=user.justice_email,
-            DisplayName=user.justice_email,
-            Name={
-                "FamilyName": surname,
-                "GivenName": forename,
-            },
-            Emails=[{"Value": user.justice_email, "Type": "EntraId", "Primary": True}],
-        )
-        user.identity_center_id = response["UserId"]
-
-        if user.is_superuser:
-            identity_store.create_group_membership(
+        if user.justice_email is not None:
+            forename, surname = user.justice_email.split("@")[0].split(".")
+            response = identity_store.create_user(
                 IdentityStoreId=identity_store_id,
-                GroupId=group_ids["azure_holding"],
-                MemberId={"UserId": user.identity_center_id},
+                UserName=user.justice_email,
+                DisplayName=user.justice_email,
+                Name={
+                    "FamilyName": surname,
+                    "GivenName": forename,
+                },
+                Emails=[{"Value": user.justice_email, "Type": "EntraId", "Primary": True}],
             )
+            user.identity_center_id = response["UserId"]
 
-            response = identity_store.create_group_membership(
-                IdentityStoreId=identity_store_id,
-                GroupId=group_ids["quicksight_compute_author"],
-                MemberId={"UserId": user.identity_center_id},
-            )
+            if user.is_superuser:
+                identity_store.create_group_membership(
+                    IdentityStoreId=identity_store_id,
+                    GroupId=group_ids["azure_holding"],
+                    MemberId={"UserId": user.identity_center_id},
+                )
 
-            user.group_membership_id = response["MembershipId"]
+                response = identity_store.create_group_membership(
+                    IdentityStoreId=identity_store_id,
+                    GroupId=group_ids["quicksight_compute_author"],
+                    MemberId={"UserId": user.identity_center_id},
+                )
 
-        if key in group_ids:
-            identity_store.create_group_membership(
-                IdentityStoreId=identity_store_id,
-                GroupId=group_ids["azure_holding"],
-                MemberId={"UserId": user.identity_center_id},
-            )
+                user.group_membership_id = response["MembershipId"]
 
-            response = identity_store.create_group_membership(
-                IdentityStoreId=identity_store_id,
-                GroupId=group_ids[key],
-                MemberId={"UserId": user.identity_center_id},
-            )
+            if key in group_ids:
+                identity_store.create_group_membership(
+                    IdentityStoreId=identity_store_id,
+                    GroupId=group_ids["azure_holding"],
+                    MemberId={"UserId": user.identity_center_id},
+                )
 
-            user.group_membership_id = response["MembershipId"]
+                response = identity_store.create_group_membership(
+                    IdentityStoreId=identity_store_id,
+                    GroupId=group_ids[key],
+                    MemberId={"UserId": user.identity_center_id},
+                )
+
+                user.group_membership_id = response["MembershipId"]
