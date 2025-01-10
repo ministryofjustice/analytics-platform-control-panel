@@ -139,6 +139,10 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         if settings.features.justice_auth.enabled and not request.user.justice_email:
             return super().get(request, *args, **kwargs)
 
+        # this is temporary change for users authorising via Entra, specifically CICA users
+        if not request.user.is_github_user:
+            return HttpResponseRedirect(reverse("help"))
+
         # Redirect to the tools page.
         return HttpResponseRedirect(reverse("list-tools"))
 
