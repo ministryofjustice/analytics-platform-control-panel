@@ -129,7 +129,7 @@ class User(AbstractUser):
     @property
     def is_github_user(self):
         """
-        Determin if the user was created via the github connection. We can use this to limit what
+        Determine if the user was created via the github connection. We can use this to limit what
         actions non-github users do within the AP.
         This has been added specifically to allow CICA users to authenticate with EntraID in order
         to access QuickSight in the AP. This is a temporary change, that should be removed once auth
