@@ -34,7 +34,8 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             "email": claims.get(settings.OIDC_FIELD_EMAIL),
             "name": self.normalise_name(claims.get(settings.OIDC_FIELD_NAME)),
         }
-        if user_details["email"].endswith("justice.gov.uk"):
+        email_domain = user_details["email"].split("@")[-1]
+        if email_domain in settings.JUSTICE_EMAIL_DOMAINS:
             user_details["justice_email"] = user_details["email"]
 
         return User.objects.create(**user_details)
