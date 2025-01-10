@@ -6,8 +6,8 @@ from rest_framework.test import APITestCase
 
 class AppFilterTest(APITestCase):
     def setUp(self):
-        self.superuser = baker.make("api.User", is_superuser=True)
-        self.app_admin = baker.make("api.User", is_superuser=False)
+        self.superuser = baker.make("api.User", auth0_id="github|superuser", is_superuser=True)
+        self.app_admin = baker.make("api.User", auth0_id="github|user", is_superuser=False)
         self.app_1 = baker.make("api.App", name="App 1")
         self.app_2 = baker.make("api.App", name="App 2")
         baker.make("api.UserApp", user=self.app_admin, app=self.app_1, is_admin=True)

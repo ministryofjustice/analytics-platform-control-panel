@@ -12,7 +12,7 @@ from rest_framework import status
 def users(users):
     users.update(
         {
-            "owner": baker.make("api.User", username="owner"),
+            "owner": baker.make("api.User", auth0_id="github|user", username="owner"),
         }
     )
     return users
