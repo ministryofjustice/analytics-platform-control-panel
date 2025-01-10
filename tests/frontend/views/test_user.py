@@ -126,9 +126,11 @@ def slack():
         yield slack
 
 
+@patch.object(aws.AWSIdentityStore, "get_group_membership_id")
 @patch.object(aws.AWSIdentityStore, "get_user_id")
 def test_grant_superuser_access(
     get_user_id,
+    get_group_membership_id,
     identity_store_user_setup,
     identity_store,
     identity_store_id,
@@ -140,6 +142,7 @@ def test_grant_superuser_access(
     request_user = users["superuser"]
     user = users["other_user"]
     get_user_id.return_value = user.identity_center_id
+    get_group_membership_id.side_effect = [None, None]
     client.force_login(request_user)
     response = set_admin(client, users)
     assert response.status_code == status.HTTP_302_FOUND
