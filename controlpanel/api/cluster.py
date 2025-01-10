@@ -249,7 +249,7 @@ class User(EntityResource):
 
     @property
     def iam_role_name(self):
-        return f"{settings.ENV}_user_{self.user.slug.lower()}"
+        return f"{settings.ENV}_user_{self.user.username.lower()}"
 
     def _run_helm_install_command(self, helm_chart_item):
         values = []
@@ -977,9 +977,9 @@ class ToolDeployment:
         Extracted from `install()` method for clarity.
         """
         values = {
-            "username": self.user.slug.lower(),
+            "username": self.user.username.lower(),
             # XXX backwards compatibility
-            "Username": self.user.slug.lower(),
+            "Username": self.user.username.lower(),
             "aws.iamRole": self.user.iam_role_name,
             "toolsDomain": settings.TOOLS_DOMAIN,
         }
