@@ -112,7 +112,7 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
                 user.justice_email, settings.QUICKSIGHT_AUTHOR_GROUP_NAME
             )
         else:
-            identity_store.remove_user_from_group(
+            identity_store.delete_group_membership(
                 user.justice_email, settings.QUICKSIGHT_AUTHOR_GROUP_NAME
             )
 

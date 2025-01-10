@@ -189,38 +189,58 @@ def test_enable_quicksight_access_legacy(
     )
 
 
+@patch.object(aws.AWSIdentityStore, "get_group_membership_id")
 @patch.object(aws.AWSIdentityStore, "get_user_id")
 @pytest.mark.parametrize(
-    "user, data, expected_groups, expected_result",
+    "user, data, group_membership_calls, expected_groups, expected_result",
     [
         (
             "superuser",
             {"enable_quicksight": ["quicksight_compute_reader"]},
+            [None, "Mock-Azure-Holding-Id"],
             ["quicksight_compute_author", "azure_holding"],
             2,
         ),
         (
             "normal_user",
             {"enable_quicksight": ["quicksight_compute_reader"]},
+            [None, None],
             ["quicksight_compute_reader", "azure_holding"],
             2,
         ),
         (
             "superuser",
             {"enable_quicksight": ["quicksight_compute_author"]},
+            ["Mock-Author-Id", "Mock-Azure-Holding-Id"],
             ["quicksight_compute_author", "azure_holding"],
             2,
         ),
         (
             "normal_user",
             {"enable_quicksight": ["quicksight_compute_author"]},
+            [None, None],
             ["quicksight_compute_author", "azure_holding"],
+            2,
+        ),
+        (
+            "normal_user",
+            {"enable_quicksight": ["quicksight_compute_author", "quicksight_compute_reader"]},
+            [None, None, None, "Mock-Azure-Holding-Id"],
+            ["quicksight_compute_author", "quicksight_compute_reader", "azure_holding"],
+            3,
+        ),
+        (
+            "quicksight_compute_reader",
+            {"enable_quicksight": ["quicksight_compute_reader"]},
+            ["Mock-Reader-Id", "Mock-Azure-Holding-Id"],
+            ["quicksight_compute_reader", "azure_holding"],
             2,
         ),
     ],
 )
 def test_quicksight_form_add_to_groups(
     get_user_id,
+    get_group_membership_id,
     identity_store_user_setup,
     users,
     identity_store,
@@ -229,6 +249,7 @@ def test_quicksight_form_add_to_groups(
     group_ids,
     user,
     data,
+    group_membership_calls,
     expected_groups,
     expected_result,
 ):
@@ -239,6 +260,7 @@ def test_quicksight_form_add_to_groups(
 
     test_user = users[user]
     get_user_id.return_value = test_user.identity_center_id
+    get_group_membership_id.side_effect = group_membership_calls
 
     request_user = users["superuser"]
     url = reverse("set-quicksight", kwargs={"pk": test_user.auth0_id})
@@ -276,6 +298,11 @@ def test_quicksight_form_add_to_groups(
             {"enable_quicksight": []},
             1,
         ),
+        (
+            "normal_user",
+            {"enable_quicksight": []},
+            0,
+        ),
     ],
 )
 def test_quicksight_form_remove_from_group(
@@ -292,12 +319,15 @@ def test_quicksight_form_remove_from_group(
     expected_result,
 ):
     """
-    Tests removing a user from their group. Should still be part of azure holding group
+    Tests removing a user from their group.
+    Should still be part of azure holding group if already in a group
     """
 
     test_user = users[user]
     get_user_id.return_value = test_user.identity_center_id
-    get_group_membership_id.return_value = test_user.group_membership_id
+    get_group_membership_id.return_value = (
+        test_user.group_membership_id if expected_result > 0 else None
+    )
     request_user = users["superuser"]
     url = reverse("set-quicksight", kwargs={"pk": test_user.auth0_id})
 
@@ -311,4 +341,6 @@ def test_quicksight_form_remove_from_group(
     )
 
     assert len(response["GroupMemberships"]) == expected_result
-    assert response["GroupMemberships"][0]["GroupId"] == group_ids["azure_holding"]
+
+    if expected_result > 0:
+        assert response["GroupMemberships"][0]["GroupId"] == group_ids["azure_holding"]

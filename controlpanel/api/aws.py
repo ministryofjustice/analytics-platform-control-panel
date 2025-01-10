@@ -1495,8 +1495,8 @@ class AWSIdentityStore(AWSService):
 
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.exception(error.response["Error"]["Message"])
-            raise error
+            log.info(error.response["Error"]["Message"])
+            raise None
 
     def get_name_from_email(self, user_email):
         """
@@ -1505,11 +1505,14 @@ class AWSIdentityStore(AWSService):
         """
 
         name = user_email.split("@")[0]
-        return name.split(".")
+        forename, surname = name.split(".")
+        surname = "".join((c for c in surname if not c.isdigit()))
+        return forename, surname
 
     def create_user(self, user_email):
 
         if self.get_user_id(user_email):
+            log.debug("User already exists in Identity Store.")
             return
 
         try:
@@ -1532,6 +1535,12 @@ class AWSIdentityStore(AWSService):
     def create_group_membership(self, group_name, user_email):
 
         try:
+            membership_id = self.get_group_membership_id(group_name, user_email)
+
+            if membership_id is not None:
+                log.debug("User is already a member of this group. Skipping")
+                return
+
             response = self.client.create_group_membership(
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
                 GroupId=self.get_group_id(group_name),
@@ -1545,22 +1554,28 @@ class AWSIdentityStore(AWSService):
 
     def delete_group_membership(self, group_name, user_email):
         try:
+            membership_id = self.get_group_membership_id(group_name, user_email)
+
+            if membership_id is None:
+                log.debug("User is not a member of this group. Skipping")
+                return
+
             self.client.delete_group_membership(
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
-                MembershipId=self.get_group_membership_id(group_name, user_email),
+                MembershipId=membership_id,
             )
-        except self.client.exceptions.ResourceNotFoundException as error:
-            log.info(error.response["Error"]["Message"])
+        except Exception as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
 
     def add_user_to_group(self, justice_email, quicksight_group):
         if not justice_email:
-            message = "Cannot create an Identity Center user without an associated justice email"
+            message = (
+                "Cannot create an Identity Center user without an associated @justice.gov.uk email"
+            )
             log.exception(message)
             raise Exception(message)
 
         self.create_user(justice_email)
         self.create_group_membership(quicksight_group, justice_email)
         self.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)
-
-    def remove_user_from_group(self, justice_email, quicksight_group):
-        self.delete_group_membership(quicksight_group, justice_email)

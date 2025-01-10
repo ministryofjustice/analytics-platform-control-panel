@@ -692,7 +692,7 @@ class QuicksightAccessForm(forms.Form):
             identity_store.add_user_to_group(self.user.justice_email, group)
         elif self.user.has_perm(f"api.{codename}"):
             self.user.user_permissions.remove(permission)
-            identity_store.remove_user_from_group(self.user.justice_email, group)
+            identity_store.delete_group_membership(self.user.justice_email, group)
 
 
 class FeedbackForm(forms.ModelForm):
