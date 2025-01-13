@@ -99,11 +99,13 @@
         "href": url("admin:index"),
       },
       {
+        "hide": not request.user.is_github_user,
         "text": "Analytical tools",
         "href": url("list-tools"),
         "active": page_name == "tools",
       },
       {
+        "hide": not request.user.is_github_user,
         "text": "Warehouse data",
         "href": url("list-warehouse-datasources"),
         "active": page_name == "warehouse-datasource-list",
@@ -115,6 +117,7 @@
         "active": page_name == "webapp-datasource-list",
       },
       {
+        "hide": not request.user.is_github_user,
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps",
@@ -126,6 +129,7 @@
         "active": page_name == "databases",
       },
       {
+        "hide": not request.user.is_github_user,
         "text": "Parameters",
         "href": url("list-parameters"),
         "active": page_name == "parameters",

@@ -118,3 +118,24 @@ def test_set_quicksight_access(users, enable):
             policy=cluster.User.QUICKSIGHT_POLICY_NAME,
             attach=enable,
         )
+
+
+@pytest.mark.parametrize(
+    "auth0_id, expected",
+    [
+        ("github|user_1", True),
+        ("github|user_2", True),
+        ("entra|user_1", False),
+        ("other|user_2", False),
+    ],
+)
+def test_user_is_github_user(auth0_id, expected):
+    user = User(auth0_id=auth0_id)
+    assert user.is_github_user == expected
+
+
+def test_non_github_user_not_provisioned():
+    user = User.objects.create(auth0_id="not_github|user_1")
+    with patch.object(cluster.User, "create") as mock_create:
+        user.save()
+        mock_create.assert_not_called()

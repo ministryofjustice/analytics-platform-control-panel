@@ -137,6 +137,7 @@ def users(
             is_database_admin=True,
         ),
         "quicksight_user": quicksight_user,
+        "non_tool_user": baker.make("api.User"),
     }
 
 

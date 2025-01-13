@@ -84,6 +84,17 @@ class TestGetAsNormalUser:
         assert response.status_code == 302
         assert response.url == reverse("list-tools")
 
+    def test_not_tool_user(self, client, users):
+        user = users["non_tool_user"]
+        user.justice_email = "email@example.com"
+        user.save()
+        client.force_login(user)
+
+        response = client.get("/")
+
+        assert response.status_code == 302
+        assert response.url == reverse("help")
+
 
 class TestPost:
 

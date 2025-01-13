@@ -36,7 +36,7 @@ def github_api_token():
 def users(users):
     users.update(
         {
-            "app_admin": baker.make("api.User", username="app_admin"),
+            "app_admin": baker.make("api.User", auth0_id="github|user", username="app_admin"),
         }
     )
     return users
