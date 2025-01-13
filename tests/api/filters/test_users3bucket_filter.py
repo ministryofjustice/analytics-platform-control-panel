@@ -10,9 +10,9 @@ from controlpanel.api.models import UserS3Bucket
 
 class UserS3BucketFilterTest(APITestCase):
     def setUp(self):
-        self.superuser = baker.make("api.User", is_superuser=True)
-        self.normal_user = baker.make("api.User", is_superuser=False)
-        self.other_user = baker.make("api.User", is_superuser=False)
+        self.superuser = baker.make("api.User", auth0_id="github|superuser", is_superuser=True)
+        self.normal_user = baker.make("api.User", auth0_id="github|user", is_superuser=False)
+        self.other_user = baker.make("api.User", auth0_id="github|other_user", is_superuser=False)
 
         self.s3bucket_1 = baker.make("api.S3Bucket", name="test-bucket-1")
         self.s3bucket_2 = baker.make("api.S3Bucket", name="test-bucket-2")

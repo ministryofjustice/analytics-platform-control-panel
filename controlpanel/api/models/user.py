@@ -130,6 +130,17 @@ class User(AbstractUser):
 
         return self.userapps.filter(is_admin=True).exists()
 
+    @property
+    def is_github_user(self):
+        """
+        Determine if the user was created via the github connection. We can use this to limit what
+        actions non-github users do within the AP.
+        This has been added specifically to allow CICA users to authenticate with EntraID in order
+        to access QuickSight in the AP. This is a temporary change, that should be removed once auth
+        with Entra is fully implemented.
+        """
+        return self.auth0_id.startswith("github|")
+
     def is_app_admin(self, app_id):
         return (
             self.userapps.filter(
@@ -165,7 +176,7 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         existing = User.objects.filter(pk=self.pk).first()
-        if not existing:
+        if not existing and self.is_github_user:
             cluster.User(self).create()
 
         already_superuser = existing and existing.is_superuser

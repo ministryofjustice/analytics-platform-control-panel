@@ -198,6 +198,8 @@ OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
 OIDC_STORE_ID_TOKEN = True
 
+JUSTICE_EMAIL_DOMAINS = ["justice.gov.uk", "cica.justice.gov.uk"]
+
 # Auth0
 AUTH0 = {
     "client_id": OIDC_RP_CLIENT_ID,

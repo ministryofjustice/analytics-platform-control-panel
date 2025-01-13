@@ -23,8 +23,12 @@ def enable_db_for_all_tests(db):
 def users(users):
     users.update(
         {
-            "bucket_viewer": baker.make("api.User", username="bucket_viewer"),
-            "bucket_admin": baker.make("api.User", username="bucket_admin"),
+            "bucket_viewer": baker.make(
+                "api.User", auth0_id="github|bucket_viewer", username="bucket_viewer"
+            ),
+            "bucket_admin": baker.make(
+                "api.User", auth0_id="github|bucket_admin", username="bucket_admin"
+            ),
         }
     )
     return users

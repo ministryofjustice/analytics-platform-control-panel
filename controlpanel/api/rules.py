@@ -47,8 +47,13 @@ def is_app_admin(user, obj):
     return False
 
 
-add_perm("api.list_app", is_authenticated)
-add_perm("api.create_app", is_authenticated)
+@predicate
+def is_github_user(user):
+    return user.is_github_user
+
+
+add_perm("api.list_app", is_authenticated & is_github_user)
+add_perm("api.create_app", is_authenticated & is_github_user)
 add_perm("api.retrieve_app", is_authenticated & is_app_admin)
 add_perm("api.update_app", is_authenticated & is_app_admin)
 add_perm("api.destroy_app", is_authenticated & is_superuser)
@@ -126,8 +131,8 @@ def is_database_admin(user):
     return user.is_database_admin
 
 
-add_perm("api.list_s3bucket", is_authenticated)
-add_perm("api.create_s3bucket", is_authenticated)
+add_perm("api.list_s3bucket", is_authenticated & is_github_user)
+add_perm("api.create_s3bucket", is_authenticated & is_github_user)
 add_perm("api.retrieve_s3bucket", is_authenticated & has_bucket_access)
 add_perm("api.update_s3bucket", is_authenticated & has_bucket_write_access)
 add_perm("api.destroy_s3bucket", is_authenticated & is_bucket_admin)
@@ -167,7 +172,7 @@ add_perm("api.destroy_tool_release", is_authenticated & is_superuser)
 add_perm("api.update_tool_release", is_authenticated & is_superuser)
 
 
-add_perm("api.list_apps3bucket", is_authenticated)
+add_perm("api.list_apps3bucket", is_authenticated & is_github_user)
 add_perm("api.create_apps3bucket", is_authenticated & is_superuser)
 add_perm(
     "api.retrieve_apps3bucket",
@@ -180,14 +185,14 @@ add_perm(
 add_perm("api.destroy_apps3bucket", is_authenticated & is_superuser)
 
 
-add_perm("api.list_users3bucket", is_authenticated)
+add_perm("api.list_users3bucket", is_authenticated & is_github_user)
 add_perm("api.create_users3bucket", is_authenticated & is_bucket_admin)
 add_perm("api.retrieve_users3bucket", is_authenticated & is_bucket_admin)
 add_perm("api.update_users3bucket", is_authenticated & is_bucket_admin)
 add_perm("api.destroy_users3bucket", is_authenticated & is_bucket_admin)
 
 
-add_perm("api.list_tool", is_authenticated)
+add_perm("api.list_tool", is_authenticated & is_github_user)
 add_perm("api.create_tool", is_authenticated & is_superuser)
 add_perm("api.retrieve_tool", is_authenticated & is_superuser)
 add_perm("api.update_tool", is_authenticated & is_superuser)
@@ -216,6 +221,7 @@ def is_owner(user, obj):
     return False
 
 
+# TODO these are not used and should be removed
 add_perm("api.list_deployment", is_authenticated)
 add_perm("api.create_deployment", is_authenticated)
 add_perm("api.retrieve_deployment", is_authenticated & is_owner)
@@ -223,8 +229,8 @@ add_perm("api.update_deployment", is_authenticated & is_owner)
 add_perm("api.destroy_deployment", is_authenticated & is_owner)
 
 
-add_perm("api.list_parameter", is_authenticated)
-add_perm("api.create_parameter", is_authenticated)
+add_perm("api.list_parameter", is_authenticated & is_github_user)
+add_perm("api.create_parameter", is_authenticated & is_github_user)
 add_perm("api.retrieve_parameter", is_authenticated & is_owner)
 add_perm("api.update_parameter", is_authenticated & is_owner)
 add_perm("api.destroy_parameter", is_authenticated & is_owner)

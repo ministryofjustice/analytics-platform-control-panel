@@ -28,12 +28,26 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
     """
 
     def create_user(self, claims):
-        return User.objects.create(
-            pk=claims.get("sub"),
-            username=claims.get(settings.OIDC_FIELD_USERNAME),
-            email=claims.get(settings.OIDC_FIELD_EMAIL),
-            name=claims.get(settings.OIDC_FIELD_NAME),
-        )
+        user_details = {
+            "pk": claims.get("sub"),
+            "username": claims.get(settings.OIDC_FIELD_USERNAME),
+            "email": claims.get(settings.OIDC_FIELD_EMAIL),
+            "name": self.normalise_name(claims.get(settings.OIDC_FIELD_NAME)),
+        }
+        email_domain = user_details["email"].split("@")[-1]
+        if email_domain in settings.JUSTICE_EMAIL_DOMAINS:
+            user_details["justice_email"] = user_details["email"]
+
+        return User.objects.create(**user_details)
+
+    def normalise_name(self, name):
+        """
+        Normalise name to be in the format "Firstname Lastname"
+        """
+        if "," in name:
+            parts = [part.strip() for part in name.split(",")]
+            name = " ".join(reversed(parts))
+        return name
 
     def update_user(self, user, claims):
         # Update the non-key information to sync the user's info
@@ -44,8 +58,9 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         if user.email != claims.get(settings.OIDC_FIELD_EMAIL):
             user.email = claims.get(settings.OIDC_FIELD_EMAIL)
             user.save()
-        if user.name != claims.get(settings.OIDC_FIELD_NAME):
-            user.name = claims.get(settings.OIDC_FIELD_NAME)
+        normalised_name = self.normalise_name(claims.get(settings.OIDC_FIELD_NAME))
+        if user.name != normalised_name:
+            user.name = normalised_name
             user.save()
         return user
 

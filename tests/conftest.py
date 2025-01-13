@@ -161,13 +161,13 @@ def users(
             "api.User",
             auth0_id="github|user_2",
             username="bob",
-            justice_email="Bob.Carolgees@justice.gov.uk",
+            justice_email="Bob.Mort@justice.gov.uk",
             is_superuser=False,
         ),
         "other_user": baker.make(
             "api.User",
             username="carol",
-            justice_email="Carol.Vorderman@justice.gov.uk",
+            justice_email="Carol.Vor@justice.gov.uk",
             auth0_id="github|user_3",
         ),
         "database_user": baker.make(
@@ -185,6 +185,7 @@ def users(
         ),
         "quicksight_compute_author": quicksight_author_user,
         "quicksight_compute_reader": quicksight_reader_user,
+        "non_tool_user": baker.make("api.User"),
     }
 
 
