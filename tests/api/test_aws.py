@@ -1186,3 +1186,33 @@ def test_get_embed_url(quicksight_service):
         mock_user = Mock(email="user@email.com")
         url = quicksight_service.get_embed_url(mock_user)
         assert url == embedded_url
+
+
+@pytest.mark.parametrize(
+    "email, expected_forename, expected_surname",
+    [
+        ("Bob.Mort@justice.gov.uk", "Bob", "Mort"),
+        ("Carol.Vor@justice.gov.uk", "Carol", "Vor"),
+        ("Ronnie.Hotdogs4@justice.gov.uk", "Ronnie", "Hotdogs"),
+        ("Ci.Ca@cica.justice.gov.uk", "Ci", "Ca"),
+    ],
+)
+def test_get_name_from_email(email, expected_forename, expected_surname):
+    forename, surname = aws.AWSIdentityStore().get_name_from_email(email)
+
+    assert forename == expected_forename
+    assert surname == expected_surname
+
+
+@pytest.mark.parametrize(
+    "email",
+    [
+        ("Bob-Mort@justice.gov.uk"),
+        ("Carol.Vor@digital.justice.gov.uk"),
+        ("Ronnie.Hotdogs4@gmail.com"),
+    ],
+)
+def test_get_name_from_email_fail(email):
+
+    with pytest.raises(ValueError):
+        aws.AWSIdentityStore().get_name_from_email(email)

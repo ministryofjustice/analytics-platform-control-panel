@@ -1496,7 +1496,7 @@ class AWSIdentityStore(AWSService):
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
             log.info(error.response["Error"]["Message"])
-            raise None
+            return None
 
     def get_name_from_email(self, user_email):
         """
@@ -1504,7 +1504,14 @@ class AWSIdentityStore(AWSService):
         (can be an email, forename only or handle)
         """
 
-        name = user_email.split("@")[0]
+        name, address = user_email.split("@")
+
+        if address not in settings.JUSTICE_EMAIL_DOMAINS:
+            raise ValueError("Expecting justice email")
+
+        if "." not in name:
+            raise ValueError("Expecting forename.surname from justice email")
+
         forename, surname = name.split(".")
         surname = "".join((c for c in surname if not c.isdigit()))
         return forename, surname
@@ -1573,7 +1580,7 @@ class AWSIdentityStore(AWSService):
             message = (
                 "Cannot create an Identity Center user without an associated @justice.gov.uk email"
             )
-            log.exception(message)
+            log.error(message)
             raise Exception(message)
 
         self.create_user(justice_email)
