@@ -30,7 +30,7 @@ class TestEntraIdAuthView:
         oauth.azure.authorize_access_token.return_value = {
             "userinfo": {"email": "email@example.com", "oid": "12345678"},
         }
-        user = users["normal_user"]
+        user = users["no_justice_user"]
         assert user.justice_email is None
 
         client.force_login(user)
@@ -44,7 +44,7 @@ class TestEntraIdAuthView:
     @patch("controlpanel.frontend.views.auth.oauth")
     def test_failure(self, oauth, client, users):
         oauth.azure.authorize_access_token.side_effect = OAuthError()
-        user = users["normal_user"]
+        user = users["no_justice_user"]
         assert user.justice_email is None
 
         client.force_login(user)

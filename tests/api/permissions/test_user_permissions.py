@@ -44,7 +44,7 @@ def user_create(client, users):
 def user_update(client, users):
     data = {
         "username": "foo",
-        "auth0_id": "github|888",
+        "auth0_id": users["other_user"].auth0_id,
         "email": "foo@example.com",
         "is_admin": True,
     }
@@ -56,7 +56,7 @@ def user_update(client, users):
 
 
 def user_update_self(client, users):
-    data = {"username": "foo", "auth0_id": "github|888"}
+    data = {"username": "foo", "auth0_id": users["normal_user"].auth0_id}
     return client.put(
         reverse("user-detail", (users["normal_user"].auth0_id,)),
         json.dumps(data),

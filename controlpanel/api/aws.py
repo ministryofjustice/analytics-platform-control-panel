@@ -1425,3 +1425,164 @@ class AWSGlue(AWSService):
             raise error
 
         return response
+
+
+class AWSSSOAdmin(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name)
+        region = region_name or settings.AWS_DEFAULT_REGION
+        self.client = self.boto3_session.client("sso-admin", region_name=region)
+        self.identity_store_id = None
+
+    def get_identity_store_id(self):
+
+        if self.identity_store_id:
+            return self.identity_store_id
+
+        response = self.client.list_instances()
+        self.identity_store_id = response["Instances"][0]["IdentityStoreId"]
+        return self.identity_store_id
+
+
+class AWSIdentityStore(AWSService):
+
+    def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        super().__init__(assume_role_name, profile_name, region_name)
+        region = region_name or settings.AWS_DEFAULT_REGION
+        self.client = self.boto3_session.client("identitystore", region_name=region)
+        self.sso_client = AWSSSOAdmin(
+            assume_role_name=assume_role_name, profile_name=profile_name, region_name=region_name
+        )
+
+    def get_user_id(self, user_email):
+        try:
+            response = self.client.get_user_id(
+                IdentityStoreId=self.sso_client.get_identity_store_id(),
+                AlternateIdentifier={
+                    "UniqueAttribute": {"AttributePath": "userName", "AttributeValue": user_email}
+                },
+            )
+
+            return response["UserId"]
+        except self.client.exceptions.ResourceNotFoundException:
+            return None
+
+    def get_group_id(self, group_name):
+        try:
+            response = self.client.get_group_id(
+                IdentityStoreId=self.sso_client.get_identity_store_id(),
+                AlternateIdentifier={
+                    "UniqueAttribute": {
+                        "AttributePath": "displayName",
+                        "AttributeValue": group_name,
+                    }
+                },
+            )
+
+            return response["GroupId"]
+        except self.client.exceptions.ResourceNotFoundException as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+    def get_group_membership_id(self, group_name, user_email):
+        try:
+            response = self.client.get_group_membership_id(
+                IdentityStoreId=self.sso_client.get_identity_store_id(),
+                GroupId=self.get_group_id(group_name),
+                MemberId={"UserId": self.get_user_id(user_email)},
+            )
+
+            return response["MembershipId"]
+        except self.client.exceptions.ResourceNotFoundException as error:
+            log.info(error.response["Error"]["Message"])
+            return None
+
+    def get_name_from_email(self, user_email):
+        """
+        gets name from justice email as user.name is not guaranteed to be a name
+        (can be an email, forename only or handle)
+        """
+
+        name, address = user_email.split("@")
+
+        if address not in settings.JUSTICE_EMAIL_DOMAINS:
+            raise ValueError("Expecting justice email")
+
+        if "." not in name:
+            raise ValueError("Expecting forename.surname from justice email")
+
+        forename, surname = name.split(".")
+        surname = "".join((c for c in surname if not c.isdigit()))
+        return forename, surname
+
+    def create_user(self, user_email):
+
+        if self.get_user_id(user_email):
+            log.debug("User already exists in Identity Store.")
+            return
+
+        try:
+            forename, surname = self.get_name_from_email(user_email)
+
+            self.client.create_user(
+                IdentityStoreId=self.sso_client.get_identity_store_id(),
+                UserName=user_email,
+                DisplayName=user_email,
+                Name={
+                    "FamilyName": surname,
+                    "GivenName": forename,
+                },
+                Emails=[{"Value": user_email, "Type": "EntraId", "Primary": True}],
+            )
+        except Exception as error:
+            log.exception(error)
+            raise error
+
+    def create_group_membership(self, group_name, user_email):
+
+        try:
+            membership_id = self.get_group_membership_id(group_name, user_email)
+
+            if membership_id is not None:
+                log.debug("User is already a member of this group. Skipping")
+                return
+
+            response = self.client.create_group_membership(
+                IdentityStoreId=self.sso_client.get_identity_store_id(),
+                GroupId=self.get_group_id(group_name),
+                MemberId={"UserId": self.get_user_id(user_email)},
+            )
+
+            return response
+        except Exception as error:
+            log.exception(error)
+            raise error
+
+    def delete_group_membership(self, group_name, user_email):
+        try:
+            membership_id = self.get_group_membership_id(group_name, user_email)
+
+            if membership_id is None:
+                log.debug("User is not a member of this group. Skipping")
+                return
+
+            self.client.delete_group_membership(
+                IdentityStoreId=self.sso_client.get_identity_store_id(),
+                MembershipId=membership_id,
+            )
+        except Exception as error:
+            log.exception(error.response["Error"]["Message"])
+            raise error
+
+    def add_user_to_group(self, justice_email, quicksight_group):
+        if not justice_email:
+            message = (
+                "Cannot create an Identity Center user without an associated @justice.gov.uk email"
+            )
+            log.error(message)
+            raise Exception(message)
+
+        self.create_user(justice_email)
+        self.create_group_membership(quicksight_group, justice_email)
+        self.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)

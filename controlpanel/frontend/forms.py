@@ -3,6 +3,7 @@ import re
 
 # Third-party
 from django import forms
+from django.conf import settings
 from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
@@ -10,11 +11,13 @@ from django.core.validators import RegexValidator, validate_email
 
 # First-party/Local
 from controlpanel.api import validators
+from controlpanel.api.aws import AWSIdentityStore
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
 from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
 from controlpanel.api.models import (
-    QUICKSIGHT_EMBED_PERMISSION,
+    QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
+    QUICKSIGHT_EMBED_READER_PERMISSION,
     App,
     Feedback,
     S3Bucket,
@@ -636,16 +639,29 @@ class CreateParameterForm(forms.Form):
 
 class QuicksightAccessForm(forms.Form):
     QUICKSIGHT_LEGACY = "quicksight_legacy"
-    QUICKSIGHT_COMPUTE = "quicksight_compute"
+    QUICKSIGHT_COMPUTE_AUTHOR = "quicksight_compute_author"
+    QUICKSIGHT_COMPUTE_READER = "quicksight_compute_reader"
 
     enable_quicksight = forms.MultipleChoiceField(
         choices=[
             (QUICKSIGHT_LEGACY, "Legacy"),
-            (QUICKSIGHT_COMPUTE, "Compute"),
+            (QUICKSIGHT_COMPUTE_AUTHOR, "Author"),
+            (QUICKSIGHT_COMPUTE_READER, "Reader"),
         ],
         widget=forms.CheckboxSelectMultiple,
         required=False,
     )
+
+    quicksight_config_data = {
+        QUICKSIGHT_COMPUTE_AUTHOR: {
+            "codename": QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
+            "group": settings.QUICKSIGHT_AUTHOR_GROUP_NAME,
+        },
+        QUICKSIGHT_COMPUTE_READER: {
+            "codename": QUICKSIGHT_EMBED_READER_PERMISSION,
+            "group": settings.QUICKSIGHT_READER_GROUP_NAME,
+        },
+    }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
@@ -655,11 +671,28 @@ class QuicksightAccessForm(forms.Form):
         quicksight_access = self.cleaned_data["enable_quicksight"]
         self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
 
-        permission = Permission.objects.get(codename=QUICKSIGHT_EMBED_PERMISSION)
-        if self.QUICKSIGHT_COMPUTE in quicksight_access:
+        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
+        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
+
+    def set_quicksight_embed_access(self, permission_name, quicksight_access):
+        identity_store = AWSIdentityStore(
+            settings.IDENTITY_CENTER_ASSUMED_ROLE,
+            "APCPIdentityCenterAccess",
+            settings.IDENTITY_CENTER_ACCOUNT_REGION,
+        )
+        if self.user.is_superuser:
+            return
+
+        codename = self.quicksight_config_data.get(permission_name)["codename"]
+        group = self.quicksight_config_data.get(permission_name)["group"]
+        permission = Permission.objects.get(codename=codename)
+
+        if permission_name in quicksight_access and not self.user.has_perm(f"api.{codename}"):
             self.user.user_permissions.add(permission)
-        else:
+            identity_store.add_user_to_group(self.user.justice_email, group)
+        elif self.user.has_perm(f"api.{codename}"):
             self.user.user_permissions.remove(permission)
+            identity_store.delete_group_membership(self.user.justice_email, group)
 
 
 class FeedbackForm(forms.ModelForm):

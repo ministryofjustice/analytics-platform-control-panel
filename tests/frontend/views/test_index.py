@@ -42,9 +42,9 @@ class TestAccess:
 
 class TestGetAsSuperuser:
 
-    def test_without_justice_email(self, client, superuser):
-        client.force_login(superuser)
-        assert superuser.justice_email is None
+    def test_without_justice_email(self, client, no_justice_superuser):
+        client.force_login(no_justice_superuser)
+        assert no_justice_superuser.justice_email is None
 
         response = client.get("/")
 
@@ -52,8 +52,6 @@ class TestGetAsSuperuser:
         assert response.template_name == ["justice_email.html"]
 
     def test_with_justice_email(self, client, superuser):
-        superuser.justice_email = "email@example.com"
-        superuser.save()
         client.force_login(superuser)
 
         response = client.get("/")
@@ -64,7 +62,7 @@ class TestGetAsSuperuser:
 
 class TestGetAsNormalUser:
     def test_without_justice_email(self, client, users):
-        user = users["normal_user"]
+        user = users["no_justice_user"]
         client.force_login(user)
         assert user.justice_email is None
 

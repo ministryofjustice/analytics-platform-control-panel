@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 
 # Third-party
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import Permission
 from django.forms import BaseModelForm
@@ -16,8 +17,9 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
+from controlpanel.api.aws import AWSIdentityStore
 from controlpanel.api.cluster import User as ClusterUser
-from controlpanel.api.models import User
+from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION, User
 from controlpanel.frontend import forms
 from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -98,6 +100,22 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=kwargs["pk"])
         is_superuser = "is_superuser" in request.POST
+
+        identity_store = AWSIdentityStore(
+            settings.IDENTITY_CENTER_ASSUMED_ROLE,
+            "APCPIdentityCenterAccess",
+            settings.IDENTITY_CENTER_ACCOUNT_REGION,
+        )
+
+        if is_superuser:
+            identity_store.add_user_to_group(
+                user.justice_email, settings.QUICKSIGHT_AUTHOR_GROUP_NAME
+            )
+        else:
+            identity_store.delete_group_membership(
+                user.justice_email, settings.QUICKSIGHT_AUTHOR_GROUP_NAME
+            )
+
         user.is_superuser = is_superuser
         user.is_staff = is_superuser
         user.save()

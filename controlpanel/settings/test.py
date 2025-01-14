@@ -34,8 +34,14 @@ USE_LOCAL_MESSAGE_BROKER = False
 
 QUICKSIGHT_ACCOUNT_ID = "123456789012"
 QUICKSIGHT_ACCOUNT_REGION = "eu-west-2"
-QUICKSIGHT_DOMAINS = "http://localhost:8000"
+QUICKSIGHT_DOMAINS = ["http://localhost:8000"]
 QUICKSIGHT_ASSUMED_ROLE = "arn:aws:iam::123456789012:role/quicksight_test"
+IDENTITY_CENTER_ASSUMED_ROLE = "arn:aws:iam::123456789012:role/identity_center_test"
+IDENTITY_CENTER_ACCOUNT_REGION = "eu-west-2"
+QUICKSIGHT_READER_GROUP_NAME = "test-reader-group"
+QUICKSIGHT_AUTHOR_GROUP_NAME = "test-author-group"
+QUICKSIGHT_ADMIN_GROUP_NAME = "test-admin-group"
+AZURE_HOLDING_GROUP_NAME = "test-holding-group"
 
 OIDC_CPANEL_API_AUDIENCE = "test-audience"
 
