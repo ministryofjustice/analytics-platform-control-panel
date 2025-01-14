@@ -688,11 +688,11 @@ class QuicksightAccessForm(forms.Form):
         permission = Permission.objects.get(codename=codename)
 
         if permission_name in quicksight_access and not self.user.has_perm(f"api.{codename}"):
-            self.user.user_permissions.add(permission)
             identity_store.add_user_to_group(self.user.justice_email, group)
+            self.user.user_permissions.add(permission)
         elif self.user.has_perm(f"api.{codename}"):
-            self.user.user_permissions.remove(permission)
             identity_store.delete_group_membership(self.user.justice_email, group)
+            self.user.user_permissions.remove(permission)
 
 
 class FeedbackForm(forms.ModelForm):
