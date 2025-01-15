@@ -150,7 +150,7 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
             messages.success(self.request, "Successfully updated Quicksight access")
         except Exception as e:
             log.error(f"Could not update QuickSight access - {e}")
-            messages.error(self.request, "Could not updated Quicksight access")
+            messages.error(self.request, "Could not update Quicksight access")
 
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
 
