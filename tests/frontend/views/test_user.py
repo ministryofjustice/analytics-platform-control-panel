@@ -235,7 +235,7 @@ def test_enable_quicksight_access_legacy(
         (
             "quicksight_compute_reader",
             {"enable_quicksight": ["quicksight_compute_reader"]},
-            ["Mock-Reader-Id", "Mock-Azure-Holding-Id"],
+            ["insert-membership-id", "Mock-Azure-Holding-Id"],
             ["quicksight_compute_reader", "azure_holding"],
             2,
         ),
@@ -263,6 +263,11 @@ def test_quicksight_form_add_to_groups(
 
     test_user = users[user]
     get_user_id.return_value = test_user.identity_center_id
+
+    for i in range(len(group_membership_calls)):
+        if group_membership_calls[i] == "insert-membership-id":
+            group_membership_calls[i] = test_user.group_membership_id
+
     get_group_membership_id.side_effect = group_membership_calls
 
     request_user = users["superuser"]
