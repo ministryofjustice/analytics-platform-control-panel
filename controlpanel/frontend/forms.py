@@ -690,7 +690,7 @@ class QuicksightAccessForm(forms.Form):
         if permission_name in quicksight_access and not self.user.has_perm(f"api.{codename}"):
             identity_store.add_user_to_group(self.user.justice_email, group)
             self.user.user_permissions.add(permission)
-        elif self.user.has_perm(f"api.{codename}"):
+        elif permission_name not in quicksight_access and self.user.has_perm(f"api.{codename}"):
             identity_store.delete_group_membership(self.user.justice_email, group)
             self.user.user_permissions.remove(permission)
 
