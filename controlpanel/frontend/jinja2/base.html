@@ -135,7 +135,7 @@
         "active": page_name == "parameters",
       },
       {
-        "hide": not request.user.has_perm("api.quicksight_embed_access"),
+        "hide": not request.user.has_perm("api.quicksight_embed_author_access") and not request.user.has_perm("api.quicksight_embed_reader_access"),
         "text": "QuickSight",
         "href": url("quicksight"),
         "active": page_name == "quicksight",

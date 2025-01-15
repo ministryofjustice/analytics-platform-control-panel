@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 
 # Third-party
+import structlog
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import Permission
@@ -23,6 +24,8 @@ from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION, User
 from controlpanel.frontend import forms
 from controlpanel.frontend.mixins import PolicyAccessMixin
 from controlpanel.oidc import OIDCLoginRequiredMixin
+
+log = structlog.getLogger(__name__)
 
 
 def ninety_days_ago():
@@ -142,8 +145,13 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
         return kwargs
 
     def form_valid(self, form):
-        form.grant_access()
-        messages.success(self.request, "Successfully updated Quicksight access")
+        try:
+            form.grant_access()
+            messages.success(self.request, "Successfully updated Quicksight access")
+        except Exception as e:
+            log.error(f"Could not update QuickSight access - {e}")
+            messages.error(self.request, "Could not update Quicksight access")
+
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
 
     def form_invalid(self, form):
