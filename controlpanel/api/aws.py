@@ -1465,7 +1465,8 @@ class AWSIdentityStore(AWSService):
             )
 
             return response["UserId"]
-        except self.client.exceptions.ResourceNotFoundException:
+        except self.client.exceptions.ResourceNotFoundException as error:
+            log.info(error.response["Error"]["Message"])
             return None
 
     def get_group_id(self, group_name):
@@ -1498,7 +1499,7 @@ class AWSIdentityStore(AWSService):
 
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.error(error.response["Error"]["Message"])
+            log.info(error.response["Error"]["Message"])
             return None
 
     def get_name_from_email(self, user_email):
@@ -1554,7 +1555,7 @@ class AWSIdentityStore(AWSService):
             membership_id = self.get_group_membership_id(group_name, user_email)
 
             if membership_id is not None:
-                log.debug("User is already a member of this group. Skipping")
+                log.info("User is already a member of this group. Skipping")
                 return
 
             response = self.client.create_group_membership(
@@ -1577,7 +1578,7 @@ class AWSIdentityStore(AWSService):
             membership_id = self.get_group_membership_id(group_name, user_email)
 
             if membership_id is None:
-                log.debug("User is not a member of this group. Skipping")
+                log.info("User is not a member of this group. Skipping")
                 return
 
             self.client.delete_group_membership(
