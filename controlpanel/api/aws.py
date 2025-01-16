@@ -1482,20 +1482,23 @@ class AWSIdentityStore(AWSService):
 
             return response["GroupId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.exception(error.response["Error"]["Message"])
+            log.error(error.response["Error"]["Message"])
             raise error
 
     def get_group_membership_id(self, group_name, user_email):
+        group_id = self.get_group_id(group_name)
+        user_id = self.get_user_id(user_email)
+
         try:
             response = self.client.get_group_membership_id(
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
-                GroupId=self.get_group_id(group_name),
-                MemberId={"UserId": self.get_user_id(user_email)},
+                GroupId=group_id,
+                MemberId={"UserId": user_id},
             )
 
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.info(error.response["Error"]["Message"])
+            log.error(error.response["Error"]["Message"])
             return None
 
     def get_name_from_email(self, user_email):
@@ -1535,11 +1538,17 @@ class AWSIdentityStore(AWSService):
                 },
                 Emails=[{"Value": user_email, "Type": "EntraId", "Primary": True}],
             )
+
+            log.info(f"User {user_email} created in Identity Center")
         except Exception as error:
-            log.exception(error)
+            log.error(error)
             raise error
 
-    def create_group_membership(self, group_name, user_email):
+    def create_group_membership(self, user_email, group_name):
+
+        log.info(f"Attempting to add {user_email} to group {group_name}")
+        group_id = self.get_group_id(group_name)
+        user_id = self.get_user_id(user_email)
 
         try:
             membership_id = self.get_group_membership_id(group_name, user_email)
@@ -1550,16 +1559,20 @@ class AWSIdentityStore(AWSService):
 
             response = self.client.create_group_membership(
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
-                GroupId=self.get_group_id(group_name),
-                MemberId={"UserId": self.get_user_id(user_email)},
+                GroupId=group_id,
+                MemberId={"UserId": user_id},
             )
 
+            log.info(f"User {user_email} added to group {group_name}")
             return response
         except Exception as error:
-            log.exception(error)
+            log.error(error)
             raise error
 
-    def delete_group_membership(self, group_name, user_email):
+    def delete_group_membership(self, user_email, group_name):
+
+        log.info(f"Attempting to remove {user_email} from group {group_name}")
+
         try:
             membership_id = self.get_group_membership_id(group_name, user_email)
 
@@ -1571,11 +1584,16 @@ class AWSIdentityStore(AWSService):
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
                 MembershipId=membership_id,
             )
+
+            log.info(f"User {user_email} removed from group {group_name}")
         except Exception as error:
-            log.exception(error.response["Error"]["Message"])
+            log.error(error.response["Error"]["Message"])
             raise error
 
     def add_user_to_group(self, justice_email, quicksight_group):
+
+        log.info(f"Attempting to add {justice_email} to azure and {quicksight_group} groups")
+
         if not justice_email:
             message = (
                 "Cannot create an Identity Center user without an associated @justice.gov.uk email"
@@ -1584,5 +1602,5 @@ class AWSIdentityStore(AWSService):
             raise Exception(message)
 
         self.create_user(justice_email)
-        self.create_group_membership(quicksight_group, justice_email)
-        self.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)
+        self.create_group_membership(justice_email, quicksight_group)
+        self.create_group_membership(justice_email, settings.AZURE_HOLDING_GROUP_NAME)
