@@ -1543,6 +1543,8 @@ class AWSIdentityStore(AWSService):
 
     def create_group_membership(self, group_name, user_email):
 
+        log.info(f"Attempting to add {user_email} to group {group_name}")
+
         try:
             membership_id = self.get_group_membership_id(group_name, user_email)
 
@@ -1563,6 +1565,9 @@ class AWSIdentityStore(AWSService):
             raise error
 
     def delete_group_membership(self, group_name, user_email):
+
+        log.info(f"Attempting to remove {user_email} from group {group_name}")
+
         try:
             membership_id = self.get_group_membership_id(group_name, user_email)
 
@@ -1581,6 +1586,9 @@ class AWSIdentityStore(AWSService):
             raise error
 
     def add_user_to_group(self, justice_email, quicksight_group):
+
+        log.info(f"Attempting to add {justice_email} to azure and {quicksight_group} groups")
+
         if not justice_email:
             message = (
                 "Cannot create an Identity Center user without an associated @justice.gov.uk email"
