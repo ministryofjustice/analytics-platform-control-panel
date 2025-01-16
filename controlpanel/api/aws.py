@@ -1483,14 +1483,17 @@ class AWSIdentityStore(AWSService):
             return response["GroupId"]
         except self.client.exceptions.ResourceNotFoundException as error:
             log.error(error.response["Error"]["Message"])
-            raise Exception(error.response["Error"]["Message"])
+            raise error
 
     def get_group_membership_id(self, group_name, user_email):
+        group_id = self.get_group_id(group_name)
+        user_id = self.get_user_id(user_email)
+
         try:
             response = self.client.get_group_membership_id(
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
-                GroupId=self.get_group_id(group_name),
-                MemberId={"UserId": self.get_user_id(user_email)},
+                GroupId=group_id,
+                MemberId={"UserId": user_id},
             )
 
             return response["MembershipId"]
@@ -1544,6 +1547,8 @@ class AWSIdentityStore(AWSService):
     def create_group_membership(self, group_name, user_email):
 
         log.info(f"Attempting to add {user_email} to group {group_name}")
+        group_id = self.get_group_id(group_name)
+        user_id = self.get_user_id(user_email)
 
         try:
             membership_id = self.get_group_membership_id(group_name, user_email)
@@ -1554,8 +1559,8 @@ class AWSIdentityStore(AWSService):
 
             response = self.client.create_group_membership(
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
-                GroupId=self.get_group_id(group_name),
-                MemberId={"UserId": self.get_user_id(user_email)},
+                GroupId=group_id,
+                MemberId={"UserId": user_id},
             )
 
             log.info(f"User {user_email} added to group {group_name}")
