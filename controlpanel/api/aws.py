@@ -1544,7 +1544,7 @@ class AWSIdentityStore(AWSService):
             log.error(error)
             raise error
 
-    def create_group_membership(self, group_name, user_email):
+    def create_group_membership(self, user_email, group_name):
 
         log.info(f"Attempting to add {user_email} to group {group_name}")
         group_id = self.get_group_id(group_name)
@@ -1569,7 +1569,7 @@ class AWSIdentityStore(AWSService):
             log.error(error)
             raise error
 
-    def delete_group_membership(self, group_name, user_email):
+    def delete_group_membership(self, user_email, group_name):
 
         log.info(f"Attempting to remove {user_email} from group {group_name}")
 
@@ -1602,5 +1602,5 @@ class AWSIdentityStore(AWSService):
             raise Exception(message)
 
         self.create_user(justice_email)
-        self.create_group_membership(quicksight_group, justice_email)
-        self.create_group_membership(settings.AZURE_HOLDING_GROUP_NAME, justice_email)
+        self.create_group_membership(justice_email, quicksight_group)
+        self.create_group_membership(justice_email, settings.AZURE_HOLDING_GROUP_NAME)
