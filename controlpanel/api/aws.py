@@ -1575,7 +1575,7 @@ class AWSIdentityStore(AWSService):
                 MembershipId=membership_id,
             )
 
-            log.info(f"User {user_email} removed to group {group_name}")
+            log.info(f"User {user_email} removed from group {group_name}")
         except Exception as error:
             log.error(error.response["Error"]["Message"])
             raise error
