@@ -1523,7 +1523,7 @@ class AWSIdentityStore(AWSService):
     def create_user(self, user_email):
 
         if self.get_user_id(user_email):
-            log.debug("User already exists in Identity Store.")
+            log.info(f"User {user_email} already exists in Identity Store.")
             return
 
         try:
