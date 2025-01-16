@@ -1482,8 +1482,8 @@ class AWSIdentityStore(AWSService):
 
             return response["GroupId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.exception(error.response["Error"]["Message"])
-            raise error
+            log.error(error.response["Error"]["Message"])
+            raise Exception(error.response["Error"]["Message"])
 
     def get_group_membership_id(self, group_name, user_email):
         try:
@@ -1495,7 +1495,7 @@ class AWSIdentityStore(AWSService):
 
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.info(error.response["Error"]["Message"])
+            log.error(error.response["Error"]["Message"])
             return None
 
     def get_name_from_email(self, user_email):
@@ -1535,8 +1535,10 @@ class AWSIdentityStore(AWSService):
                 },
                 Emails=[{"Value": user_email, "Type": "EntraId", "Primary": True}],
             )
+
+            log.info(f"User {user_email} created in Identity Center")
         except Exception as error:
-            log.exception(error)
+            log.error(error)
             raise error
 
     def create_group_membership(self, group_name, user_email):
@@ -1554,9 +1556,10 @@ class AWSIdentityStore(AWSService):
                 MemberId={"UserId": self.get_user_id(user_email)},
             )
 
+            log.info(f"User {user_email} added to group {group_name}")
             return response
         except Exception as error:
-            log.exception(error)
+            log.error(error)
             raise error
 
     def delete_group_membership(self, group_name, user_email):
@@ -1571,8 +1574,10 @@ class AWSIdentityStore(AWSService):
                 IdentityStoreId=self.sso_client.get_identity_store_id(),
                 MembershipId=membership_id,
             )
+
+            log.info(f"User {user_email} removed to group {group_name}")
         except Exception as error:
-            log.exception(error.response["Error"]["Message"])
+            log.error(error.response["Error"]["Message"])
             raise error
 
     def add_user_to_group(self, justice_email, quicksight_group):
