@@ -198,7 +198,7 @@ OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
 OIDC_STORE_ID_TOKEN = True
 
-JUSTICE_EMAIL_DOMAINS = ["justice.gov.uk", "cica.justice.gov.uk"]
+JUSTICE_EMAIL_DOMAINS = [email for email in os.environ.get("JUSTICE_EMAIL_DOMAINS").split(",")]
 
 # Auth0
 AUTH0 = {
