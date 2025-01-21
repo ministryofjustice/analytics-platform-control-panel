@@ -163,16 +163,18 @@ class User(AbstractUser):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
     def set_bedrock_access(self):
-        return cluster.User(self).update_policy_attachment(
-            policy=cluster.BEDROCK_POLICY_NAME,
-            attach=self.is_bedrock_enabled,
-        )
+        if self.is_github_user:
+            return cluster.User(self).update_policy_attachment(
+                policy=cluster.BEDROCK_POLICY_NAME,
+                attach=self.is_bedrock_enabled,
+            )
 
     def set_quicksight_access(self, enable):
-        return cluster.User(self).update_policy_attachment(
-            policy=cluster.User.QUICKSIGHT_POLICY_NAME,
-            attach=enable,
-        )
+        if self.is_github_user:
+            return cluster.User(self).update_policy_attachment(
+                policy=cluster.User.QUICKSIGHT_POLICY_NAME,
+                attach=enable,
+            )
 
     def save(self, *args, **kwargs):
         existing = User.objects.filter(pk=self.pk).first()
