@@ -31,10 +31,12 @@ def test_success_url(users, email, success_url):
 @pytest.mark.parametrize(
     "email, name, expected_name, expected_justice_email",
     [
-        ("email@exmaple.com", "User, Test", "Test User", None),
-        ("email@exmaple.com", "Test User", "Test User", None),
+        ("email@example.com", "User, Test", "Test User", None),
+        ("email@example.com", "Test User", "Test User", None),
         ("email@justice.gov.uk", "User, Test", "Test User", "email@justice.gov.uk"),
         ("email@justice.gov.uk", "Test User", "Test User", "email@justice.gov.uk"),
+        ("email@cica.gov.uk", "Test User", "Test User", "email@cica.gov.uk"),
+        ("email@CICA.GOV.UK", "Test User", "Test User", "email@CICA.GOV.UK"),
     ],
 )
 def test_create_user(email, name, expected_name, expected_justice_email):
@@ -49,3 +51,17 @@ def test_create_user(email, name, expected_name, expected_justice_email):
         )
         assert user.name == expected_name
         assert user.justice_email == expected_justice_email
+
+
+@pytest.mark.parametrize(
+    "email, expected",
+    [
+        ("email@example.com", None),
+        ("email@justice.gov.uk", "email@justice.gov.uk"),
+        ("email@JUSTICE.GOV.UK", "email@JUSTICE.GOV.UK"),
+        ("email@cica.gov.uk", "email@cica.gov.uk"),
+        ("email@CICA.GOV.UK", "email@CICA.GOV.UK"),
+    ],
+)
+def test_get_justice_email(email, expected):
+    assert OIDCSubAuthenticationBackend().get_justice_email(email) == expected

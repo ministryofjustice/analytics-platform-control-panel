@@ -1510,7 +1510,7 @@ class AWSIdentityStore(AWSService):
 
         name, address = user_email.split("@")
 
-        if address not in settings.JUSTICE_EMAIL_DOMAINS:
+        if address.lower() not in settings.JUSTICE_EMAIL_DOMAINS:
             raise ValueError("Expecting justice email")
 
         if "." not in name:
