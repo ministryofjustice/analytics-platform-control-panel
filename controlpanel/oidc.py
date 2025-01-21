@@ -33,11 +33,8 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             "username": claims.get(settings.OIDC_FIELD_USERNAME),
             "email": claims.get(settings.OIDC_FIELD_EMAIL),
             "name": self.normalise_name(claims.get(settings.OIDC_FIELD_NAME)),
+            "justice_email": self.get_justice_email(claims.get(settings.OIDC_FIELD_EMAIL)),
         }
-        email_domain = user_details["email"].split("@")[-1]
-        if email_domain in settings.JUSTICE_EMAIL_DOMAINS:
-            user_details["justice_email"] = user_details["email"]
-
         return User.objects.create(**user_details)
 
     def normalise_name(self, name):
@@ -48,6 +45,15 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             parts = [part.strip() for part in name.split(",")]
             name = " ".join(reversed(parts))
         return name
+
+    def get_justice_email(self, email):
+        """
+        Check if the email uses a justice domain and return it if it does, otherwise return None
+        """
+        email_domain = email.split("@")[-1].lower()
+        if email_domain in settings.JUSTICE_EMAIL_DOMAINS:
+            return email
+        return None
 
     def update_user(self, user, claims):
         # Update the non-key information to sync the user's info
