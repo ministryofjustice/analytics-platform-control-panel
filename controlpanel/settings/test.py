@@ -46,3 +46,5 @@ AZURE_HOLDING_GROUP_NAME = "test-holding-group"
 OIDC_CPANEL_API_AUDIENCE = "test-audience"
 
 FEEDBACK_BUCKET_NAME = "test-feedback-bucket"
+
+JUSTICE_EMAIL_DOMAINS = ["cica.gov.uk", "justice.gov.uk"]
