@@ -102,50 +102,26 @@ def test_tool_deploy_with_previous_deployment(users, tools, update_tool_status):
 def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
     user = User.objects.first()
     tool = Tool.objects.first()
+    tool_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=True)
     id_token = "secret user id_token"
 
-    with patch("controlpanel.frontend.consumers.ToolDeployment") as tool_deploy_mock:
-        tool_deployment = Mock()
-        tool_deploy_mock.return_value = tool_deployment
-
+    with patch.object(ToolDeployment, "restart") as restart_mock:
         consumer = consumers.BackgroundTaskConsumer()
         consumer.tool_restart(
             message={
+                "tool_deployment_id": tool_deployment.id,
                 "user_id": user.auth0_id,
-                "tool_name": tool.chart_name,
                 "id_token": id_token,
-                "tool_id": tool.id,
             }
         )
 
-        # 1. Instanciate `ToolDeployment` correctly
-        tool_deploy_mock.assert_called_with(tool, user)
-        # 2. Send status update
         update_tool_status.assert_called_with(
             tool_deployment,
-            id_token,
             TOOL_RESTARTING,
         )
-        # 3. Call restart() on ToolDeployment (trigger deployment)
-        tool_deployment.restart.assert_called_with(id_token=id_token)
-        # 4. Wait for deployment to complete
+        restart_mock.assert_called_with(id_token=id_token)
+
         wait_for_deployment.assert_called_with(tool_deployment, id_token)
-
-
-def test_get_tool_and_user(users, tools):
-    expected_user = User.objects.first()
-    expected_tool = Tool.objects.first()
-    message = {
-        "user_id": expected_user.auth0_id,
-        "tool_name": expected_tool.chart_name,
-        "id_token": "not used by this method",
-        "tool_id": expected_tool.id,
-    }
-
-    consumer = consumers.BackgroundTaskConsumer()
-    tool, user = consumer.get_tool_and_user(message)
-    assert expected_user == user
-    assert expected_tool == tool
 
 
 def test_get_home_reset(users, update_home_status, wait_for_home_reset):

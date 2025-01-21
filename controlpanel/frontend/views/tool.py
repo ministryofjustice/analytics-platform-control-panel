@@ -134,8 +134,7 @@ class RestartTool(OIDCLoginRequiredMixin, RedirectView):
         start_background_task(
             "tool.restart",
             {
-                "tool_name": name,
-                "tool_id": self.kwargs["tool_id"],
+                "tool_deployment_id": self.kwargs["tool_id"],
                 "user_id": self.request.user.id,
                 "id_token": self.request.user.get_id_token(),
             },

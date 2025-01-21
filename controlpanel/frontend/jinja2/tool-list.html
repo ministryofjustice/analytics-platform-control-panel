@@ -65,7 +65,7 @@
 
     <form
       {% if tool_form.deployment %}
-      action="{{ url('restart-tool', kwargs={'name': tool_form.deployment.tool.chart_name, 'tool_id': tool_form.deployment.tool.id }) }}"
+      action="{{ url('restart-tool', kwargs={'name': tool_form.deployment.tool.chart_name, 'tool_id': tool_form.deployment.id }) }}"
       {% endif %}
       data-action-name="restart"
       method="post"

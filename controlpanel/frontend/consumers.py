@@ -188,28 +188,19 @@ class BackgroundTaskConsumer(SyncConsumer):
         """
         Restart the named tool for the specified user
         """
-        tool, user = self.get_tool_and_user(message)
-        id_token = message["id_token"]
+        tool_deployment = ToolDeployment.objects.active().get(
+            id=message["tool_deployment_id"],
+            user=message["user_id"],
+        )
 
-        # TODO this will need updating
-        tool_deployment = ToolDeployment(tool, user)
         update_tool_status(tool_deployment, TOOL_RESTARTING)
-
-        tool_deployment.restart(id_token=id_token)
-
-        status = wait_for_deployment(tool_deployment, id_token)
+        tool_deployment.restart(id_token=message["id_token"])
+        status = wait_for_deployment(tool_deployment, message["id_token"])
 
         if status == TOOL_DEPLOY_FAILED:
-            log.warning(f"Failed restarting {tool.name} for {user}")
+            log.warning(f"Failed restarting {tool_deployment.tool.name} for {tool_deployment.user}")
         else:
-            log.debug(f"Restarted {tool.name} for {user}")
-
-    def get_tool_and_user(self, message):
-        tool = Tool.objects.get(is_retired=False, pk=message["tool_id"])
-        if not tool:
-            raise Exception(f"no Tool record found for query {message['tool_id']}")
-        user = User.objects.get(auth0_id=message["user_id"])
-        return tool, user
+            log.debug(f"Restarted {tool_deployment.tool.name} for {tool_deployment.user}")
 
     def home_reset(self, message):
         """
