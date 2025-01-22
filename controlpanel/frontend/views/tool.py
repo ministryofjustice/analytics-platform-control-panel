@@ -5,16 +5,16 @@ from urllib.parse import urlencode
 import structlog
 from django.conf import settings
 from django.contrib import messages
-from django.db.models import Q
+from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import TemplateView
-from django.views.generic.base import RedirectView
-from django.views.generic.list import ListView
+from django.views.generic.edit import FormMixin, ProcessFormView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api.models import Tool, ToolDeployment
-from controlpanel.frontend.forms import ToolDeploymentForm
+from controlpanel.frontend.forms import ToolDeploymentForm, ToolDeploymentRestartForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
 from controlpanel.utils import start_background_task
 
@@ -116,32 +116,29 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         return f"{settings.AWS_SERVICE_URL}/?{args}"
 
 
-class RestartTool(OIDCLoginRequiredMixin, RedirectView):
+class RestartTool(OIDCLoginRequiredMixin, FormMixin, ProcessFormView):
     http_method_names = ["post"]
-    url = reverse_lazy("list-tools")
+    success_url = reverse_lazy("list-tools")
+    form_class = ToolDeploymentRestartForm
 
-    def get_redirect_url(self, *args, **kwargs):
-        """
-        So backwards, it's forwards.
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
 
-        The "name" of the chart to restart is set in the template for
-        list-tools, if there's a live deployment.
+    def form_invalid(self, form):
+        messages.error(self.request, "Something went wrong, please try again.")
+        return HttpResponseRedirect(self.get_success_url())
 
-        That's numberwang.
-        """
-        name = self.kwargs["name"]
-
+    def form_valid(self, form):
+        tool_deployment = form.cleaned_data["tool_deployment"]
         start_background_task(
             "tool.restart",
             {
-                "tool_deployment_id": self.kwargs["tool_id"],
-                "user_id": self.request.user.id,
+                "tool_deployment_id": tool_deployment.id,
+                "user_id": self.request.user.auth0_id,
                 "id_token": self.request.user.get_id_token(),
             },
         )
-
-        messages.success(
-            self.request,
-            f"Restarting {name}...",
-        )
-        return super().get_redirect_url(*args, **kwargs)
+        messages.success(self.request, f"Restarting {tool_deployment.tool.name}...")
+        return super().form_valid(form)

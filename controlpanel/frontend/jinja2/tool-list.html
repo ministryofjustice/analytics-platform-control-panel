@@ -65,13 +65,14 @@
 
     <form
       {% if tool_form.deployment %}
-      action="{{ url('restart-tool', kwargs={'name': tool_form.deployment.tool.chart_name, 'tool_id': tool_form.deployment.id }) }}"
+      action="{{ url('restart-tool')}}"
       {% endif %}
       data-action-name="restart"
       method="post"
       style="display: inline;"
       >
       {{ csrf_input }}
+      <input type="hidden" name="tool_deployment" value="{{ tool_form.deployment.id }}">
       <button class="govuk-button govuk-button--secondary govuk-!-margin-right-1 govuk-!-margin-top-0 tool-action"
         data-action-name="restart"
         id="restart-{{ tool_form.tool_type }}"

@@ -4,7 +4,6 @@ import re
 # Third-party
 from django import forms
 from django.conf import settings
-from django.db.models import Q
 from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
@@ -768,3 +767,12 @@ class ToolDeploymentForm(forms.Form):
     @property
     def tool_type_label(self):
         return ToolDeployment.ToolType(self.tool_type).label
+
+
+class ToolDeploymentRestartForm(forms.Form):
+    tool_deployment = forms.ModelChoiceField(queryset=ToolDeployment.objects.none())
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+        self.fields["tool_deployment"].queryset = self.user.tool_deployments.active()
