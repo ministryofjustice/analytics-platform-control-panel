@@ -5,11 +5,8 @@ from urllib.parse import urlencode
 import structlog
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponseRedirect
 from django.urls import reverse_lazy
-from django.views import View
-from django.views.generic import TemplateView
-from django.views.generic.edit import FormMixin, ProcessFormView
+from django.views.generic import RedirectView, TemplateView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
@@ -116,21 +113,18 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         return f"{settings.AWS_SERVICE_URL}/?{args}"
 
 
-class RestartTool(OIDCLoginRequiredMixin, FormMixin, ProcessFormView):
-    http_method_names = ["post"]
-    success_url = reverse_lazy("list-tools")
-    form_class = ToolDeploymentRestartForm
+class RestartTool(OIDCLoginRequiredMixin, RedirectView):
+    url = reverse_lazy("list-tools")
 
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
-        return kwargs
+    def post(self, request, *args, **kwargs):
+        form = ToolDeploymentRestartForm(data=request.POST, user=request.user)
+        if not form.is_valid():
+            messages.error(
+                request,
+                "Something went wrong, please try again. If the issue persists please contact support.",  # noqa
+            )
+            return self.get(request, *args, **kwargs)
 
-    def form_invalid(self, form):
-        messages.error(self.request, "Something went wrong, please try again.")
-        return HttpResponseRedirect(self.get_success_url())
-
-    def form_valid(self, form):
         tool_deployment = form.cleaned_data["tool_deployment"]
         start_background_task(
             "tool.restart",
@@ -141,4 +135,4 @@ class RestartTool(OIDCLoginRequiredMixin, FormMixin, ProcessFormView):
             },
         )
         messages.success(self.request, f"Restarting {tool_deployment.tool.name}...")
-        return super().form_valid(form)
+        return self.get(request, *args, **kwargs)
