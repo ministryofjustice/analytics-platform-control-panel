@@ -599,6 +599,43 @@ class AWSRole(AWSService):
                 return []
             raise e
 
+    def update_assume_role_policy(self, iam_role_name, assume_role_policy):
+
+        iam = self.boto3_session.client("iam")
+        try:
+            iam.update_assume_role_policy(
+                RoleName=iam_role_name, PolicyDocument=json.dumps(assume_role_policy)
+            )
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{iam_role_name}' doesn't exist")
+                return []
+            raise e
+
+    def add_inline_policy(self, iam_role_name, policy_name, policy):
+
+        iam = self.boto3_session.client("iam")
+        try:
+            iam.put_role_policy(
+                RoleName=iam_role_name, PolicyName=policy_name, PolicyDocument=json.dumps(policy)
+            )
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Role '{iam_role_name}' doesn't exist")
+                return []
+            raise e
+
+    def delete_inline_policy(self, iam_role_name, policy_name):
+
+        iam = self.boto3_session.client("iam")
+        try:
+            iam.delete_role_policy(RoleName=iam_role_name, PolicyName=policy_name)
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                log.warning(f"Policy '{policy_name}' doesn't exist")
+                return []
+            raise e
+
 
 class AWSFolder(AWSService):
     @staticmethod

@@ -234,6 +234,30 @@ class CreateAppForm(forms.Form):
         return namespace
 
 
+class CloudPlatformArnForm(forms.Form):
+    allow_cloud_platform_assume_role = forms.BooleanField(initial=False, required=False)
+    cloud_platform_role_arn = forms.CharField(
+        required=False, max_length=130, validators=[validators.validate_aws_role_arn]
+    )
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        assume_role = cleaned_data.get("allow_cloud_platform_assume_role")
+        role_arn = cleaned_data.get("cloud_platform_role_arn")
+
+        if assume_role and not role_arn:
+            self.add_error("cloud_platform_role_arn", "Role ARN is required")
+
+        if not assume_role and role_arn:
+            cleaned_data.pop("cloud_platform_role_arn")
+
+        return cleaned_data
+
+
 class UpdateAppAuth0ConnectionsForm(AppAuth0Form):
     env_name = forms.CharField(widget=forms.HiddenInput)
 

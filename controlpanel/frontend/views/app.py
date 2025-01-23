@@ -11,6 +11,7 @@ from auth0.rest import Auth0Error
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.postgres.aggregates import StringAgg
+from django.db import transaction
 from django.db.models import F, Prefetch
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse, HttpResponseRedirect
@@ -39,6 +40,7 @@ from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.api.serializers import AppAuthSettingsSerializer
 from controlpanel.frontend.forms import (
     AddAppCustomersForm,
+    CloudPlatformArnForm,
     CreateAppForm,
     GrantAppAccessForm,
     RemoveCustomerByEmailForm,
@@ -149,6 +151,11 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
             user=self.request.user,
         )
 
+        errors = self.request.session.pop("cloud_form_errors", None)
+        cloud_form = CloudPlatformArnForm()
+        cloud_form._errors = errors
+        context["cloud_platform_access_form"] = cloud_form
+
         # If auth settings not returned, all envs marked redundant in the serializer.
         # Should hide them instead?
         auth_settings, access_repo_error_msg, github_settings_access_error_msg = (
@@ -164,6 +171,10 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context["app_log_urls"] = {}
         for env_name in context["deployments_settings"].keys():
             context["app_log_urls"].update({env_name: app.get_logs_url(env=env_name)})
+
+        context["show_cloud_platform_assume_role"] = (
+            settings.features.cloud_platform_assume_role.enabled
+        )
 
         return context
 
@@ -360,6 +371,46 @@ class EnableTextractApp(PolicyAccessMixin, UpdateView):
     fields = ["is_textract_enabled"]
     success_message = "Successfully updated textract status"
     method_name = "set_textract_access"
+
+
+class UpdateCloudPlatformRoleArn(
+    OIDCLoginRequiredMixin,
+    PermissionRequiredMixin,
+    UpdateView,
+):
+    form_class = CloudPlatformArnForm
+    model = App
+    permission_required = "api.add_cloud_platform_arn"
+
+    def get_form_kwargs(self):
+        kwargs = FormMixin.get_form_kwargs(self)
+        return kwargs
+
+    def get_success_url(self):
+        return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
+
+    def form_valid(self, form):
+        try:
+            with transaction.atomic():
+                app = self.get_object()
+                app.cloud_platform_role_arn = form.cleaned_data.get("cloud_platform_role_arn")
+                app.save()
+                app.update_cloud_platform_access()
+                messages.success(self.request, "Successfully updated cloud platform ARN")
+                return HttpResponseRedirect(self.get_success_url())
+
+        except Exception as e:
+            log.info(f"failed to add cloud platform ARN - {e}")
+            messages.error(
+                self.request,
+                "Failed to add cloud platform ARN. If this persists, please raise a support ticket",
+            )
+            return HttpResponseRedirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Failed to update Cloud Platform role ARN")
+        self.request.session["cloud_form_errors"] = form.errors
+        return HttpResponseRedirect(self.get_success_url())
 
 
 class RevokeAppAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):

@@ -1,6 +1,7 @@
 # Standard library
 import json
 import uuid
+from copy import deepcopy
 
 # Third-party
 from auth0.exceptions import Auth0Error
@@ -17,6 +18,20 @@ from django_extensions.db.models import TimeStampedModel
 from controlpanel.api import auth0, cluster, tasks
 from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
+
+BASE_CLOUD_PLATFORM_ASSUME_ROLE_POLICY = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "CloudPlatformAccess",
+            "Action": [
+                "sts:AssumeRole",
+            ],
+            "Effect": "Allow",
+            "Resource": "",
+        },
+    ],
+}
 
 
 class App(TimeStampedModel):
@@ -287,6 +302,18 @@ class App(TimeStampedModel):
             policy=cluster.TEXTRACT_POLICY_NAME,
             attach=self.is_textract_enabled,
         )
+
+    def update_cloud_platform_access(self):
+        cluster.App(self).update_trust_policy()
+
+        policy_name = f"cloud-platform-access-{self.slug}"
+
+        if self.cloud_platform_role_arn:
+            inline_policy = deepcopy(BASE_CLOUD_PLATFORM_ASSUME_ROLE_POLICY)
+            inline_policy["Statement"][0]["Resource"] = self.cloud_platform_role_arn
+            cluster.App(self).add_inline_policy(policy_name, inline_policy)
+        else:
+            cluster.App(self).delete_inline_policy(policy_name)
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY

@@ -513,19 +513,39 @@ class App(EntityResource):
         )
         return json.loads(statement)
 
-    def create_iam_role(self):
-        statement = self._get_statement()
+    def _generate_assume_role_policy(self):
+        oidc_statement, xaact_statement = self._get_statement()
         assume_role_policy = deepcopy(BASE_ASSUME_ROLE_POLICY)
-        assume_role_policy["Statement"].append(statement)
+        assume_role_policy["Statement"].append(oidc_statement)
+        if xaact_statement:
+            assume_role_policy["Statement"].append(xaact_statement)
+
+        return assume_role_policy
+
+    def create_iam_role(self):
+        assume_role_policy = self._generate_assume_role_policy()
+
         self.aws_role_service.create_role(self.iam_role_name, assume_role_policy)
         for env in self.get_deployment_envs():
             self._create_secrets(env_name=env)
 
     def _get_statement(self):
-        if self.app.cloud_platform_role_arn:
-            return self.xacct_trust_statement
+        cloud_platform_statement = (
+            self.xacct_trust_statement if self.app.cloud_platform_role_arn else None
+        )
 
-        return self.oidc_provider_statement
+        return self.oidc_provider_statement, cloud_platform_statement
+
+    def update_trust_policy(self):
+        assume_role_policy = self._generate_assume_role_policy()
+
+        self.aws_role_service.update_assume_role_policy(self.iam_role_name, assume_role_policy)
+
+    def add_inline_policy(self, policy_name, policy):
+        self.aws_role_service.add_inline_policy(self.iam_role_name, policy_name, policy)
+
+    def delete_inline_policy(self, policy_name):
+        self.aws_role_service.delete_inline_policy(self.iam_role_name, policy_name)
 
     def grant_bucket_access(self, bucket_arn, access_level, path_arns):
         self.aws_role_service.grant_bucket_access(

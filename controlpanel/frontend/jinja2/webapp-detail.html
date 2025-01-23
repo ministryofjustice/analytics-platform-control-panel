@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "input/macro.html" import govukInput %}
 {% from "autocomplete/macro.html" import autocomplete %}
 {% from "error-message/macro.html" import govukErrorMessage %}
 {% from "label/macro.html" import govukLabel %}
@@ -336,6 +337,56 @@
     <button class="govuk-button govuk-button--secondary">
       Save changes
     </button>
+  </form>
+</section>
+{% endif %}
+
+{% if show_cloud_platform_assume_role and request.user.has_perm('api.add_cloud_platform_arn') %}
+<section class="cpanel-section">
+  <form action="{{ url('set-cloud-platform-arn', kwargs={ "pk": app.id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "allow_cloud_platform_assume_role",
+      "fieldset": {
+        "legend": {
+          "text": "Access via Cloud Platform",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Allows Cloud Platform role to assume role in the Analytical Platform"
+      },
+      "items": [
+        {
+          "value": "Cloud",
+          "text": "Access via Cloud Platform",
+          "checked": True if app.cloud_platform_role_arn else False
+        }
+      ]
+    }) }}
+
+    <div class="govuk-grid-row checkbox-subform" data-show-if-selected="Cloud">
+      <div class="govuk-grid-column-full">
+        <br/>
+        {{ govukInput({
+          "name": "cloud_platform_role_arn",
+          "classes": "govuk-!-width-one-half",
+          "label": {
+            "text": "Cloud Platform Role ARN",
+            "classes": "govuk-label--s",
+          },
+          "errorMessage": {"text": ". ".join(cloud_platform_access_form.errors.get("cloud_platform_role_arn"))} if cloud_platform_access_form.errors.get("cloud_platform_role_arn") else {},
+          "value": app.cloud_platform_role_arn if app.cloud_platform_role_arn else ""
+        }) }}
+        <p class="govuk-body"><a href="https://user-guidance.analytical-platform.service.justice.gov.uk/apps/rshiny-app.html#cloud-platform-iam-role" target="_blank">Read our User Guidance related to using a Cloud Platform IAM role here</a></p>
+      </div>
+    </div>
+
+
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+
   </form>
 </section>
 {% endif %}
