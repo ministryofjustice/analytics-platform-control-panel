@@ -168,6 +168,7 @@ class ToolDeployment(TimeStampedModel):
 
     class Meta:
         ordering = ["-created"]
+        db_table = "control_panel_api_tool_deployment"
 
     def __init__(self, *args, **kwargs):
         # TODO these may not be necessary but leaving for now
