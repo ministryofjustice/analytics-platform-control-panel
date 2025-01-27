@@ -26,7 +26,7 @@ class Command(BaseCommand):
             if "scheduler" in name:
                 continue
 
-            username = deployment.metadata.namespace.strip("user-")
+            username = deployment.metadata.namespace.removeprefix("user-")
             try:
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
