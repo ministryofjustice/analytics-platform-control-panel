@@ -372,6 +372,7 @@ class ToolDeploymentSerializer(serializers.ModelSerializer):
             {
                 "new_deployment_id": new_deployment.id,
                 "previous_deployment_id": previous_deployment.id if previous_deployment else None,
+                "id_token": self.request.user.get_id_token(),
             },
         )
         return new_deployment
