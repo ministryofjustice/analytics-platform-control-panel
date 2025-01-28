@@ -19,6 +19,7 @@ from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
     HOME_RESETTING,
     TOOL_DEPLOY_FAILED,
     TOOL_DEPLOYING,
+    TOOL_READY,
     TOOL_RESTARTING,
 )
 from controlpanel.api.models import App, HomeDirectory, IPAllowlist, Tool, ToolDeployment, User
@@ -144,30 +145,37 @@ class BackgroundTaskConsumer(SyncConsumer):
 
     def tool_deploy(self, message):
         """
-        Deploy the named tool for the specified user
-        Expects a message with `tool_name`, `version` and `user_id` values
+        Uninstall the previous tool deployment, and deploy the new one.
+        Expects a message with `previous_deployment_id`, and 'new_deployment_id' values in order
+        to identify the user and the tool to deploy.
         """
+        # if we have a previous deployment, uninstall it
+        previous_deployment = ToolDeployment.objects.filter(
+            pk=message["previous_deployment_id"]
+        ).first()
+        if previous_deployment:
+            try:
+                previous_deployment.uninstall()
+            except ToolDeployment.Error as err:
+                # if something went wrong, log the error but continue to try to deploy the new tool
+                log.error(err)
+                pass
 
-        tool, user = self.get_tool_and_user(message)
-        id_token = message["id_token"]
-        old_chart_name = message.get("old_chart_name", None)
-        tool_deployment = ToolDeployment(tool, user, old_chart_name)
-
-        update_tool_status(tool_deployment, id_token, TOOL_DEPLOYING)
+        new_deployment = ToolDeployment.objects.get(pk=message["new_deployment_id"])
+        update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
-            tool_deployment.save()
+            new_deployment.deploy()
+            update_tool_status(tool_deployment=new_deployment, status=TOOL_READY)
+            log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
         except ToolDeployment.Error as err:
+            # if something went wrong, log the error and unmark the deployment object as active to
+            # allow the user to retry deploying the tool
+            new_deployment.is_active = False
+            new_deployment.save()
+            update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOY_FAILED)
             self._send_to_sentry(err)
-            update_tool_status(tool_deployment, id_token, TOOL_DEPLOY_FAILED)
             log.error(err)
-            return
-
-        status = wait_for_deployment(tool_deployment, id_token)
-
-        if status == TOOL_DEPLOY_FAILED:
-            log.warning(f"Failed deploying {tool.name} for {user}")
-        else:
-            log.debug(f"Deployed {tool.name} for {user}")
+            log.warning(f"Failed deploying {new_deployment.tool.name} for {new_deployment.user}")
 
     def _send_to_sentry(self, error):
         if os.environ.get("SENTRY_DSN"):
@@ -180,27 +188,19 @@ class BackgroundTaskConsumer(SyncConsumer):
         """
         Restart the named tool for the specified user
         """
-        tool, user = self.get_tool_and_user(message)
-        id_token = message["id_token"]
+        tool_deployment = ToolDeployment.objects.active().get(
+            id=message["tool_deployment_id"],
+            user=message["user_id"],
+        )
 
-        tool_deployment = ToolDeployment(tool, user)
-        update_tool_status(tool_deployment, id_token, TOOL_RESTARTING)
-
-        tool_deployment.restart(id_token=id_token)
-
-        status = wait_for_deployment(tool_deployment, id_token)
+        update_tool_status(tool_deployment, TOOL_RESTARTING)
+        tool_deployment.restart(id_token=message["id_token"])
+        status = wait_for_deployment(tool_deployment, message["id_token"])
 
         if status == TOOL_DEPLOY_FAILED:
-            log.warning(f"Failed restarting {tool.name} for {user}")
+            log.warning(f"Failed restarting {tool_deployment.tool.name} for {tool_deployment.user}")
         else:
-            log.debug(f"Restarted {tool.name} for {user}")
-
-    def get_tool_and_user(self, message):
-        tool = Tool.objects.get(is_retired=False, pk=message["tool_id"])
-        if not tool:
-            raise Exception(f"no Tool record found for query {message['tool_id']}")
-        user = User.objects.get(auth0_id=message["user_id"])
-        return tool, user
+            log.debug(f"Restarted {tool_deployment.tool.name} for {tool_deployment.user}")
 
     def home_reset(self, message):
         """
@@ -225,7 +225,7 @@ class BackgroundTaskConsumer(SyncConsumer):
         log.debug("Worker health ping task executed")
 
 
-def update_tool_status(tool_deployment, id_token, status):
+def update_tool_status(tool_deployment, status):
     user = tool_deployment.user
     tool = tool_deployment.tool
 
@@ -262,7 +262,7 @@ def wait_for_deployment(tool_deployment, id_token):
     status = TOOL_DEPLOYING
     while status == TOOL_DEPLOYING:
         status = tool_deployment.get_status(id_token)
-        update_tool_status(tool_deployment, id_token, status)
+        update_tool_status(tool_deployment, status)
         sleep(1)
     return status
 

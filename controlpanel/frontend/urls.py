@@ -72,7 +72,7 @@ urlpatterns = [
     ),
     path("tools/", views.ToolList.as_view(), name="list-tools"),
     path(
-        "tools/<str:name>/restart/<str:tool_id>",
+        "tools/restart/",
         views.RestartTool.as_view(),
         name="restart-tool",
     ),

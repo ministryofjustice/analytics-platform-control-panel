@@ -19,14 +19,6 @@ class Tool(TimeStampedModel):
     instance of a tool.
     """
 
-    # Defines how a matching chart name is put into a named tool bucket.
-    # E.g. jupyter-* charts all end up in the jupyter-lab bucket.
-    # chart name match: tool bucket
-    TOOL_BOX_CHART_LOOKUP = {
-        "jupyter": "jupyter-lab",
-        "rstudio": "rstudio",
-        "vscode": "vscode",
-    }
     DEFAULT_DEPRECATED_MESSAGE = "The selected release has been deprecated and will be retired soon. Please update to a more recent version."  # noqa
     JUPYTER_DATASCIENCE_CHART_NAME = "jupyter-lab-datascience-notebook"
     JUPYTER_ALL_SPARK_CHART_NAME = "jupyter-lab-all-spark"
@@ -67,6 +59,9 @@ class Tool(TimeStampedModel):
     )
     is_retired = models.BooleanField(default=False)
     image_tag = models.CharField(max_length=100)
+    users_deployed = models.ManyToManyField(
+        "User", through="ToolDeployment", related_name="deployed_tools"
+    )
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
@@ -75,9 +70,8 @@ class Tool(TimeStampedModel):
     def __repr__(self):
         return f"<Tool: {self.chart_name} {self.version}>"
 
-    def url(self, user):
-        tool = self.tool_domain or self.chart_name
-        return f"https://{user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
+    def __str__(self):
+        return f"[{self.chart_name} {self.image_tag}] {self.description}"
 
     def save(self, *args, **kwargs):
         helm.update_helm_repository(force=True)
@@ -131,57 +125,79 @@ class Tool(TimeStampedModel):
         }
         return mapping[self.status.lower()]
 
+    @property
+    def tool_type(self):
+        return self.chart_name.split("-")[0]
 
-class ToolDeploymentManager:
-    """
-    Emulates a Django model manager
-    """
+    @property
+    def tool_type_name(self):
+        mapping = {
+            "jupyter": "JupyterLab",
+            "rstudio": "RStudio",
+            "vscode": "Visual Studio Code",
+        }
+        return mapping[self.tool_type]
 
-    def create(self, *args, **kwargs):
-        tool_deployment = ToolDeployment(*args, **kwargs)
-        tool_deployment.save()
-        return tool_deployment
+
+class ToolDeploymentQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_active=True)
+
+    def inactive(self):
+        return self.filter(is_active=False)
 
 
-class ToolDeployment:
+class ToolDeployment(TimeStampedModel):
     """
     Represents a deployed Tool in the cluster
     """
 
-    DoesNotExist = django.core.exceptions.ObjectDoesNotExist
+    class ToolType(models.TextChoices):
+        JUPYTER = "jupyter", "JupyterLab"
+        RSTUDIO = "rstudio", "RStudio"
+        VSCODE = "vscode", "Visual Studio Code"
+
+    user = models.ForeignKey(to="User", on_delete=models.CASCADE, related_name="tool_deployments")
+    tool = models.ForeignKey(to="Tool", on_delete=models.CASCADE, related_name="tool_deployments")
+    tool_type = models.CharField(max_length=100, choices=ToolType.choices)
+    is_active = models.BooleanField(default=False)
+
     Error = cluster.ToolDeploymentError
-    MultipleObjectsReturned = django.core.exceptions.MultipleObjectsReturned
 
-    objects = ToolDeploymentManager()
+    objects = ToolDeploymentQuerySet.as_manager()
 
-    def __init__(self, tool, user, old_chart_name=None):
+    class Meta:
+        ordering = ["-created"]
+        db_table = "control_panel_api_tool_deployment"
+
+    def __init__(self, *args, **kwargs):
+        # TODO these may not be necessary but leaving for now
         self._subprocess = None
-        self.tool = tool
-        self.user = user
-        self.old_chart_name = old_chart_name
+        super().__init__(*args, **kwargs)
 
     def __repr__(self):
         return f"<ToolDeployment: {self.tool!r} {self.user!r}>"
 
-    def delete(self, id_token):
+    def uninstall(self):
         """
         Remove the release from the cluster
         """
-        cluster.ToolDeployment(self.user, self.tool).uninstall(id_token)
+        return cluster.ToolDeployment(tool=self.tool, user=self.user).uninstall()
 
-    @property
-    def host(self):
-        return f"{self.user.slug}-{self.tool.chart_name}.{settings.TOOLS_DOMAIN}"
+    def delete(self, *args, **kwargs):
+        """
+        Remove the release from the cluster
+        """
+        self.uninstall()
+        super().delete(*args, **kwargs)
 
-    def save(self, *args, **kwargs):
+    def deploy(self):
         """
         Deploy the tool to the cluster (asynchronous)
         """
-        self._subprocess = cluster.ToolDeployment(
-            self.user, self.tool, self.old_chart_name
-        ).install()
+        self._subprocess = cluster.ToolDeployment(self.user, self.tool).install()
 
-    def get_status(self, id_token, deployment=None):
+    def get_status(self, id_token=None, deployment=None):
         """
         Get the current status of the deployment.
         Polls the subprocess if running, otherwise returns idled status.
@@ -194,8 +210,16 @@ class ToolDeployment:
                 log.info(status)
                 return status
         return cluster.ToolDeployment(self.user, self.tool).get_status(
-            id_token, deployment=deployment
+            id_token or self.user.get_id_token(), deployment=deployment
         )
+
+    @property
+    def url(self):
+        tool = self.tool.tool_domain or self.tool.chart_name
+        url = f"https://{self.user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
+        if self.tool_type == self.ToolType.VSCODE:
+            url = f"{url}?folder=/home/analyticalplatform/workspace"
+        return url
 
     def _poll(self):
         """
@@ -211,10 +235,6 @@ class ToolDeployment:
         # the sake of visibility.
         log.info(self._subprocess.stdout.read().strip())
         self._subprocess = None
-
-    @property
-    def url(self):
-        return f"https://{self.host}/"
 
     def restart(self, id_token):
         """

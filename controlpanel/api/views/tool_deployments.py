@@ -6,7 +6,6 @@ from rest_framework.response import Response
 
 # First-party/Local
 from controlpanel.api import serializers
-from controlpanel.utils import start_background_task
 
 
 class ToolDeploymentAPIView(GenericAPIView):
@@ -15,49 +14,13 @@ class ToolDeploymentAPIView(GenericAPIView):
     serializer_class = serializers.ToolDeploymentSerializer
     permission_classes = (IsAuthenticated,)
 
-    def _deploy(self, chart_name, data):
-        """
-        This is the most backwards thing you'll see for a while. The helm
-        task to deploy the tool apparently must happen when the view class
-        attempts to redirect to the target url. I'm sure there's a good
-        reason why.
-        """
-        # If there's already a tool deployed, we need to get this from a
-        # hidden field posted back in the form. This is used by helm to delete
-        # the currently installed chart for the tool before installing the
-        # new chart.
-        old_chart_name = data.get("deployed_chart_name", None)
-        # The selected option from the "version" select control contains the
-        # data we need.
-        chart_info = data.get("version")
-        # The tool name and version are stored in the selected option's value
-        # attribute and then split on "__" to extract them. Why? Because we
-        # need both pieces of information to kick off the background helm
-        # deploy.
-        tool_name, tool_version, tool_id = chart_info.split("__")
-
-        # Kick off the helm chart as a background task.
-        start_background_task(
-            "tool.deploy",
-            {
-                "tool_name": chart_name,
-                "version": tool_version,
-                "tool_id": tool_id,
-                "user_id": self.request.user.id,
-                "id_token": self.request.user.get_id_token(),
-                "old_chart_name": old_chart_name,
-            },
-        )
-
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        chart_name = self.kwargs["tool_name"]
-        tool_action = self.kwargs["action"]
-        tool_action_function = getattr(self, f"_{tool_action}", None)
-        if tool_action_function and callable(tool_action_function):
-            tool_action_function(chart_name, request.data)
-            return Response(status=status.HTTP_200_OK)
-        else:
+        # TODO this is kept for legacy reasons, where the action is passed as a URL parameter. We
+        # may want to remove to either pass the action in the POST data, or remove the action
+        # entirely as currently it is only used for deploying a tool anyway.
+        if self.kwargs["action"] != "deploy":
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        self.serializer = self.get_serializer(data=request.data, request=request)
+        self.serializer.is_valid(raise_exception=True)
+        self.serializer.save()
+        return Response(status=status.HTTP_200_OK)
