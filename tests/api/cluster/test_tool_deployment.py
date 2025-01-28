@@ -4,7 +4,7 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.models import Tool, User
+from controlpanel.api.models import Tool, ToolDeployment, User
 
 
 def test_url():
@@ -18,14 +18,15 @@ def test_url():
         chart_name="rstudio",
         version="1.0.0",
     )
+    tool_deployment = ToolDeployment(user=user, tool=tool)
     expected = f"https://{user.slug}-rstudio.{settings.TOOLS_DOMAIN}/"
     # In the absence of a tool_domain, the chart_name (rstudio) is used.
-    assert tool.url(user) == expected
-    tool.chart_name = "rstudio-bespoke"
-    tool.tool_domain = "rstudio"
+    assert tool_deployment.url == expected
+    tool_deployment.chart_name = "rstudio-bespoke"
+    tool_deployment.tool_domain = "rstudio"
     # Now the chart_name is custom, the tool_domain (rstudio) is used, ensuring
     # the url remains "valid".
-    assert tool.url(user) == expected
+    assert tool_deployment.url == expected
 
 
 @pytest.mark.parametrize(

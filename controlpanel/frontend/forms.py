@@ -8,6 +8,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
+from django.db.models import Q
 
 # First-party/Local
 from controlpanel.api import validators
@@ -23,11 +24,11 @@ from controlpanel.api.models import (
     S3Bucket,
     Tool,
     User,
-    UserS3Bucket,
 )
 from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
+from controlpanel.api.models.tool import ToolDeployment
 
 APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -702,3 +703,76 @@ class FeedbackForm(forms.ModelForm):
             "satisfaction_rating",
             "suggestions",
         ]
+
+
+class ToolChoice(forms.Select):
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        if value:
+            option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
+            option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
+
+        if value and selected:
+            option["attrs"]["label"] = f"{label} (installed)"
+            option["attrs"]["class"] = "installed"
+
+        return option
+
+
+class ToolDeploymentForm(forms.Form):
+
+    tool = forms.ModelChoiceField(
+        queryset=Tool.objects.none(),
+        empty_label='Select a tool from this list and click "Deploy" to start',
+        widget=ToolChoice(attrs={"class": "govuk-select govuk-!-width-full govuk-!-font-size-16"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        self.tool_type = kwargs.pop("tool_type")
+        self.deployment = kwargs.pop("deployment", None)
+        super().__init__(*args, **kwargs)
+        self.fields["tool"].queryset = self.get_tool_release_choices(tool_type=self.tool_type)
+        self.fields["tool"].widget.attrs.update(
+            {"data-action-target": self.tool_type, "id": f"tools-{self.tool_type}"}
+        )
+        if self.deployment:
+            self.fields["tool"].initial = self.deployment.tool
+
+    def get_tool_release_choices(self, tool_type: str):
+        """
+        Return a queryset for Tool objects where:
+
+        * The tool is not retired
+
+        AND EITHER:
+
+        * The tool is not restricted
+
+        OR
+
+        * The current user has access to the restricted tool
+        """
+        return (
+            Tool.objects.filter(
+                Q(is_restricted=False) | Q(target_users=self.user),
+                chart_name__startswith=tool_type,
+            )
+            .exclude(is_retired=True)
+            .order_by("-chart_name", "-image_tag", "-version", "-created")
+        )
+
+    @property
+    def tool_type_label(self):
+        return ToolDeployment.ToolType(self.tool_type).label
+
+
+class ToolDeploymentRestartForm(forms.Form):
+    tool_deployment = forms.ModelChoiceField(queryset=ToolDeployment.objects.none())
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+        self.fields["tool_deployment"].queryset = self.user.tool_deployments.active()

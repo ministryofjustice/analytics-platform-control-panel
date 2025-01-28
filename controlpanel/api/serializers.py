@@ -16,10 +16,12 @@ from controlpanel.api.models import (
     AppS3Bucket,
     IPAllowlist,
     S3Bucket,
+    ToolDeployment,
     User,
     UserApp,
     UserS3Bucket,
 )
+from controlpanel.utils import start_background_task
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
@@ -337,17 +339,42 @@ class DeleteAppCustomerSerializer(serializers.Serializer):
     env_name = serializers.CharField(max_length=64, required=True)
 
 
-class ToolDeploymentSerializer(serializers.Serializer):
-    old_chart_name = serializers.CharField(max_length=64, required=False)
-    version = serializers.CharField(max_length=64, required=True)
+class ToolDeploymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ToolDeployment
+        fields = ("tool",)
 
-    def validate_version(self, value):
-        try:
-            _, _, _ = value.split("__")
-        except ValueError:
-            raise serializers.ValidationError(
-                "This field include chart name, version and tool.id," ' they are joined by "__".'
-            )
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop("request")
+        super().__init__(*args, **kwargs)
+
+    def create(self, validated_data):
+        tool = validated_data["tool"]
+        # get the currently active deployment
+        previous_deployment = ToolDeployment.objects.filter(
+            user=self.request.user, tool_type=tool.tool_type, is_active=True
+        ).first()
+        # mark all previous deployments for this tool type as inactive
+        ToolDeployment.objects.filter(user=self.request.user, tool_type=tool.tool_type).update(
+            is_active=False
+        )
+        # create the new active deployment record
+        new_deployment = ToolDeployment.objects.create(
+            tool=tool,
+            tool_type=tool.tool_type,
+            user=self.request.user,
+            is_active=True,
+        )
+        # use these details to start a background process to uninstall the deploy the new tool
+        # TODO we may want to refactor this to be handled by celery
+        start_background_task(
+            "tool.deploy",
+            {
+                "new_deployment_id": new_deployment.id,
+                "previous_deployment_id": previous_deployment.id if previous_deployment else None,
+            },
+        )
+        return new_deployment
 
 
 class ESBucketHitsSerializer(serializers.BaseSerializer):
