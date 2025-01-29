@@ -49,10 +49,11 @@ def wait_for_home_reset():
         yield wait_for_home_reset
 
 
-def test_tool_deploy(users, tools, update_tool_status):
+def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
     user = User.objects.first()
     tool = Tool.objects.first()
     tool_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=True)
+    wait_for_deployment.return_value = TOOL_READY
 
     with patch.object(ToolDeployment, "deploy") as deploy:
         consumer = consumers.BackgroundTaskConsumer()
@@ -60,6 +61,7 @@ def test_tool_deploy(users, tools, update_tool_status):
             message={
                 "new_deployment_id": tool_deployment.id,
                 "previous_deployment_id": None,
+                "id_token": "secret user id_token",
             }
         )
         deploy.assert_called_once()
@@ -69,13 +71,17 @@ def test_tool_deploy(users, tools, update_tool_status):
                 call(tool_deployment=tool_deployment, status=TOOL_READY),
             ]
         )
+        wait_for_deployment.assert_called_with(tool_deployment, "secret user id_token")
 
 
-def test_tool_deploy_with_previous_deployment(users, tools, update_tool_status):
+def test_tool_deploy_with_previous_deployment(
+    users, tools, update_tool_status, wait_for_deployment
+):
     user = User.objects.first()
     tool = Tool.objects.first()
     previous_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=False)
     new_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=True)
+    wait_for_deployment.return_value = TOOL_READY
 
     with (
         patch.object(ToolDeployment, "deploy") as deploy,
@@ -86,6 +92,7 @@ def test_tool_deploy_with_previous_deployment(users, tools, update_tool_status):
             message={
                 "new_deployment_id": new_deployment.id,
                 "previous_deployment_id": previous_deployment.id,
+                "id_token": "secret user id_token",
             }
         )
 
@@ -97,6 +104,7 @@ def test_tool_deploy_with_previous_deployment(users, tools, update_tool_status):
                 call(tool_deployment=new_deployment, status=TOOL_READY),
             ]
         )
+        wait_for_deployment.assert_called_with(new_deployment, "secret user id_token")
 
 
 def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
