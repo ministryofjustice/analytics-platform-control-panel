@@ -1,12 +1,14 @@
 # Standard library
 import re
 from collections import defaultdict
+from functools import partial
 from operator import itemgetter
 
 # Third-party
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import EmailValidator
+from django.db import transaction
 from rest_framework import serializers
 
 # First-party/Local
@@ -350,30 +352,34 @@ class ToolDeploymentSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         tool = validated_data["tool"]
-        # get the currently active deployment
-        previous_deployment = ToolDeployment.objects.filter(
-            user=self.request.user, tool_type=tool.tool_type, is_active=True
-        ).first()
-        # mark all previous deployments for this tool type as inactive
-        ToolDeployment.objects.filter(user=self.request.user, tool_type=tool.tool_type).update(
-            is_active=False
-        )
-        # create the new active deployment record
-        new_deployment = ToolDeployment.objects.create(
-            tool=tool,
-            tool_type=tool.tool_type,
-            user=self.request.user,
-            is_active=True,
-        )
+
+        with transaction.atomic():
+            # get the currently active deployment
+            previous_deployment = ToolDeployment.objects.filter(
+                user=self.request.user, tool_type=tool.tool_type, is_active=True
+            ).first()
+            # mark all previous deployments for this tool type as inactive
+            ToolDeployment.objects.filter(user=self.request.user, tool_type=tool.tool_type).update(
+                is_active=False
+            )
+            # create the new active deployment record
+            new_deployment = ToolDeployment.objects.create(
+                tool=tool,
+                tool_type=tool.tool_type,
+                user=self.request.user,
+                is_active=True,
+            )
+
         # use these details to start a background process to uninstall the deploy the new tool
         # TODO we may want to refactor this to be handled by celery
-        start_background_task(
-            "tool.deploy",
-            {
-                "new_deployment_id": new_deployment.id,
-                "previous_deployment_id": previous_deployment.id if previous_deployment else None,
-            },
-        )
+        task = "tool.deploy"
+        message = {
+            "new_deployment_id": new_deployment.id,
+            "previous_deployment_id": previous_deployment.id if previous_deployment else None,
+            "id_token": self.request.user.get_id_token(),
+        }
+        task_func = partial(start_background_task, task=task, message=message)
+        transaction.on_commit(task_func)
         return new_deployment
 
 
