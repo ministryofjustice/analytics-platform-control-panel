@@ -204,11 +204,13 @@ class ToolDeployment(TimeStampedModel):
         """
         if self._subprocess:
             # poll subprocess and maybe parse any output to get status
-            log.info("Polling helm subprocess")
+            log.info(f"Polling status of helm subprocess: {id(self._subprocess)}")
             status = self._poll()
             if status:
                 log.info(status)
                 return status
+
+        log.info("No subprocess to poll, checking deployment status")
         return cluster.ToolDeployment(self.user, self.tool).get_status(
             id_token or self.user.get_id_token(), deployment=deployment
         )
