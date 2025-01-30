@@ -12,7 +12,7 @@ RUN /node_modules/.bin/jest
 
 FROM public.ecr.aws/docker/library/python:3.12-alpine3.18 AS base
 
-ARG HELM_VERSION=3.14.1
+ARG HELM_VERSION=3.16.0
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://get.helm.sh
 
@@ -26,7 +26,7 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
 RUN addgroup -g 1000 controlpanel \
     && adduser -G controlpanel -u 1000 controlpanel -D
 
-RUN apk update \
+RUN apk update && apk upgrade \
     && apk add --no-cache \
         postgresql-client \
         wget \
