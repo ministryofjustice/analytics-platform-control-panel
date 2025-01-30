@@ -196,6 +196,7 @@ class ToolDeployment(TimeStampedModel):
         Deploy the tool to the cluster (asynchronous)
         """
         self._subprocess = cluster.ToolDeployment(self.user, self.tool).install()
+        return self._subprocess
 
     def get_status(self, id_token=None, deployment=None):
         """

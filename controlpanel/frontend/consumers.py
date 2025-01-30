@@ -164,8 +164,9 @@ class BackgroundTaskConsumer(SyncConsumer):
         new_deployment = ToolDeployment.objects.get(pk=message["new_deployment_id"])
         update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
-            new_deployment.deploy()
+            subprocess = new_deployment.deploy()
             log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
+            log.info(f"tool_deploy: subprocess = {subprocess}")
         except ToolDeployment.Error as err:
             # if something went wrong, log the error and unmark the deployment object as active to
             # allow the user to retry deploying the tool
@@ -177,8 +178,9 @@ class BackgroundTaskConsumer(SyncConsumer):
             log.warning(f"Failed deploying {new_deployment.tool.name} for {new_deployment.user}")
             return
 
-        status = wait_for_deployment(new_deployment, message["id_token"])
-        update_tool_status(tool_deployment=new_deployment, status=status)
+        if subprocess:
+            status = wait_for_deployment(new_deployment, message["id_token"])
+            update_tool_status(tool_deployment=new_deployment, status=status)
 
     def _send_to_sentry(self, error):
         if os.environ.get("SENTRY_DSN"):
