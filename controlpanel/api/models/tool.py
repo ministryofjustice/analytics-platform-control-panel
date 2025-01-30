@@ -230,6 +230,9 @@ class ToolDeployment(TimeStampedModel):
         if self._subprocess.poll() is None:
             return cluster.TOOL_DEPLOYING
         if self._subprocess.returncode:
+            log.error(
+                f"Subprocess {id(self._subprocess)} returncode: {self._subprocess.returncode}"
+            )
             log.error(self._subprocess.stdout.read().strip())
             log.error(self._subprocess.stderr.read().strip())
             return cluster.TOOL_DEPLOY_FAILED
