@@ -265,20 +265,21 @@ def test_list_releases_with_namespace():
 @pytest.mark.parametrize(
     "stderr, stdout, raise_error",
     [
-        ("Error: release: already exists", "All good", False),
-        ("Error: Something that should throw", "All good", True),
-        ("All good", "Error: Something that should throw", True),
-        ("All good", "All good", False),
+        ("Error: release: already exists", "All good", "kill_process"),
+        ("Error: Something that should throw", "All good", "throw_error"),
+        ("All good", "Error: Something that should throw", "throw_error"),
+        ("All good", "All good", "continue_process"),
         (
             (
                 "Error: uninstallation completed with 1 error(s): "
                 "uninstall: Failed to purge the release"
             ),
             "All good",
-            False,
+            "kill_process",
         ),
+        ("Error: cannot re-use a name that is still in use", "All good", "kill_process"),
     ],
 )
-def test_should_raise_error(stderr, stdout, raise_error):
-    result = helm.should_raise_error(stderr, stdout)
+def test_check_error_output(stderr, stdout, raise_error):
+    result = helm.check_error_output(stderr, stdout)
     assert result == raise_error

@@ -17,6 +17,7 @@ CACHE_FOR_MINUTES = 5 * 60
 ERRORS_TO_IGNORE = [
     "release: already exists",
     "uninstallation completed with 1 error(s): uninstall: failed to purge the release",
+    "cannot re-use a name that is still in use",
 ]
 
 
@@ -93,11 +94,14 @@ def _execute(*args, **kwargs):
                 log.info(stdout)
             if stderr:
                 log.error(stderr)
-                if should_raise_error(stderr, stdout):
+                error_status = check_error_output(stderr, stdout)
+                if error_status == "throw_error":
                     log.error("Raising error")
                     raise HelmError(stderr)
-                log.info("Error safely ignored, ending subprocess")
-                return None
+
+                if error_status == "kill_process":
+                    log.info("Error safely ignored, ending subprocess")
+                    return None
 
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
@@ -129,16 +133,16 @@ def _execute(*args, **kwargs):
     return proc
 
 
-def should_raise_error(stderr, stdout):
+def check_error_output(stderr, stdout):
     lower_error_string = stderr.lower()
     lower_out_string = stdout.lower()
     if "error" not in lower_error_string and "error" not in lower_out_string:
-        return False
+        return "continue_process"
 
     if should_ignore_error(lower_error_string) or should_ignore_error(lower_out_string):
-        return False
+        return "kill_process"
 
-    return True
+    return "throw_error"
 
 
 def should_ignore_error(error_string):
