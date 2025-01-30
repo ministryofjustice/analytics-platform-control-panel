@@ -52,7 +52,7 @@ def wait_for_home_reset():
 def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
     user = User.objects.first()
     tool = Tool.objects.first()
-    tool_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=True)
+    tool_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=False)
     wait_for_deployment.return_value = TOOL_READY
 
     with patch.object(ToolDeployment, "deploy") as deploy:
@@ -64,6 +64,9 @@ def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
                 "id_token": "secret user id_token",
             }
         )
+        tool_deployment.refresh_from_db()
+
+        assert tool_deployment.is_active is True
         deploy.assert_called_once()
         update_tool_status.assert_has_calls(
             calls=[
@@ -80,7 +83,7 @@ def test_tool_deploy_with_previous_deployment(
     user = User.objects.first()
     tool = Tool.objects.first()
     previous_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=False)
-    new_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=True)
+    new_deployment = ToolDeployment.objects.create(tool=tool, user=user, is_active=False)
     wait_for_deployment.return_value = TOOL_READY
 
     with (
@@ -95,9 +98,13 @@ def test_tool_deploy_with_previous_deployment(
                 "id_token": "secret user id_token",
             }
         )
+        previous_deployment.refresh_from_db()
+        new_deployment.refresh_from_db()
 
         uninstall.assert_called_once()
         deploy.assert_called_once()
+        assert previous_deployment.is_active is False
+        assert new_deployment.is_active is True
         update_tool_status.assert_has_calls(
             calls=[
                 call(tool_deployment=new_deployment, status=TOOL_DEPLOYING),
