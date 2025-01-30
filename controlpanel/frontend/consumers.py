@@ -160,6 +160,7 @@ class BackgroundTaskConsumer(SyncConsumer):
             new_deployment.is_active = True
             new_deployment.save()
             log.info("Tool deployment marked as active")
+        update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
 
         # if we have a previous deployment, uninstall it
         previous_deployment = ToolDeployment.objects.filter(
@@ -173,7 +174,6 @@ class BackgroundTaskConsumer(SyncConsumer):
                 log.error(err)
                 pass
 
-        update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
             log.info(f"New dep subprocess: {new_deployment._subprocess}")
             new_deployment.deploy()

@@ -228,6 +228,7 @@ class ToolDeployment(TimeStampedModel):
         Poll the deployment subprocess for status
         """
         if self._subprocess.poll() is None:
+            log.info(f"Subprocess {id(self._subprocess)} poll is None")
             return cluster.TOOL_DEPLOYING
         if self._subprocess.returncode:
             log.error(
