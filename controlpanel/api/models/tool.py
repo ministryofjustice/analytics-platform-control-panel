@@ -228,6 +228,7 @@ class ToolDeployment(TimeStampedModel):
         Poll the deployment subprocess for status
         """
         if self._subprocess.poll() is None:
+            log.info(f"Subprocess {id(self._subprocess)} poll is None")
             return cluster.TOOL_DEPLOYING
         if self._subprocess.returncode:
             log.error(
@@ -238,8 +239,10 @@ class ToolDeployment(TimeStampedModel):
             return cluster.TOOL_DEPLOY_FAILED
         # The process must have finished with a success. Log the output for
         # the sake of visibility.
+        log.info(f"Subprocess {id(self._subprocess)} finished successfully")
         log.info(self._subprocess.stdout.read().strip())
         self._subprocess = None
+        return cluster.TOOL_READY
 
     def restart(self, id_token):
         """

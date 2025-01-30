@@ -96,8 +96,7 @@ def _execute(*args, **kwargs):
                 if should_raise_error(stderr, stdout):
                     log.error("Raising error")
                     raise HelmError(stderr)
-                log.info("Error safely ignored, ending subprocess")
-                return None
+                log.info("Error ignored, continuing with subprocess")
 
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.

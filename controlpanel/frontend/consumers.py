@@ -149,6 +149,19 @@ class BackgroundTaskConsumer(SyncConsumer):
         Expects a message with `previous_deployment_id`, and 'new_deployment_id' values in order
         to identify the user and the tool to deploy.
         """
+        new_deployment_qs = ToolDeployment.objects.select_for_update().filter(
+            pk=message["new_deployment_id"]
+        )
+        with transaction.atomic():
+            new_deployment = new_deployment_qs.get()
+            if new_deployment.is_active:
+                log.info("Tool deployment already active, ending")
+                return
+            new_deployment.is_active = True
+            new_deployment.save()
+            log.info("Tool deployment marked as active")
+        update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
+
         # if we have a previous deployment, uninstall it
         previous_deployment = ToolDeployment.objects.filter(
             pk=message["previous_deployment_id"]
@@ -161,9 +174,8 @@ class BackgroundTaskConsumer(SyncConsumer):
                 log.error(err)
                 pass
 
-        new_deployment = ToolDeployment.objects.get(pk=message["new_deployment_id"])
-        update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
+            log.info(f"New dep subprocess: {new_deployment._subprocess}")
             new_deployment.deploy()
             log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
         except ToolDeployment.Error as err:
