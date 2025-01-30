@@ -89,10 +89,16 @@ def _execute(*args, **kwargs):
             # The following lines will make sure the completion of helm command
             stdout = proc.stdout.read()
             stderr = proc.stderr.read()
-            log.warning(stderr)
-            log.warning(stdout)
-            if should_raise_error(stderr, stdout):
-                raise HelmError(stderr)
+            if stdout:
+                log.info(stdout)
+            if stderr:
+                log.error(stderr)
+                if should_raise_error(stderr, stdout):
+                    log.error("Raising error")
+                    raise HelmError(stderr)
+                log.info("Error safely ignored, ending subprocess")
+                return None
+
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
@@ -113,11 +119,13 @@ def _execute(*args, **kwargs):
             raise HelmError(ex)
     if proc.returncode:
         # The helm command returned a non-0 return code. Log all the things!
+        log.warning(f"Proc return code: {proc.returncode}")
         stdout = proc.stdout.read()
         stderr = proc.stderr.read()
         log.warning(stderr)
         log.warning(stdout)
         raise HelmError(stderr)
+    log.info(f"Returning the subprocess object {id(proc)}")
     return proc
 
 
