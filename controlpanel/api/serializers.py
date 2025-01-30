@@ -367,7 +367,6 @@ class ToolDeploymentSerializer(serializers.ModelSerializer):
                 tool=tool,
                 tool_type=tool.tool_type,
                 user=self.request.user,
-                is_active=True,
             )
 
         # use these details to start a background process to uninstall the deploy the new tool

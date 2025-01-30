@@ -160,10 +160,36 @@ class BackgroundTaskConsumer(SyncConsumer):
                 # if something went wrong, log the error but continue to try to deploy the new tool
                 log.error(err)
                 pass
+        new_deployment_qs = ToolDeployment.objects.select_for_update().filter(
+            pk=message["new_deployment_id"]
+        )
+        with transaction.atomic():
+            new_deployment = new_deployment_qs.get()
+            if new_deployment.is_active:
+                log.info("Tool deployment already active, ending")
+                return
+            new_deployment.is_active = True
+            new_deployment.save()
+            log.info("Tool deployment marked as active")
 
-        new_deployment = ToolDeployment.objects.get(pk=message["new_deployment_id"])
+        # tool = Tool.objects.get(pk=message["new_tool_release_id"])
+        # user = User.objects.get(auth0_id=message["user_id"])
+        # locked_qs = user.tool_deployments.select_for_update()
+        # with transaction.atomic():
+        #     new_deployment, created = locked_qs.get_or_create(
+        #         tool=tool,
+        #         user=user,
+        #         is_active=True,
+        #         tool_type=tool.tool_type,
+        #     )
+        #     log.info(f"Tool deployment created: {created}")
+        #     if not created:
+        #         log.info(f"Tool deployment already exists, ending")
+        #         return
+
         update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
+            log.info(f"New dep subprocess: {new_deployment._subprocess}")
             new_deployment.deploy()
             log.debug(f"Deployed {new_deployment.tool.name} for {new_deployment.user}")
         except ToolDeployment.Error as err:
