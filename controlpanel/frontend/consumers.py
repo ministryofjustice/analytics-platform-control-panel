@@ -149,17 +149,6 @@ class BackgroundTaskConsumer(SyncConsumer):
         Expects a message with `previous_deployment_id`, and 'new_deployment_id' values in order
         to identify the user and the tool to deploy.
         """
-        # if we have a previous deployment, uninstall it
-        previous_deployment = ToolDeployment.objects.filter(
-            pk=message["previous_deployment_id"]
-        ).first()
-        if previous_deployment:
-            try:
-                previous_deployment.uninstall()
-            except ToolDeployment.Error as err:
-                # if something went wrong, log the error but continue to try to deploy the new tool
-                log.error(err)
-                pass
         new_deployment_qs = ToolDeployment.objects.select_for_update().filter(
             pk=message["new_deployment_id"]
         )
@@ -172,20 +161,17 @@ class BackgroundTaskConsumer(SyncConsumer):
             new_deployment.save()
             log.info("Tool deployment marked as active")
 
-        # tool = Tool.objects.get(pk=message["new_tool_release_id"])
-        # user = User.objects.get(auth0_id=message["user_id"])
-        # locked_qs = user.tool_deployments.select_for_update()
-        # with transaction.atomic():
-        #     new_deployment, created = locked_qs.get_or_create(
-        #         tool=tool,
-        #         user=user,
-        #         is_active=True,
-        #         tool_type=tool.tool_type,
-        #     )
-        #     log.info(f"Tool deployment created: {created}")
-        #     if not created:
-        #         log.info(f"Tool deployment already exists, ending")
-        #         return
+        # if we have a previous deployment, uninstall it
+        previous_deployment = ToolDeployment.objects.filter(
+            pk=message["previous_deployment_id"]
+        ).first()
+        if previous_deployment:
+            try:
+                previous_deployment.uninstall()
+            except ToolDeployment.Error as err:
+                # if something went wrong, log the error but continue to try to deploy the new tool
+                log.error(err)
+                pass
 
         update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOYING)
         try:
