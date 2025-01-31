@@ -61,10 +61,10 @@ class Command(BaseCommand):
             self.stdout.write(f"Limits Memory: {limits_memory}")
             self.stdout.write(f"GPU: {gpu}")
 
+            # include retired/restricted releases so we still have a record of which users were
+            # using them. However they wont be displayed as an option to deploy if they have been
+            # retired or restricted
             tool_queryset = Tool.objects.filter(
-                Q(is_restricted=False) | Q(target_users=user), is_retired=False
-            )
-            tool_queryset = tool_queryset.filter(
                 image_tag=image_tag,
                 version=chart_version,
                 chart_name=chart_name,
