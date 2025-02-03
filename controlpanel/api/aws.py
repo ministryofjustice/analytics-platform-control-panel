@@ -614,13 +614,24 @@ class AWSRole(AWSService):
             sentry_sdk.capture_exception(e)
             raise e
 
+    def _policy_exists(self, iam_role_name, policy_name):
+        iam = self.boto3_session.client("iam")
+        try:
+            iam.get_role_policy(RoleName=iam_role_name, PolicyName=policy_name)
+            return True
+        except iam.exceptions.NoSuchEntityException:
+            return False
+
     def add_inline_policy(self, iam_role_name, policy_name, policy):
 
         iam = self.boto3_session.client("iam")
         try:
-            iam.put_role_policy(
-                RoleName=iam_role_name, PolicyName=policy_name, PolicyDocument=json.dumps(policy)
-            )
+            if not self._policy_exists(iam_role_name, policy_name):
+                iam.put_role_policy(
+                    RoleName=iam_role_name,
+                    PolicyName=policy_name,
+                    PolicyDocument=json.dumps(policy),
+                )
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 log.warning(f"Role '{iam_role_name}' doesn't exist")
@@ -632,7 +643,8 @@ class AWSRole(AWSService):
 
         iam = self.boto3_session.client("iam")
         try:
-            iam.delete_role_policy(RoleName=iam_role_name, PolicyName=policy_name)
+            if self._policy_exists(iam_role_name, policy_name):
+                iam.delete_role_policy(RoleName=iam_role_name, PolicyName=policy_name)
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 log.warning(f"Policy '{policy_name}' doesn't exist")
