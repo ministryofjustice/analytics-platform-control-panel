@@ -303,9 +303,7 @@ class App(TimeStampedModel):
             attach=self.is_textract_enabled,
         )
 
-    def update_cloud_platform_access(self):
-        cluster.App(self).update_trust_policy()
-
+    def update_inline_policy(self):
         policy_name = f"cloud-platform-access-{self.slug}"
 
         if self.cloud_platform_role_arn:
@@ -314,6 +312,10 @@ class App(TimeStampedModel):
             cluster.App(self).add_inline_policy(policy_name, inline_policy)
         else:
             cluster.App(self).delete_inline_policy(policy_name)
+
+    def update_cloud_platform_access(self):
+        cluster.App(self).update_trust_policy()
+        self.update_inline_policy()
 
     def get_auth_client(self, env_name):
         env_name = env_name or self.DEFAULT_AUTH_CATEGORY

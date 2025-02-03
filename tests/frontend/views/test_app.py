@@ -4,6 +4,7 @@ import uuid
 from unittest.mock import patch
 
 # Third-party
+import botocore
 import pytest
 import requests
 from bs4 import BeautifulSoup
@@ -53,7 +54,7 @@ def users(users):
 
 
 @pytest.fixture
-def app(users):
+def app(users, iam):
     ip_allowlists = [
         baker.make("api.IPAllowlist", allowed_ip_ranges="xyz"),
     ]
@@ -70,6 +71,14 @@ def app(users):
     app.save()
     AppIPAllowList.objects.update_records(app, "dev_env", ip_allowlists)
     baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
+    test_policy = {
+        "Sid": "TestAssumeRolePolicy",
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Principal": {"AWS": "arn:aws:iam::123456789012:role/some-role"},
+        "Condition": {},
+    }
+    iam.create_role(RoleName=app.iam_role_name, AssumeRolePolicyDocument=json.dumps(test_policy))
     return app
 
 
@@ -279,11 +288,6 @@ def update_ip_allowlists(client, app, *args):
 
 
 def set_bedrock(client, app, *args):
-    iam = args[2]
-    iam.meta.client.create_role(
-        RoleName=app.iam_role_name,
-        AssumeRolePolicyDocument="some_policy",
-    )
     data = {
         "is_bedrock_enabled": True,
     }
@@ -292,11 +296,6 @@ def set_bedrock(client, app, *args):
 
 
 def set_textract(client, app, *args):
-    iam = args[2]
-    iam.meta.client.create_role(
-        RoleName=app.iam_role_name,
-        AssumeRolePolicyDocument="some_policy",
-    )
     data = {
         "is_textract_enabled": True,
     }
@@ -1015,7 +1014,10 @@ def test_add_cloud_platform_arn_success(app, users, client):
 
 @patch("controlpanel.api.cluster.App.update_trust_policy")
 def test_add_cloud_platform_arn_fail(update_trust_policy_mock, app, users, client):
-    update_trust_policy_mock.side_effect = Exception("Bad thing happened")
+    update_trust_policy_mock.side_effect = botocore.exceptions.ClientError(
+        operation_name="test_exception",
+        error_response={"Error": {"Message": "Something Happened", "Code": "400"}},
+    )
     user = users["superuser"]
     client.force_login(user)
 
