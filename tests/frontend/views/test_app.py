@@ -4,6 +4,7 @@ import uuid
 from unittest.mock import patch
 
 # Third-party
+import botocore
 import pytest
 import requests
 from bs4 import BeautifulSoup
@@ -53,7 +54,7 @@ def users(users):
 
 
 @pytest.fixture
-def app(users):
+def app(users, iam):
     ip_allowlists = [
         baker.make("api.IPAllowlist", allowed_ip_ranges="xyz"),
     ]
@@ -70,6 +71,14 @@ def app(users):
     app.save()
     AppIPAllowList.objects.update_records(app, "dev_env", ip_allowlists)
     baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
+    test_policy = {
+        "Sid": "TestAssumeRolePolicy",
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Principal": {"AWS": "arn:aws:iam::123456789012:role/some-role"},
+        "Condition": {},
+    }
+    iam.create_role(RoleName=app.iam_role_name, AssumeRolePolicyDocument=json.dumps(test_policy))
     return app
 
 
@@ -256,6 +265,16 @@ def remove_customer_by_email(client, app, *args):
     )
 
 
+def set_cloud_platform_arn(client, app, *args):
+
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": "arn:aws:iam::123456789012:role/test-role",
+    }
+
+    return client.post(reverse("set-cloud-platform-arn", kwargs={"pk": app.id}), data)
+
+
 def connect_bucket(client, app, _, s3buckets, *args):
     data = {
         "datasource": s3buckets["not_connected"].id,
@@ -269,11 +288,6 @@ def update_ip_allowlists(client, app, *args):
 
 
 def set_bedrock(client, app, *args):
-    iam = args[2]
-    iam.meta.client.create_role(
-        RoleName=app.iam_role_name,
-        AssumeRolePolicyDocument="some_policy",
-    )
     data = {
         "is_bedrock_enabled": True,
     }
@@ -282,11 +296,6 @@ def set_bedrock(client, app, *args):
 
 
 def set_textract(client, app, *args):
-    iam = args[2]
-    iam.meta.client.create_role(
-        RoleName=app.iam_role_name,
-        AssumeRolePolicyDocument="some_policy",
-    )
     data = {
         "is_textract_enabled": True,
     }
@@ -370,6 +379,9 @@ def delete_m2m_client(client, app, *args):
         (delete_m2m_client, "superuser", status.HTTP_302_FOUND),
         (delete_m2m_client, "app_admin", status.HTTP_302_FOUND),
         (delete_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_cloud_platform_arn, "superuser", status.HTTP_302_FOUND),
+        (set_cloud_platform_arn, "app_admin", status.HTTP_302_FOUND),
+        (set_cloud_platform_arn, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
@@ -979,3 +991,46 @@ def test_delete_m2m_client_success(app, users, client, user):
         ],
         ordered=True,
     )
+
+
+def test_add_cloud_platform_arn_success(app, users, client):
+    user = users["superuser"]
+    client.force_login(user)
+
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": "arn:aws:iam::123456789012:role/test-role",
+    }
+
+    url = reverse("set-cloud-platform-arn", kwargs={"pk": app.id})
+
+    response = client.post(url, data)
+
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    obj = App.objects.get(pk=app.id)
+    assert obj.cloud_platform_role_arn == data["cloud_platform_role_arn"]
+
+
+@patch("controlpanel.api.cluster.App.update_trust_policy")
+def test_add_cloud_platform_arn_fail(update_trust_policy_mock, app, users, client):
+    update_trust_policy_mock.side_effect = botocore.exceptions.ClientError(
+        operation_name="test_exception",
+        error_response={"Error": {"Message": "Something Happened", "Code": "400"}},
+    )
+    user = users["superuser"]
+    client.force_login(user)
+
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": "arn:aws:iam::123456789012:role/test-role",
+    }
+
+    url = reverse("set-cloud-platform-arn", kwargs={"pk": app.id})
+
+    response = client.post(url, data)
+
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+    obj = App.objects.get(pk=app.id)
+    assert obj.cloud_platform_role_arn is None

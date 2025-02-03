@@ -21,6 +21,7 @@ from controlpanel.frontend.views.app import (
     DeleteApp,
     EnableBedrockApp,
     EnableTextractApp,
+    UpdateCloudPlatformRoleArn,
     GrantAppAccess,
     RemoveCustomer,
     RemoveCustomerByEmail,

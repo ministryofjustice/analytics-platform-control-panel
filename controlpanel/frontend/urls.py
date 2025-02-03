@@ -204,6 +204,11 @@ urlpatterns = [
         name="set-textract-app",
     ),
     path(
+        "webapps/<int:pk>/cloud-platform/",
+        views.UpdateCloudPlatformRoleArn.as_view(),
+        name="set-cloud-platform-arn",
+    ),
+    path(
         "webapps/<int:pk>/update-ip-allowlists/",
         views.UpdateAppIPAllowlists.as_view(),
         name="update-app-ip-allowlists",
