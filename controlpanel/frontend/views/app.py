@@ -1,9 +1,8 @@
 # Standard library
-import csv
-from datetime import datetime
 from typing import List
 
 # Third-party
+import botocore
 import requests
 import sentry_sdk
 import structlog
@@ -399,8 +398,8 @@ class UpdateCloudPlatformRoleArn(
                 messages.success(self.request, "Successfully updated cloud platform ARN")
                 return HttpResponseRedirect(self.get_success_url())
 
-        except Exception as e:
-            log.info(f"failed to add cloud platform ARN - {e}")
+        except botocore.exceptions.ClientError as e:
+            log.warning(f"failed to add cloud platform ARN - {e}")
             messages.error(
                 self.request,
                 "Failed to add cloud platform ARN. If this persists, please raise a support ticket",

@@ -8,6 +8,7 @@ from typing import Optional
 
 # Third-party
 import botocore
+import sentry_sdk
 import structlog
 from django.conf import settings
 
@@ -609,7 +610,8 @@ class AWSRole(AWSService):
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 log.warning(f"Role '{iam_role_name}' doesn't exist")
-                return []
+
+            sentry_sdk.capture_exception(e)
             raise e
 
     def add_inline_policy(self, iam_role_name, policy_name, policy):
@@ -622,7 +624,8 @@ class AWSRole(AWSService):
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 log.warning(f"Role '{iam_role_name}' doesn't exist")
-                return []
+
+            sentry_sdk.capture_exception(e)
             raise e
 
     def delete_inline_policy(self, iam_role_name, policy_name):
@@ -633,7 +636,8 @@ class AWSRole(AWSService):
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 log.warning(f"Policy '{policy_name}' doesn't exist")
-                return []
+
+            sentry_sdk.capture_exception(e)
             raise e
 
 

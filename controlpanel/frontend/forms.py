@@ -241,10 +241,6 @@ class CloudPlatformArnForm(forms.Form):
         required=False, max_length=130, validators=[validators.validate_aws_role_arn]
     )
 
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
     def clean(self):
         cleaned_data = super().clean()
         assume_role = cleaned_data.get("allow_cloud_platform_assume_role")
