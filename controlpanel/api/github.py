@@ -76,7 +76,7 @@ class GithubAPI:
             headers=self.headers,
         )
         if response.status_code == 404:
-            raise RepositoryNotFound(f"Repository '{repo_name}' not found, it may be private")
+            raise RepositoryNotFound(f"Repository path '{repo_path}' in {repo_name} not found. It may not exist")
 
         return self._process_response(response)
 
