@@ -782,6 +782,7 @@ class ToolDeploymentForm(forms.Form):
             )
             .exclude(is_retired=True)
             .order_by("-chart_name", "-image_tag", "-version", "-created")
+            .distinct()
         )
 
     @property
