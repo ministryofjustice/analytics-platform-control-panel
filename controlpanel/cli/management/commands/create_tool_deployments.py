@@ -81,6 +81,12 @@ class Command(BaseCommand):
 
             if values:
                 tool_queryset = tool_queryset.filter(values__contains=values)
+            else:
+                tool_queryset = tool_queryset.exclude(
+                    Q(values__has_key=f"{tool_type}.resources.requests.memory")
+                    | Q(values__has_key=f"{tool_type}.resources.requests.cpu")
+                    | Q(values__has_key=f"{tool_type}.resources.limits.memory")
+                )
 
             # filter or exclude GPU releases
             if gpu:
@@ -88,11 +94,20 @@ class Command(BaseCommand):
             else:
                 tool_queryset = tool_queryset.exclude(values__contains={"gpu.enabled": "true"})
 
-            # we should be down to a single release at this point but just in case use first
-            tool = tool_queryset.first()
-            if not tool:
+            # We should be down to a single release at this point.
+            # If there is no tool found, continue as this may be a Tool that was already deleted.
+            # If there are multiple tools, there is a problem with our filtering so allow the error
+            # to raise
+            try:
+                tool = tool_queryset.get()
+            except Tool.DoesNotExist:
                 self.stderr.write("ERROR failed to find tool for these details\n")
                 continue
+            except Tool.MultipleObjectsReturned:
+                self.stderr.write("ERROR multiple tools found for these details\n")
+                pks = tool_queryset.values_list("pk", flat=True)
+                self.stderr.write(f"Tool PKs: {pks}\n")
+                raise
 
             # if we have a tool, create a ToolDeployment record
             tool_deployment = ToolDeployment.objects.create(
