@@ -89,6 +89,7 @@ def githubapi():
     """
     with (
         patch("controlpanel.frontend.forms.GithubAPI"),
+        patch("controlpanel.frontend.views.app.GithubAPI"),
         patch("controlpanel.api.cluster.GithubAPI") as GithubAPI,
     ):
         yield GithubAPI.return_value
@@ -775,7 +776,8 @@ def test_app_settings_permission(client, app, users, repos_with_auth, user, can_
             assert "Edit" not in auth_item_ui.text
 
 
-def test_register_app_with_xacct_policy(client, users):
+def test_register_app_with_xacct_policy(client, users, githubapi):
+    githubapi.get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
     test_app_name = "test_app_with_xacct_policy"
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(users["superuser"])
@@ -795,7 +797,8 @@ def test_register_app_with_xacct_policy(client, users):
     assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
 
 
-def test_register_app_with_creating_datasource(client, users):
+def test_register_app_with_creating_datasource(client, users, githubapi):
+    githubapi.get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
     test_app_name = "test_app_with_creating_datasource"
     test_bucket_name = "test-bucket"
     assert App.objects.filter(name=test_app_name).count() == 0
@@ -819,7 +822,8 @@ def test_register_app_with_creating_datasource(client, users):
     assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
 
 
-def test_register_app_with_existing_datasource(client, users, s3buckets):
+def test_register_app_with_existing_datasource(client, users, s3buckets, githubapi):
+    githubapi.get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
     test_app_name = "test_app_with_existing_datasource"
     existing_bucket = s3buckets["not_connected"]
     user = users["superuser"]
