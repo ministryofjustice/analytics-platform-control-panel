@@ -202,20 +202,22 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     def _check_namespace_in_cloud_platform(self, form_namespace):
         """Throws RepositoryNotFound error if namespace not found in CP repo"""
 
-        namespace = f"{form_namespace}-{settings.ENV}"
+        namespaces = [f"{form_namespace}-dev", f"{form_namespace}-prod"]
         cloud_platform_repo_name = "cloud-platform-environments"
-        path = f"namespaces/live.cloud-platform.service.justice.gov.uk/{namespace}"
-        GithubAPI(self.request.user.github_api_token).get_repository_contents(
-            cloud_platform_repo_name, path
-        )
+
+        for namespace in namespaces:
+            path = f"namespaces/live.cloud-platform.service.justice.gov.uk/{namespace}"
+            GithubAPI(self.request.user.github_api_token).get_repository_contents(
+                cloud_platform_repo_name, path
+            )
 
     def form_valid(self, form):
         try:
             self._check_namespace_in_cloud_platform(form.cleaned_data.get("namespace"))
 
             self.object = AppManager().register_app(self.request.user, form.cleaned_data)
-        except RepositoryNotFound:
-            form.add_error("namespace", "Namespace doesn't exist in cloud platform")
+        except RepositoryNotFound as ex:
+            form.add_error("namespace", str(ex))
             return FormMixin.form_invalid(self, form)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
