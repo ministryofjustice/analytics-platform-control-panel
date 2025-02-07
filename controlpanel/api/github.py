@@ -70,6 +70,18 @@ class GithubAPI:
 
         return self._process_response(response)
 
+    def get_repository_contents(self, repo_name: str, repo_path: str):
+        response = requests.get(
+            self._get_repo_api_url(repo_name=repo_name, api_call=f"contents/{repo_path}"),
+            headers=self.headers,
+        )
+        if response.status_code == 404:
+            raise RepositoryNotFound(
+                f"Repository path '{repo_path}' in {repo_name} not found. It may not exist"
+            )
+
+        return self._process_response(response)
+
     def read_app_deploy_info(self, repo_name: str, deploy_file="deploy.json"):
         response = requests.get(
             self._get_repo_api_url(repo_name=repo_name, api_call=f"contents/{deploy_file}"),

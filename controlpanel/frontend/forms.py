@@ -515,7 +515,7 @@ class ToolReleaseForm(forms.ModelForm):
         """
         target_list = self.data.get("target_users_list", "")
         if target_list:
-            usernames = set([username.strip() for username in target_list.split(",")])
+            usernames = set([username.strip().lower() for username in target_list.split(",")])
             return User.objects.filter(username__in=usernames)
         else:
             return []
