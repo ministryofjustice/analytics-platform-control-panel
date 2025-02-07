@@ -1,7 +1,10 @@
+# Standard library
 from unittest.mock import Mock, patch
 
+# Third-party
 import pytest
 
+# First-party/Local
 from controlpanel.api.github import GithubAPI, RepositoryNotFound
 
 
