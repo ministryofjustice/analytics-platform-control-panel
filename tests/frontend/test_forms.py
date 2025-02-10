@@ -62,20 +62,54 @@ def test_tool_release_form_check_tool_domain(release_data, tool_domain, expected
     assert f.is_valid() is expected
 
 
-def test_tool_release_form_get_target_users():
+def test_tool_release_form_clean_target_users():
     """
     Given a string list of comma separated usernames, the expected query to
     return the associated User objects is created.
     """
     f = forms.ToolReleaseForm()
-    f.data = {
-        "target_users_list": "aldo, nicholas, cal",
+    f.cleaned_data = {
+        "target_users_list": "aldo, nicholas, cal, MICHAEL",
     }
-    mock_user = mock.MagicMock()
-    with mock.patch("controlpanel.frontend.forms.User", mock_user):
-        f.get_target_users()
+    with mock.patch("controlpanel.frontend.forms.User") as mock_user:
+        mock_user.objects.filter.return_value.values_list.return_value = [
+            "aldo",
+            "nicholas",
+            "cal",
+            "michael",
+        ]
+        result = f.clean_target_users_list()
+
         mock_user.objects.filter.assert_called_once_with(
-            username__in=set(["aldo", "nicholas", "cal"])
+            username__in=set(["aldo", "nicholas", "cal", "michael"])
+        )
+        mock_user.objects.filter.return_value.values_list.assert_called_once_with(
+            "username", flat=True
+        )
+        assert result == mock_user.objects.filter.return_value
+
+
+def test_tool_release_form_clean_target_users_not_found():
+    """
+    Given a string list of comma separated usernames, the expected query to
+    return the associated User objects is created.
+    """
+    f = forms.ToolReleaseForm()
+    f.cleaned_data = {
+        "target_users_list": "missing_user, ANOTHER_MISSING_USER",
+    }
+    with mock.patch("controlpanel.frontend.forms.User") as mock_user:
+        mock_user.objects.filter.return_value.values_list.return_value = []
+
+        with pytest.raises(ValidationError) as excinfo:
+            f.clean_target_users_list()
+            assert excinfo.value.message == "Users not found: another_missing_user, missing_user"
+
+        mock_user.objects.filter.assert_called_once_with(
+            username__in=set(["missing_user", "another_missing_user"]),
+        )
+        mock_user.objects.filter.return_value.values_list.assert_called_once_with(
+            "username", flat=True
         )
 
 
