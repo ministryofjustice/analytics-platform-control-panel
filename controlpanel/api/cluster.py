@@ -1052,7 +1052,8 @@ class ToolDeployment:
         try:
             return helm.delete(self.k8s_namespace, self.release_name)
         except helm.HelmError as error:
-            # TODO make this less generic
+            # TODO make this less generic - catch when release not found, so nothing to uninstall
+            # possibly catch when in progress also
             raise ToolDeploymentError(error)
 
     def restart(self, id_token):
