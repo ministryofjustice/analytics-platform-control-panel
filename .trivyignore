@@ -1,11 +1,6 @@
 # Helm
 CVE-2024-34156  # stdlib - helm binary
+
+# Golang
 CVE-2024-45337 # golang.org/x/crypto
-
-# Python
-
-CVE-2024-33663 # python-jose needs patching/replacing abandonware no fix
-
-
-
-CVE-2024-45337 # golang.org/x/crypto
+CVE-2024-45338 # golang.org/x/net
