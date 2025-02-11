@@ -36,7 +36,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: eu-west-1
-          role-to-assume: arn:aws:iam::593291632749:role/github-actions-management-ecr
+          role-to-assume: arn:aws:iam::593291632749:role/github-analytics-platform-control-panel
           role-duration-seconds: 1200
 
       - name: Login to Amazon ECR
