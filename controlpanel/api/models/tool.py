@@ -8,6 +8,7 @@ from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import cluster, helm
+from controlpanel.api.tasks.tools import retire_tool
 
 log = structlog.getLogger(__name__)
 
@@ -80,6 +81,9 @@ class Tool(TimeStampedModel):
         # Consider removing
         if not self.description:
             self.description = helm.get_chart_app_version(self.chart_name, self.version) or ""
+
+        if self.is_retired:
+            retire_tool.delay_on_commit(self.pk)
 
         super().save(*args, **kwargs)
         return self
