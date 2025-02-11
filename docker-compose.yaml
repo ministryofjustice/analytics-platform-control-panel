@@ -47,7 +47,7 @@ services:
     environment:
       DB_HOST: "db"
       DB_NAME: controlpanel
-      DB_PASSWORD: password 
+      DB_PASSWORD: password
       DB_PORT: 5432
       DB_USER: controlpanel
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE}
@@ -91,7 +91,7 @@ services:
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       DB_HOST: "db"
       DB_NAME: controlpanel
-      DB_PASSWORD: password 
+      DB_PASSWORD: password
       DB_PORT: 5432
       DB_USER: controlpanel
       DEBUG: "True"
