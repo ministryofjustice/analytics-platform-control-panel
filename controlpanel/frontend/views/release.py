@@ -79,7 +79,7 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
         Ensure the object is updated as expected (for the beta-users).
         """
         self.object = form.save()
-        target_list = form.get_target_users()
+        target_list = form.cleaned_data["target_users_list"]
         if target_list:
             self.object.target_users.set(target_list)
         else:
@@ -104,7 +104,7 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
         Ensure the object is created as expected (with the beta-users).
         """
         self.object = form.save()
-        target_list = form.get_target_users()
+        target_list = form.cleaned_data["target_users_list"]
         if target_list:
             self.object.target_users.set(target_list)
         messages.success(self.request, "Successfully created new release")

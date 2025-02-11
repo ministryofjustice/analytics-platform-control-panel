@@ -22,28 +22,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = "api.list_tool"
     template_name = "tool-list.html"
 
-    # def _add_deployed_charts_info(self, tools_info, user, id_token):
-    #     # TODO this is left in place simply to determine the status of a tool. Not sure if it is
-    #     # necessary or worth it  we could store the status of the tool on the ToolDeployment model
-    #     # instead
-    #     deployments = cluster.ToolDeployment.get_deployments(user, id_token)
-    #     # build an index using the chart name as the key for easy lookup later
-    #     deployments = {deployment.metadata.labels["app"]: deployment for deployment in deployments}  # noqa
-    #     for tool_deployment in user.tool_deployments.active():
-    #         deployment = deployments.get(tool_deployment.tool.chart_name)
-    #         tool = tool_deployment.tool
-    #         tools_info[tool_deployment.tool_type]["deployment"] = {
-    #             "tool_id": tool.id,
-    #             "chart_name": tool.chart_name,
-    #             "chart_version": tool.version,
-    #             "image_tag": tool.image_tag,
-    #             "description": tool.description,
-    #             "status": tool_deployment.get_status(id_token=id_token, deployment=deployment),
-    #             "is_deprecated": tool.is_deprecated,
-    #             "deprecated_message": tool.get_deprecated_message,
-    #             "is_retired": tool.is_retired,
-    #         }
-
     def get_context_data(self, *args, **kwargs):
         """
         Retrieve information about tools and arrange them for the

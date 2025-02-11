@@ -1,0 +1,35 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      LOGS_BUCKET_NAME: moj-analytics-s3-logs
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Build image
+        id: build_image
+        run: make build
+        env:
+          NETWORK: host
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Run Python tests 
+        id: test
+        run: make clean && make test
+        env:
+          NETWORK: default
+          IMAGE_TAG: ${{ github.sha }}

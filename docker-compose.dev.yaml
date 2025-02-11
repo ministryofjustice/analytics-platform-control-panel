@@ -2,7 +2,7 @@ version: "3"
 
 services:
   frontend:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME}:${IMAGE_TAG-latest}
     stdin_open: true
     tty: true
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -11,11 +11,11 @@ services:
       ./tests:/home/controlpanel/tests
     ]
   migration:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME}:${IMAGE_TAG-latest}
     volumes: [./controlpanel:/home/controlpanel/controlpanel]
     command: "python manage.py migrate"
   worker:
-    image: ${REGISTRY}/${REPOSITORY}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_NAME}:${IMAGE_TAG:-latest}
     stdin_open: true
     tty: true
     volumes: [./controlpanel:/home/controlpanel/controlpanel]

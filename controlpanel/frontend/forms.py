@@ -508,17 +508,22 @@ class ResetHomeDirectoryForm(forms.Form):
 class ToolReleaseForm(forms.ModelForm):
     target_users_list = forms.CharField(required=False)
 
-    def get_target_users(self):
-        """
-        Returns a collection of User instances of those users who are marked as
-        having access to the restricted release.
-        """
-        target_list = self.data.get("target_users_list", "")
-        if target_list:
-            usernames = set([username.strip().lower() for username in target_list.split(",")])
-            return User.objects.filter(username__in=usernames)
-        else:
-            return []
+    def clean_target_users_list(self):
+        target_users_list = self.cleaned_data["target_users_list"]
+        if not target_users_list:
+            return target_users_list
+
+        target_users_list = set(
+            [username.strip().lower() for username in target_users_list.split(",")]
+        )
+
+        found_users = User.objects.filter(username__in=target_users_list)
+        not_found_users = set(target_users_list) - set(
+            found_users.values_list("username", flat=True)
+        )
+        if not_found_users:
+            raise ValidationError(f"Users not found: {', '.join(not_found_users)}")
+        return found_users
 
     def clean_chart_name(self):
         """
@@ -782,6 +787,7 @@ class ToolDeploymentForm(forms.Form):
             )
             .exclude(is_retired=True)
             .order_by("-chart_name", "-image_tag", "-version", "-created")
+            .distinct()
         )
 
     @property
