@@ -664,13 +664,11 @@ class CreateParameterForm(forms.Form):
 
 
 class QuicksightAccessForm(forms.Form):
-    QUICKSIGHT_LEGACY = "quicksight_legacy"
     QUICKSIGHT_COMPUTE_AUTHOR = "quicksight_compute_author"
     QUICKSIGHT_COMPUTE_READER = "quicksight_compute_reader"
 
     enable_quicksight = forms.MultipleChoiceField(
         choices=[
-            (QUICKSIGHT_LEGACY, "Legacy"),
             (QUICKSIGHT_COMPUTE_AUTHOR, "Author"),
             (QUICKSIGHT_COMPUTE_READER, "Reader"),
         ],
@@ -695,7 +693,6 @@ class QuicksightAccessForm(forms.Form):
 
     def grant_access(self):
         quicksight_access = self.cleaned_data["enable_quicksight"]
-        self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
 
         self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
         self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
@@ -719,6 +716,27 @@ class QuicksightAccessForm(forms.Form):
         elif permission_name not in quicksight_access and self.user.has_perm(f"api.{codename}"):
             identity_store.delete_group_membership(self.user.justice_email, group)
             self.user.user_permissions.remove(permission)
+
+
+class AdminQuicksightAccessForm(QuicksightAccessForm):
+    QUICKSIGHT_LEGACY = "quicksight_legacy"
+
+    enable_quicksight = forms.MultipleChoiceField(
+        choices=[
+            (QUICKSIGHT_LEGACY, "Legacy"),
+            (QuicksightAccessForm.QUICKSIGHT_COMPUTE_AUTHOR, "Author"),
+            (QuicksightAccessForm.QUICKSIGHT_COMPUTE_READER, "Reader"),
+        ],
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    def grant_access(self):
+        quicksight_access = self.cleaned_data["enable_quicksight"]
+        self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
+
+        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
+        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
 
 
 class FeedbackForm(forms.ModelForm):

@@ -139,6 +139,12 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
     http_method_names = ["post"]
     form_class = forms.QuicksightAccessForm
 
+    def get_form_class(self):
+        if self.request.user.is_superuser:
+            return forms.AdminQuicksightAccessForm
+
+        return self.form_class
+
     def get_permission_object(self):
         user = get_object_or_404(User, pk=self.kwargs["pk"])
         return user
