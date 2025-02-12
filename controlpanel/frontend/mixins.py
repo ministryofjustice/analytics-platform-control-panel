@@ -19,7 +19,7 @@ class PolicyAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
     """
 
     http_method_names = ["post"]
-    permission_required = "api.update_user"
+    permission_required = "api.add_superuser"
     success_message = ""
     method_name = ""
 

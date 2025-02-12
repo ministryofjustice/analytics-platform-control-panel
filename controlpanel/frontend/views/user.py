@@ -130,6 +130,7 @@ class EnableBedrockUser(PolicyAccessMixin, UpdateView):
     model = User
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"
+    permission_required = "api.update_user"
     method_name = "set_bedrock_access"
 
 
