@@ -2,6 +2,9 @@
 from celery import shared_task
 from django.apps import apps
 
+# First-party/Local
+from controlpanel.api.helm import HelmReleaseNotFound
+
 
 def _get_model(model_name):
     """
@@ -15,7 +18,6 @@ def _get_model(model_name):
 # TODO do we need to use acks_late?
 @shared_task(acks_on_failure_or_timeout=False)
 def retire_tool(tool_pk):
-    # First-party/Local
     Tool = _get_model("Tool")
     try:
         tool = Tool.objects.get(pk=tool_pk, is_retired=True)
@@ -29,8 +31,6 @@ def retire_tool(tool_pk):
 # TODO do we need to use acks_late? Not sure we can
 @shared_task(acks_on_failure_or_timeout=False)
 def uninstall_tool_deployment(tool_deployment_pk):
-    # First-party/Local
-
     ToolDeployment = _get_model("ToolDeployment")
     try:
         tool_deployment = ToolDeployment.objects.active().get(pk=tool_deployment_pk)
@@ -39,7 +39,5 @@ def uninstall_tool_deployment(tool_deployment_pk):
 
     try:
         tool_deployment.uninstall()
-    except ToolDeployment.Error as e:
-        # TODO update this to catch an error specificly about release not found, and let other
-        # errors bubble up e.g. connection/authentication errors
+    except HelmReleaseNotFound as e:
         print(e)
