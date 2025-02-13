@@ -49,7 +49,7 @@
         'label': 'Account navigation',
         'items': [
           {
-            'href': home_url,
+            'href': url('manage-user', kwargs={ "pk": request.user.auth0_id }),
             'text': request.user.name | default(request.user.email),
             'active': True
           },

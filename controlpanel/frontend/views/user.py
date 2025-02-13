@@ -130,13 +130,24 @@ class EnableBedrockUser(PolicyAccessMixin, UpdateView):
     model = User
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"
+    permission_required = "api.update_user"
     method_name = "set_bedrock_access"
 
 
 class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
-    permission_required = "api.add_superuser"
+    permission_required = "api.update_user"
     http_method_names = ["post"]
     form_class = forms.QuicksightAccessForm
+
+    def get_form_class(self):
+        if self.request.user.is_superuser:
+            return forms.AdminQuicksightAccessForm
+
+        return self.form_class
+
+    def get_permission_object(self):
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+        return user
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

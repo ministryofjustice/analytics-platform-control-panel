@@ -72,7 +72,7 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.add_superuser') %}
+{% if request.user.has_perm('api.update_user') %}
 <section class="cpanel-section">
   <form action="{{ url('set-bedrock-user', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
@@ -85,7 +85,7 @@
         },
       },
       "hint": {
-        "text": "Toggle access to Bedrock for a user."
+        "text": "Toggle access to Bedrock."
       },
       "items": [
         {
@@ -102,10 +102,11 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.add_superuser') %}
+
 <section class="cpanel-section">
   <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
+    {% if request.user.has_perm('api.add_superuser') %}
     {{ govukCheckboxes({
       "name": "enable_quicksight",
       "fieldset": {
@@ -125,25 +126,53 @@
         },
         {
           "value": "quicksight_compute_author",
-          "text": "Embedded Quicksight enabled (running in the compute-" + env + " account) as an author",
+          "text": "Access QuickSight from the Control Panel as an author",
           "checked": user.has_perm("api.quicksight_embed_author_access"),
           "disabled": user.is_superuser
         },
         {
           "value": "quicksight_compute_reader",
-          "text": "Embedded Quicksight enabled (running in the compute-" + env + " account) as a reader",
+          "text": "Access QuickSight from the Control Panel as a reader",
           "checked": user.has_perm("api.quicksight_embed_reader_access"),
           "disabled": user.is_superuser
         },
       ]
     }) }}
     <p class="govuk-body">Note: all super admins have access to the embedded Quicksight.</p>
+    {% elif request.user.has_perm('api.update_user') %}
+    {{ govukCheckboxes({
+      "name": "enable_quicksight",
+      "fieldset": {
+        "legend": {
+          "text": "Quicksight access",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Update your Quicksight access."
+      },
+      "items": [
+        {
+          "value": "quicksight_compute_author",
+          "text": "Access QuickSight from the Control Panel as an author",
+          "checked": user.has_perm("api.quicksight_embed_author_access"),
+          "disabled": user.is_superuser
+        },
+        {
+          "value": "quicksight_compute_reader",
+          "text": "Access QuickSight from the Control Panel as a reader",
+          "checked": user.has_perm("api.quicksight_embed_reader_access"),
+          "disabled": user.is_superuser
+        },
+      ]
+    }) }}
+    {% endif %}
     <button class="govuk-button govuk-button--secondary">
       Save changes
     </button>
   </form>
 </section>
-{% endif %}
+
 
 {% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
@@ -199,11 +228,13 @@
   {{ app_list(user.userapps.all()|map(attribute="app")|list, user) }}
 </section>
 
+{% if request.user.has_perm('api.add_superuser') %}
 {# user's datasources #}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} webapp data sources</h2>
   {{ datasource_list(user.users3buckets.filter(s3bucket__is_data_warehouse=False)|map(attribute="s3bucket")|list, "webapp", user) }}
 </section>
+{% endif %}
 
 {% if request.user.has_perm('api.destroy_user', user) %}
 <section class="cpanel-section">
