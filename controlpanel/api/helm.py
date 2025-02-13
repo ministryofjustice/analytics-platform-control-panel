@@ -33,6 +33,12 @@ class HelmError(APIException):
     default_detail = "Error executing Helm command"
 
 
+class HelmReleaseNotFound(HelmError):
+    status_code = 404
+    default_detail = "Helm release not found."
+    default_code = "helm_release_not_found"
+
+
 class HelmChart:
     """
     Instances represent a Helm chart.
@@ -85,49 +91,41 @@ def _execute(*args, **kwargs):
             env=env,
             **kwargs,
         )
-        if "upgrade" in args or "uninstall" in args:
-            # The following lines will make sure the completion of helm command
-            stdout = proc.stdout.read()
-            stderr = proc.stderr.read()
-            if stdout:
-                log.info(stdout)
-            if stderr:
-                log.error(stderr)
-                if should_raise_error(stderr, stdout):
-                    log.error("Raising error")
-                    raise HelmError(stderr)
-                log.info("Error ignored, continuing with subprocess")
 
+        # ensures we get a returncode
+        # if process does timeout exception will be caught and reraised below
+        if wait:
+            proc.wait(timeout)
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
         log.error(proc_ex.stderr.read())
-        raise HelmError(proc_ex)
+        raise HelmError(proc_ex) from proc_ex
     except Exception as ex:
         # Catch all other exceptions, log them and re-raise as HelmError
-        # exceptions.
         log.error(ex)
-        raise HelmError(ex)
-    if wait:
-        # Wait for blocking helm commands.
-        try:
-            proc.wait(timeout)
-        except subprocess.TimeoutExpired as ex:
-            # Raise if timed out.
-            log.warning(ex)
-            raise HelmError(ex)
-    if proc.returncode:
-        # The helm command returned a non-0 return code. Log all the things!
-        log.warning(f"Proc return code: {proc.returncode}")
-        stdout = proc.stdout.read()
-        stderr = proc.stderr.read()
-        log.warning(stderr)
-        log.warning(stdout)
-        raise HelmError(stderr)
-    log.info(f"Returning the subprocess object {id(proc)}")
-    return proc
+        raise HelmError() from ex
+
+    # check the returncode to determine if the process succeeded
+    stdout = proc.stdout.read()
+    if proc.returncode == 0:
+        log.info(stdout)
+        log.info(f"Subprocess {id(proc)} succeeded with returncode: {proc.returncode}")
+        return proc
+
+    # something went went wrong, log the error and raise an exception
+    stderr = proc.stderr.read()
+    log.warning(stdout)
+    log.error(stderr)
+
+    if "error: uninstall: release not loaded" in str(stderr).lower():
+        raise HelmReleaseNotFound(detail=stderr)
+
+    log.error(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
+    raise HelmError(stderr)
 
 
+# TODO want to test if this is still necessary, remove if not
 def should_raise_error(stderr, stdout):
     lower_error_string = stderr.lower()
     lower_out_string = stdout.lower()
