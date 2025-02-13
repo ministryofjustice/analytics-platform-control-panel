@@ -100,7 +100,7 @@ def _execute(*args, **kwargs):
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
         log.error(proc_ex.stderr.read())
-        raise HelmError(proc_ex) from proc_ex
+        raise HelmError() from proc_ex
     except Exception as ex:
         # Catch all other exceptions, log them and re-raise as HelmError
         log.error(ex)
