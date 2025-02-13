@@ -71,16 +71,18 @@ def _execute(*args, **kwargs):
     log.info("Helm process args: " + str(kwargs))
     # Flag to indicate if the helm process will be blocking.
     wait = False
-    # The timeout value will be passed into the process's wait method. See the
-    # Python docs for the blocking behaviour this causes.
+    # The timeout value is only passed into the subprocess wait method NOT helm. This could cause
+    # confusion if the subprocess timeout is lower than the helm timeout
     if "timeout" in kwargs:
         wait = True
         timeout = kwargs.pop("timeout")
         log.info("Blocking helm command. Timeout after {} seconds.".format(timeout))
+
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
     if "DEBUG" in env:
         del env["DEBUG"]
+
     # Run the helm command in a sub-process.
     try:
         proc = subprocess.Popen(
@@ -91,7 +93,6 @@ def _execute(*args, **kwargs):
             env=env,
             **kwargs,
         )
-
         # ensures we get a returncode
         # if process does timeout exception will be caught and reraised below
         if wait:
@@ -107,13 +108,12 @@ def _execute(*args, **kwargs):
         raise HelmError() from ex
 
     # check the returncode to determine if the process succeeded
-    stdout = proc.stdout.read()
     if proc.returncode == 0:
-        log.info(stdout)
         log.info(f"Subprocess {id(proc)} succeeded with returncode: {proc.returncode}")
         return proc
 
     # something went went wrong, log the error and raise an exception
+    stdout = proc.stdout.read()
     stderr = proc.stderr.read()
     log.warning(stdout)
     log.error(stderr)
@@ -233,6 +233,7 @@ def upgrade_release(release, chart, *args):
         release,
         chart,
         *args,
+        timeout=300,  # helm default
     )
 
 
@@ -254,6 +255,7 @@ def delete(namespace, *args, dry_run=False):
         *args,
         "--namespace",
         namespace,
+        "--wait",
         timeout=settings.HELM_DELETE_TIMEOUT,
         dry_run=dry_run,
     )
