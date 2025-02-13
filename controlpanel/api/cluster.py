@@ -1051,9 +1051,12 @@ class ToolDeployment:
     def uninstall(self):
         try:
             return helm.delete(self.k8s_namespace, self.release_name)
+        except helm.HelmReleaseNotFound as error:
+            raise error
         except helm.HelmError as error:
-            # TODO make this less generic
-            raise ToolDeploymentError(error)
+            # this will catch any helm error and reraise as generic ToolDeploymentError, may want
+            # to be more specific in the future based on errors that occur in testing
+            raise ToolDeploymentError() from error
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)
