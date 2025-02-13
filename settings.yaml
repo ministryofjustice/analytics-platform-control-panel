@@ -1,4 +1,4 @@
-enabled_features:
+rrenabled_features:
   redirect_legacy_api_urls:
     _DEFAULT: true
   s3_folders:
@@ -31,7 +31,7 @@ USER_GUIDANCE_BASE_URL: 'https://user-guidance.services.alpha.mojanalytics.xyz'
 
 GOOGLE_ANALYTICS_ID:
   _HOST_dev: 'UA-151666116-4'
-  _HOST_prod: 'UA-151666116-3'
+  _HOST_prod: 'G-65W1XWEH5G'
   _HOST_alpha: 'UA-151666116-2'
 
 # Helm repo where tool charts are hosted
