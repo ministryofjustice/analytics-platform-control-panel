@@ -1,14 +1,18 @@
+# Standard library
+from datetime import timedelta
+
 # Third-party
-import django.core.exceptions
 import structlog
 from django.conf import settings
 from django.db import models
 from django.db.models import JSONField
+from django.dispatch import receiver
+from django.utils import timezone
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import cluster, helm
-from controlpanel.api.tasks.tools import retire_tool
+from controlpanel.api.tasks.tools import uninstall_helm_release, uninstall_tool
 
 log = structlog.getLogger(__name__)
 
@@ -82,10 +86,11 @@ class Tool(TimeStampedModel):
         if not self.description:
             self.description = helm.get_chart_app_version(self.chart_name, self.version) or ""
 
-        if self.is_retired:
-            retire_tool.delay_on_commit(self.pk)
-
         super().save(*args, **kwargs)
+
+        if self.is_retired:
+            self.uninstall_deployments()
+
         return self
 
     @property
@@ -142,6 +147,17 @@ class Tool(TimeStampedModel):
         }
         return mapping[self.tool_type]
 
+    def uninstall_deployments(self):
+        """
+        Sends task to uninstall the tool from all users namespaces. If DELAY_TOOL_UNINSTALL is True,
+        tasks will be sent to be run at3am the next day. This is to avoid uninstalling the tool when
+        users are actively using it.
+        """
+        eta = None
+        if settings.DELAY_TOOL_UNINSTALL:
+            eta = timezone.now().replace(hour=3, minute=0, second=0) + timedelta(seconds=1)
+        uninstall_tool.apply_async_on_commit(args=[self.pk], eta=eta)
+
 
 class ToolDeploymentQuerySet(models.QuerySet):
     def active(self):
@@ -188,13 +204,6 @@ class ToolDeployment(TimeStampedModel):
         """
         return cluster.ToolDeployment(tool=self.tool, user=self.user).uninstall()
 
-    def delete(self, *args, **kwargs):
-        """
-        Remove the release from the cluster
-        """
-        self.uninstall()
-        super().delete(*args, **kwargs)
-
     def deploy(self):
         """
         Deploy the tool to the cluster (asynchronous)
@@ -227,6 +236,14 @@ class ToolDeployment(TimeStampedModel):
             url = f"{url}?folder=/home/analyticalplatform/workspace"
         return url
 
+    @property
+    def k8s_namespace(self):
+        return self.user.k8s_namespace
+
+    @property
+    def release_name(self):
+        return f"{self.tool.chart_name}-{self.user.slug}"[: settings.MAX_RELEASE_NAME_LEN]
+
     def _poll(self):
         """
         Poll the deployment subprocess for status
@@ -253,6 +270,15 @@ class ToolDeployment(TimeStampedModel):
         Restart the tool deployment
         """
         cluster.ToolDeployment(self.user, self.tool).restart(id_token)
+
+
+@receiver(models.signals.post_delete, sender=ToolDeployment)
+def uninstall_tool_deployment(sender, instance, **kwargs):
+    """
+    Uninstall the tool deployment from the cluster. This is done in a signal to catch cascade
+    deletes when a Tool or User has been deleted.
+    """
+    uninstall_helm_release.delay_on_commit(instance.k8s_namespace, instance.release_name)
 
 
 class HomeDirectory:
