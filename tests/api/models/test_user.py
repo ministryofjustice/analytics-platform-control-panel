@@ -129,9 +129,9 @@ def test_set_quicksight_access(users, enable):
         ("other|user_2", False),
     ],
 )
-def test_user_is_github_user(auth0_id, expected):
+def test_user_is_iam_user(auth0_id, expected):
     user = User(auth0_id=auth0_id)
-    assert user.is_github_user == expected
+    assert user.is_iam_user == expected
 
 
 def test_non_github_user_not_provisioned():

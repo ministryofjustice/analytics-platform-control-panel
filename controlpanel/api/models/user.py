@@ -131,7 +131,7 @@ class User(AbstractUser):
         return self.userapps.filter(is_admin=True).exists()
 
     @property
-    def is_github_user(self):
+    def is_iam_user(self):
         """
         Determine if the user was created via the github connection. We can use this to limit what
         actions non-github users do within the AP.
@@ -163,14 +163,14 @@ class User(AbstractUser):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 
     def set_bedrock_access(self):
-        if self.is_github_user:
+        if self.is_iam_user:
             return cluster.User(self).update_policy_attachment(
                 policy=cluster.BEDROCK_POLICY_NAME,
                 attach=self.is_bedrock_enabled,
             )
 
     def set_quicksight_access(self, enable):
-        if self.is_github_user:
+        if self.is_iam_user:
             return cluster.User(self).update_policy_attachment(
                 policy=cluster.User.QUICKSIGHT_POLICY_NAME,
                 attach=enable,
@@ -178,7 +178,7 @@ class User(AbstractUser):
 
     def save(self, *args, **kwargs):
         existing = User.objects.filter(pk=self.pk).first()
-        if not existing and self.is_github_user:
+        if not existing and self.is_iam_user:
             cluster.User(self).create()
 
         already_superuser = existing and existing.is_superuser
