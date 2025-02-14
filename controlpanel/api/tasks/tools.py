@@ -15,12 +15,12 @@ def _get_model(model_name):
     return apps.get_model("api", model_name)
 
 
-# TODO do we need to use acks_late?
+# TODO do we need to use acks_late? try without first
 @shared_task(acks_on_failure_or_timeout=False)
 def uninstall_tool(tool_pk):
     Tool = _get_model("Tool")
     try:
-        tool = Tool.objects.get(pk=tool_pk, is_retired=True)
+        tool = Tool.objects.get(pk=tool_pk)
     except Tool.DoesNotExist:
         return
 
