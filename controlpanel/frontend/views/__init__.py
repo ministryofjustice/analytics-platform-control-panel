@@ -141,7 +141,7 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
             return super().get(request, *args, **kwargs)
 
         # this is temporary change for users authorising via Entra, specifically CICA users
-        if not request.user.is_github_user:
+        if not request.user.is_iam_user:
             return HttpResponseRedirect(reverse("help"))
 
         # Redirect to the tools page.
