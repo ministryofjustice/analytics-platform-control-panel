@@ -150,12 +150,14 @@ class Tool(TimeStampedModel):
     def uninstall_deployments(self):
         """
         Sends task to uninstall the tool from all users namespaces. If DELAY_TOOL_UNINSTALL is True,
-        tasks will be sent to be run at3am the next day. This is to avoid uninstalling the tool when
-        users are actively using it.
+        tasks will be sent to be run at 3am the next day. This is to avoid uninstalling the tool
+        when users are actively using it.
         """
         eta = None
         if settings.DELAY_TOOL_UNINSTALL:
-            eta = timezone.now().replace(hour=3, minute=0, second=0) + timedelta(seconds=1)
+            eta = timezone.now().replace(hour=3, minute=0, second=0, microsecond=0) + timedelta(
+                days=1
+            )
         uninstall_tool.apply_async_on_commit(args=[self.pk], eta=eta)
 
 
