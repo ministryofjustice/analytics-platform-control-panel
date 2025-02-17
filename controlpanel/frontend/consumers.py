@@ -14,14 +14,14 @@ from django.db import transaction
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.cluster import (  # TOOL_IDLED,; TOOL_READY,
+from controlpanel.api.cluster import (
     HOME_RESET_FAILED,
     HOME_RESETTING,
     TOOL_DEPLOY_FAILED,
     TOOL_DEPLOYING,
-    TOOL_READY,
     TOOL_RESTARTING,
 )
+from controlpanel.api.helm import HelmReleaseNotFound
 from controlpanel.api.models import App, HomeDirectory, IPAllowlist, Tool, ToolDeployment, User
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse
 
@@ -169,9 +169,10 @@ class BackgroundTaskConsumer(SyncConsumer):
         if previous_deployment:
             try:
                 previous_deployment.uninstall()
-            except ToolDeployment.Error as err:
+            # TODO update this
+            except (ToolDeployment.Error, HelmReleaseNotFound) as err:
                 # if something went wrong, log the error but continue to try to deploy the new tool
-                log.error(err)
+                log.warning(err)
                 pass
 
         try:

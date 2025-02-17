@@ -11,6 +11,7 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import auth0
+from controlpanel.api.helm import HelmError, HelmReleaseNotFound
 from controlpanel.api.models import (
     QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
     QUICKSIGHT_EMBED_READER_PERMISSION,
@@ -72,6 +73,9 @@ def helm():
     Mock calls to Helm
     """
     with patch("controlpanel.api.cluster.helm") as helm:
+        # patch the actual exceptions
+        helm.HelmReleaseNotFound = HelmReleaseNotFound
+        helm.HelmError = HelmError
         yield helm
 
 

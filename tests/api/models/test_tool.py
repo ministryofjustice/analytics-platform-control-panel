@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 # Third-party
 import pytest
 from django.conf import settings
+from django.utils import timezone
 from model_bakery import baker
 
 # First-party/Local
@@ -138,3 +139,40 @@ def test_status_colour():
     assert tool.status_colour == "grey"
     tool.is_retired = True
     assert tool.status_colour == "red"
+
+
+@patch("django.utils.timezone.now", return_value=timezone.datetime(2025, 1, 1, 0, 0, 0))
+@pytest.mark.parametrize(
+    "delay, eta",
+    [
+        (False, None),
+        (True, timezone.datetime(2025, 1, 2, 3, 0, 0)),  # 3am the next day
+    ],
+)
+def test_uninstall_deployments(timezone_now, delay, eta):
+    settings.DELAY_TOOL_UNINSTALL = delay
+    tool = Tool(pk=123)
+
+    with patch("controlpanel.api.models.tool.uninstall_tool") as uninstall_tool:
+        tool.uninstall_deployments()
+        uninstall_tool.apply_async_on_commit.assert_called_once_with(args=[tool.pk], eta=eta)
+        assert bool(timezone_now.mock_calls) == delay
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.models.tool.helm")
+@pytest.mark.parametrize("is_retired", [True, False])
+def test_save(mock_helm, is_retired):
+    tool = Tool(
+        chart_name="rstudio",
+        version="1.0.0",
+        image_tag="0.0.1",
+        description="Test description",
+        is_retired=is_retired,
+    )
+
+    with patch.object(Tool, "uninstall_deployments") as uninstall_deployments:
+        tool.save()
+
+        mock_helm.update_helm_repository.assert_called_once_with(force=True)
+        assert bool(uninstall_deployments.mock_calls) == is_retired

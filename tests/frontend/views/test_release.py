@@ -186,3 +186,33 @@ def test_release_update_failure(client, users, release_data):
     )
     assert response.status_code == 200
     assert "target_users_list" in response.context_data["form"].errors
+
+
+@mock.patch("controlpanel.api.models.Tool.uninstall_deployments")
+def test_retire_release(uninstall_deployments, client, users, release_data):
+    """
+    Ensure retiring the release uninstalls deployments.
+    """
+    client.force_login(users["superuser"])
+    # create the tool
+    response = client.post(
+        reverse("create-tool-release"),
+        data=release_data,
+    )
+    tool = Tool.objects.get(
+        name=release_data["name"],
+        version=release_data["version"],
+        image_tag=release_data["image_tag"],
+        description=release_data["description"],
+    )
+
+    # retire the tool
+    url = reverse("manage-tool-release", kwargs={"pk": tool.pk})
+    release_data["is_retired"] = True
+    response = client.post(url, data=release_data)
+
+    uninstall_deployments.assert_called_once()
+    tool.refresh_from_db()
+    assert tool.is_retired is True
+    assert response.status_code == 302
+    assert response.url == reverse("list-tool-releases")
