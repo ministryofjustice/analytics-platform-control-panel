@@ -1,9 +1,13 @@
+# Standard library
+from unittest.mock import patch
+
 # Third-party
 import pytest
 from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
+from controlpanel.api.helm import HelmError, HelmReleaseNotFound
 from controlpanel.api.models import Tool, ToolDeployment, User
 
 
@@ -89,3 +93,36 @@ def test_get_chart_details(chart, expected):
     Ensures the chart details are correctly extracted from the chart name.
     """
     assert cluster.ToolDeployment.get_chart_details(chart) == expected
+
+
+def test_uninstall_success(helm):
+    user = User(username="test-user")
+    tool = Tool()
+    cluster_tool_deployment = cluster.ToolDeployment(user=user, tool=tool)
+    result = cluster_tool_deployment.uninstall()
+
+    helm.delete.assert_called_once_with(
+        cluster_tool_deployment.k8s_namespace, cluster_tool_deployment.release_name
+    )
+    assert result == helm.delete.return_value
+
+
+@pytest.mark.parametrize(
+    "error, error_raised",
+    [
+        (HelmReleaseNotFound, HelmReleaseNotFound),
+        (HelmError, cluster.ToolDeploymentError),
+    ],
+)
+def test_uninstall_exceptions(helm, error, error_raised):
+    helm.delete.side_effect = error
+
+    user = User(username="test-user")
+    tool = Tool()
+    cluster_tool_deployment = cluster.ToolDeployment(user=user, tool=tool)
+
+    with pytest.raises(error_raised):
+        cluster_tool_deployment.uninstall()
+        helm.delete.assert_called_once_with(
+            cluster_tool_deployment.k8s_namespace, cluster_tool_deployment.release_name
+        )
