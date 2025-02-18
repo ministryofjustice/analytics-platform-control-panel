@@ -21,8 +21,7 @@
     "vscode": {
       "extensions": [
         "EditorConfig.EditorConfig",
-        "GitHub.vscode-github-actions",
-        "GitHub.vscode-codeql"
+        "GitHub.vscode-github-actions"
       ]
     }
   }
