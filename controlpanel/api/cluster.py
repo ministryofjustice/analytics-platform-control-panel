@@ -961,35 +961,6 @@ class ToolDeployment:
     def escape_namespace_len(self, name: str) -> str:
         return name[: settings.MAX_RELEASE_NAME_LEN]
 
-    def _delete_legacy_release(self):
-        """
-        At some point the naming scheme for RStudio
-        changed. This cause upgrade problems when
-        an old release with the old release name is
-        present.
-
-        We're going to temporarily check/uninstall
-        releases with the old name before installing
-        the new release with the correct name.
-
-        We can remove this once every user is on new naming
-        scheme for RStudio.
-        """
-        old_release_name = f"{self.chart_name}-{self.user.slug}"
-        old_release_name = self.escape_namespace_len(old_release_name)
-
-        if self.old_chart_name:
-            # If an old_chart_name has been passed into the deployment, it
-            # means the currently deployed instance of the tool is from a
-            # different chart to the one for this tool. Therefore, it's
-            # the old_chart_name that we should use for the old release
-            # that needs deleting.
-            old_release_name = f"{self.old_chart_name}-{self.user.slug}"
-            old_release_name = self.escape_namespace_len(old_release_name)
-
-        if old_release_name in helm.list_releases(old_release_name, self.k8s_namespace):
-            helm.delete(self.k8s_namespace, old_release_name)
-
     def _set_values(self, **kwargs):
         """
         Return the list of `--set KEY=VALUE` helm upgrade arguments
@@ -1027,10 +998,6 @@ class ToolDeployment:
         return set_values
 
     def install(self, **kwargs):
-        # TODO remove as should no longer be necessary as we uninstall the previous release before
-        # installing the new one
-        # self._delete_legacy_release()
-
         try:
             set_values = self._set_values(**kwargs)
 
@@ -1051,9 +1018,12 @@ class ToolDeployment:
     def uninstall(self):
         try:
             return helm.delete(self.k8s_namespace, self.release_name)
+        except helm.HelmReleaseNotFound as error:
+            raise error
         except helm.HelmError as error:
-            # TODO make this less generic
-            raise ToolDeploymentError(error)
+            # this will catch any helm error and reraise as generic ToolDeploymentError, may want
+            # to be more specific in the future based on errors that occur in testing
+            raise ToolDeploymentError() from error
 
     def restart(self, id_token):
         k8s = KubernetesClient(id_token=id_token)

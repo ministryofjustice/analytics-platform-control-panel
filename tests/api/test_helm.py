@@ -96,6 +96,7 @@ def test_helm_upgrade_release():
             "--wait",
             "--force",
             *upgrade_args,
+            timeout=300,
         )
 
 
@@ -221,6 +222,7 @@ def test_delete():
             "baz",
             "--namespace",
             "my_namespace",
+            "--wait",
             timeout=settings.HELM_DELETE_TIMEOUT,
             dry_run=False,
         )
