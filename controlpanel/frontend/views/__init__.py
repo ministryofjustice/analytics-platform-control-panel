@@ -56,6 +56,7 @@ from controlpanel.frontend.views.datasource import (
     GrantAccess,
     GrantPolicyAccess,
     RevokeAccess,
+    RevokeAccessSelf,
     RevokeIAMManagedPolicyAccess,
     UpdateAccessLevel,
     UpdateDatasourceLifecycleConfig,
@@ -106,6 +107,7 @@ from controlpanel.frontend.views.user import (
     SetSuperadmin,
     UserDelete,
     UserDetail,
+    UserDetailRedirect,
     UserList,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin, get_code_challenge, oauth

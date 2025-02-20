@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
+from django.db.models import Prefetch
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
@@ -71,7 +72,12 @@ class BucketList(
     template_name = "datasource-list.html"
 
     def get_queryset(self):
-        return S3Bucket.objects.prefetch_related("users3buckets").filter(
+
+        userbuckets = UserS3Bucket.objects.filter(user=self.request.user)
+
+        return S3Bucket.objects.prefetch_related(
+            Prefetch("users3buckets", queryset=userbuckets, to_attr="user_buckets")
+        ).filter(
             is_data_warehouse=self.datasource_type == "warehouse",
             users3buckets__user=self.request.user,
             is_deleted=False,
@@ -79,6 +85,13 @@ class BucketList(
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
+
+        for bucket in context["buckets"]:
+            if hasattr(bucket, "user_buckets"):
+                userbucket = bucket.user_buckets[0]
+                bucket.revoke_url = reverse_lazy(
+                    "revoke-datasource-access-self", kwargs={"pk": userbucket.id}
+                )
 
         all_datasources = S3Bucket.objects.prefetch_related("users3buckets__user").filter(
             is_data_warehouse=self.datasource_type == "warehouse",
@@ -302,7 +315,24 @@ class RevokeAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")
+
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+
+
+class RevokeAccessSelf(RevokeAccess):
+    permission_required = "api.destroy_users3bucket_self"
+
+    def get_permission_object(self):
+        perm_obj = super().get_permission_object()
+
+        if perm_obj is None:
+            return perm_obj
+
+        return perm_obj.user
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully revoked access")
+        return reverse_lazy("list-warehouse-datasources")
 
 
 class RevokeIAMManagedPolicyAccess(RevokeAccess):

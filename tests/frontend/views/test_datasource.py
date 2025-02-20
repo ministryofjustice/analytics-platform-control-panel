@@ -178,6 +178,15 @@ def revoke_access(client, users3buckets, *args):
     )
 
 
+def revoke_access_self(client, users3buckets, *args):
+    return client.post(
+        reverse(
+            "revoke-datasource-access-self",
+            kwargs={"pk": users3buckets["warehouse_readonly"].id},
+        )
+    )
+
+
 def grant_access(client, users3buckets, users, **kwargs):
     data = {
         "access_level": UserS3Bucket.READWRITE,
@@ -204,6 +213,10 @@ def grant_access(client, users3buckets, users, **kwargs):
         (revoke_access, "superuser", status.HTTP_302_FOUND),
         (revoke_access, "bucket_admin", status.HTTP_302_FOUND),
         (revoke_access, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_access_self, "superuser", status.HTTP_302_FOUND),
+        (revoke_access_self, "bucket_admin", status.HTTP_403_FORBIDDEN),
+        (revoke_access_self, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_access_self, "bucket_viewer", status.HTTP_302_FOUND),
         (grant_access, "superuser", status.HTTP_302_FOUND),
         (grant_access, "bucket_admin", status.HTTP_302_FOUND),
         (grant_access, "normal_user", status.HTTP_403_FORBIDDEN),
