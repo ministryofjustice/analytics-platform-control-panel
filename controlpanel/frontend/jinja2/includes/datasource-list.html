@@ -18,7 +18,10 @@
       {% endif %}
       </th>
       <th class="govuk-table__header">
-        <span class="govuk-visually-hidden">Actions</span>
+        <span class="govuk-visually-hidden">Manage</span>
+      </th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Revoke</span>
       </th>
     </tr>
   </thead>
@@ -53,6 +56,15 @@
           Manage data source
         </a>
       </td>
+      {% if request.user.has_perm('api.destroy_users3bucket_self') %}
+        <td class="govuk-table__cell align-right no-wrap">
+          <form method="post" action="{{ datasource.revoke_url }}">
+            {{ csrf_input }}
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-confirm-message="You will no longer be able to access this data. Are you sure?">Revoke access</button>
+          </form>
+        </td> 
+      {% endif %}
     </tr>
   {% endfor %}
   </tbody>
