@@ -393,15 +393,11 @@
 
 {% if request.user.has_perm('api.destroy_app', app) %}
 <section class="cpanel-section">
-  <h2 class="govuk-heading-m">Unlink App from Control Panel</h2>
-  <p class="govuk-body">
-    This button unlinks your app from control panel. This will not delete your app. You must delete it from Cloud Platform if you want to permanently delete your app. Do not forget to do this.
-  </p>
   <form action="{{ url('delete-app', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
     <button class="govuk-button cpanel-button--destructive js-confirm"
-            data-confirm-message="Are you sure you want to unlink this app?">
-      Unlink app
+            data-confirm-message="Are you sure you want to delete this app?">
+      Delete app
     </button>
   </form>
 </section>
