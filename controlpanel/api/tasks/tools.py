@@ -1,18 +1,9 @@
 # Third-party
 from celery import shared_task
-from django.apps import apps
 
 # First-party/Local
-from controlpanel.api import cluster, helm
-
-
-def _get_model(model_name):
-    """
-    This is used to avoid a circular import when calling tasks from within models. I feel like this
-    is the best worst option. For futher reading on this issue and the lack of an ideal solution:
-    https://stackoverflow.com/questions/26379026/resolving-circular-imports-in-celery-and-django
-    """
-    return apps.get_model("api", model_name)
+from controlpanel.api import helm
+from controlpanel.utils import _get_model
 
 
 # TODO do we need to use acks_late? try without first

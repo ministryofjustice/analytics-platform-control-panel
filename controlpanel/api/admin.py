@@ -2,13 +2,16 @@
 import csv
 
 # Third-party
-from django.contrib import admin
+from django.conf import settings
+from django.contrib import admin, messages
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.translation import ngettext
 from simple_history.admin import SimpleHistoryAdmin
 
 # First-party/Local
 from controlpanel.api.models import App, Feedback, IPAllowlist, S3Bucket, ToolDeployment, User
+from controlpanel.api.tasks.user import upgrade_user_helm_chart
 
 
 def make_migration_pending(modeladmin, request, queryset):
@@ -56,6 +59,39 @@ class UserAdmin(admin.ModelAdmin):
         "email",
         "auth0_id",
     )
+    actions = [
+        "upgrade_bootstrap_user_helm_chart",
+        "upgrade_provision_user_helm_chart",
+        "reset_home_directory",
+    ]
+
+    def _upgrade_helm_chart(self, request, queryset, chart_name):
+        total = 0
+        for user in queryset:
+            if not user.is_iam_user:
+                continue
+
+            upgrade_user_helm_chart.delay(user.username, chart_name)
+            total += 1
+
+        self.message_user(
+            request,
+            ngettext(
+                f"{chart_name} helm chart updated for %d user.",
+                f"{chart_name} helm chart updated for %d users.",
+                total,
+            )
+            % total,
+            messages.SUCCESS,
+        )
+
+    @admin.action(description="Upgrade bootstrap-user helm chart")
+    def upgrade_bootstrap_user_helm_chart(self, request, queryset):
+        self._upgrade_helm_chart(request, queryset, f"{settings.HELM_REPO}/bootstrap-user")
+
+    @admin.action(description="Reset users home directory")
+    def reset_home_directory(self, request, queryset):
+        self._upgrade_helm_chart(request, queryset, f"{settings.HELM_REPO}/reset-user-efs-home")
 
 
 class IPAllowlistAdmin(SimpleHistoryAdmin):
