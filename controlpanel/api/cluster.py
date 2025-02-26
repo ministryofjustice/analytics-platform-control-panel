@@ -211,6 +211,18 @@ class User(EntityResource):
     def _init_aws_services(self):
         self.aws_role_service = self.create_aws_service(AWSRole)
 
+    def get_helm_chart(self, chart_name):
+        """
+        Lookup helm chart dictionary by name. This is fine for now as there are not many charts,
+        but if the number of charts grows, we should consider refactoring to store them in a
+        way that allows a more efficient lookup.
+        """
+        for chart_type, charts in self.user_helm_charts.items():
+            for chart in charts:
+                if chart["chart"] == chart_name:
+                    return chart
+        return None
+
     @property
     def user_helm_charts(self):
         # The full list of the charts required for a user under different situations

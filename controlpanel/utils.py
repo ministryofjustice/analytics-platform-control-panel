@@ -11,6 +11,7 @@ from asgiref.sync import async_to_sync
 from channels.exceptions import StopConsumer
 from channels.generic.http import AsyncHttpConsumer
 from channels.layers import get_channel_layer
+from django.apps import apps
 from django.conf import settings
 from django.template.defaultfilters import slugify
 from nacl import encoding, public
@@ -246,3 +247,12 @@ def start_background_task(task, message):
             **message,
         },
     )
+
+
+def _get_model(model_name):
+    """
+    This is used to avoid a circular import when calling tasks from within models. I feel like this
+    is the best worst option. For futher reading on this issue and the lack of an ideal solution:
+    https://stackoverflow.com/questions/26379026/resolving-circular-imports-in-celery-and-django
+    """
+    return apps.get_model("api", model_name)

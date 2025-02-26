@@ -12,6 +12,7 @@ from rest_framework.reverse import reverse
 
 # First-party/Local
 from controlpanel.api.models import User
+from controlpanel.api.tasks.user import upgrade_user_helm_chart
 
 
 @pytest.fixture(autouse=True)
