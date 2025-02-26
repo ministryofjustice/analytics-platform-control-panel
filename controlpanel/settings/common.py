@@ -79,6 +79,8 @@ INSTALLED_APPS = [
     "controlpanel.cli",
     # Health check
     "django_prometheus",
+    # for scheduled tasks
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
