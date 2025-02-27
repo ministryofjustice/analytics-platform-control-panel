@@ -37,6 +37,11 @@ urlpatterns = [
         views.RevokeAccess.as_view(),
         name="revoke-datasource-access",
     ),
+    path(
+        "datasource-access/<int:pk>/self-delete/",
+        views.RevokeAccessSelf.as_view(),
+        name="revoke-datasource-access-self",
+    ),
     path("groups/", views.IAMManagedPolicyList.as_view(), name="list-policies"),
     path(
         "groups/all/",
@@ -78,6 +83,7 @@ urlpatterns = [
     ),
     path("users/", views.UserList.as_view(), name="list-users"),
     path("users/<str:pk>/", views.UserDetail.as_view(), name="manage-user"),
+    path("user/", views.UserDetailRedirect.as_view(), name="manage-user-redirect"),
     path("users/<str:pk>/delete/", views.UserDelete.as_view(), name="delete-user"),
     path("users/<str:pk>/bedrock/", views.EnableBedrockUser.as_view(), name="set-bedrock-user"),
     path("users/<str:pk>/quicksight/", views.SetQuicksightAccess.as_view(), name="set-quicksight"),

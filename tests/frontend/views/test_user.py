@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from rest_framework import status
 
 # First-party/Local
@@ -352,3 +352,15 @@ def test_quicksight_form_remove_from_group(
 
     if expected_result > 0:
         assert response["GroupMemberships"][0]["GroupId"] == group_ids["azure_holding"]
+
+
+@pytest.mark.parametrize("user", ["normal_user", "superuser", "other_user"])
+def test_user_redirect(client, users, user):
+    url = reverse("manage-user-redirect")
+    user = users[user]
+
+    client.force_login(user)
+    response = client.post(url)
+
+    assert response.status_code == status.HTTP_302_FOUND
+    assert response.url == reverse_lazy("manage-user", kwargs={"pk": user.auth0_id})
