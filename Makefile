@@ -27,7 +27,9 @@ test-python:
 		frontend sh -c "pytest -v --tb=line tests --color=yes"
 
 ## test: Run tests in Docker container
-test: test-python
+test: 
+	pip freeze 
+	test-python
 
 prepare-up:
 	@docker compose up -d db
