@@ -29,7 +29,7 @@ test-python:
 ## test: Run tests in Docker container
 test: 
 	pip freeze 
-	test-python
+	make test-python
 
 prepare-up:
 	@docker compose up -d db
