@@ -24,12 +24,10 @@ test-python:
 	@echo
 	@echo "> Running Python Tests (In Docker)..."
 	@docker compose run --rm -e KUBECONFIG=tests/kubeconfig \
-		frontend sh -c "pytest -v --tb=line tests --color=yes"
+		frontend sh -c "pip freeze && pytest -v --tb=line tests --color=yes"
 
 ## test: Run tests in Docker container
-test: 
-	pip freeze 
-	make test-python
+test: test-python
 
 prepare-up:
 	@docker compose up -d db
