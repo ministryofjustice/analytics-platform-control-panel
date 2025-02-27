@@ -1,13 +1,16 @@
 # Third-party
+import structlog
 from celery import shared_task
 
 # First-party/Local
 from controlpanel.api import helm
 from controlpanel.utils import _get_model
 
+log = structlog.getLogger(__name__)
+
 
 # TODO do we need to use acks_late? try without first
-@shared_task(acks_on_failure_or_timeout=False)
+@shared_task(acks_on_failure_or_timeout=False)  # this does nothing without using acks_late
 def uninstall_tool(tool_pk):
     Tool = _get_model("Tool")
     try:
@@ -24,4 +27,4 @@ def uninstall_helm_release(namespace, release_name):
     try:
         helm.delete(namespace, release_name)
     except helm.HelmReleaseNotFound as e:
-        print(e)
+        log.info(e)
