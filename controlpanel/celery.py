@@ -6,6 +6,7 @@ from pathlib import Path
 import dotenv
 import structlog
 from celery import Celery
+from celery.signals import beat_init
 from django.conf import settings
 from kombu import Queue
 
@@ -41,6 +42,11 @@ def debug_task(self):
 def worker_health_check(self):
     Path(settings.WORKER_HEALTH_FILENAME).touch()
     log.debug("Worker health ping task executed")
+
+
+@beat_init.connect
+def beat_ready(**_):
+    Path(settings.WORKER_HEALTH_FILENAME).touch()
 
 
 # ensures worker picks and runs tasks from all queues rather than just default queue
