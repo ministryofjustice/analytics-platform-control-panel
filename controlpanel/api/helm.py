@@ -69,11 +69,11 @@ def _execute(*args, **kwargs):
         return None
 
     log.info("Helm process args: " + str(kwargs))
-    # Flag to indicate if the helm process will be blocking.
+
     timeout = None
     if "timeout" in kwargs:
         timeout = kwargs.pop("timeout")
-        log.info("Blocking helm command. Timeout after {} seconds.".format(timeout))
+        log.info(f"Blocking helm command. Timeout after {timeout} seconds.")
 
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
@@ -91,13 +91,18 @@ def _execute(*args, **kwargs):
             **kwargs,
         )
         # waits for process to complete or reaches timeout
-        outs, errs = proc.communicate(timeout=timeout)
+        proc.wait(timeout=timeout)
+    except OSError as ex:
+        # Catch system level errors and re-raise as HelmError
+        log.error(ex)
+        raise HelmError() from ex
     except subprocess.TimeoutExpired as timeout_ex:
+        # If timeout reached kill the child process, then log outputs and reraise HelmError
         proc.kill()
         outs, errs = proc.communicate()
         log.warning(outs)
         log.error(errs)
-        raise timeout_ex
+        raise HelmError() from timeout_ex
     except subprocess.CalledProcessError as proc_ex:
         # Subprocess specific exception handling should capture stderr too.
         log.error(proc_ex)
