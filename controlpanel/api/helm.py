@@ -69,14 +69,11 @@ def _execute(*args, **kwargs):
         return None
 
     log.info("Helm process args: " + str(kwargs))
-    # Flag to indicate if the helm process will be blocking.
-    wait = False
-    # The timeout value is only passed into the subprocess wait method NOT helm. This could cause
-    # confusion if the subprocess timeout is lower than the helm timeout
+
+    timeout = None
     if "timeout" in kwargs:
-        wait = True
         timeout = kwargs.pop("timeout")
-        log.info("Blocking helm command. Timeout after {} seconds.".format(timeout))
+        log.info(f"Blocking helm command. Timeout after {timeout} seconds.")
 
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
@@ -93,19 +90,26 @@ def _execute(*args, **kwargs):
             env=env,
             **kwargs,
         )
-        # ensures we get a returncode
-        # if process does timeout exception will be caught and reraised below
-        if wait:
-            proc.wait(timeout)
-    except subprocess.CalledProcessError as proc_ex:
-        # Subprocess specific exception handling should capture stderr too.
-        log.error(proc_ex)
-        log.error(proc_ex.stderr.read())
-        raise HelmError() from proc_ex
-    except Exception as ex:
-        # Catch all other exceptions, log them and re-raise as HelmError
+        # waits for process to complete or reaches timeout
+        proc.wait(timeout=timeout)
+    except OSError as ex:
+        # Catch system level errors and re-raise as HelmError
         log.error(ex)
         raise HelmError() from ex
+    except subprocess.TimeoutExpired as timeout_ex:
+        # If timeout reached kill the child process, then log outputs and reraise HelmError
+        proc.kill()
+        outs, errs = proc.communicate()
+        log.warning(outs)
+        log.error(errs)
+        raise HelmError() from timeout_ex
+    except subprocess.SubprocessError as proc_ex:
+        # Catch general subprocess errors and reraise as HelmError
+        proc.kill()
+        outs, errs = proc.communicate()
+        log.warning(outs)
+        log.error(errs)
+        raise HelmError() from proc_ex
 
     # check the returncode to determine if the process succeeded
     if proc.returncode == 0:
@@ -113,16 +117,15 @@ def _execute(*args, **kwargs):
         return proc
 
     # something went went wrong, log the error and raise an exception
-    stdout = proc.stdout.read()
-    stderr = proc.stderr.read()
-    log.warning(stdout)
-    log.error(stderr)
+    outs, errs = proc.communicate()
+    log.warning(outs)
+    log.error(errs)
 
-    if "error: uninstall: release not loaded" in str(stderr).lower():
-        raise HelmReleaseNotFound(detail=stderr)
+    if "error: uninstall: release not loaded" in str(errs).lower():
+        raise HelmReleaseNotFound(detail=outs)
 
     log.error(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
-    raise HelmError(stderr)
+    raise HelmError(errs)
 
 
 # TODO want to test if this is still necessary, remove if not
