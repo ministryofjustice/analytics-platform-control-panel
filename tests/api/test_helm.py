@@ -139,26 +139,27 @@ def test_execute_with_timeout():
     with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
         result = helm._execute("delete", "foo", timeout=timeout)
     assert result == mock_proc
-    mock_proc.wait.assert_called_once_with(timeout)
+    mock_proc.wait.assert_called_once_with(timeout=timeout)
 
 
 def test_execute_with_failing_process():
     """
     Ensure a HelmError is raised if the subprocess was unable to run.
     """
-    mock_stderr = MagicMock()
-    mock_stderr.read.return_value = "boom"
-    mock_Popen = MagicMock(side_effect=subprocess.CalledProcessError(1, "boom", stderr=mock_stderr))
+    mock_process = MagicMock()
+    mock_process.wait.side_effect = subprocess.SubprocessError()
+    mock_process.communicate.return_value = ("boom", "bang")
+    mock_Popen = MagicMock(return_value=mock_process)
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
             helm._execute("delete", "foo")
 
 
-def test_execute_with_unforeseen_exception():
+def test_execute_with_oserror():
     """
     Ensure a HelmError is raised if any other sort of exception is encountered.
     """
-    mock_Popen = MagicMock(side_effect=ValueError("Boom"))
+    mock_Popen = MagicMock(side_effect=OSError("Boom"))
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
             helm._execute("delete", "foo")
@@ -170,10 +171,26 @@ def test_execute_with_failing_helm_command():
     """
     mock_proc = MagicMock()
     mock_proc.returncode = 1  # Boom ;-)
+    mock_proc.communicate.return_value = ("boom", "bang")
     mock_Popen = MagicMock(return_value=mock_proc)
     with pytest.raises(helm.HelmError):
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
             helm._execute("delete", "foo")
+            mock_proc.communicate.assert_called_once()
+
+
+@pytest.mark.parametrize("timeout", [None, 60])
+def test_execute_waits(timeout):
+    mock_proc = MagicMock()
+    mock_proc.returncode = 0
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+        helm._execute("foo", "bar", timeout=timeout)
+
+    mock_proc.wait.assert_called_once_with(timeout=timeout)
+    mock_proc.communicate.assert_not_called()
+    assert mock_proc.returncode == 0
 
 
 def test_update_helm_repository_non_existent_cache(helm_repository_index):

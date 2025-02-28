@@ -103,15 +103,13 @@ def _execute(*args, **kwargs):
         log.warning(outs)
         log.error(errs)
         raise HelmError() from timeout_ex
-    except subprocess.CalledProcessError as proc_ex:
-        # Subprocess specific exception handling should capture stderr too.
-        log.error(proc_ex)
-        log.error(proc_ex.stderr.read())
+    except subprocess.SubprocessError as proc_ex:
+        # Catch general subprocess errors and reraise as HelmError
+        proc.kill()
+        outs, errs = proc.communicate()
+        log.warning(outs)
+        log.error(errs)
         raise HelmError() from proc_ex
-    except Exception as ex:
-        # Catch all other exceptions, log them and re-raise as HelmError
-        log.error(ex)
-        raise HelmError() from ex
 
     # check the returncode to determine if the process succeeded
     if proc.returncode == 0:
@@ -119,6 +117,7 @@ def _execute(*args, **kwargs):
         return proc
 
     # something went went wrong, log the error and raise an exception
+    outs, errs = proc.communicate()
     log.warning(outs)
     log.error(errs)
 
