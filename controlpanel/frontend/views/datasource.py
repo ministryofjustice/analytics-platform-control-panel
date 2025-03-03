@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Prefetch
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin, View
@@ -86,13 +86,6 @@ class BucketList(
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
-        for bucket in context["buckets"]:
-            if hasattr(bucket, "user_buckets"):
-                userbucket = bucket.user_buckets[0]
-                bucket.revoke_url = reverse_lazy(
-                    "revoke-datasource-access-self", kwargs={"pk": userbucket.id}
-                )
-
         all_datasources = S3Bucket.objects.prefetch_related("users3buckets__user").filter(
             is_data_warehouse=self.datasource_type == "warehouse",
             is_deleted=False,
@@ -111,6 +104,7 @@ class BucketList(
 class AdminBucketList(BucketList):
     all_datasources = True
     permission_required = "api.is_superuser"
+    template_name = "datasource-list-admin.html"
 
     def get_queryset(self):
         return S3Bucket.objects.prefetch_related("users3buckets").filter(is_deleted=False)
@@ -329,6 +323,13 @@ class RevokeAccessSelf(RevokeAccess):
             return perm_obj
 
         return perm_obj.user
+
+    def get_object(self, queryset=None):
+        try:
+            obj = self.request.user.users3buckets.get(s3bucket_id=self.kwargs["pk"])
+        except self.model.DoesNotExist:
+            raise Http404()
+        return obj
 
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")
