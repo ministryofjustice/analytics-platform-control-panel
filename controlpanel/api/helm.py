@@ -100,14 +100,14 @@ def _execute(*args, **kwargs):
         # If timeout reached kill the child process, then log outputs and reraise HelmError
         proc.kill()
         outs, errs = proc.communicate()
-        log.warning(outs)
+        log.info(outs)
         log.error(errs)
         raise HelmError() from timeout_ex
     except subprocess.SubprocessError as proc_ex:
         # Catch general subprocess errors and reraise as HelmError
         proc.kill()
         outs, errs = proc.communicate()
-        log.warning(outs)
+        log.info(outs)
         log.error(errs)
         raise HelmError() from proc_ex
 
@@ -121,9 +121,9 @@ def _execute(*args, **kwargs):
     if "error: uninstall: release not loaded" in str(errs).lower():
         raise HelmReleaseNotFound(detail=outs)
 
-    log.warning(outs)
+    log.info(outs)
+    log.info(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
     log.error(errs)
-    log.error(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
     raise HelmError(errs)
 
 

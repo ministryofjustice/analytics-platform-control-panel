@@ -170,7 +170,7 @@ class BackgroundTaskConsumer(SyncConsumer):
             try:
                 previous_deployment.uninstall()
             except (ToolDeployment.Error, HelmReleaseNotFound) as err:
-                log.warning(f"Previous deployment not found with: {str(err)}. Continuing to deploy")
+                log.info(f"Previous deployment not found with: {str(err)}. Continuing to deploy")
                 pass
 
         try:
