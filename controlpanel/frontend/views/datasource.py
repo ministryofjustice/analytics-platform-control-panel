@@ -72,12 +72,7 @@ class BucketList(
     template_name = "datasource-list.html"
 
     def get_queryset(self):
-
-        userbuckets = UserS3Bucket.objects.filter(user=self.request.user)
-
-        return S3Bucket.objects.prefetch_related(
-            Prefetch("users3buckets", queryset=userbuckets, to_attr="user_buckets")
-        ).filter(
+        return S3Bucket.objects.prefetch_related("users3buckets").filter(
             is_data_warehouse=self.datasource_type == "warehouse",
             users3buckets__user=self.request.user,
             is_deleted=False,
