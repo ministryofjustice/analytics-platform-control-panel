@@ -116,14 +116,13 @@ def _execute(*args, **kwargs):
         log.info(f"Subprocess {id(proc)} succeeded with returncode: {proc.returncode}")
         return proc
 
-    # something went went wrong, log the error and raise an exception
+    # something went went wrong, check the outputs
     outs, errs = proc.communicate()
-    log.warning(outs)
-    log.error(errs)
-
     if "error: uninstall: release not loaded" in str(errs).lower():
         raise HelmReleaseNotFound(detail=outs)
 
+    log.warning(outs)
+    log.error(errs)
     log.error(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
     raise HelmError(errs)
 
