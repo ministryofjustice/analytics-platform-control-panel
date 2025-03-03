@@ -8,5 +8,5 @@ numpy==1.26.0
 pandas==2.2.3
 pipdeptree==2.25.0
 pre-commit==4.0.1
-pylint==3.3.2
+pylint==3.3.4
 pylint-django==2.6.1
