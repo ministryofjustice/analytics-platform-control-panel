@@ -8,6 +8,7 @@ from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
 from django.db.transaction import atomic
+from django.urls import reverse
 from django.utils import timezone
 from django_extensions.db.models import TimeStampedModel
 
@@ -109,6 +110,12 @@ class S3Bucket(TimeStampedModel):
         it must represent a folder.
         """
         return "/" in self.name
+
+    def get_absolute_revoke_self_url(self):
+        """
+        Build url to the view which revokes the current user's access to the datasource.
+        """
+        return reverse("revoke-datasource-access-self", kwargs={"pk": self.pk})
 
     def user_is_admin(self, user):
         return (

@@ -8,7 +8,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.db.models import Prefetch
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.base import ContextMixin, View
@@ -98,6 +99,7 @@ class BucketList(
 class AdminBucketList(BucketList):
     all_datasources = True
     permission_required = "api.is_superuser"
+    template_name = "datasource-list-admin.html"
 
     def get_queryset(self):
         return S3Bucket.objects.prefetch_related("users3buckets").filter(is_deleted=False)
@@ -302,7 +304,31 @@ class RevokeAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
 
     def get_success_url(self):
         messages.success(self.request, "Successfully revoked access")
+
         return reverse_lazy("manage-datasource", kwargs={"pk": self.object.s3bucket.id})
+
+
+class RevokeAccessSelf(RevokeAccess):
+    permission_required = "api.destroy_users3bucket_self"
+
+    def get_permission_object(self):
+        perm_obj = super().get_permission_object()
+
+        if perm_obj is None:
+            return perm_obj
+
+        return perm_obj.user
+
+    def get_object(self, queryset=None):
+        try:
+            obj = self.request.user.users3buckets.get(s3bucket_id=self.kwargs["pk"])
+        except self.model.DoesNotExist:
+            raise Http404()
+        return obj
+
+    def get_success_url(self):
+        messages.success(self.request, "Successfully revoked access")
+        return reverse_lazy("list-warehouse-datasources")
 
 
 class RevokeIAMManagedPolicyAccess(RevokeAccess):

@@ -2,6 +2,82 @@
 
 {% set access_levels_html %}{% include "modals/user_data_access_levels.html" %}{% endset %}
 
+{% macro datasource_list_self_serve(datasources, datasource_type, user) %}
+{%- set pronoun = "Your" if user == request.user else "User's" %}
+{%- set num_datasources = datasources|length %}
+<table class="govuk-table">
+  <thead class="govuk-table__head">
+    <tr class="govuk-table__row">
+      <th class="govuk-table__header">Name</th>
+      <th class="govuk-table__header">
+      {% if all_datasources %}
+        Type
+      {% else %}
+        {{ pronoun }} access level
+        {{ modal_dialog(access_levels_html|safe) }}
+      {% endif %}
+      </th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Manage</span>
+      </th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Revoke</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody class="govuk-table__body">
+  {% for datasource in datasources %}
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell">
+        <a href="{{ url('manage-datasource', kwargs={ "pk": datasource.id }) }}">{{ datasource.name }}</a>
+      </td>
+      <td class="govuk-table__cell">
+      {%- if all_datasources %}
+        {%- if datasource.is_data_warehouse -%}
+          Warehouse
+        {%- else -%}
+          Webapp
+        {%- endif -%}
+      {%- else -%}
+        {% with access_level = datasource.access_level(user).lower() -%}
+          {% if access_level == 'admin' -%}
+            Admin
+          {%- elif access_level == 'readwrite' -%}
+            Read/write
+          {%- else -%}
+            Read only
+          {%- endif %}
+        {%- endwith %}
+      {%- endif -%}
+      </td>
+      <td class="govuk-table__cell align-right no-wrap">
+        <a class="govuk-button govuk-button--secondary"
+           href="{{ url('manage-datasource', kwargs={ "pk": datasource.pk }) }}">
+          Manage data source
+        </a>
+      </td>
+      {% if request.user.has_perm('api.destroy_users3bucket_self') %}
+        <td class="govuk-table__cell align-right no-wrap">
+          <form method="post" action="{{ datasource.get_absolute_revoke_self_url() }}">
+            {{ csrf_input }}
+            <button class="govuk-button cpanel-button--destructive js-confirm"
+              data-confirm-message="You will no longer be able to access this data. Are you sure?">Revoke access</button>
+          </form>
+        </td> 
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot class="govuk-table__foot">
+    <tr class="govuk-table__row">
+      <td class="govuk-table__cell" colspan="3">
+        {{ num_datasources }} {{ datasource_type if datasource_type else "" }} data source{% if num_datasources != 1 %}s{% endif %}
+      </td>
+    </tr>
+  </tfoot>
+</table>
+{% endmacro %}
+
 {% macro datasource_list(datasources, datasource_type, user) %}
 {%- set pronoun = "Your" if user == request.user else "User's" %}
 {%- set num_datasources = datasources|length %}
@@ -18,7 +94,7 @@
       {% endif %}
       </th>
       <th class="govuk-table__header">
-        <span class="govuk-visually-hidden">Actions</span>
+        <span class="govuk-visually-hidden">Manage</span>
       </th>
     </tr>
   </thead>
