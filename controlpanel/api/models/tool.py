@@ -1,4 +1,5 @@
 # Standard library
+import json
 from datetime import timedelta
 
 # Third-party
@@ -8,11 +9,12 @@ from django.db import models
 from django.db.models import JSONField
 from django.dispatch import receiver
 from django.utils import timezone
+from django_celery_beat.models import ClockedSchedule, PeriodicTask
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import cluster, helm
-from controlpanel.api.tasks.tools import uninstall_helm_release, uninstall_tool
+from controlpanel.api.tasks.tools import uninstall_helm_release
 
 log = structlog.getLogger(__name__)
 
@@ -149,16 +151,26 @@ class Tool(TimeStampedModel):
 
     def uninstall_deployments(self):
         """
-        Sends task to uninstall the tool from all users namespaces. If DELAY_TOOL_UNINSTALL is True,
-        tasks will be sent to be run at 3am the next day. This is to avoid uninstalling the tool
-        when users are actively using it.
+        Sends task to uninstall the tool from all users namespaces. Task will be sent to be run at
+        3am the next day. This is to avoid uninstalling the tool when users are actively using it.
+        This time can be updated in the celery beat admin.
         """
-        eta = None
-        if settings.DELAY_TOOL_UNINSTALL:
-            eta = timezone.now().replace(hour=3, minute=0, second=0, microsecond=0) + timedelta(
-                days=1
-            )
-        uninstall_tool.apply_async_on_commit(args=[self.pk], eta=eta)
+        # can be amended later in django admin
+        default_run_at = timezone.now().replace(
+            hour=3, minute=0, second=0, microsecond=0
+        ) + timedelta(days=1)
+        clocked, _ = ClockedSchedule.objects.get_or_create(clocked_time=default_run_at)
+        PeriodicTask.objects.update_or_create(
+            name=f"Uninstall active deployments: {self.description} ({self.pk})",
+            defaults={
+                "clocked": clocked,
+                "task": "controlpanel.api.tasks.tools.uninstall_tool",
+                "kwargs": json.dumps({"tool_pk": self.pk}),
+                "expires": default_run_at + timedelta(hours=3),
+                "one_off": True,
+                "enabled": True,
+            },
+        )
 
 
 class ToolDeploymentQuerySet(models.QuerySet):

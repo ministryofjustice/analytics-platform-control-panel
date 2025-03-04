@@ -141,22 +141,35 @@ def test_status_colour():
     assert tool.status_colour == "red"
 
 
-@patch("django.utils.timezone.now", return_value=timezone.datetime(2025, 1, 1, 0, 0, 0))
-@pytest.mark.parametrize(
-    "delay, eta",
-    [
-        (False, None),
-        (True, timezone.datetime(2025, 1, 2, 3, 0, 0)),  # 3am the next day
-    ],
+@patch(
+    "django.utils.timezone.now",
+    return_value=timezone.datetime(2025, 1, 1, 0, 0, 0, tzinfo=timezone.timezone.utc),
 )
-def test_uninstall_deployments(timezone_now, delay, eta):
-    settings.DELAY_TOOL_UNINSTALL = delay
-    tool = Tool(pk=123)
+@patch("controlpanel.api.models.tool.ClockedSchedule")
+@patch("controlpanel.api.models.tool.PeriodicTask")
+def test_uninstall_deployments(task, clocked, mock_now):
+    tool = Tool(pk=123, description="Test description", is_retired=True)
+    expected_run_at = timezone.datetime(2025, 1, 2, 3, 0, 0, tzinfo=timezone.timezone.utc)
+    clocked_mock = MagicMock()
+    clocked.objects.get_or_create.return_value = (clocked_mock, True)
 
-    with patch("controlpanel.api.models.tool.uninstall_tool") as uninstall_tool:
-        tool.uninstall_deployments()
-        uninstall_tool.apply_async_on_commit.assert_called_once_with(args=[tool.pk], eta=eta)
-        assert bool(timezone_now.mock_calls) == delay
+    tool.uninstall_deployments()
+
+    mock_now.assert_called_once()
+    clocked.objects.get_or_create.assert_called_once_with(
+        clocked_time=expected_run_at,
+    )
+    task.objects.update_or_create.assert_called_once_with(
+        name=f"Uninstall active deployments: {tool.description} ({tool.pk})",
+        defaults={
+            "clocked": clocked_mock,
+            "task": "controlpanel.api.tasks.tools.uninstall_tool",
+            "kwargs": f'{{"tool_pk": {tool.pk}}}',
+            "expires": expected_run_at + timezone.timedelta(hours=3),
+            "one_off": True,
+            "enabled": True,
+        },
+    )
 
 
 @pytest.mark.django_db

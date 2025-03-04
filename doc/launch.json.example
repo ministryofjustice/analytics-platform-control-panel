@@ -14,6 +14,21 @@
             ],
         },
         {
+            "name": "celery_beat",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "celery",
+            "args": [
+                "-A",
+                "controlpanel",
+                "beat",
+                "--loglevel=debug",
+                "--scheduler",
+                "django_celery_beat.schedulers:DatabaseScheduler",
+            ],
+            "justMyCode": false,
+        },
+        {
             "name": "runserver",
             "type": "debugpy",
             "request": "launch",
