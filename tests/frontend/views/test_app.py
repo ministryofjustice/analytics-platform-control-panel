@@ -127,6 +127,7 @@ def repos_with_auth(githubapi):
         {"name": cluster.App.AUTH0_DOMAIN, "value": "http://testing"},
     ]
     githubapi.get_repo_env_secrets.return_value = [
+        {"name": cluster.App.APP_ROLE_ARN},
         {"name": cluster.App.AUTH0_CLIENT_ID},
         {"name": cluster.App.AUTH0_CLIENT_SECRET},
         {"name": cluster.App.IP_RANGES},
@@ -161,6 +162,7 @@ def repos_for_no_auth(githubapi):
     ]
     githubapi.get_repo_env_secrets.return_value = [
         {"name": cluster.App.IP_RANGES},
+        {"name": cluster.App.APP_ROLE_ARN},
     ]
     yield githubapi
 
@@ -676,6 +678,7 @@ def test_app_detail_with_auth_on(client, app, users, repos_with_auth):
     auth_settings = get_auth_settings(response.content, "dev_env")
     settings_for_checks = [
         {"n": cluster.App.IP_RANGES, "v": app.env_allowed_ip_ranges_names("dev_env"), "e": True},
+        {"n": cluster.App.APP_ROLE_ARN, "v": app.iam_role_arn, "e": False},
         {"n": cluster.App.AUTH0_CLIENT_ID, "v": settings.SECRET_DISPLAY_VALUE, "e": False},
         {"n": cluster.App.AUTH0_CLIENT_SECRET, "v": settings.SECRET_DISPLAY_VALUE, "e": False},
         {"n": cluster.App.AUTH0_CONNECTIONS, "v": "[]", "e": True},
@@ -714,6 +717,7 @@ def test_app_detail_with_auth_off(client, app, users, repos_for_no_auth):
 
     settings_for_checks = [
         {"n": cluster.App.IP_RANGES, "v": app.env_allowed_ip_ranges_names("dev_env"), "e": True},
+        {"n": cluster.App.APP_ROLE_ARN, "v": app.iam_role_arn, "e": False},
         {"n": cluster.App.AUTHENTICATION_REQUIRED, "v": "False", "e": True},
     ]
     for item in settings_for_checks:
@@ -721,7 +725,10 @@ def test_app_detail_with_auth_off(client, app, users, repos_for_no_auth):
         if not auth_item_ui:
             continue
         assert item["v"] in auth_item_ui.text
-        assert "Edit" in auth_item_ui.text
+        if item["e"]:
+            assert "Edit" in auth_item_ui.text
+        else:
+            assert "Edit" not in auth_item_ui.text
 
 
 def test_app_detail_with_self_define_settings(client, app, users, repos):

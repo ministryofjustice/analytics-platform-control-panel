@@ -658,14 +658,20 @@ class App(EntityResource):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_secrets = []
         created_secret_names = []
+
+        visible_values = {
+            App.IP_RANGES: self.app.env_allowed_ip_ranges_names(env_name=env_name),
+            App.APP_ROLE_ARN: self.app.iam_role_arn,
+        }
+
         for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_secrets(
             repo_name=repo_name, env_name=env_name
         ):
             if self._is_hidden_secret(item["name"]):
                 continue
-            value = settings.SECRET_DISPLAY_VALUE
-            if item["name"] == App.IP_RANGES:
-                value = self.app.env_allowed_ip_ranges_names(env_name=env_name)
+
+            value = visible_values.get(item["name"], settings.SECRET_DISPLAY_VALUE)
+
             app_secrets.append(
                 {
                     "name": item["name"],
