@@ -27,7 +27,7 @@ AWS_SERVICE_URL:
   _HOST_alpha: "https://aws.services.analytical-platform.service.justice.gov.uk"
   _HOST_prod: "https://aws.services.analytical-platform.service.justice.gov.uk"
 
-USER_GUIDANCE_BASE_URL: 'https://user-guidance.services.alpha.mojanalytics.xyz'
+USER_GUIDANCE_BASE_URL: 'https://user-guidance.analytical-platform.service.justice.gov.uk'
 
 GOOGLE_ANALYTICS_ID:
   _HOST_dev: 'G-ZSLFX0MKL9'
