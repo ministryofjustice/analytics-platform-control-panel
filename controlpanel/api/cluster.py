@@ -654,6 +654,20 @@ class App(EntityResource):
             repo_name=repo_name
         )
 
+    def _append_value(self, variables, created_names, item_name, env_name, value):
+        variables.append(
+            {
+                "name": item_name,
+                "env_name": env_name,
+                "value": value,
+                "created": True,
+                "removable": item_name not in settings.AUTH_SETTINGS_SECRETS,
+                "editable": item_name not in settings.AUTH_SETTINGS_NO_EDIT,
+            }
+        )
+
+        created_names.append(item_name)
+
     def get_env_secrets(self, env_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
         app_secrets = []
@@ -661,28 +675,21 @@ class App(EntityResource):
 
         visible_values = {
             App.IP_RANGES: self.app.env_allowed_ip_ranges_names(env_name=env_name),
-            App.APP_ROLE_ARN: self.app.iam_role_arn,
         }
+
+        self._append_value(
+            app_secrets, created_secret_names, App.APP_ROLE_ARN, env_name, self.app.iam_role_arn
+        )
 
         for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_secrets(
             repo_name=repo_name, env_name=env_name
         ):
-            if self._is_hidden_secret(item["name"]):
+            if self._is_hidden_secret(item["name"]) or item["name"] == App.APP_ROLE_ARN:
                 continue
 
             value = visible_values.get(item["name"], settings.SECRET_DISPLAY_VALUE)
+            self._append_value(app_secrets, created_secret_names, item["name"], env_name, value)
 
-            app_secrets.append(
-                {
-                    "name": item["name"],
-                    "env_name": env_name,
-                    "value": value,
-                    "created": True,
-                    "removable": item["name"] not in settings.AUTH_SETTINGS_SECRETS,
-                    "editable": item["name"] not in settings.AUTH_SETTINGS_NO_EDIT,
-                }
-            )
-            created_secret_names.append(item["name"])
         self._add_missing_mandatory_secrets(env_name, app_secrets, created_secret_names)
         return app_secrets
 
@@ -693,17 +700,9 @@ class App(EntityResource):
         for item in GithubAPI(self.github_api_token, github_org=org_name).get_repo_env_vars(
             repo_name, env_name=env_name
         ):
-            app_env_vars.append(
-                {
-                    "name": item["name"],
-                    "value": item["value"],
-                    "created": True,
-                    "env_name": env_name,
-                    "removable": item["name"] not in settings.AUTH_SETTINGS_ENVS,
-                    "editable": item["name"] not in settings.AUTH_SETTINGS_NO_EDIT,
-                }
+            self._append_value(
+                app_env_vars, created_var_names, item["name"], env_name, item["value"]
             )
-            created_var_names.append(item["name"])
         self._add_missing_mandatory_vars(env_name, app_env_vars, created_var_names)
         return app_env_vars
 

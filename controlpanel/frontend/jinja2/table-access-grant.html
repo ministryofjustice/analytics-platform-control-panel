@@ -14,7 +14,7 @@
   <form action="{{ grant_url }}" method="post">
     {{ csrf_input }}
     <div class="govuk-form-group{% if form.entity_id.errors %} govuk-form-group--error{% endif %}">
-      <label class="govuk-label" for="entity_id">Grant access to this data to other users</label>
+      <label class="govuk-label" for="entity_id">Specify user to grant access to</label>
       <select class="govuk-form-control no-blank autocomplete-select" id="entity_id" name="entity_id">
         <option value="">Select a user</option>
         {% for entity in entity_options %}
