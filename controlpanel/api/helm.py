@@ -63,22 +63,17 @@ def _execute(*args, **kwargs):
     the helm command. The caller is responsible for logging stdout in the case
     of a success or failure.
     """
-    log.info(" ".join(["helm", *args]))
 
     if "dry_run" in kwargs and kwargs.pop("dry_run"):
         return None
-
-    log.info("Helm process args: " + str(kwargs))
-
-    timeout = None
-    if "timeout" in kwargs:
-        timeout = kwargs.pop("timeout")
-        log.info(f"Blocking helm command. Timeout after {timeout} seconds.")
 
     # Apparently, helm checks for existence of DEBUG env var, so delete it.
     env = os.environ.copy()
     if "DEBUG" in env:
         del env["DEBUG"]
+
+    log.info(" ".join(["helm", *args]))
+    log.info("Helm process kwargs: " + str(kwargs))
 
     # Run the helm command in a sub-process.
     try:
@@ -90,19 +85,12 @@ def _execute(*args, **kwargs):
             env=env,
             **kwargs,
         )
-        # waits for process to complete or reaches timeout
-        proc.wait(timeout=timeout)
+        # waits for process to complete or reaches helm timeout - default is 5m0s
+        proc.wait()
     except OSError as ex:
         # Catch system level errors and re-raise as HelmError
         log.error(ex)
         raise HelmError() from ex
-    except subprocess.TimeoutExpired as timeout_ex:
-        # If timeout reached kill the child process, then log outputs and reraise HelmError
-        proc.kill()
-        outs, errs = proc.communicate()
-        log.info(outs)
-        log.error(errs)
-        raise HelmError() from timeout_ex
     except subprocess.SubprocessError as proc_ex:
         # Catch general subprocess errors and reraise as HelmError
         proc.kill()
@@ -157,26 +145,12 @@ def update_helm_repository(force=False):
     repo_path = get_repo_path()
     # If there's no helm repository cache, call helm repo update to fill it.
     if not os.path.exists(repo_path):
-        _execute("repo", "update", timeout=None)
+        _execute("repo", "update")
     else:
         # Execute the helm repo update command if the helm repository cache is
         # stale (older than CACHE_FOR_MINUTES value).
         if force or os.path.getmtime(repo_path) + CACHE_FOR_MINUTES < time.time():
-            _execute("repo", "update", timeout=None)  # timeout = infinity.
-
-
-# TODO no longer used, remove
-def get_default_image_tag_from_helm_chart(chart_url, chart_name):
-    proc = _execute("show", "values", chart_url)
-    if proc:
-        output = proc.stdout.read()
-        values = yaml.safe_load(output) or {}
-        tool_name = chart_name.split("-")[0]
-        return values.get(tool_name, {}).get("tag") or values.get(tool_name, {}).get(
-            "image", {}
-        ).get("tag")
-    else:
-        return None
+            _execute("repo", "update")
 
 
 # TODO this is no longer called from the Your Tools page
@@ -230,12 +204,13 @@ def upgrade_release(release, chart, *args):
     return _execute(
         "upgrade",
         "--install",
-        "--wait",
         "--force",
+        "--wait",
+        "--timeout",
+        "7m0s",
         release,
         chart,
         *args,
-        timeout=300,  # helm default
     )
 
 
@@ -258,7 +233,8 @@ def delete(namespace, *args, dry_run=False):
         "--namespace",
         namespace,
         "--wait",
-        timeout=settings.HELM_DELETE_TIMEOUT,
+        "--timeout",
+        settings.HELM_DELETE_TIMEOUT,
         dry_run=dry_run,
     )
     if proc:
