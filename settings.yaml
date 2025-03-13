@@ -40,7 +40,7 @@ HELM_REPO: 'mojanalytics'
 HELM_REPOSITORY_CACHE: "/tmp/helm/cache/repository"
 
 # The number of seconds helm should wait for helm delete to complete.
-HELM_DELETE_TIMEOUT: 30
+HELM_DELETE_TIMEOUT: "30s"
 
 # domain where tools are deployed
 TOOLS_DOMAIN:

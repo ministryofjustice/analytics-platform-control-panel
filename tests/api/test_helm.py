@@ -93,10 +93,11 @@ def test_helm_upgrade_release():
         mock_execute.assert_called_with(
             "upgrade",
             "--install",
-            "--wait",
             "--force",
+            "--wait",
+            "--timeout",
+            "7m0s",
             *upgrade_args,
-            timeout=300,
         )
 
 
@@ -126,20 +127,6 @@ def test_execute_ignores_debug():
         encoding="utf8",
         env={},  # Missing the DEBUG flag.
     )
-
-
-def test_execute_with_timeout():
-    """
-    Ensure the subprocess is waited on (blocks) for timeout seconds.
-    """
-    mock_proc = MagicMock()
-    mock_proc.returncode = 0
-    mock_Popen = MagicMock(return_value=mock_proc)
-    timeout = 1
-    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-        result = helm._execute("delete", "foo", timeout=timeout)
-    assert result == mock_proc
-    mock_proc.wait.assert_called_once_with(timeout=timeout)
 
 
 def test_execute_with_failing_process():
@@ -186,9 +173,9 @@ def test_execute_waits(timeout):
     mock_Popen = MagicMock(return_value=mock_proc)
 
     with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-        helm._execute("foo", "bar", timeout=timeout)
+        helm._execute("foo", "bar")
 
-    mock_proc.wait.assert_called_once_with(timeout=timeout)
+    mock_proc.wait.assert_called_once()
     mock_proc.communicate.assert_not_called()
     assert mock_proc.returncode == 0
 
@@ -206,7 +193,7 @@ def test_update_helm_repository_non_existent_cache(helm_repository_index):
         patch("controlpanel.api.helm.os.path.exists", return_value=False),
     ):
         helm.update_helm_repository()
-        mock_execute.assert_called_once_with("repo", "update", timeout=None)
+        mock_execute.assert_called_once_with("repo", "update")
 
 
 def test_update_helm_repository_valid_cache(helm_repository_index):
@@ -240,7 +227,8 @@ def test_delete():
             "--namespace",
             "my_namespace",
             "--wait",
-            timeout=settings.HELM_DELETE_TIMEOUT,
+            "--timeout",
+            settings.HELM_DELETE_TIMEOUT,
             dry_run=False,
         )
 
