@@ -8,7 +8,11 @@ from model_bakery import baker
 # First-party/Local
 from controlpanel.api import helm
 from controlpanel.api.models import Tool, ToolDeployment
-from controlpanel.api.tasks.tools import uninstall_helm_release, uninstall_tool
+from controlpanel.api.tasks.tools import (
+    reset_home_directory,
+    uninstall_helm_release,
+    uninstall_tool,
+)
 
 
 @pytest.fixture
@@ -103,3 +107,12 @@ def test_uninstall_helm_other_error_raises(mock_helm_delete):
     with pytest.raises(helm.HelmError):
         uninstall_helm_release(namespace, release_name)
         mock_helm_delete.assert_called_once_with(namespace, release_name)
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.cluster.User")
+def test_reset_home_directory(cluster_user, users):
+    reset_home_directory(user_id=users["normal_user"].auth0_id)
+
+    cluster_user.assert_called_once_with(users["normal_user"])
+    cluster_user.return_value.reset_home.assert_called_once()
