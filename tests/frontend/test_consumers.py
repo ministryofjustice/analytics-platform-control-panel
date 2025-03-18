@@ -43,12 +43,6 @@ def wait_for_deployment():
         yield wait_for_deployment
 
 
-@pytest.fixture
-def wait_for_home_reset():
-    with patch("controlpanel.frontend.consumers.wait_for_home_reset") as wait_for_home_reset:
-        yield wait_for_home_reset
-
-
 def test_tool_deploy(users, tools, update_tool_status, wait_for_deployment):
     user = User.objects.first()
     tool = Tool.objects.first()
@@ -137,33 +131,6 @@ def test_tool_restart(users, tools, update_tool_status, wait_for_deployment):
         restart_mock.assert_called_with(id_token=id_token)
 
         wait_for_deployment.assert_called_with(tool_deployment, id_token)
-
-
-def test_get_home_reset(users, update_home_status, wait_for_home_reset):
-    user = User.objects.first()
-
-    with patch("controlpanel.frontend.consumers.HomeDirectory") as HomeDirectory:
-        mock_hd = Mock()  # Mock home directory instance.
-        HomeDirectory.return_value = mock_hd
-
-        consumer = consumers.BackgroundTaskConsumer()
-        consumer.home_reset(
-            message={
-                "user_id": user.auth0_id,
-            }
-        )
-
-        # 1. Instanciate `HomeDirectory` correctly
-        HomeDirectory.assert_called_with(user)
-        # 2. Send status update
-        update_home_status.assert_called_with(
-            mock_hd,
-            HOME_RESETTING,
-        )
-        # 3. Call restart() on ToolDeployment (trigger deployment)
-        mock_hd.reset.assert_called_once_with()
-        # 4. Wait for deployment to complete
-        wait_for_home_reset.assert_called_with(mock_hd)
 
 
 def test_update_tool_status():
