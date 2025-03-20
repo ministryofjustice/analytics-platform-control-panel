@@ -1,0 +1,15 @@
+{% from "includes/admin-dashboard-list.html" import dashboard_list with context %}
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "All Dashboards" %}
+
+{% block content %}
+{% set num_dashboards = dashboard|length %}
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  {% if request.user.has_perm('api.add_superuser') %}
+    {{ dashboard_list(dashboards, request.user) }}
+  {% endif %}
+{% endblock %}

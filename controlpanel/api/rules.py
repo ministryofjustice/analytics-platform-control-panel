@@ -9,6 +9,7 @@ from rules import add_perm, is_authenticated, is_superuser, predicate
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
+    Dashboard,
     Parameter,
     S3Bucket,
     ToolDeployment,
@@ -238,3 +239,29 @@ add_perm("api.update_parameter", is_authenticated & is_owner)
 add_perm("api.destroy_parameter", is_authenticated & is_owner)
 
 add_perm("api.list_task", is_authenticated & is_superuser)
+
+
+@predicate
+def is_dashboard_admin(user, obj):
+    if obj is None:
+        return True
+
+    # Implement logic here
+    if is_superuser(user):
+        return True
+
+    if isinstance(obj, Dashboard):
+        return user in obj.admins
+
+    return False
+
+
+add_perm("api.list_dashboard", is_authenticated & is_iam_user)
+add_perm("api.create_dashboard", is_authenticated & is_iam_user)
+add_perm("api.retrieve_dashboard", is_authenticated & is_dashboard_admin)
+add_perm("api.update_dashboard", is_authenticated & is_dashboard_admin)
+add_perm("api.destroy_dashboard", is_authenticated & is_dashboard_admin)
+add_perm("api.add_dashboard_customer", is_authenticated & is_dashboard_admin)
+add_perm("api.remove_dashboard_customer", is_authenticated & is_dashboard_admin)
+add_perm("api.add_dashboard_admin", is_authenticated & is_dashboard_admin)
+add_perm("api.revoke_dashboard_admin", is_authenticated & is_dashboard_admin)

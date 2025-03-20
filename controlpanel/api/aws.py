@@ -1255,6 +1255,34 @@ class AWSQuicksight(AWSService):
 
         return response
 
+    def describe_dashboard(self):
+
+        response = self.client.describe_dashboard(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            DashboardId="732f8932-764e-47bc-bd88-6ed437e3293e",
+        )
+
+        return response
+
+    def generate_embed_url_for_anonymous_user(self):
+
+        response = self.client.generate_embed_url_for_anonymous_user(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            SessionLifetimeInMinutes=60,
+            Namespace="default",
+            AuthorizedResourceArns=[
+                "arn:aws:quicksight:eu-west-2:381491960855:dashboard/732f8932-764e-47bc-bd88-6ed437e3293e"
+            ],
+            ExperienceConfiguration={
+                "Dashboard": {
+                    "InitialDashboardId": "732f8932-764e-47bc-bd88-6ed437e3293e",
+                }
+            },
+            AllowedDomains=settings.QUICKSIGHT_DOMAINS,
+        )
+
+        return response
+
 
 class AWSLakeFormation(AWSService):
 

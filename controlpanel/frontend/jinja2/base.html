@@ -123,6 +123,12 @@
         "active": page_name == "webapps",
       },
       {
+        "hide": not request.user.is_iam_user,
+        "text": "Dashboards",
+        "href": url("list-dashboards"),
+        "active": page_name == "dashboards",
+      },
+      {
         "hide": not request.user.is_superuser and not request.user.is_database_admin,
         "text": "Databases",
         "href": url("list-databases"),

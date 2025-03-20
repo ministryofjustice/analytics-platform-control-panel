@@ -40,6 +40,12 @@ from controlpanel.frontend.views.app import (
 
 # isort: on
 # First-party/Local
+from controlpanel.frontend.views.dashboard import (
+    AdminDashboardList,
+    DashboardDetail,
+    DashboardList,
+    RegisterDashboard,
+)
 from controlpanel.frontend.views.databases import (
     DatabasesListView,
     ManageTable,

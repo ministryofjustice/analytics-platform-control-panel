@@ -20,6 +20,7 @@ from controlpanel.api.models import (
     QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
     QUICKSIGHT_EMBED_READER_PERMISSION,
     App,
+    Dashboard,
     Feedback,
     S3Bucket,
     Tool,
@@ -746,6 +747,27 @@ class FeedbackForm(forms.ModelForm):
             "satisfaction_rating",
             "suggestions",
         ]
+
+
+class RegisterDashboardForm(forms.ModelForm):
+    class Meta:
+        model = Dashboard
+        fields = [
+            "name",
+            "quicksight_id",
+        ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        dashboard_url = cleaned_data["quicksight_id"]
+
+        if "dashboards/" not in dashboard_url:
+            raise ValidationError("The URL entered is not a valid Quicksight dashboard URL")
+
+        quicksight_id = dashboard_url.split("dashboards/")[1]
+        cleaned_data["quicksight_id"] = quicksight_id
+
+        return cleaned_data
 
 
 class ToolChoice(forms.Select):

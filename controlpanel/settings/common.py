@@ -622,3 +622,4 @@ DPR_DATABASE_NAME = os.environ.get("DPR_DATABASE_NAME", None)
 
 S3_ARCHIVE_BUCKET_NAME = "dev-archive-folder"
 FEEDBACK_BUCKET_NAME = f"{ENV}-{os.environ.get('FEEDBACK_BUCKET_NAME')}"
+DASHBOARD_SERVICE_URL = os.environ.get("DASHBOARD_SERVICE_URL")

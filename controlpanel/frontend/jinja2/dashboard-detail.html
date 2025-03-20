@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "checkboxes/macro.html" import govukCheckboxes %}
+{% from "input/macro.html" import govukInput %}
+{% from "autocomplete/macro.html" import autocomplete %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "label/macro.html" import govukLabel %}
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "tag/macro.html" import tag %}
+{% from "selectable-rows/macro.html" import row_selector %}
+{% from "user/macro.html" import user_name %}
+{% from "includes/yesno.html" import yes_no %}
+{% from "includes/app-deployment-settings.html" import app_deployment_settings %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = dashboard.name %}
+
+{% set dashboard_admins_html %}
+{% include "modals/dashboard_admins.html" %}
+{% endset %}
+
+{% set app_access_levels_html %}
+{% include "modals/app_data_access_levels.html" %}
+{% endset %}
+
+{% block content %}
+
+<header>
+
+  <span class="govuk-caption-xl">Dashboard</span>
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  <h2 class="govuk-heading-m">Dashboard URL</h2>
+  <p class="govuk-body">
+      <a href="{{ dashboard.get_dashboard_url() }}">{{ dashboard.get_dashboard_url() }}</a>
+  </p>
+
+</header>
+
+<section class="cpanel-section">
+  <h2 class="govuk-heading-m">
+    Dashboard admins
+    {{ modal_dialog(dashboard_admins_html|safe) }}
+  </h2>
+
+  <table class="govuk-table app-admins form-group">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">User</th>
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+    {% set dashboard_admins = dashboard.admins %}
+    {% for user in dashboard_admins %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+        {% if user.auth0_id %}
+          <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
+              href="{{ url('manage-user', kwargs={ 'pk': user.auth0_id }) }}">
+            {{ user_name(user) }}
+          </a>
+        {% else %}
+          {{ user_name(user) }}
+        {% endif %}
+        </td>
+        {% if request.user.has_perm('api.revoke_app_admin', app) %}
+        <td class="govuk-table__cell align-right">
+          {% if user.id %}
+            <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
+              {{ csrf_input }}
+              <button class="js-confirm govuk-button govuk-button--secondary right">
+              Revoke admin
+              </button>
+            </form>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ dashboard_admins|length }} Dashboard admin{% if dashboard_admins|length != 1 %}s{% endif %}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+{% if request.user.has_perm('api.add_dashboard_admin', dashboard) %}
+  {% if admin_options|length %}
+  <form action="{{ url('add-dashboard-admin', kwargs={ 'pk': dashboard.id }) }}" method="post" class="govuk-form-group">
+    {{ csrf_input }}
+
+    {% call(user) autocomplete({
+      "name": "user_id",
+      "label": "Give a user admin rights to this dashboard",
+      "placeholder": "Start typing to find a user...",
+      "items": admin_options,
+    }) %}
+      <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
+    {% endcall %}
+
+    <div class="govuk-form-group">
+      <button class="govuk-button">Grant access</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="govuk-body">
+    (All available users are already admins of this app.)
+  </p>
+  {% endif %}
+{% endif %}
+</section>
+
+{% if request.user.has_perm('api.destroy_dashboard', dashboard) %}
+<section class="cpanel-section">
+  <form action="{{ url('delete-dashboard', kwargs={ "pk": dashboard.id }) }}" method="post">
+    {{ csrf_input }}
+    <button class="govuk-button cpanel-button--destructive js-confirm"
+            data-confirm-message="Are you sure you want to remove this dashboard from control panel?">
+      Remove dashboard
+    </button>
+  </form>
+</section>
+{% endif %}
+
+{% endblock %}

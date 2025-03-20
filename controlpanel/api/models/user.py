@@ -150,6 +150,14 @@ class User(AbstractUser):
             != 0
         )
 
+    def is_dashboard_admin(self, dashboard_id):
+        return (
+            self.dashboards.filter(
+                id=dashboard_id,
+            ).count()
+            != 0
+        )
+
     def is_bucket_admin(self, bucket_id):
         return (
             self.users3buckets.filter(
