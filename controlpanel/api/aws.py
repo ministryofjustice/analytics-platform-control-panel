@@ -1519,7 +1519,7 @@ class AWSIdentityStore(AWSService):
 
             return response["UserId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.info(error.response["Error"]["Message"])
+            sentry_sdk.capture_exception(error)
             return None
 
     def get_group_id(self, group_name):
@@ -1536,7 +1536,7 @@ class AWSIdentityStore(AWSService):
 
             return response["GroupId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.error(error.response["Error"]["Message"])
+            sentry_sdk.capture_exception(error)
             raise error
 
     def get_group_membership_id(self, group_name, user_email):
@@ -1552,7 +1552,7 @@ class AWSIdentityStore(AWSService):
 
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            log.info(error.response["Error"]["Message"])
+            sentry_sdk.capture_exception(error)
             return None
 
     def get_name_from_email(self, user_email):
@@ -1595,7 +1595,7 @@ class AWSIdentityStore(AWSService):
 
             log.info(f"User {user_email} created in Identity Center")
         except Exception as error:
-            log.error(error)
+            sentry_sdk.capture_exception(error)
             raise error
 
     def create_group_membership(self, user_email, group_name):
@@ -1620,7 +1620,7 @@ class AWSIdentityStore(AWSService):
             log.info(f"User {user_email} added to group {group_name}")
             return response
         except Exception as error:
-            log.error(error)
+            sentry_sdk.capture_exception(error)
             raise error
 
     def delete_group_membership(self, user_email, group_name):
@@ -1641,7 +1641,7 @@ class AWSIdentityStore(AWSService):
 
             log.info(f"User {user_email} removed from group {group_name}")
         except Exception as error:
-            log.error(error.response["Error"]["Message"])
+            sentry_sdk.capture_exception(error)
             raise error
 
     def add_user_to_group(self, justice_email, quicksight_group):
@@ -1653,7 +1653,7 @@ class AWSIdentityStore(AWSService):
                 "Cannot create an Identity Center user without an associated @justice.gov.uk email"
             )
             log.error(message)
-            raise Exception(message)
+            raise ValueError(message)
 
         self.create_user(justice_email)
         self.create_group_membership(justice_email, quicksight_group)
