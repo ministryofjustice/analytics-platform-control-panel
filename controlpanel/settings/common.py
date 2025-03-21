@@ -200,10 +200,6 @@ OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
 OIDC_STORE_ID_TOKEN = True
 
-JUSTICE_EMAIL_DOMAINS = [
-    email for email in os.environ.get("JUSTICE_EMAIL_DOMAINS", "").split(",") if email
-]
-
 # Auth0
 AUTH0 = {
     "client_id": OIDC_RP_CLIENT_ID,

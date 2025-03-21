@@ -10,7 +10,15 @@ from django.utils.translation import ngettext
 from simple_history.admin import SimpleHistoryAdmin
 
 # First-party/Local
-from controlpanel.api.models import App, Feedback, IPAllowlist, S3Bucket, ToolDeployment, User
+from controlpanel.api.models import (
+    App,
+    Feedback,
+    IPAllowlist,
+    JusticeDomain,
+    S3Bucket,
+    ToolDeployment,
+    User,
+)
 from controlpanel.api.tasks.user import upgrade_user_helm_chart
 
 
@@ -166,9 +174,14 @@ class ToolDeploymentAdmin(admin.ModelAdmin):
         return response
 
 
+class JusticeDomainAdmin(admin.ModelAdmin):
+    list_display = ("domain",)
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
 admin.site.register(IPAllowlist, IPAllowlistAdmin)
 admin.site.register(Feedback, FeedbackAdmin)
 admin.site.register(ToolDeployment, ToolDeploymentAdmin)
+admin.site.register(JusticeDomain, JusticeDomainAdmin)

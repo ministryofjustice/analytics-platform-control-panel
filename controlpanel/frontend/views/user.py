@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta
 
 # Third-party
+import sentry_sdk
 import structlog
 from django.conf import settings
 from django.contrib import messages
@@ -167,8 +168,11 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
             form.grant_access()
             messages.success(self.request, "Successfully updated Quicksight access")
         except Exception as e:
-            log.error(f"Could not update QuickSight access - {e}")
-            messages.error(self.request, "Could not update Quicksight access")
+            sentry_sdk.capture_exception(e)
+            messages.error(
+                self.request,
+                "Could not update Quicksight access, if the issue persists please contact support",
+            )
 
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
 
