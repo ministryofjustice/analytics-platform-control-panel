@@ -10,6 +10,7 @@ from controlpanel.api.models.app_ip_allowlist import AppIPAllowList
 from controlpanel.api.models.apps3bucket import AppS3Bucket
 from controlpanel.api.models.feedback import Feedback
 from controlpanel.api.models.iam_managed_policy import IAMManagedPolicy
+from controlpanel.api.models.justice_domain import JusticeDomain
 from controlpanel.api.models.parameter import Parameter
 from controlpanel.api.models.policys3bucket import PolicyS3Bucket
 from controlpanel.api.models.s3bucket import S3Bucket

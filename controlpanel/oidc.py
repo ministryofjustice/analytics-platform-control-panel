@@ -17,7 +17,7 @@ from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
 # First-party/Local
-from controlpanel.api.models import User
+from controlpanel.api.models import JusticeDomain, User
 
 log = structlog.getLogger(__name__)
 
@@ -51,7 +51,8 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         Check if the email uses a justice domain and return it if it does, otherwise return None
         """
         email_domain = email.split("@")[-1].lower()
-        if email_domain in settings.JUSTICE_EMAIL_DOMAINS:
+        justice_domains = JusticeDomain.objects.values_list("domain", flat=True)
+        if email_domain in justice_domains:
             return email
         return None
 

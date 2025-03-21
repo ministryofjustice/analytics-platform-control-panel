@@ -37,6 +37,7 @@ def test_success_url(users, email, success_url):
         ("email@justice.gov.uk", "Test User", "Test User", "email@justice.gov.uk"),
         ("email@cica.gov.uk", "Test User", "Test User", "email@cica.gov.uk"),
         ("email@CICA.GOV.UK", "Test User", "Test User", "email@CICA.GOV.UK"),
+        ("email@publicguardian.gov.uk", "Test User", "Test User", "email@publicguardian.gov.uk"),
     ],
 )
 def test_create_user(email, name, expected_name, expected_justice_email):
@@ -53,6 +54,7 @@ def test_create_user(email, name, expected_name, expected_justice_email):
         assert user.justice_email == expected_justice_email
 
 
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "email, expected",
     [

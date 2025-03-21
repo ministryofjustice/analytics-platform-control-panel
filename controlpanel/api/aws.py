@@ -14,6 +14,7 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
+from controlpanel.api.models.justice_domain import JusticeDomain
 
 log = structlog.getLogger(__name__)
 
@@ -1563,7 +1564,8 @@ class AWSIdentityStore(AWSService):
 
         name, address = user_email.split("@")
 
-        if address.lower() not in settings.JUSTICE_EMAIL_DOMAINS:
+        allowed_domains = JusticeDomain.objects.values_list("domain", flat=True)
+        if address.lower() not in allowed_domains:
             raise ValueError("Expecting justice email")
 
         if "." not in name:
@@ -1571,7 +1573,7 @@ class AWSIdentityStore(AWSService):
 
         forename, surname = name.split(".")
         surname = "".join((c for c in surname if not c.isdigit()))
-        return forename, surname
+        return forename.title(), surname.title()
 
     def create_user(self, user_email):
 
