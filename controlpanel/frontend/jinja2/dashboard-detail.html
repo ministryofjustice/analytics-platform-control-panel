@@ -18,8 +18,8 @@
 {% include "modals/dashboard_admins.html" %}
 {% endset %}
 
-{% set app_access_levels_html %}
-{% include "modals/app_data_access_levels.html" %}
+{% set dashboard_domain_html %}
+{% include "modals/dashboard_domain_access.html" %}
 {% endset %}
 
 {% block content %}
@@ -31,7 +31,7 @@
 
   <h2 class="govuk-heading-m">Dashboard URL</h2>
   <p class="govuk-body">
-      <a href="{{ dashboard.get_dashboard_url() }}">{{ dashboard.get_dashboard_url() }}</a>
+      <a href="{{ dashboard.url }}">{{ dashboard.url }}</a>
   </p>
 
 </header>
@@ -52,7 +52,6 @@
       </tr>
     </thead>
     <tbody class="govuk-table__body">
-    {% set dashboard_admins = dashboard.admins %}
     {% for user in dashboard_admins %}
       <tr class="govuk-table__row">
         <td class="govuk-table__cell">
@@ -65,10 +64,10 @@
           {{ user_name(user) }}
         {% endif %}
         </td>
-        {% if request.user.has_perm('api.revoke_app_admin', app) %}
+        {% if request.user.has_perm('api.revoke_dashboard_admin', dashboard) %}
         <td class="govuk-table__cell align-right">
           {% if user.id %}
-            <form action="{{ url('revoke-app-admin', kwargs={ "pk": app.id, "user_id": user.id }) }}" method="post">
+            <form action="{{ url('revoke-dashboard-admin', kwargs={ "pk": dashboard.id, "user_id": user.id }) }}" method="post">
               {{ csrf_input }}
               <button class="js-confirm govuk-button govuk-button--secondary right">
               Revoke admin
@@ -104,12 +103,84 @@
     {% endcall %}
 
     <div class="govuk-form-group">
-      <button class="govuk-button">Grant access</button>
+      <button class="govuk-button">Grant admin</button>
     </div>
   </form>
   {% else %}
   <p class="govuk-body">
-    (All available users are already admins of this app.)
+    (All available users are already admins of this dashboard.)
+  </p>
+  {% endif %}
+{% endif %}
+</section>
+
+<section class="cpanel-section">
+  <h2 class="govuk-heading-m">
+    Domain access
+    {{ modal_dialog(dashboard_domain_html|safe) }}
+  </h2>
+
+  <table class="govuk-table app-data-sources form-group">
+    <thead class="govuk-table__head">
+      <tr class="govuk-table__row">
+        <th class="govuk-table__header">Name</th>
+        <th class="govuk-table__header">
+          <span class="govuk-visually-hidden">Actions</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+      {% set domains = dashboard.whitelist_domains.all() %}
+      {% set num_domains = domains|length %}
+      {% for domain in domains %}
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell">
+          <p class="govuk-body">{{ domain.name }}</p>
+        </td>
+        <td class="govuk-table__cell align-right">
+          {% if request.user.has_perm('api.remove_dashboard_domain', dashboard) %}
+          <form action="{{ url('revoke-domain-access', kwargs={ "pk": dashboard.id, "domain_id": domain.id }) }}" method="post" class="form-control-prefix">
+            {{ csrf_input }}
+            <button class="js-confirm govuk-button govuk-button--secondary">
+              Remove
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot class="govuk-table__foot">
+      <tr class="govuk-table__row">
+        <td class="govuk-table__cell" colspan="3">
+          {{ num_domains }} dashboard domain{% if domains != 1 %}s{% endif %}
+        </td>
+      </tr>
+    </tfoot>
+  </table>
+
+{% if request.user.has_perm('api.add_dashboard_domain', dashboard) %}
+  {% set num_domain_options = grant_access_form.datasource|length - 1 %}
+  {% if num_domain_options %}
+    <form action="{{ url('grant-domain-access', kwargs={ "pk": dashboard.id }) }}" method="post">
+    {{ csrf_input }}
+    <input type="hidden" name="access_level" value="readonly">
+    <div class="govuk-form-group">
+      {{ govukLabel({"text": "Connect an app data source"}) }}
+      {% if grant_access_form.datasource.errors -%}
+      {{ govukErrorMessage({"text": grant_access_form.datasource.errors|join(". ")}) }}
+      {%- endif %}
+      {{ grant_access_form.datasource }}
+    </div>
+    <div class="govuk-form-group">
+      <button class="govuk-button govuk-button--secondary">
+        Grant access
+      </button>
+    </div>
+  </form>
+  {% else %}
+  <p class="govuk-body">
+    (All available domains are already assigned to this dashboard.)
   </p>
   {% endif %}
 {% endif %}

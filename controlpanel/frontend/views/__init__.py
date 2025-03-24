@@ -41,10 +41,19 @@ from controlpanel.frontend.views.app import (
 # isort: on
 # First-party/Local
 from controlpanel.frontend.views.dashboard import (
+    AddDashboardAdmin,
+    AddDashboardCustomers,
     AdminDashboardList,
+    DashboardCustomers,
     DashboardDetail,
     DashboardList,
+    DeleteDashboard,
+    GrantDomainAccess,
     RegisterDashboard,
+    RemoveDashboardCustomerByEmail,
+    RemoveDashboardCustomerById,
+    RevokeDashboardAdmin,
+    RevokeDomainAccess,
 )
 from controlpanel.frontend.views.databases import (
     DatabasesListView,

@@ -300,4 +300,43 @@ urlpatterns = [
     path("dashboards/all/", views.AdminDashboardList.as_view(), name="list-all-dashboards"),
     path("dashboards/register/", views.RegisterDashboard.as_view(), name="register-dashboard"),
     path("dashboards/<int:pk>/", views.DashboardDetail.as_view(), name="manage-dashboard"),
+    path("dashboards/<int:pk>/delete/", views.DeleteDashboard.as_view(), name="delete-dashboard"),
+    path(
+        "dashboards/<int:pk>/admins/", views.AddDashboardAdmin.as_view(), name="add-dashboard-admin"
+    ),
+    path(
+        "dashboards/<int:pk>/admins/<str:user_id>/revoke/",
+        views.RevokeDashboardAdmin.as_view(),
+        name="revoke-dashboard-admin",
+    ),
+    path(
+        "dashboards/<int:pk>/customers/paginate/<int:page_no>/",
+        views.DashboardCustomers.as_view(),
+        name="dashboard-customers",
+    ),
+    path(
+        "dashboards/<int:pk>/customers/add/",
+        views.AddDashboardCustomers.as_view(),
+        name="add-dashboard-customers",
+    ),
+    path(
+        "dashboards/<int:pk>/customers/remove/",
+        views.RemoveDashboardCustomerById.as_view(),
+        name="remove-dashboard-customer",
+    ),
+    path(
+        "dashboards/<int:pk>/customers/remove/email/",
+        views.RemoveDashboardCustomerByEmail.as_view(),
+        name="remove-dashboard-customer-by-email",
+    ),
+    path(
+        "dashboards/<int:pk>/domain/add/",
+        views.GrantDomainAccess.as_view(),
+        name="grant-domain-access",
+    ),
+    path(
+        "dashboards/<int:pk>/domain/revoke/<int:domain_id>/",
+        views.RevokeDomainAccess.as_view(),
+        name="revoke-domain-access",
+    ),
 ]

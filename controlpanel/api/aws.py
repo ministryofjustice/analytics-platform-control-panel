@@ -1255,27 +1255,25 @@ class AWSQuicksight(AWSService):
 
         return response
 
-    def describe_dashboard(self):
+    def describe_dashboard(self, dashboard_id):
 
         response = self.client.describe_dashboard(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
-            DashboardId="732f8932-764e-47bc-bd88-6ed437e3293e",
+            DashboardId=dashboard_id,
         )
 
         return response
 
-    def generate_embed_url_for_anonymous_user(self):
+    def generate_embed_url_for_anonymous_user(self, dashboard_arn, dashboard_id):
 
         response = self.client.generate_embed_url_for_anonymous_user(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
             SessionLifetimeInMinutes=60,
             Namespace="default",
-            AuthorizedResourceArns=[
-                "arn:aws:quicksight:eu-west-2:381491960855:dashboard/732f8932-764e-47bc-bd88-6ed437e3293e"
-            ],
+            AuthorizedResourceArns=[dashboard_arn],
             ExperienceConfiguration={
                 "Dashboard": {
-                    "InitialDashboardId": "732f8932-764e-47bc-bd88-6ed437e3293e",
+                    "InitialDashboardId": dashboard_id,
                 }
             },
             AllowedDomains=settings.QUICKSIGHT_DOMAINS,

@@ -21,6 +21,7 @@ from controlpanel.api.models import (
     QUICKSIGHT_EMBED_READER_PERMISSION,
     App,
     Dashboard,
+    DashboardDomain,
     Feedback,
     S3Bucket,
     Tool,
@@ -31,7 +32,7 @@ from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.tool import ToolDeployment
 
-APP_CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
+CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
 
 class DatasourceChoiceField(forms.ModelChoiceField):
@@ -452,6 +453,34 @@ class GrantAppAccessForm(forms.Form):
         )
 
 
+class GrantDomainAccessForm(forms.Form):
+
+    datasource = DatasourceChoiceField(
+        empty_label="Select domain",
+        queryset=DashboardDomain.objects.none(),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.dashboard = kwargs.pop("dashboard")
+        self.exclude_connected = kwargs.pop("exclude_connected", True)
+
+        super().__init__(*args, **kwargs)
+
+        self.fields["datasource"].queryset = self.get_datasource_queryset()
+
+    def get_datasource_queryset(self):
+        """
+        Get all domains except those that are already assigned to the dashboard
+        """
+        queryset = DashboardDomain.objects.all()
+        if self.exclude_connected:
+            queryset = queryset.exclude(
+                pk__in=self.dashboard.whitelist_domains.values_list("id", flat=True)
+            )
+
+        return queryset
+
+
 class CreateIAMManagedPolicyForm(forms.Form):
     name = forms.CharField(
         # TODO restrict allowed characters in group policy name
@@ -463,8 +492,8 @@ class AddUserToIAMManagedPolicyForm(forms.Form):
     user_id = forms.CharField(max_length=128)
 
 
-class AppCustomersField(forms.Field):
-    def __init__(self, *, delimiters=APP_CUSTOMERS_DELIMITERS, strip=True, **kwargs):
+class CustomersField(forms.Field):
+    def __init__(self, *, delimiters=CUSTOMERS_DELIMITERS, strip=True, **kwargs):
         self.delimiters = delimiters
         self.strip = strip
         super().__init__(**kwargs)
@@ -488,8 +517,8 @@ class AppCustomersField(forms.Field):
         return value
 
 
-class AddAppCustomersForm(forms.Form):
-    customer_email = AppCustomersField()
+class AddCustomersForm(forms.Form):
+    customer_email = CustomersField()
 
 
 class RemoveCustomerByEmailForm(forms.Form):

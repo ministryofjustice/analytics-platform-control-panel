@@ -112,7 +112,7 @@ class FeedbackAdmin(admin.ModelAdmin):
 
 
 class DashboardDomainAdmin(admin.ModelAdmin):
-    list_display = ("domain_name",)
+    list_display = ("name",)
 
 
 class ToolDeploymentAdmin(admin.ModelAdmin):

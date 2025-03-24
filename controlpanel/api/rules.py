@@ -251,7 +251,7 @@ def is_dashboard_admin(user, obj):
         return True
 
     if isinstance(obj, Dashboard):
-        return user in obj.admins
+        return obj.is_admin(user)
 
     return False
 
@@ -265,3 +265,5 @@ add_perm("api.add_dashboard_customer", is_authenticated & is_dashboard_admin)
 add_perm("api.remove_dashboard_customer", is_authenticated & is_dashboard_admin)
 add_perm("api.add_dashboard_admin", is_authenticated & is_dashboard_admin)
 add_perm("api.revoke_dashboard_admin", is_authenticated & is_dashboard_admin)
+add_perm("api.add_dashboard_domain", is_authenticated & is_dashboard_admin)
+add_perm("api.remove_dashboard_domain", is_authenticated & is_dashboard_admin)
