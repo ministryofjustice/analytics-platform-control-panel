@@ -63,14 +63,6 @@ class AWSRoleCategory(str, Enum):
     user = "USER"
 
 
-class HomeDirectoryResetError(Exception):
-    """
-    Raised if a home directory cannot be reset.
-    """
-
-    pass
-
-
 class AWSServiceCredentialSettings:
     """This class is responsible for defining the mapping between coding object
     (class[.func] or function) for creating AWS resource or using AWS service

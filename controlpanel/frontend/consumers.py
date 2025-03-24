@@ -14,15 +14,9 @@ from django.db import transaction
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.cluster import (
-    HOME_RESET_FAILED,
-    HOME_RESETTING,
-    TOOL_DEPLOY_FAILED,
-    TOOL_DEPLOYING,
-    TOOL_RESTARTING,
-)
+from controlpanel.api.cluster import TOOL_DEPLOY_FAILED, TOOL_DEPLOYING, TOOL_RESTARTING
 from controlpanel.api.helm import HelmReleaseNotFound
-from controlpanel.api.models import App, HomeDirectory, IPAllowlist, Tool, ToolDeployment, User
+from controlpanel.api.models import App, IPAllowlist, ToolDeployment, User
 from controlpanel.utils import PatchedAsyncHttpConsumer, sanitize_dns_label, send_sse
 
 log = structlog.getLogger(__name__)
@@ -216,23 +210,6 @@ class BackgroundTaskConsumer(SyncConsumer):
         else:
             log.debug(f"Restarted {tool_deployment.tool.name} for {tool_deployment.user}")
 
-    def home_reset(self, message):
-        """
-        Reset the home directory of the specified user.
-        """
-        user = User.objects.get(auth0_id=message["user_id"])
-        home_directory = HomeDirectory(user)
-        update_home_status(home_directory, HOME_RESETTING)
-
-        home_directory.reset()
-
-        status = wait_for_home_reset(home_directory)
-
-        if status == HOME_RESET_FAILED:
-            log.warning(f"Failed to reset home directory for user {user}")
-        else:
-            log.debug(f"Reset home directory for user {user}")
-
     def workers_health(self, message):
         Path(settings.WORKER_HEALTH_FILENAME).touch()
 
@@ -277,17 +254,5 @@ def wait_for_deployment(tool_deployment, id_token):
     while status == TOOL_DEPLOYING:
         status = tool_deployment.get_status(id_token)
         update_tool_status(tool_deployment, status)
-        sleep(1)
-    return status
-
-
-def wait_for_home_reset(home_directory):
-    """
-    Check and report upon the reset of the user's home directory.
-    """
-    status = HOME_RESETTING
-    while status == HOME_RESETTING:
-        status = home_directory.get_status()
-        update_home_status(home_directory, status)
         sleep(1)
     return status

@@ -1196,6 +1196,8 @@ def test_get_embed_url(quicksight_service):
         ("Ronnie.Hotdogs4@justice.gov.uk", "Ronnie", "Hotdogs"),
         ("Ci.Ca@cica.gov.uk", "Ci", "Ca"),
         ("Ci.Ca@CICA.GOV.UK", "Ci", "Ca"),
+        ("foo.bar@publicguardian.gov.uk", "Foo", "Bar"),
+        ("Foo.Bar@PUBLICGUARDIAN.GOV.UK", "Foo", "Bar"),
     ],
 )
 def test_get_name_from_email(email, expected_forename, expected_surname):
