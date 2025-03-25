@@ -27,7 +27,13 @@ class Dashboard(TimeStampedModel):
 
     @property
     def arn(self):
-        return f"{aws.arn("quicksight", "dashboard", settings.QUICKSIGHT_ACCOUNT_REGION, settings.QUICKSIGHT_ACCOUNT_ID)}/{self.quicksight_id}"
+        arn = aws.arn(
+            "quicksight",
+            "dashboard",
+            settings.QUICKSIGHT_ACCOUNT_REGION,
+            settings.QUICKSIGHT_ACCOUNT_ID,
+        )
+        return f"{arn}/{self.quicksight_id}"
 
     def is_admin(self, user):
         return self.admins.filter(pk=user.pk).exists()

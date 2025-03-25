@@ -22,6 +22,10 @@
 {% include "modals/dashboard_domain_access.html" %}
 {% endset %}
 
+{% set dashboard_url_html %}
+{% include "modals/dashboard_url.html" %}
+{% endset %}
+
 {% block content %}
 
 <header>
@@ -29,7 +33,10 @@
   <span class="govuk-caption-xl">Dashboard</span>
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  <h2 class="govuk-heading-m">Dashboard URL</h2>
+  <h2 class="govuk-heading-m">
+    Dashboard URL
+    {{ modal_dialog(dashboard_url_html|safe) }}
+  </h2>
   <p class="govuk-body">
       <a href="{{ dashboard.url }}">{{ dashboard.url }}</a>
   </p>
