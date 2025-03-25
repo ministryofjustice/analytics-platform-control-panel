@@ -15,6 +15,7 @@ from controlpanel.api.models import (
     DashboardDomain,
     Feedback,
     IPAllowlist,
+    JusticeDomain,
     S3Bucket,
     ToolDeployment,
     User,
@@ -178,6 +179,10 @@ class ToolDeploymentAdmin(admin.ModelAdmin):
         return response
 
 
+class JusticeDomainAdmin(admin.ModelAdmin):
+    list_display = ("domain",)
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
@@ -185,3 +190,4 @@ admin.site.register(IPAllowlist, IPAllowlistAdmin)
 admin.site.register(Feedback, FeedbackAdmin)
 admin.site.register(ToolDeployment, ToolDeploymentAdmin)
 admin.site.register(DashboardDomain, DashboardDomainAdmin)
+admin.site.register(JusticeDomain, JusticeDomainAdmin)

@@ -8,7 +8,7 @@ from django.utils import timezone
 from model_bakery import baker
 
 # First-party/Local
-from controlpanel.api.models import HomeDirectory, Tool, ToolDeployment, User
+from controlpanel.api.models import Tool, ToolDeployment, User
 
 
 @pytest.fixture
@@ -69,22 +69,6 @@ def test_tool_description_from_helm_chart(
     tool = Tool(chart_name="rstudio", version=chart_version).save()
 
     assert tool.description == expected_description
-
-
-def test_home_directory_reset(cluster):
-    user = User(username="test-user")
-    hd = HomeDirectory(user)
-    hd.reset()
-    assert hd._subprocess == cluster.User(user).reset_home()
-
-
-def test_home_directory_get_status():
-    user = User(username="test-user")
-    hd = HomeDirectory(user)
-    cluster.HOME_RESETTING = "Resetting"
-    hd._poll = MagicMock(return_value=cluster.HOME_RESETTING)
-    hd._subprocess = True
-    assert hd.get_status() == cluster.HOME_RESETTING
 
 
 @pytest.mark.parametrize(
