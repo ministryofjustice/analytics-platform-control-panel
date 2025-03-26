@@ -173,7 +173,7 @@
     {{ csrf_input }}
     <input type="hidden" name="access_level" value="readonly">
     <div class="govuk-form-group">
-      {{ govukLabel({"text": "Connect an app data source"}) }}
+      {{ govukLabel({"text": "Connect an email domain"}) }}
       {% if grant_access_form.datasource.errors -%}
       {{ govukErrorMessage({"text": grant_access_form.datasource.errors|join(". ")}) }}
       {%- endif %}
