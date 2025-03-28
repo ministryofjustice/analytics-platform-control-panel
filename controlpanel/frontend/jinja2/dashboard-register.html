@@ -1,0 +1,59 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
+{% from "label/macro.html" import govukLabel %}
+
+
+{% extends "base.html" %}
+
+{% set page_title = "Register a dashboard" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+<p class="govuk-body">
+  After creating your dashboard, use this form to register it and allow it to be shared securely.
+</p>
+
+<form method="post" id="register_app" action="{{ url("register-dashboard") }}">
+  {{ csrf_input }}
+
+  <div class="govuk-form-group" id="container-element">
+
+    <label class="govuk-label govuk-label--m" for="dashboard_name">Dashboard name
+    </label>
+
+    {% set error_name_msg = form.errors.get("name") %}
+    {% if error_name_msg %}
+      {% set errorId = 'name-error' %}
+      {{ govukErrorMessage({
+        "id": errorId,
+        "html": error_name_msg|join(". "),
+      }) }}
+    {% endif %}
+
+    <input type="text" class="govuk-input" id="dashboard_name" name="name" {% if form.name.value() %} value="{{ form.name.value() }}" {% endif %} required />
+
+  </div>
+  <div class="govuk-form-group" id="container-element">
+
+    <label class="govuk-label govuk-label--m" for="display_result_repo">Dashboard URL
+    </label>
+
+    {% set error_qsid_msg = form.errors.get("quicksight_id") %}
+    {% if error_qsid_msg %}
+      {% set errorId = 'qsid-error' %}
+      {{ govukErrorMessage({
+        "id": errorId,
+        "html": error_qsid_msg|join(". "),
+      }) }}
+    {% endif %}
+    <span class="govuk-hint">Enter your Dashboard URL here</span>
+    <input type="text" class="govuk-input" id="id_quicksight" name="quicksight_id" {% if form.quicksight_id.value() %} value="{{ form.quicksight_id.value() }}" {% endif %} required />
+
+  </div>
+
+
+  <div class="govuk-form-group">
+    <button class="govuk-button">Register dashboard</button>
+  </div>
+</form>
+{% endblock %}
