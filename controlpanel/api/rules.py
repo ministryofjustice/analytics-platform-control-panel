@@ -257,7 +257,7 @@ def is_dashboard_admin(user, obj):
 
 
 add_perm("api.list_dashboard", is_authenticated & is_iam_user)
-add_perm("api.create_dashboard", is_authenticated & is_iam_user)
+add_perm("api.register_dashboard", is_authenticated & is_iam_user)
 add_perm("api.retrieve_dashboard", is_authenticated & is_dashboard_admin)
 add_perm("api.update_dashboard", is_authenticated & is_dashboard_admin)
 add_perm("api.destroy_dashboard", is_authenticated & is_dashboard_admin)
