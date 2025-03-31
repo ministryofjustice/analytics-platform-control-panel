@@ -53,6 +53,10 @@ class Dashboard(TimeStampedModel):
     def delete_customer_by_email(self, customer_email):
         try:
             viewer = DashboardViewer.objects.filter(email=customer_email).first()
+
+            if not viewer:
+                raise DeleteCustomerError(f"Customer with email {customer_email} not found")
+
             self.viewers.remove(viewer)
         except Exception as e:
             raise DeleteCustomerError from e
