@@ -15,6 +15,13 @@ from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
 NUM_DASHBOARDS = 3
 
 
+@pytest.fixture()
+def ExtendedAuth0():
+    with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
+        ExtendedAuth0.return_value.add_dashboard_member_by_email.return_value = None
+        yield ExtendedAuth0.return_value
+
+
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
@@ -36,7 +43,7 @@ def users(users):
 
 
 @pytest.fixture
-def dashboard(users):
+def dashboard(users, ExtendedAuth0):
     baker.make("api.Dashboard", NUM_DASHBOARDS - 1)
     dashboard = baker.make(
         "api.Dashboard",
@@ -51,10 +58,9 @@ def dashboard(users):
 
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
-    with patch("controlpanel.api.auth0.ExtendedAuth0.add_dashboard_member_by_email"):
-        viewer = baker.make(DashboardViewer, email=users["dashboard_admin"].justice_email)
-        dashboard.viewers.add(viewer)
-        return viewer
+    viewer = baker.make(DashboardViewer, email=users["dashboard_admin"].justice_email)
+    dashboard.viewers.add(viewer)
+    return viewer
 
 
 @pytest.fixture
@@ -183,10 +189,9 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
     ],
 )
 def test_permissions(client, dashboard, users, dashboard_domain, view, user, expected_status):
-    with patch("controlpanel.api.auth0.ExtendedAuth0.add_dashboard_member_by_email"):
-        client.force_login(users[user])
-        response = view(client, dashboard, users, dashboard_domain)
-        assert response.status_code == expected_status
+    client.force_login(users[user])
+    response = view(client, dashboard, users, dashboard_domain)
+    assert response.status_code == expected_status
 
 
 @pytest.mark.parametrize(
@@ -230,14 +235,13 @@ def add_customer_form_error(client, response):
     ],
 )
 def test_add_customers(client, dashboard, dashboard_viewer, users, emails, expected_response):
-    with patch("controlpanel.api.auth0.ExtendedAuth0.add_dashboard_member_by_email"):
-        client.force_login(users["superuser"])
-        data = {"customer_email": emails}
-        response = client.post(
-            reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
-            data,
-        )
-        assert expected_response(client, response)
+    client.force_login(users["superuser"])
+    data = {"customer_email": emails}
+    response = client.post(
+        reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
+        data,
+    )
+    assert expected_response(client, response)
 
 
 def remove_customer_success(client, response):
@@ -270,7 +274,7 @@ def test_delete_customers(
     expected_response,
 ):
     with patch(
-        "controlpanel.frontend.views.dashboard.Dashboard.delete_customer_by_email"
+        "controlpanel.frontend.views.dashboard.Dashboard.delete_customers_by_id"
     ) as delete_by_email:
         delete_by_email.side_effect = side_effect
         client.force_login(users["superuser"])
