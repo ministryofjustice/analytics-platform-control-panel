@@ -47,4 +47,4 @@ OIDC_CPANEL_API_AUDIENCE = "test-audience"
 
 FEEDBACK_BUCKET_NAME = "test-feedback-bucket"
 DASHBOARD_SERVICE_URL = "http://test-dashboard-service-url/"
-DASHBOARD_AUTH0_ROLE_ID = "rol_ab0CdEf1GHiJKlmN"
+DASHBOARD_AUTH0_ROLE_ID = "rol_ab0CdEf1GHiJKlmN" #gitleaks:allow
