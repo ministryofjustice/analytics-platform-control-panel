@@ -168,6 +168,8 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
 
         customers = dashboard.viewers.all()
         paginator = Paginator(customers, 25)
+
+        context["errors"] = self.request.session.pop("add_customer_form_errors", None)
         context["page_no"] = page_no = self.kwargs.get("page_no")
         context["paginator"] = paginator
         context["elided"] = paginator.get_elided_page_range(page_no)
@@ -183,6 +185,7 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
 
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors
+        messages.error(self.request, "Could not add customer(s)")
         return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):

@@ -86,9 +86,9 @@
         </label>
         {% if errors and errors.customer_email %}
           {% for error in errors.customer_email %}
-        <span id="customer_email-error" class="govuk-error-message">
-          <span class="govuk-visually-hidden">Error:</span> {{ error }}
-        </span>
+          <span id="customer_email-error" class="govuk-error-message">
+            <span class="govuk-visually-hidden">Error:</span> {{ error }}
+          </span>
           {% endfor %}
         {% endif %}
         <input id="customer_email" class="govuk-input cpanel-input" name="customer_email" autocomplete="off">
