@@ -1,16 +1,13 @@
 # Third-party
 import sentry_sdk
 import structlog
-from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Prefetch
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
-from django.utils.http import urlencode
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -169,7 +166,7 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
         customers = dashboard.viewers.all()
         paginator = Paginator(customers, 25)
 
-        context["errors"] = self.request.session.pop("add_customer_form_errors", None)
+        context["errors"] = self.request.session.pop("customer_form_errors", None)
         context["page_no"] = page_no = self.kwargs.get("page_no")
         context["paginator"] = paginator
         context["elided"] = paginator.get_elided_page_range(page_no)
@@ -184,7 +181,7 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
     permission_required = "api.add_dashboard_customer"
 
     def form_invalid(self, form):
-        self.request.session["add_customer_form_errors"] = form.errors
+        self.request.session["customer_form_errors"] = form.errors
         messages.error(self.request, "Could not add customer(s)")
         return HttpResponseRedirect(self.get_success_url())
 
@@ -233,6 +230,7 @@ class RemoveDashboardCustomerByEmail(UpdateDashboard):
         """
         self.form = RemoveCustomerByEmailForm(data=self.request.POST)
         if not self.form.is_valid():
+            self.request.session["customer_form_errors"] = self.form.errors
             return messages.error(self.request, "Invalid email address entered")
 
         dashboard = self.get_object()
