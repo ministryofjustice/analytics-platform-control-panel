@@ -210,11 +210,11 @@ def test_list(client, dashboard, users, view, user, expected_count):
 
 
 def add_customer_success(client, response):
-    return "add_customer_form_errors" not in client.session
+    return "customer_form_errors" not in client.session
 
 
 def add_customer_form_error(client, response):
-    return "add_customer_form_errors" in client.session
+    return "customer_form_errors" in client.session
 
 
 @pytest.mark.parametrize(
