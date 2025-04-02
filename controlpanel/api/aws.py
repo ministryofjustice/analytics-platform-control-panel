@@ -1257,13 +1257,10 @@ class AWSQuicksight(AWSService):
         return response
 
     def describe_dashboard(self, dashboard_id):
-
-        response = self.client.describe_dashboard(
+        return self.client.describe_dashboard(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
             DashboardId=dashboard_id,
         )
-
-        return response
 
     def generate_embed_url_for_anonymous_user(self, dashboard_arn, dashboard_id):
 
