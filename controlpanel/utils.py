@@ -3,6 +3,7 @@ import os
 import re
 import time
 from base64 import b64encode
+from functools import wraps
 
 # Third-party
 import structlog
@@ -13,6 +14,7 @@ from channels.generic.http import AsyncHttpConsumer
 from channels.layers import get_channel_layer
 from django.apps import apps
 from django.conf import settings
+from django.http import Http404
 from django.template.defaultfilters import slugify
 from nacl import encoding, public
 
@@ -25,6 +27,20 @@ SURROUNDING_HYPHENS = re.compile(r"^-*|-*$")
 _ENV_PREFIX_ = "_HOST"
 _ENV_DEFAULT_ = "_DEFAULT"
 _DEFAULT_APP_CONFIG_FILE_ = "./settings.yaml"
+
+
+def feature_flag_required(feature_name):
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            feature_flag = getattr(settings.features, feature_name, None)
+            if not request.user.is_superuser and (not feature_flag or not feature_flag.enabled):
+                raise Http404("Feature not available")
+            return view_func(request, *args, **kwargs)
+
+        return _wrapped_view
+
+    return decorator
 
 
 def github_repository_name(url):

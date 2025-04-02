@@ -8,6 +8,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
@@ -24,10 +25,12 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.utils import feature_flag_required
 
 log = structlog.getLogger(__name__)
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "dashboards"
     model = Dashboard
@@ -38,6 +41,7 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         return self.request.user.dashboards.all()
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AdminDashboardList(DashboardList):
     permission_required = "api.is_superuser"
     template_name = "dashboard-admin-list.html"
@@ -46,6 +50,7 @@ class AdminDashboardList(DashboardList):
         return Dashboard.objects.all().prefetch_related("admins")
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = RegisterDashboardForm
     model = Dashboard
@@ -73,6 +78,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
             return HttpResponseRedirect(self.get_success_url())
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "dashboard"
     model = Dashboard
@@ -99,6 +105,7 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         return context
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Dashboard
     permission_required = "api.destroy_dashboard"
@@ -112,6 +119,7 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
         return HttpResponseRedirect(self.get_success_url())
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class UpdateDashboard(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
@@ -129,6 +137,7 @@ class UpdateDashboard(
         return super().post(request, *args, **kwargs)
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AddDashboardAdmin(UpdateDashboard):
     model = Dashboard
     permission_required = "api.add_dashboard_admin"
@@ -141,6 +150,7 @@ class AddDashboardAdmin(UpdateDashboard):
         messages.success(self.request, f"Granted admin access to {user.name}")
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RevokeDashboardAdmin(UpdateDashboard):
     model = Dashboard
     permission_required = "api.revoke_dashboard_admin"
@@ -153,6 +163,7 @@ class RevokeDashboardAdmin(UpdateDashboard):
         messages.success(self.request, f"Removed admin access from {user.name}")
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "dashboard"
     model = Dashboard
@@ -175,6 +186,7 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
         return context
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Dashboard
     form_class = AddCustomersForm
@@ -198,6 +210,7 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RemoveDashboardCustomerById(UpdateDashboard):
     permission_required = "api.remove_dashboard_customer"
 
@@ -216,6 +229,7 @@ class RemoveDashboardCustomerById(UpdateDashboard):
             messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RemoveDashboardCustomerByEmail(UpdateDashboard):
     model = Dashboard
     form = None
@@ -246,6 +260,7 @@ class RemoveDashboardCustomerByEmail(UpdateDashboard):
         messages.success(self.request, f"Successfully removed customer {email}")
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class GrantDomainAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
@@ -277,6 +292,7 @@ class GrantDomainAccess(
         raise Exception(form.errors)
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RevokeDomainAccess(UpdateDashboard):
     permission_required = "api.remove_dashboard_domain"
 
