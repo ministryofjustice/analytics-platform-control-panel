@@ -41,6 +41,14 @@
       <a href="{{ dashboard.url }}">{{ dashboard.url }}</a>
   </p>
 
+  <h2 class="govuk-heading-m">
+    Dashboard access
+  </h2>
+
+  <p class="govuk-body">
+    <a href="{{ url('dashboard-customers', kwargs={ 'pk': dashboard.id, 'page_no': '1' }) }}">Manage dashboard access</a>
+  </p>
+
 </header>
 
 <section class="cpanel-section">
@@ -167,17 +175,17 @@
   </table>
 
 {% if request.user.has_perm('api.add_dashboard_domain', dashboard) %}
-  {% set num_domain_options = grant_access_form.datasource|length - 1 %}
+  {% set num_domain_options = grant_access_form.whitelist_domain|length - 1 %}
   {% if num_domain_options %}
     <form action="{{ url('grant-domain-access', kwargs={ "pk": dashboard.id }) }}" method="post">
     {{ csrf_input }}
     <input type="hidden" name="access_level" value="readonly">
     <div class="govuk-form-group">
       {{ govukLabel({"text": "Connect an email domain"}) }}
-      {% if grant_access_form.datasource.errors -%}
-      {{ govukErrorMessage({"text": grant_access_form.datasource.errors|join(". ")}) }}
+      {% if grant_access_form.whitelist_domain.errors -%}
+      {{ govukErrorMessage({"text": grant_access_form.whitelist_domain.errors|join(". ")}) }}
       {%- endif %}
-      {{ grant_access_form.datasource }}
+      {{ grant_access_form.whitelist_domain }}
     </div>
     <div class="govuk-form-group">
       <button class="govuk-button govuk-button--secondary">

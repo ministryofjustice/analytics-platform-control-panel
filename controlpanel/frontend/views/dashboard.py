@@ -11,7 +11,7 @@ from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic.base import RedirectView
 from django.views.generic.detail import DetailView, SingleObjectMixin
-from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
+from django.views.generic.edit import CreateView, DeleteView, FormView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
@@ -69,8 +69,9 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         with transaction.atomic():
             user = self.request.user
             email = user.justice_email.lower()
-            dashboard = form.save()
+            dashboard = form.save(commit=False)
             dashboard.created_by = user
+            dashboard.save()
             dashboard.admins.add(user)
             viewer, created = DashboardViewer.objects.get_or_create(email=email)
             dashboard.viewers.add(viewer)
@@ -119,8 +120,7 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
         return HttpResponseRedirect(self.get_success_url())
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class UpdateDashboard(
+class UpdateDashboardBaseView(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
     SingleObjectMixin,
@@ -128,6 +128,9 @@ class UpdateDashboard(
 ):
     http_method_names = ["post"]
     model = Dashboard
+
+    def perform_update(self):
+        raise NotImplementedError("Subclasses must define this method")
 
     def get_redirect_url(self, *args, **kwargs):
         return reverse_lazy("manage-dashboard", kwargs={"pk": kwargs["pk"]})
@@ -138,8 +141,7 @@ class UpdateDashboard(
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardAdmin(UpdateDashboard):
-    model = Dashboard
+class AddDashboardAdmin(UpdateDashboardBaseView):
     permission_required = "api.add_dashboard_admin"
 
     def perform_update(self, **kwargs):
@@ -151,8 +153,7 @@ class AddDashboardAdmin(UpdateDashboard):
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDashboardAdmin(UpdateDashboard):
-    model = Dashboard
+class RevokeDashboardAdmin(UpdateDashboardBaseView):
     permission_required = "api.revoke_dashboard_admin"
 
     def perform_update(self, **kwargs):
@@ -175,7 +176,7 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
         dashboard = self.get_object()
 
         customers = dashboard.viewers.all()
-        paginator = Paginator(customers, 25)
+        paginator = Paginator(customers, 50)
 
         context["errors"] = self.request.session.pop("customer_form_errors", None)
         context["page_no"] = page_no = self.kwargs.get("page_no")
@@ -187,7 +188,9 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+class AddDashboardCustomers(
+    OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, FormView
+):
     model = Dashboard
     form_class = AddCustomersForm
     permission_required = "api.add_dashboard_customer"
@@ -202,16 +205,12 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Upd
         messages.success(self.request, "Successfully added customers")
         return HttpResponseRedirect(self.get_success_url())
 
-    def get_form_kwargs(self):
-        kwargs = FormMixin.get_form_kwargs(self)
-        return kwargs
-
     def get_success_url(self, *args, **kwargs):
         return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RemoveDashboardCustomerById(UpdateDashboard):
+class RemoveDashboardCustomerById(UpdateDashboardBaseView):
     permission_required = "api.remove_dashboard_customer"
 
     def get_redirect_url(self, *args, **kwargs):
@@ -230,8 +229,7 @@ class RemoveDashboardCustomerById(UpdateDashboard):
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RemoveDashboardCustomerByEmail(UpdateDashboard):
-    model = Dashboard
+class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
     form = None
     permission_required = "api.remove_dashboard_customer"
 
@@ -264,14 +262,15 @@ class RemoveDashboardCustomerByEmail(UpdateDashboard):
 class GrantDomainAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
-    UpdateView,
+    SingleObjectMixin,
+    FormView,
 ):
     form_class = GrantDomainAccessForm
     model = Dashboard
     permission_required = "api.add_dashboard_domain"
 
     def get_form_kwargs(self):
-        kwargs = FormMixin.get_form_kwargs(self)
+        kwargs = super().get_form_kwargs()
         if "dashboard" not in kwargs:
             kwargs["dashboard"] = Dashboard.objects.get(pk=self.kwargs["pk"])
         return kwargs
@@ -280,12 +279,12 @@ class GrantDomainAccess(
         return reverse_lazy("manage-dashboard", kwargs={"pk": self.kwargs["pk"]})
 
     def form_valid(self, form):
-        domain = form.cleaned_data["datasource"]
+        domain = form.cleaned_data["whitelist_domain"]
         dashboard = self.get_object()
         dashboard.whitelist_domains.add(domain)
         messages.success(self.request, f"Successfully granted access to {domain.name}")
 
-        return FormMixin.form_valid(self, form)
+        return super().form_valid(form)
 
     def form_invalid(self, form):
         log.warning("Received suspicious invalid grant app access request")
@@ -293,7 +292,7 @@ class GrantDomainAccess(
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDomainAccess(UpdateDashboard):
+class RevokeDomainAccess(UpdateDashboardBaseView):
     permission_required = "api.remove_dashboard_domain"
 
     def perform_update(self, **kwargs):

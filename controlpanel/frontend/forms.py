@@ -455,7 +455,7 @@ class GrantAppAccessForm(forms.Form):
 
 class GrantDomainAccessForm(forms.Form):
 
-    datasource = DatasourceChoiceField(
+    whitelist_domain = DatasourceChoiceField(
         empty_label="Select domain",
         queryset=DashboardDomain.objects.none(),
     )
@@ -466,7 +466,7 @@ class GrantDomainAccessForm(forms.Form):
 
         super().__init__(*args, **kwargs)
 
-        self.fields["datasource"].queryset = self.get_datasource_queryset()
+        self.fields["whitelist_domain"].queryset = self.get_datasource_queryset()
 
     def get_datasource_queryset(self):
         """

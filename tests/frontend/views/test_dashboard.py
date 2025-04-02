@@ -133,7 +133,7 @@ def remove_customer_by_email(client, dashboard, *args):
 
 def grant_domain_access(client, dashboard, users, dashboard_domain, *args):
     data = {
-        "datasource": dashboard_domain.id,
+        "whitelist_domain": dashboard_domain.id,
     }
     return client.post(reverse("grant-domain-access", kwargs={"pk": dashboard.id}), data=data)
 
@@ -333,7 +333,7 @@ def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
 
     response = client.post(
         url,
-        data={"datasource": dashboard_domain.id},
+        data={"whitelist_domain": dashboard_domain.id},
     )
 
     assert response.status_code == 302

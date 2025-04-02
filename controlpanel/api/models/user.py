@@ -151,12 +151,9 @@ class User(AbstractUser):
         )
 
     def is_dashboard_admin(self, dashboard_id):
-        return (
-            self.dashboards.filter(
-                id=dashboard_id,
-            ).count()
-            != 0
-        )
+        return self.dashboards.filter(
+            id=dashboard_id,
+        ).exists()
 
     def is_bucket_admin(self, bucket_id):
         return (

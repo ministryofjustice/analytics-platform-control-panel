@@ -7,17 +7,15 @@
 
 {% block content %}
 {% set num_dashboards = dashboards|length %}
-<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {% if request.user.has_perm('api.list_dashboard') %}
-    {{ dashboard_list(dashboards, request.user) }}
+  {{ dashboard_list(dashboards, request.user) }}
 
-      {% if request.user.has_perm('api.create_dashboard') %}
-      <p class="govuk-body">
-        <a class="govuk-button" href="{{ url('register-dashboard') }}">
-          Register a Dashboard
-        </a>
-      </p>
-    {% endif %}
-  {% endif %}
+  <p class="govuk-body">
+    <a class="govuk-button" href="{{ url('register-dashboard') }}">
+      Register a Dashboard
+    </a>
+  </p>
+  
+
 {% endblock %}
