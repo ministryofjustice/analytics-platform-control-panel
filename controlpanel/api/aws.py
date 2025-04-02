@@ -1263,8 +1263,7 @@ class AWSQuicksight(AWSService):
         )
 
     def generate_embed_url_for_anonymous_user(self, dashboard_arn, dashboard_id):
-
-        response = self.client.generate_embed_url_for_anonymous_user(
+        return self.client.generate_embed_url_for_anonymous_user(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
             SessionLifetimeInMinutes=60,
             Namespace="default",
@@ -1276,8 +1275,6 @@ class AWSQuicksight(AWSService):
             },
             AllowedDomains=settings.QUICKSIGHT_DOMAINS,
         )
-
-        return response
 
 
 class AWSLakeFormation(AWSService):
