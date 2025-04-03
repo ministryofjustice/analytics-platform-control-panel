@@ -221,6 +221,7 @@ class RemoveDashboardCustomerById(UpdateDashboardBaseView):
         user_ids = self.request.POST.getlist("customer")
         try:
             dashboard.delete_customers_by_id(user_ids)
+
         except DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             messages.error(self.request, f"Failed removing customer{pluralize(user_ids)}")

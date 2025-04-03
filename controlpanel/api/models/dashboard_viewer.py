@@ -4,7 +4,7 @@ from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import auth0
-from controlpanel.api.exceptions import AddCustomerError
+from controlpanel.api.exceptions import AddCustomerError, DeleteCustomerError
 
 
 class DashboardViewer(TimeStampedModel):
@@ -22,6 +22,10 @@ class DashboardViewer(TimeStampedModel):
         self.add_viewer(self.email)
         return super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        self.remove_viewer(self.email)
+        return super().delete(*args, **kwargs)
+
     def add_viewer(self, email, env_name=None):
         try:
             auth0.ExtendedAuth0().add_dashboard_member_by_email(
@@ -30,3 +34,11 @@ class DashboardViewer(TimeStampedModel):
             )
         except auth0.Auth0Error as e:
             raise AddCustomerError from e
+
+    def remove_viewer(self, email):
+        try:
+            auth0.ExtendedAuth0().remove_dashboard_role(
+                email=email,
+            )
+        except auth0.Auth0Error as e:
+            raise DeleteCustomerError from e

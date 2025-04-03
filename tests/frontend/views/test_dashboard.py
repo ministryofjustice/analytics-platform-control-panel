@@ -17,7 +17,7 @@ NUM_DASHBOARDS = 3
 
 @pytest.fixture()
 def ExtendedAuth0():
-    with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
+    with patch("controlpanel.api.auth0.ExtendedAuth0") as ExtendedAuth0:
         ExtendedAuth0.return_value.add_dashboard_member_by_email.return_value = None
         yield ExtendedAuth0.return_value
 

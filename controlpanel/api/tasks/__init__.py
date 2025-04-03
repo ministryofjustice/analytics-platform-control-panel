@@ -1,5 +1,8 @@
 # First-party/Local
 from controlpanel.api.tasks.app import AppCreateAuth, AppCreateRole
+from controlpanel.api.tasks.dashboards import (
+    prune_dashboard_viewers,
+)
 from controlpanel.api.tasks.s3bucket import (
     S3BucketArchive,
     S3BucketArchiveObject,

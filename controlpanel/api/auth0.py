@@ -233,6 +233,10 @@ class ExtendedAuth0(Auth0):
         user_ids = self.users.add_users_by_emails([email], user_options=user_options)
         self.auth0_roles.add_users(settings.DASHBOARD_AUTH0_ROLE_ID, user_ids)
 
+    def remove_dashboard_role(self, email):
+        user_id = self.users.get_user_id_by_email(email, "email")
+        self.users.remove_role(user_id, settings.DASHBOARD_AUTH0_ROLE_ID)
+
     def clear_up_group(self, group_id):
         """
         Deletes a group from the authorization API
@@ -603,6 +607,12 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
         return response.get(self.endpoint, [])
 
+    def get_user_id_by_email(self, email, connection=None):
+        response = self.get_users_email_search(email, connection)
+        if response:
+            return response[0]["user_id"]
+        return None
+
     def add_users_by_emails(self, emails, user_options={}):
         user_ids_to_add = []
 
@@ -628,6 +638,14 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
             raise Auth0Error("get_users_email_search", response)
 
         return len(response["users"]) > 0
+
+    def remove_role(self, user_id, role_id):
+        response = self.remove_roles(user_id, [role_id])
+
+        if "error" in response:
+            raise Auth0Error("reset_mfa", response)
+
+        return response
 
 
 class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):
