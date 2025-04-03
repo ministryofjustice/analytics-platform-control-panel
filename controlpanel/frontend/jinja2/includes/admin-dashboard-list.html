@@ -44,8 +44,7 @@
       {% if request.user.has_perm('api.add_superuser') -%}
       <td class="govuk-table__cell">
         {%- for admin in dashboard.admins.all() %}
-        <a class="{% if request.user.auth0_id == admin.auth0_id %}highlight-current{% endif %}"
-              href="{{ url('manage-user', kwargs={ "pk": admin.auth0_id }) }}">
+          <a href="{{ url('manage-user', kwargs={ "pk": admin.auth0_id }) }}">
             {{ admin.username }}
           </a>
           {% if not loop.last %}
