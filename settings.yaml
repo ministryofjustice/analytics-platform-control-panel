@@ -16,6 +16,12 @@ enabled_features:
     _HOST_dev: true
     _HOST_prod: true
     _HOST_alpha: true
+  register_dashboard:
+    _DEFAULT: false
+    _HOST_dev: true
+    _HOST_test: true
+    _HOST_prod: false
+    _HOST_alpha: false
   app_m2m_client:
     _DEFAULT: false
     _HOST_dev: true

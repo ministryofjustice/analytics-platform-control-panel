@@ -12,6 +12,7 @@ from simple_history.admin import SimpleHistoryAdmin
 # First-party/Local
 from controlpanel.api.models import (
     App,
+    DashboardDomain,
     Feedback,
     IPAllowlist,
     JusticeDomain,
@@ -111,6 +112,10 @@ class FeedbackAdmin(admin.ModelAdmin):
     list_display = ("satisfaction_rating", "suggestions", "date_added")
 
 
+class DashboardDomainAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+
+
 class ToolDeploymentAdmin(admin.ModelAdmin):
     list_display = (
         "user__username",
@@ -184,4 +189,5 @@ admin.site.register(User, UserAdmin)
 admin.site.register(IPAllowlist, IPAllowlistAdmin)
 admin.site.register(Feedback, FeedbackAdmin)
 admin.site.register(ToolDeployment, ToolDeploymentAdmin)
+admin.site.register(DashboardDomain, DashboardDomainAdmin)
 admin.site.register(JusticeDomain, JusticeDomainAdmin)

@@ -39,7 +39,7 @@ from controlpanel.api.models import (
 from controlpanel.api.pagination import Auth0Paginator
 from controlpanel.api.serializers import AppAuthSettingsSerializer
 from controlpanel.frontend.forms import (
-    AddAppCustomersForm,
+    AddCustomersForm,
     CloudPlatformArnForm,
     CreateAppForm,
     GrantAppAccessForm,
@@ -606,7 +606,7 @@ class RemoveAppDeploymentEnv(
 
 class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = App
-    form_class = AddAppCustomersForm
+    form_class = AddCustomersForm
     permission_required = "api.add_app_customer"
 
     def form_invalid(self, form):
