@@ -25,5 +25,5 @@ def prune_dashboard_viewers():
     viewers = DashboardViewer.objects.filter(dashboards__isnull=True)
     for viewer in viewers:
         viewer_domain = viewer.email.split("@")[-1]
-        if not viewer_domain in domains:
+        if viewer_domain not in domains:
             viewer.delete()

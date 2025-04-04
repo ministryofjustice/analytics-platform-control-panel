@@ -62,9 +62,10 @@ def viewers(dashboards):
     ]
 
     for i in range(num_viewers):
-        viewers.append(baker.make(DashboardViewer, email=f"test.user{i+1}@{domains[i]}"))
+        viewers.append(baker.make(DashboardViewer, email=f"test.user{i + 1}@{domains[i]}"))
 
-    # only assign 2 so we can check that a user won't be pruned if their domain is linked to a dashboard
+    # only assign 2 so we can check that a user won't be pruned 
+    # if their domain is linked to a dashboard
     dashboards[0].viewers.add(viewers[0])
     dashboards[1].viewers.add(viewers[1])
 
@@ -78,7 +79,7 @@ def domain(dashboards):
     domains = []
 
     for i in range(num_domains):
-        domains.append(baker.make(DashboardDomain, name=f"test-domain{i+1}.gov.uk"))
+        domains.append(baker.make(DashboardDomain, name=f"test-domain{i + 1}.gov.uk"))
 
     dashboards[0].whitelist_domains.add(domains[0])
     dashboards[1].whitelist_domains.add(domains[2])
