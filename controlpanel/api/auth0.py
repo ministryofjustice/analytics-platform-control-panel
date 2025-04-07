@@ -643,7 +643,7 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         response = self.remove_roles(user_id, [role_id])
 
         if "error" in response:
-            raise Auth0Error("reset_mfa", response)
+            raise Auth0Error("remove_role", response)
 
         return response
 
