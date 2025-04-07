@@ -4,6 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 
 # Third-party
+import sentry_sdk
 import structlog
 import yaml
 from auth0 import authentication, exceptions
@@ -640,12 +641,13 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         return len(response["users"]) > 0
 
     def remove_role(self, user_id, role_id):
-        response = self.remove_roles(user_id, [role_id])
+        try:
+            response = self.remove_roles(user_id, [role_id])
 
-        if "error" in response:
-            raise Auth0Error("remove_role", response)
-
-        return response
+            return response
+        except Auth0Error as e:
+            sentry_sdk.capture_exception(e)
+            raise e
 
 
 class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):
