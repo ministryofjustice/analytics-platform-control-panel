@@ -4,6 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 
 # Third-party
+import sentry_sdk
 import structlog
 import yaml
 from auth0 import authentication, exceptions
@@ -11,6 +12,7 @@ from auth0.management import Auth0
 from auth0.management.clients import Clients
 from auth0.management.connections import Connections
 from auth0.management.device_credentials import DeviceCredentials
+from auth0.management.roles import Roles as Auth0Roles
 from auth0.management.users import Users
 from auth0.rest import RestClient
 from django.conf import settings
@@ -70,6 +72,7 @@ class ExtendedAuth0(Auth0):
         self.device_credentials = ExtendedDeviceCredentials(
             self.domain, self._token, timeout=DEFAULT_TIMEOUT
         )
+        self.auth0_roles = ExtendedRoles(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
@@ -226,6 +229,14 @@ class ExtendedAuth0(Auth0):
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
         self.groups.add_group_members(user_ids=user_ids, group_id=group_id, group_name=group_name)
         return user_ids
+
+    def add_dashboard_member_by_email(self, email, user_options={}):
+        user_ids = self.users.add_users_by_emails([email], user_options=user_options)
+        self.auth0_roles.add_users(settings.DASHBOARD_AUTH0_ROLE_ID, user_ids)
+
+    def remove_dashboard_role(self, email):
+        user_id = self.users.get_user_id_by_email(email, "email")
+        self.users.remove_role(user_id, settings.DASHBOARD_AUTH0_ROLE_ID)
 
     def clear_up_group(self, group_id):
         """
@@ -469,6 +480,10 @@ class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
     endpoint = "device-credentials"
 
 
+class ExtendedRoles(ExtendedAPIMethods, Auth0Roles):
+    endpoint = "roles"
+
+
 class ExtendedConnections(ExtendedAPIMethods, Connections):
     endpoint = "connections"
 
@@ -593,6 +608,12 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
         return response.get(self.endpoint, [])
 
+    def get_user_id_by_email(self, email, connection=None):
+        response = self.get_users_email_search(email, connection)
+        if response:
+            return response[0]["user_id"]
+        return None
+
     def add_users_by_emails(self, emails, user_options={}):
         user_ids_to_add = []
 
@@ -618,6 +639,15 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
             raise Auth0Error("get_users_email_search", response)
 
         return len(response["users"]) > 0
+
+    def remove_role(self, user_id, role_id):
+        try:
+            response = self.remove_roles(user_id, [role_id])
+
+            return response
+        except Auth0Error as e:
+            sentry_sdk.capture_exception(e)
+            raise e
 
 
 class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):

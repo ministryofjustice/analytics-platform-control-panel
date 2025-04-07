@@ -16,6 +16,7 @@ from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api import auth0, cluster, tasks
+from controlpanel.api.exceptions import AddCustomerError, DeleteCustomerError
 from controlpanel.api.models import IPAllowlist
 from controlpanel.utils import github_repository_name, s3_slugify, webapp_release_name
 
@@ -373,14 +374,6 @@ class App(TimeStampedModel):
                 "env": env,
             },
         )
-
-
-class AddCustomerError(Exception):
-    pass
-
-
-class DeleteCustomerError(Exception):
-    pass
 
 
 App.AddCustomerError = AddCustomerError
