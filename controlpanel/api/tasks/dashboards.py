@@ -29,5 +29,5 @@ def prune_dashboard_viewers():
         if viewer_domain not in domains:
             try:
                 viewer.delete()
-            except Auth0Error as e:
+            except Auth0Error:
                 log.info(f"Failed to remove viewer {viewer.email} from Auth0")
