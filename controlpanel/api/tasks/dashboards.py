@@ -3,6 +3,7 @@ import structlog
 from celery import shared_task
 
 # First-party/Local
+from controlpanel.api.auth0 import Auth0Error
 from controlpanel.api.models.dashboard_domain import DashboardDomain
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
 
@@ -26,4 +27,7 @@ def prune_dashboard_viewers():
     for viewer in viewers:
         viewer_domain = viewer.email.split("@")[-1]
         if viewer_domain not in domains:
-            viewer.delete()
+            try:
+                viewer.delete()
+            except Auth0Error as e:
+                log.info(f"Failed to remove viewer {viewer.email} from Auth0")
