@@ -1,6 +1,7 @@
 # First-party/Local
 from controlpanel.api.views.apps import AppByNameViewSet
 from controlpanel.api.views.customers import AppCustomersAPIView, AppCustomersDetailAPIView
+from controlpanel.api.views.dashboards import DashboardViewSet
 from controlpanel.api.views.health_check import health_check
 from controlpanel.api.views.models import (
     AppS3BucketViewSet,

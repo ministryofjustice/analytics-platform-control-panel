@@ -16,6 +16,7 @@ from controlpanel.api import cluster, validators
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
+    Dashboard,
     IPAllowlist,
     S3Bucket,
     ToolDeployment,
@@ -545,3 +546,10 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         auth_settings = app_auth_data["auth_settings"]
         auth_settings_status = app_auth_data["auth0_clients_status"]
         return self._process_auth_settings(auth_settings, auth_settings_status)
+
+
+class DashboardSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Dashboard
+        fields = ("name", "quicksight_id")

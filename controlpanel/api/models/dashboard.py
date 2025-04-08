@@ -7,6 +7,7 @@ from django_extensions.db.models import TimeStampedModel
 from controlpanel.api import aws
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
+from controlpanel.utils import get_domain_from_email
 
 
 class Dashboard(TimeStampedModel):
