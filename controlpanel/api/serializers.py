@@ -546,12 +546,12 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         auth_settings = app_auth_data["auth_settings"]
         auth_settings_status = app_auth_data["auth0_clients_status"]
         return self._process_auth_settings(auth_settings, auth_settings_status)
-    
+
 
 class DashboardAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("name", "email") 
+        fields = ("name", "email")
 
 
 class DashboardSerializer(serializers.ModelSerializer):

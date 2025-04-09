@@ -63,7 +63,7 @@ class DashboardViewSet(ViewSet):
                     {"error": f"Dashboard {quicksight_id} not found."},
                     status=404,
                 )
-            
+
             serialiser = DashboardUrlSerializer(dashboard)
             return Response(serialiser.data)
         except Dashboard.DoesNotExist:

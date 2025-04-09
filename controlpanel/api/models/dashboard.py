@@ -4,7 +4,7 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
-from controlpanel.api.aws import arn, AWSQuicksight
+from controlpanel.api.aws import AWSQuicksight, arn
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
 from controlpanel.utils import get_domain_from_email
@@ -61,7 +61,7 @@ class Dashboard(TimeStampedModel):
             self.viewers.remove(viewer)
         except Exception as e:
             raise DeleteCustomerError from e
-        
+
     def get_embed_url(self):
         """
         Get the QuickSight embed URL for the dashboard.
