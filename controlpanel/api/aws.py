@@ -1273,7 +1273,7 @@ class AWSQuicksight(AWSService):
                     "InitialDashboardId": dashboard_id,
                 }
             },
-            AllowedDomains=settings.QUICKSIGHT_DOMAINS,
+            AllowedDomains=settings.DASHBOARD_SERVICE_DOMAINS,
         )
 
 
