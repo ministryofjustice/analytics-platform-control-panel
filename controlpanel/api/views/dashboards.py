@@ -9,6 +9,7 @@ from rest_framework.viewsets import ViewSet
 from controlpanel.api import permissions
 from controlpanel.api.aws import AWSQuicksight
 from controlpanel.api.models.dashboard import Dashboard
+from controlpanel.api.pagination import CustomPageNumberPagination
 from controlpanel.api.serializers import DashboardSerializer
 from controlpanel.utils import get_domain_from_email
 
@@ -24,7 +25,7 @@ class DashboardViewSet(ViewSet):
     @action(detail=False, methods=["get"])
     def dashboard_list(self, request):
         """
-        Get a list of dashboards that the viewer has access to.
+        Get a paginated list of dashboards that the viewer has access to.
         """
         viewer_email = request.query_params.get("email")
 
@@ -37,8 +38,11 @@ class DashboardViewSet(ViewSet):
             Q(viewers__email=viewer_email) | Q(whitelist_domains__name=domain)
         ).distinct()
 
-        serialiser = DashboardSerializer(dashboards, many=True)
-        return Response(serialiser.data)
+        paginator = CustomPageNumberPagination()
+        paginated_dashboards = paginator.paginate_queryset(dashboards, request)
+        serializer = DashboardSerializer(paginated_dashboards, many=True)
+
+        return paginator.get_paginated_response(serializer.data)
 
     @action(detail=True, methods=["get"])
     def embed_url(self, request, quicksight_id=None):
