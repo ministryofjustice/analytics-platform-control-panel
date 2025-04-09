@@ -1,16 +1,13 @@
 # Third-party
-from django.conf import settings
 from django.db.models import Q
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 # First-party/Local
 from controlpanel.api import permissions
-from controlpanel.api.aws import AWSQuicksight
 from controlpanel.api.models.dashboard import Dashboard
 from controlpanel.api.pagination import CustomPageNumberPagination
-from controlpanel.api.serializers import DashboardSerializer
+from controlpanel.api.serializers import DashboardSerializer, DashboardUrlSerializer
 from controlpanel.utils import get_domain_from_email
 
 
@@ -22,8 +19,7 @@ class DashboardViewSet(ViewSet):
     permission_classes = [permissions.IsSuperuser]
     lookup_field = "quicksight_id"
 
-    @action(detail=False, methods=["get"])
-    def dashboard_list(self, request):
+    def list(self, request):
         """
         Get a paginated list of dashboards that the viewer has access to.
         """
@@ -44,8 +40,7 @@ class DashboardViewSet(ViewSet):
 
         return paginator.get_paginated_response(serializer.data)
 
-    @action(detail=True, methods=["get"])
-    def embed_url(self, request, quicksight_id=None):
+    def retrieve(self, request, quicksight_id=None):
         """
         Get a dashboard by its QuickSight ID.
         """
@@ -68,24 +63,8 @@ class DashboardViewSet(ViewSet):
                     {"error": f"Dashboard {quicksight_id} not found."},
                     status=404,
                 )
-
-            assume_role_name = settings.QUICKSIGHT_ASSUMED_ROLE
-            quicksight_region = settings.QUICKSIGHT_ACCOUNT_REGION
-            quicksight_client = AWSQuicksight(
-                assume_role_name=assume_role_name,
-                profile_name="control_panel_api",
-                region_name=quicksight_region,
-            )
-
-            response = quicksight_client.generate_embed_url_for_anonymous_user(
-                dashboard_arn=dashboard.arn, dashboard_id=quicksight_id
-            )
-
-            return Response(
-                {
-                    "embed_url": response["EmbedUrl"],
-                    "anonymous_user_arn": response["AnonymousUserArn"],
-                }
-            )
+            
+            serialiser = DashboardUrlSerializer(dashboard)
+            return Response(serialiser.data)
         except Dashboard.DoesNotExist:
             return Response({"error": "Dashboard not found."}, status=404)

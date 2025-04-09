@@ -546,10 +546,29 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
         auth_settings = app_auth_data["auth_settings"]
         auth_settings_status = app_auth_data["auth0_clients_status"]
         return self._process_auth_settings(auth_settings, auth_settings_status)
+    
+
+class DashboardAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("name", "email") 
 
 
 class DashboardSerializer(serializers.ModelSerializer):
+    admins = DashboardAdminSerializer(many=True, read_only=True)
 
     class Meta:
         model = Dashboard
-        fields = ("name", "quicksight_id")
+        fields = ("name", "quicksight_id", "admins")
+
+
+class DashboardUrlSerializer(DashboardSerializer):
+    class Meta(DashboardSerializer.Meta):
+        fields = ("name",)
+
+    def to_representation(self, dashboard):
+        data = super().to_representation(dashboard)
+        response = dashboard.get_embed_url()
+        data["embed_url"] = response["EmbedUrl"]
+        data["anonymous_user_arn"] = response["AnonymousUserArn"]
+        return data
