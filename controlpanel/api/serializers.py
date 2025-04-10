@@ -568,6 +568,7 @@ class DashboardUrlSerializer(DashboardSerializer):
 
     def to_representation(self, dashboard):
         data = super().to_representation(dashboard)
+
         response = dashboard.get_embed_url()
         data["embed_url"] = response["EmbedUrl"]
         data["anonymous_user_arn"] = response["AnonymousUserArn"]
