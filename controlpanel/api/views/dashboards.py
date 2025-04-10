@@ -18,7 +18,8 @@ class DashboardViewSet(ReadOnlyModelViewSet):
 
     queryset = Dashboard.objects.all()
     serializer_class = DashboardSerializer
-    permission_classes = [permissions.IsSuperuser]
+    resource = "dashboard"
+    permission_classes = [permissions.IsSuperuser | permissions.JWTTokenResourcePermissions]
     lookup_field = "quicksight_id"
     pagination_class = CustomPageNumberPagination
 
