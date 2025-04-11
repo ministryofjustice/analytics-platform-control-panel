@@ -75,20 +75,32 @@ def dashboard_domain(dashboard):
     ],
 )
 def test_list(
-    client, dashboard, dashboard_viewer, dashboard_domain, email, expected_status, expected_count
+    client,
+    users,
+    dashboard,
+    dashboard_viewer,
+    dashboard_domain,
+    email,
+    expected_status,
+    expected_count,
 ):
-    data = {"email": email} if email else {}
-    response = client.get(reverse("dashboard-list"), data=data)
+    with patch(
+        "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
+    ) as has_permission:
+        has_permission.return_value = True
+        data = {"email": email} if email else {}
+        client.force_login(users["dashboard_admin"])
+        response = client.get(reverse("dashboard-list"), data=data)
 
-    assert response.status_code == expected_status
+        assert response.status_code == expected_status
 
-    if expected_status == status.HTTP_200_OK:
-        assert response.data["count"] == expected_count
+        if expected_status == status.HTTP_200_OK:
+            assert response.data["count"] == expected_count
 
-        if expected_count > 0:
-            result = response.data["results"][0]
-            assert result["quicksight_id"] == dashboard.quicksight_id
-            assert result["name"] == dashboard.name
+            if expected_count > 0:
+                result = response.data["results"][0]
+                assert result["quicksight_id"] == dashboard.quicksight_id
+                assert result["name"] == dashboard.name
 
 
 @pytest.mark.parametrize(
