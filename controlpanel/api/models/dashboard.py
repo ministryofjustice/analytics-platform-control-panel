@@ -4,9 +4,10 @@ from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
-from controlpanel.api import aws
+from controlpanel.api.aws import AWSQuicksight, arn
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
+from controlpanel.utils import get_domain_from_email
 
 
 class Dashboard(TimeStampedModel):
@@ -27,13 +28,13 @@ class Dashboard(TimeStampedModel):
 
     @property
     def arn(self):
-        arn = aws.arn(
+        dashboard_arn = arn(
             "quicksight",
             "dashboard",
             settings.QUICKSIGHT_ACCOUNT_REGION,
             settings.QUICKSIGHT_ACCOUNT_ID,
         )
-        return f"{arn}/{self.quicksight_id}"
+        return f"{dashboard_arn}/{self.quicksight_id}"
 
     def is_admin(self, user):
         return self.admins.filter(pk=user.pk).exists()
@@ -60,3 +61,21 @@ class Dashboard(TimeStampedModel):
             self.viewers.remove(viewer)
         except Exception as e:
             raise DeleteCustomerError from e
+
+    def get_embed_url(self):
+        """
+        Get the QuickSight embed URL for the dashboard.
+        """
+        assume_role_name = settings.QUICKSIGHT_ASSUMED_ROLE
+        quicksight_region = settings.QUICKSIGHT_ACCOUNT_REGION
+        quicksight_client = AWSQuicksight(
+            assume_role_name=assume_role_name,
+            profile_name="control_panel_api",
+            region_name=quicksight_region,
+        )
+
+        response = quicksight_client.generate_embed_url_for_anonymous_user(
+            dashboard_arn=self.arn, dashboard_id=self.quicksight_id
+        )
+
+        return response

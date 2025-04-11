@@ -272,3 +272,12 @@ def _get_model(model_name):
     https://stackoverflow.com/questions/26379026/resolving-circular-imports-in-celery-and-django
     """
     return apps.get_model("api", model_name)
+
+
+def get_domain_from_email(email):
+    """
+    Extract the domain from an email address.
+    """
+    if "@" not in email:
+        raise ValueError("Invalid email address.")
+    return email.split("@")[-1].lower()

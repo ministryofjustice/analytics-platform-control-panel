@@ -266,6 +266,8 @@ try:
 except gaierror:
     pass
 
+DASHBOARD_SERVICE_DOMAINS = [os.environ.get("DASHBOARD_SERVICE_DOMAINS")]
+
 # Sets the X-XSS-Protection: 1; mode=block header
 SECURE_BROWSER_XSS_FILTER = True
 

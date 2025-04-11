@@ -14,6 +14,7 @@ router.register("tools", views.ToolViewSet, basename="tool")
 router.register("userapps", views.UserAppViewSet)
 router.register("users", views.UserViewSet)
 router.register("users3buckets", views.UserS3BucketViewSet)
+router.register("dashboards", views.DashboardViewSet, basename="dashboard")
 
 urlpatterns = [
     path("", include(router.urls)),

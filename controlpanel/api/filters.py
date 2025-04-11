@@ -11,6 +11,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 # First-party/Local
 from controlpanel.api.models import S3Bucket
 from controlpanel.api.permissions import is_superuser
+from controlpanel.utils import get_domain_from_email
 
 
 class SuperusersOnlyFilter(DjangoFilterBackend):
@@ -63,6 +64,21 @@ class AppS3BucketFilter(DjangoFilterBackend):
         )
 
         return queryset.filter(is_app_admin | is_bucket_admin).distinct()
+
+
+class DashboardFilter(DjangoFilterBackend):
+    def filter_queryset(self, request, queryset, view):
+        queryset = super().filter_queryset(request, queryset, view)
+
+        if is_superuser(request.user):
+            return queryset
+
+        viewer_email = request.query_params.get("email")
+        domain = get_domain_from_email(viewer_email)
+
+        return queryset.filter(
+            Q(viewers__email=viewer_email) | Q(whitelist_domains__name=domain)
+        ).distinct()
 
 
 class UserS3BucketFilter(DjangoFilterBackend):
