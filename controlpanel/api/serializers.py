@@ -564,7 +564,7 @@ class DashboardSerializer(serializers.ModelSerializer):
 
 class DashboardUrlSerializer(DashboardSerializer):
     class Meta(DashboardSerializer.Meta):
-        fields = ("name",)
+        fields = ("name", "admins")
 
     def to_representation(self, dashboard):
         data = super().to_representation(dashboard)

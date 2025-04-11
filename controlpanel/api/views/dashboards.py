@@ -5,6 +5,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 # First-party/Local
 from controlpanel.api import permissions
+from controlpanel.api.filters import DashboardFilter
 from controlpanel.api.models.dashboard import Dashboard
 from controlpanel.api.pagination import CustomPageNumberPagination
 from controlpanel.api.serializers import DashboardSerializer, DashboardUrlSerializer
@@ -22,17 +23,7 @@ class DashboardViewSet(ReadOnlyModelViewSet):
     permission_classes = [permissions.IsSuperuser | permissions.JWTTokenResourcePermissions]
     lookup_field = "quicksight_id"
     pagination_class = CustomPageNumberPagination
-
-    def get_queryset(self):
-        """
-        Filter dashboards based on the viewer's email or whitelist domain.
-        """
-        viewer_email = self.request.query_params.get("email")
-        domain = get_domain_from_email(viewer_email)
-
-        return Dashboard.objects.filter(
-            Q(viewers__email=viewer_email) | Q(whitelist_domains__name=domain)
-        ).distinct()
+    filter_backends = (DashboardFilter,)
 
     def get_object(self):
         """
