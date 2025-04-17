@@ -38,3 +38,5 @@ SESSION_COOKIE_SECURE = False
 
 # -- Structured logging
 LOGGING["loggers"]["controlpanel"]["level"] = "INFO"  # noqa: F405
+
+DASHBOARD_SERVICE_DOMAINS = ["http://localhost:8001"]
