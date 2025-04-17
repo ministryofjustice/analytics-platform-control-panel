@@ -10,7 +10,7 @@ RUN ./node_modules/.bin/sass --load-path=./ --style=compressed src/app.scss:dist
 WORKDIR /src
 RUN /node_modules/.bin/jest
 
-FROM public.ecr.aws/docker/library/python:3.12-alpine3.18 AS base
+FROM public.ecr.aws/docker/library/python:3.12-alpine3.21 AS base
 
 ARG HELM_VERSION=3.16.0
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
