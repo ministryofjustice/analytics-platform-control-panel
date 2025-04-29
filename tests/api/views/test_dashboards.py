@@ -100,7 +100,7 @@ def test_list(
             if expected_count > 0:
                 result = response.data["results"][0]
                 assert result["quicksight_id"] == dashboard.quicksight_id
-                assert result["name"] == dashboard.name
+                assert result["admins"][0]["email"] == users["dashboard_admin"].justice_email
 
 
 @pytest.mark.parametrize(

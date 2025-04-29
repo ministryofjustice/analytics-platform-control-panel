@@ -549,9 +549,17 @@ class AppAuthSettingsSerializer(serializers.BaseSerializer):
 
 
 class DashboardAdminSerializer(serializers.ModelSerializer):
+    email = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ("name", "email")
+
+    def get_email(self, obj):
+        if obj.justice_email:
+            return obj.justice_email
+
+        return obj.email
 
 
 class DashboardSerializer(serializers.ModelSerializer):
