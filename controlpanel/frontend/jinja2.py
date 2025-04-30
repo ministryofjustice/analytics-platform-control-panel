@@ -20,6 +20,7 @@ def environment(**kwargs):
             "static": static,
             "url": reverse,
             "google_analytics_id": settings.GOOGLE_ANALYTICS_ID,
+            "dashboard_url": settings.DASHBOARD_SERVICE_URL,
             "user_guidance_base_url": settings.USER_GUIDANCE_BASE_URL,
         }
     )
