@@ -12,7 +12,7 @@ from django.db.models import Q
 
 # First-party/Local
 from controlpanel.api import validators
-from controlpanel.api.aws import AWSIdentityStore
+from controlpanel.api.aws import AWSIdentityStore, AWSQuicksight
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
 from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
@@ -779,6 +779,7 @@ class FeedbackForm(forms.ModelForm):
 
 
 class RegisterDashboardForm(forms.ModelForm):
+
     class Meta:
         model = Dashboard
         fields = [
@@ -786,17 +787,29 @@ class RegisterDashboardForm(forms.ModelForm):
             "quicksight_id",
         ]
 
-    def clean(self):
-        cleaned_data = super().clean()
-        dashboard_url = cleaned_data["quicksight_id"]
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
 
-        if "dashboards/" not in dashboard_url:
+    def clean_quicksight_id(self):
+        dashboard_url = self.cleaned_data["quicksight_id"]
+
+        prefix = (
+            f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/"
+        )
+        if not dashboard_url.startswith(prefix):
             raise ValidationError("The URL entered is not a valid Quicksight dashboard URL")
 
-        quicksight_id = dashboard_url.split("dashboards/")[1]
-        cleaned_data["quicksight_id"] = quicksight_id
+        quicksight_id = dashboard_url.split(prefix)[1]
+        if not quicksight_id:
+            raise ValidationError("The URL entered is not a valid Quicksight dashboard URL")
 
-        return cleaned_data
+        if not AWSQuicksight().has_update_dashboard_permissions(
+            dashboard_id=quicksight_id, user=self.user
+        ):
+            raise ValidationError("You do not have permission to register this dashboard")
+
+        return quicksight_id
 
 
 class ToolChoice(forms.Select):
