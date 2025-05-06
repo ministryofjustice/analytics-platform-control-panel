@@ -402,6 +402,30 @@ def test_register_dashboard_not_permitted(client, users):
         assert "You do not have permission to register this dashboard" in str(response.content)
 
 
+def test_register_dashboard_already_registered(client, users, dashboard):
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
+        has_update_permissions.return_value = True
+        client.force_login(users["superuser"])
+        url = reverse("register-dashboard")
+        response = client.post(
+            url,
+            data={
+                "name": "Test Dashboard 2",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/{dashboard.quicksight_id}",  # noqa
+            },
+        )
+        has_update_permissions.assert_called_once_with(
+            dashboard_id=dashboard.quicksight_id, user=users["superuser"]
+        )
+        assert response.status_code == 200
+        assert (
+            f"This dashboard is already registered by {dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+            in str(response.content)
+        )
+
+
 def test_register_dashboard_success(client, users, ExtendedAuth0):
     with patch(
         "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
@@ -419,8 +443,9 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
         has_update_permissions.assert_called_once_with(
             dashboard_id="abc-123", user=users["superuser"]
         )
+        dashboard = Dashboard.objects.get(name="Test Dashboard", quicksight_id="abc-123")
         assert response.status_code == 302
-        assert response.url == reverse("manage-dashboard", kwargs={"pk": 1})
+        assert response.url == reverse("manage-dashboard", kwargs={"pk": dashboard.pk})
         ExtendedAuth0.add_dashboard_member_by_email.assert_called_once_with(
             email=users["superuser"].justice_email.lower(),
             user_options={"connection": "email"},

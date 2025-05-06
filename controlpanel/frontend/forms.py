@@ -809,6 +809,12 @@ class RegisterDashboardForm(forms.ModelForm):
         ):
             raise ValidationError("You do not have permission to register this dashboard")
 
+        existing_dashboard = Dashboard.objects.filter(quicksight_id=quicksight_id).first()
+        if existing_dashboard:
+            raise ValidationError(
+                f"This dashboard is already registered by {existing_dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+            )
+
         return quicksight_id
 
 
