@@ -40,7 +40,7 @@ class Dashboard(TimeStampedModel):
 
     def add_customers(self, emails):
         for email in emails:
-            viewer, _ = DashboardViewer.objects.get_or_create(email=email)
+            viewer, _ = DashboardViewer.objects.get_or_create(email=email.lower())
             self.viewers.add(viewer)
 
     def delete_customers_by_id(self, customer_ids):

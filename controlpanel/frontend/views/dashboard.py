@@ -154,6 +154,7 @@ class AddDashboardAdmin(UpdateDashboardBaseView):
         user = get_object_or_404(User, pk=self.request.POST["user_id"])
 
         dashboard.admins.add(user)
+        dashboard.add_customers([user.justice_email])
         messages.success(self.request, f"Granted admin access to {user.name}")
 
 

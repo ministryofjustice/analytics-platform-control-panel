@@ -520,6 +520,9 @@ class CustomersField(forms.Field):
 class AddCustomersForm(forms.Form):
     customer_email = CustomersField()
 
+    def clean_customer_email(self):
+        return [email.lower() for email in self.cleaned_data["customer_email"]]
+
 
 class RemoveCustomerByEmailForm(forms.Form):
     prefix = "remove"
