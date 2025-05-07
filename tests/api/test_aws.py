@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, Mock, PropertyMock, call, patch
 # Third-party
 import botocore
 import pytest
+from botocore.exceptions import ClientError
 
 # First-party/Local
 from controlpanel.api import aws
@@ -1186,6 +1187,60 @@ def test_get_embed_url(quicksight_service):
         mock_user = Mock(email="user@email.com")
         url = quicksight_service.get_embed_url(mock_user)
         assert url == embedded_url
+
+
+@pytest.mark.parametrize(
+    "describe_permissions_return, client_error, expected_result",
+    [
+        (None, {"Error": {"Code": "ResourceNotFoundException", "Message": "Not found"}}, False),
+        (
+            [
+                {
+                    "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/other.user@example.com",  # noqa
+                    "Actions": ["quicksight:DescribeDashboard"],
+                }
+            ],
+            None,
+            False,
+        ),
+        (
+            [
+                {
+                    "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/test.user@example.com",  # noqa
+                    "Actions": ["quicksight:UpdateDashboardPermissions"],
+                }
+            ],
+            None,
+            True,
+        ),
+    ],
+)
+def test_has_update_dashboard_permissions(
+    describe_permissions_return, client_error, expected_result
+):
+    dashboard_id = "dashboard-123"
+    user = MagicMock(justice_email="test.user@example.com")
+    quicksight = aws.AWSQuicksight()
+
+    with (
+        patch.object(quicksight, "client") as mock_client,
+        patch("controlpanel.api.aws.arn") as mock_arn,
+    ):
+
+        mock_arn.return_value = (
+            "arn:aws:quicksight:eu-west-1:123456789012:user/default/test.user@example.com"
+        )
+        if client_error:
+            mock_client.describe_dashboard_permissions.side_effect = ClientError(
+                error_response=client_error, operation_name="DescribeDashboardPermissions"
+            )
+        else:
+            mock_client.describe_dashboard_permissions.return_value = {
+                "Permissions": describe_permissions_return
+            }
+
+        result = quicksight.has_update_dashboard_permissions(dashboard_id, user)
+        assert result == expected_result
 
 
 @pytest.mark.parametrize(

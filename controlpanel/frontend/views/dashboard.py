@@ -57,6 +57,11 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
     permission_required = "api.register_dashboard"
     template_name = "dashboard-register.html"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
     def get_success_url(self):
         messages.success(
             self.request,

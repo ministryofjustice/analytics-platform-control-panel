@@ -1217,6 +1217,9 @@ class AWSQuicksight(AWSService):
     service_name = "quicksight"
 
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
+        assume_role_name = assume_role_name or settings.QUICKSIGHT_ASSUMED_ROLE
+        region_name = region_name or settings.QUICKSIGHT_ACCOUNT_REGION
+        profile_name = profile_name or "control_panel_api"
         log.info(
             f"assume_role_name: {assume_role_name}, \
             profile_name: {profile_name}, \
@@ -1261,6 +1264,32 @@ class AWSQuicksight(AWSService):
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
             DashboardId=dashboard_id,
         )
+
+    def has_update_dashboard_permissions(self, dashboard_id, user):
+        try:
+            permissions = self.client.describe_dashboard_permissions(
+                AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+                DashboardId=dashboard_id,
+            )["Permissions"]
+        except botocore.exceptions.ClientError as error:
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                log.warning(f"Dashboard {dashboard_id} not found")
+                return False
+            raise error
+
+        user_arn = arn(
+            service=self.service_name,
+            resource=f"user/default/{user.justice_email}",
+            region=settings.QUICKSIGHT_ACCOUNT_REGION,
+            account=settings.QUICKSIGHT_ACCOUNT_ID,
+        )
+        user_permissions = []
+        for permission_set in permissions:
+            if permission_set["Principal"].lower() == user_arn:
+                user_permissions = permission_set["Actions"]
+                break
+
+        return "quicksight:UpdateDashboardPermissions" in user_permissions
 
     def generate_embed_url_for_anonymous_user(self, dashboard_arn, dashboard_id):
         return self.client.generate_embed_url_for_anonymous_user(

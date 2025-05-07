@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
+from django.conf import settings
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
@@ -355,3 +356,97 @@ def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain)
     assert response.status_code == 302
     updated_dashboard = Dashboard.objects.get(pk=dashboard.id)
     assert updated_dashboard.whitelist_domains.count() == 0
+
+
+@pytest.mark.parametrize(
+    "dashboard_url",
+    [
+        ("https://not-quicksight.com/sn/dashboards/abc-123"),
+        ("https://eu-west-1.quicksight.com/sn/dashboards/abc-123"),
+        (f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.aws.amazon.com/sn/dashboards/"),
+    ],
+)
+def test_register_dashboard_invalid_url(dashboard_url, client, users):
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "name": "Test Dashboard",
+            "quicksight_id": dashboard_url,
+        },
+    )
+
+    assert response.status_code == 200
+    assert "The URL entered is not a valid Quicksight dashboard URL" in str(response.content)
+
+
+def test_register_dashboard_not_permitted(client, users):
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
+        has_update_permissions.return_value = False
+        client.force_login(users["superuser"])
+        url = reverse("register-dashboard")
+        response = client.post(
+            url,
+            data={
+                "name": "Test Dashboard",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/abc-123",  # noqa
+            },
+        )
+        has_update_permissions.assert_called_once_with(
+            dashboard_id="abc-123", user=users["superuser"]
+        )
+        assert response.status_code == 200
+        assert "You do not have permission to register this dashboard" in str(response.content)
+
+
+def test_register_dashboard_already_registered(client, users, dashboard):
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
+        has_update_permissions.return_value = True
+        client.force_login(users["superuser"])
+        url = reverse("register-dashboard")
+        response = client.post(
+            url,
+            data={
+                "name": "Test Dashboard 2",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/{dashboard.quicksight_id}",  # noqa
+            },
+        )
+        has_update_permissions.assert_called_once_with(
+            dashboard_id=dashboard.quicksight_id, user=users["superuser"]
+        )
+        assert response.status_code == 200
+        assert (
+            f"This dashboard is already registered by {dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+            in str(response.content)
+        )
+
+
+def test_register_dashboard_success(client, users, ExtendedAuth0):
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
+        has_update_permissions.return_value = True
+        client.force_login(users["superuser"])
+        url = reverse("register-dashboard")
+        response = client.post(
+            url,
+            data={
+                "name": "Test Dashboard",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/abc-123",  # noqa
+            },
+        )
+        has_update_permissions.assert_called_once_with(
+            dashboard_id="abc-123", user=users["superuser"]
+        )
+        dashboard = Dashboard.objects.get(name="Test Dashboard", quicksight_id="abc-123")
+        assert response.status_code == 302
+        assert response.url == reverse("manage-dashboard", kwargs={"pk": dashboard.pk})
+        ExtendedAuth0.add_dashboard_member_by_email.assert_called_once_with(
+            email=users["superuser"].justice_email.lower(),
+            user_options={"connection": "email"},
+        )
