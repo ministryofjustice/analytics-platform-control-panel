@@ -239,7 +239,9 @@ def add_customer_form_error(client, response):
         "no-emails",
     ],
 )
-def test_add_customers(client, dashboard, dashboard_viewer, users, emails, expected_response, count):
+def test_add_customers(
+    client, dashboard, dashboard_viewer, users, emails, expected_response, count
+):
     client.force_login(users["superuser"])
     data = {"customer_email": emails}
     response = client.post(
