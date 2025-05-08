@@ -23,6 +23,15 @@ def ExtendedAuth0():
         yield ExtendedAuth0.return_value
 
 
+@pytest.fixture()
+def NotificationsAPIClient():
+    with patch(
+        "controlpanel.api.models.dashboard.NotificationsAPIClient"
+    ) as NotificationsAPIClient:
+        NotificationsAPIClient.return_value.send_email_notification.return_value = None
+        yield NotificationsAPIClient.return_value
+
+
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
@@ -189,7 +198,9 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
         (revoke_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
-def test_permissions(client, dashboard, users, dashboard_domain, view, user, expected_status):
+def test_permissions(
+    client, NotificationsAPIClient, dashboard, users, dashboard_domain, view, user, expected_status
+):
     client.force_login(users[user])
     response = view(client, dashboard, users, dashboard_domain)
     assert response.status_code == expected_status
@@ -240,7 +251,14 @@ def add_customer_form_error(client, response):
     ],
 )
 def test_add_customers(
-    client, dashboard, dashboard_viewer, users, emails, expected_response, count
+    client,
+    NotificationsAPIClient,
+    dashboard,
+    dashboard_viewer,
+    users,
+    emails,
+    expected_response,
+    count,
 ):
     client.force_login(users["superuser"])
     data = {"customer_email": emails}
