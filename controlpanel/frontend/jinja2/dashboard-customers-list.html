@@ -19,6 +19,14 @@
 </h2>
 
 <h2 class="govuk-heading-s">
+  Manage Your Dashboard
+</h2>
+
+<p class="govuk-body">
+  <a href="{{ url('manage-dashboard', kwargs={ 'pk': dashboard.id }) }}">Manage dashboard</a>
+</p>
+
+<h2 class="govuk-heading-s">
   Dashboard customers
   {{ modal_dialog(dashboard_customers_html|safe) }}
 </h2>
