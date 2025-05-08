@@ -219,23 +219,27 @@ def add_customer_form_error(client, response):
 
 
 @pytest.mark.parametrize(
-    "emails, expected_response",
+    "emails, expected_response, count",
     [
-        ("foo@example.com", add_customer_success),
-        ("foo@example.com, bar@example.com", add_customer_success),
-        ("foobar", add_customer_form_error),
-        ("foo@example.com, foobar", add_customer_form_error),
-        ("", add_customer_form_error),
+        ("foo@example.com", add_customer_success, 1),
+        ("FOO@example.com", add_customer_success, 1),
+        ("foo@example.com, bar@example.com", add_customer_success, 2),
+        ("FOO@EXAMPLE.COM, Bar@example.com", add_customer_success, 2),
+        ("foobar", add_customer_form_error, 0),
+        ("foo@example.com, foobar", add_customer_form_error, 0),
+        ("", add_customer_form_error, 0),
     ],
     ids=[
         "single-valid-email",
+        "single-valid-email-uppercase",
         "multiple-delimited-emails",
+        "multiple-delimited-emails-uppercase",
         "invalid-email",
         "mixed-valid-invalid-emails",
         "no-emails",
     ],
 )
-def test_add_customers(client, dashboard, dashboard_viewer, users, emails, expected_response):
+def test_add_customers(client, dashboard, dashboard_viewer, users, emails, expected_response, count):
     client.force_login(users["superuser"])
     data = {"customer_email": emails}
     response = client.post(
@@ -243,6 +247,8 @@ def test_add_customers(client, dashboard, dashboard_viewer, users, emails, expec
         data,
     )
     assert expected_response(client, response)
+    emails = [email.strip().lower() for email in emails.split(",")]
+    assert dashboard.viewers.filter(email__in=emails).count() == count
 
 
 def remove_customer_success(client, response):
