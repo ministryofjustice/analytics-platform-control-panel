@@ -154,7 +154,7 @@ class AddDashboardAdmin(UpdateDashboardBaseView):
         user = get_object_or_404(User, pk=self.request.POST["user_id"])
 
         dashboard.admins.add(user)
-        dashboard.add_customers([user.justice_email])
+        dashboard.add_customers([user.justice_email], self.request.user.justice_email)
         messages.success(self.request, f"Granted admin access to {user.name}")
 
 
@@ -207,7 +207,9 @@ class AddDashboardCustomers(
         return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):
-        not_notified = self.get_object().add_customers(form.cleaned_data["customer_email"])
+        not_notified = self.get_object().add_customers(
+            form.cleaned_data["customer_email"], self.request.user.justice_email
+        )
         messages.success(self.request, "Successfully added customers")
 
         if len(not_notified) > 0:

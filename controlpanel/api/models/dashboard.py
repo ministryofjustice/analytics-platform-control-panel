@@ -40,7 +40,7 @@ class Dashboard(TimeStampedModel):
     def is_admin(self, user):
         return self.admins.filter(pk=user.pk).exists()
 
-    def add_customers(self, emails):
+    def add_customers(self, emails, inviter_email):
         notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
         not_notified = []
         for email in emails:
@@ -55,6 +55,7 @@ class Dashboard(TimeStampedModel):
                         "dashboard": self.name,
                         "dashboard_link": self.url,
                         "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+                        "dashboard_admin": inviter_email,
                     },
                 )
             except HTTPError:
