@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
+from notifications_python_client.errors import HTTPError
 from rest_framework import status
 
 # First-party/Local
@@ -21,6 +22,15 @@ def ExtendedAuth0():
     with patch("controlpanel.api.auth0.ExtendedAuth0") as ExtendedAuth0:
         ExtendedAuth0.return_value.add_dashboard_member_by_email.return_value = None
         yield ExtendedAuth0.return_value
+
+
+@pytest.fixture()
+def NotificationsAPIClient():
+    with patch(
+        "controlpanel.api.models.dashboard.NotificationsAPIClient"
+    ) as NotificationsAPIClient:
+        NotificationsAPIClient.return_value.send_email_notification.return_value = None
+        yield NotificationsAPIClient.return_value
 
 
 @pytest.fixture(autouse=True)
@@ -189,7 +199,9 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
         (revoke_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
-def test_permissions(client, dashboard, users, dashboard_domain, view, user, expected_status):
+def test_permissions(
+    client, NotificationsAPIClient, dashboard, users, dashboard_domain, view, user, expected_status
+):
     client.force_login(users[user])
     response = view(client, dashboard, users, dashboard_domain)
     assert response.status_code == expected_status
@@ -240,7 +252,14 @@ def add_customer_form_error(client, response):
     ],
 )
 def test_add_customers(
-    client, dashboard, dashboard_viewer, users, emails, expected_response, count
+    client,
+    NotificationsAPIClient,
+    dashboard,
+    dashboard_viewer,
+    users,
+    emails,
+    expected_response,
+    count,
 ):
     client.force_login(users["superuser"])
     data = {"customer_email": emails}
@@ -251,6 +270,31 @@ def test_add_customers(
     assert expected_response(client, response)
     emails = [email.strip().lower() for email in emails.split(",")]
     assert dashboard.viewers.filter(email__in=emails).count() == count
+
+
+def test_add_customers_fail_notify(
+    client,
+    dashboard,
+    dashboard_viewer,
+    users,
+):
+    client.force_login(users["superuser"])
+    data = {"customer_email": ["test.user@justice.gov.uk"]}
+    with patch(
+        "controlpanel.api.models.dashboard.NotificationsAPIClient"
+    ) as NotificationsAPIClient:
+        NotificationsAPIClient.return_value.send_email_notification.side_effect = HTTPError(
+            "Error",
+        )
+        response = client.post(
+            reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
+            data,
+        )
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        assert (
+            "Failed to notify test.user@justice.gov.uk. "
+            "You may wish to email them your dahsboard link."
+        ) in messages
 
 
 def remove_customer_success(client, response):
