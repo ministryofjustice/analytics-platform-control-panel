@@ -9,9 +9,11 @@ moj.Modules.autocomplete = {
 
   bindEvents() {
     document.querySelectorAll(this.selector).forEach(select => {
+
       accessibleAutocomplete.enhanceSelectElement({
         defaultValue: '',
         selectElement: select,
+        required: select.dataset.required === "true"
       });
     });
   },
