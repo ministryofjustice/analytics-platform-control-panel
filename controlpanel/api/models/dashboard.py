@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
+from notifications_python_client.errors import HTTPError
 from notifications_python_client.notifications import NotificationsAPIClient
 
 # First-party/Local
@@ -41,18 +42,25 @@ class Dashboard(TimeStampedModel):
 
     def add_customers(self, emails):
         notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
+        not_notified = []
         for email in emails:
             viewer, _ = DashboardViewer.objects.get_or_create(email=email.lower())
             self.viewers.add(viewer)
-            notifications_client.send_email_notification(
-                email_address=email,
-                template_id=settings.NOTIFY_TEMPLATE_ID,
-                personalisation={
-                    "dashboard": self.name,
-                    "dashboard_link": self.url,
-                    "dashboard_home": settings.DASHBOARD_SERVICE_URL,
-                },
-            )
+
+            try:
+                notifications_client.send_email_notification(
+                    email_address=email,
+                    template_id=settings.NOTIFY_TEMPLATE_ID,
+                    personalisation={
+                        "dashboard": self.name,
+                        "dashboard_link": self.url,
+                        "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+                    },
+                )
+            except HTTPError as e:
+                not_notified.append(email)
+
+        return not_notified
 
     def delete_customers_by_id(self, customer_ids):
         try:

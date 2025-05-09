@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
+from notifications_python_client.errors import HTTPError
 from rest_framework import status
 
 # First-party/Local
@@ -269,6 +270,31 @@ def test_add_customers(
     assert expected_response(client, response)
     emails = [email.strip().lower() for email in emails.split(",")]
     assert dashboard.viewers.filter(email__in=emails).count() == count
+
+
+def test_add_customers_fail_notify(
+    client,
+    dashboard,
+    dashboard_viewer,
+    users,
+):
+    client.force_login(users["superuser"])
+    data = {"customer_email": ["test.user@justice.gov.uk"]}
+    with patch(
+        "controlpanel.api.models.dashboard.NotificationsAPIClient"
+    ) as NotificationsAPIClient:
+        NotificationsAPIClient.return_value.send_email_notification.side_effect = HTTPError(
+            "Error",
+        )
+        response = client.post(
+            reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
+            data,
+        )
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        assert (
+            "Failed to notify test.user@justice.gov.uk. "
+            "You may wish to email them your dahsboard link."
+        ) in messages
 
 
 def remove_customer_success(client, response):
