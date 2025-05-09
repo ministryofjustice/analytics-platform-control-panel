@@ -458,3 +458,26 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
             email=users["superuser"].justice_email.lower(),
             user_options={"connection": "email"},
         )
+
+
+@pytest.mark.parametrize(
+    "user_id, expected_message, count",
+    [
+        ("invalid_user", "User not found", 0),
+        ("", "User not found", 0),
+        ("github|user_3", "Granted admin access to ", 1),
+    ],
+)
+def test_add_admin(user_id, expected_message, count, client, dashboard, users):
+    client.force_login(users["superuser"])
+    url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
+    data = {
+        # "user_id": users["other_user"].auth0_id,
+        "user_id": user_id,
+    }
+    response = client.post(url, data)
+    assert response.status_code == 302
+    assert response.url == reverse("manage-dashboard", kwargs={"pk": dashboard.id})
+    assert dashboard.admins.filter(auth0_id=user_id).count() == count
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert expected_message in messages

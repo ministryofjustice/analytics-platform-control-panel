@@ -151,7 +151,16 @@ class AddDashboardAdmin(UpdateDashboardBaseView):
 
     def perform_update(self, **kwargs):
         dashboard = self.get_object()
-        user = get_object_or_404(User, pk=self.request.POST["user_id"])
+
+        user_id = self.request.POST.get("user_id")
+        if not user_id:
+            messages.error(self.request, "User not found")
+            return
+        try:
+            user = User.objects.get(pk=self.request.POST["user_id"])
+        except User.DoesNotExist:
+            messages.error(self.request, "User not found")
+            return
 
         dashboard.admins.add(user)
         dashboard.add_customers([user.justice_email])

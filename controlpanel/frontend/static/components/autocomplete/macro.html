@@ -49,7 +49,8 @@
         {%- if describedBy %} aria-describedBy="{{ describedBy }}"{% endif %}
         {%- if params.attributes %}
           {%- for attribute, value in params.attributes.items() %} {{ attribute }}="{{ value }}"{% endfor %}
-        {%- endif %}>
+        {%- endif %}
+        {%- if params.required %}data-required="true" {% endif %}>
     <option value=""></option>
     {% set items = params["items"] %}
     {% if items is callable %}{% set items = items() %}{% endif %}
