@@ -216,8 +216,17 @@ class AddDashboardCustomers(
         return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):
-        self.get_object().add_customers(form.cleaned_data["customer_email"])
+        not_notified = self.get_object().add_customers(form.cleaned_data["customer_email"])
         messages.success(self.request, "Successfully added customers")
+
+        if len(not_notified) > 0:
+            messages.error(
+                self.request,
+                (
+                    f"Failed to notify {", ".join(not_notified)}. "
+                    "You may wish to email them your dahsboard link."
+                ),
+            )
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self, *args, **kwargs):
