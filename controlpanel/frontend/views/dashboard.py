@@ -216,7 +216,7 @@ class AddDashboardCustomers(
             messages.error(
                 self.request,
                 (
-                    f"Failed to notify {", ".join(not_notified)}. "
+                    f"Failed to notify {', '.join(not_notified)}. "
                     "You may wish to email them your dahsboard link."
                 ),
             )
