@@ -57,7 +57,7 @@ class Dashboard(TimeStampedModel):
                         "dashboard_home": settings.DASHBOARD_SERVICE_URL,
                     },
                 )
-            except HTTPError as e:
+            except HTTPError:
                 not_notified.append(email)
 
         return not_notified
