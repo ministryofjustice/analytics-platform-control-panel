@@ -1044,4 +1044,4 @@ def test_add_cloud_platform_arn_fail(update_trust_policy_mock, app, users, clien
     assert response.status_code == 302
     assert response.url == reverse("manage-app", kwargs={"pk": app.id})
     obj = App.objects.get(pk=app.id)
-    assert obj.cloud_platform_role_arn is None
+    assert obj.cloud_platform_role_arn == ""
