@@ -226,7 +226,7 @@ class AddDashboardCustomers(
                 self.request,
                 (
                     f"Failed to notify {', '.join(not_notified)}. "
-                    "You may wish to email them your dahsboard link."
+                    "You may wish to email them your dashboard link."
                 ),
             )
         return HttpResponseRedirect(self.get_success_url())
