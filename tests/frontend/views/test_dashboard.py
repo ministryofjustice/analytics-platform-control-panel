@@ -293,7 +293,7 @@ def test_add_customers_fail_notify(
         messages = [str(m) for m in get_messages(response.wsgi_request)]
         assert (
             "Failed to notify test.user@justice.gov.uk. "
-            "You may wish to email them your dahsboard link."
+            "You may wish to email them your dashboard link."
         ) in messages
 
 
@@ -512,11 +512,12 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
         ("github|user_3", "Granted admin access to ", 1),
     ],
 )
-def test_add_admin(user_id, expected_message, count, client, dashboard, users):
+def test_add_admin(
+    user_id, expected_message, count, client, dashboard, users, NotificationsAPIClient
+):
     client.force_login(users["superuser"])
     url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
     data = {
-        # "user_id": users["other_user"].auth0_id,
         "user_id": user_id,
     }
     response = client.post(url, data)

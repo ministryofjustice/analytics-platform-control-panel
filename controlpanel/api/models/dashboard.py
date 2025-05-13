@@ -1,4 +1,5 @@
 # Third-party
+import sentry_sdk
 from django.conf import settings
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
@@ -58,7 +59,8 @@ class Dashboard(TimeStampedModel):
                         "dashboard_admin": inviter_email,
                     },
                 )
-            except HTTPError:
+            except HTTPError as e:
+                sentry_sdk.capture_exception(e)
                 not_notified.append(email)
 
         return not_notified
