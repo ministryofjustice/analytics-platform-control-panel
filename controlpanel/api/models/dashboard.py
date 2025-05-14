@@ -51,7 +51,7 @@ class Dashboard(TimeStampedModel):
             try:
                 notifications_client.send_email_notification(
                     email_address=email,
-                    template_id=settings.NOTIFY_TEMPLATE_ID,
+                    template_id=settings.NOTIFY_DASHBOARD_ACCESS_TEMPLATE_ID,
                     personalisation={
                         "dashboard": self.name,
                         "dashboard_link": self.url,
@@ -72,6 +72,23 @@ class Dashboard(TimeStampedModel):
         except Exception as e:
             raise DeleteCustomerError from e
 
+        emails = viewers.values_list("email", flat=True)
+
+        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
+        for email in emails:
+            try:
+                notifications_client.send_email_notification(
+                    email_address=email,
+                    template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,
+                    personalisation={
+                        "dashboard": self.name,
+                        "dashboard_link": self.url,
+                        "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+                    },
+                )
+            except HTTPError as e:
+                sentry_sdk.capture_exception(e)
+
     def delete_customer_by_email(self, customer_email):
         try:
             viewer = DashboardViewer.objects.filter(email=customer_email).first()
@@ -82,6 +99,20 @@ class Dashboard(TimeStampedModel):
             self.viewers.remove(viewer)
         except Exception as e:
             raise DeleteCustomerError from e
+
+        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
+        try:
+            notifications_client.send_email_notification(
+                email_address=customer_email,
+                template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,
+                personalisation={
+                    "dashboard": self.name,
+                    "dashboard_link": self.url,
+                    "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+                },
+            )
+        except HTTPError as e:
+            sentry_sdk.capture_exception(e)
 
     def get_embed_url(self):
         """
