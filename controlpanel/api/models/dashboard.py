@@ -66,7 +66,7 @@ class Dashboard(TimeStampedModel):
         """
         Remove the given viewers from the dashboard.
         """
-        emails = viewers.values_list("email", flat=True)
+        emails = [viewer.email for viewer in viewers]
         self.viewers.remove(*viewers)
 
         for email in emails:
@@ -80,17 +80,17 @@ class Dashboard(TimeStampedModel):
                 },
             )
 
-    def delete_customers_by_id(self, customer_ids):
-        viewers = DashboardViewer.objects.filter(pk__in=customer_ids)
+    def delete_customers_by_id(self, ids):
+        viewers = DashboardViewer.objects.filter(pk__in=ids)
         if not viewers:
-            raise DeleteCustomerError(f"Customers with IDs {customer_ids} not found.")
+            raise DeleteCustomerError(f"Customers with IDs {ids} not found.")
 
         self.delete_viewers(viewers)
 
-    def delete_customer_by_email(self, customer_email):
-        viewers = DashboardViewer.objects.filter(email=customer_email)
+    def delete_customer_by_email(self, email):
+        viewers = DashboardViewer.objects.filter(email=email)
         if not viewers:
-            raise DeleteCustomerError(f"Customer with email {customer_email} not found.")
+            raise DeleteCustomerError(f"Customer with email {email} not found.")
 
         self.delete_viewers(viewers)
 

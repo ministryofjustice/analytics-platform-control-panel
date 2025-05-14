@@ -24,12 +24,6 @@ def ExtendedAuth0():
         yield ExtendedAuth0.return_value
 
 
-@pytest.fixture()
-def govuk_notify_send_email():
-    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
-        yield mock_send_email
-
-
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass

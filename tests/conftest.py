@@ -250,3 +250,9 @@ def feedback(db):
     )
 
     return feedback
+
+
+@pytest.fixture()
+def govuk_notify_send_email():
+    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
+        yield mock_send_email
