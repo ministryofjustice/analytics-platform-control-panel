@@ -3,13 +3,12 @@ import sentry_sdk
 from django.conf import settings
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
-from notifications_python_client.errors import HTTPError
-from notifications_python_client.notifications import NotificationsAPIClient
 
 # First-party/Local
 from controlpanel.api.aws import AWSQuicksight, arn
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
+from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 
 
 class Dashboard(TimeStampedModel):
@@ -42,14 +41,13 @@ class Dashboard(TimeStampedModel):
         return self.admins.filter(pk=user.pk).exists()
 
     def add_customers(self, emails, inviter_email):
-        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
         not_notified = []
         for email in emails:
             viewer, _ = DashboardViewer.objects.get_or_create(email=email.lower())
             self.viewers.add(viewer)
 
             try:
-                notifications_client.send_email_notification(
+                govuk_notify_send_email(
                     email_address=email,
                     template_id=settings.NOTIFY_DASHBOARD_ACCESS_TEMPLATE_ID,
                     personalisation={
@@ -59,8 +57,7 @@ class Dashboard(TimeStampedModel):
                         "dashboard_admin": inviter_email,
                     },
                 )
-            except HTTPError as e:
-                sentry_sdk.capture_exception(e)
+            except GovukNotifyEmailError:
                 not_notified.append(email)
 
         return not_notified
@@ -69,13 +66,12 @@ class Dashboard(TimeStampedModel):
         """
         Remove the given viewers from the dashboard.
         """
+        emails = viewers.values_list("email", flat=True)
         self.viewers.remove(*viewers)
 
-        emails = viewers.values_list("email", flat=True)
         for email in emails:
-            # TODO catch when this fails?
-            self.send_email_notification(
-                email=email,
+            govuk_notify_send_email(
+                email_address=email,
                 template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,
                 personalisation={
                     "dashboard": self.name,
@@ -83,22 +79,6 @@ class Dashboard(TimeStampedModel):
                     "dashboard_home": settings.DASHBOARD_SERVICE_URL,
                 },
             )
-
-    def send_email_notification(self, email, template_id, personalisation):
-        """
-        Send an email notification to the given email address using the specified template ID and
-        personalisation data.
-        """
-        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
-        try:
-            notifications_client.send_email_notification(
-                email_address=email,
-                template_id=template_id,
-                personalisation=personalisation,
-            )
-        except HTTPError as e:
-            # capture the exception but dont raise it to the viewer
-            sentry_sdk.capture_exception(e)
 
     def delete_customers_by_id(self, customer_ids):
         viewers = DashboardViewer.objects.filter(pk__in=customer_ids)

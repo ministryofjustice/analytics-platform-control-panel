@@ -7,12 +7,12 @@ from django.conf import settings
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
-from notifications_python_client.errors import HTTPError
 from rest_framework import status
 
 # First-party/Local
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
+from controlpanel.utils import GovukNotifyEmailError
 
 NUM_DASHBOARDS = 3
 
@@ -25,12 +25,9 @@ def ExtendedAuth0():
 
 
 @pytest.fixture()
-def NotificationsAPIClient():
-    with patch(
-        "controlpanel.api.models.dashboard.NotificationsAPIClient"
-    ) as NotificationsAPIClient:
-        NotificationsAPIClient.return_value.send_email_notification.return_value = None
-        yield NotificationsAPIClient.return_value
+def govuk_notify_send_email():
+    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
+        yield mock_send_email
 
 
 @pytest.fixture(autouse=True)
@@ -200,7 +197,7 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
     ],
 )
 def test_permissions(
-    client, NotificationsAPIClient, dashboard, users, dashboard_domain, view, user, expected_status
+    client, dashboard, users, dashboard_domain, view, user, expected_status, govuk_notify_send_email
 ):
     client.force_login(users[user])
     response = view(client, dashboard, users, dashboard_domain)
@@ -253,13 +250,13 @@ def add_customer_form_error(client, response):
 )
 def test_add_customers(
     client,
-    NotificationsAPIClient,
     dashboard,
     dashboard_viewer,
     users,
     emails,
     expected_response,
     count,
+    govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
     data = {"customer_email": emails}
@@ -281,11 +278,9 @@ def test_add_customers_fail_notify(
     client.force_login(users["superuser"])
     data = {"customer_email": ["test.user@justice.gov.uk"]}
     with patch(
-        "controlpanel.api.models.dashboard.NotificationsAPIClient"
-    ) as NotificationsAPIClient:
-        NotificationsAPIClient.return_value.send_email_notification.side_effect = HTTPError(
-            "Error",
-        )
+        "controlpanel.api.models.dashboard.govuk_notify_send_email"
+    ) as govuk_notify_send_email:
+        govuk_notify_send_email.side_effect = GovukNotifyEmailError()
         response = client.post(
             reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
             data,
@@ -513,7 +508,7 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
     ],
 )
 def test_add_admin(
-    user_id, expected_message, count, client, dashboard, users, NotificationsAPIClient
+    user_id, expected_message, count, client, dashboard, users, govuk_notify_send_email
 ):
     client.force_login(users["superuser"])
     url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
@@ -526,3 +521,5 @@ def test_add_admin(
     assert dashboard.admins.filter(auth0_id=user_id).count() == count
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     assert expected_message in messages
+    if count:
+        govuk_notify_send_email.assert_called_once()

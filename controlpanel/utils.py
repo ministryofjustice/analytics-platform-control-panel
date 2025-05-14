@@ -6,6 +6,7 @@ from base64 import b64encode
 from functools import wraps
 
 # Third-party
+import sentry_sdk
 import structlog
 import yaml
 from asgiref.sync import async_to_sync
@@ -17,6 +18,8 @@ from django.conf import settings
 from django.http import Http404
 from django.template.defaultfilters import slugify
 from nacl import encoding, public
+from notifications_python_client.errors import HTTPError
+from notifications_python_client.notifications import NotificationsAPIClient
 
 log = structlog.getLogger(__name__)
 
@@ -281,3 +284,24 @@ def get_domain_from_email(email):
     if "@" not in email:
         raise ValueError("Invalid email address.")
     return email.split("@")[-1].lower()
+
+
+class GovukNotifyEmailError(Exception):
+    pass
+
+
+def govuk_notify_send_email(email_address, template_id, personalisation, raise_exception=False):
+    """
+    Send an email using the GOV.UK Notify API.
+    """
+    client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
+    try:
+        client.send_email_notification(
+            email_address=email_address,
+            template_id=template_id,
+            personalisation=personalisation,
+        )
+    except HTTPError as e:
+        sentry_sdk.capture_exception(e)
+        if raise_exception:
+            raise GovukNotifyEmailError(f"Failed to send email to {email_address}") from e
