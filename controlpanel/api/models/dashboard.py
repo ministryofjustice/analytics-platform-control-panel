@@ -65,45 +65,17 @@ class Dashboard(TimeStampedModel):
 
         return not_notified
 
-    def delete_customers_by_id(self, customer_ids):
-        try:
-            viewers = DashboardViewer.objects.filter(pk__in=customer_ids).all()
-            self.viewers.remove(*viewers)
-        except Exception as e:
-            raise DeleteCustomerError from e
+    def delete_viewers(self, viewers):
+        """
+        Remove the given viewers from the dashboard.
+        """
+        self.viewers.remove(*viewers)
 
         emails = viewers.values_list("email", flat=True)
-
-        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
         for email in emails:
-            try:
-                notifications_client.send_email_notification(
-                    email_address=email,
-                    template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,
-                    personalisation={
-                        "dashboard": self.name,
-                        "dashboard_link": self.url,
-                        "dashboard_home": settings.DASHBOARD_SERVICE_URL,
-                    },
-                )
-            except HTTPError as e:
-                sentry_sdk.capture_exception(e)
-
-    def delete_customer_by_email(self, customer_email):
-        try:
-            viewer = DashboardViewer.objects.filter(email=customer_email).first()
-
-            if not viewer:
-                raise DeleteCustomerError(f"Customer with email {customer_email} not found")
-
-            self.viewers.remove(viewer)
-        except Exception as e:
-            raise DeleteCustomerError from e
-
-        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
-        try:
-            notifications_client.send_email_notification(
-                email_address=customer_email,
+            # TODO catch when this fails?
+            self.send_email_notification(
+                email=email,
                 template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,
                 personalisation={
                     "dashboard": self.name,
@@ -111,8 +83,36 @@ class Dashboard(TimeStampedModel):
                     "dashboard_home": settings.DASHBOARD_SERVICE_URL,
                 },
             )
+
+    def send_email_notification(self, email, template_id, personalisation):
+        """
+        Send an email notification to the given email address using the specified template ID and
+        personalisation data.
+        """
+        notifications_client = NotificationsAPIClient(settings.NOTIFY_API_KEY)
+        try:
+            notifications_client.send_email_notification(
+                email_address=email,
+                template_id=template_id,
+                personalisation=personalisation,
+            )
         except HTTPError as e:
+            # capture the exception but dont raise it to the viewer
             sentry_sdk.capture_exception(e)
+
+    def delete_customers_by_id(self, customer_ids):
+        viewers = DashboardViewer.objects.filter(pk__in=customer_ids)
+        if not viewers:
+            raise DeleteCustomerError(f"Customers with IDs {customer_ids} not found.")
+
+        self.delete_viewers(viewers)
+
+    def delete_customer_by_email(self, customer_email):
+        viewers = DashboardViewer.objects.filter(email=customer_email)
+        if not viewers:
+            raise DeleteCustomerError(f"Customer with email {customer_email} not found.")
+
+        self.delete_viewers(viewers)
 
     def get_embed_url(self):
         """

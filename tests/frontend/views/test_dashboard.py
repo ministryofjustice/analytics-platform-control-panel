@@ -131,7 +131,7 @@ def add_customers(client, dashboard, *args):
 
 def remove_customers(client, dashboard, *args):
     data = {
-        "customer": "email|user_1",
+        "customer": "1",
     }
     return client.post(reverse("remove-dashboard-customer", kwargs={"pk": dashboard.id}), data)
 
