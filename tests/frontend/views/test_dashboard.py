@@ -12,6 +12,7 @@ from rest_framework import status
 # First-party/Local
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
+from controlpanel.utils import GovukNotifyEmailError
 
 NUM_DASHBOARDS = 3
 
@@ -121,7 +122,7 @@ def add_customers(client, dashboard, *args):
 
 def remove_customers(client, dashboard, *args):
     data = {
-        "customer": "email|user_1",
+        "customer": "1",
     }
     return client.post(reverse("remove-dashboard-customer", kwargs={"pk": dashboard.id}), data)
 
@@ -189,7 +190,9 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
         (revoke_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
-def test_permissions(client, dashboard, users, dashboard_domain, view, user, expected_status):
+def test_permissions(
+    client, dashboard, users, dashboard_domain, view, user, expected_status, govuk_notify_send_email
+):
     client.force_login(users[user])
     response = view(client, dashboard, users, dashboard_domain)
     assert response.status_code == expected_status
@@ -240,7 +243,14 @@ def add_customer_form_error(client, response):
     ],
 )
 def test_add_customers(
-    client, dashboard, dashboard_viewer, users, emails, expected_response, count
+    client,
+    dashboard,
+    dashboard_viewer,
+    users,
+    emails,
+    expected_response,
+    count,
+    govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
     data = {"customer_email": emails}
@@ -251,6 +261,29 @@ def test_add_customers(
     assert expected_response(client, response)
     emails = [email.strip().lower() for email in emails.split(",")]
     assert dashboard.viewers.filter(email__in=emails).count() == count
+
+
+def test_add_customers_fail_notify(
+    client,
+    dashboard,
+    dashboard_viewer,
+    users,
+):
+    client.force_login(users["superuser"])
+    data = {"customer_email": ["test.user@justice.gov.uk"]}
+    with patch(
+        "controlpanel.api.models.dashboard.govuk_notify_send_email"
+    ) as govuk_notify_send_email:
+        govuk_notify_send_email.side_effect = GovukNotifyEmailError()
+        response = client.post(
+            reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
+            data,
+        )
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        assert (
+            "Failed to notify test.user@justice.gov.uk. "
+            "You may wish to email them your dashboard link."
+        ) in messages
 
 
 def remove_customer_success(client, response):
@@ -468,11 +501,12 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
         ("github|user_3", "Granted admin access to ", 1),
     ],
 )
-def test_add_admin(user_id, expected_message, count, client, dashboard, users):
+def test_add_admin(
+    user_id, expected_message, count, client, dashboard, users, govuk_notify_send_email
+):
     client.force_login(users["superuser"])
     url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
     data = {
-        # "user_id": users["other_user"].auth0_id,
         "user_id": user_id,
     }
     response = client.post(url, data)
@@ -481,3 +515,5 @@ def test_add_admin(user_id, expected_message, count, client, dashboard, users):
     assert dashboard.admins.filter(auth0_id=user_id).count() == count
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     assert expected_message in messages
+    if count:
+        govuk_notify_send_email.assert_called_once()
