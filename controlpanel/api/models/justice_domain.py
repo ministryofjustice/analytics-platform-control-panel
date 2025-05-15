@@ -5,7 +5,7 @@ from django.db import models
 class JusticeDomain(models.Model):
     """
     Represents a valid Justice email domain. This is used to validate users that can access
-    Quicksight.
+    QuickSight.
     """
 
     domain = models.CharField(max_length=255, unique=True)

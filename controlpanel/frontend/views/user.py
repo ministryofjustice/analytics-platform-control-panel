@@ -166,18 +166,18 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
     def form_valid(self, form):
         try:
             form.grant_access()
-            messages.success(self.request, "Successfully updated Quicksight access")
+            messages.success(self.request, "Successfully updated QuickSight access")
         except Exception as e:
             sentry_sdk.capture_exception(e)
             messages.error(
                 self.request,
-                "Could not update Quicksight access, if the issue persists please contact support",
+                "Could not update QuickSight access, if the issue persists please contact support",
             )
 
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
 
     def form_invalid(self, form):
-        messages.error(self.request, "Failed to update Quicksight access")
+        messages.error(self.request, "Failed to update QuickSight access")
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": form.user.auth0_id}))
 
 

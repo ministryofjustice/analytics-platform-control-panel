@@ -111,17 +111,17 @@
       "name": "enable_quicksight",
       "fieldset": {
         "legend": {
-          "text": "Quicksight access",
+          "text": "QuickSight access",
           "classes": "govuk-fieldset__legend--m",
         },
       },
       "hint": {
-        "text": "Update Quicksight access for a user."
+        "text": "Update QuickSight access for a user."
       },
       "items": [
         {
           "value": "quicksight_legacy",
-          "text": "Legacy Quicksight access enabled (running in the data-" + env + " account)",
+          "text": "Legacy QuickSight access enabled (running in the data-" + env + " account)",
           "checked": user.is_quicksight_enabled
         },
         {
@@ -138,18 +138,18 @@
         },
       ]
     }) }}
-    <p class="govuk-body">Note: all super admins have access to the embedded Quicksight.</p>
+    <p class="govuk-body">Note: all super admins have access to the embedded QuickSight.</p>
     {% elif request.user.has_perm('api.update_user') %}
     {{ govukCheckboxes({
       "name": "enable_quicksight",
       "fieldset": {
         "legend": {
-          "text": "Quicksight access",
+          "text": "QuickSight access",
           "classes": "govuk-fieldset__legend--m",
         },
       },
       "hint": {
-        "text": "Update your Quicksight access."
+        "text": "Update your QuickSight access."
       },
       "items": [
         {

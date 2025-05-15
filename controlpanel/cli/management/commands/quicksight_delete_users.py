@@ -12,14 +12,14 @@ from controlpanel.api import aws
 
 class Command(BaseCommand):
     """
-    This command will delete users from Quicksight based on the csv file provided.
+    This command will delete users from QuickSight based on the csv file provided.
     """
 
     READER_ROLES = ["READER"]
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "file", type=str, help="input: csv of Quicksight usernames", default=None
+            "file", type=str, help="input: csv of QuickSight usernames", default=None
         )
         parser.add_argument(
             "--delete",
