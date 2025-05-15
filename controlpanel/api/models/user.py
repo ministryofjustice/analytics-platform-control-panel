@@ -52,8 +52,8 @@ class User(AbstractUser):
         db_table = "control_panel_api_user"
         ordering = ("username",)
         permissions = [
-            (QUICKSIGHT_EMBED_AUTHOR_PERMISSION, "Can access embedded Quicksight as an author"),
-            (QUICKSIGHT_EMBED_READER_PERMISSION, "Can access embedded Quicksight as a reader"),
+            (QUICKSIGHT_EMBED_AUTHOR_PERMISSION, "Can access embedded QuickSight as an author"),
+            (QUICKSIGHT_EMBED_READER_PERMISSION, "Can access embedded QuickSight as a reader"),
         ]
 
     def __repr__(self):

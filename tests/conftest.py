@@ -126,7 +126,7 @@ def quicksight_author_user(db):
         "api.User",
         auth0_id="github|user_5",
         username="qs_author",
-        justice_email="Quicksight.Author@justice.gov.uk",
+        justice_email="QuickSight.Author@justice.gov.uk",
         is_superuser=False,
     )
     user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION))
@@ -139,7 +139,7 @@ def quicksight_reader_user(db):
         "api.User",
         auth0_id="github|user_6",
         username="qs_reader",
-        justice_email="Quicksight.Reader@justice.gov.uk",
+        justice_email="QuickSight.Reader@justice.gov.uk",
         is_superuser=False,
     )
     user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_READER_PERMISSION))

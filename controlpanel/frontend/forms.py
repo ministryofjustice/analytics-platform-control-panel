@@ -801,11 +801,11 @@ class RegisterDashboardForm(forms.ModelForm):
             f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/"
         )
         if not dashboard_url.startswith(prefix):
-            raise ValidationError("The URL entered is not a valid Quicksight dashboard URL")
+            raise ValidationError("The URL entered is not a valid QuickSight dashboard URL")
 
         quicksight_id = dashboard_url.split(prefix)[1]
         if not quicksight_id:
-            raise ValidationError("The URL entered is not a valid Quicksight dashboard URL")
+            raise ValidationError("The URL entered is not a valid QuickSight dashboard URL")
 
         if not AWSQuicksight().has_update_dashboard_permissions(
             dashboard_id=quicksight_id, user=self.user

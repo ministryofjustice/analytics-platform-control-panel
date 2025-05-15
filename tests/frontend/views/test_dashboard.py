@@ -386,7 +386,7 @@ def test_register_dashboard_invalid_url(dashboard_url, client, users):
     )
 
     assert response.status_code == 200
-    assert "The URL entered is not a valid Quicksight dashboard URL" in str(response.content)
+    assert "The URL entered is not a valid QuickSight dashboard URL" in str(response.content)
 
 
 def test_register_dashboard_not_permitted(client, users):
