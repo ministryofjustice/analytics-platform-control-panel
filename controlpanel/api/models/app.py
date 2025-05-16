@@ -52,8 +52,7 @@ class App(TimeStampedModel):
     cloud_platform_role_arn = models.CharField(
         help_text="The cloud platform arn for the app",
         max_length=130,
-        null=True,
-        default=None,
+        blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     is_bedrock_enabled = models.BooleanField(default=False)
