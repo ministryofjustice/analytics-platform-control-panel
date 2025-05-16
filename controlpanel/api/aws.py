@@ -1283,13 +1283,11 @@ class AWSQuicksight(AWSService):
             region=settings.QUICKSIGHT_ACCOUNT_REGION,
             account=settings.QUICKSIGHT_ACCOUNT_ID,
         )
-        user_permissions = []
         for permission_set in permissions:
-            if permission_set["Principal"].lower() == user_arn:
-                user_permissions = permission_set["Actions"]
-                break
+            if permission_set["Principal"].lower() == user_arn.lower():
+                return "quicksight:UpdateDashboardPermissions" in permission_set["Actions"]
 
-        return "quicksight:UpdateDashboardPermissions" in user_permissions
+        return False
 
     def generate_embed_url_for_anonymous_user(self, dashboard_arn, dashboard_id):
         return self.client.generate_embed_url_for_anonymous_user(
