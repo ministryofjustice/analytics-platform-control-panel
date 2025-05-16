@@ -1190,10 +1190,16 @@ def test_get_embed_url(quicksight_service):
 
 
 @pytest.mark.parametrize(
-    "describe_permissions_return, client_error, expected_result",
+    "user_email, describe_permissions_return, client_error, expected_result",
     [
-        (None, {"Error": {"Code": "ResourceNotFoundException", "Message": "Not found"}}, False),
         (
+            "other.user@example.com",
+            None,
+            {"Error": {"Code": "ResourceNotFoundException", "Message": "Not found"}},
+            False,
+        ),
+        (
+            "other.user@example.com",
             [
                 {
                     "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/other.user@example.com",  # noqa
@@ -1204,6 +1210,18 @@ def test_get_embed_url(quicksight_service):
             False,
         ),
         (
+            "test.user@example.com",
+            [
+                {
+                    "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/other.user@example.com",  # noqa
+                    "Actions": ["quicksight:UpdateDashboardPermissions"],
+                }
+            ],
+            None,
+            False,
+        ),
+        (
+            "test.user@example.com",
             [
                 {
                     "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/test.user@example.com",  # noqa
@@ -1213,13 +1231,46 @@ def test_get_embed_url(quicksight_service):
             None,
             True,
         ),
+        (
+            "Test.User@example.com",
+            [
+                {
+                    "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/test.user@example.com",  # noqa
+                    "Actions": ["quicksight:UpdateDashboardPermissions"],
+                }
+            ],
+            None,
+            True,
+        ),
+        (
+            "test.user@example.com",
+            [
+                {
+                    "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/Test.User@example.com",  # noqa
+                    "Actions": ["quicksight:UpdateDashboardPermissions"],
+                }
+            ],
+            None,
+            True,
+        ),
+        (
+            "Test.User@example.com",
+            [
+                {
+                    "Principal": "arn:aws:quicksight:eu-west-1:123456789012:user/default/Test.User@example.com",  # noqa
+                    "Actions": ["quicksight:UpdateDashboardPermissions"],
+                }
+            ],
+            None,
+            True,
+        ),
     ],
 )
 def test_has_update_dashboard_permissions(
-    describe_permissions_return, client_error, expected_result
+    user_email, describe_permissions_return, client_error, expected_result
 ):
     dashboard_id = "dashboard-123"
-    user = MagicMock(justice_email="test.user@example.com")
+    user = MagicMock(justice_email=user_email)
     quicksight = aws.AWSQuicksight()
 
     with (
@@ -1228,7 +1279,7 @@ def test_has_update_dashboard_permissions(
     ):
 
         mock_arn.return_value = (
-            "arn:aws:quicksight:eu-west-1:123456789012:user/default/test.user@example.com"
+            f"arn:aws:quicksight:eu-west-1:123456789012:user/default/{user.justice_email}"
         )
         if client_error:
             mock_client.describe_dashboard_permissions.side_effect = ClientError(
