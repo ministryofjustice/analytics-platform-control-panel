@@ -184,7 +184,7 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
     context_object_name = "dashboard"
     model = Dashboard
     permission_required = "api.retrieve_dashboard"
-    template_name = "dashboard-customers-list.html"
+    template_name = "dashboard-user-list.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

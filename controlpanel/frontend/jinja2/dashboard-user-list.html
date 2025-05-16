@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% from "modal-dialog/macro.html" import modal_dialog %}
-{% from "customers/macro.html" import display_dashboard_customer %}
+{% from "customers/macro.html" import display_dashboard_user %}
 {% from "menus/customers.html" import displayCustomerMenu %}
 
-{% set page_title = "Dashboard customers" %}
-{% set page_name = "customers" %}
+{% set page_title = "Dashboard users" %}
+{% set page_name = "Dashboard users" %}
 {% set remove_perm = request.user.has_perm('api.remove_dashboard_customer', dashboard) %}
 
 {% set dashboard_customers_html %}
@@ -15,7 +15,7 @@
 {% block content %}
 
 <h2 class="govuk-heading-m">
-    Customer management for {{ dashboard.name }}
+    User management for {{ dashboard.name }}
 </h2>
 
 <h2 class="govuk-heading-s">
@@ -27,7 +27,7 @@
 </p>
 
 <h2 class="govuk-heading-s">
-  Dashboard customers
+  Dashboard users
   {{ modal_dialog(dashboard_customers_html|safe) }}
 </h2>
 
@@ -38,14 +38,14 @@
           name="submit"
           disabled="disabled"
           value="submit">
-    Remove all selected customers
+    Remove all selected users
   </button>
 
   <table class="govuk-table selectable-rows">
     <thead class="govuk-table__head">
       <tr class="govuk-table__row">
         <th class="govuk-table__header" ></th>
-        <th class="govuk-table__header" colspan="2">Customer email</th>
+        <th class="govuk-table__header" colspan="2">User email</th>
 
         <th class="govuk-table__header">
           <span class="govuk-visually-hidden">Actions</span>
@@ -54,8 +54,8 @@
     </thead>
     <tbody class="govuk-table__body" id="list-customers-paginated">
       {% for customer in customers %}
-        {{ display_dashboard_customer(
-            customer = customer,
+        {{ display_dashboard_user(
+            user = customer,
             has_remove_perm= remove_perm
           ) }}
       {% endfor %}
@@ -90,7 +90,7 @@
       {{ csrf_input }}
       <div class="govuk-form-group {% if errors and errors.customer_email %}govuk-form-group--error{% endif %}">
         <label class="govuk-label" for="customer_email">
-          Add customers by entering their email addresses (separated by spaces)
+          Add users by entering their email addresses (separated by spaces)
         </label>
         {% if errors and errors.customer_email %}
           {% for error in errors.customer_email %}
@@ -102,7 +102,7 @@
         <input id="customer_email" class="govuk-input cpanel-input" name="customer_email" autocomplete="off">
       </div>
       <div class="govuk-form-group">
-        <button class="govuk-button">Add customer</button>
+        <button class="govuk-button">Add user</button>
       </div>
     </form>
   {% endif %}
@@ -112,12 +112,12 @@
       {{ csrf_input }}
       <div class="govuk-form-group">
         <label class="govuk-label" for="{{ remove_customer_form.email.id_for_label }}">
-          Remove a customer by entering their email address
+          Remove a user by entering their email address
         </label>
         {{ remove_customer_form.email }}
       </div>
       <div class="govuk-form-group">
-        <button class="govuk-button">Remove customer</button>
+        <button class="govuk-button">Remove user</button>
       </div>
     </form>
   {% endif %}
