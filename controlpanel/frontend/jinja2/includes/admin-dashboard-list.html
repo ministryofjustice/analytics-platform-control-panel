@@ -21,7 +21,7 @@
       </th>
       {%- endif %}
       <th class="govuk-table__header">
-        <span class="govuk-visually-hidden">Customers</span>
+        <span class="govuk-visually-hidden">Users</span>
       </th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
@@ -52,9 +52,9 @@
           {% endif %}
         {% endfor %}
       </td>
-      {%- endif %} 
+      {%- endif %}
       <td class="govuk-table__cell">
-        <a href="{{ url('dashboard-customers', kwargs={ 'pk': dashboard.id, 'page_no': '1' }) }}" class="govuk-button govuk-button--secondary right">Manage customers</a>
+        <a href="{{ url('dashboard-customers', kwargs={ 'pk': dashboard.id, 'page_no': '1' }) }}" class="govuk-button govuk-button--secondary right">Manage users</a>
       </td>
       <td class="govuk-table__cell">
         <a class="govuk-button govuk-button--secondary right {%- if not request.user.has_perm('api.retrieve_dashboard', dashboard) %} govuk-visually-hidden{% endif %}"

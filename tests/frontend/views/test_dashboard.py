@@ -288,12 +288,12 @@ def test_add_customers_fail_notify(
 
 def remove_customer_success(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
-    return "Successfully removed customer" in messages
+    return "Successfully removed user" in messages
 
 
 def remove_customer_failure(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
-    return "Failed removing customer" in messages
+    return "Failed removing user" in messages
 
 
 @pytest.mark.parametrize(
@@ -345,9 +345,9 @@ def test_delete_cutomer_by_email_invalid_email(client, dashboard, users):
 @pytest.mark.parametrize(
     "side_effect, expected_message",
     [
-        (None, "Successfully removed customer email@example.com"),
+        (None, "Successfully removed user email@example.com"),
         # fallback to display generic message if raised without one
-        (DeleteCustomerError(), "Couldn't remove customer with email email@example.com"),
+        (DeleteCustomerError(), "Couldn't remove user with email email@example.com"),
         # specific error message displayed
         (DeleteCustomerError("API error"), "API error"),
     ],
