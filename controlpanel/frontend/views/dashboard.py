@@ -212,14 +212,14 @@ class AddDashboardCustomers(
 
     def form_invalid(self, form):
         self.request.session["customer_form_errors"] = form.errors
-        messages.error(self.request, "Could not add customer(s)")
+        messages.error(self.request, "Could not add user(s)")
         return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):
         not_notified = self.get_object().add_customers(
             form.cleaned_data["customer_email"], self.request.user.justice_email
         )
-        messages.success(self.request, "Successfully added customers")
+        messages.success(self.request, "Successfully added users")
 
         if len(not_notified) > 0:
             messages.error(
@@ -249,9 +249,9 @@ class RemoveDashboardCustomerById(UpdateDashboardBaseView):
             dashboard.delete_customers_by_id(user_ids)
         except DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
-            messages.error(self.request, f"Failed removing customer{pluralize(user_ids)}")
+            messages.error(self.request, f"Failed removing user{pluralize(user_ids)}")
         else:
-            messages.success(self.request, f"Successfully removed customer{pluralize(user_ids)}")
+            messages.success(self.request, f"Successfully removed user{pluralize(user_ids)}")
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
@@ -278,10 +278,10 @@ class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
         except DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             return messages.error(
-                self.request, str(e) or f"Couldn't remove customer with email {email}"
+                self.request, str(e) or f"Couldn't remove user with email {email}"
             )
 
-        messages.success(self.request, f"Successfully removed customer {email}")
+        messages.success(self.request, f"Successfully removed user {email}")
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
