@@ -403,7 +403,7 @@ def test_admin_csv(client, app, users):
     client.force_login(users["superuser"])
     response = admin_csv(client, app)
     content = response.content.decode("utf-8")
-    assert "App Name,Admins,Emails" in content
+    assert "App Name,Repo URL,Admins,Emails" in content
     assert app.name in content
 
 
