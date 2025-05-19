@@ -1,10 +1,13 @@
 # Standard library
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 # Third-party
 import jwt
 import jwt.algorithms
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt.exceptions import DecodeError, PyJWKClientError
 
 # First-party/Local
@@ -14,29 +17,26 @@ TEST_CLIENT_ID = "test-client-id"
 TEST_KID = "test-key-id"
 TEST_SUB = "github|1234"
 
-# The RSA key below is for testing only. DO NOT USE for anything else.
-TEST_PRIVATE_KEY = """-----BEGIN RSA PRIVATE KEY-----
-MIICXAIBAAKBgQCo/FYLtMEuzwVf5n0ml+znmXF3hgj/i4W0ZndaL7GL1C+JpdQQ
-yXGVKom2TyDMRPAwcL7D2shGO+dxAJQ0D2475Grk+rwBSBmtxea/glL7Fi6eMCKj
-B7vwFf0jw8mDhjfKBtBKOdfEaEs7+0D32XCkYnq9IFoHfA1uQMhlVFdiBwIDAQAB
-AoGABM0WjMKX8oKDPpRH3f7XBkV/ycuPGeOW6uc2YOOWAckHiLujaM6wYXKR8xIQ
-dn1G7blmUh43LnepPbasf0Yo9ZLPKKbo/AMd8nS59Q0WHlIKUJ9DLnfxjpEzigZ4
-PjEISBcmXbjg2Icq0b9xoeLC9X0aFEYbSGQJbA7L0snAOTECQQDgsKTxTxby1Ma4
-SYdKwxhxchb4BD3NjvFAyx/FDmVHtbezOhng1va1TsM3aB95xIu8K8SNSSm/Hgi0
-bDkVlVgLAkEAwIiN2EFXwioDjstyF8eC7leFoKKxykIZID+YerT6UoQd9Bu0trDe
-Mh0RVsSW4D5Y/CjV5v5f5NT8eoDNKbiPdQJAV26lYHkkNu3xPfjuunrcYhjBM1WD
-Lx/2ZP4lqKqHYrYle4qaU1GSws6ZTFAqH1oJ/fkSDOBxbDslq/+I3ws0LQJAIFAK
-tkupJd4VQMbmPBVw5P1tYNtNSWu0edQSjC2JgYXI3So1NyAR+okkWtKdm777Aj78
-P0tb3rTcNtcdF65w7QJBAIlfLWXrnjuJP4xdsJpubct+VoPZpEkojXp16zdEPSni
-Tk1/Hf+kxTTBR5xfmgtLCPmOU8d+qodjxI6JmZtfvVU=
------END RSA PRIVATE KEY-----"""  # gitleaks:allow
 
-TEST_PUBLIC_KEY = """-----BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCo/FYLtMEuzwVf5n0ml+znmXF3
-hgj/i4W0ZndaL7GL1C+JpdQQyXGVKom2TyDMRPAwcL7D2shGO+dxAJQ0D2475Grk
-+rwBSBmtxea/glL7Fi6eMCKjB7vwFf0jw8mDhjfKBtBKOdfEaEs7+0D32XCkYnq9
-IFoHfA1uQMhlVFdiBwIDAQAB
------END PUBLIC KEY-----"""
+@pytest.fixture()
+def rsa_key_pair():
+    # Generate private key
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    # Serialize private key
+    private_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
+    # Generate and serialize public key
+    public_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+
+    return private_pem.decode(), public_pem.decode()
 
 
 @pytest.fixture(autouse=True)
@@ -46,11 +46,13 @@ def audience(settings):
 
 
 @pytest.fixture(autouse=True)
-def jwks():
+def jwks(rsa_key_pair):
+    _, public_key = rsa_key_pair
+
     with patch("controlpanel.jwt.jwt.PyJWKClient") as client:
         client_value = MagicMock()
         client_value.get_signing_key_from_jwt.return_value = MagicMock(
-            key=TEST_PUBLIC_KEY, key_id=TEST_KID
+            key=public_key, key_id=TEST_KID
         )
         client.return_value = client_value
         yield client
@@ -77,7 +79,7 @@ def api_request(client):
     return make_request
 
 
-def token(claims={}, headers={}):
+def token(private_key, claims={}, headers={}):
     header = {
         "kid": TEST_KID,
         **headers,
@@ -90,20 +92,20 @@ def token(claims={}, headers={}):
         "aud": TEST_CLIENT_ID,
         **claims,
     }
-    return jwt.encode(payload, TEST_PRIVATE_KEY, "RS256", header)
+    return jwt.encode(payload, private_key, "RS256", header)
 
 
 @pytest.mark.parametrize(
-    "auth_header, status",
+    "claim_kwargs, header_prefix, header_override, status",
     [
-        (None, 403),
-        (f"Bearer {token()}", 403),
-        (f'Bearer {token(claims={"scope": "list:app"})}', 403),
-        (f'Bearer {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
-        (f'JWT {token(claims={"scope": "list:app", "gty": "client-credentials"})}', 200),
-        (f"FOO {token()}", 403),
-        ("Bearer invalid_token", 403),
-        (f'Bearer {token(headers={"kid": "no_match"})}', 403),
+        ({}, "Bearer", {}, 403),
+        ({}, "Bearer", {}, 403),
+        ({"scope": "list:app"}, "Bearer", {}, 403),
+        ({"scope": "list:app", "gty": "client-credentials"}, "Bearer", {}, 200),
+        ({"scope": "list:app", "gty": "client-credentials"}, "JWT", {}, 200),
+        ({}, "FOO", {}, 403),
+        ({}, "Bearer invalid_token", None, 403),
+        ({}, "Bearer", {"kid": "no_match"}, 403),
     ],
     ids=[
         "No token",
@@ -116,19 +118,31 @@ def token(claims={}, headers={}):
         "No matching JWKs",
     ],
 )
-def test_token_auth(api_request, auth_header, status):
+def test_token_auth(
+    api_request, rsa_key_pair, claim_kwargs, header_prefix, header_override, status
+):
+    private_key, _ = rsa_key_pair
+    if header_prefix == "Bearer invalid_token":
+        auth_header = header_prefix
+    else:
+        tok = token(private_key, claims=claim_kwargs, headers=header_override or {})
+        auth_header = f"{header_prefix} {tok}"
+
     assert api_request(HTTP_AUTHORIZATION=auth_header).status_code == status
 
 
-def test_bad_request_for_jwks(api_request, jwks):
+def test_bad_request_for_jwks(api_request, jwks, rsa_key_pair):
     jwks.return_value.get_signing_key_from_jwt.side_effect = PyJWKClientError(
         "test_bad_request_for_jwks"
     )
-    assert api_request(HTTP_AUTHORIZATION=f"Bearer {token()}").status_code == 403
+    private_key, _ = rsa_key_pair
+    tok = token(private_key)
+    assert api_request(HTTP_AUTHORIZATION=f"Bearer {tok}").status_code == 403
 
 
-def test_decode_jwt_error(api_request):
+def test_decode_jwt_error(api_request, rsa_key_pair):
+    private_key, _ = rsa_key_pair
     with patch("controlpanel.jwt.jwt") as jwt:
         jwt.decode.side_effect = DecodeError("test_decode_jwt_error")
-
-        assert api_request(HTTP_AUTHORIZATION=f"Bearer {token()}").status_code == 403
+        tok = token(private_key)
+        assert api_request(HTTP_AUTHORIZATION=f"Bearer {tok}").status_code == 403
