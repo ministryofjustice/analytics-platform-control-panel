@@ -82,8 +82,8 @@ class AdminAppList(AppList):
 
 class AppAdminCSV(CsvWriterMixin, View):
     filename = "app_admins"
-    csv_headings = ["App Name", "Admins", "Emails"]
-    model_attributes = ["name", "users", "emails"]
+    csv_headings = ["App Name", "Repo URL", "Admins", "Emails"]
+    model_attributes = ["name", "repo_url", "users", "emails"]
 
     def post(self, request, *args, **kwargs):
         apps = (
@@ -95,7 +95,7 @@ class AppAdminCSV(CsvWriterMixin, View):
                     delimiter=", ",
                 ),
             )
-            .values("name", "users", "emails")
+            .values("name", "repo_url", "users", "emails")
             .order_by("name")
         )
 
