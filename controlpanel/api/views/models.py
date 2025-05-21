@@ -48,10 +48,6 @@ class AppViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         self.get_object().delete(github_api_token=self.request.user.github_api_token)
-        if "redirect_to" in request.query_params:
-            return HttpResponseRedirect(
-                redirect_to=request.query_params["redirect_to"],
-            )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

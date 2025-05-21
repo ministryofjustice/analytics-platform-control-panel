@@ -8,7 +8,7 @@ channels==4.2.2
 channels-redis==4.2.1
 cryptography==45.0.2
 daphne==4.1.2
-Django==5.1.4
+Django==5.1.9
 django-celery-beat==2.7.0
 django-crequest==2018.5.11
 django-extensions==3.2.3
@@ -37,7 +37,7 @@ python-dotenv==1.0.1
 pyyaml==6.0.2
 rules==3.5
 sentry-sdk==2.19.2
-setuptools==77.0.3
+setuptools==80.7.1
 slackclient==2.9.4
 urllib3==2.3.0
 uvicorn[standard]==0.32.1
