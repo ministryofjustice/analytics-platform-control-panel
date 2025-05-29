@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("api", "0060_cloud_platform_role_arn_consolidate_null_values"),
+        ("api", "0061_cloud_platform_role_arn_consolidate_null_values"),
     ]
 
     operations = [

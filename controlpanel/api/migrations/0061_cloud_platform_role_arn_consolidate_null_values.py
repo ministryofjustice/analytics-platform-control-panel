@@ -15,7 +15,7 @@ def code(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("api", "0059_dashboarddomain_dashboardviewer_dashboard"),
+        ("api", "0060_alter_user_options"),
     ]
 
     operations = [
