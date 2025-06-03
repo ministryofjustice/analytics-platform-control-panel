@@ -499,7 +499,8 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
     [
         ("invalid_user", "User not found", 0),
         ("", "User not found", 0),
-        ("github|user_3", "Granted admin access to ", 1),
+        ("github|user_3", "User cannot be added as a dashboard admin", 0),
+        ("github|user_5", "Granted admin access to ", 1),
     ],
 )
 def test_add_admin(

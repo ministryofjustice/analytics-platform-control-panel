@@ -114,12 +114,7 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
             auth0_id__in=[user.auth0_id for user in dashboard_admins],
         )
 
-        context["admin_options"] = [
-            user
-            for user in potential_admins
-            if user.has_perm("api.quicksight_embed_author_access")
-            or user.has_perm("api.quicksight_embed_reader_access")
-        ]
+        context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]
 
         context["dashboard_admins"] = dashboard_admins
 
@@ -181,9 +176,13 @@ class AddDashboardAdmin(UpdateDashboardBaseView):
             messages.error(self.request, "User not found")
             return
 
-        dashboard.admins.add(user)
-        dashboard.add_customers([user.justice_email], self.request.user.justice_email)
-        messages.success(self.request, f"Granted admin access to {user.name}")
+        if user.is_quicksight_user():
+            dashboard.admins.add(user)
+            dashboard.add_customers([user.justice_email], self.request.user.justice_email)
+            messages.success(self.request, f"Granted admin access to {user.name}")
+            return
+
+        messages.error(self.request, "User cannot be added as a dashboard admin")
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
