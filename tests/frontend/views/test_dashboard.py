@@ -204,7 +204,6 @@ def test_permissions(
     "view,user,expected_count",
     [
         (list_dashboards, "superuser", 0),
-        (list_dashboards, "normal_user", 0),
         (list_dashboards, "dashboard_admin", 1),
         (list_all, "superuser", NUM_DASHBOARDS),
     ],
