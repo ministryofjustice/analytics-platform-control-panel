@@ -164,6 +164,11 @@ class User(AbstractUser):
             != 0
         )
 
+    def is_quicksight_user(self):
+        return self.has_perm("api.quicksight_embed_author_access") or self.has_perm(
+            "api.quicksight_embed_reader_access"
+        )
+
     def reset_mfa(self):
         auth0.ExtendedAuth0().users.reset_mfa(self.auth0_id)
 

@@ -34,8 +34,13 @@ log = structlog.getLogger(__name__)
 class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "dashboards"
     model = Dashboard
-    permission_required = "api.list_dashboard"
     template_name = "dashboard-list.html"
+
+    def has_permission(self):
+        user = self.request.user
+        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
+            "api.quicksight_embed_reader_access"
+        )
 
     def get_queryset(self):
         return self.request.user.dashboards.all()
@@ -43,8 +48,10 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AdminDashboardList(DashboardList):
-    permission_required = "api.is_superuser"
     template_name = "dashboard-admin-list.html"
+
+    def has_permission(self):
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         return Dashboard.objects.all().prefetch_related("admins")
@@ -54,8 +61,13 @@ class AdminDashboardList(DashboardList):
 class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = RegisterDashboardForm
     model = Dashboard
-    permission_required = "api.register_dashboard"
     template_name = "dashboard-register.html"
+
+    def has_permission(self):
+        user = self.request.user
+        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
+            "api.quicksight_embed_reader_access"
+        )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -96,11 +108,13 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         dashboard = self.get_object()
         dashboard_admins = dashboard.admins.all()
 
-        context["admin_options"] = User.objects.exclude(
+        potential_admins = User.objects.exclude(
             auth0_id="",
         ).exclude(
             auth0_id__in=[user.auth0_id for user in dashboard_admins],
         )
+
+        context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]
 
         context["dashboard_admins"] = dashboard_admins
 
@@ -162,9 +176,13 @@ class AddDashboardAdmin(UpdateDashboardBaseView):
             messages.error(self.request, "User not found")
             return
 
-        dashboard.admins.add(user)
-        dashboard.add_customers([user.justice_email], self.request.user.justice_email)
-        messages.success(self.request, f"Granted admin access to {user.name}")
+        if user.is_quicksight_user():
+            dashboard.admins.add(user)
+            dashboard.add_customers([user.justice_email], self.request.user.justice_email)
+            messages.success(self.request, f"Granted admin access to {user.name}")
+            return
+
+        messages.error(self.request, "User cannot be added as a dashboard admin")
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")

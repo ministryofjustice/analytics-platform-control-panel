@@ -19,9 +19,7 @@ class QuicksightView(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateVi
 
     def has_permission(self):
         user = self.request.user
-        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
-            "api.quicksight_embed_reader_access"
-        )
+        return user.is_quicksight_user()
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)

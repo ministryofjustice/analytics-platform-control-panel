@@ -4,6 +4,7 @@ from unittest.mock import patch
 # Third-party
 import pytest
 from django.conf import settings
+from django.contrib.auth.models import Permission
 from django.contrib.messages import get_messages
 from django.urls import reverse
 from model_bakery import baker
@@ -11,6 +12,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api.exceptions import DeleteCustomerError
+from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
 from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
 from controlpanel.utils import GovukNotifyEmailError
 
@@ -31,16 +33,16 @@ def enable_db_for_all_tests(db):
 
 @pytest.fixture
 def users(users):
-    users.update(
-        {
-            "dashboard_admin": baker.make(
-                "api.User",
-                auth0_id="github|dashboard-admin",
-                username="dashboard_admin",
-                justice_email="dashboard.admin@justice.gov.uk",
-            ),
-        }
+
+    user = baker.make(
+        "api.User",
+        auth0_id="github|dashboard-admin",
+        username="dashboard_admin",
+        justice_email="dashboard.admin@justice.gov.uk",
+        is_superuser=False,
     )
+    user.user_permissions.add(Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION))
+    users["dashboard_admin"] = user
     return users
 
 
@@ -154,7 +156,7 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
     [
         (list_dashboards, "superuser", status.HTTP_200_OK),
         (list_dashboards, "dashboard_admin", status.HTTP_200_OK),
-        (list_dashboards, "normal_user", status.HTTP_200_OK),
+        (list_dashboards, "normal_user", status.HTTP_403_FORBIDDEN),
         (list_all, "superuser", status.HTTP_200_OK),
         (list_all, "dashboard_admin", status.HTTP_403_FORBIDDEN),
         (list_all, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -163,7 +165,7 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
         (detail, "normal_user", status.HTTP_403_FORBIDDEN),
         (create, "superuser", status.HTTP_200_OK),
         (create, "dashboard_admin", status.HTTP_200_OK),
-        (create, "normal_user", status.HTTP_200_OK),
+        (create, "normal_user", status.HTTP_403_FORBIDDEN),
         (delete, "superuser", status.HTTP_302_FOUND),
         (delete, "dashboard_admin", status.HTTP_302_FOUND),
         (delete, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -202,7 +204,6 @@ def test_permissions(
     "view,user,expected_count",
     [
         (list_dashboards, "superuser", 0),
-        (list_dashboards, "normal_user", 0),
         (list_dashboards, "dashboard_admin", 1),
         (list_all, "superuser", NUM_DASHBOARDS),
     ],
@@ -498,7 +499,8 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
     [
         ("invalid_user", "User not found", 0),
         ("", "User not found", 0),
-        ("github|user_3", "Granted admin access to ", 1),
+        ("github|user_3", "User cannot be added as a dashboard admin", 0),
+        ("github|user_5", "Granted admin access to ", 1),
     ],
 )
 def test_add_admin(
