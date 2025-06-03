@@ -37,10 +37,7 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     template_name = "dashboard-list.html"
 
     def has_permission(self):
-        user = self.request.user
-        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
-            "api.quicksight_embed_reader_access"
-        )
+        return self.request.user.is_quicksight_user()
 
     def get_queryset(self):
         return self.request.user.dashboards.all()
@@ -64,10 +61,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
     template_name = "dashboard-register.html"
 
     def has_permission(self):
-        user = self.request.user
-        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
-            "api.quicksight_embed_reader_access"
-        )
+        return self.request.user.is_quicksight_user()
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
