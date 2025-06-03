@@ -123,7 +123,7 @@
         "active": page_name == "webapps",
       },
       {
-        "hide": not settings.features.register_dashboard.enabled and not request.user.has_perm("api.quicksight_embed_author_access") and not request.user.has_perm("api.quicksight_embed_reader_access"),
+        "hide": not settings.features.register_dashboard.enabled and not request.user.is_quicksight_user(),
         "text": "Dashboards",
         "href": url("list-dashboards"),
         "active": page_name == "dashboards",
@@ -141,7 +141,7 @@
         "active": page_name == "parameters",
       },
       {
-        "hide": not request.user.has_perm("api.quicksight_embed_author_access") and not request.user.has_perm("api.quicksight_embed_reader_access"),
+        "hide": not request.user.is_quicksight_user(),
         "text": "QuickSight",
         "href": url("quicksight"),
         "active": page_name == "quicksight",
