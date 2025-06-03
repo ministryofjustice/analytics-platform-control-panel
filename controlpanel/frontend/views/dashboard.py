@@ -34,8 +34,13 @@ log = structlog.getLogger(__name__)
 class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "dashboards"
     model = Dashboard
-    permission_required = "api.list_dashboard"
     template_name = "dashboard-list.html"
+
+    def has_permission(self):
+        user = self.request.user
+        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
+            "api.quicksight_embed_reader_access"
+        )
 
     def get_queryset(self):
         return self.request.user.dashboards.all()
@@ -43,8 +48,10 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AdminDashboardList(DashboardList):
-    permission_required = "api.is_superuser"
     template_name = "dashboard-admin-list.html"
+
+    def has_permission(self):
+        return self.request.user.is_superuser
 
     def get_queryset(self):
         return Dashboard.objects.all().prefetch_related("admins")
@@ -54,8 +61,13 @@ class AdminDashboardList(DashboardList):
 class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = RegisterDashboardForm
     model = Dashboard
-    permission_required = "api.register_dashboard"
     template_name = "dashboard-register.html"
+
+    def has_permission(self):
+        user = self.request.user
+        return user.has_perm("api.quicksight_embed_author_access") or user.has_perm(
+            "api.quicksight_embed_reader_access"
+        )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()

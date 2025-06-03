@@ -123,7 +123,7 @@
         "active": page_name == "webapps",
       },
       {
-        "hide": not request.user.is_superuser and not settings.features.register_dashboard.enabled,
+        "hide": not settings.features.register_dashboard.enabled and not request.user.has_perm("api.quicksight_embed_author_access") and not request.user.has_perm("api.quicksight_embed_reader_access"),
         "text": "Dashboards",
         "href": url("list-dashboards"),
         "active": page_name == "dashboards",
