@@ -108,11 +108,18 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         dashboard = self.get_object()
         dashboard_admins = dashboard.admins.all()
 
-        context["admin_options"] = User.objects.exclude(
+        potential_admins = User.objects.exclude(
             auth0_id="",
         ).exclude(
             auth0_id__in=[user.auth0_id for user in dashboard_admins],
         )
+
+        context["admin_options"] = [
+            user
+            for user in potential_admins
+            if user.has_perm("api.quicksight_embed_author_access")
+            or user.has_perm("api.quicksight_embed_reader_access")
+        ]
 
         context["dashboard_admins"] = dashboard_admins
 
