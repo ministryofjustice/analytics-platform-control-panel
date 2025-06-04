@@ -123,7 +123,7 @@
         "active": page_name == "webapps",
       },
       {
-        "hide": not settings.features.register_dashboard.enabled and not request.user.is_quicksight_user(),
+        "hide": not request.user.is_quicksight_user(),
         "text": "Dashboards",
         "href": url("list-dashboards"),
         "active": page_name == "dashboards",
