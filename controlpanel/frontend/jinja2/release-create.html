@@ -154,7 +154,7 @@
         "text": 'A comma separated list of usernames of users who have access to this release'
       },
       "name": "target_users_list",
-      "value": release.target_users if release else "",
+      "value": form.target_users_list.value() if form.target_users_list else "",
       "errorMessage": { "html": form.target_users_list.errors|join(". ") } if form.target_users_list.errors else {}
     }) }}
     <button class="govuk-button">Create tool release</button>

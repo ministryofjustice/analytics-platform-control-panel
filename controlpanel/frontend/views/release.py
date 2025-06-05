@@ -2,6 +2,7 @@
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.http.response import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
@@ -12,6 +13,14 @@ from controlpanel.api.models import Tool
 from controlpanel.frontend.filters import ReleaseFilter
 from controlpanel.frontend.forms import ToolReleaseForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
+
+
+def get_target_users_list(release):
+    target_users = []
+    for user in release.target_users.all():
+        target_users.append(user.username)
+
+    return ", ".join(target_users)
 
 
 class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -68,10 +77,7 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        target_users = []
-        for user in self.object.target_users.all():
-            target_users.append(user.username)
-        context["target_users"] = ", ".join(target_users)
+        context["target_users"] = get_target_users_list(self.object)
         return context
 
     def form_valid(self, form):
@@ -109,3 +115,19 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
             self.object.target_users.set(target_list)
         messages.success(self.request, "Successfully created new release")
         return HttpResponseRedirect(reverse_lazy("list-tool-releases"))
+
+
+class ReleaseDuplicateCreate(ReleaseCreate):
+    """
+    Create a new release of a tool on the analytic platform based on an older release.
+    """
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        release = get_object_or_404(Tool, id=self.kwargs["pk"])
+        if form_class is None:
+            form_class = self.get_form_class()
+        form = form_class(
+            instance=release, initial={"target_users_list": get_target_users_list(release)}
+        )
+        return form
