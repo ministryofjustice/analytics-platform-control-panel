@@ -96,7 +96,7 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
 
 class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """
-    Create a new release of a tool on the analytic platform.
+    Create a new release of a tool on the analytical platform.
     """
 
     form_class = ToolReleaseForm
@@ -119,7 +119,7 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
 
 class ReleaseDuplicateCreate(ReleaseCreate):
     """
-    Create a new release of a tool on the analytic platform based on an older release.
+    Create a new release of a tool on the analytical platform based on an older release.
     """
 
     def get_form(self, form_class=None):
