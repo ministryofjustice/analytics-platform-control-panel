@@ -12,7 +12,7 @@
 
 {% set page_title = "Update tool release" %}
 {% set legend -%}
-Create a new release of a tool in the analytical platform.
+Update a release of a tool in the analytical platform.
 {%- endset %}
 
 {% block content %}
@@ -21,6 +21,14 @@ Create a new release of a tool in the analytical platform.
   {% if form.errors %}
       {{ govukErrorMessage({"text": form.errors}) }}
   {% endif %}
+
+  <h3 class="govuk-heading-m">Duplicate release</h1>
+  <div class="govuk-hint">Use this release as a template to create a new release</div>
+
+  <a href="{{ url('create-tool-release') }}?duplicate={{ release.pk }}"
+      class="govuk-button govuk-button--secondary">
+    Duplicate Release
+  </a>
 
   <form action="{{ url('manage-tool-release', kwargs={ "pk": release.pk}) }}" method="post">
     {{ csrf_input }}

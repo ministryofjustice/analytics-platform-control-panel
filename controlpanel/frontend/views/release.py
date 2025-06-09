@@ -2,6 +2,7 @@
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.http.response import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic.edit import CreateView, DeleteView, UpdateView
 from django.views.generic.list import ListView
@@ -12,6 +13,14 @@ from controlpanel.api.models import Tool
 from controlpanel.frontend.filters import ReleaseFilter
 from controlpanel.frontend.forms import ToolReleaseForm
 from controlpanel.oidc import OIDCLoginRequiredMixin
+
+
+def get_target_users_list(release):
+    target_users = []
+    for user in release.target_users.all():
+        target_users.append(user.username)
+
+    return ", ".join(target_users)
 
 
 class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
@@ -68,10 +77,7 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        target_users = []
-        for user in self.object.target_users.all():
-            target_users.append(user.username)
-        context["target_users"] = ", ".join(target_users)
+        context["target_users"] = get_target_users_list(self.object)
         return context
 
     def form_valid(self, form):
@@ -90,7 +96,7 @@ class ReleaseDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView)
 
 class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     """
-    Create a new release of a tool on the analytic platform.
+    Create a new release of a tool on the analytical platform.
     """
 
     form_class = ToolReleaseForm
@@ -98,6 +104,20 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
     model = Tool
     permission_required = "api.create_tool_release"
     template_name = "release-create.html"
+
+    def get(self, request, *args, **kwargs):
+        try:
+            self.object = self.model.objects.get(id=self.request.GET.get("duplicate", None))
+        except self.model.DoesNotExist:
+            self.object = None
+        return self.render_to_response(self.get_context_data())
+
+    def get_initial(self):
+        initial = super().get_initial()
+        if not self.object:
+            return initial
+        initial["target_users_list"] = get_target_users_list(self.object)
+        return initial
 
     def form_valid(self, form):
         """

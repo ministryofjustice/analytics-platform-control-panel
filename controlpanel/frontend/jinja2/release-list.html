@@ -50,6 +50,9 @@
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
+      <th class="govuk-table__header">
+        <span class="govuk-visually-hidden">Actions</span>
+      </th>
     </tr>
   </thead>
   <tbody class="govuk-table__body">
@@ -84,6 +87,12 @@
         <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"
            class="govuk-button govuk-button--secondary">
           Manage Release
+        </a>
+      </td>
+      <td class="govuk-table__cell">
+        <a href="{{ url('create-tool-release') }}?duplicate={{ release.pk }}"
+           class="govuk-button govuk-button--secondary">
+          Duplicate Release
         </a>
       </td>
     </tr>

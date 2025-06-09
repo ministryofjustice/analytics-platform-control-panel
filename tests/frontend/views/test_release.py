@@ -4,6 +4,7 @@ from unittest import mock
 # Third-party
 import pytest
 from django.urls import reverse
+from model_bakery import baker
 from pytest_django.asserts import assertQuerySetEqual
 
 # First-party/Local
@@ -22,6 +23,19 @@ def release_data(users):
         "target_users_list": f"{users['normal_user'].username}, {users['superuser'].username}",
         "values": '{"client_id": "id", "client_secret": "secret"}',
     }
+
+
+@pytest.fixture
+def test_release(db):
+    release = baker.make(
+        "api.Tool",
+        name="test-tool",
+        version="1.0",
+        image_tag="1.0",
+        chart_name="rstudio",
+    )
+
+    return release
 
 
 def test_release_detail_context_data():
@@ -100,6 +114,34 @@ def test_release_create_success(client, users, release_data):
     assert set(tool.target_users.values_list("username", flat=True)) == set(
         target_users_list.split(", ")
     )
+
+
+@pytest.mark.django_db
+def test_release_duplicate_create(client, users, test_release):
+    """
+    Ensure the data in the form is duplicated successfully.
+    """
+    client.force_login(users["superuser"])
+    url = reverse("create-tool-release")
+    response = client.get(url, query_params={"duplicate": test_release.pk})
+    assert response.status_code == 200
+    initial_data = response.context_data["form"].initial
+    assert initial_data["name"] == test_release.name
+    assert initial_data["version"] == test_release.version
+    assert initial_data["chart_name"] == test_release.chart_name
+
+
+@pytest.mark.django_db
+def test_release_duplicate_create_fail(client, users, test_release):
+    """
+    Ensure we receive a 404 if a release doesn't exist.
+    """
+    client.force_login(users["superuser"])
+    url = reverse("create-tool-release")
+    response = client.get(url, query_params={"duplicate": test_release.pk + 1})
+    assert response.status_code == 200
+    initial_data = response.context_data["form"].initial
+    assert len(initial_data) == 0
 
 
 @pytest.mark.django_db
