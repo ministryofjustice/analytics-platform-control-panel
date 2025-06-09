@@ -105,6 +105,20 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
     permission_required = "api.create_tool_release"
     template_name = "release-create.html"
 
+    def get(self, request, *args, **kwargs):
+        try:
+            self.object = self.model.objects.get(id=self.request.GET.get("duplicate", None))
+        except self.model.DoesNotExist:
+            self.object = None
+        return self.render_to_response(self.get_context_data())
+
+    def get_initial(self):
+        initial = super().get_initial()
+        if not self.object:
+            return initial
+        initial["target_users_list"] = get_target_users_list(self.object)
+        return initial
+
     def form_valid(self, form):
         """
         Ensure the object is created as expected (with the beta-users).
@@ -115,19 +129,3 @@ class ReleaseCreate(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView)
             self.object.target_users.set(target_list)
         messages.success(self.request, "Successfully created new release")
         return HttpResponseRedirect(reverse_lazy("list-tool-releases"))
-
-
-class ReleaseDuplicateCreate(ReleaseCreate):
-    """
-    Create a new release of a tool on the analytical platform based on an older release.
-    """
-
-    def get_form(self, form_class=None):
-        """Return an instance of the form to be used in this view."""
-        release = get_object_or_404(Tool, id=self.kwargs["pk"])
-        if form_class is None:
-            form_class = self.get_form_class()
-        form = form_class(
-            instance=release, initial={"target_users_list": get_target_users_list(release)}
-        )
-        return form

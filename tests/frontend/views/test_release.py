@@ -122,8 +122,8 @@ def test_release_duplicate_create(client, users, test_release):
     Ensure the data in the form is duplicated successfully.
     """
     client.force_login(users["superuser"])
-    url = reverse("create-duplicate-tool-release", kwargs={"pk": test_release.pk})
-    response = client.get(url)
+    url = reverse("create-tool-release")
+    response = client.get(url, query_params={"duplicate": test_release.pk})
     assert response.status_code == 200
     initial_data = response.context_data["form"].initial
     assert initial_data["name"] == test_release.name
@@ -137,9 +137,11 @@ def test_release_duplicate_create_fail(client, users, test_release):
     Ensure we receive a 404 if a release doesn't exist.
     """
     client.force_login(users["superuser"])
-    url = reverse("create-duplicate-tool-release", kwargs={"pk": test_release.pk + 1})
-    response = client.get(url)
-    assert response.status_code == 404
+    url = reverse("create-tool-release")
+    response = client.get(url, query_params={"duplicate": test_release.pk + 1})
+    assert response.status_code == 200
+    initial_data = response.context_data["form"].initial
+    assert len(initial_data) == 0
 
 
 @pytest.mark.django_db

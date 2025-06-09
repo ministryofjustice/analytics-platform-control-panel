@@ -108,7 +108,6 @@ from controlpanel.frontend.views.release import (
     ReleaseCreate,
     ReleaseDelete,
     ReleaseDetail,
-    ReleaseDuplicateCreate,
     ReleaseList,
 )
 from controlpanel.frontend.views.reset import ResetHome
