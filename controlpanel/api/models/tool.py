@@ -72,6 +72,7 @@ class Tool(TimeStampedModel):
 
     class Meta(TimeStampedModel.Meta):
         db_table = "control_panel_api_tool"
+        unique_together = ("version", "image_tag", "chart_name", "description", "values")
         ordering = ("name",)
 
     def __repr__(self):
