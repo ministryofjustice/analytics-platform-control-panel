@@ -2,13 +2,13 @@ asgiref==3.8.1
 auth0-python==4.8.1
 authlib==1.5.1
 beautifulsoup4==4.12.3
-boto3==1.36.18
+boto3==1.38.32
 celery[sqs]==5.4.0
 channels==4.2.2
 channels-redis==4.2.1
 cryptography==45.0.2
 daphne==4.1.2
-Django==5.2.3
+Django==5.1.10
 django-celery-beat==2.8.1
 django-crequest==2018.5.11
 django-extensions==3.2.3
