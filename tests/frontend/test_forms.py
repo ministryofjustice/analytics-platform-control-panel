@@ -37,7 +37,7 @@ def release_data():
         ("invalid-chartname", False),
     ],
 )
-def test_tool_release_form_check_chart_name(release_data, chart_name, expected):
+def test_tool_release_form_check_chart_name(db, release_data, chart_name, expected):
     """
     Ensure valid chart names work, while invalid ones cause a helpful
     exception.
@@ -51,7 +51,7 @@ def test_tool_release_form_check_chart_name(release_data, chart_name, expected):
     "tool_domain, expected",
     [("jupyter-lab", True), ("rstudio", True), ("vscode", True), ("invalid-tool-domain", False)],
 )
-def test_tool_release_form_check_tool_domain(release_data, tool_domain, expected):
+def test_tool_release_form_check_tool_domain(db, release_data, tool_domain, expected):
     """
     Ensure ONLY valid chart names work, while invalid ones cause a helpful
     exception.
