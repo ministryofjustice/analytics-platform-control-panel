@@ -1,4 +1,5 @@
 # Third-party
+from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
 from rest_framework import serializers
 from rest_framework.pagination import PageNumberPagination, _positive_int
@@ -45,6 +46,38 @@ class CustomPageNumberPagination(PageNumberPagination):
     def _page_size_is_all(self, page_size):
         """If page_size is specified as 0 we use that to mean return all"""
         return page_size == 0
+
+
+class DashboardPaginator(CustomPageNumberPagination):
+    """Custom paginator for dashboards that allows for a page_size of 0 to return all items."""
+
+    def get_next_link(self):
+        return (
+            f"{settings.DASHBOARD_SERVICE_URL}?page={self.page.next_page_number()}"
+            if self.page.has_next()
+            else None
+        )
+
+    def get_previous_link(self):
+        return (
+            f"{settings.DASHBOARD_SERVICE_URL}?page={self.page.previous_page_number()}"
+            if self.page.has_previous()
+            else None
+        )
+
+    def get_paginated_response(self, data):
+        return Response(
+            {
+                "count": self.page.paginator.count,
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "current_page": self.page.number,
+                "page_numbers": self.page.paginator.get_elided_page_range(
+                    self.page.number, on_each_side=1, on_ends=1
+                ),
+                "results": data,
+            }
+        )
 
 
 class Auth0Paginator(Paginator):
