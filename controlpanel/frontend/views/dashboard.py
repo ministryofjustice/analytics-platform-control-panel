@@ -309,7 +309,8 @@ class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
 
         messages.success(self.request, f"Successfully removed user {email}")
         log.info(
-            f"{self.request.user.justice_email} removing {email} access to dashboard {dashboard.name}"
+            f"{self.request.user.justice_email} removing {email} "
+            f"access to dashboard {dashboard.name}"
         )
 
 
@@ -358,6 +359,7 @@ class RevokeDomainAccess(UpdateDashboardBaseView):
         domain = DashboardDomain.objects.get(pk=kwargs["domain_id"])
         dashboard.whitelist_domains.remove(domain)
         log.info(
-            f"{self.request.user.justice_email} revoking {domain.name} wide access for dashboard {dashboard.name}"
+            f"{self.request.user.justice_email} revoking {domain.name} "
+            f"wide access for dashboard {dashboard.name}"
         )
         messages.success(self.request, f"Successfully removed {domain.name}")
