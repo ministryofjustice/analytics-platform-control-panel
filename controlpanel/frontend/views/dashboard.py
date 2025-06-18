@@ -174,6 +174,9 @@ class AddDashboardAdmin(UpdateDashboardBaseView):
             dashboard.admins.add(user)
             dashboard.add_customers([user.justice_email], self.request.user.justice_email)
             messages.success(self.request, f"Granted admin access to {user.name}")
+            log.info(
+                f"{self.request.user.justice_email} granted admin access to {user.justice_email}"
+            )
             return
 
         messages.error(self.request, "User cannot be added as a dashboard admin")
@@ -188,6 +191,9 @@ class RevokeDashboardAdmin(UpdateDashboardBaseView):
         user = get_object_or_404(User, pk=kwargs["user_id"])
 
         dashboard.admins.remove(user)
+        log.info(
+            f"{self.request.user.justice_email} removed admin access from {user.justice_email}"
+        )
         messages.success(self.request, f"Removed admin access from {user.name}")
 
 
@@ -228,8 +234,12 @@ class AddDashboardCustomers(
         return HttpResponseRedirect(self.get_success_url())
 
     def form_valid(self, form):
-        not_notified = self.get_object().add_customers(
-            form.cleaned_data["customer_email"], self.request.user.justice_email
+        dashboard = self.get_object()
+        emails = form.cleaned_data["customer_email"]
+        not_notified = dashboard.add_customers(emails, self.request.user.justice_email)
+        log.info(
+            f"{self.request.user.justice_email} granted {', '.join(emails)} "
+            f"access to dashboard {dashboard.name}"
         )
         messages.success(self.request, "Successfully added users")
 
@@ -264,6 +274,10 @@ class RemoveDashboardCustomerById(UpdateDashboardBaseView):
             messages.error(self.request, f"Failed removing user{pluralize(user_ids)}")
         else:
             messages.success(self.request, f"Successfully removed user{pluralize(user_ids)}")
+            log.info(
+                f"{self.request.user.justice_email} removing {pluralize(user_ids)} "
+                f"access to dashboard {dashboard.name}"
+            )
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
@@ -294,6 +308,9 @@ class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
             )
 
         messages.success(self.request, f"Successfully removed user {email}")
+        log.info(
+            f"{self.request.user.justice_email} removing {email} access to dashboard {dashboard.name}"
+        )
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
@@ -321,7 +338,10 @@ class GrantDomainAccess(
         dashboard = self.get_object()
         dashboard.whitelist_domains.add(domain)
         messages.success(self.request, f"Successfully granted access to {domain.name}")
-
+        log.info(
+            f"{self.request.user.justice_email} granting {domain.name} "
+            f"wide access for dashboard {dashboard.name}"
+        )
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -337,4 +357,7 @@ class RevokeDomainAccess(UpdateDashboardBaseView):
         dashboard = self.get_object()
         domain = DashboardDomain.objects.get(pk=kwargs["domain_id"])
         dashboard.whitelist_domains.remove(domain)
+        log.info(
+            f"{self.request.user.justice_email} revoking {domain.name} wide access for dashboard {dashboard.name}"
+        )
         messages.success(self.request, f"Successfully removed {domain.name}")
