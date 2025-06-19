@@ -274,7 +274,7 @@ class RemoveDashboardCustomerById(UpdateDashboardBaseView):
             emails = viewers.values_list("email", flat=True)
         except DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
-            messages.error(self.request, f"Failed removing user(s) {', '.join(emails)}")
+            messages.error(self.request, f"Failed removing user(s) - {pluralize(user_ids)}")
         else:
             messages.success(self.request, f"Successfully removed user(s) {', '.join(emails)}")
             log.info(

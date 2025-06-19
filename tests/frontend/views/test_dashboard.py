@@ -289,12 +289,21 @@ def test_add_customers_fail_notify(
 
 def remove_customer_success(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
-    return "Successfully removed user" in messages
+    for message in messages:
+        if "Successfully removed user(s)" in message:
+            return True
+
+    return False
 
 
 def remove_customer_failure(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
-    return "Failed removing user" in messages
+    for message in messages:
+        if "Failed removing user(s)" in message:
+            return True
+
+    return False
+    return "" in messages
 
 
 @pytest.mark.parametrize(
