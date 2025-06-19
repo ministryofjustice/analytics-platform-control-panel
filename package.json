@@ -5,7 +5,7 @@
   "repository": "https://github.com/ministryofjustice/analytics-platform-control-panel.git",
   "license": "MIT",
   "dependencies": {
-    "@ministryofjustice/frontend": "3.3.1",
+    "@ministryofjustice/frontend": "5.1.3",
     "govuk-frontend": "5.8.0",
     "accessible-autocomplete": "2.0.4",
     "core-js": "3.26.1",

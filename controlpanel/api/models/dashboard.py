@@ -86,6 +86,7 @@ class Dashboard(TimeStampedModel):
             raise DeleteCustomerError(f"Customers with IDs {ids} not found.")
 
         self.delete_viewers(viewers)
+        return viewers
 
     def delete_customer_by_email(self, email):
         viewers = DashboardViewer.objects.filter(email=email)

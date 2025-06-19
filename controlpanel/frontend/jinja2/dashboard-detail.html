@@ -14,14 +14,6 @@
 {% set page_name = "dashboards" %}
 {% set page_title = dashboard.name %}
 
-{% set dashboard_admins_html %}
-{% include "modals/dashboard_admins.html" %}
-{% endset %}
-
-{% set dashboard_domain_html %}
-{% include "modals/dashboard_domain_access.html" %}
-{% endset %}
-
 {% set dashboard_url_html %}
 {% include "modals/dashboard_url.html" %}
 {% endset %}
@@ -54,8 +46,9 @@
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">
     Dashboard admins
-    {{ modal_dialog(dashboard_admins_html|safe) }}
   </h2>
+
+  <p class="govuk-hint">Dashboard admins can manage user access and remove the dashboard from Control Panel.</p>
 
   <table class="govuk-table app-admins form-group">
     <thead class="govuk-table__head">
@@ -133,8 +126,26 @@
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">
     Domain access
-    {{ modal_dialog(dashboard_domain_html|safe) }}
   </h2>
+
+  <div role="region" class="moj-alert moj-alert--warning moj-alert--with-heading" aria-label="domain access warning" data-module="moj-alert">
+  <div>
+    <svg class="moj-alert__icon" role="presentation" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" height="30" width="30">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M15 2.44922L28.75 26.1992H1.25L15 2.44922ZM13.5107 9.49579H16.4697L16.2431 17.7678H13.7461L13.5107 9.49579ZM13.1299 21.82C13.1299 21.5661 13.1787 21.3285 13.2764 21.1071C13.374 20.8793 13.5075 20.6807 13.6768 20.5114C13.8525 20.3421 14.0544 20.2087 14.2822 20.111C14.5101 20.0134 14.7542 19.9645 15.0146 19.9645C15.2686 19.9645 15.5062 20.0134 15.7275 20.111C15.9554 20.2087 16.154 20.3421 16.3232 20.5114C16.4925 20.6807 16.626 20.8793 16.7236 21.1071C16.8213 21.3285 16.8701 21.5661 16.8701 21.82C16.8701 22.0804 16.8213 22.3246 16.7236 22.5524C16.626 22.7803 16.4925 22.9789 16.3232 23.1481C16.154 23.3174 15.9554 23.4509 15.7275 23.5485C15.5062 23.6462 15.2686 23.695 15.0146 23.695C14.7542 23.695 14.5101 23.6462 14.2822 23.5485C14.0544 23.4509 13.8525 23.3174 13.6768 23.1481C13.5075 22.9789 13.374 22.7803 13.2764 22.5524C13.1787 22.3246 13.1299 22.0804 13.1299 21.82Z" fill="currentColor" />
+    </svg>
+  </div>
+  <div class="moj-alert__content">
+    Domain access allows all users with the specified email domain to see the dashboard
+    <p class="govuk-body govuk-!-font-weight-bold">Do not grant domain access to dashboards with sensitive data
+    </p>
+  </div>
+
+  <div class="moj-alert__action">
+    <button class="moj-alert__dismiss" hidden>Dismiss</button>
+  </div>
+</div>
+
+  <p class="govuk-hint"></p>
 
   <table class="govuk-table app-data-sources form-group">
     <thead class="govuk-table__head">
@@ -189,7 +200,7 @@
       {{ grant_access_form.whitelist_domain }}
     </div>
     <div class="govuk-form-group">
-      <button class="govuk-button govuk-button--secondary">
+      <button class="js-confirm govuk-button govuk-button--secondary" data-confirm-message="This will grant access to all users with an email address on this domain. If this dashboard contains sensitive data, consider who could see it. Are you sure you wish to grant domain access?">
         Grant access
       </button>
     </div>
