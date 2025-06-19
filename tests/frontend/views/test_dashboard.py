@@ -290,7 +290,7 @@ def test_add_customers_fail_notify(
 def remove_customer_success(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     for message in messages:
-        if "Successfully removed user(s)" in message:
+        if "Successfully removed user" in message:
             return True
 
     return False
@@ -299,7 +299,7 @@ def remove_customer_success(client, response):
 def remove_customer_failure(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     for message in messages:
-        if "Failed removing user(s)" in message:
+        if "Failed removing user" in message:
             return True
 
     return False
