@@ -69,7 +69,10 @@ class DashboardViewSet(ReadOnlyModelViewSet):
         try:
             dashboard = self.get_object()
             serializer = DashboardUrlSerializer(dashboard)
-            log.info(f"{dashboard.name} requested by {request.query_params.get('email')}")
+            log.info(
+                f"{dashboard.name} requested by {request.query_params.get('email')}",
+                audit="dashboard_audit",
+            )
             return Response(serializer.data)
         except ValueError as e:
             return Response({"error": str(e)}, status=400)
