@@ -8,7 +8,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from controlpanel.api import permissions
 from controlpanel.api.filters import DashboardFilter
 from controlpanel.api.models.dashboard import Dashboard
-from controlpanel.api.pagination import CustomPageNumberPagination
+from controlpanel.api.pagination import DashboardPaginator
 from controlpanel.api.serializers import DashboardSerializer, DashboardUrlSerializer
 from controlpanel.utils import get_domain_from_email
 
@@ -25,7 +25,7 @@ class DashboardViewSet(ReadOnlyModelViewSet):
     resource = "dashboard"
     permission_classes = [permissions.IsSuperuser | permissions.JWTTokenResourcePermissions]
     lookup_field = "quicksight_id"
-    pagination_class = CustomPageNumberPagination
+    pagination_class = DashboardPaginator
     filter_backends = (DashboardFilter,)
 
     def get_object(self):
