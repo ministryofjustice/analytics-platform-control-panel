@@ -51,20 +51,6 @@ class CustomPageNumberPagination(PageNumberPagination):
 class DashboardPaginator(CustomPageNumberPagination):
     """Custom paginator for dashboards that allows for a page_size of 0 to return all items."""
 
-    def get_next_link(self):
-        return (
-            f"{settings.DASHBOARD_SERVICE_URL}?page={self.page.next_page_number()}"
-            if self.page.has_next()
-            else None
-        )
-
-    def get_previous_link(self):
-        return (
-            f"{settings.DASHBOARD_SERVICE_URL}?page={self.page.previous_page_number()}"
-            if self.page.has_previous()
-            else None
-        )
-
     def get_paginated_response(self, data):
         return Response(
             {
