@@ -56,6 +56,7 @@ BASE_ASSUME_ROLE_POLICY = {
 
 BEDROCK_POLICY_NAME = "analytical-platform-bedrock-integration"
 TEXTRACT_POLICY_NAME = "analytical-platform-textract-integration"
+COMPREHEND_POLICY_NAME = "analytical-platform-comprehend-integration"
 
 
 class AWSRoleCategory(str, Enum):
@@ -190,6 +191,8 @@ class User(EntityResource):
 
     ATTACH_POLICIES = [
         READ_INLINE_POLICIES,
+        TEXTRACT_POLICY_NAME,
+        COMPREHEND_POLICY_NAME,
         "airflow-dev-ui-access",
         "airflow-prod-ui-access",
     ]

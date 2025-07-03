@@ -11,3 +11,4 @@ from controlpanel.api.tasks.s3bucket import (
     S3BucketRevokeAppAccess,
     S3BucketRevokeUserAccess,
 )
+from controlpanel.api.tasks.update_policy import update_policy
