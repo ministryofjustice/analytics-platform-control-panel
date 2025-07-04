@@ -180,21 +180,6 @@
   {% endif %}
 
   {{ alerts() }}
-  {% if not hide_nav and request.user.is_authenticated and broadcast_messages %}
-  <br/>
-  <div class="govuk-width-container">
-    <div class="govuk-warning-text">
-      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-      <strong class="govuk-warning-text__text">
-        <span class="govuk-visually-hidden">Warning</span>
-        {% for message in broadcast_messages %}
-        {{ message }} <br/>
-        {% endfor %}
-      </strong>
-    </div>
-    <hr class="govuk-section-break govuk-section-break--visible">
-  </div>
-  {% endif %}
 
   {% if not hide_nav and request.user.is_authenticated and display_service_info %}
   <br/>
@@ -213,9 +198,9 @@
           </div>
 
           <div class="govuk-grid-column-three-quarters">
-            <p class="govuk-notification-banner__heading">
+            <a class="govuk-notification-banner__heading" href="https://status.analytical-platform.service.justice.gov.uk/posts/details/{{post.id}}" target="_blank" rel="noopener noreferrer">
               {{ post.title }}
-            </p>
+            </a>
             {% if post.starts_at %}
             <p class="govuk-body-s">{{post.starts_at}} until {{post.ends_at}}</p>
             {% endif %}
@@ -225,6 +210,22 @@
         <p class="govuk-body">For more information, visit the <a href="https://status.analytical-platform.service.justice.gov.uk/posts/dashboard" target="_blank" rel="noopener noreferrer">Analytical Platform status page</a>.</p>
       </div>
     </div>
+  </div>
+  {% endif %}
+
+  {% if not hide_nav and request.user.is_authenticated and broadcast_messages %}
+  <br/>
+  <div class="govuk-width-container">
+    <div class="govuk-warning-text">
+      <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+      <strong class="govuk-warning-text__text">
+        <span class="govuk-visually-hidden">Warning</span>
+        {% for message in broadcast_messages %}
+        {{ message }} <br/>
+        {% endfor %}
+      </strong>
+    </div>
+    <hr class="govuk-section-break govuk-section-break--visible">
   </div>
   {% endif %}
 {% endblock %}
