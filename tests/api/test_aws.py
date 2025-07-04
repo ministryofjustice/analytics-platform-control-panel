@@ -98,7 +98,9 @@ def test_create_app_role(iam):
     assert ec2_assume_role(pd["Statement"][0])
 
 
-def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_policy):
+def test_create_user_role(
+    iam, managed_policy, airflow_dev_policy, airflow_prod_policy, textract_policy, comprehend_policy
+):
     """
     Ensure EKS settngs are in the policy document when running on that
     infrastructure.
@@ -122,11 +124,13 @@ def test_create_user_role(iam, managed_policy, airflow_dev_policy, airflow_prod_
     assert eks_assume_role(pd["Statement"][2], user)
 
     attached_policies = list(role.attached_policies.all())
-    assert len(attached_policies) == 3
+    assert len(attached_policies) == 5
     arns = [policy.arn for policy in attached_policies]
     assert managed_policy["Arn"] in arns
     assert airflow_dev_policy["Arn"] in arns
     assert airflow_prod_policy["Arn"] in arns
+    assert textract_policy["Arn"] in arns
+    assert comprehend_policy["Arn"] in arns
 
 
 @pytest.fixture
@@ -609,7 +613,7 @@ def test_delete_policy(iam, superuser, group):
     role = iam.Role("test_user_alice")
     aws.AWSPolicy().update_policy_members(group.arn, set([role.name]))
 
-    assert len(list(role.attached_policies.all())) == 4
+    assert len(list(role.attached_policies.all())) == 6
 
     try:
         aws.AWSPolicy().delete_policy(group.arn)
@@ -622,7 +626,7 @@ def test_delete_policy(iam, superuser, group):
     # with pytest.raises(iam.meta.client.exceptions.NoSuchEntityException):
     #     iam.Policy(group_arn).load()
 
-    assert len(list(role.attached_policies.all())) == 3
+    assert len(list(role.attached_policies.all())) == 5
 
 
 @pytest.mark.parametrize(
