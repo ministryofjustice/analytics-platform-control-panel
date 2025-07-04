@@ -36,13 +36,13 @@ def PagerdutyClient():
                 "title": "Test Maintenance",
                 "post_type": "maintenance",
                 "starts_at": "1 Jan 2025, 9:00",
-                "starts_at": "1 Jan 2025, 17:00",
+                "ends_at": "1 Jan 2025, 17:00",
             },
             {
                 "title": "Test Incident",
                 "post_type": "incident",
                 "starts_at": None,
-                "starts_at": None,
+                "ends_at": None,
             },
         ]
         yield pagerduty_client
