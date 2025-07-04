@@ -27,6 +27,7 @@ class QuicksightView(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateVi
         assume_role_name = settings.QUICKSIGHT_ASSUMED_ROLE
         quicksight_region = settings.QUICKSIGHT_ACCOUNT_REGION
         context["broadcast_messages"] = None
+        context["display_service_info"] = False
         quicksight_client = AWSQuicksight(
             assume_role_name=assume_role_name,
             profile_name=profile_name,

@@ -195,6 +195,38 @@
     <hr class="govuk-section-break govuk-section-break--visible">
   </div>
   {% endif %}
+
+  {% if not hide_nav and request.user.is_authenticated and display_service_info %}
+  <br/>
+  <div class="govuk-width-container">
+    <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+      <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+          Service information
+        </h2>
+      </div>
+      <div class="govuk-notification-banner__content">
+        {% for post in pagerduty_posts %}
+        <div class="govuk-grid-row">
+          <div class="govuk-grid-column-one-quarter">
+            <strong class="govuk-tag govuk-tag--{{post.label_colour}}">{{post.post_type.capitalize()}}</strong>
+          </div>
+
+          <div class="govuk-grid-column-three-quarters">
+            <p class="govuk-notification-banner__heading">
+              {{ post.title }}
+            </p>
+            {% if post.starts_at %}
+            <p class="govuk-body-s">{{post.starts_at}} until {{post.ends_at}}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <p class="govuk-body">For more information, visit the <a href="https://status.analytical-platform.service.justice.gov.uk/posts/dashboard" target="_blank" rel="noopener noreferrer">Analytical Platform status page</a>.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 {% endblock %}
 
 {% block footer %}
