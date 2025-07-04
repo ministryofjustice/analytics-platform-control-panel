@@ -1,6 +1,6 @@
 # Standard library
 import uuid
-from unittest.mock import mock_open, patch
+from unittest.mock import Mock, mock_open, patch
 
 # Third-party
 import pytest
@@ -26,6 +26,26 @@ def ExtendedAuth0():
     with patch("auth0.authentication.GetToken.client_credentials") as client_credentials:
         client_credentials.return_value = {"access_token": "access_token_testing"}
         yield auth0.ExtendedAuth0()
+
+
+@pytest.fixture(autouse=True)
+def PagerdutyClient():
+    with patch("controlpanel.oidc.pagerduty_client") as pagerduty_client:
+        pagerduty_client.get_status_page_posts.return_value = [
+            {
+                "title": "Test Maintenance",
+                "post_type": "maintenance",
+                "starts_at": "1 Jan 2025, 9:00",
+                "starts_at": "1 Jan 2025, 17:00",
+            },
+            {
+                "title": "Test Incident",
+                "post_type": "incident",
+                "starts_at": None,
+                "starts_at": None,
+            },
+        ]
+        yield pagerduty_client
 
 
 @pytest.fixture
