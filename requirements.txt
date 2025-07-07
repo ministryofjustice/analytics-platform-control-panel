@@ -7,7 +7,7 @@ celery[sqs]==5.4.0
 channels==4.2.2
 channels-redis==4.2.1
 cryptography==45.0.2
-daphne==4.1.2
+daphne==4.2.1
 Django==5.1.10
 django-celery-beat==2.8.1
 django-crequest==2018.5.11
