@@ -17,6 +17,7 @@ from controlpanel.api.models.justice_domain import JusticeDomain
 from controlpanel.api.models.parameter import Parameter
 from controlpanel.api.models.policys3bucket import PolicyS3Bucket
 from controlpanel.api.models.s3bucket import S3Bucket
+from controlpanel.api.models.status_post import StatusPageEvent
 from controlpanel.api.models.task import Task
 from controlpanel.api.models.tool import Tool, ToolDeployment
 from controlpanel.api.models.user import (
