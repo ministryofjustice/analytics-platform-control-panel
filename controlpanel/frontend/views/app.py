@@ -200,16 +200,23 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         return reverse_lazy("manage-app", kwargs={"pk": self.object.pk})
 
     def _check_namespace_in_cloud_platform(self, form_namespace):
-        """Throws RepositoryNotFound error if namespace not found in CP repo"""
+        """
+        Throws RepositoryNotFound error if both a dev and prod namespace not found in CP repo.
+        If either dev or prod is found, returns True.
+        """
 
         namespaces = [f"{form_namespace}-dev", f"{form_namespace}-prod"]
         cloud_platform_repo_name = "cloud-platform-environments"
 
         for namespace in namespaces:
             path = f"namespaces/live.cloud-platform.service.justice.gov.uk/{namespace}"
-            GithubAPI(self.request.user.github_api_token).get_repository_contents(
-                cloud_platform_repo_name, path
-            )
+            try:
+                return GithubAPI(self.request.user.github_api_token).get_repository_contents(
+                    cloud_platform_repo_name, path
+                )
+            except RepositoryNotFound:
+                continue
+        raise RepositoryNotFound(f"No namespace found in {cloud_platform_repo_name} repository.")
 
     def form_valid(self, form):
         try:

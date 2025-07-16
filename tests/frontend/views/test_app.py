@@ -1,7 +1,7 @@
 # Standard library
 import json
 import uuid
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 # Third-party
 import botocore
@@ -17,6 +17,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
+from controlpanel.api.github import RepositoryNotFound
 from controlpanel.api.models import App, AppIPAllowList, S3Bucket
 from controlpanel.api.models.app import DeleteCustomerError
 from tests.api.fixtures.aws import *
@@ -88,11 +89,15 @@ def githubapi():
     Mock calls to Github
     """
     with (
-        patch("controlpanel.frontend.forms.GithubAPI"),
-        patch("controlpanel.frontend.views.app.GithubAPI"),
-        patch("controlpanel.api.cluster.GithubAPI") as GithubAPI,
+        patch("controlpanel.frontend.forms.GithubAPI") as forms_githubapi,
+        patch("controlpanel.frontend.views.app.GithubAPI") as views_githubapi,
+        patch("controlpanel.api.cluster.GithubAPI") as cluster_githubapi,
     ):
-        yield GithubAPI.return_value
+        yield {
+            "forms": forms_githubapi.return_value,
+            "views": views_githubapi.return_value,
+            "cluster": cluster_githubapi.return_value,
+        }
 
 
 @pytest.fixture
@@ -101,13 +106,13 @@ def repos(githubapi):
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
-    githubapi.get_repository.return_value = test_repo
-    githubapi.get_repo_envs.return_value = ["dev_env", "prod_env"]
-    githubapi.get_repo_env_vars.return_value = [
+    githubapi["cluster"].get_repository.return_value = test_repo
+    githubapi["cluster"].get_repo_envs.return_value = ["dev_env", "prod_env"]
+    githubapi["cluster"].get_repo_env_vars.return_value = [
         {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"},
         {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}PARAM_VAR", "value": "test_var"},
     ]
-    githubapi.get_repo_env_secrets.return_value = [
+    githubapi["cluster"].get_repo_env_secrets.return_value = [
         {"name": cluster.App.IP_RANGES},
         {"name": f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}PARAM_SECRET"},
     ]
@@ -120,19 +125,19 @@ def repos_with_auth(githubapi):
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
-    githubapi.get_repository.return_value = test_repo
-    githubapi.get_repo_envs.return_value = ["dev_env"]
-    githubapi.get_repo_env_vars.return_value = [
+    githubapi["cluster"].get_repository.return_value = test_repo
+    githubapi["cluster"].get_repo_envs.return_value = ["dev_env"]
+    githubapi["cluster"].get_repo_env_vars.return_value = [
         {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"},
         {"name": cluster.App.AUTH0_DOMAIN, "value": "http://testing"},
     ]
-    githubapi.get_repo_env_secrets.return_value = [
+    githubapi["cluster"].get_repo_env_secrets.return_value = [
         {"name": cluster.App.APP_ROLE_ARN},
         {"name": cluster.App.AUTH0_CLIENT_ID},
         {"name": cluster.App.AUTH0_CLIENT_SECRET},
         {"name": cluster.App.IP_RANGES},
     ]
-    yield githubapi
+    yield githubapi["cluster"]
 
 
 @pytest.fixture
@@ -141,12 +146,12 @@ def repos_for_missing_auth(githubapi):
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
-    githubapi.get_repository.return_value = test_repo
-    githubapi.get_repo_envs.return_value = ["dev_env"]
-    githubapi.get_repo_env_vars.return_value = [
+    githubapi["cluster"].get_repository.return_value = test_repo
+    githubapi["cluster"].get_repo_envs.return_value = ["dev_env"]
+    githubapi["cluster"].get_repo_env_vars.return_value = [
         {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "True"}
     ]
-    yield githubapi
+    yield githubapi["cluster"]
 
 
 @pytest.fixture
@@ -155,16 +160,16 @@ def repos_for_no_auth(githubapi):
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
-    githubapi.get_repository.return_value = test_repo
-    githubapi.get_repo_envs.return_value = ["dev_env"]
-    githubapi.get_repo_env_vars.return_value = [
+    githubapi["cluster"].get_repository.return_value = test_repo
+    githubapi["cluster"].get_repo_envs.return_value = ["dev_env"]
+    githubapi["cluster"].get_repo_env_vars.return_value = [
         {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "False"},
     ]
-    githubapi.get_repo_env_secrets.return_value = [
+    githubapi["cluster"].get_repo_env_secrets.return_value = [
         {"name": cluster.App.IP_RANGES},
         {"name": cluster.App.APP_ROLE_ARN},
     ]
-    yield githubapi
+    yield githubapi["cluster"]
 
 
 @pytest.fixture
@@ -173,16 +178,16 @@ def repos_for_redundant_auth(githubapi):
         "full_name": "Test App",
         "html_url": "https://github.com/moj-analytical-services/test_app",
     }
-    githubapi.get_repository.return_value = test_repo
-    githubapi.get_repo_envs.return_value = ["dev_env"]
-    githubapi.get_repo_env_vars.return_value = [
+    githubapi["cluster"].get_repository.return_value = test_repo
+    githubapi["cluster"].get_repo_envs.return_value = ["dev_env"]
+    githubapi["cluster"].get_repo_env_vars.return_value = [
         {"name": cluster.App.AUTHENTICATION_REQUIRED, "value": "False"}
     ]
-    githubapi.get_repo_env_secrets.return_value = [
+    githubapi["cluster"].get_repo_env_secrets.return_value = [
         {"name": cluster.App.AUTH0_CLIENT_ID},
         {"name": cluster.App.AUTH0_CLIENT_SECRET},
     ]
-    yield githubapi
+    yield githubapi["cluster"]
 
 
 @pytest.fixture(autouse=True)
@@ -784,7 +789,7 @@ def test_app_settings_permission(client, app, users, repos_with_auth, user, can_
 
 
 def test_register_app_with_xacct_policy(client, users, githubapi):
-    githubapi.get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
+    githubapi["views"].get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
     test_app_name = "test_app_with_xacct_policy"
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(users["superuser"])
@@ -805,7 +810,7 @@ def test_register_app_with_xacct_policy(client, users, githubapi):
 
 
 def test_register_app_with_creating_datasource(client, users, githubapi):
-    githubapi.get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
+    githubapi["views"].get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
     test_app_name = "test_app_with_creating_datasource"
     test_bucket_name = "test-bucket"
     assert App.objects.filter(name=test_app_name).count() == 0
@@ -830,7 +835,7 @@ def test_register_app_with_creating_datasource(client, users, githubapi):
 
 
 def test_register_app_with_existing_datasource(client, users, s3buckets, githubapi):
-    githubapi.get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
+    githubapi["views"].get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
     test_app_name = "test_app_with_existing_datasource"
     existing_bucket = s3buckets["not_connected"]
     user = users["superuser"]
@@ -870,6 +875,59 @@ def test_register_app_invalid_organisation(client, users):
     assert response.status_code == 200
     assert "repo_url" in response.context_data["form"].errors
     assert App.objects.filter(name=app_name).count() == 0
+
+
+def test_register_app_invalid_namespace(client, users, githubapi):
+    githubapi["views"].get_repository_contents.side_effect = RepositoryNotFound()
+    client.force_login(users["superuser"])
+    test_app_name = "test-app-with-invalid-namespace"
+    data = dict(
+        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
+        namespace="test-app-namespace",
+        connect_bucket="later",
+    )
+
+    url = reverse("create-app")
+    response = client.post(url, data)
+
+    # 200 due to namespace error
+    assert response.status_code == 200
+    assert "namespace" in response.context_data["form"].errors
+    assert App.objects.filter(name=test_app_name).count() == 0
+    githubapi["views"].get_repository_contents.assert_has_calls(
+        [
+            call(
+                "cloud-platform-environments",
+                f"namespaces/live.cloud-platform.service.justice.gov.uk/{data['namespace']}-dev",
+            ),
+            call(
+                "cloud-platform-environments",
+                f"namespaces/live.cloud-platform.service.justice.gov.uk/{data['namespace']}-prod",
+            ),
+        ]
+    )
+
+
+def test_register_app_with_valid_namespace(client, users, githubapi):
+    githubapi["views"].get_repository_contents.return_value = {"repo": "test-app-dev"}
+    client.force_login(users["superuser"])
+    test_app_name = "test-app"
+    data = dict(
+        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
+        namespace="test-app-namespace",
+        connect_bucket="later",
+    )
+
+    url = reverse("create-app")
+    response = client.post(url, data)
+
+    # 302 due to successful creation
+    assert response.status_code == 302
+    # only one call to get_repository_contents as dev exists
+    githubapi["views"].get_repository_contents.assert_called_once_with(
+        "cloud-platform-environments",
+        f"namespaces/live.cloud-platform.service.justice.gov.uk/{data['namespace']}-dev",
+    )
 
 
 def test_update_app_ip_allowlist_fails(app):
