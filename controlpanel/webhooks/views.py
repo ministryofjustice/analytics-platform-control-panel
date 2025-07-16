@@ -63,6 +63,7 @@ class PagerDutyWebhookView(View):
                 "title": data.get("title", ""),
                 "post_type": data.get("post_type", ""),
                 "severity": data.get("severity", ""),
+                "status": data.get("status", ""),
                 "starts_at": (
                     parse_datetime(data.get("starts_at")) if data.get("starts_at") else None
                 ),

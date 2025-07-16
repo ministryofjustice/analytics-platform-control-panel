@@ -18,6 +18,7 @@ from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
 # First-party/Local
 from controlpanel.api.models import JusticeDomain, User
+from controlpanel.api.models.status_post import StatusPageEvent
 from controlpanel.api.pagerduty import PagerdutyClient
 
 log = structlog.getLogger(__name__)
@@ -125,14 +126,9 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
             settings.BROADCAST_MESSAGE.split("|") if settings.BROADCAST_MESSAGE else []
         )
 
-        display_service_info = False
-        pagerduty_posts = pagerduty_client.get_status_page_posts(settings.PAGERDUTY_STATUS_ID)
-
-        if pagerduty_posts is not None:
-            display_service_info = True
-            context["pagerduty_posts"] = pagerduty_posts
-
-        context["display_service_info"] = display_service_info
+        status_page_posts = StatusPageEvent.objects.exclude(status="resolved")
+        context["pagerduty_posts"] = status_page_posts
+        context["display_service_info"] = status_page_posts.exists()
         context["settings"] = settings
         return context
 

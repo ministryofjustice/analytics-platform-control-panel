@@ -18,10 +18,19 @@ class StatusPageEvent(TimeStampedModel):
         ("major", "Major"),
         ("critical", "Critical"),
     ]
+    STATUS_CHOICES = [
+        ("investigating", "Investigating"),
+        ("detected", "Detected"),
+        ("resolved", "Resolved"),
+        ("scheduled", "Scheduled"),
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+    ]
 
     title = models.CharField(max_length=200)
     post_type = models.CharField(max_length=20, choices=POST_TYPE_CHOICES)
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     starts_at = models.DateTimeField(null=True, blank=True)
     ends_at = models.DateTimeField(null=True, blank=True)
     href = models.URLField(unique=True)

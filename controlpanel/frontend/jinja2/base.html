@@ -202,7 +202,9 @@
               {{ post.title }}
             </a>
             {% if post.starts_at %}
-            <p class="govuk-body-s">{{post.starts_at}} until {{post.ends_at}}</p>
+            <p class="govuk-body-s">
+              {{ post.starts_at.strftime('%-d %b %Y, %H:%M') }}{% if post.ends_at %} until {{ post.ends_at.strftime('%-d %b %Y, %H:%M') }}{% endif %}
+            </p>
             {% endif %}
           </div>
         </div>
