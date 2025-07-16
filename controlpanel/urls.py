@@ -18,7 +18,7 @@ urlpatterns = [
     path("k8s/", include("controlpanel.kubeapi.urls")),
     path("health/", health_check),
     path("metrics", exports.ExportToDjangoView, name="prometheus-django-metrics"),
-    path("webhooks/", include("controlpanel.webhooks.urls")),
+    path("webhooks/", include("controlpanel.webhooks.urls", namespace="webhooks")),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

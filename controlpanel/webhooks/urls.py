@@ -3,6 +3,8 @@ from django.urls import path
 
 from . import views
 
+app_name = "webhooks"
+
 urlpatterns = [
-    path("pagerduty/", views.pagerduty_webhook, name="pagerduty"),
+    path("pagerduty/", views.PagerDutyWebhookView.as_view(), name="pagerduty"),
 ]

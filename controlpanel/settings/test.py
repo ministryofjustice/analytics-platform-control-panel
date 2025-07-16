@@ -54,3 +54,4 @@ NOTIFY_DASHBOARD_ACCESS_TEMPLATE_ID = "test-template-id"
 
 PAGERDUTY_TOKEN = "test_token"
 PAGERDUTY_STATUS_ID = "test_status_id"
+PAGERDUTY_WEBHOOK_SECRET = "example-webhook-secret"
