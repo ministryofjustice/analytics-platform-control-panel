@@ -66,6 +66,9 @@ class CsvWriterMixin(PermissionRequiredMixin):
 
 
 class StatusPageEventMixin:
+    """
+    Mixin to add pagerduty status page events to the context.
+    """
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
