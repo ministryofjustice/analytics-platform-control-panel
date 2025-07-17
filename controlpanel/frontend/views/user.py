@@ -134,7 +134,7 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
 
-class EnableBedrockUser(PolicyAccessMixin, UpdateView):
+class EnableBedrockUser(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     model = User
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"

@@ -80,7 +80,7 @@ class AdminAppList(AppList):
         )
 
 
-class AppAdminCSV(CsvWriterMixin, View):
+class AppAdminCSV(OIDCLoginRequiredMixin, CsvWriterMixin, View):
     filename = "app_admins"
     csv_headings = ["App Name", "Repo URL", "Admins", "Emails"]
     model_attributes = ["name", "repo_url", "users", "emails"]
@@ -383,14 +383,14 @@ class GrantAppAccess(
         raise Exception(form.errors)
 
 
-class EnableBedrockApp(PolicyAccessMixin, UpdateView):
+class EnableBedrockApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     model = App
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"
     method_name = "set_bedrock_access"
 
 
-class EnableTextractApp(PolicyAccessMixin, UpdateView):
+class EnableTextractApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     model = App
     fields = ["is_textract_enabled"]
     success_message = "Successfully updated textract status"

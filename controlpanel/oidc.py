@@ -18,8 +18,8 @@ from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
 # First-party/Local
 from controlpanel.api.models import JusticeDomain, User
-from controlpanel.api.models.status_post import StatusPageEvent
 from controlpanel.api.pagerduty import PagerdutyClient
+from controlpanel.frontend.mixins import StatusPageEventMixin
 
 log = structlog.getLogger(__name__)
 pagerduty_client = PagerdutyClient()
@@ -117,7 +117,7 @@ def logout(request):
     return f"{settings.AUTH0['logout_url']}?{params}"
 
 
-class OIDCLoginRequiredMixin(LoginRequiredMixin):
+class OIDCLoginRequiredMixin(StatusPageEventMixin, LoginRequiredMixin):
     """Verify that the current user is (still) authenticated."""
 
     def get_context_data(self, *args, **kwargs):
@@ -125,10 +125,6 @@ class OIDCLoginRequiredMixin(LoginRequiredMixin):
         context["broadcast_messages"] = (
             settings.BROADCAST_MESSAGE.split("|") if settings.BROADCAST_MESSAGE else []
         )
-
-        status_page_posts = StatusPageEvent.objects.exclude(status="resolved")
-        context["pagerduty_posts"] = status_page_posts
-        context["display_service_info"] = status_page_posts.exists()
         context["settings"] = settings
         return context
 

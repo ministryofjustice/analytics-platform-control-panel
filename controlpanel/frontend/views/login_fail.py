@@ -12,7 +12,6 @@ class LoginFail(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["environment"] = settings.ENV
-        context["display_service_info"] = False
         context["auth0_logout_url"] = settings.AUTH0["logout_url"]
 
         return context
