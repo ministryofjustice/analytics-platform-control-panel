@@ -72,7 +72,9 @@ class StatusPageEventMixin:
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        events = StatusPageEvent.objects.exclude(status="resolved")
+        events = StatusPageEvent.objects.exclude(
+            status__in=[StatusPageEvent.STATUS_COMPLETED, StatusPageEvent.STATUS_RESOLVED]
+        ).order_by("-modified")
         context["pagerduty_posts"] = events
         context["display_service_info"] = events.exists()
         return context

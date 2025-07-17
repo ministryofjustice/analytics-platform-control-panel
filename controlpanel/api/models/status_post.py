@@ -12,19 +12,31 @@ class StatusPageEvent(TimeStampedModel):
     ]
     INCIDENT_COLOUR = "orange"
     MAINTENANCE_COLOUR = "blue"
+
+    SEVERITY_MINOR = "minor"
+    SEVERITY_MAJOR = "major"
+    SEVERITY_ALL_GOOD = "all_good"
+    SEVERITY_MAINTENANCE = "maintenance"
     SEVERITY_CHOICES = [
-        ("info", "Info"),
-        ("minor", "Minor"),
-        ("major", "Major"),
-        ("critical", "Critical"),
+        (SEVERITY_MINOR, "Minor"),
+        (SEVERITY_MAJOR, "Major"),
+        (SEVERITY_ALL_GOOD, "All good"),
+        (SEVERITY_MAINTENANCE, "Maintenance"),
     ]
+
+    STATUS_INVESTIGATING = "investigating"
+    STATUS_DETECTED = "detected"
+    STATUS_RESOLVED = "resolved"
+    STATUS_SCHEDULED = "scheduled"
+    STATUS_IN_PROGRESS = "in_progress"
+    STATUS_COMPLETED = "completed"
     STATUS_CHOICES = [
-        ("investigating", "Investigating"),
-        ("detected", "Detected"),
-        ("resolved", "Resolved"),
-        ("scheduled", "Scheduled"),
-        ("in_progress", "In Progress"),
-        ("completed", "Completed"),
+        (STATUS_INVESTIGATING, "Investigating"),
+        (STATUS_DETECTED, "Detected"),
+        (STATUS_RESOLVED, "Resolved"),
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_IN_PROGRESS, "In Progress"),
+        (STATUS_COMPLETED, "Completed"),
     ]
 
     title = models.CharField(max_length=200)

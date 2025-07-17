@@ -194,17 +194,20 @@
         {% for post in pagerduty_posts %}
         <div class="govuk-grid-row">
           <div class="govuk-grid-column-one-quarter">
-            <strong class="govuk-tag govuk-tag--{{post.label_colour}}">{{post.post_type.capitalize()}}</strong>
+            <p><strong class="govuk-tag govuk-tag--{{post.label_colour}}">{{post.get_post_type_display()}}</strong></p>
           </div>
 
           <div class="govuk-grid-column-three-quarters">
-            <a class="govuk-notification-banner__heading" href="https://status.analytical-platform.service.justice.gov.uk/posts/details/{{post.id}}" target="_blank" rel="noopener noreferrer">
-              {{ post.title }}
-            </a>
+            <p class="govuk-notification-banner__heading">
+              <a class="govuk-notification-banner__link" href="{{ post.href }}" target="_blank" rel="noopener noreferrer">
+                {{ post.title }}
+              </a>
+            </p>
             {% if post.starts_at %}
             <p class="govuk-body-s">
               {{ post.starts_at.strftime('%-d %b %Y, %H:%M') }}{% if post.ends_at %} until {{ post.ends_at.strftime('%-d %b %Y, %H:%M') }}{% endif %}
             </p>
+            <p class="govuk-body-s"><strong>Status:</strong> {{post.get_status_display()}}</p>
             {% endif %}
           </div>
         </div>
