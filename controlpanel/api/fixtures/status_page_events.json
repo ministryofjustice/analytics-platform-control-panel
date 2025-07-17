@@ -20,7 +20,8 @@
         "href": "https://status.example.com/incident_details/OUTAGE123"
       },
       "created": "2025-07-08T09:00:00Z",
-      "modified": "2025-07-08T09:00:00Z"
+      "modified": "2025-07-08T09:00:00Z",
+      "reported_at": "2025-07-08T09:00:00Z"
     }
   },
   {
@@ -44,7 +45,8 @@
         "href": "https://status.example.com/incident_details/MAINT001"
       },
       "created": "2025-07-09T10:00:00Z",
-      "modified": "2025-07-09T10:00:00Z"
+      "modified": "2025-07-09T10:00:00Z",
+      "reported_at": null
     }
   },
   {
@@ -68,7 +70,8 @@
         "href": "https://status.example.com/incident_details/RESOLVED456"
       },
       "created": "2025-07-06T08:00:00Z",
-      "modified": "2025-07-06T08:00:00Z"
+      "modified": "2025-07-06T08:00:00Z",
+      "reported_at": "2025-07-06T08:00:00Z"
     }
   }
 ]

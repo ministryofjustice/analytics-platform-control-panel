@@ -45,6 +45,7 @@ class StatusPageEvent(TimeStampedModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     starts_at = models.DateTimeField(null=True, blank=True)
     ends_at = models.DateTimeField(null=True, blank=True)
+    reported_at = models.DateTimeField(null=True, blank=True)
     href = models.URLField(unique=True)
     raw_payload = models.JSONField()
 
@@ -57,3 +58,11 @@ class StatusPageEvent(TimeStampedModel):
             self.POST_TYPE_MAINTENANCE: self.MAINTENANCE_COLOUR,
             self.POST_TYPE_INCIDENT: self.INCIDENT_COLOUR,
         }.get(self.post_type, self.POST_TYPE_INCIDENT)
+
+    @property
+    def is_maintenance(self):
+        return self.post_type == self.POST_TYPE_MAINTENANCE
+
+    @property
+    def is_incident(self):
+        return self.post_type == self.POST_TYPE_INCIDENT
