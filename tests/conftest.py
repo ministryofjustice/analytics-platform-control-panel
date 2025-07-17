@@ -28,9 +28,9 @@ def ExtendedAuth0():
         yield auth0.ExtendedAuth0()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def PagerdutyClient():
-    with patch("controlpanel.oidc.pagerduty_client") as pagerduty_client:
+    with patch("controlpanel.api.pagerduty.PagerdutyClient") as pagerduty_client:
         pagerduty_client.get_status_page_posts.return_value = [
             {
                 "title": "Test Maintenance",
