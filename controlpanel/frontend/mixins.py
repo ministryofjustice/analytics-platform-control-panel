@@ -8,10 +8,10 @@ from django.http import HttpResponse
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
-from controlpanel.oidc import OIDCLoginRequiredMixin
+from controlpanel.api.models.status_post import StatusPageEvent
 
 
-class PolicyAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
+class PolicyAccessMixin(PermissionRequiredMixin):
     """
     Updates policy access for a model instance.
     Assumes updating a boolean field and updating a policy based on it.
@@ -35,7 +35,7 @@ class PolicyAccessMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
         return super().get_success_url()
 
 
-class CsvWriterMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
+class CsvWriterMixin(PermissionRequiredMixin):
     """
     Allows exporting a list of models to a CSV file.
     """
@@ -63,3 +63,18 @@ class CsvWriterMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
             writer.writerow(row)
 
         return response
+
+
+class StatusPageEventMixin:
+    """
+    Mixin to add pagerduty status page events to the context.
+    """
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        events = StatusPageEvent.objects.exclude(
+            status__in=[StatusPageEvent.STATUS_COMPLETED, StatusPageEvent.STATUS_RESOLVED]
+        )
+        context["pagerduty_posts"] = events
+        context["display_service_info"] = events.exists()
+        return context

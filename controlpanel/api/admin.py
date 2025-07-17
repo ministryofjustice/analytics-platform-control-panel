@@ -20,6 +20,7 @@ from controlpanel.api.models import (
     ToolDeployment,
     User,
 )
+from controlpanel.api.models.status_post import StatusPageEvent
 from controlpanel.api.tasks.user import upgrade_user_helm_chart
 
 
@@ -183,6 +184,25 @@ class JusticeDomainAdmin(admin.ModelAdmin):
     list_display = ("domain",)
 
 
+class StatusPageEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "post_type",
+        "severity",
+        "status",
+        "reported_at",
+        "starts_at",
+        "ends_at",
+        "href",
+        "modified",
+    )
+    list_filter = ("post_type", "severity", "status")
+    search_fields = ("title", "href")
+    ordering = ("-modified",)
+    readonly_fields = ("created", "modified", "raw_payload")
+    date_hierarchy = "reported_at"
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
@@ -191,3 +211,4 @@ admin.site.register(Feedback, FeedbackAdmin)
 admin.site.register(ToolDeployment, ToolDeploymentAdmin)
 admin.site.register(DashboardDomain, DashboardDomainAdmin)
 admin.site.register(JusticeDomain, JusticeDomainAdmin)
+admin.site.register(StatusPageEvent, StatusPageEventAdmin)

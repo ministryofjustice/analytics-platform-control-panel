@@ -40,3 +40,5 @@ SESSION_COOKIE_SECURE = False
 LOGGING["loggers"]["controlpanel"]["level"] = "INFO"  # noqa: F405
 
 DASHBOARD_SERVICE_DOMAINS = ["http://localhost:8001"]
+
+PAGERDUTY_WEBHOOK_SECRET = os.environ.get("PAGERDUTY_WEBHOOK_SECRET")

@@ -180,6 +180,47 @@
   {% endif %}
 
   {{ alerts() }}
+
+  {% if not hide_nav and request.user.is_authenticated and display_service_info %}
+  <br/>
+  <div class="govuk-width-container">
+    <div class="govuk-notification-banner" role="region" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+      <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+          Service information
+        </h2>
+      </div>
+      <div class="govuk-notification-banner__content">
+        {% for post in pagerduty_posts %}
+        <div class="govuk-grid-row">
+          <div class="govuk-grid-column-one-quarter">
+            <p><strong class="govuk-tag govuk-tag--{{post.label_colour}}">{{post.get_post_type_display()}}</strong></p>
+          </div>
+
+          <div class="govuk-grid-column-three-quarters">
+            <p class="govuk-notification-banner__heading">
+              <a class="govuk-notification-banner__link" href="{{ post.href }}" target="_blank" rel="noopener noreferrer">
+                {{ post.title }}
+              </a>
+            </p>
+            {% if post.is_incident %}
+            <p class="govuk-body-s"><strong>Reported at:</strong> {{ post.reported_at.strftime('%-d %b %Y, %H:%M') }}</p>
+            <p class="govuk-body-s"><strong>Status:</strong> {{post.get_status_display()}}</p>
+            {% endif %}
+            {% if post.is_maintenance %}
+            <p class="govuk-body-s">
+              <strong>Scheduled:</strong> {{ post.starts_at.strftime('%-d %b %Y, %H:%M') }} until {{ post.ends_at.strftime('%-d %b %Y, %H:%M') }}
+            </p>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+        <p class="govuk-body">For more information, visit the <a href="https://status.analytical-platform.service.justice.gov.uk/posts/dashboard" target="_blank" rel="noopener noreferrer">Analytical Platform status page</a>.</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {% if not hide_nav and request.user.is_authenticated and broadcast_messages %}
   <br/>
   <div class="govuk-width-container">

@@ -38,6 +38,10 @@ def test_release(db):
     return release
 
 
+@mock.patch(
+    "controlpanel.frontend.mixins.StatusPageEventMixin.get_context_data",
+    new=mock.MagicMock(return_value={}),
+)
 def test_release_detail_context_data():
     """
     Ensure the context data for the release detail view contains the expected
