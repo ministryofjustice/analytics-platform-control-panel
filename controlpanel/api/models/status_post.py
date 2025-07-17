@@ -49,6 +49,11 @@ class StatusPageEvent(TimeStampedModel):
     href = models.URLField(unique=True)
     raw_payload = models.JSONField()
 
+    class Meta:
+        ordering = ["-modified"]
+        verbose_name = "Pager Duty Status Page Event"
+        verbose_name_plural = "Pager Duty Status Page Events"
+
     def __str__(self):
         return f"[{self.post_type.upper()}] {self.title}"
 
