@@ -4,6 +4,7 @@ import re
 import time
 from base64 import b64encode
 from functools import wraps
+from zoneinfo import ZoneInfo
 
 # Third-party
 import sentry_sdk
@@ -17,9 +18,13 @@ from django.apps import apps
 from django.conf import settings
 from django.http import Http404
 from django.template.defaultfilters import slugify
+from django.utils.timezone import localtime
 from nacl import encoding, public
 from notifications_python_client.errors import HTTPError
 from notifications_python_client.notifications import NotificationsAPIClient
+
+UK_TZ = ZoneInfo("Europe/London")
+
 
 log = structlog.getLogger(__name__)
 
@@ -305,3 +310,7 @@ def govuk_notify_send_email(email_address, template_id, personalisation, raise_e
         sentry_sdk.capture_exception(e)
         if raise_exception:
             raise GovukNotifyEmailError(f"Failed to send email to {email_address}") from e
+
+
+def format_uk_time(dt):
+    return localtime(dt, timezone=UK_TZ).strftime("%-d %b %Y, %H:%M")
