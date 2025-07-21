@@ -68,6 +68,9 @@ class PagerDutyWebhookView(View):
                     parse_datetime(data.get("starts_at")) if data.get("starts_at") else None
                 ),
                 "ends_at": parse_datetime(data.get("ends_at")) if data.get("ends_at") else None,
+                "reported_at": (
+                    parse_datetime(data.get("reported_at")) if data.get("reported_at") else None
+                ),
                 "raw_payload": data,
             },
         )
