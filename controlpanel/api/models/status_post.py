@@ -2,6 +2,9 @@
 from django.db import models
 from django_extensions.db.models import TimeStampedModel
 
+# First-party/Local
+from controlpanel.utils import format_uk_time
+
 
 class StatusPageEvent(TimeStampedModel):
     POST_TYPE_INCIDENT = "incident"
@@ -71,3 +74,15 @@ class StatusPageEvent(TimeStampedModel):
     @property
     def is_incident(self):
         return self.post_type == self.POST_TYPE_INCIDENT
+
+    @property
+    def reported_at_local(self):
+        return format_uk_time(self.reported_at)
+
+    @property
+    def starts_at_local(self):
+        return format_uk_time(self.starts_at)
+
+    @property
+    def ends_at_local(self):
+        return format_uk_time(self.ends_at)
