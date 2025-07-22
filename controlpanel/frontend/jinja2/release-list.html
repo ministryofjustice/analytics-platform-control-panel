@@ -47,9 +47,7 @@
       <th class="govuk-table__header">Created</th>
       <th class="govuk-table__header">Status</th>
       <th class="govuk-table__header">Active Deployments</th>
-      <th class="govuk-table__header">
-        <span class="govuk-visually-hidden">Actions</span>
-      </th>
+      <th class="govuk-table__header">Available to</th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
       </th>
@@ -84,16 +82,28 @@
           {{ release.num_users }}
       </td>
       <td class="govuk-table__cell">
-        <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"
-           class="govuk-button govuk-button--secondary">
-          Manage Release
-        </a>
+        {% if release.status == "Retired" %}
+          None
+        {% elif release.status == "Active" %}
+          All
+        {% else %}
+          {{ release.num_target_users }} user(s)
+        {% endif %}
       </td>
       <td class="govuk-table__cell">
-        <a href="{{ url('create-tool-release') }}?duplicate={{ release.pk }}"
-           class="govuk-button govuk-button--secondary">
-          Duplicate Release
-        </a>
+        <div>
+          <a href="{{ url('manage-tool-release', kwargs={ "pk": release.pk }) }}"
+            class="govuk-button govuk-button--secondary">
+            Manage Release
+          </a>
+        </div>
+        
+        <div class="govuk-!-margin-top-1">
+          <a href="{{ url('create-tool-release') }}?duplicate={{ release.pk }}"
+            class="govuk-button govuk-button--secondary">
+            Duplicate Release
+          </a>
+        </div>
       </td>
     </tr>
   {% endfor %}

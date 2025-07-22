@@ -40,7 +40,8 @@ class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         qs = qs.annotate(
             num_users=Count(
                 "tool_deployments", distinct=True, filter=Q(tool_deployments__is_active=True)
-            )
+            ),
+            num_target_users=Count("target_users", distinct=True),
         )
         return qs
 
@@ -48,6 +49,7 @@ class ReleaseList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         context = super().get_context_data(*args, **kwargs)
         context["filter"] = ReleaseFilter(self.request.GET, queryset=self.get_queryset())
         context[self.context_object_name] = context["filter"].qs.distinct()
+
         return context
 
 
