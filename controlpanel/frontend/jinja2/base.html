@@ -204,12 +204,12 @@
               </a>
             </p>
             {% if post.is_incident %}
-            <p class="govuk-body-s"><strong>Reported at:</strong> {{ post.reported_at.strftime('%-d %b %Y, %H:%M') }}</p>
+            <p class="govuk-body-s"><strong>Reported at:</strong> {{ post.reported_at_local }}</p>
             <p class="govuk-body-s"><strong>Status:</strong> {{post.get_status_display()}}</p>
             {% endif %}
             {% if post.is_maintenance %}
             <p class="govuk-body-s">
-              <strong>Scheduled:</strong> {{ post.starts_at.strftime('%-d %b %Y, %H:%M') }} until {{ post.ends_at.strftime('%-d %b %Y, %H:%M') }}
+              <strong>{{ post.get_status_display() }}:</strong> {{ post.starts_at_local }} until {{ post.ends_at_local }}
             </p>
             {% endif %}
           </div>
