@@ -313,4 +313,7 @@ def govuk_notify_send_email(email_address, template_id, personalisation, raise_e
 
 
 def format_uk_time(dt):
+    # avoid raising a 500 error due to missing value
+    if not dt:
+        return None
     return localtime(dt, timezone=UK_TZ).strftime("%-d %b %Y, %H:%M")
