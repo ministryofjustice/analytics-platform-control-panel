@@ -1,7 +1,7 @@
 asgiref==3.8.1
 auth0-python==4.8.1
 authlib==1.6.1
-beautifulsoup4==4.12.3
+beautifulsoup4==4.13.4
 boto3==1.38.46
 celery[sqs]==5.4.0
 channels==4.2.2
