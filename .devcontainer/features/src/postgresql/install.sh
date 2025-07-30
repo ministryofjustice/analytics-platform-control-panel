@@ -9,6 +9,6 @@ apt-get update
 apt-get -y install \
      postgresql-common \
      postgresql-client-common \
-     postgresql-15 \
-     postgresql-client-15 \
+     postgresql-17 \
+     postgresql-client-17 \
      libpq-dev
