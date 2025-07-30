@@ -18,7 +18,7 @@ class StatusPageEvent(TimeStampedModel):
 
     SEVERITY_MINOR = "minor"
     SEVERITY_MAJOR = "major"
-    SEVERITY_ALL_GOOD = "all_good"
+    SEVERITY_ALL_GOOD = "all good"
     SEVERITY_MAINTENANCE = "maintenance"
     SEVERITY_CHOICES = [
         (SEVERITY_MINOR, "Minor"),
@@ -31,7 +31,7 @@ class StatusPageEvent(TimeStampedModel):
     STATUS_DETECTED = "detected"
     STATUS_RESOLVED = "resolved"
     STATUS_SCHEDULED = "scheduled"
-    STATUS_IN_PROGRESS = "in_progress"
+    STATUS_IN_PROGRESS = "in progress"
     STATUS_COMPLETED = "completed"
     STATUS_CHOICES = [
         (STATUS_INVESTIGATING, "Investigating"),
