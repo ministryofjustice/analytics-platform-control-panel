@@ -145,7 +145,6 @@ moj.Modules.toolStatus = {
   versionSelectChanged(target) {
     const selected = target.options[target.options.selectedIndex];
     const classes = selected.className.split(" ");
-
     const notInstalledSelected = classes.indexOf(this.versionNotInstalledClass) !== -1;
     const installedSelected = classes.indexOf(this.versionInstalledClass) !== -1;
 
@@ -158,6 +157,8 @@ moj.Modules.toolStatus = {
     // the "Deploy" button needs to be disabled
     deployButton.disabled = notInstalledSelected || installedSelected;
     openButton.disabled = !installedSelected;
+    const toolUrl = selected.attributes["data-tool-url"].value;
+    openButton.setAttribute("onclick", `window.open('${toolUrl}', '_blank');`);
     restartButton.disabled = !installedSelected;
 
     this.toggleDeprecationMessage(selected, targetTool);
