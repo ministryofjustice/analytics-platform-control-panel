@@ -15,6 +15,7 @@ from django_extensions.db.models import TimeStampedModel
 # First-party/Local
 from controlpanel.api import cluster, helm
 from controlpanel.api.tasks.tools import uninstall_helm_release
+from controlpanel.utils import build_tool_url
 
 log = structlog.getLogger(__name__)
 
@@ -245,11 +246,7 @@ class ToolDeployment(TimeStampedModel):
 
     @property
     def url(self):
-        tool = self.tool.tool_domain or self.tool.chart_name
-        url = f"https://{self.user.slug}-{tool}.{settings.TOOLS_DOMAIN}/"
-        if self.tool_type == self.ToolType.VSCODE:
-            url = f"{url}?folder=/home/analyticalplatform/workspace"
-        return url
+        return build_tool_url(tool=self.tool, user=self.user)
 
     @property
     def k8s_namespace(self):
