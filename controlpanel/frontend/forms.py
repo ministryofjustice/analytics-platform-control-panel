@@ -31,6 +31,7 @@ from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.tool import ToolDeployment
+from controlpanel.utils import build_tool_url
 
 CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -823,12 +824,17 @@ class RegisterDashboardForm(forms.ModelForm):
 
 class ToolChoice(forms.Select):
 
+    def __init__(self, user=None, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
 
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
+            option["attrs"]["data-tool-url"] = build_tool_url(tool=value.instance, user=self.user)
 
         if value and selected:
             option["attrs"]["label"] = f"{label} (installed)"
@@ -842,7 +848,6 @@ class ToolDeploymentForm(forms.Form):
     tool = forms.ModelChoiceField(
         queryset=Tool.objects.none(),
         empty_label='Select a tool from this list and click "Deploy" to start',
-        widget=ToolChoice(attrs={"class": "govuk-select govuk-!-width-full govuk-!-font-size-16"}),
     )
 
     def __init__(self, *args, **kwargs):
@@ -850,10 +855,15 @@ class ToolDeploymentForm(forms.Form):
         self.tool_type = kwargs.pop("tool_type")
         self.deployment = kwargs.pop("deployment", None)
         super().__init__(*args, **kwargs)
-        self.fields["tool"].queryset = self.get_tool_release_choices(tool_type=self.tool_type)
-        self.fields["tool"].widget.attrs.update(
-            {"data-action-target": self.tool_type, "id": f"tools-{self.tool_type}"}
+        self.fields["tool"].widget = ToolChoice(
+            user=self.user,
+            attrs={
+                "class": "govuk-select govuk-!-width-full govuk-!-font-size-16",
+                "data-action-target": self.tool_type,
+                "id": f"tools-{self.tool_type}",
+            },
         )
+        self.fields["tool"].queryset = self.get_tool_release_choices(tool_type=self.tool_type)
         if self.deployment:
             self.fields["tool"].initial = self.deployment.tool
 
@@ -884,6 +894,10 @@ class ToolDeploymentForm(forms.Form):
     @property
     def tool_type_label(self):
         return ToolDeployment.ToolType(self.tool_type).label
+
+    @property
+    def tool_url(self):
+        return self.deployment.url if self.deployment else ""
 
 
 class ToolDeploymentRestartForm(forms.Form):

@@ -317,3 +317,11 @@ def format_uk_time(dt):
     if not dt:
         return None
     return localtime(dt, timezone=UK_TZ).strftime("%-d %b %Y, %H:%M")
+
+
+def build_tool_url(tool, user):
+    domain_part = tool.tool_domain or tool.chart_name
+    url = f"https://{user.slug}-{domain_part}.{settings.TOOLS_DOMAIN}/"
+    if tool.chart_name == tool.VSCODE_CHART_NAME:
+        url += "?folder=/home/analyticalplatform/workspace"
+    return url
