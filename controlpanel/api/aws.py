@@ -1231,21 +1231,22 @@ class AWSQuicksight(AWSService):
         )
         self.client = self.boto3_session.client("quicksight")
 
-    def get_embed_url(self, user):
-
-        if not user.justice_email:
-            return None
-
-        user_arn = arn(
+    def get_user_arn(self, user):
+        return arn(
             service=self.service_name,
             resource=f"user/default/{user.justice_email}",
             region=settings.QUICKSIGHT_ACCOUNT_REGION,
             account=settings.QUICKSIGHT_ACCOUNT_ID,
         )
 
+    def get_embed_url(self, user):
+
+        if not user.justice_email:
+            return None
+
         response = self.client.generate_embed_url_for_registered_user(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
-            UserArn=user_arn,
+            UserArn=self.get_user_arn(user),
             ExperienceConfiguration={
                 "QuickSightConsole": {
                     "InitialPath": "/start",
@@ -1277,14 +1278,8 @@ class AWSQuicksight(AWSService):
                 return False
             raise error
 
-        user_arn = arn(
-            service=self.service_name,
-            resource=f"user/default/{user.justice_email}",
-            region=settings.QUICKSIGHT_ACCOUNT_REGION,
-            account=settings.QUICKSIGHT_ACCOUNT_ID,
-        )
         for permission_set in permissions:
-            if permission_set["Principal"].lower() == user_arn.lower():
+            if permission_set["Principal"].lower() == self.get_user_arn(user).lower():
                 return "quicksight:UpdateDashboardPermissions" in permission_set["Actions"]
 
         return False
@@ -1301,6 +1296,26 @@ class AWSQuicksight(AWSService):
                 }
             },
             AllowedDomains=settings.DASHBOARD_SERVICE_DOMAINS,
+        )
+
+    def create_folder(self, user, folder_id):
+
+        folder_admin_actions = [
+            "quicksight:CreateFolder",
+            "quicksight:DescribeFolder",
+            "quicksight:UpdateFolder",
+            "quicksight:DeleteFolder",
+            "quicksight:CreateFolderMembership",
+            "quicksight:DeleteFolderMembership",
+            "quicksight:DescribeFolderPermissions",
+            "quicksight:UpdateFolderPermissions",
+        ]
+
+        return self.client.create_folder(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            FolderId=folder_id,
+            Name=folder_id,
+            Permissions=[{"Principal": self.get_user_arn(user), "Actions": folder_admin_actions}],
         )
 
 

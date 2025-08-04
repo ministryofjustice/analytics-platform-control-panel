@@ -893,3 +893,7 @@ class ToolDeploymentRestartForm(forms.Form):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
         self.fields["tool_deployment"].queryset = self.user.tool_deployments.active()
+
+
+class QuicksightFolderForm(forms.Form):
+    folder_id = forms.CharField(required=True)

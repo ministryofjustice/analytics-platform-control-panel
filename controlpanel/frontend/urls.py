@@ -294,6 +294,11 @@ urlpatterns = [
     ),
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
     path("quicksight/", views.QuicksightView.as_view(), name="quicksight"),
+    path(
+        "quicksight/create-folder",
+        views.QuicksightCreateFolderView.as_view(),
+        name="quicksight-create-folder",
+    ),
     path("feedback/", views.CreateFeedback.as_view(), name="feedback-create"),
     path("feedback/thanks", views.FeedbackThanks.as_view(), name="feedback-thanks"),
     path("dashboards/", views.DashboardList.as_view(), name="list-dashboards"),

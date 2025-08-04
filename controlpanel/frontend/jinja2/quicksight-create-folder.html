@@ -1,0 +1,41 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
+{% from "label/macro.html" import govukLabel %}
+
+
+{% extends "base.html" %}
+
+{% set page_title = "Create Shared Folder" %}
+
+{% block content %}
+<h1 class="govuk-heading-xl">{{ page_title }}</h1>
+<p class="govuk-body">
+  Creates a shared folder in Quicksight. The folder is then managed in the Quicksight interface.
+</p>
+
+<form method="post" id="create_shared_folder" action="{{ url("quicksight-create-folder") }}">
+  {{ csrf_input }}
+
+  <div class="govuk-form-group" id="container-element">
+
+    <label class="govuk-label govuk-label--m" for="folder_id">Folder name
+    </label>
+
+    {% set error_name_msg = form.errors.get("folder_id") %}
+    {% if error_name_msg %}
+      {% set errorId = 'folder-error' %}
+      {{ govukErrorMessage({
+        "id": errorId,
+        "html": error_name_msg|join(". "),
+      }) }}
+    {% endif %}
+
+    <input type="text" class="govuk-input" id="folder_id" name="folder_id" {% if form.folder_id.value() %} value="{{ form.folder_id.value() }}" {% endif %} required />
+
+  </div>
+
+  <div class="govuk-form-group">
+    <button class="govuk-button">Create Shared Folder</button>
+  </div>
+</form>
+{% endblock %}
