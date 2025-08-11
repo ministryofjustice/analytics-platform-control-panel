@@ -39,7 +39,7 @@ python-dotenv==1.0.1
 pyyaml==6.0.2
 rules==3.5
 sentry-sdk==2.29.1
-setuptools==80.8.0
+setuptools==80.9.0
 slackclient==2.9.4
 urllib3==2.5.0
 uvicorn[standard]==0.34.2
