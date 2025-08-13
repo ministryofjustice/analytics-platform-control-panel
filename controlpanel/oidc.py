@@ -1,7 +1,7 @@
 # Standard library
 import base64
 import hashlib
-from urllib.parse import urlencode
+from urllib.parse import quote_plus, urlencode
 
 # Third-party
 import structlog
@@ -107,7 +107,7 @@ class StateMismatchHandler(OIDCAuthenticationCallbackView):
     @property
     def failure_url(self):
         error = self.request.GET.get("error_description", "")
-        return f"{settings.LOGIN_REDIRECT_URL_FAILURE}?error={error}"
+        return f"{settings.LOGIN_REDIRECT_URL_FAILURE}?error={quote_plus(error)}"
 
 
 def logout(request):
