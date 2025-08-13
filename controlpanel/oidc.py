@@ -104,6 +104,11 @@ class StateMismatchHandler(OIDCAuthenticationCallbackView):
 
         return super().success_url
 
+    @property
+    def failure_url(self):
+        error = self.request.GET.get("error_description", "")
+        return f"{settings.LOGIN_REDIRECT_URL_FAILURE}?error={error}"
+
 
 def logout(request):
     params = urlencode(

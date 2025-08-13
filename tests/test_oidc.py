@@ -67,3 +67,19 @@ def test_create_user(email, name, expected_name, expected_justice_email):
 )
 def test_get_justice_email(email, expected):
     assert OIDCSubAuthenticationBackend().get_justice_email(email) == expected
+
+
+@pytest.mark.parametrize(
+    "error_description",
+    [
+        "use_github",
+        "access_denied",
+        "foo",
+        "",
+    ],
+)
+def test_failure_url(rf, error_description):
+    request = rf.get("/", query_params={"error_description": error_description})
+    view = StateMismatchHandler()
+    view.request = request
+    assert view.failure_url == f"/login-fail/?error={error_description}"

@@ -6,24 +6,35 @@
 {% block content %}
 <div class="govuk-grid-row" id="reset-container">
     <div class="govuk-grid-column-two-thirds">
-        <h2 class="govuk-heading-l">Your session has expired</h2>
+        {% if show_github_login_prompt %}
+            <h2 class="govuk-heading-l">Please log in with GitHub</h2>
 
-        <p>
-            <a href="{{ auth0_logout_url }}?returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2Foidc%2Flogout%2F">
-                Click here to refresh your session
-            </a>
-        </p>
+            <p>
+                You must use GitHub to log in rather than your email.<a href="{{ auth0_logout_url }}?returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2Foidc%2Flogout%2F">
+                    Click here to log in again
+                </a>
+            </p>
+        {% else %}
 
-        <p>
-            If refreshing your session fails
+            <h2 class="govuk-heading-l">Your session has expired</h2>
 
-        <ul class="govuk-list govuk-list--bullet">
-            <li>You may need to ensure you are in the <a href="https://github.com/moj-analytical-services">MoJ
-                    Analytical Services</a> team on GitHub.</li>
-            <li>You may have migrated to a newer version of the platform, so your account on this version is no longer
-                available.</li>
-        </ul>
-        </p>
+            <p>
+                <a href="{{ auth0_logout_url }}?returnTo={{ request.scheme }}%3A%2F%2F{{ request.get_host() }}%2Foidc%2Flogout%2F">
+                    Click here to refresh your session
+                </a>
+            </p>
+
+            <p>
+                If refreshing your session fails
+
+            <ul class="govuk-list govuk-list--bullet">
+                <li>You may need to ensure you are in the <a href="https://github.com/moj-analytical-services">MoJ
+                        Analytical Services</a> organisation on GitHub.</li>
+                <li>You may have migrated to a newer version of the platform, so your account on this version is no longer
+                    available.</li>
+            </ul>
+            </p>
+        {% endif %}
         <p>Alternatively, please refer to our guide for
             <a href="https://user-guidance.analytical-platform.service.justice.gov.uk/get-started.html">getting started on the
                 Analytical Platform</a>
