@@ -32,6 +32,7 @@ make_migration_pending.short_description = "Mark selected users as pending migra
 
 
 def export_as_csv(filename, row_data):
+    """Helper function to export data as CSV and return in HttpResponse."""
     response = HttpResponse(content_type="text/csv")
     timestamp = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"{filename}_{timestamp}.csv"
