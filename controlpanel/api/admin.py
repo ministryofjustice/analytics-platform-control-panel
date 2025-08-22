@@ -31,6 +31,24 @@ def make_migration_pending(modeladmin, request, queryset):
 make_migration_pending.short_description = "Mark selected users as pending migration"
 
 
+def export_as_csv(filename, row_data):
+    response = HttpResponse(content_type="text/csv")
+    timestamp = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"{filename}_{timestamp}.csv"
+    response["Content-Disposition"] = f"attachment; filename={filename}"
+
+    # Handle empty data case
+    if not row_data:
+        writer = csv.DictWriter(response, fieldnames=[])
+        writer.writeheader()
+        return response
+
+    writer = csv.DictWriter(response, fieldnames=row_data[0].keys())
+    writer.writeheader()
+    writer.writerows(row_data)
+    return response
+
+
 class AppAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "created_by", "created")
     list_filter = ("created_by",)
@@ -57,7 +75,6 @@ class UserAdmin(admin.ModelAdmin):
         "migration_state",
         "last_login",
     )
-    actions = [make_migration_pending]
     exclude = ("password",)
     list_filter = [
         "migration_state",
@@ -73,6 +90,7 @@ class UserAdmin(admin.ModelAdmin):
         "upgrade_bootstrap_user_helm_chart",
         "upgrade_provision_user_helm_chart",
         "reset_home_directory",
+        "export_as_csv",
     ]
 
     def _upgrade_helm_chart(self, request, queryset, chart_name):
@@ -102,6 +120,25 @@ class UserAdmin(admin.ModelAdmin):
     @admin.action(description="Reset users home directory")
     def reset_home_directory(self, request, queryset):
         self._upgrade_helm_chart(request, queryset, f"{settings.HELM_REPO}/reset-user-efs-home")
+
+    @admin.action(description="Export selected users as CSV")
+    def export_as_csv(self, request, queryset):
+        data = [
+            {
+                "username": obj.username,
+                "alpha_role_arn": obj.iam_role_name,
+                "k8s_namespace": obj.k8s_namespace,
+                "email": obj.email,
+                "justice_email": obj.justice_email,
+                "auth0_id": obj.auth0_id,
+                "name": obj.name,
+                "azure_oid": obj.azure_oid,
+                "date_joined": obj.date_joined,
+            }
+            for obj in queryset
+        ]
+
+        return export_as_csv(filename="users", row_data=data)
 
 
 class IPAllowlistAdmin(SimpleHistoryAdmin):
@@ -139,45 +176,25 @@ class ToolDeploymentAdmin(admin.ModelAdmin):
 
     @admin.action
     def export_as_csv(self, request, queryset):
-        response = HttpResponse(content_type="text/csv")
-        timestamp = timezone.now().strftime("%Y-%m-%d_%H-%M-%S")
-        filename = f"{self.model._meta.verbose_name_plural}_{timestamp}.csv"
-        response["Content-Disposition"] = f"attachment; filename={filename}"
-
-        fieldnames = [
-            "username",
-            "tool_type",
-            "image_tag",
-            "chart_version",
-            "description",
-            "email",
-            "justice_email",
-            "is_active",
-            "is_retired",
-            "is_deprecated",
-            "created",
+        queryset = queryset.select_related("user", "tool")
+        data = [
+            {
+                "username": obj.user.username,
+                "tool_type": obj.tool_type,
+                "image_tag": obj.tool.image_tag,
+                "chart_version": obj.tool.version,
+                "description": obj.tool.description,
+                "email": obj.user.email,
+                "justice_email": obj.user.justice_email,
+                "is_active": obj.is_active,
+                "is_retired": obj.tool.is_retired,
+                "is_deprecated": obj.tool.is_deprecated,
+                "created": obj.created,
+            }
+            for obj in queryset
         ]
-        writer = csv.DictWriter(response, fieldnames=fieldnames)
-        writer.writeheader()
 
-        for obj in queryset:
-            writer.writerow(
-                {
-                    "username": obj.user.username,
-                    "tool_type": obj.tool_type,
-                    "image_tag": obj.tool.image_tag,
-                    "chart_version": obj.tool.version,
-                    "description": obj.tool.description,
-                    "email": obj.user.email,
-                    "justice_email": obj.user.justice_email,
-                    "is_active": obj.is_active,
-                    "is_retired": obj.tool.is_retired,
-                    "is_deprecated": obj.tool.is_deprecated,
-                    "created": obj.created,
-                }
-            )
-
-        return response
+        return export_as_csv(filename="tool_deployments", row_data=data)
 
 
 class JusticeDomainAdmin(admin.ModelAdmin):
