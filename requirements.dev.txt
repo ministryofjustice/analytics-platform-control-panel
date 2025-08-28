@@ -1,12 +1,12 @@
-black==24.10.0
+black==25.1.0
 django-debug-toolbar==4.4.6
 flake8==7.3.0
 ipdb==0.13.13
 ipython==8.29.0
 isort==6.0.1
-numpy==1.26.0
-pandas==2.3.1
+numpy==1.26.4
+pandas==2.3.2
 pipdeptree==2.28.0
-pre-commit==4.2.0
+pre-commit==4.3.0
 pylint==3.3.8
 pylint-django==2.6.1
