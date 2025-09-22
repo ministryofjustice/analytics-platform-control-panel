@@ -1,6 +1,6 @@
 asgiref==3.9.1
 auth0-python==4.11.0
-authlib==1.6.3
+authlib==1.6.4
 beautifulsoup4==4.13.5
 boto3==1.40.30
 celery[sqs]==5.5.3
