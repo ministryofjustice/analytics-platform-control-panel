@@ -1,0 +1,3 @@
+# Ignore Django template files that contain template syntax
+controlpanel/api/templates/assume_roles/cloud_platform_xacct.json
+controlpanel/api/templates/assume_roles/cloud_platform_oidc.json

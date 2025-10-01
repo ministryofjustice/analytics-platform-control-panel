@@ -48,4 +48,5 @@ jobs:
           VALIDATE_HTML: false
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
           PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
+          FILTER_REGEX_EXCLUDE: '.*templates/assume_roles/.*\.json$'
           PYTHON_ISORT_CONFIG_FILE: pyproject.toml
