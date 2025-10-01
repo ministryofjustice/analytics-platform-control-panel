@@ -514,9 +514,10 @@ class App(EntityResource):
         """
         Builds an assume role statement for a Cloud Platform IAM role
         """
+        arns = self.app.cloud_platform_role_arns
         statement = render_to_string(
             template_name="assume_roles/cloud_platform_xacct.json",
-            context={"app_role": self.app.cloud_platform_role_arn},
+            context={"app_role": json.dumps(arns)},
         )
         return json.loads(statement)
 
@@ -538,7 +539,7 @@ class App(EntityResource):
 
     def _get_statement(self):
         cloud_platform_statement = (
-            self.xacct_trust_statement if self.app.cloud_platform_role_arn else None
+            self.xacct_trust_statement if self.app.cloud_platform_role_arns else None
         )
 
         return self.oidc_provider_statement, cloud_platform_statement

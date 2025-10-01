@@ -42,6 +42,7 @@ class CloudPlatformRole(TimeStampedModel):
     arn = models.CharField(
         max_length=130,
         help_text="The cloud platform ARN for the app",
+        db_index=True,
     )
     description = models.CharField(
         max_length=255, blank=True, help_text="Optional description for this ARN"
@@ -67,11 +68,6 @@ class App(TimeStampedModel):
         through="AppIPAllowList",
         related_name="apps",
         related_query_name="app",
-        blank=True,
-    )
-    cloud_platform_role_arn = models.CharField(
-        help_text="The cloud platform arn for the app",
-        max_length=130,
         blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
@@ -327,6 +323,10 @@ class App(TimeStampedModel):
     def cloud_platform_role_arns(self):
         """Returns list of all ARNs for this app"""
         return list(self.cloud_platform_roles.values_list("arn", flat=True))
+
+    @property
+    def cloud_platform_role_arns_string(self):
+        return ", ".join(self.cloud_platform_role_arns)
 
     def update_inline_policy(self):
         policy_name = f"cloud-platform-access-{self.slug}"
