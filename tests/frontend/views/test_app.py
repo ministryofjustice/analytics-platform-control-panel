@@ -19,7 +19,8 @@ from rest_framework import status
 from controlpanel.api import auth0, cluster
 from controlpanel.api.github import RepositoryNotFound
 from controlpanel.api.models import App, AppIPAllowList, S3Bucket
-from controlpanel.api.models.app import DeleteCustomerError
+from controlpanel.api.models.app import CloudPlatformRole, DeleteCustomerError
+from controlpanel.frontend.forms import CloudPlatformArnForm
 from tests.api.fixtures.aws import *
 
 NUM_APPS = 3
@@ -805,7 +806,13 @@ def test_register_app_with_xacct_policy(client, users, githubapi):
     assert response.status_code == 302
     assert App.objects.filter(name=test_app_name).count() == 1
     created_app = App.objects.filter(name=test_app_name).first()
-    assert created_app.cloud_platform_role_arn == "arn:aws:iam::123456789012:role/test_role"
+
+    # Check that CloudPlatformRole was created correctly
+    assert created_app.cloud_platform_roles.count() == 1
+    cloud_role = created_app.cloud_platform_roles.first()
+    assert cloud_role.arn == "arn:aws:iam::123456789012:role/test_role"
+    assert created_app.cloud_platform_role_arns == ["arn:aws:iam::123456789012:role/test_role"]
+
     assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
 
 
@@ -1078,7 +1085,12 @@ def test_add_cloud_platform_arn_success(app, users, client):
     assert response.status_code == 302
     assert response.url == reverse("manage-app", kwargs={"pk": app.id})
     obj = App.objects.get(pk=app.id)
-    assert obj.cloud_platform_role_arn == data["cloud_platform_role_arn"]
+
+    # Check that CloudPlatformRole was created correctly
+    assert obj.cloud_platform_roles.count() == 1
+    cloud_role = obj.cloud_platform_roles.first()
+    assert cloud_role.arn == data["cloud_platform_role_arn"]
+    assert obj.cloud_platform_role_arns == [data["cloud_platform_role_arn"]]
 
 
 @patch("controlpanel.api.cluster.App.update_trust_policy")
@@ -1102,4 +1114,203 @@ def test_add_cloud_platform_arn_fail(update_trust_policy_mock, app, users, clien
     assert response.status_code == 302
     assert response.url == reverse("manage-app", kwargs={"pk": app.id})
     obj = App.objects.get(pk=app.id)
-    assert obj.cloud_platform_role_arn == ""
+
+    # Check that no CloudPlatformRole was created due to the failure
+    assert obj.cloud_platform_roles.count() == 0
+    assert obj.cloud_platform_role_arns == []
+
+
+def test_add_multiple_cloud_platform_arns_success(app, users, client):
+    """Test creating an app with multiple comma-separated Cloud Platform ARNs"""
+    user = users["superuser"]
+    client.force_login(user)
+
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            "arn:aws:iam::123456789012:role/role1,"
+            "arn:aws:iam::123456789012:role/role2,"
+            "arn:aws:iam::123456789012:role/role3"
+        ),  # noqa: E501
+    }
+
+    url = reverse("set-cloud-platform-arn", kwargs={"pk": app.id})
+    response = client.post(url, data)
+
+    assert response.status_code == 302
+    assert response.url == reverse("manage-app", kwargs={"pk": app.id})
+
+    obj = App.objects.get(pk=app.id)
+
+    # Check that three CloudPlatformRole objects were created
+    assert obj.cloud_platform_roles.count() == 3
+
+    # Check the ARNs are stored correctly
+    expected_arns = [
+        "arn:aws:iam::123456789012:role/role1",
+        "arn:aws:iam::123456789012:role/role2",
+        "arn:aws:iam::123456789012:role/role3",
+    ]
+    assert set(obj.cloud_platform_role_arns) == set(expected_arns)
+
+    # Check string representation
+    assert "role1" in obj.cloud_platform_role_arns_string
+    assert "role2" in obj.cloud_platform_role_arns_string
+    assert "role3" in obj.cloud_platform_role_arns_string
+
+
+def test_update_cloud_platform_arns_replaces_existing(app, users, client):
+    """Test that updating ARNs replaces existing ones rather than adding to them"""
+    user = users["superuser"]
+    client.force_login(user)
+
+    # First, add some ARNs
+    CloudPlatformRole.objects.create(app=app, arn="arn:aws:iam::123456789012:role/old1")
+    CloudPlatformRole.objects.create(app=app, arn="arn:aws:iam::123456789012:role/old2")
+
+    assert app.cloud_platform_roles.count() == 2
+
+    # Now update with new ARNs
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            "arn:aws:iam::123456789012:role/new1," "arn:aws:iam::123456789012:role/new2"
+        ),  # noqa: E501
+    }
+
+    url = reverse("set-cloud-platform-arn", kwargs={"pk": app.id})
+    response = client.post(url, data)
+
+    assert response.status_code == 302
+
+    obj = App.objects.get(pk=app.id)
+
+    # Check that old ARNs were replaced with new ones
+    assert obj.cloud_platform_roles.count() == 2
+    expected_new_arns = [
+        "arn:aws:iam::123456789012:role/new1",
+        "arn:aws:iam::123456789012:role/new2",
+    ]
+    assert set(obj.cloud_platform_role_arns) == set(expected_new_arns)
+
+    # Ensure old ARNs are gone
+    assert "old1" not in obj.cloud_platform_role_arns_string
+    assert "old2" not in obj.cloud_platform_role_arns_string
+
+
+def test_create_app_with_multiple_arns(client, users, githubapi):
+    """Test creating a new app with multiple ARNs"""
+    githubapi["views"].get_repository_contents.return_value = {"repo": "test-app-namespace-test"}
+    test_app_name = "test_app_with_multiple_arns"
+
+    assert App.objects.filter(name=test_app_name).count() == 0
+    client.force_login(users["superuser"])
+
+    data = dict(
+        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
+        namespace="test-app-namespace",
+        connect_bucket="later",
+        allow_cloud_platform_assume_role=True,
+        cloud_platform_role_arn=(
+            "arn:aws:iam::123456789012:role/create1," "arn:aws:iam::123456789012:role/create2"
+        ),  # noqa: E501
+    )
+    response = client.post(reverse("create-app"), data)
+
+    assert response.status_code == 302
+    assert App.objects.filter(name=test_app_name).count() == 1
+
+    created_app = App.objects.filter(name=test_app_name).first()
+
+    # Check that multiple CloudPlatformRole objects were created
+    assert created_app.cloud_platform_roles.count() == 2
+    expected_arns = [
+        "arn:aws:iam::123456789012:role/create1",
+        "arn:aws:iam::123456789012:role/create2",
+    ]
+    assert set(created_app.cloud_platform_role_arns) == set(expected_arns)
+
+
+def test_cloud_platform_arn_validation_duplicate_arns(app, users, client):
+    """Test form validation prevents duplicate ARNs in comma-separated input"""
+    user = users["superuser"]
+    client.force_login(user)
+
+    # Try to submit duplicate ARNs - this should be rejected by form validation
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            "arn:aws:iam::123456789012:role/duplicate,"
+            "arn:aws:iam::123456789012:role/unique,"
+            "arn:aws:iam::123456789012:role/duplicate"
+        ),  # noqa: E501
+    }
+
+    url = reverse("set-cloud-platform-arn", kwargs={"pk": app.id})
+    client.post(url, data)
+
+    obj = App.objects.get(pk=app.id)
+
+    # If ARNs were created, verify no duplicates exist
+    arns = obj.cloud_platform_role_arns
+    assert len(arns) == len(set(arns))  # No duplicates
+    assert len(arns) <= 2  # Should be at most the unique ARNs
+
+
+def test_cloud_platform_arn_whitespace_handling(app, users, client):
+    """Test that ARNs with whitespace are properly handled"""
+    user = users["superuser"]
+    client.force_login(user)
+
+    data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            " arn:aws:iam::123456789012:role/role1 , " "arn:aws:iam::123456789012:role/role2 , "
+        ),  # noqa: E501
+    }
+
+    url = reverse("set-cloud-platform-arn", kwargs={"pk": app.id})
+    response = client.post(url, data)
+
+    assert response.status_code == 302
+
+    obj = App.objects.get(pk=app.id)
+
+    # Check that whitespace was stripped and empty entries ignored
+    assert obj.cloud_platform_roles.count() == 2
+    expected_arns = ["arn:aws:iam::123456789012:role/role1", "arn:aws:iam::123456789012:role/role2"]
+    assert set(obj.cloud_platform_role_arns) == set(expected_arns)
+
+
+def test_cloud_platform_arn_form_validation():
+    """Test the CloudPlatformArnValidationMixin directly"""
+    # Test valid multiple ARNs
+    form_data = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            "arn:aws:iam::123456789012:role/role1," "arn:aws:iam::123456789012:role/role2"
+        ),  # noqa: E501
+    }
+    form = CloudPlatformArnForm(data=form_data)
+    assert form.is_valid()
+
+    # Test duplicate ARNs (should be invalid)
+    form_data_invalid = {
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            "arn:aws:iam::123456789012:role/duplicate," "arn:aws:iam::123456789012:role/duplicate"
+        ),  # noqa: E501
+    }
+    form_invalid = CloudPlatformArnForm(data=form_data_invalid)
+    assert not form_invalid.is_valid()
+    assert "cloud_platform_role_arn" in form_invalid.errors
+    assert "Duplicate ARN" in str(form_invalid.errors["cloud_platform_role_arn"])
+
+    # Test that when assume_role is False, ARN field is ignored
+    form_data_disabled = {
+        "allow_cloud_platform_assume_role": False,
+        "cloud_platform_role_arn": "arn:aws:iam::123456789012:role/should-be-ignored",  # noqa: E501
+    }
+    form_disabled = CloudPlatformArnForm(data=form_data_disabled)
+    assert form_disabled.is_valid()
+    assert "cloud_platform_role_arn" not in form_disabled.cleaned_data

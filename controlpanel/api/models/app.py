@@ -35,6 +35,27 @@ BASE_CLOUD_PLATFORM_ASSUME_ROLE_POLICY = {
 }
 
 
+class CloudPlatformRole(TimeStampedModel):
+    """Stores Cloud Platform ARNs for apps"""
+
+    app = models.ForeignKey("App", on_delete=models.CASCADE, related_name="cloud_platform_roles")
+    arn = models.CharField(
+        max_length=130,
+        help_text="The cloud platform ARN for the app",
+        db_index=True,
+    )
+    description = models.CharField(
+        max_length=255, blank=True, help_text="Optional description for this ARN"
+    )
+
+    class Meta:
+        unique_together = ("app", "arn")
+        db_table = "control_panel_api_cloudplatformrole"
+
+    def __str__(self):
+        return f"{self.app.slug}: {self.arn}"
+
+
 class App(TimeStampedModel):
 
     name = models.CharField(max_length=100, blank=False)
@@ -47,11 +68,6 @@ class App(TimeStampedModel):
         through="AppIPAllowList",
         related_name="apps",
         related_query_name="app",
-        blank=True,
-    )
-    cloud_platform_role_arn = models.CharField(
-        help_text="The cloud platform arn for the app",
-        max_length=130,
         blank=True,
     )
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
@@ -303,12 +319,22 @@ class App(TimeStampedModel):
             attach=self.is_textract_enabled,
         )
 
+    @property
+    def cloud_platform_role_arns(self):
+        """Returns list of all ARNs for this app"""
+        return list(self.cloud_platform_roles.values_list("arn", flat=True))
+
+    @property
+    def cloud_platform_role_arns_string(self):
+        return ", ".join(self.cloud_platform_role_arns)
+
     def update_inline_policy(self):
         policy_name = f"cloud-platform-access-{self.slug}"
 
-        if self.cloud_platform_role_arn:
+        arns = self.cloud_platform_role_arns
+        if arns:
             inline_policy = deepcopy(BASE_CLOUD_PLATFORM_ASSUME_ROLE_POLICY)
-            inline_policy["Statement"][0]["Resource"] = self.cloud_platform_role_arn
+            inline_policy["Statement"][0]["Resource"] = arns  # Can handle multiple ARNs
             cluster.App(self).add_inline_policy(policy_name, inline_policy)
         else:
             cluster.App(self).delete_inline_policy(policy_name)

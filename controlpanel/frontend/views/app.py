@@ -413,13 +413,24 @@ class UpdateCloudPlatformRoleArn(
     def get_success_url(self):
         return reverse_lazy("manage-app", kwargs={"pk": self.object.id})
 
+    def update_cloud_platform_roles(self, form):
+        app = self.get_object()
+
+        # Parse and clean ARNs
+        arn_string = form.cleaned_data.get("cloud_platform_role_arn", "")
+        new_arns = [arn.strip() for arn in arn_string.split(",") if arn.strip()]
+
+        # Delete existing roles and create new ones
+        app.cloud_platform_roles.all().delete()
+        for arn in new_arns:
+            app.cloud_platform_roles.create(arn=arn)
+
+        app.update_cloud_platform_access()
+
     def form_valid(self, form):
         try:
             with transaction.atomic():
-                app = self.get_object()
-                app.cloud_platform_role_arn = form.cleaned_data.get("cloud_platform_role_arn")
-                app.save()
-                app.update_cloud_platform_access()
+                self.update_cloud_platform_roles(form=form)
                 messages.success(self.request, "Successfully updated cloud platform ARN")
                 return HttpResponseRedirect(self.get_success_url())
 

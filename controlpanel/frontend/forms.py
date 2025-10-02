@@ -53,6 +53,50 @@ class DynamicMultiChoiceField(forms.MultipleChoiceField):
             raise ValidationError(self.error_messages["required"], code="required")
 
 
+class CloudPlatformArnValidationMixin:
+    """Mixin to provide consistent Cloud Platform ARN validation for forms."""
+
+    def validate_cloud_platform_arns(self, cleaned_data):
+        """
+        Validates Cloud Platform ARN fields with consistent logic.
+
+        Expected fields in cleaned_data:
+        - allow_cloud_platform_assume_role: BooleanField
+        - cloud_platform_role_arn: CharField (comma-separated ARNs)
+
+        Returns: cleaned_data (potentially modified)
+        """
+        assume_role = cleaned_data.get("allow_cloud_platform_assume_role")
+        role_arn = cleaned_data.get("cloud_platform_role_arn", "")
+
+        if assume_role and not role_arn.strip():
+            self.add_error("cloud_platform_role_arn", "Role ARN is required")
+            return cleaned_data
+
+        if not assume_role and role_arn.strip():
+            cleaned_data.pop("cloud_platform_role_arn")
+            return cleaned_data
+
+        # Validate each ARN individually and collect all errors
+        arns = [arn.strip() for arn in role_arn.split(",") if arn.strip()]
+        unique_arns = set()
+
+        for arn in arns:
+            # Check for duplicates
+            if arn in unique_arns:
+                self.add_error("cloud_platform_role_arn", f"Duplicate ARN: {arn}")
+                continue
+            unique_arns.add(arn)
+
+            # Validate ARN format
+            try:
+                validators.validate_aws_role_arn(arn)
+            except ValidationError as e:
+                self.add_error("cloud_platform_role_arn", f"Invalid ARN '{arn}': {e.message}")
+
+        return cleaned_data
+
+
 class AppAuth0Form(forms.Form):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
@@ -122,7 +166,7 @@ class AppAuth0Form(forms.Form):
         return auth0_conn_data
 
 
-class CreateAppForm(forms.Form):
+class CreateAppForm(CloudPlatformArnValidationMixin, forms.Form):
 
     repo_url = forms.CharField(
         max_length=512,
@@ -156,9 +200,7 @@ class CreateAppForm(forms.Form):
     )
     namespace = forms.CharField(required=True, max_length=63)
     allow_cloud_platform_assume_role = forms.BooleanField(initial=False, required=False)
-    cloud_platform_role_arn = forms.CharField(
-        required=False, max_length=130, validators=[validators.validate_aws_role_arn]
-    )
+    cloud_platform_role_arn = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop("request", None)
@@ -197,14 +239,8 @@ class CreateAppForm(forms.Form):
         if connect_data_source == "existing" and not existing_datasource:
             self.add_error("existing_datasource_id", "This field is required.")
 
-        assume_role = cleaned_data.get("allow_cloud_platform_assume_role")
-        role_arn = cleaned_data.get("cloud_platform_role_arn")
-
-        if assume_role and not role_arn:
-            self.add_error("cloud_platform_role_arn", "Role ARN is required")
-
-        if not assume_role and role_arn:
-            cleaned_data.pop("cloud_platform_role_arn")
+        # Validate Cloud Platform ARN fields using mixin
+        cleaned_data = self.validate_cloud_platform_arns(cleaned_data)
 
         return cleaned_data
 
@@ -238,22 +274,14 @@ class CreateAppForm(forms.Form):
         return namespace
 
 
-class CloudPlatformArnForm(forms.Form):
+class CloudPlatformArnForm(CloudPlatformArnValidationMixin, forms.Form):
     allow_cloud_platform_assume_role = forms.BooleanField(initial=False, required=False)
-    cloud_platform_role_arn = forms.CharField(
-        required=False, max_length=130, validators=[validators.validate_aws_role_arn]
-    )
+    cloud_platform_role_arn = forms.CharField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
-        assume_role = cleaned_data.get("allow_cloud_platform_assume_role")
-        role_arn = cleaned_data.get("cloud_platform_role_arn")
-
-        if assume_role and not role_arn:
-            self.add_error("cloud_platform_role_arn", "Role ARN is required")
-
-        if not assume_role and role_arn:
-            cleaned_data.pop("cloud_platform_role_arn")
+        # Validate Cloud Platform ARN fields using mixin
+        cleaned_data = self.validate_cloud_platform_arns(cleaned_data)
 
         return cleaned_data
 

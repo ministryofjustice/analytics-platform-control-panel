@@ -1,0 +1,2 @@
+# Ignore Django template files that contain template syntax
+controlpanel/api/templates/**/*.json

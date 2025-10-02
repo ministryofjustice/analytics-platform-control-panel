@@ -1,6 +1,6 @@
 # Standard library
 from copy import deepcopy
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, PropertyMock, call, patch
 
 # Third-party
 import pytest
@@ -74,17 +74,74 @@ def oidc_provider_statement(app, settings):
     return statement
 
 
+@pytest.fixture
+def cloud_platform_role_statement(app, settings):
+    statement = dict()
+    statement["Sid"] = "AllowCloudPlatformCrossAccountIAM"
+    statement["Effect"] = "Allow"
+    statement["Action"] = "sts:AssumeRole"
+    statement["Principal"] = {"AWS": None}
+    statement["Condition"] = {}
+    return statement
+
+
 def test_oidc_provider_statement(app, oidc_provider_statement):
     assert cluster.App(app).oidc_provider_statement == oidc_provider_statement
 
 
+@patch("controlpanel.api.models.App.cloud_platform_role_arns", new=PropertyMock(return_value=[]))
 @patch("controlpanel.api.cluster.App.get_deployment_envs")
 @patch("controlpanel.api.cluster.App._create_secrets")
 def test_app_create_iam_role(
-    _create_secrets, get_deployment_envs, aws_create_role, app, oidc_provider_statement
+    _create_secrets,
+    get_deployment_envs,
+    aws_create_role,
+    app,
+    oidc_provider_statement,
 ):
     expected_assume_role = deepcopy(BASE_ASSUME_ROLE_POLICY)
     expected_assume_role["Statement"].append(oidc_provider_statement)
+
+    get_deployment_envs.return_value = ["dev", "prod"]
+    cluster.App(app).create_iam_role()
+
+    aws_create_role.assert_called_with(app.iam_role_name, expected_assume_role)
+    _create_secrets.assert_has_calls(
+        [
+            call(env_name="dev"),
+            call(env_name="prod"),
+        ]
+    )
+
+
+@patch("controlpanel.api.models.App.cloud_platform_role_arns", new_callable=PropertyMock)
+@patch("controlpanel.api.cluster.App.get_deployment_envs")
+@patch("controlpanel.api.cluster.App._create_secrets")
+@pytest.mark.parametrize(
+    "role_arns",
+    [
+        "arn:aws:iam::123456789012:role/CloudPlatformRole",
+        [
+            "arn:aws:iam::123456789012:role/CloudPlatformRole",
+            "arn:aws:iam::123456789012:role/CloudPlatformRole2",
+        ],
+    ],
+)
+def test_app_create_iam_role_with_cloud_platform_role(
+    _create_secrets,
+    get_deployment_envs,
+    cloud_platform_role_arns_mock,
+    role_arns,
+    aws_create_role,
+    app,
+    oidc_provider_statement,
+    cloud_platform_role_statement,
+):
+    cloud_platform_role_arns_mock.return_value = role_arns
+    cloud_platform_role_statement["Principal"]["AWS"] = role_arns
+    expected_assume_role = deepcopy(BASE_ASSUME_ROLE_POLICY)
+    expected_assume_role["Statement"].append(oidc_provider_statement)
+    expected_assume_role["Statement"].append(cloud_platform_role_statement)
 
     get_deployment_envs.return_value = ["dev", "prod"]
     cluster.App(app).create_iam_role()

@@ -25,16 +25,17 @@ class AppManager:
     def register_app(self, user, app_data):
         repo_url = app_data["repo_url"]
         _, name = repo_url.rsplit("/", 1)
-        cloud_platform_role_arn = app_data.get("cloud_platform_role_arn", None)
-
         # Create app and all the related sources
         new_app = self._create_app(
             name=name,
             repo_url=repo_url,
             current_user=user,
             namespace=app_data["namespace"],
-            cloud_platform_role_arn=cloud_platform_role_arn,
         )
+        cloud_platform_role_arns = app_data.get("cloud_platform_role_arn", "")
+        for arn in cloud_platform_role_arns.split(","):
+            new_app.cloud_platform_roles.create(arn=arn.strip())
+
         self._add_app_to_users(new_app, user)
         self._create_or_link_datasource(new_app, user, app_data)
         return new_app

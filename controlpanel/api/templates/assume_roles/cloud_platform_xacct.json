@@ -3,7 +3,7 @@
     "Effect": "Allow",
     "Action": "sts:AssumeRole",
     "Principal": {
-        "AWS": "{{ app_role }}"
+        "AWS": {{ app_role|safe }}
     },
     "Condition": {}
 }
