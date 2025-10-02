@@ -1,6 +1,6 @@
 # Standard library
 from copy import deepcopy
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, PropertyMock, call, isort, patch
 
 # Third-party
 import pytest
@@ -78,6 +78,7 @@ def test_oidc_provider_statement(app, oidc_provider_statement):
     assert cluster.App(app).oidc_provider_statement == oidc_provider_statement
 
 
+@patch("controlpanel.api.models.App.cloud_platform_role_arns", new=PropertyMock(return_value=[]))
 @patch("controlpanel.api.cluster.App.get_deployment_envs")
 @patch("controlpanel.api.cluster.App._create_secrets")
 def test_app_create_iam_role(
