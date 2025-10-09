@@ -18,6 +18,10 @@
         Register an app
       </a>
     </p>
+    {% else %}
+    <p class="govuk-body">
+      Please raise a <a href="https://github.com/ministryofjustice/data-platform-support/issues/new?template=analytical-platform-register-app.yml" target="_blank" class="govuk-link">support request in GitHub</a> if you need to register an app.  You can find all information regarding web apps in the <a href="https://user-guidance.analytical-platform.service.justice.gov.uk/apps/rshiny-app.html" target="_blank" class="govuk-link">Analytical Platform User Guidance</a>.
+    </p>
     {% endif %}
   {% endif %}
 {% endblock %}
