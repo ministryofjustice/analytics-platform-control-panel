@@ -15,8 +15,6 @@ updates:
       - dependency-name: "numpy"
         versions: [ ">=2.0.0" ]
     groups:
-      production-dependencies:
-        dependency-type: "production"
       development-dependencies:
         dependency-type: "development"
       support-dependencies:
