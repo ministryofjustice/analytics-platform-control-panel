@@ -54,7 +54,7 @@ def is_iam_user(user):
 
 
 add_perm("api.list_app", is_authenticated & is_iam_user)
-add_perm("api.create_app", is_authenticated & is_iam_user)
+add_perm("api.create_app", is_authenticated & is_superuser)
 add_perm("api.retrieve_app", is_authenticated & is_app_admin)
 add_perm("api.update_app", is_authenticated & is_app_admin)
 add_perm("api.add_cloud_platform_arn", is_authenticated & is_app_admin)
