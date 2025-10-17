@@ -282,7 +282,7 @@
   {% include "includes/webapp-m2m-client.html" %}
 {% endif %}
 
-{% if request.user.has_perm('api.add_superuser') %}
+{% if request.user.has_perm('api.update_app') %}
 <section class="cpanel-section">
   <form action="{{ url('set-bedrock-app', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
@@ -312,7 +312,7 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.add_superuser') %}
+{% if request.user.has_perm('api.update_app') %}
 <section class="cpanel-section">
   <form action="{{ url('set-textract-app', kwargs={ "pk": app.id }) }}" method="post">
     {{ csrf_input }}
