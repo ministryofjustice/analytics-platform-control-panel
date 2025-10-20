@@ -388,6 +388,7 @@ class EnableBedrockApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"
     method_name = "set_bedrock_access"
+    permission_required = "api.update_app"
 
 
 class EnableTextractApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
@@ -395,6 +396,7 @@ class EnableTextractApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     fields = ["is_textract_enabled"]
     success_message = "Successfully updated textract status"
     method_name = "set_textract_access"
+    permission_required = "api.update_app"
 
 
 class UpdateCloudPlatformRoleArn(
