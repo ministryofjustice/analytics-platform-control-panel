@@ -33,8 +33,9 @@ class AppManager:
             namespace=app_data["namespace"],
         )
         cloud_platform_role_arns = app_data.get("cloud_platform_role_arn", "")
-        for arn in cloud_platform_role_arns.split(","):
-            new_app.cloud_platform_roles.create(arn=arn.strip())
+        if cloud_platform_role_arns:
+            for arn in cloud_platform_role_arns.split(","):
+                new_app.cloud_platform_roles.create(arn=arn.strip())
 
         self._add_app_to_users(new_app, user)
         self._create_or_link_datasource(new_app, user, app_data)

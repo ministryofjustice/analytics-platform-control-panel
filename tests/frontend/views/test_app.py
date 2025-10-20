@@ -839,6 +839,7 @@ def test_register_app_with_creating_datasource(client, users, githubapi):
     assert len(related_bucket_ids) == 1
     assert bucket.id in related_bucket_ids
     assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
+    assert created_app.cloud_platform_roles.count() == 0
 
 
 def test_register_app_with_existing_datasource(client, users, s3buckets, githubapi):
@@ -865,6 +866,7 @@ def test_register_app_with_existing_datasource(client, users, s3buckets, githuba
     assert len(related_bucket_ids) == 1
     assert bucket.id in related_bucket_ids
     assert response.url == reverse("manage-app", kwargs={"pk": created_app.pk})
+    assert created_app.cloud_platform_roles.count() == 0
 
 
 def test_register_app_invalid_organisation(client, users):
@@ -935,6 +937,8 @@ def test_register_app_with_valid_namespace(client, users, githubapi):
         "cloud-platform-environments",
         f"namespaces/live.cloud-platform.service.justice.gov.uk/{data['namespace']}-dev",
     )
+    assert App.objects.filter(name=test_app_name).count() == 1
+    assert CloudPlatformRole.objects.filter(app__name=test_app_name).count() == 0
 
 
 def test_update_app_ip_allowlist_fails(app):
