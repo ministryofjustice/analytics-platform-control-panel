@@ -73,7 +73,7 @@ class CloudPlatformArnValidationMixin:
             self.add_error("cloud_platform_role_arn", "Role ARN is required")
             return cleaned_data
 
-        if not assume_role and role_arn.strip():
+        if not assume_role:
             cleaned_data.pop("cloud_platform_role_arn")
             return cleaned_data
 
