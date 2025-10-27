@@ -7,7 +7,7 @@ boto3==1.40.56
 celery[sqs]==5.5.3
 channels==4.3.1
 channels-redis==4.3.0
-cryptography==46.0.2
+cryptography==46.0.3
 daphne==4.2.1
 Django==5.2.7
 django-celery-beat==2.8.1
