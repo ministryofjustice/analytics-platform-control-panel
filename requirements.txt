@@ -3,13 +3,13 @@ auth0-python==4.13.0
 authlib==1.6.5
 autobahn==25.9.1
 beautifulsoup4==4.14.2
-boto3==1.40.59
+boto3==1.40.64
 celery[sqs]==5.5.3
 channels==4.3.1
 channels-redis==4.3.0
 cryptography==46.0.3
 daphne==4.2.1
-Django==5.2.7
+Django==5.2.8
 django-celery-beat==2.8.1
 django-crequest==2018.5.11
 django-extensions==4.1
@@ -17,7 +17,7 @@ django-filter==25.2
 django-prometheus==2.4.1
 django-redis==6.0.0
 django-simple-history==3.10.1
-django-structlog==9.1.1
+django-structlog==10.0.0
 djangorestframework==3.16.1
 djproxy==2.3.6
 elasticsearch-dsl==7.4.1
@@ -26,7 +26,7 @@ Jinja2==3.1.6
 kubernetes==33.1.0
 MarkupSafe==3.0.3
 model-bakery==1.20.5
-moto[all]==5.1.14
+moto[all]==5.1.16
 mozilla-django-oidc==4.0.1
 notifications-python-client==10.0.1
 pagerduty==6.0.0
@@ -39,7 +39,7 @@ pytest-xdist==3.8.0
 python-dotenv==1.1.1
 pyyaml==6.0.3
 rules==3.5
-sentry-sdk==2.41.0
+sentry-sdk==2.43.0
 setuptools==80.9.0
 slackclient==2.9.4
 urllib3==2.5.0
