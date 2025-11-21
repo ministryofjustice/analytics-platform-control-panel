@@ -139,7 +139,7 @@ def remove_chars(item_to_replace=[]):
 def get_buttons(content: str) -> list:
     soup = BeautifulSoup(content, "html.parser")
     menu_holder = soup.find("div", {"class": "pagination-menu"})
-    return menu_holder.findAll("a", {"class": "govuk-button"})
+    return menu_holder.find_all("a", {"class": "govuk-button"})
 
 
 def test_get_paginated(client, app, ExtendedAuth0, fixture_customers_mocked):
