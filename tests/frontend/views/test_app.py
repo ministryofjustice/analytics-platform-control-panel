@@ -667,7 +667,7 @@ def app_being_migrated(users):
 def get_auth_settings(content, env_name):
     soup = BeautifulSoup(content, "html.parser")
     setting_panel = soup.find("section", {"class": f"{env_name}-settings-panel"})
-    return setting_panel.findAll("tr", {"class": "auth-setting-row"})
+    return setting_panel.find_all("tr", {"class": "auth-setting-row"})
 
 
 def locate_setting_ui(settings, setting_name):
@@ -751,7 +751,7 @@ def test_app_detail_with_self_define_settings(client, app, users, repos):
         auth_item_ui = locate_setting_ui(auth_settings, item["n"])
         if not auth_item_ui:
             continue
-        setting_link = auth_item_ui.findAll("a")[0]["href"]
+        setting_link = auth_item_ui.find_all("a")[0]["href"]
         assert f"{settings.APP_SELF_DEFINE_SETTING_PREFIX}{item['n']}" in setting_link
         assert item["v"] in auth_item_ui.text
         assert "Edit" in auth_item_ui.text
