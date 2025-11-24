@@ -101,6 +101,11 @@ def _execute(*args, **kwargs):
 
     # check the returncode to determine if the process succeeded
     if proc.returncode == 0:
+        # Even with successful return code, check for any stderr output and log as warnings
+        # (e.g., transient errors during resource deletion that don't affect the overall result)
+        stderr_output = proc.stderr.read()
+        if stderr_output:
+            log.warning(f"Helm command succeeded but with stderr output: {stderr_output}")
         log.info(f"Subprocess {id(proc)} succeeded with returncode: {proc.returncode}")
         return proc
 
@@ -204,7 +209,6 @@ def upgrade_release(release, chart, *args):
     return _execute(
         "upgrade",
         "--install",
-        "--force",
         "--wait",
         "--timeout",
         "7m0s",
