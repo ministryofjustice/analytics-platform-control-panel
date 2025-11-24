@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import MagicMock, PropertyMock, call, patch
+from unittest.mock import patch
 
 # Third-party
 from django.core.management import call_command
