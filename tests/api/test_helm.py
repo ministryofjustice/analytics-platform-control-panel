@@ -93,7 +93,6 @@ def test_helm_upgrade_release():
         mock_execute.assert_called_with(
             "upgrade",
             "--install",
-            "--force",
             "--wait",
             "--timeout",
             "7m0s",
