@@ -1,6 +1,6 @@
 # Standard library
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from io import StringIO
 
 # Third-party
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         parser.add_argument("--all", "-a", action="store_true", help="Get all feedback received")
 
     def handle(self, *args, **options):
-        today = datetime.today()
+        today = datetime.now(timezone.utc)
 
         if options["all"]:
             feedback_items = Feedback.objects.all()
