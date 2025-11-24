@@ -28,7 +28,7 @@ class Command(BaseCommand):
         parser.add_argument("--all", "-a", action="store_true", help="Get all feedback received")
 
     def handle(self, *args, **options):
-        today = datetime.today()
+        today = datetime.today().replace(tzinfo=pytz.utc)
 
         if options["all"]:
             feedback_items = Feedback.objects.all()
