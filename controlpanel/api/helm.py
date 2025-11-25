@@ -45,6 +45,12 @@ class HelmReleaseNotFound(HelmError):
     default_code = "helm_release_not_found"
 
 
+class HelmTimeoutError(HelmError):
+    status_code = 504
+    default_detail = "Helm operation timed out."
+    default_code = "helm_timeout"
+
+
 class HelmChart:
     """
     Instances represent a Helm chart.
@@ -122,6 +128,10 @@ def _execute(*args, **kwargs):
     if "error: uninstall: release not loaded" in str(errs).lower():
         raise HelmReleaseNotFound(detail=errs)
 
+    # Check for timeout errors (context deadline exceeded)
+    if "context deadline exceeded" in str(errs).lower():
+        raise HelmTimeoutError(detail=errs)
+
     # Check if this is a transient error that might not be fatal
     # These typically occur during resource updates due to timing/race conditions
     # IMPORTANT: We rely on subsequent status checks (wait_for_deployment) to verify actual success
@@ -145,7 +155,9 @@ def _execute(*args, **kwargs):
             f"Stdout: {outs}. "
             "Proceeding with deployment verification via wait_for_deployment()."
         )
-        return proc
+        # Return None instead of proc to avoid errors downstream trying to read outputs when
+        # communicate() has already been called and closed the streams.
+        return None
 
     # For all other cases, this is a real error
     log.info(outs)
