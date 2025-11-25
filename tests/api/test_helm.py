@@ -179,6 +179,61 @@ def test_execute_waits(timeout):
     assert mock_proc.returncode == 0
 
 
+def test_execute_with_transient_error_during_upgrade():
+    """
+    Ensure transient errors during upgrade operations with --wait are treated as warnings
+    rather than failures. These are timing/race condition issues that don't prevent
+    the deployment from succeeding (verified later by wait_for_deployment).
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1  # Non-zero exit code
+    mock_proc.communicate.return_value = (
+        "",  # Stdout may be empty with --wait
+        'Error: services "vscode-user-scheduler" not found',  # Transient error
+    )
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+        # Should NOT raise an error for transient issues during upgrade --wait
+        result = helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
+        assert result == mock_proc
+
+
+def test_execute_with_transient_error_not_during_upgrade():
+    """
+    Ensure transient errors are only treated as non-fatal during upgrade operations.
+    For other operations (like delete), they should still raise errors.
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1
+    mock_proc.communicate.return_value = ("", 'Error: services "foo" not found')
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            helm._execute("delete", "my-release")
+
+
+def test_execute_with_transient_error_but_no_wait_flag():
+    """
+    Ensure that transient errors during upgrade WITHOUT --wait still raise an error.
+    The --wait flag is required because it ensures Helm waits for resources to be ready.
+    Without it, we can't trust the deployment will succeed.
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1
+    mock_proc.communicate.return_value = (
+        "",
+        'Error: services "foo" not found',  # Transient error pattern
+    )
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            # No --wait flag, so should still fail
+            helm._execute("upgrade", "--install", "my-release", "my-chart")
+
+
 def test_update_helm_repository_non_existent_cache(helm_repository_index):
     """
     If this is a fresh instance and there's no existing helm repository cache,

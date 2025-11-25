@@ -19,6 +19,12 @@ ERRORS_TO_IGNORE = [
     "uninstallation completed with 1 error(s): uninstall: failed to purge the release",
 ]
 
+# Patterns for errors that appear during upgrades but don't prevent the deployment from succeeding
+TRANSIENT_ERROR_PATTERNS = [
+    "not found",  # e.g., "services X not found" during resource updates
+    "already exists",  # resource already created
+]
+
 
 def get_repo_path():
     """
@@ -109,11 +115,39 @@ def _execute(*args, **kwargs):
         log.info(f"Subprocess {id(proc)} succeeded with returncode: {proc.returncode}")
         return proc
 
-    # something went went wrong, check the outputs
+    # something went wrong, check the outputs
     outs, errs = proc.communicate()
+
+    # Check for specific error types
     if "error: uninstall: release not loaded" in str(errs).lower():
         raise HelmReleaseNotFound(detail=errs)
 
+    # Check if this is a transient error that might not be fatal
+    # These typically occur during resource updates due to timing/race conditions
+    # IMPORTANT: We rely on subsequent status checks (wait_for_deployment) to verify actual success
+    err_lower = str(errs).lower()
+
+    # Only consider it transient if:
+    # 1. It matches a known transient pattern
+    # 2. It's an upgrade operation with --wait flag
+    # The --wait flag ensures Helm waits for resources, and wait_for_deployment() provides
+    # additional verification. Without --wait, we can't trust that resources are ready.
+    is_transient_pattern = any(pattern.lower() in err_lower for pattern in TRANSIENT_ERROR_PATTERNS)
+    is_upgrade_with_wait = "upgrade" in " ".join(args).lower() and "--wait" in args
+
+    if is_transient_pattern and is_upgrade_with_wait:
+        # For upgrade operations with --wait and transient errors, log as warning
+        # but allow to proceed. The --wait flag ensures Helm waits for resources to be ready, and
+        # wait_for_deployment() provides verification via Kubernetes API polling.
+        log.warning(
+            f"Helm upgrade with --wait encountered transient error (returncode: {proc.returncode}). "  # noqa
+            f"Stderr: {errs}. "
+            f"Stdout: {outs}. "
+            "Proceeding with deployment verification via wait_for_deployment()."
+        )
+        return proc
+
+    # For all other cases, this is a real error
     log.info(outs)
     log.info(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
     log.error(errs)
