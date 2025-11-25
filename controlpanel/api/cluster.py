@@ -950,6 +950,12 @@ class ToolDeploymentError(Exception):
     pass
 
 
+class ToolDeploymentTimeoutError(ToolDeploymentError):
+    """Raised when a tool deployment times out during Helm upgrade."""
+
+    pass
+
+
 class ToolDeployment:
     def __init__(self, user, tool, old_chart_name=None):
         self.user = user
@@ -1025,6 +1031,8 @@ class ToolDeployment:
                 *set_values,
             )
 
+        except helm.HelmTimeoutError as error:
+            raise ToolDeploymentTimeoutError(error)
         except helm.HelmError as error:
             raise ToolDeploymentError(error)
 

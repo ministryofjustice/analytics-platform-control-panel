@@ -195,8 +195,9 @@ def test_execute_with_transient_error_during_upgrade():
 
     with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
         # Should NOT raise an error for transient issues during upgrade --wait
+        # Returns None because streams are closed, forcing Kubernetes status check
         result = helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
-        assert result == mock_proc
+        assert result is None
 
 
 def test_execute_with_transient_error_not_during_upgrade():
