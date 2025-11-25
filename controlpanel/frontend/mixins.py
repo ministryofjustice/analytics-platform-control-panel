@@ -1,10 +1,11 @@
 # Standard library
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Third-party
 from django.contrib import messages
 from django.http import HttpResponse
+from django.utils import timezone
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
@@ -75,6 +76,12 @@ class StatusPageEventMixin:
         events = StatusPageEvent.objects.exclude(
             status__in=[StatusPageEvent.STATUS_COMPLETED, StatusPageEvent.STATUS_RESOLVED]
         )
-        context["pagerduty_posts"] = events
-        context["display_service_info"] = events.exists()
+        events_present = events.exists()
+        if events_present:
+            latest_update_time = events.order_by("modified").last().modified
+            show_posts_timespan = latest_update_time + timedelta(days=1)
+            context["show_pagerduty_posts"] = timezone.now() < show_posts_timespan
+            context["pagerduty_posts"] = events
+
+        context["display_service_info"] = events_present
         return context

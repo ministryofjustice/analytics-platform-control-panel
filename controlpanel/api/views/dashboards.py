@@ -20,7 +20,7 @@ class DashboardViewSet(ReadOnlyModelViewSet):
     A ViewSet for managing dashboards.
     """
 
-    queryset = Dashboard.objects.all()
+    queryset = Dashboard.objects.all().order_by("name")
     serializer_class = DashboardSerializer
     resource = "dashboard"
     permission_classes = [permissions.IsSuperuser | permissions.JWTTokenResourcePermissions]
