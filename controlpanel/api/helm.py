@@ -101,14 +101,12 @@ def _execute(*args, **kwargs):
         proc.wait()
     except OSError as ex:
         # Catch system level errors and re-raise as HelmError
-        log.error(ex)
         raise HelmError() from ex
     except subprocess.SubprocessError as proc_ex:
         # Catch general subprocess errors and reraise as HelmError
         proc.kill()
         outs, errs = proc.communicate()
-        log.info(outs)
-        log.error(errs)
+        log.error(f"Subprocess error - stdout: {outs}, stderr: {errs}")
         raise HelmError() from proc_ex
 
     # check the returncode to determine if the process succeeded
@@ -160,9 +158,9 @@ def _execute(*args, **kwargs):
         return None
 
     # For all other cases, this is a real error
-    log.info(outs)
-    log.info(f"Subprocess {id(proc)} failed with returncode: {proc.returncode}")
-    log.error(errs)
+    log.error(
+        f"Helm command failed - returncode: {proc.returncode}, stdout: {outs}, stderr: {errs}"
+    )
     raise HelmError(errs)
 
 

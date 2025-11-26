@@ -177,9 +177,10 @@ class BackgroundTaskConsumer(SyncConsumer):
             new_deployment.is_active = False
             new_deployment.save()
             update_tool_status(tool_deployment=new_deployment, status=TOOL_DEPLOY_FAILED)
+            log.error(
+                f"Failed deploying {new_deployment.tool.name} for {new_deployment.user}: {err}"
+            )
             self._send_to_sentry(err)
-            log.error(err)
-            log.warning(f"Failed deploying {new_deployment.tool.name} for {new_deployment.user}")
             return
 
         status = wait_for_deployment(new_deployment, message["id_token"])

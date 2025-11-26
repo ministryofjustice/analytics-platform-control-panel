@@ -3,6 +3,7 @@ from itertools import chain
 
 # Third-party
 import botocore.exceptions
+import sentry_sdk
 import structlog
 from django.conf import settings
 from django.contrib import messages
@@ -453,6 +454,7 @@ class UpdateDatasourceLifecycleConfig(
             log.warning(f"Error updating lifecycle configurations: {e}")
         except Exception as e:
             log.error(f"Error updating lifecycle configurations: {e}")
+            sentry_sdk.capture_exception(e)
             messages.error(self.request, "Failed to update bucket lifecycle configurations")
             return HttpResponseRedirect(self.get_success_url())
 
