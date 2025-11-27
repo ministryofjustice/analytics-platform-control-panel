@@ -111,6 +111,7 @@ class ExtendedAuth0(Auth0):
         except exceptions.Auth0Error as error:
             error_detail = f"Access token error: {self.client_id}, {self.domain}, {error}"
             log.error(error_detail)
+            sentry_sdk.capture_exception(error)
             raise Auth0Error(error_detail)
 
         return token["access_token"]

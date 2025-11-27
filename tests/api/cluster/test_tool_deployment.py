@@ -7,7 +7,7 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.helm import HelmError, HelmReleaseNotFound
+from controlpanel.api.helm import HelmError, HelmReleaseNotFound, HelmTimeoutError
 from controlpanel.api.models import Tool, ToolDeployment, User
 
 
@@ -126,3 +126,30 @@ def test_uninstall_exceptions(helm, error, error_raised):
         helm.delete.assert_called_once_with(
             cluster_tool_deployment.k8s_namespace, cluster_tool_deployment.release_name
         )
+
+
+@pytest.mark.parametrize(
+    "error, error_raised",
+    [
+        (HelmTimeoutError, cluster.ToolDeploymentTimeoutError),
+        (HelmError, cluster.ToolDeploymentError),
+    ],
+)
+def test_install_exceptions(helm, error, error_raised):
+    """
+    Test that HelmTimeoutError is converted to ToolDeploymentTimeoutError
+    and HelmError is converted to ToolDeploymentError.
+    """
+    helm.upgrade_release.side_effect = error
+
+    user = User(username="test-user")
+    tool = Tool(
+        name="RStudio",
+        chart_name=Tool.RSTUDIO_CHART_NAME,
+        version="1.0.0",
+        image_tag="0.2",
+    )
+    cluster_tool_deployment = cluster.ToolDeployment(user=user, tool=tool)
+
+    with pytest.raises(error_raised):
+        cluster_tool_deployment.install()

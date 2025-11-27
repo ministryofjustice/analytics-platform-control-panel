@@ -375,16 +375,27 @@ if os.environ.get("SENTRY_DSN"):
     KUBERNETES_ENV = "EKS"
     if ENV == "alpha":
         SENTRY_ENVIRONMENT = "prod"
+    # Standard library
+    import logging
+
     # Third-party
     import sentry_sdk
     from sentry_sdk import set_tag
     from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
     from sentry_sdk.integrations.redis import RedisIntegration
 
     sentry_sdk.init(
         dsn=os.environ["SENTRY_DSN"],
         environment=SENTRY_ENVIRONMENT,
-        integrations=[DjangoIntegration(), RedisIntegration()],
+        integrations=[
+            DjangoIntegration(),
+            RedisIntegration(),
+            LoggingIntegration(
+                level=logging.INFO,  # Capture logs as breadcrumbs for debugging context
+                event_level=None,  # Don't create events from log records
+            ),
+        ],
         traces_sample_rate=0.0,
         send_default_pii=True,
     )

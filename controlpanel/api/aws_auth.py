@@ -3,6 +3,7 @@ import uuid
 
 # Third-party
 import boto3
+import sentry_sdk
 import structlog
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
@@ -98,6 +99,7 @@ class BotoSession:
             log.error(
                 "Failed to establish the refreshable token due to reason ({})".format(str(ex))
             )
+            sentry_sdk.capture_exception(ex)
             return boto3.Session()
 
 

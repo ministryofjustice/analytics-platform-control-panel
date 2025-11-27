@@ -179,6 +179,24 @@ def test_execute_waits(timeout):
     assert mock_proc.returncode == 0
 
 
+def test_execute_with_timeout_error():
+    """
+    Ensure a HelmTimeoutError is raised when the helm command times out
+    (context deadline exceeded).
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1
+    mock_proc.communicate.return_value = (
+        "",
+        "Error: context deadline exceeded",
+    )
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with pytest.raises(helm.HelmTimeoutError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
+
+
 def test_execute_with_transient_error_during_upgrade():
     """
     Ensure transient errors during upgrade operations with --wait are treated as warnings
