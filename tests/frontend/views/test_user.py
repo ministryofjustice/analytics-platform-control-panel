@@ -8,6 +8,7 @@ from rest_framework import status
 
 # First-party/Local
 from controlpanel.api import aws, cluster
+from controlpanel.api.exceptions import QuicksightAccessError
 
 
 @pytest.fixture(autouse=True)
@@ -364,3 +365,23 @@ def test_user_redirect(client, users, user):
 
     assert response.status_code == status.HTTP_302_FOUND
     assert response.url == reverse_lazy("manage-user", kwargs={"pk": user.auth0_id})
+
+
+def test_set_quicksight_handles_error(client, users):
+    """
+    Tests that when grant_access raises QuicksightAccessError,
+    the view catches it and shows an error message instead of 500ing.
+    """
+    test_user = users["normal_user"]
+    request_user = users["superuser"]
+    url = reverse("set-quicksight", kwargs={"pk": test_user.auth0_id})
+
+    with patch(
+        "controlpanel.frontend.forms.AdminQuicksightAccessForm.grant_access",
+        side_effect=QuicksightAccessError("AWS error"),
+    ):
+        client.force_login(request_user)
+        response = client.post(url, data={"enable_quicksight": ["quicksight_compute_author"]})
+
+    assert response.status_code == status.HTTP_302_FOUND
+    assert response.url == reverse_lazy("manage-user", kwargs={"pk": test_user.auth0_id})

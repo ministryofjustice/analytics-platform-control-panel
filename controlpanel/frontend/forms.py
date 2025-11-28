@@ -2,6 +2,7 @@
 import re
 
 # Third-party
+import botocore
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import Permission
@@ -15,6 +16,7 @@ from controlpanel.api import validators
 from controlpanel.api.aws import AWSIdentityStore, AWSQuicksight
 from controlpanel.api.cluster import AWSRoleCategory
 from controlpanel.api.cluster import S3Folder as ClusterS3Folder
+from controlpanel.api.exceptions import QuicksightAccessError
 from controlpanel.api.github import GithubAPI, RepositoryNotFound, extract_repo_info_from_url
 from controlpanel.api.models import (
     QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
@@ -754,10 +756,13 @@ class QuicksightAccessForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     def grant_access(self):
-        quicksight_access = self.cleaned_data["enable_quicksight"]
+        try:
+            quicksight_access = self.cleaned_data["enable_quicksight"]
 
-        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
-        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
+            self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
+            self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
+        except (botocore.exceptions.ClientError, ValueError) as e:
+            raise QuicksightAccessError("Failed to update QuickSight access") from e
 
     def set_quicksight_embed_access(self, permission_name, quicksight_access):
         identity_store = AWSIdentityStore(
@@ -794,11 +799,14 @@ class AdminQuicksightAccessForm(QuicksightAccessForm):
     )
 
     def grant_access(self):
-        quicksight_access = self.cleaned_data["enable_quicksight"]
-        self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
+        try:
+            quicksight_access = self.cleaned_data["enable_quicksight"]
+            self.user.set_quicksight_access(enable=self.QUICKSIGHT_LEGACY in quicksight_access)
 
-        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
-        self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
+            self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_AUTHOR, quicksight_access)
+            self.set_quicksight_embed_access(self.QUICKSIGHT_COMPUTE_READER, quicksight_access)
+        except (botocore.exceptions.ClientError, ValueError) as e:
+            raise QuicksightAccessError("Failed to update QuickSight access") from e
 
 
 class FeedbackForm(forms.ModelForm):
