@@ -1566,8 +1566,8 @@ class AWSIdentityStore(AWSService):
             )
 
             return response["UserId"]
-        except self.client.exceptions.ResourceNotFoundException as error:
-            sentry_sdk.capture_exception(error)
+        except self.client.exceptions.ResourceNotFoundException:
+            log.warning(f"User {user_email} not found in Identity Store.")
             return None
 
     def get_group_id(self, group_name):
@@ -1584,12 +1584,18 @@ class AWSIdentityStore(AWSService):
 
             return response["GroupId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            sentry_sdk.capture_exception(error)
+            log.warning(f"Group {group_name} not found in Identity Store.")
             raise error
 
     def get_group_membership_id(self, group_name, user_email):
         group_id = self.get_group_id(group_name)
         user_id = self.get_user_id(user_email)
+
+        if not user_id:
+            log.info(
+                f"User {user_email} not found in Identity Store, so cannot be a member of any group."  # noqa
+            )
+            return None
 
         try:
             response = self.client.get_group_membership_id(
@@ -1600,7 +1606,7 @@ class AWSIdentityStore(AWSService):
 
             return response["MembershipId"]
         except self.client.exceptions.ResourceNotFoundException as error:
-            sentry_sdk.capture_exception(error)
+            log.info(f"User {user_email} is not a member of group {group_name}. Error: {error}")
             return None
 
     def get_name_from_email(self, user_email):
@@ -1653,45 +1659,35 @@ class AWSIdentityStore(AWSService):
         group_id = self.get_group_id(group_name)
         user_id = self.get_user_id(user_email)
 
-        try:
-            membership_id = self.get_group_membership_id(group_name, user_email)
+        membership_id = self.get_group_membership_id(group_name, user_email)
 
-            if membership_id is not None:
-                log.info("User is already a member of this group. Skipping")
-                return
+        if membership_id is not None:
+            log.info("User is already a member of this group. Skipping")
+            return
 
-            response = self.client.create_group_membership(
-                IdentityStoreId=self.sso_client.get_identity_store_id(),
-                GroupId=group_id,
-                MemberId={"UserId": user_id},
-            )
+        response = self.client.create_group_membership(
+            IdentityStoreId=self.sso_client.get_identity_store_id(),
+            GroupId=group_id,
+            MemberId={"UserId": user_id},
+        )
 
-            log.info(f"User {user_email} added to group {group_name}")
-            return response
-        except Exception as error:
-            sentry_sdk.capture_exception(error)
-            raise error
+        log.info(f"User {user_email} added to group {group_name}")
+        return response
 
     def delete_group_membership(self, user_email, group_name):
 
         log.info(f"Attempting to remove {user_email} from group {group_name}")
+        membership_id = self.get_group_membership_id(group_name, user_email)
 
-        try:
-            membership_id = self.get_group_membership_id(group_name, user_email)
+        if membership_id is None:
+            log.info("User is not a member of this group. Skipping")
+            return
 
-            if membership_id is None:
-                log.info("User is not a member of this group. Skipping")
-                return
-
-            self.client.delete_group_membership(
-                IdentityStoreId=self.sso_client.get_identity_store_id(),
-                MembershipId=membership_id,
-            )
-
-            log.info(f"User {user_email} removed from group {group_name}")
-        except Exception as error:
-            sentry_sdk.capture_exception(error)
-            raise error
+        self.client.delete_group_membership(
+            IdentityStoreId=self.sso_client.get_identity_store_id(),
+            MembershipId=membership_id,
+        )
+        log.info(f"User {user_email} removed from group {group_name}")
 
     def add_user_to_group(self, justice_email, quicksight_group):
 
