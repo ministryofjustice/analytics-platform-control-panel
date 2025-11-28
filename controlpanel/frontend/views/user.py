@@ -21,6 +21,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api.aws import AWSIdentityStore
 from controlpanel.api.cluster import User as ClusterUser
+from controlpanel.api.exceptions import QuicksightAccessError
 from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION, User
 from controlpanel.frontend import forms
 from controlpanel.frontend.mixins import PolicyAccessMixin
@@ -167,7 +168,7 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
         try:
             form.grant_access()
             messages.success(self.request, "Successfully updated QuickSight access")
-        except Exception as e:
+        except QuicksightAccessError as e:
             sentry_sdk.capture_exception(e)
             messages.error(
                 self.request,
