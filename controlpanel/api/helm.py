@@ -14,10 +14,6 @@ log = structlog.getLogger(__name__)
 
 # Cache helm repository metadata for 5 minutes (expressed as seconds).
 CACHE_FOR_MINUTES = 5 * 60
-ERRORS_TO_IGNORE = [
-    "release: already exists",
-    "uninstallation completed with 1 error(s): uninstall: failed to purge the release",
-]
 
 # Patterns for errors that appear during upgrades but don't prevent the deployment from succeeding
 TRANSIENT_ERROR_PATTERNS = [
@@ -178,28 +174,6 @@ def _execute(*args, **kwargs):
         f"Helm command failed - returncode: {proc.returncode}, stdout: {outs}, stderr: {errs}"
     )
     raise HelmError(errs)
-
-
-# TODO want to test if this is still necessary, remove if not
-def should_raise_error(stderr, stdout):
-    lower_error_string = stderr.lower()
-    lower_out_string = stdout.lower()
-    if "error" not in lower_error_string and "error" not in lower_out_string:
-        return False
-
-    if should_ignore_error(lower_error_string) or should_ignore_error(lower_out_string):
-        return False
-
-    return True
-
-
-def should_ignore_error(error_string):
-
-    for error in ERRORS_TO_IGNORE:
-        if error in error_string:
-            return True
-
-    return False
 
 
 def update_helm_repository(force=False):
