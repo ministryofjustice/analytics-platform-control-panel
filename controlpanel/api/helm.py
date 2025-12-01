@@ -51,6 +51,17 @@ class HelmTimeoutError(HelmError):
     default_code = "helm_timeout"
 
 
+class HelmOperationInProgressError(HelmError):
+    """
+    Raised when another Helm operation is already in progress for the same release.
+    This is a transient condition that typically resolves with a retry.
+    """
+
+    status_code = 409  # Conflict
+    default_detail = "Another Helm operation is in progress. Please try again."
+    default_code = "helm_operation_in_progress"
+
+
 class HelmChart:
     """
     Instances represent a Helm chart.
@@ -129,6 +140,11 @@ def _execute(*args, **kwargs):
     # Check for timeout errors (context deadline exceeded)
     if "context deadline exceeded" in str(errs).lower():
         raise HelmTimeoutError(detail=errs)
+
+    # Check for concurrent operation errors (another install/upgrade/rollback in progress)
+    if "another operation" in str(errs).lower() and "in progress" in str(errs).lower():
+        log.warning(f"Helm operation conflict detected: {errs}")
+        raise HelmOperationInProgressError(detail=errs)
 
     # Check if this is a transient error that might not be fatal
     # These typically occur during resource updates due to timing/race conditions
