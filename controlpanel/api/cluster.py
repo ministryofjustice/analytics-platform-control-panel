@@ -956,6 +956,12 @@ class ToolDeploymentTimeoutError(ToolDeploymentError):
     pass
 
 
+class ToolDeploymentConflictError(ToolDeploymentError):
+    """Raised when another Helm operation is already in progress for the same release."""
+
+    pass
+
+
 class ToolDeployment:
     def __init__(self, user, tool, old_chart_name=None):
         self.user = user
@@ -1032,9 +1038,11 @@ class ToolDeployment:
             )
 
         except helm.HelmTimeoutError as error:
-            raise ToolDeploymentTimeoutError(error)
+            raise ToolDeploymentTimeoutError(error) from error
+        except helm.HelmOperationInProgressError as error:
+            raise ToolDeploymentConflictError(error) from error
         except helm.HelmError as error:
-            raise ToolDeploymentError(error)
+            raise ToolDeploymentError(error) from error
 
     def uninstall(self):
         try:

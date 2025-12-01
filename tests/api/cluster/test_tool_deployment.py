@@ -7,7 +7,12 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
-from controlpanel.api.helm import HelmError, HelmReleaseNotFound, HelmTimeoutError
+from controlpanel.api.helm import (
+    HelmError,
+    HelmOperationInProgressError,
+    HelmReleaseNotFound,
+    HelmTimeoutError,
+)
 from controlpanel.api.models import Tool, ToolDeployment, User
 
 
@@ -132,12 +137,14 @@ def test_uninstall_exceptions(helm, error, error_raised):
     "error, error_raised",
     [
         (HelmTimeoutError, cluster.ToolDeploymentTimeoutError),
+        (HelmOperationInProgressError, cluster.ToolDeploymentConflictError),
         (HelmError, cluster.ToolDeploymentError),
     ],
 )
 def test_install_exceptions(helm, error, error_raised):
     """
-    Test that HelmTimeoutError is converted to ToolDeploymentTimeoutError
+    Test that HelmTimeoutError is converted to ToolDeploymentTimeoutError,
+    HelmOperationInProgressError is converted to ToolDeploymentConflictError,
     and HelmError is converted to ToolDeploymentError.
     """
     helm.upgrade_release.side_effect = error

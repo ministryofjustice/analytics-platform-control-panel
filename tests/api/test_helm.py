@@ -197,6 +197,24 @@ def test_execute_with_timeout_error():
             helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
 
 
+def test_execute_with_operation_in_progress_error():
+    """
+    Ensure HelmOperationInProgressError is raised when another Helm operation
+    is already running for the same release.
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1
+    mock_proc.communicate.return_value = (
+        "",
+        "Error: UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress",
+    )
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with pytest.raises(helm.HelmOperationInProgressError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            helm._execute("upgrade", "--install", "my-release", "my-chart")
+
+
 def test_execute_with_transient_error_during_upgrade():
     """
     Ensure transient errors during upgrade operations with --wait are treated as warnings
@@ -340,25 +358,3 @@ def test_list_releases_with_namespace():
             "qux",
         ]
         mock_execute.assert_called_once_with("list", "-aq", "--namespace", "some-ns")
-
-
-@pytest.mark.parametrize(
-    "stderr, stdout, raise_error",
-    [
-        ("Error: release: already exists", "All good", False),
-        ("Error: Something that should throw", "All good", True),
-        ("All good", "Error: Something that should throw", True),
-        ("All good", "All good", False),
-        (
-            (
-                "Error: uninstallation completed with 1 error(s): "
-                "uninstall: Failed to purge the release"
-            ),
-            "All good",
-            False,
-        ),
-    ],
-)
-def test_should_raise_error(stderr, stdout, raise_error):
-    result = helm.should_raise_error(stderr, stdout)
-    assert result == raise_error

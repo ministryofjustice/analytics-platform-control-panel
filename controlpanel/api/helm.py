@@ -14,10 +14,6 @@ log = structlog.getLogger(__name__)
 
 # Cache helm repository metadata for 5 minutes (expressed as seconds).
 CACHE_FOR_MINUTES = 5 * 60
-ERRORS_TO_IGNORE = [
-    "release: already exists",
-    "uninstallation completed with 1 error(s): uninstall: failed to purge the release",
-]
 
 # Patterns for errors that appear during upgrades but don't prevent the deployment from succeeding
 TRANSIENT_ERROR_PATTERNS = [
@@ -49,6 +45,17 @@ class HelmTimeoutError(HelmError):
     status_code = 504
     default_detail = "Helm operation timed out."
     default_code = "helm_timeout"
+
+
+class HelmOperationInProgressError(HelmError):
+    """
+    Raised when another Helm operation is already in progress for the same release.
+    This is a transient condition that typically resolves with a retry.
+    """
+
+    status_code = 409  # Conflict
+    default_detail = "Another Helm operation is in progress. Please try again."
+    default_code = "helm_operation_in_progress"
 
 
 class HelmChart:
@@ -130,6 +137,11 @@ def _execute(*args, **kwargs):
     if "context deadline exceeded" in str(errs).lower():
         raise HelmTimeoutError(detail=errs)
 
+    # Check for concurrent operation errors (another install/upgrade/rollback in progress)
+    if "another operation" in str(errs).lower() and "in progress" in str(errs).lower():
+        log.warning(f"Helm operation conflict detected: {errs}")
+        raise HelmOperationInProgressError(detail=errs)
+
     # Check if this is a transient error that might not be fatal
     # These typically occur during resource updates due to timing/race conditions
     # IMPORTANT: We rely on subsequent status checks (wait_for_deployment) to verify actual success
@@ -162,28 +174,6 @@ def _execute(*args, **kwargs):
         f"Helm command failed - returncode: {proc.returncode}, stdout: {outs}, stderr: {errs}"
     )
     raise HelmError(errs)
-
-
-# TODO want to test if this is still necessary, remove if not
-def should_raise_error(stderr, stdout):
-    lower_error_string = stderr.lower()
-    lower_out_string = stdout.lower()
-    if "error" not in lower_error_string and "error" not in lower_out_string:
-        return False
-
-    if should_ignore_error(lower_error_string) or should_ignore_error(lower_out_string):
-        return False
-
-    return True
-
-
-def should_ignore_error(error_string):
-
-    for error in ERRORS_TO_IGNORE:
-        if error in error_string:
-            return True
-
-    return False
 
 
 def update_helm_repository(force=False):
