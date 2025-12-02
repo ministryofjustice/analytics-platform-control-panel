@@ -11,7 +11,13 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import auth0
-from controlpanel.api.helm import HelmError, HelmReleaseNotFound, HelmTimeoutError
+from controlpanel.api.cluster import ToolDeploymentConflictError
+from controlpanel.api.helm import (
+    HelmError,
+    HelmOperationInProgressError,
+    HelmReleaseNotFound,
+    HelmTimeoutError,
+)
 from controlpanel.api.models import (
     QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
     QUICKSIGHT_EMBED_READER_PERMISSION,
@@ -97,6 +103,7 @@ def helm():
         helm.HelmReleaseNotFound = HelmReleaseNotFound
         helm.HelmError = HelmError
         helm.HelmTimeoutError = HelmTimeoutError
+        helm.HelmOperationInProgressError = HelmOperationInProgressError
         yield helm
 
 
