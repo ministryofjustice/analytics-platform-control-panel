@@ -15,8 +15,6 @@ updates:
       - dependency-name: "numpy"
         versions: [ ">=2.0.0" ]
     groups:
-      development-dependencies:
-        dependency-type: "development"
       support-dependencies:
         patterns:
           - ".github/workflows/*"
