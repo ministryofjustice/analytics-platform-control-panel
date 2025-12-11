@@ -20,6 +20,7 @@ django-simple-history==3.10.1
 django-structlog==10.0.0
 djangorestframework==3.16.1
 djproxy==2.3.6
+elasticsearch==7.17.12
 elasticsearch-dsl==7.4.1
 gunicorn==23.0.0
 Jinja2==3.1.6
@@ -42,5 +43,5 @@ rules==3.5
 sentry-sdk==2.43.0
 setuptools==80.9.0
 slackclient==2.9.4
-urllib3==2.5.0
+urllib3==2.6.0
 uvicorn[standard]==0.38.0
