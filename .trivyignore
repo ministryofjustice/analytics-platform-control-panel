@@ -1,5 +1,6 @@
 ## (usr/local/bin/helm)
 CVE-2025-61729
-## urllib3
+## urllib3 - Cannot upgrade to 2.6.0+ due to elasticsearch-dsl 7.x incompatibility
+## Risk accepted: server-side only, requests to trusted endpoints (GitHub API, internal services)
 CVE-2025-66418
 CVE-2025-66471
