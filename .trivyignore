@@ -1,2 +1,5 @@
 ## (usr/local/bin/helm)
 CVE-2025-61729
+## urllib3
+CVE-2025-66418
+CVE-2025-66471
