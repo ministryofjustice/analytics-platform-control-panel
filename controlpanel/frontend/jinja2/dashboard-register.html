@@ -5,55 +5,64 @@
 
 {% extends "base.html" %}
 
-{% set page_title = "Register a dashboard" %}
+{% set page_title = "Share a dashboard" %}
 
 {% block content %}
-<h1 class="govuk-heading-xl">{{ page_title }}</h1>
-<p class="govuk-body">
-  After creating your dashboard, use this form to register it and allow it to be shared securely.
-</p>
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
 
-<form method="post" id="register_app" action="{{ url("register-dashboard") }}">
-  {{ csrf_input }}
+    <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  <div class="govuk-form-group" id="container-element">
+    <form method="post" id="register_app" action="{{ url("register-dashboard") }}">
+      {{ csrf_input }}
 
-    <label class="govuk-label govuk-label--m" for="dashboard_name">Dashboard name
-    </label>
+      <div class="govuk-form-group" id="container-element">
 
-    {% set error_name_msg = form.errors.get("name") %}
-    {% if error_name_msg %}
-      {% set errorId = 'name-error' %}
-      {{ govukErrorMessage({
-        "id": errorId,
-        "html": error_name_msg|join(". "),
-      }) }}
-    {% endif %}
+        <label class="govuk-label govuk-label--s" for="name">Choose dashboard
+        </label>
+        <div id="name-hint" class="govuk-hint">
+          Start typing the name of your dashboard as it appears in QuickSight.
+        </div>
 
-    <input type="text" class="govuk-input" id="dashboard_name" name="name" {% if form.name.value() %} value="{{ form.name.value() }}" {% endif %} required />
 
+        {% set error_name_msg = form.errors.get("name") %}
+        {% if error_name_msg %}
+          {% set errorId = 'name-error' %}
+          {{ govukErrorMessage({
+            "id": errorId,
+            "html": error_name_msg|join(". "),
+          }) }}
+        {% endif %}
+
+        <input type="text" class="govuk-input" id="name" name="name" {% if form.name.value() %} value="{{ form.name.value() }}" {% endif %} required />
+
+      </div>
+      <div class="govuk-form-group" id="container-element">
+
+        <label class="govuk-label govuk-label--s" for="description">Enter a description
+        </label>
+        <div id="description-hint" class="govuk-hint">
+          Help people understand what your dashboard shows. Explain any acronyms or less common terms.
+        </div>
+
+        {% set error_qsid_msg = form.errors.get("description") %}
+        {% if error_qsid_msg %}
+          {% set errorId = 'qsid-error' %}
+          {{ govukErrorMessage({
+            "id": errorId,
+            "html": error_qsid_msg|join(". "),
+          }) }}
+        {% endif %}
+
+        <textarea type="text" class="govuk-textarea" id="description" name="description" rows="5" aria-describedby="description-hint" {% if form.description.value() %} value="{{ form.description.value() }}" {% endif %}></textarea>
+
+      </div>
+
+
+      <div class="govuk-form-group">
+        <button class="govuk-button">Register dashboard</button>
+      </div>
+    </form>
   </div>
-  <div class="govuk-form-group" id="container-element">
-
-    <label class="govuk-label govuk-label--m" for="display_result_repo">Dashboard URL
-    </label>
-
-    {% set error_qsid_msg = form.errors.get("quicksight_id") %}
-    {% if error_qsid_msg %}
-      {% set errorId = 'qsid-error' %}
-      {{ govukErrorMessage({
-        "id": errorId,
-        "html": error_qsid_msg|join(". "),
-      }) }}
-    {% endif %}
-    <span class="govuk-hint">Enter your Dashboard URL here</span>
-    <input type="text" class="govuk-input" id="id_quicksight" name="quicksight_id" {% if form.quicksight_id.value() %} value="{{ form.quicksight_id.value() }}" {% endif %} required />
-
-  </div>
-
-
-  <div class="govuk-form-group">
-    <button class="govuk-button">Register dashboard</button>
-  </div>
-</form>
+</div>
 {% endblock %}

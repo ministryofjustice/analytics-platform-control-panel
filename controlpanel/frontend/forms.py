@@ -820,10 +820,13 @@ class FeedbackForm(forms.ModelForm):
 
 class RegisterDashboardForm(forms.ModelForm):
 
+    quicksight_id = forms.CharField(widget=forms.HiddenInput)
+
     class Meta:
         model = Dashboard
         fields = [
             "name",
+            "description",
             "quicksight_id",
         ]
 
@@ -831,6 +834,10 @@ class RegisterDashboardForm(forms.ModelForm):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
 
+    # def get_dashboard_names(self):
+    #     return AWSQuicksight().get_dashboards_for_user(user=self.user)
+
+    # TODO remove this when we lookup dashboard URL via boto
     def clean_quicksight_id(self):
         dashboard_url = self.cleaned_data["quicksight_id"]
 

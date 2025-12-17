@@ -16,6 +16,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
+from controlpanel.api import aws
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import Dashboard, DashboardDomain, DashboardViewer, User
 from controlpanel.frontend.forms import (
@@ -74,6 +75,13 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
             f"Successfully registered {self.object.name} dashboard",
         )
         return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.object.pk})
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["dashboard_names"] = aws.AWSQuicksight().get_dashboards_for_user(
+            user=self.request.user
+        )
+        return context
 
     def form_valid(self, form):
         # add dashboard, set creator as an admin and viewer
