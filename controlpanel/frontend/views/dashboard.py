@@ -78,9 +78,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context["dashboard_names"] = aws.AWSQuicksight().get_dashboards_for_user(
-            user=self.request.user
-        )
+        context["dashboards"] = aws.AWSQuicksight().get_dashboards_for_user(user=self.request.user)
         return context
 
     def form_valid(self, form):

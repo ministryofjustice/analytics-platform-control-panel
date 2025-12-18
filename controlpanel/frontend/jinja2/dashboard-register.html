@@ -1,6 +1,7 @@
 {% from "error-message/macro.html" import govukErrorMessage %}
 {% from "input/macro.html" import govukInput %}
 {% from "label/macro.html" import govukLabel %}
+{% from "autocomplete/macro.html" import autocomplete %}
 
 
 {% extends "base.html" %}
@@ -16,27 +17,18 @@
     <form method="post" id="register_app" action="{{ url("register-dashboard") }}">
       {{ csrf_input }}
 
-      <div class="govuk-form-group" id="container-element">
-
-        <label class="govuk-label govuk-label--s" for="name">Choose dashboard
-        </label>
-        <div id="name-hint" class="govuk-hint">
-          Start typing the name of your dashboard as it appears in QuickSight.
-        </div>
-
-
-        {% set error_name_msg = form.errors.get("name") %}
-        {% if error_name_msg %}
-          {% set errorId = 'name-error' %}
-          {{ govukErrorMessage({
-            "id": errorId,
-            "html": error_name_msg|join(". "),
-          }) }}
-        {% endif %}
-
-        <input type="text" class="govuk-input" id="name" name="name" {% if form.name.value() %} value="{{ form.name.value() }}" {% endif %} required />
-
-      </div>
+      {% set error_name_msg = form.errors.get("name") %}
+      {% call(dashboard) autocomplete({
+        "name": "name",
+        "label": {"text": "Choose dashboard", "classes": "govuk-label--s"},
+        "hint": {"text": "Start typing the name of your dashboard as it appears in QuickSight."},
+        "items": dashboards,
+        "required": True,
+        "formGroup": {"classes": "autocomplete--full-width"},
+        "errorMessage": {"html": error_name_msg|join(". ")} if error_name_msg else None,
+      }) %}
+        <option value="{{ dashboard.Name }}">{{ dashboard.Name }}</option>
+      {% endcall %}
       <div class="govuk-form-group" id="container-element">
 
         <label class="govuk-label govuk-label--s" for="description">Enter a description

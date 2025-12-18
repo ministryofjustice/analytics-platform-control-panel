@@ -57,7 +57,7 @@ build-static:
 	rm -rf static/
 	make build-css
 	make build-js
-	python3 manage.py collectstatic
+	python3 manage.py collectstatic --noinput
 
 build-css:
 	mkdir static
