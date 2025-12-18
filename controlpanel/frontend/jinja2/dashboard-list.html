@@ -3,19 +3,36 @@
 {% extends "base.html" %}
 
 {% set page_name = "dashboards" %}
-{% set page_title = "Your Dashboards" %}
+{% set page_title = "Share dashboards" %}
+{% set mainClasses = "govuk-!-padding-top-0" %}
 
 {% block content %}
+
+<nav class="moj-sub-navigation" aria-label="Sub navigation">
+    <ul class="moj-sub-navigation__list">
+        <li class="moj-sub-navigation__item">
+        <a class="moj-sub-navigation__link" href="{{url("quicksight")}}">QuickSight</a>
+        </li>
+        <li class="moj-sub-navigation__item">
+        <a class="moj-sub-navigation__link" aria-current="page" href="{{url("list-dashboards")}}">Share Dashboard</a>
+        </li>
+    </ul>
+</nav>
+
 {% set num_dashboards = dashboards|length %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  {{ dashboard_list(dashboards, request.user) }}
+  <p class="govuk-body">Allow colleagues and stakeholders to view your dashboards. They'll be able to view even without Analytical Platform access.</p>
+
+  <p class=govuk-body>Choose from your existing dashboards to share.</p>
 
   <p class="govuk-body">
-    <a class="govuk-button" href="{{ url('register-dashboard') }}">
-      Register a Dashboard
+    <a class="govuk-button govuk-!-margin-bottom-0" href="{{ url('register-dashboard') }}">
+      Share a dashboard
     </a>
   </p>
-  
+
+  {{ dashboard_list(dashboards, request.user) }}
+
 
 {% endblock %}
