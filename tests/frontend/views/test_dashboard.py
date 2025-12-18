@@ -89,7 +89,7 @@ def list_all(client, *args):
 
 
 def detail(client, dashboard, *args):
-    return client.get(reverse("manage-dashboard", kwargs={"pk": dashboard.id}))
+    return client.get(reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}))
 
 
 def create(client, *args):
@@ -496,7 +496,7 @@ def test_register_dashboard_success(client, users, ExtendedAuth0):
         )
         dashboard = Dashboard.objects.get(name="Test Dashboard", quicksight_id="abc-123")
         assert response.status_code == 302
-        assert response.url == reverse("manage-dashboard", kwargs={"pk": dashboard.pk})
+        assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.pk})
         ExtendedAuth0.add_dashboard_member_by_email.assert_called_once_with(
             email=users["superuser"].justice_email.lower(),
             user_options={"connection": "email"},
@@ -522,7 +522,7 @@ def test_add_admin(
     }
     response = client.post(url, data)
     assert response.status_code == 302
-    assert response.url == reverse("manage-dashboard", kwargs={"pk": dashboard.id})
+    assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id})
     assert dashboard.admins.filter(auth0_id=user_id).count() == count
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     assert expected_message in messages
