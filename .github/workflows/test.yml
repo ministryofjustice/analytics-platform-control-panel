@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - development
 
 permissions: {}
 
@@ -14,7 +15,7 @@ jobs:
       LOGS_BUCKET_NAME: moj-analytics-s3-logs
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout
         id: checkout
@@ -27,7 +28,7 @@ jobs:
           NETWORK: host
           IMAGE_TAG: ${{ github.sha }}
 
-      - name: Run Python tests 
+      - name: Run Python tests
         id: test
         run: make clean && make test
         env:
