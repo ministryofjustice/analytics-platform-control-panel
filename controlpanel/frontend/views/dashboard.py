@@ -73,7 +73,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
             self.request,
             f"Successfully registered {self.object.name} dashboard",
         )
-        return reverse_lazy("manage-dashboard", kwargs={"pk": self.object.pk})
+        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.object.pk})
 
     def form_valid(self, form):
         # add dashboard, set creator as an admin and viewer
@@ -146,7 +146,7 @@ class UpdateDashboardBaseView(
         raise NotImplementedError("Subclasses must define this method")
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy("manage-dashboard", kwargs={"pk": kwargs["pk"]})
+        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": kwargs["pk"]})
 
     def post(self, request, *args, **kwargs):
         self.perform_update(**kwargs)
@@ -337,7 +337,7 @@ class GrantDomainAccess(
         return kwargs
 
     def get_success_url(self):
-        return reverse_lazy("manage-dashboard", kwargs={"pk": self.kwargs["pk"]})
+        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.kwargs["pk"]})
 
     def form_valid(self, form):
         domain = form.cleaned_data["whitelist_domain"]

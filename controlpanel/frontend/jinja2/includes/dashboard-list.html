@@ -1,22 +1,17 @@
 {% from "modal-dialog/macro.html" import modal_dialog %}
 {% from "includes/yesno.html" import yes_no %}
 
-{% set admin_access_html %}
-{% include "modals/dashboard_admins.html" %}
-{% endset %}
-
 {% macro dashboard_list(dashboards, user) %}
 {%- set num_dashboards = dashboards|length %}
-<table class="govuk-table track_task">
+{% if num_dashboards > 0 %}
+  <h2 class="govuk-heading-l">Your shared dashboards</h2>
+
+  <table class="govuk-table track_task">
   <thead class="govuk-table__head">
     <tr class="govuk-table__row">
       <th class="govuk-table__header">Dashboard name</th>
       <th class="govuk-table__header">
-        Admin access
-        {{ modal_dialog(admin_access_html|safe) }}
-      </th>
-      <th class="govuk-table__header">
-        <span class="govuk-visually-hidden">Users</span>
+        Description
       </th>
       <th class="govuk-table__header">
         <span class="govuk-visually-hidden">Actions</span>
@@ -27,22 +22,15 @@
   {%- for dashboard in dashboards %}
     <tr class="govuk-table__row">
       <td class="govuk-table__cell">
-        {% if not request.user.has_perm('api.retrieve_dashboard', dashboard) -%}
           {{ dashboard.name }}
-        {%- else -%}
-          <a href="{{ url('manage-dashboard', kwargs={ 'pk': dashboard.id }) }}">{{ dashboard.name }}</a>
-        {%- endif %}
       </td>
       <td class="govuk-table__cell">
-        {{ yes_no(user.is_dashboard_admin(dashboard.id)) }}
+        Description goes here
       </td>
       <td class="govuk-table__cell">
-        <a href="{{ url('dashboard-customers', kwargs={ 'pk': dashboard.id, 'page_no': '1' }) }}" class="govuk-button govuk-button--secondary right">Manage users</a>
-      </td>
-      <td class="govuk-table__cell">
-        <a class="govuk-button govuk-button--secondary right {%- if not request.user.has_perm('api.retrieve_dashboard', dashboard) %} govuk-visually-hidden{% endif %}"
-          href="{{ url('manage-dashboard', kwargs={ 'pk': dashboard.id }) }}">
-          Manage dashboard
+        <a class="govuk-link right"
+          href="{{ url('manage-dashboard-sharing', kwargs={ 'pk': dashboard.id }) }}">
+          Manage sharing
         </a>
       </td>
     </tr>
@@ -56,4 +44,6 @@
     </tr>
   </tfoot>
 </table>
+{% endif %}
+
 {% endmacro %}

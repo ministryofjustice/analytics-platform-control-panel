@@ -294,12 +294,18 @@ urlpatterns = [
     ),
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
     path("quicksight/", views.QuicksightView.as_view(), name="quicksight"),
+    path("quicksight/dashboards/", views.DashboardList.as_view(), name="list-dashboards"),
+    path(
+        "quicksight/dashboards/all/", views.AdminDashboardList.as_view(), name="list-all-dashboards"
+    ),
+    path(
+        "quicksight/dashboards/<int:pk>/",
+        views.DashboardDetail.as_view(),
+        name="manage-dashboard-sharing",
+    ),
     path("feedback/", views.CreateFeedback.as_view(), name="feedback-create"),
     path("feedback/thanks", views.FeedbackThanks.as_view(), name="feedback-thanks"),
-    path("dashboards/", views.DashboardList.as_view(), name="list-dashboards"),
-    path("dashboards/all/", views.AdminDashboardList.as_view(), name="list-all-dashboards"),
     path("dashboards/register/", views.RegisterDashboard.as_view(), name="register-dashboard"),
-    path("dashboards/<int:pk>/", views.DashboardDetail.as_view(), name="manage-dashboard"),
     path("dashboards/<int:pk>/delete/", views.DeleteDashboard.as_view(), name="delete-dashboard"),
     path(
         "dashboards/<int:pk>/admins/", views.AddDashboardAdmin.as_view(), name="add-dashboard-admin"
