@@ -305,7 +305,6 @@ urlpatterns = [
     ),
     path("feedback/", views.CreateFeedback.as_view(), name="feedback-create"),
     path("feedback/thanks", views.FeedbackThanks.as_view(), name="feedback-thanks"),
-    path("dashboards/all/", views.AdminDashboardList.as_view(), name="list-all-dashboards"),
     path("dashboards/register/", views.RegisterDashboard.as_view(), name="register-dashboard"),
     path("dashboards/<int:pk>/delete/", views.DeleteDashboard.as_view(), name="delete-dashboard"),
     path(

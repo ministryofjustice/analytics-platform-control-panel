@@ -4,7 +4,10 @@
 
 {% set page_name = "dashboards" %}
 {% set page_title = "Share dashboards" %}
-{% set mainClasses = "govuk-!-padding-top-0" %}
+
+{% if display_service_info %}
+  {% set mainClasses = "govuk-!-padding-top-0" %}
+{% endif %}
 
 {% block content %}
 
@@ -22,9 +25,13 @@
 {% set num_dashboards = dashboards|length %}
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-  <p class="govuk-body">Allow colleagues and stakeholders to view your dashboards. They'll be able to view even without Analytical Platform access.</p>
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body">Allow colleagues and stakeholders to view your dashboards. They'll be able to view even without Analytical Platform access.</p>
 
-  <p class=govuk-body>Choose from your existing dashboards to share.</p>
+      <p class="govuk-body">Choose from your existing dashboards to share.</p>
+    </div>
+  </div>
 
   <p class="govuk-body">
     <a class="govuk-button govuk-!-margin-bottom-0" href="{{ url('register-dashboard') }}">
