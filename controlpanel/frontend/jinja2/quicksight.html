@@ -1,11 +1,27 @@
 {% extends "base.html" %}
 
+
 {% set page_name = "quicksight" %}
 {% set page_title = "QuickSight" %}
 
 {% block container_class_names %}govuk-grid-column-full{% endblock container_class_names %}
 
 {% block content %}
+    <div class="govuk-width-container">
+        <nav class="moj-sub-navigation" aria-label="Sub navigation">
+            <ul class="moj-sub-navigation__list">
+                <li class="moj-sub-navigation__item">
+                <a class="moj-sub-navigation__link" aria-current="page" href="{{url("quicksight")}}">QuickSight</a>
+                </li>
+                <li class="moj-sub-navigation__item">
+                <a class="moj-sub-navigation__link" href="{{url("list-dashboards")}}">Share Dashboard</a>
+                </li>
+            </ul>
+        </nav>
+
+        <h1 class="govuk-heading-xl">QuickSight</h1>
+    </div>
+
     {% if embed_url %}
         <body onload="embedConsole()">
             <div id="experience-container"></div>
