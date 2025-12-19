@@ -1,6 +1,4 @@
 {% from "error-message/macro.html" import govukErrorMessage %}
-{% from "input/macro.html" import govukInput %}
-{% from "label/macro.html" import govukLabel %}
 {% from "autocomplete/macro.html" import autocomplete %}
 
 
@@ -14,20 +12,20 @@
 
     <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-    <form method="post" id="register_app" action="{{ url("register-dashboard") }}">
+    <form method="post" action="{{ url("register-dashboard") }}">
       {{ csrf_input }}
 
-      {% set error_name_msg = form.errors.get("name") %}
+      {% set error_qs_msg = form.errors.get("quicksight_id") %}
       {% call(dashboard) autocomplete({
-        "name": "name",
+        "name": "quicksight_id",
         "label": {"text": "Choose dashboard", "classes": "govuk-label--s"},
         "hint": {"text": "Start typing the name of your dashboard as it appears in QuickSight."},
         "items": dashboards,
         "required": True,
         "formGroup": {"classes": "autocomplete--full-width"},
-        "errorMessage": {"html": error_name_msg|join(". ")} if error_name_msg else None,
+        "errorMessage": {"html": error_qs_msg|join(". ")} if error_qs_msg else None,
       }) %}
-        <option value="{{ dashboard.Name }}">{{ dashboard.Name }}</option>
+        <option value="{{ dashboard.DashboardId }}">{{ dashboard.Name }}</option>
       {% endcall %}
       <div class="govuk-form-group" id="container-element">
 

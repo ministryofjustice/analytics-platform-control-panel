@@ -64,9 +64,16 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
     def has_permission(self):
         return self.request.user.is_quicksight_user()
 
+    def get_dashboards(self):
+        """Cache dashboards list to avoid multiple API calls"""
+        if not hasattr(self, "_dashboards"):
+            self._dashboards = aws.AWSQuicksight().get_dashboards_for_user(user=self.request.user)
+        return self._dashboards
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
+        kwargs["dashboards"] = self.get_dashboards()
         return kwargs
 
     def get_success_url(self):
@@ -78,7 +85,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context["dashboards"] = aws.AWSQuicksight().get_dashboards_for_user(user=self.request.user)
+        context["dashboards"] = self.get_dashboards()
         return context
 
     def form_valid(self, form):

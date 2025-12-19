@@ -820,7 +820,7 @@ class FeedbackForm(forms.ModelForm):
 
 class RegisterDashboardForm(forms.ModelForm):
 
-    quicksight_id = forms.CharField(widget=forms.HiddenInput)
+    quicksight_id = forms.CharField()
 
     class Meta:
         model = Dashboard
@@ -832,30 +832,26 @@ class RegisterDashboardForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
+        self.dashboards = kwargs.pop("dashboards", [])
         super().__init__(*args, **kwargs)
+        # name field is populated from dashboards list, not user input
+        self.fields["name"].required = False
 
-    # def get_dashboard_names(self):
-    #     return AWSQuicksight().get_dashboards_for_user(user=self.user)
-
-    # TODO remove this when we lookup dashboard URL via boto
     def clean_quicksight_id(self):
-        dashboard_url = self.cleaned_data["quicksight_id"]
+        quicksight_id = self.cleaned_data["quicksight_id"]
 
-        prefix = (
-            f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/"
-        )
-        if not dashboard_url.startswith(prefix):
-            raise ValidationError("The URL entered is not a valid QuickSight dashboard URL")
+        # Validate the selected dashboard is in the user's list (security check)
+        valid_ids = [d["DashboardId"] for d in self.dashboards]
+        if quicksight_id not in valid_ids:
+            raise ValidationError("Please select a valid dashboard from the list")
 
-        quicksight_id = dashboard_url.split(prefix)[1]
-        if not quicksight_id:
-            raise ValidationError("The URL entered is not a valid QuickSight dashboard URL")
-
+        # Check user has permission to register this dashboard
         if not AWSQuicksight().has_update_dashboard_permissions(
             dashboard_id=quicksight_id, user=self.user
         ):
             raise ValidationError("You do not have permission to register this dashboard")
 
+        # Check dashboard isn't already registered
         existing_dashboard = Dashboard.objects.filter(quicksight_id=quicksight_id).first()
         if existing_dashboard:
             raise ValidationError(
@@ -863,6 +859,22 @@ class RegisterDashboardForm(forms.ModelForm):
             )
 
         return quicksight_id
+
+    def clean(self):
+        cleaned_data = super().clean()
+        quicksight_id = cleaned_data.get("quicksight_id")
+
+        # Look up the dashboard name from the dashboards list
+        if quicksight_id:
+            for dashboard in self.dashboards:
+                if dashboard["DashboardId"] == quicksight_id:
+                    cleaned_data["name"] = dashboard["Name"]
+                    break
+
+        if not cleaned_data.get("name"):
+            self.add_error("quicksight_id", "Please select a dashboard")
+
+        return cleaned_data
 
 
 class ToolChoice(forms.Select):
