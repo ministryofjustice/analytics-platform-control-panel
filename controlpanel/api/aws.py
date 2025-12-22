@@ -1265,6 +1265,27 @@ class AWSQuicksight(AWSService):
 
         return response
 
+    def get_dashboard_embed_url(self, user, dashboard_id):
+        """Generate an embed URL for a specific dashboard for a registered user."""
+        user_arn = self.get_user_arn(user)
+        if not user_arn:
+            return None
+
+        response = self.client.generate_embed_url_for_registered_user(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            UserArn=user_arn,
+            ExperienceConfiguration={
+                "Dashboard": {
+                    "InitialDashboardId": dashboard_id,
+                },
+            },
+            AllowedDomains=settings.QUICKSIGHT_DOMAINS,
+        )
+        if response:
+            return response["EmbedUrl"]
+
+        return response
+
     def describe_dashboard(self, dashboard_id):
         return self.client.describe_dashboard(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,

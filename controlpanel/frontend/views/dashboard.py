@@ -74,7 +74,6 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         """Pre-populate form with session data if returning from preview."""
         initial = super().get_initial()
         preview_data = self.request.session.get("dashboard_preview")
-        # Only use preview data if it belongs to the current user
         if preview_data and preview_data.get("user_id") == self.request.user.id:
             initial["quicksight_id"] = preview_data.get("quicksight_id", "")
             initial["description"] = preview_data.get("description", "")
@@ -119,22 +118,31 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
         return None
 
     def dispatch(self, request, *args, **kwargs):
-        # Redirect to registration if no preview data in session (or wrong user)
         if not self.get_preview_data():
-            # Clear any stale preview data from a different user
             request.session.pop("dashboard_preview", None)
             return HttpResponseRedirect(reverse_lazy("register-dashboard"))
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["preview"] = self.get_preview_data()
+        preview_data = self.get_preview_data()
+        context["preview"] = preview_data
+
+        embed_url = aws.AWSQuicksight().get_dashboard_embed_url(
+            user=self.request.user,
+            dashboard_id=preview_data["quicksight_id"],
+        )
+        context["embed_url"] = embed_url
+
         return context
 
     def post(self, request, *args, **kwargs):
         """Create the dashboard from session data."""
         preview_data = request.session.pop("dashboard_preview", None)
         if not preview_data:
+            return HttpResponseRedirect(reverse_lazy("register-dashboard"))
+
+        if preview_data.get("user_id") != request.user.id:
             return HttpResponseRedirect(reverse_lazy("register-dashboard"))
 
         with transaction.atomic():
@@ -149,7 +157,7 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
             )
             dashboard.admins.add(user)
 
-            # Add creator as viewer
+            # Add creator as viewer so they can view it in Dashboard Service
             viewer, _ = DashboardViewer.objects.get_or_create(email=email)
             dashboard.viewers.add(viewer)
 

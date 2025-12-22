@@ -620,8 +620,10 @@ def test_register_dashboard_prepopulates_from_session(get_dashboards, client, us
     assert "selected" in str(response.content)
 
 
-def test_preview_dashboard_displays_session_data(client, users):
-    """Preview page displays data from session."""
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboard_embed_url")
+def test_preview_dashboard_displays_session_data(mock_embed_url, client, users):
+    """Preview page displays data from session and embeds dashboard."""
+    mock_embed_url.return_value = "https://quicksight.aws.amazon.com/embed/test-url"
     client.force_login(users["superuser"])
     session = client.session
     session["dashboard_preview"] = {
@@ -640,6 +642,32 @@ def test_preview_dashboard_displays_session_data(client, users):
     assert "A test dashboard" in str(response.content)
     assert "user1@example.com" in str(response.content)
     assert "user2@example.com" in str(response.content)
+    # Check embed URL is included
+    assert "https://quicksight.aws.amazon.com/embed/test-url" in str(response.content)
+    assert "dashboard-container" in str(response.content)
+    mock_embed_url.assert_called_once_with(user=users["superuser"], dashboard_id="preview-123")
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboard_embed_url")
+def test_preview_dashboard_without_embed_url(mock_embed_url, client, users):
+    """Preview page shows fallback message when embed URL is not available."""
+    mock_embed_url.return_value = None
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "My Dashboard",
+        "description": "A test dashboard",
+        "quicksight_id": "preview-123",
+        "emails": [],
+    }
+    session.save()
+
+    url = reverse("preview-dashboard")
+    response = client.get(url)
+    assert response.status_code == 200
+    assert "Dashboard preview is not available" in str(response.content)
+    assert "dashboard-container" not in str(response.content)
 
 
 def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth0):
