@@ -47,6 +47,16 @@
           </div>
         {% endfor %}
       {% endif %}
+
+      <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">Domain access</dt>
+        <dd class="govuk-summary-list__value">{{ preview.whitelist_domain if preview.whitelist_domain else "No domain selected" }}</dd>
+        <dd class="govuk-summary-list__actions">
+          <a class="govuk-link" href="{{ url("register-dashboard") }}">
+            Change<span class="govuk-visually-hidden"> domain access</span>
+          </a>
+        </dd>
+      </div>
     </dl>
 
     <h2 class="govuk-heading-m">Dashboard preview</h2>

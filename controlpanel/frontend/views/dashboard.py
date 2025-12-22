@@ -99,6 +99,11 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
             "description": form.cleaned_data.get("description", ""),
             "quicksight_id": form.cleaned_data["quicksight_id"],
             "emails": form.cleaned_data.get("emails", []),
+            "whitelist_domain": (
+                form.cleaned_data.get("whitelist_domain").name
+                if form.cleaned_data.get("whitelist_domain")
+                else None
+            ),
         }
         return HttpResponseRedirect(reverse_lazy("preview-dashboard"))
 
@@ -156,6 +161,10 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                 created_by=user,
             )
             dashboard.admins.add(user)
+            if preview_data.get("whitelist_domain"):
+                dashboard.whitelist_domains.add(
+                    DashboardDomain.objects.get(name=preview_data.get("whitelist_domain"))
+                )
 
             # Add creator as viewer so they can view it in Dashboard Service
             viewer, _ = DashboardViewer.objects.get_or_create(email=email)

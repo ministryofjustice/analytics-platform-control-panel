@@ -881,6 +881,12 @@ class RegisterDashboardForm(forms.ModelForm):
 
     quicksight_id = forms.CharField()
     emails = MultiEmailField(required=False)
+    whitelist_domain = forms.ModelChoiceField(
+        queryset=DashboardDomain.objects.all(),
+        empty_label="Select domain",
+        required=False,
+        widget=forms.Select(attrs={"class": "govuk-select"}),
+    )
 
     class Meta:
         model = Dashboard
@@ -896,6 +902,7 @@ class RegisterDashboardForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # name field is populated from dashboards list, not user input
         self.fields["name"].required = False
+        self.fields["description"].required = True
 
     def clean_quicksight_id(self):
         quicksight_id = self.cleaned_data["quicksight_id"]
@@ -923,13 +930,13 @@ class RegisterDashboardForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         quicksight_id = cleaned_data.get("quicksight_id")
+        if not quicksight_id:
+            return cleaned_data
 
-        # Look up the dashboard name from the dashboards list
-        if quicksight_id:
-            for dashboard in self.dashboards:
-                if dashboard["DashboardId"] == quicksight_id:
-                    cleaned_data["name"] = dashboard["Name"]
-                    break
+        for dashboard in self.dashboards:
+            if dashboard["DashboardId"] == quicksight_id:
+                cleaned_data["name"] = dashboard["Name"]
+                break
 
         if not cleaned_data.get("name"):
             self.add_error("quicksight_id", "Please select a dashboard")

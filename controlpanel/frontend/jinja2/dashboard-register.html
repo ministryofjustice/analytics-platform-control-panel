@@ -1,6 +1,8 @@
 {% from "error-message/macro.html" import govukErrorMessage %}
 {% from "autocomplete/macro.html" import autocomplete %}
 {% from "input/macro.html" import govukInput %}
+{% from "label/macro.html" import govukLabel %}
+{% from "hint/macro.html" import govukHint %}
 
 
 {% extends "base.html" %}
@@ -68,7 +70,7 @@
               {{ govukInput({
                 "name": "emails[" ~ loop.index0 ~ "]",
                 "id": "emails[" ~ loop.index0 ~ "]",
-                "label": {"text": "Email address", "classes": "govuk-label--s"},
+                "label": {"text": "Add an email", "classes": "govuk-label--s"},
                 "hint": {"text": "Enter an email address to share with."} if loop.first else None,
                 "type": "email",
                 "value": email,
@@ -84,7 +86,7 @@
             {{ govukInput({
               "name": "emails[0]",
               "id": "emails[0]",
-              "label": {"text": "Email address", "classes": "govuk-label--s"},
+              "label": {"text": "Add an email", "classes": "govuk-label--s"},
               "hint": {"text": "Enter an email address to share with."},
               "type": "email",
               "attributes": {
@@ -104,8 +106,18 @@
       </div>
 
 
+      <div class="govuk-form-group">
+        {{ govukLabel({"text": "Connect an email domain", "classes": "govuk-label--s"}) }}
+        {{ govukHint({"text": "Allow all users on a specified email domain to view your dashboard. <br><b>Do not use for dashboards containing sensitive data.</b>"}) }}
+        {% if form.whitelist_domain.errors %}
+          {{ govukErrorMessage({"text": form.whitelist_domain.errors|join(". ")}) }}
+        {% endif %}
+        {{ form.whitelist_domain }}
+      </div>
+
+
       <div class="govuk-button-group">
-        <button class="govuk-button">Register dashboard</button>
+        <button class="govuk-button">Next</button>
         <a class="govuk-link" href="{{ url("cancel-dashboard-registration") }}">Cancel</a>
       </div>
     </form>

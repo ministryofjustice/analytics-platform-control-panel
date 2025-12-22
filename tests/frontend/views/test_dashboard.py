@@ -499,6 +499,7 @@ def test_register_dashboard_with_valid_emails(
         url,
         data={
             "quicksight_id": "def-456",
+            "description": "Test description",
             "emails[0]": "viewer1@example.com",
             "emails[1]": "viewer2@example.com",
         },
@@ -525,6 +526,7 @@ def test_register_dashboard_with_invalid_emails(
         url,
         data={
             "quicksight_id": "ghi-789",
+            "description": "Test description",
             "emails[0]": "not-an-email",
             "emails[1]": "also-invalid",
         },
@@ -551,6 +553,7 @@ def test_register_dashboard_with_empty_emails(
         url,
         data={
             "quicksight_id": "jkl-012",
+            "description": "Test description",
         },
     )
     assert response.status_code == 302
@@ -699,6 +702,54 @@ def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth
     assert "viewer@example.com" in viewer_emails
     # Session should be cleared
     assert "dashboard_preview" not in client.session
+
+
+def test_preview_dashboard_confirm_creates_dashboard_with_whitelist_domain(
+    client, users, dashboard_domain, ExtendedAuth0
+):
+    """Confirming preview creates dashboard with whitelist domain."""
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "Dashboard With Domain",
+        "description": "Description",
+        "quicksight_id": "domain-123",
+        "emails": [],
+        "whitelist_domain": dashboard_domain.name,
+    }
+    session.save()
+
+    url = reverse("preview-dashboard")
+    response = client.post(url)
+
+    dashboard = Dashboard.objects.get(quicksight_id="domain-123")
+    assert response.status_code == 302
+    assert dashboard.whitelist_domains.count() == 1
+    assert dashboard_domain in dashboard.whitelist_domains.all()
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_with_whitelist_domain(
+    has_update_permissions, get_dashboards, client, users, dashboard_domain
+):
+    """Registration with whitelist domain stores it in session for preview."""
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [{"DashboardId": "domain-456", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "domain-456",
+            "description": "Test description",
+            "whitelist_domain": dashboard_domain.id,
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("preview-dashboard")
+    assert client.session["dashboard_preview"]["whitelist_domain"] == dashboard_domain.name
 
 
 def test_cancel_dashboard_registration_clears_session(client, users):
