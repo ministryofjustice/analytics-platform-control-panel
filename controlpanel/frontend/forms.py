@@ -55,6 +55,65 @@ class DynamicMultiChoiceField(forms.MultipleChoiceField):
             raise ValidationError(self.error_messages["required"], code="required")
 
 
+class MultiEmailWidget(forms.TextInput):
+    """
+    Widget that extracts multiple values from array-style form inputs.
+
+    Handles input names like emails[0], emails[1], etc. from the "Add another" component.
+    """
+
+    def value_from_datadict(self, data, files, name):
+        """Extract values from POST data with keys like name[0], name[1], etc."""
+        values = []
+        index = 0
+        while f"{name}[{index}]" in data:
+            value = data.get(f"{name}[{index}]", "").strip()
+            if value:
+                values.append(value)
+            index += 1
+        return values
+
+
+class MultiEmailField(forms.Field):
+    """
+    A form field that accepts multiple email addresses from array-style form inputs.
+
+    Handles input names like emails[0], emails[1], etc. from the "Add another" component.
+    Returns a list of validated, lowercase email addresses.
+
+    Usage:
+        emails = MultiEmailField(required=False)
+    """
+
+    widget = MultiEmailWidget
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("required", False)
+        super().__init__(**kwargs)
+
+    def clean(self, value):
+        """Validate that all values are valid email addresses."""
+        if not value:
+            if self.required:
+                raise ValidationError(self.error_messages["required"], code="required")
+            return []
+
+        errors = []
+        validated_emails = []
+
+        for email in value:
+            try:
+                validate_email(email)
+                validated_emails.append(email.lower())
+            except ValidationError:
+                errors.append(f"'{email}' is not a valid email address")
+
+        if errors:
+            raise ValidationError(errors)
+
+        return validated_emails
+
+
 class CloudPlatformArnValidationMixin:
     """Mixin to provide consistent Cloud Platform ARN validation for forms."""
 
@@ -821,6 +880,7 @@ class FeedbackForm(forms.ModelForm):
 class RegisterDashboardForm(forms.ModelForm):
 
     quicksight_id = forms.CharField()
+    emails = MultiEmailField(required=False)
 
     class Meta:
         model = Dashboard

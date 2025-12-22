@@ -27,14 +27,6 @@ def ExtendedAuth0():
 
 
 @pytest.fixture(autouse=True)
-def mock_get_dashboards_for_user():
-    """Mock get_dashboards_for_user for all tests - needed for register-dashboard page"""
-    with patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user") as get_dashboards:
-        get_dashboards.return_value = []
-        yield get_dashboards
-
-
-@pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
 
@@ -417,42 +409,41 @@ def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain)
     assert updated_dashboard.whitelist_domains.count() == 0
 
 
-def test_register_dashboard_invalid_id(client, users):
-    """Test that submitting a dashboard ID not in the user's available list is rejected"""
-    with patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user") as get_dashboards:
-        get_dashboards.return_value = [
-            {"DashboardId": "valid-dashboard-123", "Name": "Valid Dashboard"},
-        ]
-        client.force_login(users["superuser"])
-        url = reverse("register-dashboard")
-        response = client.post(
-            url,
-            data={
-                "quicksight_id": "invalid-dashboard-id",
-            },
-        )
+@pytest.mark.parametrize(
+    "dashboard_url",
+    [
+        ("https://not-quicksight.com/sn/dashboards/abc-123"),
+        ("https://eu-west-1.quicksight.com/sn/dashboards/abc-123"),
+        (f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.aws.amazon.com/sn/dashboards/"),
+    ],
+)
+def test_register_dashboard_invalid_url(dashboard_url, client, users):
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "name": "Test Dashboard",
+            "quicksight_id": dashboard_url,
+        },
+    )
 
-        assert response.status_code == 200
-        assert "Please select a valid dashboard from the list" in str(response.content)
+    assert response.status_code == 200
+    assert "The URL entered is not a valid QuickSight dashboard URL" in str(response.content)
 
 
 def test_register_dashboard_not_permitted(client, users):
-    with (
-        patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user") as get_dashboards,
-        patch(
-            "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
-        ) as has_update_permissions,
-    ):
-        get_dashboards.return_value = [
-            {"DashboardId": "abc-123", "Name": "Test Dashboard"},
-        ]
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
         has_update_permissions.return_value = False
         client.force_login(users["superuser"])
         url = reverse("register-dashboard")
         response = client.post(
             url,
             data={
-                "quicksight_id": "abc-123",
+                "name": "Test Dashboard",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/abc-123",  # noqa
             },
         )
         has_update_permissions.assert_called_once_with(
@@ -463,22 +454,17 @@ def test_register_dashboard_not_permitted(client, users):
 
 
 def test_register_dashboard_already_registered(client, users, dashboard):
-    with (
-        patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user") as get_dashboards,
-        patch(
-            "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
-        ) as has_update_permissions,
-    ):
-        get_dashboards.return_value = [
-            {"DashboardId": dashboard.quicksight_id, "Name": "Test Dashboard 2"},
-        ]
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
         has_update_permissions.return_value = True
         client.force_login(users["superuser"])
         url = reverse("register-dashboard")
         response = client.post(
             url,
             data={
-                "quicksight_id": dashboard.quicksight_id,
+                "name": "Test Dashboard 2",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/{dashboard.quicksight_id}",  # noqa
             },
         )
         has_update_permissions.assert_called_once_with(
@@ -492,22 +478,17 @@ def test_register_dashboard_already_registered(client, users, dashboard):
 
 
 def test_register_dashboard_success(client, users, ExtendedAuth0):
-    with (
-        patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user") as get_dashboards,
-        patch(
-            "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
-        ) as has_update_permissions,
-    ):
-        get_dashboards.return_value = [
-            {"DashboardId": "abc-123", "Name": "Test Dashboard"},
-        ]
+    with patch(
+        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
+    ) as has_update_permissions:
         has_update_permissions.return_value = True
         client.force_login(users["superuser"])
         url = reverse("register-dashboard")
         response = client.post(
             url,
             data={
-                "quicksight_id": "abc-123",
+                "name": "Test Dashboard",
+                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/abc-123",  # noqa
             },
         )
         has_update_permissions.assert_called_once_with(

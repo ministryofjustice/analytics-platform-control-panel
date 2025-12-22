@@ -1,5 +1,6 @@
 {% from "error-message/macro.html" import govukErrorMessage %}
 {% from "autocomplete/macro.html" import autocomplete %}
+{% from "input/macro.html" import govukInput %}
 
 
 {% extends "base.html" %}
@@ -46,6 +47,35 @@
 
         <textarea type="text" class="govuk-textarea" id="description" name="description" rows="5" aria-describedby="description-hint" {% if form.description.value() %} value="{{ form.description.value() }}" {% endif %}></textarea>
 
+      </div>
+
+      {% set emails_error = form.errors.get("emails") %}
+      <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
+        {% if emails_error %}
+          {{ govukErrorMessage({"html": emails_error|join(". ")}) }}
+        {% endif %}
+
+        <div data-module="moj-add-another">
+          <div class="moj-add-another__item">
+            {{ govukInput({
+              "name": "emails[0]",
+              "id": "emails[0]",
+              "label": {"text": "Email address", "classes": "govuk-label--s"},
+              "hint": {"text": "Enter an email address to share with."},
+              "type": "email",
+              "attributes": {
+                "data-name": "emails[%index%]",
+                "data-id": "emails[%index%]"
+              }
+            }) }}
+          </div>
+
+          <div class="moj-button-action govuk-!-margin-top-4">
+            <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
+              Add another email
+            </button>
+          </div>
+        </div>
       </div>
 
 
