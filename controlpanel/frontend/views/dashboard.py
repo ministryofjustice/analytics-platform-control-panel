@@ -173,6 +173,15 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
+class CancelDashboardRegistration(OIDCLoginRequiredMixin, RedirectView):
+    url = reverse_lazy("list-dashboards")
+
+    def get(self, request, *args, **kwargs):
+        request.session.pop("dashboard_preview", None)
+        return super().get(request, *args, **kwargs)
+
+
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "dashboard"
     model = Dashboard

@@ -44,6 +44,7 @@ from controlpanel.frontend.views.dashboard import (
     AddDashboardAdmin,
     AddDashboardCustomers,
     AdminDashboardList,
+    CancelDashboardRegistration,
     DashboardCustomers,
     DashboardDetail,
     DashboardList,

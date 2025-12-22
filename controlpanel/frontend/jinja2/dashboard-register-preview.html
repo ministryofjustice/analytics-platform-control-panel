@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% set page_title = "Check details" %}
+{% set back_link_url = url("register-dashboard") %}
 
 {% block content %}
 <div class="govuk-grid-row">
@@ -60,7 +61,8 @@
       {{ csrf_input }}
 
       <div class="govuk-button-group">
-        <button class="govuk-button">Share dashboard</button><a class="govuk-link" href="{{ url("register-dashboard") }}">Cancel</a>
+        <button class="govuk-button">Share dashboard</button>
+        <a class="govuk-link" href="{{ url("cancel-dashboard-registration") }}">Cancel</a>
       </div>
     </form>
   </div>

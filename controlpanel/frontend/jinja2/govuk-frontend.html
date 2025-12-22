@@ -54,6 +54,9 @@
   {% block main %}
     {% block beforeContent %}{% endblock %}
     <div class="{% block container_class_names %}govuk-width-container{% endblock container_class_names %}">
+      {% block back_link %}
+        {% if back_link_url %}<a href="{{ back_link_url }}" class="govuk-back-link">Back</a>{% endif %}
+      {% endblock %}
       <main class="govuk-main-wrapper {{ mainClasses or "" }}" id="main-content" role="main">
         {% block content %}{% endblock %}
       </main>

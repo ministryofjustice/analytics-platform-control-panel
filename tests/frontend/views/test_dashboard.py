@@ -701,6 +701,25 @@ def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth
     assert "dashboard_preview" not in client.session
 
 
+def test_cancel_dashboard_registration_clears_session(client, users):
+    """Cancel registration clears session data and redirects to list-dashboards."""
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "Test Dashboard",
+        "quicksight_id": "test-123",
+    }
+    session.save()
+
+    url = reverse("cancel-dashboard-registration")
+    response = client.get(url)
+
+    assert response.status_code == 302
+    assert response.url == reverse("list-dashboards")
+    assert "dashboard_preview" not in client.session
+
+
 @pytest.mark.parametrize(
     "user_id, expected_message, count",
     [

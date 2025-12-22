@@ -7,6 +7,8 @@
 
 {% set page_title = "Share a dashboard" %}
 
+{% set back_link_url = url("list-dashboards") %}
+
 {% block content %}
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
@@ -101,8 +103,9 @@
       </div>
 
 
-      <div class="govuk-form-group">
+      <div class="govuk-button-group">
         <button class="govuk-button">Register dashboard</button>
+        <a class="govuk-link" href="{{ url("cancel-dashboard-registration") }}">Cancel</a>
       </div>
     </form>
   </div>
