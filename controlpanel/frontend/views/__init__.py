@@ -50,6 +50,7 @@ from controlpanel.frontend.views.dashboard import (
     DeleteDashboard,
     GrantDomainAccess,
     RegisterDashboard,
+    RegisterDashboardPreview,
     RemoveDashboardCustomerByEmail,
     RemoveDashboardCustomerById,
     RevokeDashboardAdmin,

@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic.base import RedirectView
+from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormView
 from django.views.generic.list import ListView
@@ -70,18 +70,22 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
             self._dashboards = aws.AWSQuicksight().get_dashboards_for_user(user=self.request.user)
         return self._dashboards
 
+    def get_initial(self):
+        """Pre-populate form with session data if returning from preview."""
+        initial = super().get_initial()
+        preview_data = self.request.session.get("dashboard_preview")
+        # Only use preview data if it belongs to the current user
+        if preview_data and preview_data.get("user_id") == self.request.user.id:
+            initial["quicksight_id"] = preview_data.get("quicksight_id", "")
+            initial["description"] = preview_data.get("description", "")
+            initial["emails"] = preview_data.get("emails", [])
+        return initial
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         kwargs["dashboards"] = self.get_dashboards()
         return kwargs
-
-    def get_success_url(self):
-        messages.success(
-            self.request,
-            f"Successfully registered {self.object.name} dashboard",
-        )
-        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.object.pk})
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -89,18 +93,75 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         return context
 
     def form_valid(self, form):
-        # add dashboard, set creator as an admin and viewer
+        """Store validated form data in session and redirect to preview."""
+        self.request.session["dashboard_preview"] = {
+            "user_id": self.request.user.id,
+            "name": form.cleaned_data["name"],
+            "description": form.cleaned_data.get("description", ""),
+            "quicksight_id": form.cleaned_data["quicksight_id"],
+            "emails": form.cleaned_data.get("emails", []),
+        }
+        return HttpResponseRedirect(reverse_lazy("preview-dashboard"))
+
+
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
+class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    template_name = "dashboard-register-preview.html"
+
+    def has_permission(self):
+        return self.request.user.is_quicksight_user()
+
+    def get_preview_data(self):
+        """Get preview data only if it belongs to the current user."""
+        preview_data = self.request.session.get("dashboard_preview")
+        if preview_data and preview_data.get("user_id") == self.request.user.id:
+            return preview_data
+        return None
+
+    def dispatch(self, request, *args, **kwargs):
+        # Redirect to registration if no preview data in session (or wrong user)
+        if not self.get_preview_data():
+            # Clear any stale preview data from a different user
+            request.session.pop("dashboard_preview", None)
+            return HttpResponseRedirect(reverse_lazy("register-dashboard"))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["preview"] = self.get_preview_data()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Create the dashboard from session data."""
+        preview_data = request.session.pop("dashboard_preview", None)
+        if not preview_data:
+            return HttpResponseRedirect(reverse_lazy("register-dashboard"))
+
         with transaction.atomic():
-            user = self.request.user
+            user = request.user
             email = user.justice_email.lower()
-            dashboard = form.save(commit=False)
-            dashboard.created_by = user
-            dashboard.save()
+
+            dashboard = Dashboard.objects.create(
+                name=preview_data["name"],
+                description=preview_data.get("description", ""),
+                quicksight_id=preview_data["quicksight_id"],
+                created_by=user,
+            )
             dashboard.admins.add(user)
-            viewer, created = DashboardViewer.objects.get_or_create(email=email)
+
+            # Add creator as viewer
+            viewer, _ = DashboardViewer.objects.get_or_create(email=email)
             dashboard.viewers.add(viewer)
-            self.object = dashboard
-            return HttpResponseRedirect(self.get_success_url())
+
+            # Add any additional viewers from the emails list
+            for viewer_email in preview_data.get("emails", []):
+                viewer, _ = DashboardViewer.objects.get_or_create(email=viewer_email.lower())
+                dashboard.viewers.add(viewer)
+
+        messages.success(request, f"Successfully registered {dashboard.name} dashboard")
+        return HttpResponseRedirect(
+            reverse_lazy("manage-dashboard-sharing", kwargs={"pk": dashboard.pk})
+        )
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")

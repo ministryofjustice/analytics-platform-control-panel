@@ -93,7 +93,9 @@ def detail(client, dashboard, *args):
 
 
 def create(client, *args):
-    return client.get(reverse("register-dashboard"))
+    with patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user") as get_dashboards:
+        get_dashboards.return_value = []
+        return client.get(reverse("register-dashboard"))
 
 
 def delete(client, dashboard, *args):
@@ -409,98 +411,266 @@ def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain)
     assert updated_dashboard.whitelist_domains.count() == 0
 
 
-@pytest.mark.parametrize(
-    "dashboard_url",
-    [
-        ("https://not-quicksight.com/sn/dashboards/abc-123"),
-        ("https://eu-west-1.quicksight.com/sn/dashboards/abc-123"),
-        (f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.aws.amazon.com/sn/dashboards/"),
-    ],
-)
-def test_register_dashboard_invalid_url(dashboard_url, client, users):
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_not_permitted(has_update_permissions, get_dashboards, client, users):
+    has_update_permissions.return_value = False
+    get_dashboards.return_value = [{"DashboardId": "abc-123", "Name": "Test Dashboard"}]
     client.force_login(users["superuser"])
     url = reverse("register-dashboard")
     response = client.post(
         url,
         data={
-            "name": "Test Dashboard",
-            "quicksight_id": dashboard_url,
+            "quicksight_id": "abc-123",
         },
     )
+    has_update_permissions.assert_called_once_with(dashboard_id="abc-123", user=users["superuser"])
+    assert response.status_code == 200
+    assert "You do not have permission to register this dashboard" in str(response.content)
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_already_registered(
+    has_update_permissions, get_dashboards, client, users, dashboard
+):
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [
+        {"DashboardId": dashboard.quicksight_id, "Name": "Test Dashboard"}
+    ]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": dashboard.quicksight_id,
+        },
+    )
+    has_update_permissions.assert_called_once_with(
+        dashboard_id=dashboard.quicksight_id, user=users["superuser"]
+    )
+    assert response.status_code == 200
+    assert (
+        f"This dashboard is already registered by {dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+        in str(response.content)
+    )
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_redirects_to_preview(
+    has_update_permissions, get_dashboards, client, users
+):
+    """Valid form submission redirects to preview page and stores data in session."""
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [{"DashboardId": "abc-123", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "abc-123",
+            "description": "Test description",
+            "emails[0]": "viewer@example.com",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("preview-dashboard")
+    # Check session data
+    assert client.session["dashboard_preview"]["name"] == "Test Dashboard"
+    assert client.session["dashboard_preview"]["quicksight_id"] == "abc-123"
+    assert client.session["dashboard_preview"]["description"] == "Test description"
+    assert client.session["dashboard_preview"]["emails"] == ["viewer@example.com"]
+    # Dashboard should not be created yet
+    assert not Dashboard.objects.filter(quicksight_id="abc-123").exists()
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_with_valid_emails(
+    has_update_permissions, get_dashboards, client, users
+):
+    """Registration with valid emails stores them in session for preview."""
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [{"DashboardId": "def-456", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "def-456",
+            "emails[0]": "viewer1@example.com",
+            "emails[1]": "viewer2@example.com",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("preview-dashboard")
+    assert client.session["dashboard_preview"]["emails"] == [
+        "viewer1@example.com",
+        "viewer2@example.com",
+    ]
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_with_invalid_emails(
+    has_update_permissions, get_dashboards, client, users, ExtendedAuth0
+):
+    """Registration with invalid emails shows validation errors."""
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [{"DashboardId": "ghi-789", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "ghi-789",
+            "emails[0]": "not-an-email",
+            "emails[1]": "also-invalid",
+        },
+    )
+    assert response.status_code == 200
+    # Check for escaped HTML entities in error message
+    assert "not-an-email" in str(response.content)
+    assert "is not a valid email address" in str(response.content)
+    # Dashboard should not be created
+    assert not Dashboard.objects.filter(quicksight_id="ghi-789").exists()
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_with_empty_emails(
+    has_update_permissions, get_dashboards, client, users
+):
+    """Registration with no emails redirects to preview (emails field is optional)."""
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [{"DashboardId": "jkl-012", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "jkl-012",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse("preview-dashboard")
+    assert client.session["dashboard_preview"]["emails"] == []
+
+
+def test_preview_dashboard_without_session_redirects(client, users):
+    """Accessing preview page without session data redirects to register."""
+    client.force_login(users["superuser"])
+    url = reverse("preview-dashboard")
+    response = client.get(url)
+    assert response.status_code == 302
+    assert response.url == reverse("register-dashboard")
+
+
+def test_preview_dashboard_rejects_other_users_session_data(client, users):
+    """Preview page rejects session data belonging to a different user."""
+    client.force_login(users["superuser"])
+    session = client.session
+    # Session data with a different user's ID
+    session["dashboard_preview"] = {
+        "user_id": users["normal_user"].id,  # Different user
+        "name": "Other User Dashboard",
+        "description": "Should not be accessible",
+        "quicksight_id": "other-123",
+        "emails": [],
+    }
+    session.save()
+
+    url = reverse("preview-dashboard")
+    response = client.get(url)
+
+    # Should redirect to register and clear the stale session data
+    assert response.status_code == 302
+    assert response.url == reverse("register-dashboard")
+    assert "dashboard_preview" not in client.session
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+def test_register_dashboard_prepopulates_from_session(get_dashboards, client, users):
+    """Registration form is pre-populated with session data when returning from preview."""
+    get_dashboards.return_value = [{"DashboardId": "abc-123", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+
+    # Set up session data as if returning from preview via "Change" link
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "Test Dashboard",
+        "description": "My description",
+        "quicksight_id": "abc-123",
+        "emails": ["viewer1@example.com", "viewer2@example.com"],
+    }
+    session.save()
+
+    url = reverse("register-dashboard")
+    response = client.get(url)
 
     assert response.status_code == 200
-    assert "The URL entered is not a valid QuickSight dashboard URL" in str(response.content)
+    # Check description is populated
+    assert "My description" in str(response.content)
+    # Check emails are populated
+    assert "viewer1@example.com" in str(response.content)
+    assert "viewer2@example.com" in str(response.content)
+    # Check dashboard option is selected
+    assert "selected" in str(response.content)
 
 
-def test_register_dashboard_not_permitted(client, users):
-    with patch(
-        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
-    ) as has_update_permissions:
-        has_update_permissions.return_value = False
-        client.force_login(users["superuser"])
-        url = reverse("register-dashboard")
-        response = client.post(
-            url,
-            data={
-                "name": "Test Dashboard",
-                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/abc-123",  # noqa
-            },
-        )
-        has_update_permissions.assert_called_once_with(
-            dashboard_id="abc-123", user=users["superuser"]
-        )
-        assert response.status_code == 200
-        assert "You do not have permission to register this dashboard" in str(response.content)
+def test_preview_dashboard_displays_session_data(client, users):
+    """Preview page displays data from session."""
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "My Dashboard",
+        "description": "A test dashboard",
+        "quicksight_id": "preview-123",
+        "emails": ["user1@example.com", "user2@example.com"],
+    }
+    session.save()
+
+    url = reverse("preview-dashboard")
+    response = client.get(url)
+    assert response.status_code == 200
+    assert "My Dashboard" in str(response.content)
+    assert "A test dashboard" in str(response.content)
+    assert "user1@example.com" in str(response.content)
+    assert "user2@example.com" in str(response.content)
 
 
-def test_register_dashboard_already_registered(client, users, dashboard):
-    with patch(
-        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
-    ) as has_update_permissions:
-        has_update_permissions.return_value = True
-        client.force_login(users["superuser"])
-        url = reverse("register-dashboard")
-        response = client.post(
-            url,
-            data={
-                "name": "Test Dashboard 2",
-                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/{dashboard.quicksight_id}",  # noqa
-            },
-        )
-        has_update_permissions.assert_called_once_with(
-            dashboard_id=dashboard.quicksight_id, user=users["superuser"]
-        )
-        assert response.status_code == 200
-        assert (
-            f"This dashboard is already registered by {dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
-            in str(response.content)
-        )
+def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth0):
+    """Confirming preview creates dashboard with viewers."""
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "Confirmed Dashboard",
+        "description": "Confirmed description",
+        "quicksight_id": "confirm-123",
+        "emails": ["viewer@example.com"],
+    }
+    session.save()
 
+    url = reverse("preview-dashboard")
+    response = client.post(url)
 
-def test_register_dashboard_success(client, users, ExtendedAuth0):
-    with patch(
-        "controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions"
-    ) as has_update_permissions:
-        has_update_permissions.return_value = True
-        client.force_login(users["superuser"])
-        url = reverse("register-dashboard")
-        response = client.post(
-            url,
-            data={
-                "name": "Test Dashboard",
-                "quicksight_id": f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/abc-123",  # noqa
-            },
-        )
-        has_update_permissions.assert_called_once_with(
-            dashboard_id="abc-123", user=users["superuser"]
-        )
-        dashboard = Dashboard.objects.get(name="Test Dashboard", quicksight_id="abc-123")
-        assert response.status_code == 302
-        assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.pk})
-        ExtendedAuth0.add_dashboard_member_by_email.assert_called_once_with(
-            email=users["superuser"].justice_email.lower(),
-            user_options={"connection": "email"},
-        )
+    dashboard = Dashboard.objects.get(quicksight_id="confirm-123")
+    assert response.status_code == 302
+    assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.pk})
+    assert dashboard.name == "Confirmed Dashboard"
+    assert dashboard.description == "Confirmed description"
+    assert dashboard.created_by == users["superuser"]
+    assert users["superuser"] in dashboard.admins.all()
+    # Check viewers (creator + additional email)
+    viewer_emails = list(dashboard.viewers.values_list("email", flat=True))
+    assert users["superuser"].justice_email.lower() in viewer_emails
+    assert "viewer@example.com" in viewer_emails
+    # Session should be cleared
+    assert "dashboard_preview" not in client.session
 
 
 @pytest.mark.parametrize(

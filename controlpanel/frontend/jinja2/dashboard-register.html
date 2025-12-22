@@ -17,6 +17,7 @@
       {{ csrf_input }}
 
       {% set error_qs_msg = form.errors.get("quicksight_id") %}
+      {% set initial_quicksight_id = form.initial.get("quicksight_id", "") %}
       {% call(dashboard) autocomplete({
         "name": "quicksight_id",
         "label": {"text": "Choose dashboard", "classes": "govuk-label--s"},
@@ -25,8 +26,9 @@
         "required": True,
         "formGroup": {"classes": "autocomplete--full-width"},
         "errorMessage": {"html": error_qs_msg|join(". ")} if error_qs_msg else None,
+        "value": initial_quicksight_id,
       }) %}
-        <option value="{{ dashboard.DashboardId }}">{{ dashboard.Name }}</option>
+        <option value="{{ dashboard.DashboardId }}"{% if dashboard.DashboardId == initial_quicksight_id %} selected{% endif %}>{{ dashboard.Name }}</option>
       {% endcall %}
       <div class="govuk-form-group" id="container-element">
 
@@ -45,17 +47,36 @@
           }) }}
         {% endif %}
 
-        <textarea type="text" class="govuk-textarea" id="description" name="description" rows="5" aria-describedby="description-hint" {% if form.description.value() %} value="{{ form.description.value() }}" {% endif %}></textarea>
+        <textarea type="text" class="govuk-textarea" id="description" name="description" rows="5" aria-describedby="description-hint">{{ form.initial.get("description", "") }}</textarea>
 
       </div>
 
       {% set emails_error = form.errors.get("emails") %}
+      {% set initial_emails = form.initial.get("emails", []) %}
       <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
         {% if emails_error %}
           {{ govukErrorMessage({"html": emails_error|join(". ")}) }}
         {% endif %}
 
         <div data-module="moj-add-another">
+          {% if initial_emails %}
+            {% for email in initial_emails %}
+            <div class="moj-add-another__item">
+              {{ govukInput({
+                "name": "emails[" ~ loop.index0 ~ "]",
+                "id": "emails[" ~ loop.index0 ~ "]",
+                "label": {"text": "Email address", "classes": "govuk-label--s"},
+                "hint": {"text": "Enter an email address to share with."} if loop.first else None,
+                "type": "email",
+                "value": email,
+                "attributes": {
+                  "data-name": "emails[%index%]",
+                  "data-id": "emails[%index%]"
+                }
+              }) }}
+            </div>
+            {% endfor %}
+          {% else %}
           <div class="moj-add-another__item">
             {{ govukInput({
               "name": "emails[0]",
@@ -69,6 +90,7 @@
               }
             }) }}
           </div>
+          {% endif %}
 
           <div class="moj-button-action govuk-!-margin-top-4">
             <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
