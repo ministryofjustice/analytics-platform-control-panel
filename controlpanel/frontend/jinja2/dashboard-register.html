@@ -26,6 +26,7 @@
         "hint": {"text": "Start typing the name of your dashboard as it appears in QuickSight."},
         "items": dashboards,
         "required": True,
+        "showAllValues": True,
         "formGroup": {"classes": "autocomplete--full-width"},
         "errorMessage": {"html": error_qs_msg|join(". ")} if error_qs_msg else None,
         "value": initial_quicksight_id,

@@ -50,7 +50,8 @@
         {%- if params.attributes %}
           {%- for attribute, value in params.attributes.items() %} {{ attribute }}="{{ value }}"{% endfor %}
         {%- endif %}
-        {%- if params.required %}data-required="true" {% endif %}>
+        {%- if params.required %} data-required="true"{% endif %}
+        {%- if params.showAllValues %} data-show-all-values="true"{% endif %}>
     <option value=""></option>
     {% set items = params["items"] %}
     {% if items is callable %}{% set items = items() %}{% endif %}
