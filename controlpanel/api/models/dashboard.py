@@ -2,6 +2,7 @@
 import sentry_sdk
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
@@ -23,6 +24,9 @@ class Dashboard(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_dashboard"
+
+    def get_absolute_url(self):
+        return reverse("manage-dashboard-sharing", kwargs={"pk": self.pk})
 
     @property
     def url(self):

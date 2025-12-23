@@ -216,6 +216,37 @@ def test_list(client, dashboard, users, view, user, expected_count):
     assert len(response.context_data["object_list"]) == expected_count
 
 
+def test_list_dashboards_displays_success_message(client, users):
+    """Dashboard list displays success message from session and clears it."""
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_created"] = {
+        "name": "My New Dashboard",
+        "url": "/quicksight/dashboards/123/",
+    }
+    session.save()
+
+    response = client.get(reverse("list-dashboards"))
+
+    assert response.status_code == 200
+    assert response.context_data["dashboard_created"] == {
+        "name": "My New Dashboard",
+        "url": "/quicksight/dashboards/123/",
+    }
+    # Session should be cleared after displaying
+    assert "dashboard_created" not in client.session
+
+
+def test_list_dashboards_no_success_message(client, users):
+    """Dashboard list returns None for dashboard_created when not in session."""
+    client.force_login(users["superuser"])
+
+    response = client.get(reverse("list-dashboards"))
+
+    assert response.status_code == 200
+    assert response.context_data["dashboard_created"] is None
+
+
 def add_customer_success(client, response):
     return "customer_form_errors" not in client.session
 
@@ -691,7 +722,7 @@ def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth
 
     dashboard = Dashboard.objects.get(quicksight_id="confirm-123")
     assert response.status_code == 302
-    assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.pk})
+    assert response.url == reverse("list-dashboards")
     assert dashboard.name == "Confirmed Dashboard"
     assert dashboard.description == "Confirmed description"
     assert dashboard.created_by == users["superuser"]

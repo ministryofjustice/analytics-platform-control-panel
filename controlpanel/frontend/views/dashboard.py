@@ -43,6 +43,11 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_queryset(self):
         return self.request.user.dashboards.all()
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
+        return context
+
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AdminDashboardList(DashboardList):
@@ -175,10 +180,11 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                 viewer, _ = DashboardViewer.objects.get_or_create(email=viewer_email.lower())
                 dashboard.viewers.add(viewer)
 
-        messages.success(request, f"Successfully registered {dashboard.name} dashboard")
-        return HttpResponseRedirect(
-            reverse_lazy("manage-dashboard-sharing", kwargs={"pk": dashboard.pk})
-        )
+        request.session["dashboard_created"] = {
+            "name": dashboard.name,
+            "url": dashboard.get_absolute_url(),
+        }
+        return HttpResponseRedirect(reverse_lazy("list-dashboards"))
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
@@ -199,6 +205,7 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
         dashboard = self.get_object()
         dashboard_admins = dashboard.admins.all()
 
@@ -246,7 +253,7 @@ class UpdateDashboardBaseView(
         raise NotImplementedError("Subclasses must define this method")
 
     def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": kwargs["pk"]})
+        return self.get_object().get_absolute_url()
 
     def post(self, request, *args, **kwargs):
         self.perform_update(**kwargs)
@@ -437,7 +444,7 @@ class GrantDomainAccess(
         return kwargs
 
     def get_success_url(self):
-        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.kwargs["pk"]})
+        return self.get_object().get_absolute_url()
 
     def form_valid(self, form):
         domain = form.cleaned_data["whitelist_domain"]
