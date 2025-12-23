@@ -1,59 +1,125 @@
 {% from "error-message/macro.html" import govukErrorMessage %}
+{% from "autocomplete/macro.html" import autocomplete %}
 {% from "input/macro.html" import govukInput %}
 {% from "label/macro.html" import govukLabel %}
+{% from "hint/macro.html" import govukHint %}
 
 
 {% extends "base.html" %}
 
-{% set page_title = "Register a dashboard" %}
+{% set page_title = "Share a dashboard" %}
+
+{% set back_link_url = url("list-dashboards") %}
 
 {% block content %}
-<h1 class="govuk-heading-xl">{{ page_title }}</h1>
-<p class="govuk-body">
-  After creating your dashboard, use this form to register it and allow it to be shared securely.
-</p>
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+    <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-<form method="post" id="register_app" action="{{ url("register-dashboard") }}">
-  {{ csrf_input }}
+    <form method="post" action="{{ url("register-dashboard") }}">
+      {{ csrf_input }}
 
-  <div class="govuk-form-group" id="container-element">
+      {% set error_qs_msg = form.errors.get("quicksight_id") %}
+      {% set initial_quicksight_id = form.initial.get("quicksight_id", "") %}
+      {% call(dashboard) autocomplete({
+        "name": "quicksight_id",
+        "label": {"text": "Choose dashboard", "classes": "govuk-label--s"},
+        "hint": {"text": "Start typing the name of your dashboard as it appears in QuickSight."},
+        "items": dashboards,
+        "required": True,
+        "showAllValues": True,
+        "formGroup": {"classes": "autocomplete--full-width"},
+        "errorMessage": {"html": error_qs_msg|join(". ")} if error_qs_msg else None,
+        "value": initial_quicksight_id,
+      }) %}
+        <option value="{{ dashboard.DashboardId }}"{% if dashboard.DashboardId == initial_quicksight_id %} selected{% endif %}>{{ dashboard.Name }}</option>
+      {% endcall %}
+      <div class="govuk-form-group" id="container-element">
 
-    <label class="govuk-label govuk-label--m" for="dashboard_name">Dashboard name
-    </label>
+        <label class="govuk-label govuk-label--s" for="description">Enter a description
+        </label>
+        <div id="description-hint" class="govuk-hint">
+          Help people understand what your dashboard shows. Explain any acronyms or less common terms.
+        </div>
 
-    {% set error_name_msg = form.errors.get("name") %}
-    {% if error_name_msg %}
-      {% set errorId = 'name-error' %}
-      {{ govukErrorMessage({
-        "id": errorId,
-        "html": error_name_msg|join(". "),
-      }) }}
-    {% endif %}
+        {% set error_qsid_msg = form.errors.get("description") %}
+        {% if error_qsid_msg %}
+          {% set errorId = 'qsid-error' %}
+          {{ govukErrorMessage({
+            "id": errorId,
+            "html": error_qsid_msg|join(". "),
+          }) }}
+        {% endif %}
 
-    <input type="text" class="govuk-input" id="dashboard_name" name="name" {% if form.name.value() %} value="{{ form.name.value() }}" {% endif %} required />
+        <textarea type="text" class="govuk-textarea" id="description" name="description" rows="5" aria-describedby="description-hint">{{ form.initial.get("description", "") }}</textarea>
 
+      </div>
+
+      {% set emails_error = form.errors.get("emails") %}
+      {% set initial_emails = form.initial.get("emails", []) %}
+      <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
+        {% if emails_error %}
+          {{ govukErrorMessage({"html": emails_error|join(". ")}) }}
+        {% endif %}
+
+        <div data-module="moj-add-another">
+          {% if initial_emails %}
+            {% for email in initial_emails %}
+            <div class="moj-add-another__item">
+              {{ govukInput({
+                "name": "emails[" ~ loop.index0 ~ "]",
+                "id": "emails[" ~ loop.index0 ~ "]",
+                "label": {"text": "Add an email", "classes": "govuk-label--s"},
+                "hint": {"text": "Enter an email address to share with."} if loop.first else None,
+                "type": "email",
+                "value": email,
+                "attributes": {
+                  "data-name": "emails[%index%]",
+                  "data-id": "emails[%index%]"
+                }
+              }) }}
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="moj-add-another__item">
+            {{ govukInput({
+              "name": "emails[0]",
+              "id": "emails[0]",
+              "label": {"text": "Add an email", "classes": "govuk-label--s"},
+              "hint": {"text": "Enter an email address to share with."},
+              "type": "email",
+              "attributes": {
+                "data-name": "emails[%index%]",
+                "data-id": "emails[%index%]"
+              }
+            }) }}
+          </div>
+          {% endif %}
+
+          <div class="moj-button-action govuk-!-margin-top-4">
+            <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
+              Add another email
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="govuk-form-group">
+        {{ govukLabel({"text": "Connect an email domain", "classes": "govuk-label--s"}) }}
+        {{ govukHint({"text": "Allow all users on a specified email domain to view your dashboard. <br><b>Do not use for dashboards containing sensitive data.</b>"}) }}
+        {% if form.whitelist_domain.errors %}
+          {{ govukErrorMessage({"text": form.whitelist_domain.errors|join(". ")}) }}
+        {% endif %}
+        {{ form.whitelist_domain }}
+      </div>
+
+
+      <div class="govuk-button-group">
+        <button class="govuk-button">Next</button>
+        <a class="govuk-link" href="{{ url("cancel-dashboard-registration") }}">Cancel</a>
+      </div>
+    </form>
   </div>
-  <div class="govuk-form-group" id="container-element">
-
-    <label class="govuk-label govuk-label--m" for="display_result_repo">Dashboard URL
-    </label>
-
-    {% set error_qsid_msg = form.errors.get("quicksight_id") %}
-    {% if error_qsid_msg %}
-      {% set errorId = 'qsid-error' %}
-      {{ govukErrorMessage({
-        "id": errorId,
-        "html": error_qsid_msg|join(". "),
-      }) }}
-    {% endif %}
-    <span class="govuk-hint">Enter your Dashboard URL here</span>
-    <input type="text" class="govuk-input" id="id_quicksight" name="quicksight_id" {% if form.quicksight_id.value() %} value="{{ form.quicksight_id.value() }}" {% endif %} required />
-
-  </div>
-
-
-  <div class="govuk-form-group">
-    <button class="govuk-button">Register dashboard</button>
-  </div>
-</form>
+</div>
 {% endblock %}

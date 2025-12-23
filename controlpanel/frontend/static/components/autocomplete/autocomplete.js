@@ -13,7 +13,8 @@ moj.Modules.autocomplete = {
       accessibleAutocomplete.enhanceSelectElement({
         defaultValue: '',
         selectElement: select,
-        required: select.dataset.required === "true"
+        required: select.dataset.required === "true",
+        showAllValues: select.dataset.showAllValues === "true"
       });
     });
   },

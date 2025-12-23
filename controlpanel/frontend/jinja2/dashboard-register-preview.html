@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% set page_title = "Check details" %}
+{% set back_link_url = url("register-dashboard") %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+    <p class="govuk-body">Check the details you have provided are correct before sharing. The email addresses you have listed will receive a link to the dashboard.</p>
+
+    <dl class="govuk-summary-list">
+      <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">Dashboard name</dt>
+        <dd class="govuk-summary-list__value">{{ preview.name }}</dd>
+        <dd class="govuk-summary-list__actions">
+          <a class="govuk-link" href="{{ url("register-dashboard") }}">
+            Change<span class="govuk-visually-hidden"> dashboard name</span>
+          </a>
+        </dd>
+      </div>
+
+      <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">Description</dt>
+        <dd class="govuk-summary-list__value">{{ preview.description if preview.description else "Not provided" }}</dd>
+        <dd class="govuk-summary-list__actions">
+          <a class="govuk-link" href="{{ url("register-dashboard") }}">
+            Change<span class="govuk-visually-hidden"> description</span>
+          </a>
+        </dd>
+      </div>
+
+      {% if preview.emails %}
+        {% for email in preview.emails %}
+          <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Recipient</dt>
+            <dd class="govuk-summary-list__value">
+                  {{ email }}{% if not loop.last %}<br>{% endif %}
+            </dd>
+            <dd class="govuk-summary-list__actions">
+              <a class="govuk-link" href="{{ url("register-dashboard") }}">
+                Change<span class="govuk-visually-hidden"> email addresses</span>
+              </a>
+            </dd>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">Domain access</dt>
+        <dd class="govuk-summary-list__value">{{ preview.whitelist_domain if preview.whitelist_domain else "No domain selected" }}</dd>
+        <dd class="govuk-summary-list__actions">
+          <a class="govuk-link" href="{{ url("register-dashboard") }}">
+            Change<span class="govuk-visually-hidden"> domain access</span>
+          </a>
+        </dd>
+      </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Dashboard preview</h2>
+
+    {% if embed_url %}
+      <div id="dashboard-container" class="govuk-!-margin-bottom-6"></div>
+    {% else %}
+      <p class="govuk-body">Dashboard preview is not available.</p>
+    {% endif %}
+
+    <form method="post" action="{{ url("preview-dashboard") }}">
+      {{ csrf_input }}
+
+      <div class="govuk-button-group">
+        <button class="govuk-button">Share dashboard</button>
+        <a class="govuk-link" href="{{ url("cancel-dashboard-registration") }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block body_end %}
+{% if embed_url %}
+<script src="{{ static("assets/js/quicksight-embedding-js-sdk.min.js") }}"></script>
+<script>
+(async function() {
+    const { createEmbeddingContext } = QuickSightEmbedding;
+
+    const embeddingContext = await createEmbeddingContext();
+
+    await embeddingContext.embedDashboard({
+        url: "{{ embed_url|safe }}",
+        container: '#dashboard-container',
+        height: window.innerHeight * 0.6,
+        width: "100%",
+    });
+})();
+</script>
+{% endif %}
+{% endblock body_end %}

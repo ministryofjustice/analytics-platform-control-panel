@@ -1231,8 +1231,7 @@ class AWSQuicksight(AWSService):
         )
         self.client = self.boto3_session.client("quicksight")
 
-    def get_embed_url(self, user):
-
+    def get_user_arn(self, user):
         if not user.justice_email:
             return None
 
@@ -1242,6 +1241,13 @@ class AWSQuicksight(AWSService):
             region=settings.QUICKSIGHT_ACCOUNT_REGION,
             account=settings.QUICKSIGHT_ACCOUNT_ID,
         )
+        return user_arn
+
+    def get_embed_url(self, user):
+
+        user_arn = self.get_user_arn(user)
+        if not user_arn:
+            return None
 
         response = self.client.generate_embed_url_for_registered_user(
             AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
@@ -1250,6 +1256,27 @@ class AWSQuicksight(AWSService):
                 "QuickSightConsole": {
                     "InitialPath": "/start",
                     "FeatureConfigurations": {"StatePersistence": {"Enabled": True}},
+                },
+            },
+            AllowedDomains=settings.QUICKSIGHT_DOMAINS,
+        )
+        if response:
+            return response["EmbedUrl"]
+
+        return response
+
+    def get_dashboard_embed_url(self, user, dashboard_id):
+        """Generate an embed URL for a specific dashboard for a registered user."""
+        user_arn = self.get_user_arn(user)
+        if not user_arn:
+            return None
+
+        response = self.client.generate_embed_url_for_registered_user(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            UserArn=user_arn,
+            ExperienceConfiguration={
+                "Dashboard": {
+                    "InitialDashboardId": dashboard_id,
                 },
             },
             AllowedDomains=settings.QUICKSIGHT_DOMAINS,
@@ -1277,12 +1304,10 @@ class AWSQuicksight(AWSService):
                 return False
             raise error
 
-        user_arn = arn(
-            service=self.service_name,
-            resource=f"user/default/{user.justice_email}",
-            region=settings.QUICKSIGHT_ACCOUNT_REGION,
-            account=settings.QUICKSIGHT_ACCOUNT_ID,
-        )
+        user_arn = self.get_user_arn(user)
+        if not user_arn:
+            return False
+
         for permission_set in permissions:
             if permission_set["Principal"].lower() == user_arn.lower():
                 return "quicksight:UpdateDashboardPermissions" in permission_set["Actions"]
@@ -1302,6 +1327,23 @@ class AWSQuicksight(AWSService):
             },
             AllowedDomains=settings.DASHBOARD_SERVICE_DOMAINS,
         )
+
+    def get_dashboards_for_user(self, user, permission_name="QUICKSIGHT_OWNER"):
+        user_arn = self.get_user_arn(user)
+        if not user_arn:
+            return []
+
+        response = self.client.search_dashboards(
+            AwsAccountId=settings.QUICKSIGHT_ACCOUNT_ID,
+            Filters=[
+                {
+                    "Name": permission_name,
+                    "Operator": "StringEquals",
+                    "Value": user_arn,
+                },
+            ],
+        )
+        return response.get("DashboardSummaryList", [])
 
 
 class AWSLakeFormation(AWSService):

@@ -12,3 +12,6 @@ class DashboardDomain(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_dashboard_domain"
+
+    def __str__(self):
+        return self.name

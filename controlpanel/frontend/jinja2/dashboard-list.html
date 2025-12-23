@@ -23,6 +23,25 @@
 </nav>
 
 {% set num_dashboards = dashboards|length %}
+
+  {% if dashboard_created %}
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+      <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+          Success
+        </h2>
+      </div>
+      <div class="govuk-notification-banner__content">
+        <h3 class="govuk-notification-banner__heading">
+          You've shared '{{ dashboard_created.name }}'
+        </h3>
+        <p class="govuk-body">
+          To share with more people, or grant admin rights, go to <a class="govuk-notification-banner__link" href="{{ dashboard_created.url }}">manage sharing</a>.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
   <div class="govuk-grid-row">

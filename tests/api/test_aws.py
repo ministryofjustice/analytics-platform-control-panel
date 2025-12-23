@@ -1193,6 +1193,34 @@ def test_get_embed_url(quicksight_service):
         assert url == embedded_url
 
 
+def test_get_dashboard_embed_url(quicksight_service):
+    """
+    Test get_dashboard_embed_url returns embed URL for specific dashboard.
+    """
+    embedded_url = "https://embedded-dashboard-url.com"
+    client = Mock()
+    client.generate_embed_url_for_registered_user.return_value = {"EmbedUrl": embedded_url}
+
+    with patch.object(quicksight_service, "client", client):
+        mock_user = Mock(justice_email="user@justice.gov.uk")
+        url = quicksight_service.get_dashboard_embed_url(mock_user, "dashboard-123")
+        assert url == embedded_url
+        # Verify the correct ExperienceConfiguration was passed
+        call_kwargs = client.generate_embed_url_for_registered_user.call_args[1]
+        assert call_kwargs["ExperienceConfiguration"] == {
+            "Dashboard": {"InitialDashboardId": "dashboard-123"}
+        }
+
+
+def test_get_dashboard_embed_url_no_justice_email(quicksight_service):
+    """
+    Test get_dashboard_embed_url returns None when user has no justice_email.
+    """
+    mock_user = Mock(justice_email=None)
+    url = quicksight_service.get_dashboard_embed_url(mock_user, "dashboard-123")
+    assert url is None
+
+
 @pytest.mark.parametrize(
     "user_email, describe_permissions_return, client_error, expected_result",
     [
