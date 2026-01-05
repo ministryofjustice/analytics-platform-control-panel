@@ -25,7 +25,7 @@ gunicorn==23.0.0
 Jinja2==3.1.6
 kubernetes==33.1.0
 MarkupSafe==3.0.3
-model-bakery==1.20.5
+model-bakery==1.21.0
 moto[all]==5.1.18
 mozilla-django-oidc==4.0.1
 notifications-python-client==10.0.1
