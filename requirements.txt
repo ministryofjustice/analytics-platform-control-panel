@@ -29,7 +29,7 @@ model-bakery==1.20.5
 moto[all]==5.1.18
 mozilla-django-oidc==4.0.1
 notifications-python-client==10.0.1
-pagerduty==6.0.0
+pagerduty==6.1.0
 psycopg2-binary==2.9.11
 PyJWT==2.10.1
 PyNaCl==1.6.0
