@@ -106,7 +106,7 @@ class MultiEmailField(forms.Field):
                 validate_email(email)
                 validated_emails.append(email.lower())
             except ValidationError:
-                errors.append(f"'{email}' is not a valid email address")
+                errors.append("Enter a valid email address")
 
         if errors:
             raise ValidationError(errors)
@@ -879,7 +879,6 @@ class FeedbackForm(forms.ModelForm):
 
 class RegisterDashboardForm(forms.ModelForm):
 
-    quicksight_id = forms.CharField()
     emails = MultiEmailField(required=False)
     whitelist_domain = forms.ModelChoiceField(
         queryset=DashboardDomain.objects.all(),
@@ -895,6 +894,14 @@ class RegisterDashboardForm(forms.ModelForm):
             "description",
             "quicksight_id",
         ]
+        error_messages = {
+            "quicksight_id": {
+                "required": "Select or type a dashboard name",
+            },
+            "description": {
+                "required": "Enter a description",
+            },
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
@@ -930,16 +937,20 @@ class RegisterDashboardForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         quicksight_id = cleaned_data.get("quicksight_id")
-        if not quicksight_id:
-            return cleaned_data
+        if quicksight_id:
+            for dashboard in self.dashboards:
+                if dashboard["DashboardId"] == quicksight_id:
+                    cleaned_data["name"] = dashboard["Name"]
+                    break
 
-        for dashboard in self.dashboards:
-            if dashboard["DashboardId"] == quicksight_id:
-                cleaned_data["name"] = dashboard["Name"]
-                break
+            if not cleaned_data.get("name"):
+                self.add_error("quicksight_id", "Select or type a dashboard name")
+                return cleaned_data
 
-        if not cleaned_data.get("name"):
-            self.add_error("quicksight_id", "Please select a dashboard")
+        if not cleaned_data.get("emails") and not cleaned_data.get("whitelist_domain"):
+            error_msg = "Enter an email address or add domain access"
+            self.add_error("emails", error_msg)
+            self.add_error("whitelist_domain", error_msg)
 
         return cleaned_data
 

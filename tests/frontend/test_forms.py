@@ -132,7 +132,7 @@ class TestMultiEmailFieldClean:
         field = MultiEmailField()
         with pytest.raises(ValidationError) as exc_info:
             field.clean(["not-an-email"])
-        assert "'not-an-email' is not a valid email address" in str(exc_info.value)
+        assert "Enter a valid email address" in str(exc_info.value)
 
     def test_multiple_invalid_emails_shows_all_errors(self):
         """All invalid emails are reported, not just the first."""
@@ -141,8 +141,8 @@ class TestMultiEmailFieldClean:
             field.clean(["bad1", "valid@example.com", "bad2"])
         errors = exc_info.value.messages
         assert len(errors) == 2
-        assert "'bad1' is not a valid email address" in errors
-        assert "'bad2' is not a valid email address" in errors
+        assert "Enter a valid email address" in errors
+        assert "Enter a valid email address" in errors
 
 
 @pytest.fixture

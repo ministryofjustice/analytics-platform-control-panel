@@ -563,9 +563,8 @@ def test_register_dashboard_with_invalid_emails(
         },
     )
     assert response.status_code == 200
-    # Check for escaped HTML entities in error message
-    assert "not-an-email" in str(response.content)
-    assert "is not a valid email address" in str(response.content)
+    # Check form has email validation errors
+    assert "Enter a valid email address" in str(response.content)
     # Dashboard should not be created
     assert not Dashboard.objects.filter(quicksight_id="ghi-789").exists()
 
@@ -573,9 +572,9 @@ def test_register_dashboard_with_invalid_emails(
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
 @patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
 def test_register_dashboard_with_empty_emails(
-    has_update_permissions, get_dashboards, client, users
+    has_update_permissions, get_dashboards, client, users, dashboard_domain
 ):
-    """Registration with no emails redirects to preview (emails field is optional)."""
+    """Registration with no emails but with whitelist_domain redirects to preview."""
     has_update_permissions.return_value = True
     get_dashboards.return_value = [{"DashboardId": "jkl-012", "Name": "Test Dashboard"}]
     client.force_login(users["superuser"])
@@ -585,11 +584,37 @@ def test_register_dashboard_with_empty_emails(
         data={
             "quicksight_id": "jkl-012",
             "description": "Test description",
+            "whitelist_domain": dashboard_domain.id,
         },
     )
     assert response.status_code == 302
     assert response.url == reverse("preview-dashboard")
     assert client.session["dashboard_preview"]["emails"] == []
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+@patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
+def test_register_dashboard_requires_email_or_domain(
+    has_update_permissions, get_dashboards, client, users
+):
+    """Registration without emails AND without whitelist_domain shows validation error."""
+    has_update_permissions.return_value = True
+    get_dashboards.return_value = [{"DashboardId": "xyz-123", "Name": "Test Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "xyz-123",
+            "description": "Test description",
+            # No emails and no whitelist_domain
+        },
+    )
+    assert response.status_code == 200
+    # Check for validation error requiring at least one
+    assert "Enter an email address or add domain access" in str(response.content)
+    # Dashboard should not be created
+    assert not Dashboard.objects.filter(quicksight_id="xyz-123").exists()
 
 
 def test_preview_dashboard_without_session_redirects(client, users):

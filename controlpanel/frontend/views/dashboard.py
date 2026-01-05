@@ -96,6 +96,26 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         context["dashboards"] = self.get_dashboards()
         return context
 
+    def form_invalid(self, form):
+        """Build error summary with deduplicated messages."""
+        error_summary = []
+        seen_messages = set()
+
+        for field_name, errors in form.errors.items():
+            for error in errors:
+                if error not in seen_messages:
+                    seen_messages.add(error)
+                    error_summary.append(
+                        {
+                            "text": error,
+                            "field": field_name,
+                        }
+                    )
+
+        return self.render_to_response(
+            self.get_context_data(form=form, error_summary=error_summary)
+        )
+
     def form_valid(self, form):
         """Store validated form data in session and redirect to preview."""
         self.request.session["dashboard_preview"] = {
