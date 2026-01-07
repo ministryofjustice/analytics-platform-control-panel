@@ -196,9 +196,15 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
             dashboard.viewers.add(viewer)
 
             # Add any additional viewers from the emails list
-            for viewer_email in preview_data.get("emails", []):
-                viewer, _ = DashboardViewer.objects.get_or_create(email=viewer_email.lower())
-                dashboard.viewers.add(viewer)
+            not_notified = dashboard.add_customers(preview_data.get("emails", []), email)
+            if not_notified:
+                messages.error(
+                    request,
+                    (
+                        f"Failed to notify {', '.join(not_notified)}. "
+                        "You may wish to email them your dashboard link."
+                    ),
+                )
 
         request.session["dashboard_created"] = {
             "name": dashboard.name,

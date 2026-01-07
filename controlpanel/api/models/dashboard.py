@@ -60,6 +60,7 @@ class Dashboard(TimeStampedModel):
                         "dashboard_link": self.url,
                         "dashboard_home": settings.DASHBOARD_SERVICE_URL,
                         "dashboard_admin": inviter_email,
+                        "dashboard_description": self.description,
                     },
                 )
             except GovukNotifyEmailError:

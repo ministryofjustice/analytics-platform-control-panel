@@ -729,7 +729,9 @@ def test_preview_dashboard_without_embed_url(mock_embed_url, client, users):
     assert "dashboard-container" not in str(response.content)
 
 
-def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth0):
+def test_preview_dashboard_confirm_creates_dashboard(
+    client, users, ExtendedAuth0, govuk_notify_send_email
+):
     """Confirming preview creates dashboard with viewers."""
     client.force_login(users["superuser"])
     session = client.session
@@ -758,6 +760,17 @@ def test_preview_dashboard_confirm_creates_dashboard(client, users, ExtendedAuth
     assert "viewer@example.com" in viewer_emails
     # Session should be cleared
     assert "dashboard_preview" not in client.session
+
+    govuk_notify_send_email.assert_called_once_with(
+        email_address="viewer@example.com",
+        template_id=settings.NOTIFY_DASHBOARD_ACCESS_TEMPLATE_ID,
+        personalisation={
+            "dashboard": dashboard.name,
+            "dashboard_link": dashboard.url,
+            "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+            "dashboard_admin": users["superuser"].justice_email.lower(),
+        },
+    )
 
 
 def test_preview_dashboard_confirm_creates_dashboard_with_whitelist_domain(
@@ -852,3 +865,39 @@ def test_add_admin(
     assert expected_message in messages
     if count:
         govuk_notify_send_email.assert_called_once()
+
+
+def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):
+    """Confirming preview creates dashboard but shows error if notify fails."""
+    client.force_login(users["superuser"])
+    session = client.session
+    session["dashboard_preview"] = {
+        "user_id": users["superuser"].id,
+        "name": "Confirmed Dashboard",
+        "description": "Confirmed description",
+        "quicksight_id": "confirm-123",
+        "emails": ["viewer@example.com"],
+    }
+    session.save()
+
+    url = reverse("preview-dashboard")
+
+    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
+        mock_send_email.side_effect = GovukNotifyEmailError()
+        response = client.post(url)
+
+    # Dashboard should still be created
+    dashboard = Dashboard.objects.get(quicksight_id="confirm-123")
+    assert response.status_code == 302
+    assert response.url == reverse("list-dashboards")
+    assert dashboard.name == "Confirmed Dashboard"
+
+    # Check viewers (viewer should still be added despite email failure)
+    viewer_emails = list(dashboard.viewers.values_list("email", flat=True))
+    assert "viewer@example.com" in viewer_emails
+
+    # Check error message
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert (
+        "Failed to notify viewer@example.com. " "You may wish to email them your dashboard link."
+    ) in messages
