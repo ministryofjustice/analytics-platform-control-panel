@@ -75,6 +75,8 @@ build-js:
 	mkdir -p static/assets/js
 	cp node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js static/assets/js/govuk-frontend.min.js
 	cp node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js.map static/assets/js/govuk-frontend.min.js.map
+	cp node_modules/@ministryofjustice/frontend/moj/moj-frontend.min.js static/assets/js/moj-frontend.min.js
+	cp node_modules/@ministryofjustice/frontend/moj/moj-frontend.min.js.map static/assets/js/moj-frontend.min.js.map
 	cp node_modules/amazon-quicksight-embedding-sdk/dist/quicksight-embedding-js-sdk.min.js static/assets/js/quicksight-embedding-js-sdk.min.js
 
 	cp -R node_modules/jquery/dist/ static/jquery

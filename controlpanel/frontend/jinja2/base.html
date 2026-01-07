@@ -284,6 +284,9 @@
     <script type="module">
       import { initAll } from "{{ static('assets/js/govuk-frontend.min.js') }}"
       initAll()
+
+      import { initAll as initAllMoj } from "{{ static('assets/js/moj-frontend.min.js') }}"
+      initAllMoj()
     </script>
     <script src="{{ static('accessible-autocomplete/accessible-autocomplete.min.js') }}"></script>
     <script src="{{ static('jquery/jquery.min.js') }}"></script>

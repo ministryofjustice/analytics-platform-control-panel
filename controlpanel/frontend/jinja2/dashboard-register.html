@@ -84,7 +84,6 @@
       <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
           <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Add an email</legend>
-          <div id="emails-hint" class="govuk-hint">Enter an email address to share with.</div>
 
           {% if emails_error %}
             {{ govukErrorMessage({"html": emails_error|join(". ")}) }}
@@ -95,7 +94,8 @@
               {% for email in initial_emails %}
               <div class="moj-add-another__item">
                 {{ govukInput({
-                  "label": {"text": ""},
+                  "label": {"text": "Email address"},
+                  "hint": {"text": "Enter an email address to share with."},
                   "name": "emails[" ~ loop.index0 ~ "]",
                   "id": "emails[" ~ loop.index0 ~ "]",
                   "type": "email",
@@ -110,7 +110,8 @@
             {% else %}
             <div class="moj-add-another__item">
               {{ govukInput({
-                "label": {"text": ""},
+                "label": {"text": "Email address"},
+                "hint": {"text": "Enter an email address to share with."},
                 "name": "emails[0]",
                 "id": "emails[0]",
                 "type": "email",
