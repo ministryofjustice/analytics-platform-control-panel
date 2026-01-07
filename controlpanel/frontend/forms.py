@@ -937,15 +937,17 @@ class RegisterDashboardForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         quicksight_id = cleaned_data.get("quicksight_id")
-        if quicksight_id:
-            for dashboard in self.dashboards:
-                if dashboard["DashboardId"] == quicksight_id:
-                    cleaned_data["name"] = dashboard["Name"]
-                    break
+        if not quicksight_id:
+            return cleaned_data
 
-            if not cleaned_data.get("name"):
-                self.add_error("quicksight_id", "Select or type a dashboard name")
-                return cleaned_data
+        for dashboard in self.dashboards:
+            if dashboard["DashboardId"] == quicksight_id:
+                cleaned_data["name"] = dashboard["Name"]
+                break
+
+        if not cleaned_data.get("name"):
+            self.add_error("quicksight_id", "Select or type a dashboard name")
+            return cleaned_data
 
         if not cleaned_data.get("emails") and not cleaned_data.get("whitelist_domain"):
             error_msg = "Enter an email address or add domain access"
