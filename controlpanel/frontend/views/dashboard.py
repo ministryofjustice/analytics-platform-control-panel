@@ -403,7 +403,7 @@ class RemoveDashboardCustomerById(UpdateDashboardBaseView):
         dashboard = self.get_object()
         user_ids = self.request.POST.getlist("customer")
         try:
-            viewers = dashboard.delete_customers_by_id(user_ids)
+            viewers = dashboard.delete_customers_by_id(user_ids, admin=self.request.user)
             emails = viewers.values_list("email", flat=True)
         except DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
@@ -437,7 +437,7 @@ class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
         dashboard = self.get_object()
         email = self.form.cleaned_data["email"]
         try:
-            dashboard.delete_customer_by_email(email)
+            dashboard.delete_customer_by_email(email, admin=self.request.user)
         except DeleteCustomerError as e:
             sentry_sdk.capture_exception(e)
             return messages.error(

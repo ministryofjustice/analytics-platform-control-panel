@@ -769,6 +769,7 @@ def test_preview_dashboard_confirm_creates_dashboard(
             "dashboard_link": dashboard.url,
             "dashboard_home": settings.DASHBOARD_SERVICE_URL,
             "dashboard_admin": users["superuser"].justice_email.lower(),
+            "dashboard_description": dashboard.description,
         },
     )
 

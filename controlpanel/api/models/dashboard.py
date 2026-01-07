@@ -68,7 +68,7 @@ class Dashboard(TimeStampedModel):
 
         return not_notified
 
-    def delete_viewers(self, viewers):
+    def delete_viewers(self, viewers, admin):
         """
         Remove the given viewers from the dashboard.
         """
@@ -83,23 +83,24 @@ class Dashboard(TimeStampedModel):
                     "dashboard": self.name,
                     "dashboard_link": self.url,
                     "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+                    "revoked_by": admin.justice_email,
                 },
             )
 
-    def delete_customers_by_id(self, ids):
+    def delete_customers_by_id(self, ids, admin):
         viewers = DashboardViewer.objects.filter(pk__in=ids)
         if not viewers:
             raise DeleteCustomerError(f"Customers with IDs {ids} not found.")
 
-        self.delete_viewers(viewers)
+        self.delete_viewers(viewers, admin=admin)
         return viewers
 
-    def delete_customer_by_email(self, email):
+    def delete_customer_by_email(self, email, admin):
         viewers = DashboardViewer.objects.filter(email=email)
         if not viewers:
             raise DeleteCustomerError(f"Customer with email {email} not found.")
 
-        self.delete_viewers(viewers)
+        self.delete_viewers(viewers, admin=admin)
 
     def get_embed_url(self):
         """
