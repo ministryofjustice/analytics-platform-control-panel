@@ -75,6 +75,7 @@ COPY --from=build-node node_modules/govuk-frontend/dist/govuk/govuk-frontend.min
 COPY --from=build-node node_modules/govuk-frontend/dist/govuk/govuk-frontend.min.js.map static/assets/js/govuk-frontend.min.js.map
 COPY --from=build-node node_modules/@ministryofjustice/frontend/moj/moj-frontend.min.js static/assets/js/moj-frontend.min.js
 COPY --from=build-node node_modules/@ministryofjustice/frontend/moj/moj-frontend.min.js.map static/assets/js/moj-frontend.min.js.map
+COPY --from=build-node node_modules/amazon-quicksight-embedding-sdk/dist/quicksight-embedding-js-sdk.min.js static/assets/js/quicksight-embedding-js-sdk.min.js
 COPY --from=build-node node_modules/accessible-autocomplete/dist/ static/accessible-autocomplete
 COPY --from=build-node node_modules/govuk-frontend static/govuk-frontend
 COPY --from=build-node node_modules/@ministryofjustice/frontend/moj static/ministryofjustice-frontend
