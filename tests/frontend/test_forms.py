@@ -4,6 +4,7 @@ from unittest import mock
 # Third-party
 import pytest
 from django.core.exceptions import ValidationError
+from django.http import QueryDict
 from django.urls import reverse
 
 # First-party/Local
@@ -11,6 +12,137 @@ from controlpanel.api import aws
 from controlpanel.api.github import RepositoryNotFound
 from controlpanel.api.models import S3Bucket
 from controlpanel.frontend import forms
+from controlpanel.frontend.forms import MultiEmailField, MultiEmailWidget
+
+
+class TestMultiEmailWidgetValueFromDatadict:
+    """Tests for MultiEmailWidget.value_from_datadict method."""
+
+    def test_empty_data_returns_empty_list(self):
+        """When no matching keys exist, returns empty list."""
+        widget = MultiEmailWidget()
+        data = {}
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == []
+
+    def test_single_email(self):
+        """Extracts a single email from emails[0]."""
+        widget = MultiEmailWidget()
+        data = {"emails[0]": "test@example.com"}
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["test@example.com"]
+
+    def test_multiple_emails(self):
+        """Extracts multiple emails from sequential indices."""
+        widget = MultiEmailWidget()
+        data = {
+            "emails[0]": "first@example.com",
+            "emails[1]": "second@example.com",
+            "emails[2]": "third@example.com",
+        }
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["first@example.com", "second@example.com", "third@example.com"]
+
+    def test_strips_whitespace(self):
+        """Strips leading and trailing whitespace from values."""
+        widget = MultiEmailWidget()
+        data = {
+            "emails[0]": "  test@example.com  ",
+            "emails[1]": "\tother@example.com\n",
+        }
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["test@example.com", "other@example.com"]
+
+    def test_skips_empty_values(self):
+        """Empty values (after stripping) are not included."""
+        widget = MultiEmailWidget()
+        data = {
+            "emails[0]": "first@example.com",
+            "emails[1]": "",
+            "emails[2]": "   ",
+            "emails[3]": "third@example.com",
+        }
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["first@example.com", "third@example.com"]
+
+    def test_stops_at_first_missing_index(self):
+        """Stops extracting when an index is missing (gap in sequence)."""
+        widget = MultiEmailWidget()
+        data = {
+            "emails[0]": "first@example.com",
+            "emails[1]": "second@example.com",
+            # emails[2] is missing
+            "emails[3]": "should-not-be-included@example.com",
+        }
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["first@example.com", "second@example.com"]
+
+    def test_different_field_name(self):
+        """Works with different field names."""
+        widget = MultiEmailWidget()
+        data = {
+            "recipients[0]": "one@example.com",
+            "recipients[1]": "two@example.com",
+        }
+        result = widget.value_from_datadict(data, {}, "recipients")
+        assert result == ["one@example.com", "two@example.com"]
+
+    def test_ignores_unrelated_keys(self):
+        """Only extracts keys matching the specified name pattern."""
+        widget = MultiEmailWidget()
+        data = {
+            "emails[0]": "correct@example.com",
+            "other_field": "ignored",
+            "emails": "also-ignored",
+        }
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["correct@example.com"]
+
+    def test_with_querydict(self):
+        """Works with Django QueryDict (as used in request.POST)."""
+        widget = MultiEmailWidget()
+        data = QueryDict("emails[0]=first@example.com&emails[1]=second@example.com")
+        result = widget.value_from_datadict(data, {}, "emails")
+        assert result == ["first@example.com", "second@example.com"]
+
+
+class TestMultiEmailFieldClean:
+    """Tests for MultiEmailField.clean method."""
+
+    def test_empty_value_not_required_returns_empty_list(self):
+        """When not required and no value, returns empty list."""
+        field = MultiEmailField(required=False)
+        assert field.clean([]) == []
+        assert field.clean(None) == []
+
+    def test_empty_value_required_raises_error(self):
+        """When required and no value, raises ValidationError."""
+        field = MultiEmailField(required=True)
+        with pytest.raises(ValidationError):
+            field.clean([])
+
+    def test_converts_emails_to_lowercase(self):
+        """Emails are converted to lowercase."""
+        field = MultiEmailField()
+        result = field.clean(["TEST@EXAMPLE.COM", "Another@Example.Org"])
+        assert result == ["test@example.com", "another@example.org"]
+
+    def test_invalid_email_raises_error(self):
+        """Invalid email addresses raise ValidationError."""
+        field = MultiEmailField()
+        with pytest.raises(ValidationError) as exc_info:
+            field.clean(["not-an-email"])
+        assert "Enter a valid email address" in str(exc_info.value)
+
+    def test_multiple_invalid_emails_shows_all_errors(self):
+        """All invalid emails are reported, not just the first."""
+        field = MultiEmailField()
+        with pytest.raises(ValidationError) as exc_info:
+            field.clean(["bad1", "valid@example.com", "bad2"])
+        errors = exc_info.value.messages
+        assert len(errors) == 2
+        assert "Enter a valid email address" in errors
+        assert "Enter a valid email address" in errors
 
 
 @pytest.fixture

@@ -2,6 +2,7 @@
 import sentry_sdk
 from django.conf import settings
 from django.db import models
+from django.urls import reverse
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
@@ -14,6 +15,7 @@ from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 class Dashboard(TimeStampedModel):
 
     name = models.CharField(max_length=100, blank=False, unique=True)
+    description = models.TextField(blank=True)
     quicksight_id = models.CharField(max_length=100, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
     admins = models.ManyToManyField("User", related_name="dashboards")
@@ -22,6 +24,9 @@ class Dashboard(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_dashboard"
+
+    def get_absolute_url(self):
+        return reverse("manage-dashboard-sharing", kwargs={"pk": self.pk})
 
     @property
     def url(self):
@@ -55,6 +60,7 @@ class Dashboard(TimeStampedModel):
                         "dashboard_link": self.url,
                         "dashboard_home": settings.DASHBOARD_SERVICE_URL,
                         "dashboard_admin": inviter_email,
+                        "dashboard_description": self.description,
                     },
                 )
             except GovukNotifyEmailError:
@@ -62,7 +68,7 @@ class Dashboard(TimeStampedModel):
 
         return not_notified
 
-    def delete_viewers(self, viewers):
+    def delete_viewers(self, viewers, admin):
         """
         Remove the given viewers from the dashboard.
         """
@@ -77,23 +83,24 @@ class Dashboard(TimeStampedModel):
                     "dashboard": self.name,
                     "dashboard_link": self.url,
                     "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+                    "revoked_by": admin.justice_email,
                 },
             )
 
-    def delete_customers_by_id(self, ids):
+    def delete_customers_by_id(self, ids, admin):
         viewers = DashboardViewer.objects.filter(pk__in=ids)
         if not viewers:
             raise DeleteCustomerError(f"Customers with IDs {ids} not found.")
 
-        self.delete_viewers(viewers)
+        self.delete_viewers(viewers, admin=admin)
         return viewers
 
-    def delete_customer_by_email(self, email):
+    def delete_customer_by_email(self, email, admin):
         viewers = DashboardViewer.objects.filter(email=email)
         if not viewers:
             raise DeleteCustomerError(f"Customer with email {email} not found.")
 
-        self.delete_viewers(viewers)
+        self.delete_viewers(viewers, admin=admin)
 
     def get_embed_url(self):
         """

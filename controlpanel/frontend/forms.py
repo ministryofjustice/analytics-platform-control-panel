@@ -55,6 +55,65 @@ class DynamicMultiChoiceField(forms.MultipleChoiceField):
             raise ValidationError(self.error_messages["required"], code="required")
 
 
+class MultiEmailWidget(forms.TextInput):
+    """
+    Widget that extracts multiple values from array-style form inputs.
+
+    Handles input names like emails[0], emails[1], etc. from the "Add another" component.
+    """
+
+    def value_from_datadict(self, data, files, name):
+        """Extract values from POST data with keys like name[0], name[1], etc."""
+        values = []
+        index = 0
+        while f"{name}[{index}]" in data:
+            value = data.get(f"{name}[{index}]", "").strip()
+            if value:
+                values.append(value)
+            index += 1
+        return values
+
+
+class MultiEmailField(forms.Field):
+    """
+    A form field that accepts multiple email addresses from array-style form inputs.
+
+    Handles input names like emails[0], emails[1], etc. from the "Add another" component.
+    Returns a list of validated, lowercase email addresses.
+
+    Usage:
+        emails = MultiEmailField(required=False)
+    """
+
+    widget = MultiEmailWidget
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("required", False)
+        super().__init__(**kwargs)
+
+    def clean(self, value):
+        """Validate that all values are valid email addresses."""
+        if not value:
+            if self.required:
+                raise ValidationError(self.error_messages["required"], code="required")
+            return []
+
+        errors = []
+        validated_emails = []
+
+        for email in value:
+            try:
+                validate_email(email)
+                validated_emails.append(email.lower())
+            except ValidationError:
+                errors.append("Enter a valid email address")
+
+        if errors:
+            raise ValidationError(errors)
+
+        return validated_emails
+
+
 class CloudPlatformArnValidationMixin:
     """Mixin to provide consistent Cloud Platform ARN validation for forms."""
 
@@ -820,35 +879,53 @@ class FeedbackForm(forms.ModelForm):
 
 class RegisterDashboardForm(forms.ModelForm):
 
+    emails = MultiEmailField(required=False)
+    whitelist_domain = forms.ModelChoiceField(
+        queryset=DashboardDomain.objects.all(),
+        empty_label="Select domain",
+        required=False,
+        widget=forms.Select(attrs={"class": "govuk-select"}),
+    )
+
     class Meta:
         model = Dashboard
         fields = [
             "name",
+            "description",
             "quicksight_id",
         ]
+        error_messages = {
+            "quicksight_id": {
+                "required": "Select or type a dashboard name",
+            },
+            "description": {
+                "required": "Enter a description",
+            },
+        }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
+        self.dashboards = kwargs.pop("dashboards", [])
         super().__init__(*args, **kwargs)
+        # name field is populated from dashboards list, not user input
+        self.fields["name"].required = False
+        self.fields["description"].required = True
 
     def clean_quicksight_id(self):
-        dashboard_url = self.cleaned_data["quicksight_id"]
+        quicksight_id = self.cleaned_data["quicksight_id"]
 
-        prefix = (
-            f"https://{settings.QUICKSIGHT_ACCOUNT_REGION}.quicksight.aws.amazon.com/sn/dashboards/"
-        )
-        if not dashboard_url.startswith(prefix):
-            raise ValidationError("The URL entered is not a valid QuickSight dashboard URL")
+        # Validate the selected dashboard is in the user's list (security check)
+        valid_ids = [d["DashboardId"] for d in self.dashboards]
+        if quicksight_id not in valid_ids:
+            raise ValidationError("Please select a valid dashboard from the list")
 
-        quicksight_id = dashboard_url.split(prefix)[1]
-        if not quicksight_id:
-            raise ValidationError("The URL entered is not a valid QuickSight dashboard URL")
-
+        # Check user has permission to register this dashboard
         if not AWSQuicksight().has_update_dashboard_permissions(
             dashboard_id=quicksight_id, user=self.user
         ):
             raise ValidationError("You do not have permission to register this dashboard")
 
+        # Check dashboard isn't already registered
         existing_dashboard = Dashboard.objects.filter(quicksight_id=quicksight_id).first()
         if existing_dashboard:
             raise ValidationError(
@@ -856,6 +933,28 @@ class RegisterDashboardForm(forms.ModelForm):
             )
 
         return quicksight_id
+
+    def clean(self):
+        cleaned_data = super().clean()
+        quicksight_id = cleaned_data.get("quicksight_id")
+        if not quicksight_id:
+            return cleaned_data
+
+        for dashboard in self.dashboards:
+            if dashboard["DashboardId"] == quicksight_id:
+                cleaned_data["name"] = dashboard["Name"]
+                break
+
+        if not cleaned_data.get("name"):
+            self.add_error("quicksight_id", "Select or type a dashboard name")
+            return cleaned_data
+
+        if not cleaned_data.get("emails") and not cleaned_data.get("whitelist_domain"):
+            error_msg = "Enter an email address or add domain access"
+            self.add_error("emails", error_msg)
+            self.add_error("whitelist_domain", error_msg)
+
+        return cleaned_data
 
 
 class ToolChoice(forms.Select):
