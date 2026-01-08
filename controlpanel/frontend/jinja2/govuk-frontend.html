@@ -19,10 +19,10 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {% block headIcons %}
   <link rel="shortcut icon" href="{{ static('assets/images/favicon.ico') }}" type="image/x-icon">
-  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-180x180.png') }}" sizes="180x180">
-  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-167x167.png') }}" sizes="167x167">
-  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon-152x152.png') }}" sizes="152x152">
-  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/moj/assets/images/moj-apple-touch-icon.png') }}">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/assets/images/moj-apple-touch-icon-180x180-2024.png') }}" sizes="180x180">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/assets/images/moj-apple-touch-icon-167x167-2024.png') }}" sizes="167x167">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/assets/images/moj-apple-touch-icon-152x152-2024.png') }}" sizes="152x152">
+  <link rel="apple-touch-icon" href="{{ static('ministryofjustice-frontend/assets/images/moj-apple-touch-icon-2024.png') }}">
   {% endblock %}
 
   {% block head %}{% endblock %}
@@ -32,7 +32,7 @@
   {%- set host = "localhost" %}
   {%- if request %}{% set scheme = request.scheme %}{% endif %}
   {%- if request %}{% set host = request.get_host() %}{% endif %}
-  <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('ministryofjustice-frontend/assets/images/moj-opengraph-image.png') }}">
+  <meta property="og:image" content="{{ scheme }}://{{ host }}{{ static('ministryofjustice-frontend/assets/images/moj-opengraph-image-2024.png') }}">
 </head>
 
 <body class="app-body govuk-frontend-supported {{ bodyClasses or "" }}">
