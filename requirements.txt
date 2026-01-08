@@ -16,7 +16,7 @@ django-extensions==4.1
 django-filter==25.2
 django-prometheus==2.4.1
 django-redis==6.0.0
-django-simple-history==3.10.1
+django-simple-history==3.11.0
 django-structlog==10.0.0
 djangorestframework==3.16.1
 djproxy==2.3.6
@@ -39,7 +39,7 @@ pytest-xdist==3.8.0
 python-dotenv==1.2.1
 pyyaml==6.0.3
 rules==3.5
-sentry-sdk==2.43.0
+sentry-sdk==2.47.0
 setuptools==80.9.0
 slackclient==2.9.4
 urllib3==2.6.3
