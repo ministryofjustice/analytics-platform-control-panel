@@ -1,3 +1,9 @@
+// Full-width autocomplete variant
+.autocomplete--full-width .autocomplete__wrapper,
+.autocomplete--full-width .autocomplete__input {
+  width: 100%;
+}
+
 .autocomplete__input {
   width: 33.3%;
 }
