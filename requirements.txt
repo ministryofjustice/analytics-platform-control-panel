@@ -4,7 +4,7 @@ authlib==1.6.6
 autobahn==25.12.1
 beautifulsoup4==4.14.3
 boto3==1.42.24
-celery[sqs]==5.5.3
+celery[sqs]==5.6.2
 channels==4.3.2
 channels-redis==4.3.0
 cryptography==46.0.3
