@@ -83,14 +83,13 @@
       {% set initial_emails = form.initial.get("emails", []) %}
       <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
-          <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Add an email</legend>
 
           <div data-module="moj-add-another">
             {% if initial_emails %}
               {% for email in initial_emails %}
               <div class="moj-add-another__item">
                 {{ govukInput({
-                  "label": {"text": ""},
+                  "label": {"html": "<b>Add an email</b>"},
                   "hint": {"text": "Enter an email address to share with."},
                   "name": "emails[" ~ loop.index0 ~ "]",
                   "id": "emails[" ~ loop.index0 ~ "]",
@@ -106,7 +105,7 @@
             {% else %}
             <div class="moj-add-another__item">
               {{ govukInput({
-                "label": {"text": ""},
+                "label": {"html": "<b>Add an email</b>"},
                 "hint": {"text": "Enter an email address to share with."},
                 "name": "emails[0]",
                 "id": "emails[0]",
