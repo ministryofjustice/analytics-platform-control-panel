@@ -112,8 +112,15 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
                         }
                     )
 
+        # Get submitted emails from the bound form field (uses MultiEmailWidget.value_from_datadict)
+        submitted_emails = form["emails"].value() or []
+
         return self.render_to_response(
-            self.get_context_data(form=form, error_summary=error_summary)
+            self.get_context_data(
+                form=form,
+                error_summary=error_summary,
+                submitted_emails=submitted_emails,
+            )
         )
 
     def form_valid(self, form):

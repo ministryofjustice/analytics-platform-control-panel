@@ -43,7 +43,7 @@
       {{ csrf_input }}
 
       {% set error_qs_msg = form.errors.get("quicksight_id") %}
-      {% set initial_quicksight_id = form.initial.get("quicksight_id", "") %}
+      {% set initial_quicksight_id = form.data.get("quicksight_id", "") or form.initial.get("quicksight_id", "") %}
       {% call(dashboard) autocomplete({
         "id": "id_quicksight_id",
         "name": "quicksight_id",
@@ -75,12 +75,13 @@
           }) }}
         {% endif %}
 
-        <textarea type="text" class="govuk-textarea{% if error_desc_msg %} govuk-textarea--error{% endif %}" id="id_description" name="description" rows="5" aria-describedby="description-hint">{{ form.initial.get("description", "") }}</textarea>
+        {% set description_value = form.data.get("description", "") or form.initial.get("description", "") %}
+        <textarea type="text" class="govuk-textarea{% if error_desc_msg %} govuk-textarea--error{% endif %}" id="id_description" name="description" rows="5" aria-describedby="description-hint">{{ description_value }}</textarea>
 
       </div>
 
       {% set emails_error = form.errors.get("emails") %}
-      {% set initial_emails = form.initial.get("emails", []) %}
+      {% set initial_emails = submitted_emails if submitted_emails else form.initial.get("emails", []) %}
       <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
 
@@ -100,6 +101,10 @@
                     "data-id": "emails[%index%]"
                   }
                 }) }}
+                {# Add remove button when there are multiple emails #}
+                {% if initial_emails|length > 1 %}
+                <button type="button" class="govuk-button govuk-button--secondary moj-add-another__remove-button">Remove</button>
+                {% endif %}
               </div>
               {% endfor %}
             {% else %}
