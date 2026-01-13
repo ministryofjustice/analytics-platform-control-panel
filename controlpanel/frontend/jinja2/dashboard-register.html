@@ -50,7 +50,7 @@
         "label": {"text": "Choose dashboard", "classes": "govuk-label--s"},
         "hint": {"text": "Start typing the name of your dashboard as it appears in QuickSight."},
         "items": dashboards,
-        "required": True,
+        "required": False,
         "showAllValues": True,
         "formGroup": {"classes": "autocomplete--full-width"},
         "errorMessage": {"html": error_qs_msg|join(". ")} if error_qs_msg else None,
@@ -75,7 +75,7 @@
           }) }}
         {% endif %}
 
-        <textarea type="text" class="govuk-textarea{% if error_desc_msg %} govuk-textarea--error{% endif %}" id="id_description" name="description" rows="5" aria-describedby="description-hint" required>{{ form.initial.get("description", "") }}</textarea>
+        <textarea type="text" class="govuk-textarea{% if error_desc_msg %} govuk-textarea--error{% endif %}" id="id_description" name="description" rows="5" aria-describedby="description-hint">{{ form.initial.get("description", "") }}</textarea>
 
       </div>
 
@@ -134,13 +134,13 @@
 
 
       <div class="govuk-form-group{% if form.whitelist_domain.errors %} govuk-form-group--error{% endif %}">
-        {{ govukLabel({"text": "Connect an email domain", "classes": "govuk-label--s"}) }}
-        {{ govukHint({"text": "Allow all users on a specified email domain to view your dashboard. <br><b>Do not use for dashboards containing sensitive data.</b>"}) }}
+        {{ govukLabel({"text": "Add domain access", "classes": "govuk-label--s", "for": "id_whitelist_domain"}) }}
+        {{ govukHint({"id": "whitelist-domain-hint", "html": "Allow all users on a specified email domain to view your dashboard. <br><b>Do not use for dashboards containing sensitive data.</b>"}) }}
         {% if form.whitelist_domain.errors %}
-          {{ govukErrorMessage({"text": form.whitelist_domain.errors|join(". ")}) }}
+          {{ govukErrorMessage({"id": "whitelist-domain-error", "text": form.whitelist_domain.errors|join(". ")}) }}
         {% endif %}
-        <select name="whitelist_domain" id="id_whitelist_domain" class="govuk-select{% if form.whitelist_domain.errors %} govuk-select--error{% endif %}">
-          <option value="">Select domain</option>
+        <select name="whitelist_domain" id="id_whitelist_domain" class="govuk-select{% if form.whitelist_domain.errors %} govuk-select--error{% endif %}" aria-describedby="whitelist-domain-hint{% if form.whitelist_domain.errors %} whitelist-domain-error{% endif %}">
+          <option value="">No domain selected</option>
           {% for choice in form.whitelist_domain.field.queryset %}
             <option value="{{ choice.id }}"{% if form.whitelist_domain.value() == choice.id|string %} selected{% endif %}>{{ choice.name }}</option>
           {% endfor %}

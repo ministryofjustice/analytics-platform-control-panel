@@ -546,7 +546,7 @@ class GrantAppAccessForm(forms.Form):
 class GrantDomainAccessForm(forms.Form):
 
     whitelist_domain = DatasourceChoiceField(
-        empty_label="Select domain",
+        empty_label="No domain selected",
         queryset=DashboardDomain.objects.none(),
     )
 
@@ -882,7 +882,7 @@ class RegisterDashboardForm(forms.ModelForm):
     emails = MultiEmailField(required=False)
     whitelist_domain = forms.ModelChoiceField(
         queryset=DashboardDomain.objects.all(),
-        empty_label="Select domain",
+        empty_label="No domain selected",
         required=False,
         widget=forms.Select(attrs={"class": "govuk-select"}),
     )
