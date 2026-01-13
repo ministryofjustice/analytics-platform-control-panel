@@ -890,9 +890,9 @@ class RegisterDashboardForm(forms.ModelForm):
     class Meta:
         model = Dashboard
         fields = [
+            "quicksight_id",
             "name",
             "description",
-            "quicksight_id",
         ]
         error_messages = {
             "quicksight_id": {
@@ -912,7 +912,9 @@ class RegisterDashboardForm(forms.ModelForm):
         self.fields["description"].required = True
 
     def clean_quicksight_id(self):
-        quicksight_id = self.cleaned_data["quicksight_id"]
+        quicksight_id = self.cleaned_data.get("quicksight_id")
+        if not quicksight_id:
+            raise ValidationError("Select or type a dashboard name")
 
         # Validate the selected dashboard is in the user's list (security check)
         valid_ids = [d["DashboardId"] for d in self.dashboards]
@@ -937,17 +939,14 @@ class RegisterDashboardForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         quicksight_id = cleaned_data.get("quicksight_id")
-        if not quicksight_id:
-            return cleaned_data
+        if quicksight_id:
+            for dashboard in self.dashboards:
+                if dashboard["DashboardId"] == quicksight_id:
+                    cleaned_data["name"] = dashboard["Name"]
+                    break
 
-        for dashboard in self.dashboards:
-            if dashboard["DashboardId"] == quicksight_id:
-                cleaned_data["name"] = dashboard["Name"]
-                break
-
-        if not cleaned_data.get("name"):
-            self.add_error("quicksight_id", "Select or type a dashboard name")
-            return cleaned_data
+            if not cleaned_data.get("name"):
+                self.add_error("quicksight_id", "Select or type a dashboard name")
 
         if not cleaned_data.get("emails") and not cleaned_data.get("whitelist_domain"):
             error_msg = "Enter an email address or add domain access"
