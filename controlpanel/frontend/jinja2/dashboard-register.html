@@ -85,16 +85,12 @@
         <fieldset class="govuk-fieldset">
           <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Add an email</legend>
 
-          {% if emails_error %}
-            {{ govukErrorMessage({"html": emails_error|join(". ")}) }}
-          {% endif %}
-
           <div data-module="moj-add-another">
             {% if initial_emails %}
               {% for email in initial_emails %}
               <div class="moj-add-another__item">
                 {{ govukInput({
-                  "label": {"text": "Email address"},
+                  "label": {"text": ""},
                   "hint": {"text": "Enter an email address to share with."},
                   "name": "emails[" ~ loop.index0 ~ "]",
                   "id": "emails[" ~ loop.index0 ~ "]",
@@ -110,7 +106,7 @@
             {% else %}
             <div class="moj-add-another__item">
               {{ govukInput({
-                "label": {"text": "Email address"},
+                "label": {"text": ""},
                 "hint": {"text": "Enter an email address to share with."},
                 "name": "emails[0]",
                 "id": "emails[0]",
@@ -118,7 +114,8 @@
                 "attributes": {
                   "data-name": "emails[%index%]",
                   "data-id": "emails[%index%]"
-                }
+                },
+                "errorMessage": {"html": emails_error|join(". ")} if emails_error else None
               }) }}
             </div>
             {% endif %}
