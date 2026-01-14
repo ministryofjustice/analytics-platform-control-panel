@@ -1,15 +1,29 @@
 {% extends "base.html" %}
 
+
 {% set page_name = "quicksight" %}
 {% set page_title = "QuickSight" %}
 
-{% block container_class_names %}govuk-grid-column-full{% endblock container_class_names %}
+{% block container_class_names %}govuk-grid-column-full white-bg{% endblock container_class_names %}
 
 {% block content %}
+    <div class="govuk-width-container">
+        <nav class="moj-sub-navigation" aria-label="Sub navigation">
+            <ul class="moj-sub-navigation__list">
+                <li class="moj-sub-navigation__item">
+                <a class="moj-sub-navigation__link" aria-current="page" href="{{url("quicksight")}}">QuickSight</a>
+                </li>
+                <li class="moj-sub-navigation__item">
+                <a class="moj-sub-navigation__link" href="{{url("list-dashboards")}}">Share dashboards</a>
+                </li>
+            </ul>
+        </nav>
+
+        <h1 class="govuk-heading-xl">QuickSight</h1>
+    </div>
+
     {% if embed_url %}
-        <body onload="embedConsole()">
-            <div id="experience-container"></div>
-        </body>
+        <div id="experience-container"></div>
     {% else %}
     <div class="govuk-width-container">
         <h2 class="govuk-heading-m">Something went wrong, try refreshing the page</h2>
@@ -19,49 +33,19 @@
 {% endblock content %}
 
 {% block body_end %}
-    <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.6.0/dist/quicksight-embedding-js-sdk.min.js"></script>
-    <script type="text/javascript">
-        const embedConsole = async() => {
-            const {
-                createEmbeddingContext,
-            } = QuickSightEmbedding;
+    <script src="{{ static("assets/js/quicksight-embedding-js-sdk.min.js") }}"></script>
+    <script>
+    (async function() {
+        const { createEmbeddingContext } = QuickSightEmbedding;
 
-            const embeddingContext = await createEmbeddingContext({
-                onChange: (changeEvent, metadata) => {
-                    console.log('Context received a change', changeEvent, metadata);
-                },
-            });
+        const embeddingContext = await createEmbeddingContext();
 
-            const frameOptions = {
-                url: "{{ embed_url|safe }}", // replace this value with the url generated via embedding API
-                container: '#experience-container',
-                height: window.screen.availHeight * 0.85,
-                width: "100%",
-                onChange: (changeEvent, metadata) => {
-                    switch (changeEvent.eventName) {
-                        case 'FRAME_MOUNTED': {
-                            console.log("Do something when the experience frame is mounted.");
-                            break;
-                        }
-                        case 'FRAME_LOADED': {
-                            console.log("Do something when the experience frame is loaded.");
-                            break;
-                        }
-                    }
-                },
-            };
-
-            const contentOptions = {
-                onMessage: async (messageEvent, experienceMetadata) => {
-                    switch (messageEvent.eventName) {
-                        case 'ERROR_OCCURRED': {
-                            console.log("Do something when the embedded experience fails loading.");
-                            break;
-                        }
-                    }
-                }
-            };
-            const embeddedConsoleExperience = await embeddingContext.embedConsole(frameOptions, contentOptions);
-        };
+        await embeddingContext.embedConsole({
+            url: "{{ embed_url|safe }}",
+            container: '#experience-container',
+            height: window.innerHeight * 0.85,
+            width: "100%",
+        });
+    })();
     </script>
 {% endblock body_end %}

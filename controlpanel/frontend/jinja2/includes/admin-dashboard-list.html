@@ -35,7 +35,7 @@
         {% if not request.user.has_perm('api.retrieve_dashboard', dashboard) -%}
           {{ dashboard.name }}
         {%- else -%}
-          <a href="{{ url('manage-dashboard', kwargs={ 'pk': dashboard.id }) }}">{{ dashboard.name }}</a>
+          <a href="{{ url('manage-dashboard-sharing', kwargs={ 'pk': dashboard.id }) }}">{{ dashboard.name }}</a>
         {%- endif %}
       </td>
       <td class="govuk-table__cell">
@@ -58,7 +58,7 @@
       </td>
       <td class="govuk-table__cell">
         <a class="govuk-button govuk-button--secondary right {%- if not request.user.has_perm('api.retrieve_dashboard', dashboard) %} govuk-visually-hidden{% endif %}"
-          href="{{ url('manage-dashboard', kwargs={ 'pk': dashboard.id }) }}">
+          href="{{ url('manage-dashboard-sharing', kwargs={ 'pk': dashboard.id }) }}">
           Manage dashboard
         </a>
       </td>

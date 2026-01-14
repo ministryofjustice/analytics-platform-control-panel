@@ -294,49 +294,73 @@ urlpatterns = [
     ),
     path("parameters/<int:pk>/delete/", views.ParameterDelete.as_view(), name="delete-parameter"),
     path("quicksight/", views.QuicksightView.as_view(), name="quicksight"),
-    path("feedback/", views.CreateFeedback.as_view(), name="feedback-create"),
-    path("feedback/thanks", views.FeedbackThanks.as_view(), name="feedback-thanks"),
-    path("dashboards/", views.DashboardList.as_view(), name="list-dashboards"),
-    path("dashboards/all/", views.AdminDashboardList.as_view(), name="list-all-dashboards"),
-    path("dashboards/register/", views.RegisterDashboard.as_view(), name="register-dashboard"),
-    path("dashboards/<int:pk>/", views.DashboardDetail.as_view(), name="manage-dashboard"),
-    path("dashboards/<int:pk>/delete/", views.DeleteDashboard.as_view(), name="delete-dashboard"),
+    path("quicksight/dashboards/", views.DashboardList.as_view(), name="list-dashboards"),
     path(
-        "dashboards/<int:pk>/admins/", views.AddDashboardAdmin.as_view(), name="add-dashboard-admin"
+        "quicksight/dashboards/all/", views.AdminDashboardList.as_view(), name="list-all-dashboards"
     ),
     path(
-        "dashboards/<int:pk>/admins/<str:user_id>/revoke/",
+        "quicksight/dashboards/share/", views.RegisterDashboard.as_view(), name="register-dashboard"
+    ),
+    path(
+        "quicksight/dashboards/share/preview/",
+        views.RegisterDashboardPreview.as_view(),
+        name="preview-dashboard",
+    ),
+    path(
+        "quicksight/dashboards/share/cancel/",
+        views.CancelDashboardRegistration.as_view(),
+        name="cancel-dashboard-registration",
+    ),
+    path(
+        "quicksight/dashboards/<int:pk>/",
+        views.DashboardDetail.as_view(),
+        name="manage-dashboard-sharing",
+    ),
+    path(
+        "quicksight/dashboards/<int:pk>/delete/",
+        views.DeleteDashboard.as_view(),
+        name="delete-dashboard",
+    ),
+    path(
+        "quicksight/dashboards/<int:pk>/admins/",
+        views.AddDashboardAdmin.as_view(),
+        name="add-dashboard-admin",
+    ),
+    path(
+        "quicksight/dashboards/<int:pk>/admins/<str:user_id>/revoke/",
         views.RevokeDashboardAdmin.as_view(),
         name="revoke-dashboard-admin",
     ),
     path(
-        "dashboards/<int:pk>/customers/paginate/<int:page_no>/",
+        "quicksight/dashboards/<int:pk>/customers/paginate/<int:page_no>/",
         views.DashboardCustomers.as_view(),
         name="dashboard-customers",
     ),
     path(
-        "dashboards/<int:pk>/customers/add/",
+        "quicksight/dashboards/<int:pk>/customers/add/",
         views.AddDashboardCustomers.as_view(),
         name="add-dashboard-customers",
     ),
     path(
-        "dashboards/<int:pk>/customers/remove/",
+        "quicksight/dashboards/<int:pk>/customers/remove/",
         views.RemoveDashboardCustomerById.as_view(),
         name="remove-dashboard-customer",
     ),
     path(
-        "dashboards/<int:pk>/customers/remove/email/",
+        "quicksight/dashboards/<int:pk>/customers/remove/email/",
         views.RemoveDashboardCustomerByEmail.as_view(),
         name="remove-dashboard-customer-by-email",
     ),
     path(
-        "dashboards/<int:pk>/domain/add/",
+        "quicksight/dashboards/<int:pk>/domain/add/",
         views.GrantDomainAccess.as_view(),
         name="grant-domain-access",
     ),
     path(
-        "dashboards/<int:pk>/domain/revoke/<int:domain_id>/",
+        "quicksight/dashboards/<int:pk>/domain/revoke/<int:domain_id>/",
         views.RevokeDomainAccess.as_view(),
         name="revoke-domain-access",
     ),
+    path("feedback/", views.CreateFeedback.as_view(), name="feedback-create"),
+    path("feedback/thanks", views.FeedbackThanks.as_view(), name="feedback-thanks"),
 ]

@@ -295,7 +295,7 @@ class GovukNotifyEmailError(Exception):
     pass
 
 
-def govuk_notify_send_email(email_address, template_id, personalisation, raise_exception=False):
+def govuk_notify_send_email(email_address, template_id, personalisation):
     """
     Send an email using the GOV.UK Notify API.
     """
@@ -308,8 +308,7 @@ def govuk_notify_send_email(email_address, template_id, personalisation, raise_e
         )
     except HTTPError as e:
         sentry_sdk.capture_exception(e)
-        if raise_exception:
-            raise GovukNotifyEmailError(f"Failed to send email to {email_address}") from e
+        raise GovukNotifyEmailError(f"Failed to send email to {email_address}") from e
 
 
 def format_uk_time(dt):

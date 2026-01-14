@@ -9,7 +9,6 @@
 {% set home_url = url("index") %}
 {% set signout_url = url("oidc_logout") %}
 
-
 {% block page_title %}
   {{ page_title }} | {{ service_name }}
 {% endblock %}
@@ -121,12 +120,6 @@
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps",
-      },
-      {
-        "hide": not request.user.is_quicksight_user(),
-        "text": "Dashboards",
-        "href": url("list-dashboards"),
-        "active": page_name == "dashboards",
       },
       {
         "hide": not request.user.is_superuser and not request.user.is_database_admin,
@@ -291,6 +284,9 @@
     <script type="module">
       import { initAll } from "{{ static('assets/js/govuk-frontend.min.js') }}"
       initAll()
+
+      import { initAll as initAllMoj } from "{{ static('assets/js/moj-frontend.min.js') }}"
+      initAllMoj()
     </script>
     <script src="{{ static('accessible-autocomplete/accessible-autocomplete.min.js') }}"></script>
     <script src="{{ static('jquery/jquery.min.js') }}"></script>

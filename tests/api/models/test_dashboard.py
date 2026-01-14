@@ -16,7 +16,10 @@ def test_remove_viewers(mock_viewers, govuk_notify_send_email):
     """
     dashboard = Dashboard(name="Test Dashboard")
     viewer = DashboardViewer(email="foo@example.com")
-    dashboard.delete_viewers([viewer])
+    admin = MagicMock()
+    admin.justice_email = "admin@example.com"
+
+    dashboard.delete_viewers([viewer], admin=admin)
 
     mock_viewers.remove.assert_called_once_with(viewer)
     govuk_notify_send_email.assert_called_once_with(
@@ -26,6 +29,7 @@ def test_remove_viewers(mock_viewers, govuk_notify_send_email):
             "dashboard": dashboard.name,
             "dashboard_link": dashboard.url,
             "dashboard_home": settings.DASHBOARD_SERVICE_URL,
+            "revoked_by": admin.justice_email,
         },
     )
 
@@ -45,13 +49,14 @@ def test_delete_customers_by_id(mock_delete_viewers, mock_filter, ids, return_va
     """
     dashboard = Dashboard(name="Test Dashboard")
     mock_filter.return_value = return_value
+    admin = MagicMock()
 
     if success:
-        dashboard.delete_customers_by_id(ids)
-        mock_delete_viewers.assert_called_once_with(return_value)
+        dashboard.delete_customers_by_id(ids, admin=admin)
+        mock_delete_viewers.assert_called_once_with(return_value, admin=admin)
     else:
         with pytest.raises(DeleteCustomerError):
-            dashboard.delete_customers_by_id(ids)
+            dashboard.delete_customers_by_id(ids, admin=admin)
             mock_delete_viewers.assert_not_called()
 
 
@@ -70,11 +75,12 @@ def test_delete_customers_by_email(mock_delete_viewers, mock_filter, email, retu
     """
     dashboard = Dashboard(name="Test Dashboard")
     mock_filter.return_value = return_value
+    admin = MagicMock()
 
     if success:
-        dashboard.delete_customers_by_id(email)
-        mock_delete_viewers.assert_called_once_with(return_value)
+        dashboard.delete_customer_by_email(email, admin=admin)
+        mock_delete_viewers.assert_called_once_with(return_value, admin=admin)
     else:
         with pytest.raises(DeleteCustomerError):
-            dashboard.delete_customers_by_id(email)
+            dashboard.delete_customer_by_email(email, admin=admin)
             mock_delete_viewers.assert_not_called()

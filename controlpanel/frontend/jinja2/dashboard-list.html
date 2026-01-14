@@ -3,19 +3,60 @@
 {% extends "base.html" %}
 
 {% set page_name = "dashboards" %}
-{% set page_title = "Your Dashboards" %}
+{% set page_title = "Share dashboards" %}
+
+{% if display_service_info %}
+  {% set mainClasses = "govuk-!-padding-top-0" %}
+{% endif %}
 
 {% block content %}
-{% set num_dashboards = dashboards|length %}
+
+<nav class="moj-sub-navigation" aria-label="Sub navigation">
+    <ul class="moj-sub-navigation__list">
+        <li class="moj-sub-navigation__item">
+        <a class="moj-sub-navigation__link" href="{{url("quicksight")}}">QuickSight</a>
+        </li>
+        <li class="moj-sub-navigation__item">
+        <a class="moj-sub-navigation__link" aria-current="page" href="{{url("list-dashboards")}}">Share dashboards</a>
+        </li>
+    </ul>
+</nav>
+
+  {% if dashboard_created %}
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+      <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+          Success
+        </h2>
+      </div>
+      <div class="govuk-notification-banner__content">
+        <h3 class="govuk-notification-banner__heading">
+          You've shared '{{ dashboard_created.name }}'
+        </h3>
+        <p class="govuk-body">
+          To share with more people, or grant admin rights, go to <a class="govuk-notification-banner__link" href="{{ dashboard_created.url }}">manage sharing</a>.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
   <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body">Allow colleagues and stakeholders to view your dashboards. They'll be able to view even without Analytical Platform access.</p>
+
+      <p class="govuk-body">Choose from your existing dashboards to share.</p>
+    </div>
+  </div>
+
+  <p class="govuk-body">
+    <a class="govuk-button govuk-!-margin-bottom-0" href="{{ url('register-dashboard') }}">
+      Share a dashboard
+    </a>
+  </p>
 
   {{ dashboard_list(dashboards, request.user) }}
 
-  <p class="govuk-body">
-    <a class="govuk-button" href="{{ url('register-dashboard') }}">
-      Register a Dashboard
-    </a>
-  </p>
-  
 
 {% endblock %}
