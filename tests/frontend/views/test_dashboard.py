@@ -482,7 +482,7 @@ def test_register_dashboard_already_registered(
     )
     assert response.status_code == 200
     assert (
-        f"This dashboard is already registered by {dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+        f"This dashboard has already been shared. Contact {dashboard.created_by.justice_email} to request sharing access."  # noqa
         in str(response.content)
     )
 

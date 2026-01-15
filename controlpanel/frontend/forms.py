@@ -931,7 +931,7 @@ class RegisterDashboardForm(forms.ModelForm):
         existing_dashboard = Dashboard.objects.filter(quicksight_id=quicksight_id).first()
         if existing_dashboard:
             raise ValidationError(
-                f"This dashboard is already registered by {existing_dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+                f"This dashboard has already been shared. Contact {existing_dashboard.created_by.justice_email} to request sharing access."  # noqa
             )
 
         return quicksight_id
