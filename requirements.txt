@@ -23,7 +23,7 @@ djproxy==2.3.6
 elasticsearch-dsl==7.4.1
 gunicorn==23.0.0
 Jinja2==3.1.6
-kubernetes==33.1.0
+kubernetes==35.0.0
 MarkupSafe==3.0.3
 model-bakery==1.21.0
 moto[all]==5.1.18
