@@ -67,7 +67,7 @@ LOGS_BUCKET_NAME:
 BUCKET_REGION: 'eu-west-1'
 
 # -- Airflow
-AIRFLOW_REGION: "eu-west-1"
+AIRFLOW_REGION: "eu-west-2"
 
 AWS_DEFAULT_REGION: "eu-west-1"
 
