@@ -89,7 +89,9 @@ def list_all(client, *args):
 
 
 def detail(client, dashboard, *args):
-    return client.get(reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}))
+    with patch("controlpanel.api.aws.AWSQuicksight.get_dashboard_embed_url") as mock_embed:
+        mock_embed.return_value = "https://quicksight.aws.amazon.com/embed/test"
+        return client.get(reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}))
 
 
 def create(client, *args):
