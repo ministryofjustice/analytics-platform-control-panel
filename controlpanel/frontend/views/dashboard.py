@@ -238,23 +238,26 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
         dashboard = self.get_object()
-        dashboard_admins = dashboard.admins.all()
 
-        potential_admins = User.objects.exclude(
-            auth0_id="",
-        ).exclude(
-            auth0_id__in=[user.auth0_id for user in dashboard_admins],
+        context["dashboard_admins"] = dashboard.admins.all()
+        context["num_admins"] = len(context["dashboard_admins"])
+        context["dashboard_viewers"] = dashboard.viewers.all()
+        context["num_viewers"] = len(context["dashboard_viewers"])
+        context["domain_whitelist"] = dashboard.whitelist_domains.all()
+        context["num_domains"] = len(context["domain_whitelist"])
+        context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
+            user=self.request.user,
+            dashboard_id=dashboard.quicksight_id,
         )
 
-        context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]
-
-        context["dashboard_admins"] = dashboard_admins
-
-        context["grant_access_form"] = GrantDomainAccessForm(
-            dashboard=dashboard,
-        )
+        # TODO remove this, leaving as may be useful for future features
+        # potential_admins = User.objects.exclude(
+        #     auth0_id="",
+        # ).exclude(
+        #     auth0_id__in=[user.auth0_id for user in dashboard_admins],
+        # )
+        # context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]. # noqa
 
         return context
 

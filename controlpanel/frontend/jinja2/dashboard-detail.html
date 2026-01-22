@@ -22,207 +22,154 @@
 
 <header>
 
-  <span class="govuk-caption-xl">Dashboard</span>
-  <h1 class="govuk-heading-xl">{{ page_title }}</h1>
+  <span class="govuk-caption-xl">{{ page_title }}</span>
+  <h1 class="govuk-heading-xl">Manage Sharing</h1>
 
-  <h2 class="govuk-heading-m">
-    Dashboard URL
-    {{ modal_dialog(dashboard_url_html|safe) }}
-  </h2>
-  <p class="govuk-body">
-      <a href="{{ dashboard.url }}">{{ dashboard.url }}</a>
-  </p>
-
-  <h2 class="govuk-heading-m">
-    Dashboard access
-  </h2>
-
-  <p class="govuk-body">
-    <a href="{{ url('dashboard-customers', kwargs={ 'pk': dashboard.id, 'page_no': '1' }) }}">Manage dashboard access</a>
-  </p>
-
-</header>
-
-<section class="cpanel-section">
-  <h2 class="govuk-heading-m">
-    Dashboard admins
-  </h2>
-
-  <p class="govuk-hint">Dashboard admins can manage user access and remove the dashboard from Control Panel.</p>
-
-  <table class="govuk-table app-admins form-group">
-    <thead class="govuk-table__head">
-      <tr class="govuk-table__row">
-        <th class="govuk-table__header">User</th>
-        <th class="govuk-table__header">
-          <span class="govuk-visually-hidden">Actions</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody class="govuk-table__body">
-    {% for user in dashboard_admins %}
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell">
-        {% if user.auth0_id %}
-          <a class="{% if request.user.auth0_id == user.auth0_id %}highlight-current{% endif %}"
-              href="{{ url('manage-user', kwargs={ 'pk': user.auth0_id }) }}">
-            {{ user_name(user) }}
-          </a>
-        {% else %}
-          {{ user_name(user) }}
+  <div class="govuk-tabs" data-module="govuk-tabs">
+    <h2 class="govuk-tabs__title">
+      Contents
+    </h2>
+    <ul class="govuk-tabs__list">
+      <li class="govuk-tabs__list-item govuk-tabs__list-item--selected">
+        <a class="govuk-tabs__tab" href="#overview">
+          Overview
+        </a>
+      </li>
+      <li class="govuk-tabs__list-item">
+        <a class="govuk-tabs__tab" href="#admins">
+          Admins ({{ num_admins }})
+        </a>
+      </li>
+      <li class="govuk-tabs__list-item">
+        <a class="govuk-tabs__tab" href="#viewers">
+          Viewers ({{ num_viewers }})
+        </a>
+      </li>
+      <li class="govuk-tabs__list-item">
+        <a class="govuk-tabs__tab" href="#domain-access">
+          Domain access ({{ num_domains }})
+        </a>
+      </li>
+    </ul>
+    <div class="govuk-tabs__panel" id="overview">
+      <h2 class="govuk-heading-m">
+        Description
+        <a class="govuk-link govuk-!-font-size-19 govuk-!-font-weight-regular govuk-!-margin-left-2" href="#TODO">Change</a>
+      </h2>
+      <p class="govuk-body">
+        {{ dashboard.description }}
+      </p>
+      <h2 class="govuk-heading-m">Dashboard URL</h2>
+      <p class="govuk-body">
+        <a href="{{ dashboard.url }}">{{ dashboard.url }}</a>
+      </p>
+      <h2 class="govuk-heading-m">Dashboard preview</h2>
+      <div id="dashboard-container" class="govuk-!-margin-bottom-6"></div>
+      <p class="govuk-body">
+        <a href="#TODO" class="govuk-link">Remove this dashboard</a> from the dashboard service and revoke all access.<br>
+        <strong>This will not delete your dashboard in QuickSight</strong>.
+      </p>
+    </div>
+    <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="admins">
+      <h2 class="govuk-heading-m">Dashboard admins</h2>
+      <p class="govuk-body">You can choose other Control Panel users to manage access. <br>This does not grant any author permissions in QuickSight.</p>
+      <a class="govuk-button" href="#TODO">Add admins</a>
+      <table class="govuk-table">
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Admin</th>
+            <th scope="col" class="govuk-table__header">Date added</th>
+            <th scope="col" class="govuk-table__header">Added by</th>
+            <th scope="col" class="govuk-table__header"></th>
+          </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+          {% for admin in dashboard_admins %}
+          <tr class="govuk-table__row">
+            <td class="govuk-table__cell">{{ admin.name }}</td>
+            <td class="govuk-table__cell">#TODO</td>
+            <td class="govuk-table__cell">#TODO</td>
+            <td class="govuk-table__cell">{% if num_admins > 1 %}<a class="govuk-link" href="#TODO">Remove admin</a>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="viewers">
+      <h2 class="govuk-heading-m">Viewers</h2>
+      <p>Allow colleagues and stakeholders to view your dashboards.<br>They'll be able to view even without Analytical Platform access.</p>
+      <a class="govuk-button" href="{{ dashboard.get_absolute_add_viewers_url() }}">Add viewers</a>
+      <table class="govuk-table">
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Viewer</th>
+            <th scope="col" class="govuk-table__header">Date shared</th>
+            <th scope="col" class="govuk-table__header">Shared by</th>
+            <th scope="col" class="govuk-table__header"></th>
+          </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+          {% for viewer in dashboard_viewers %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell">{{ viewer.email }}</td>
+              <td class="govuk-table__cell">#TODO</td>
+              <td class="govuk-table__cell">#TODO</td>
+              <td class="govuk-table__cell"><a class="govuk-link" href="#TODO">Remove viewer</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="domain-access">
+      <h2 class="govuk-heading-m">Domain access</h2>
+      <p class="govuk-body">
+        Allow all users on a specified email domain to view your dashboard.<br>
+        <strong>Do not use for dashboards containing sensitive data.</strong>
+      </p>
+      <a class="govuk-button" href="#TODO">Add domain</a>
+      {% if num_domains %}
+      <table class="govuk-table">
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Domain</th>
+            <th scope="col" class="govuk-table__header">Date added</th>
+            <th scope="col" class="govuk-table__header">Added by</th>
+            <th scope="col" class="govuk-table__header"></th>
+          </tr>
+        </thead>
+          <tbody class="govuk-table__body">
+            {% for domain_access in domain_whitelist %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell">{{ domain_access.domain }}</td>
+              <td class="govuk-table__cell">#TODO</td>
+              <td class="govuk-table__cell">#TODO</td>
+              <td class="govuk-table__cell"><a class="govuk-link" href="#TODO">Remove domain</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
         {% endif %}
-        </td>
-        {% if request.user.has_perm('api.revoke_dashboard_admin', dashboard) %}
-        <td class="govuk-table__cell align-right">
-          {% if user.id %}
-            <form action="{{ url('revoke-dashboard-admin', kwargs={ "pk": dashboard.id, "user_id": user.id }) }}" method="post">
-              {{ csrf_input }}
-              <button class="js-confirm govuk-button govuk-button--secondary right">
-              Revoke admin
-              </button>
-            </form>
-          {% endif %}
-        </td>
-        {% endif %}
-      </tr>
-    {% endfor %}
-    </tbody>
-    <tfoot class="govuk-table__foot">
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell" colspan="3">
-          {{ dashboard_admins|length }} Dashboard admin{% if dashboard_admins|length != 1 %}s{% endif %}
-        </td>
-      </tr>
-    </tfoot>
-  </table>
-
-{% if request.user.has_perm('api.add_dashboard_admin', dashboard) %}
-  {% if admin_options|length %}
-  <form action="{{ url('add-dashboard-admin', kwargs={ 'pk': dashboard.id }) }}" method="post" class="govuk-form-group">
-    {{ csrf_input }}
-
-    {% call(user) autocomplete({
-      "name": "user_id",
-      "label": "Give a user admin rights to this dashboard",
-      "placeholder": "Start typing to find a user...",
-      "items": admin_options,
-      "required": True,
-    }) %}
-      <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
-    {% endcall %}
-
-    <div class="govuk-form-group">
-      <button class="govuk-button">Grant admin</button>
     </div>
-  </form>
-  {% else %}
-  <p class="govuk-body">
-    (All available users are already admins of this dashboard.)
-  </p>
-  {% endif %}
-{% endif %}
-</section>
-
-<section class="cpanel-section">
-  <h2 class="govuk-heading-m">
-    Domain access
-  </h2>
-
-  <div role="region" class="moj-alert moj-alert--warning moj-alert--with-heading" aria-label="domain access warning" data-module="moj-alert">
-  <div>
-    <svg class="moj-alert__icon" role="presentation" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 30" height="30" width="30">
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M15 2.44922L28.75 26.1992H1.25L15 2.44922ZM13.5107 9.49579H16.4697L16.2431 17.7678H13.7461L13.5107 9.49579ZM13.1299 21.82C13.1299 21.5661 13.1787 21.3285 13.2764 21.1071C13.374 20.8793 13.5075 20.6807 13.6768 20.5114C13.8525 20.3421 14.0544 20.2087 14.2822 20.111C14.5101 20.0134 14.7542 19.9645 15.0146 19.9645C15.2686 19.9645 15.5062 20.0134 15.7275 20.111C15.9554 20.2087 16.154 20.3421 16.3232 20.5114C16.4925 20.6807 16.626 20.8793 16.7236 21.1071C16.8213 21.3285 16.8701 21.5661 16.8701 21.82C16.8701 22.0804 16.8213 22.3246 16.7236 22.5524C16.626 22.7803 16.4925 22.9789 16.3232 23.1481C16.154 23.3174 15.9554 23.4509 15.7275 23.5485C15.5062 23.6462 15.2686 23.695 15.0146 23.695C14.7542 23.695 14.5101 23.6462 14.2822 23.5485C14.0544 23.4509 13.8525 23.3174 13.6768 23.1481C13.5075 22.9789 13.374 22.7803 13.2764 22.5524C13.1787 22.3246 13.1299 22.0804 13.1299 21.82Z" fill="currentColor" />
-    </svg>
-  </div>
-  <div class="moj-alert__content">
-    Domain access allows all users with the specified email domain to see the dashboard
-    <p class="govuk-body govuk-!-font-weight-bold">Do not grant domain access to dashboards with sensitive data
-    </p>
   </div>
 
-  <div class="moj-alert__action">
-    <button class="moj-alert__dismiss" hidden>Dismiss</button>
-  </div>
-</div>
+{% endblock %}
 
-  <p class="govuk-hint"></p>
 
-  <table class="govuk-table app-data-sources form-group">
-    <thead class="govuk-table__head">
-      <tr class="govuk-table__row">
-        <th class="govuk-table__header">Name</th>
-        <th class="govuk-table__header">
-          <span class="govuk-visually-hidden">Actions</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody class="govuk-table__body">
-      {% set domains = dashboard.whitelist_domains.all() %}
-      {% set num_domains = domains|length %}
-      {% for domain in domains %}
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell">
-          <p class="govuk-body">{{ domain.name }}</p>
-        </td>
-        <td class="govuk-table__cell align-right">
-          {% if request.user.has_perm('api.remove_dashboard_domain', dashboard) %}
-          <form action="{{ url('revoke-domain-access', kwargs={ "pk": dashboard.id, "domain_id": domain.id }) }}" method="post" class="form-control-prefix">
-            {{ csrf_input }}
-            <button class="js-confirm govuk-button govuk-button--secondary">
-              Remove
-            </button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot class="govuk-table__foot">
-      <tr class="govuk-table__row">
-        <td class="govuk-table__cell" colspan="3">
-          {{ num_domains }} dashboard domain{% if domains != 1 %}s{% endif %}
-        </td>
-      </tr>
-    </tfoot>
-  </table>
+{% block body_end %}
+  {{ super() }}
+  <script src="{{ static("assets/js/quicksight-embedding-js-sdk.min.js") }}"></script>
+  <script>
+  (async function() {
+      const { createEmbeddingContext } = QuickSightEmbedding;
 
-{% if request.user.has_perm('api.add_dashboard_domain', dashboard) %}
-  {% set num_domain_options = grant_access_form.whitelist_domain|length - 1 %}
-  {% if num_domain_options %}
-    <form action="{{ url('grant-domain-access', kwargs={ "pk": dashboard.id }) }}" method="post">
-    {{ csrf_input }}
-    <input type="hidden" name="access_level" value="readonly">
-    <div class="govuk-form-group">
-      {{ govukLabel({"text": "Connect an email domain"}) }}
-      {% if grant_access_form.whitelist_domain.errors -%}
-      {{ govukErrorMessage({"text": grant_access_form.whitelist_domain.errors|join(". ")}) }}
-      {%- endif %}
-      {{ grant_access_form.whitelist_domain }}
-    </div>
-    <div class="govuk-form-group">
-      <button class="js-confirm govuk-button govuk-button--secondary" data-confirm-message="This will grant access to all users with an email address on this domain. If this dashboard contains sensitive data, consider who could see it. Are you sure you wish to grant domain access?">
-        Grant access
-      </button>
-    </div>
-  </form>
-  {% else %}
-  <p class="govuk-body">
-    (All available domains are already assigned to this dashboard.)
-  </p>
-  {% endif %}
-{% endif %}
-</section>
+      const embeddingContext = await createEmbeddingContext();
 
-{% if request.user.has_perm('api.destroy_dashboard', dashboard) %}
-<section class="cpanel-section">
-  <form action="{{ url('delete-dashboard', kwargs={ "pk": dashboard.id }) }}" method="post">
-    {{ csrf_input }}
-    <button class="govuk-button cpanel-button--destructive js-confirm"
-            data-confirm-message="Are you sure you want to remove this dashboard from control panel?">
-      Remove dashboard
-    </button>
-  </form>
-</section>
-{% endif %}
-
+      await embeddingContext.embedDashboard({
+          url: "{{ embed_url|safe }}",
+          container: '#dashboard-container',
+          height: window.innerHeight * 0.6,
+          width: "100%",
+      });
+  })();
+  </script>
 {% endblock %}
