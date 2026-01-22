@@ -443,6 +443,35 @@ def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain)
 
 
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
+def test_register_dashboard_rejects_id_not_in_user_list(get_dashboards, client, users):
+    """
+    Security test: Verify that a user cannot register a dashboard by submitting
+    an arbitrary quicksight_id that is not in their list of owned dashboards.
+    This prevents users from manipulating form data to register dashboards they don't own.
+    """
+    # User only owns "owned-dashboard-123"
+    get_dashboards.return_value = [{"DashboardId": "owned-dashboard-123", "Name": "My Dashboard"}]
+    client.force_login(users["superuser"])
+    url = reverse("register-dashboard")
+
+    # Attacker tries to submit a different dashboard ID
+    response = client.post(
+        url,
+        data={
+            "quicksight_id": "not-owned-dashboard-456",
+            "description": "Trying to hijack",
+            "emails[0]": "attacker@example.com",
+        },
+    )
+
+    # Should be rejected with validation error (not a redirect)
+    assert response.status_code == 200
+    assert "Please select a valid dashboard from the list" in str(response.content)
+    # Dashboard should NOT be created
+    assert not Dashboard.objects.filter(quicksight_id="not-owned-dashboard-456").exists()
+
+
+@patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
 @patch("controlpanel.api.aws.AWSQuicksight.has_update_dashboard_permissions")
 def test_register_dashboard_not_permitted(has_update_permissions, get_dashboards, client, users):
     has_update_permissions.return_value = False
@@ -482,7 +511,7 @@ def test_register_dashboard_already_registered(
     )
     assert response.status_code == 200
     assert (
-        f"This dashboard is already registered by {dashboard.created_by.justice_email}. Please contact them to request access."  # noqa
+        f"This dashboard has already been shared. Contact {dashboard.created_by.justice_email} to request sharing access."  # noqa
         in str(response.content)
     )
 
