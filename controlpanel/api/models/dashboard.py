@@ -25,8 +25,11 @@ class Dashboard(TimeStampedModel):
     class Meta:
         db_table = "control_panel_api_dashboard"
 
-    def get_absolute_url(self):
-        return reverse("manage-dashboard-sharing", kwargs={"pk": self.pk})
+    def get_absolute_url(self, viewname="manage-dashboard-sharing", **kwargs):
+        return reverse(viewname, kwargs={"pk": self.pk, **kwargs})
+
+    def get_absolute_add_viewers_url(self):
+        return self.get_absolute_url(viewname="dashboard-customers", page_no=1)
 
     @property
     def url(self):
