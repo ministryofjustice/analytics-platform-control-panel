@@ -151,6 +151,7 @@ def grant_domain_access_post(client, dashboard, users, dashboard_domain, *args):
 
 
 def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
+    dashboard.whitelist_domains.add(dashboard_domain)
     return client.get(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
@@ -159,6 +160,7 @@ def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
 
 
 def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args):
+    dashboard.whitelist_domains.add(dashboard_domain)
     return client.post(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
