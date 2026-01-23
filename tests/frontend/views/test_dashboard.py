@@ -139,14 +139,26 @@ def remove_customer_by_email(client, dashboard, *args):
     )
 
 
-def grant_domain_access(client, dashboard, users, dashboard_domain, *args):
+def grant_domain_access_get(client, dashboard, users, dashboard_domain, *args):
+    return client.get(reverse("grant-domain-access", kwargs={"pk": dashboard.id}))
+
+
+def grant_domain_access_post(client, dashboard, users, dashboard_domain, *args):
     data = {
         "whitelist_domain": dashboard_domain.id,
     }
     return client.post(reverse("grant-domain-access", kwargs={"pk": dashboard.id}), data=data)
 
 
-def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
+def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
+    return client.get(
+        reverse(
+            "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
+        )
+    )
+
+
+def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args):
     return client.post(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
@@ -188,12 +200,18 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
         (remove_customer_by_email, "superuser", status.HTTP_302_FOUND),
         (remove_customer_by_email, "dashboard_admin", status.HTTP_302_FOUND),
         (remove_customer_by_email, "normal_user", status.HTTP_403_FORBIDDEN),
-        (grant_domain_access, "superuser", status.HTTP_302_FOUND),
-        (grant_domain_access, "dashboard_admin", status.HTTP_302_FOUND),
-        (grant_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
-        (revoke_domain_access, "superuser", status.HTTP_302_FOUND),
-        (revoke_domain_access, "dashboard_admin", status.HTTP_302_FOUND),
-        (revoke_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
+        (grant_domain_access_get, "superuser", status.HTTP_200_OK),
+        (grant_domain_access_get, "dashboard_admin", status.HTTP_200_OK),
+        (grant_domain_access_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (grant_domain_access_post, "superuser", status.HTTP_302_FOUND),
+        (grant_domain_access_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (grant_domain_access_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_domain_access_get, "superuser", status.HTTP_200_OK),
+        (revoke_domain_access_get, "dashboard_admin", status.HTTP_200_OK),
+        (revoke_domain_access_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_domain_access_post, "superuser", status.HTTP_302_FOUND),
+        (revoke_domain_access_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (revoke_domain_access_post, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(

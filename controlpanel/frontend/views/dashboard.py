@@ -4,14 +4,14 @@ import structlog
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
-from django.views.generic.edit import CreateView, DeleteView, FormView
+from django.views.generic.edit import CreateView, DeleteView, FormView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
@@ -239,6 +239,7 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         dashboard = self.get_object()
+        context["success_message"] = self.request.session.pop("success_message", None)
 
         context["dashboard_admins"] = dashboard.admins.all()
         context["num_admins"] = len(context["dashboard_admins"])
@@ -246,6 +247,9 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         context["num_viewers"] = len(context["dashboard_viewers"])
         context["domain_whitelist"] = dashboard.whitelist_domains.all()
         context["num_domains"] = len(context["domain_whitelist"])
+        context["show_add_domain_button"] = (
+            context["num_domains"] < DashboardDomain.objects.all().count()
+        )
         context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
             user=self.request.user,
             dashboard_id=dashboard.quicksight_id,
@@ -472,21 +476,37 @@ class GrantDomainAccess(
     form_class = GrantDomainAccessForm
     model = Dashboard
     permission_required = "api.add_dashboard_domain"
+    template_name = "dashboard-grant-domain-access.html"
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super().post(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         if "dashboard" not in kwargs:
-            kwargs["dashboard"] = Dashboard.objects.get(pk=self.kwargs["pk"])
+            kwargs["dashboard"] = self.object
         return kwargs
 
     def get_success_url(self):
-        return self.get_object().get_absolute_url()
+        res = reverse_lazy(
+            "manage-dashboard-sharing",
+            kwargs={"pk": self.get_object().pk},
+        )
+        return f"{res}#domain-access"
 
     def form_valid(self, form):
         domain = form.cleaned_data["whitelist_domain"]
         dashboard = self.get_object()
         dashboard.whitelist_domains.add(domain)
-        messages.success(self.request, f"Successfully granted access to {domain.name}")
+        self.request.session["success_message"] = {
+            "heading": f"You have updated domain access for {dashboard.name}",
+            "message": None,
+        }
         log.info(
             f"{self.request.user.justice_email} granting {domain.name} "
             f"wide access for dashboard {dashboard.name}",
@@ -495,21 +515,48 @@ class GrantDomainAccess(
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        log.warning("Received suspicious invalid grant app access request")
+        log.warning("Received suspicious invalid grant domain access request")
         raise Exception(form.errors)
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDomainAccess(UpdateDashboardBaseView):
+class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.remove_dashboard_domain"
+    model = Dashboard
+    template_name = "dashboard-domain-remove-confirm.html"
 
-    def perform_update(self, **kwargs):
+    def get_success_url(self):
+        res = reverse_lazy(
+            "manage-dashboard-sharing",
+            kwargs={"pk": self.get_object().pk},
+        )
+        return f"{res}#domain-access"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
         dashboard = self.get_object()
-        domain = DashboardDomain.objects.get(pk=kwargs["domain_id"])
+        domain = dashboard.whitelist_domains.get(pk=self.kwargs["domain_id"])
+
+        if not domain:
+            raise Http404("Domain not found")
+
+        context["domain"] = domain
+        return context
+
+    def form_valid(self, form):
+        dashboard = self.get_object()
+        domain = get_object_or_404(DashboardDomain, pk=self.kwargs["domain_id"])
         dashboard.whitelist_domains.remove(domain)
+
+        self.request.session["success_message"] = {
+            "heading": f"You have updated domain access for {dashboard.name}",
+            "message": None,
+        }
         log.info(
-            f"{self.request.user.justice_email} revoking {domain.name} "
-            f"wide access for dashboard {dashboard.name}",
+            f"{self.request.user.justice_email} removing {domain.name} "
+            f"domain access to dashboard {dashboard.name}",
             audit="dashboard_audit",
         )
-        messages.success(self.request, f"Successfully removed {domain.name}")
+
+        return HttpResponseRedirect(self.get_success_url())
