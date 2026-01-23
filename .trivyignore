@@ -4,5 +4,5 @@ CVE-2025-61729
 ## Risk accepted: server-side only, requests to trusted endpoints (GitHub API, internal services)
 CVE-2025-66418
 CVE-2025-66471
-# jaraco.context
-GHSA-58pv-8j8x-9vj2 exp:2026-01-28
+# wheel
+CVE-2026-24049
