@@ -12,13 +12,29 @@ from controlpanel.api.models.dashboard_viewer import DashboardViewer
 from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 
 
+class DashboardAdmin(TimeStampedModel):
+    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    added_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_admins_added_set"
+    )
+
+    class Meta:
+        db_table = "control_panel_api_dashboard_admins"
+
+
 class Dashboard(TimeStampedModel):
 
     name = models.CharField(max_length=100, blank=False, unique=True)
     description = models.TextField(blank=True)
     quicksight_id = models.CharField(max_length=100, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
-    admins = models.ManyToManyField("User", related_name="dashboards")
+    admins = models.ManyToManyField(
+        "User",
+        related_name="dashboards",
+        through=DashboardAdmin,
+        through_fields=("dashboard", "user"),
+    )
     viewers = models.ManyToManyField("DashboardViewer", related_name="dashboards")
     whitelist_domains = models.ManyToManyField("DashboardDomain", related_name="dashboards")
 
