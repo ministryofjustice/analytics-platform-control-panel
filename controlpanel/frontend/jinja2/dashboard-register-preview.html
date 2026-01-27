@@ -80,6 +80,7 @@
 {% endblock %}
 
 {% block body_end %}
+{{ super() }}
 {% if embed_url %}
 <script src="{{ static("assets/js/quicksight-embedding-js-sdk.min.js") }}"></script>
 <script>

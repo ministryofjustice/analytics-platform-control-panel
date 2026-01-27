@@ -18,7 +18,13 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import aws
 from controlpanel.api.exceptions import DeleteCustomerError
-from controlpanel.api.models import Dashboard, DashboardDomain, DashboardViewer, User
+from controlpanel.api.models import (
+    Dashboard,
+    DashboardAdmin,
+    DashboardDomain,
+    DashboardViewer,
+    User,
+)
 from controlpanel.frontend.forms import (
     AddCustomersForm,
     GrantDomainAccessForm,
@@ -238,23 +244,26 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
         dashboard = self.get_object()
-        dashboard_admins = dashboard.admins.all()
 
-        potential_admins = User.objects.exclude(
-            auth0_id="",
-        ).exclude(
-            auth0_id__in=[user.auth0_id for user in dashboard_admins],
+        context["dashboard_admins"] = dashboard.admins.all()
+        context["num_admins"] = len(context["dashboard_admins"])
+        context["dashboard_viewers"] = dashboard.viewers.all()
+        context["num_viewers"] = len(context["dashboard_viewers"])
+        context["domain_whitelist"] = dashboard.whitelist_domains.all()
+        context["num_domains"] = len(context["domain_whitelist"])
+        context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
+            user=self.request.user,
+            dashboard_id=dashboard.quicksight_id,
         )
 
-        context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]
-
-        context["dashboard_admins"] = dashboard_admins
-
-        context["grant_access_form"] = GrantDomainAccessForm(
-            dashboard=dashboard,
-        )
+        # TODO remove this, leaving as may be useful when implementing add admin page
+        # potential_admins = User.objects.exclude(
+        #     auth0_id="",
+        # ).exclude(
+        #     auth0_id__in=[user.auth0_id for user in dashboard_admins],
+        # )
+        # context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]. # noqa
 
         return context
 
@@ -294,33 +303,36 @@ class UpdateDashboardBaseView(
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardAdmin(UpdateDashboardBaseView):
+class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     permission_required = "api.add_dashboard_admin"
+    template_name = "dashboard-add-admin.html"
+    model = DashboardAdmin
+    fields = ["user"]
 
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self.dashboard = get_object_or_404(Dashboard, pk=kwargs["pk"])
 
-        user_id = self.request.POST.get("user_id")
-        if not user_id:
-            messages.error(self.request, "User not found")
-            return
-        try:
-            user = User.objects.get(pk=self.request.POST["user_id"])
-        except User.DoesNotExist:
-            messages.error(self.request, "User not found")
-            return
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["dashboard"] = self.dashboard
+        return context
 
-        if user.is_quicksight_user():
-            dashboard.admins.add(user)
-            dashboard.add_customers([user.justice_email], self.request.user.justice_email)
-            messages.success(self.request, f"Granted admin access to {user.name}")
-            log.info(
-                f"{self.request.user.justice_email} granted admin access to {user.justice_email}",
-                audit="dashboard_audit",
-            )
-            return
+    def form_valid(self, form):
+        form.instance.dashboard = self.dashboard
+        form.instance.added_by = self.request.user
+        log.info(
+            f"{self.request.user.justice_email} granted admin access to {form.instance.user.justice_email}",  # noqa
+            audit="dashboard_audit",
+        )
+        form.save()
+        self.dashboard.add_customers(
+            [form.instance.user.justice_email], self.request.user.justice_email
+        )
+        return HttpResponseRedirect(self.get_success_url())
 
-        messages.error(self.request, "User cannot be added as a dashboard admin")
+    def get_success_url(self):
+        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.dashboard.pk})
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
