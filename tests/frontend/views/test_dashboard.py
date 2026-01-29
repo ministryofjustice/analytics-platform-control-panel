@@ -100,7 +100,11 @@ def create(client, *args):
         return client.get(reverse("register-dashboard"))
 
 
-def delete(client, dashboard, *args):
+def delete_get(client, dashboard, *args):
+    return client.get(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
+
+
+def delete_post(client, dashboard, *args):
     return client.post(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
 
 
@@ -184,9 +188,12 @@ def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args)
         (create, "superuser", status.HTTP_200_OK),
         (create, "dashboard_admin", status.HTTP_200_OK),
         (create, "normal_user", status.HTTP_403_FORBIDDEN),
-        (delete, "superuser", status.HTTP_302_FOUND),
-        (delete, "dashboard_admin", status.HTTP_302_FOUND),
-        (delete, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_get, "superuser", status.HTTP_200_OK),
+        (delete_get, "dashboard_admin", status.HTTP_200_OK),
+        (delete_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_post, "superuser", status.HTTP_302_FOUND),
+        (delete_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (delete_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (add_admin, "superuser", status.HTTP_302_FOUND),
         (add_admin, "dashboard_admin", status.HTTP_302_FOUND),
         (add_admin, "normal_user", status.HTTP_403_FORBIDDEN),

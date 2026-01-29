@@ -46,6 +46,7 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
+        context["dashboard_deleted"] = self.request.session.pop("dashboard_deleted", None)
         return context
 
 
@@ -271,12 +272,16 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
     model = Dashboard
     permission_required = "api.destroy_dashboard"
     success_url = reverse_lazy("list-dashboards")
-    allowed_methods = ["POST"]
+    template_name = "dashboard-delete-confirm.html"
+    allowed_methods = ["GET", "POST"]
 
     def form_valid(self, form):
         dashboard = self.get_object()
         dashboard.delete()
-        messages.success(self.request, f"Successfully deleted {dashboard.name} dashboard")
+        self.request.session["dashboard_deleted"] = {
+            "heading": f"You've removed {dashboard.name}",
+            "message": "The dashboard will no longer appear in the dashboard service.",
+        }
         return HttpResponseRedirect(self.get_success_url())
 
 
