@@ -63,7 +63,7 @@
     <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="admins">
       <h2 class="govuk-heading-m">Dashboard admins</h2>
       <p class="govuk-body">You can choose other Control Panel users to manage access. <br>This does not grant any author permissions in QuickSight.</p>
-      <a class="govuk-button" href="#TODO">Add admins</a>
+      <a class="govuk-button" href="{{ dashboard.get_absolute_add_admins_url() }}">Add admins</a>
       <table class="govuk-table">
         <thead class="govuk-table__head">
           <tr class="govuk-table__row">

@@ -13,7 +13,7 @@ from rest_framework import status
 # First-party/Local
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
-from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
+from controlpanel.api.models.dashboard import Dashboard, DashboardViewer, DashboardViewerAccess
 from controlpanel.utils import GovukNotifyEmailError
 
 NUM_DASHBOARDS = 3
@@ -63,7 +63,7 @@ def dashboard(users, ExtendedAuth0):
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
     viewer = baker.make(DashboardViewer, email=users["dashboard_admin"].justice_email)
-    dashboard.viewers.add(viewer)
+    DashboardViewerAccess.objects.create(dashboard=dashboard, viewer=viewer)
     return viewer
 
 

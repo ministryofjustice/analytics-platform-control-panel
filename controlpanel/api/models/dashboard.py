@@ -12,7 +12,7 @@ from controlpanel.api.models.dashboard_viewer import DashboardViewer
 from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 
 
-class DashboardAdmin(TimeStampedModel):
+class DashboardAdminAccess(TimeStampedModel):
     dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
     user = models.ForeignKey("User", on_delete=models.CASCADE)
     added_by = models.ForeignKey(
@@ -20,7 +20,29 @@ class DashboardAdmin(TimeStampedModel):
     )
 
     class Meta:
-        db_table = "control_panel_api_dashboard_admins"
+        db_table = "control_panel_api_dashboard_admin_access"
+
+
+class DashboardViewerAccess(TimeStampedModel):
+    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    viewer = models.ForeignKey("DashboardViewer", on_delete=models.CASCADE)
+    shared_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_viewers_shared_set"
+    )
+
+    class Meta:
+        db_table = "control_panel_api_dashboard_viewer_access"
+
+
+class DashboardDomainAccess(TimeStampedModel):
+    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    domain = models.ForeignKey("DashboardDomain", on_delete=models.CASCADE)
+    added_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_domains_added_set"
+    )
+
+    class Meta:
+        db_table = "control_panel_api_dashboard_domain_access"
 
 
 class Dashboard(TimeStampedModel):
@@ -32,11 +54,21 @@ class Dashboard(TimeStampedModel):
     admins = models.ManyToManyField(
         "User",
         related_name="dashboards",
-        through=DashboardAdmin,
+        through=DashboardAdminAccess,
         through_fields=("dashboard", "user"),
     )
-    viewers = models.ManyToManyField("DashboardViewer", related_name="dashboards")
-    whitelist_domains = models.ManyToManyField("DashboardDomain", related_name="dashboards")
+    viewers = models.ManyToManyField(
+        "DashboardViewer",
+        related_name="dashboards",
+        through=DashboardViewerAccess,
+        through_fields=("dashboard", "viewer"),
+    )
+    whitelist_domains = models.ManyToManyField(
+        "DashboardDomain",
+        related_name="dashboards",
+        through=DashboardDomainAccess,
+        through_fields=("dashboard", "domain"),
+    )
 
     class Meta:
         db_table = "control_panel_api_dashboard"
@@ -49,6 +81,9 @@ class Dashboard(TimeStampedModel):
 
     def get_absolute_delete_url(self):
         return self.get_absolute_url(viewname="delete-dashboard")
+
+    def get_absolute_add_admins_url(self):
+        return self.get_absolute_url(viewname="add-dashboard-admin")
 
     @property
     def url(self):
@@ -67,11 +102,26 @@ class Dashboard(TimeStampedModel):
     def is_admin(self, user):
         return self.admins.filter(pk=user.pk).exists()
 
-    def add_customers(self, emails, inviter_email):
+    def add_customers(self, emails, shared_by):
+        """
+        Add viewers to the dashboard and notify them.
+
+        Args:
+            emails: List of email addresses to add as viewers.
+            shared_by: User object representing who shared the dashboard.
+
+        Returns:
+            List of emails that could not be notified.
+        """
         not_notified = []
+        inviter_email = shared_by.justice_email if shared_by else None
         for email in emails:
             viewer, _ = DashboardViewer.objects.get_or_create(email=email.lower())
-            self.viewers.add(viewer)
+            DashboardViewerAccess.objects.get_or_create(
+                dashboard=self,
+                viewer=viewer,
+                defaults={"shared_by": shared_by},
+            )
 
             try:
                 govuk_notify_send_email(

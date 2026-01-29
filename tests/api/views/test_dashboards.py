@@ -54,7 +54,7 @@ def dashboard(users, ExtendedAuth0):
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
     viewer = baker.make("api.DashboardViewer", email=users["dashboard_admin"].justice_email)
-    dashboard.viewers.add(viewer)
+    baker.make("api.DashboardViewerAccess", dashboard=dashboard, viewer=viewer)
     return viewer
 
 

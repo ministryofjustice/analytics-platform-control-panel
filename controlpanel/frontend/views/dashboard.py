@@ -21,9 +21,10 @@ from controlpanel.api import aws
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import (
     Dashboard,
-    DashboardAdmin,
+    DashboardAdminAccess,
     DashboardDomain,
     DashboardViewer,
+    DashboardViewerAccess,
     User,
 )
 from controlpanel.frontend.forms import (
@@ -207,10 +208,14 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
 
             # Add creator as viewer so they can view it in Dashboard Service
             viewer, _ = DashboardViewer.objects.get_or_create(email=email)
-            dashboard.viewers.add(viewer)
+            DashboardViewerAccess.objects.get_or_create(
+                dashboard=dashboard,
+                viewer=viewer,
+                defaults={"shared_by": user},
+            )
 
             # Add any additional viewers from the emails list
-            not_notified = dashboard.add_customers(preview_data.get("emails", []), email)
+            not_notified = dashboard.add_customers(preview_data.get("emails", []), user)
             if not_notified:
                 messages.error(
                     request,
@@ -266,15 +271,6 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
             user=self.request.user,
             dashboard_id=dashboard.quicksight_id,
         )
-
-        # TODO remove this, leaving as may be useful when implementing add admin page
-        # potential_admins = User.objects.exclude(
-        #     auth0_id="",
-        # ).exclude(
-        #     auth0_id__in=[user.auth0_id for user in dashboard_admins],
-        # )
-        # context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]. # noqa
-
         return context
 
 
@@ -318,11 +314,9 @@ class UpdateDashboardBaseView(
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
+class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     permission_required = "api.add_dashboard_admin"
     template_name = "dashboard-add-admin.html"
-    model = DashboardAdmin
-    fields = ["user"]
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
@@ -404,7 +398,7 @@ class AddDashboardCustomers(
     def form_valid(self, form):
         dashboard = self.get_object()
         emails = form.cleaned_data["customer_email"]
-        not_notified = dashboard.add_customers(emails, self.request.user.justice_email)
+        not_notified = dashboard.add_customers(emails, self.request.user)
         log.info(
             f"{self.request.user.justice_email} granted {', '.join(emails)} "
             f"access to dashboard {dashboard.name}",
