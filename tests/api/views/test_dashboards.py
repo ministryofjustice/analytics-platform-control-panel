@@ -61,7 +61,7 @@ def dashboard_viewer(users, dashboard):
 @pytest.fixture
 def dashboard_domain(dashboard):
     domain = baker.make("api.DashboardDomain", name="justice.gov.uk")
-    dashboard.whitelist_domains.add(domain)
+    baker.make("api.DashboardDomainAccess", dashboard=dashboard, domain=domain)
     return domain
 
 

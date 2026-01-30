@@ -13,7 +13,12 @@ from rest_framework import status
 # First-party/Local
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
-from controlpanel.api.models.dashboard import Dashboard, DashboardViewer, DashboardViewerAccess
+from controlpanel.api.models.dashboard import (
+    Dashboard,
+    DashboardDomainAccess,
+    DashboardViewer,
+    DashboardViewerAccess,
+)
 from controlpanel.utils import GovukNotifyEmailError
 
 NUM_DASHBOARDS = 3
@@ -74,9 +79,11 @@ def dashboard_domain():
 
 
 @pytest.fixture
-def add_dashboard_domain(dashboard):
+def add_dashboard_domain(dashboard, users):
     domain = baker.make("api.DashboardDomain", name="test.gov.uk")
-    dashboard.whitelist_domains.add(domain)
+    DashboardDomainAccess.objects.create(
+        dashboard=dashboard, domain=domain, added_by=users["superuser"]
+    )
     return domain
 
 
@@ -155,7 +162,9 @@ def grant_domain_access_post(client, dashboard, users, dashboard_domain, *args):
 
 
 def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
-    dashboard.whitelist_domains.add(dashboard_domain)
+    DashboardDomainAccess.objects.get_or_create(
+        dashboard=dashboard, domain=dashboard_domain, defaults={"added_by": users["superuser"]}
+    )
     return client.get(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
@@ -164,7 +173,9 @@ def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
 
 
 def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args):
-    dashboard.whitelist_domains.add(dashboard_domain)
+    DashboardDomainAccess.objects.get_or_create(
+        dashboard=dashboard, domain=dashboard_domain, defaults={"added_by": users["superuser"]}
+    )
     return client.post(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
@@ -453,6 +464,11 @@ def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
     assert response.status_code == 302
     updated_dashboard = Dashboard.objects.get(pk=dashboard.id)
     assert updated_dashboard.whitelist_domains.count() == 1
+    # Verify added_by is stored
+    domain_access = DashboardDomainAccess.objects.get(
+        dashboard=updated_dashboard, domain=dashboard_domain
+    )
+    assert domain_access.added_by == users["superuser"]
 
 
 def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain):
@@ -855,6 +871,9 @@ def test_preview_dashboard_confirm_creates_dashboard_with_whitelist_domain(
     assert response.status_code == 302
     assert dashboard.whitelist_domains.count() == 1
     assert dashboard_domain in dashboard.whitelist_domains.all()
+    # Verify added_by is stored
+    domain_access = DashboardDomainAccess.objects.get(dashboard=dashboard, domain=dashboard_domain)
+    assert domain_access.added_by == users["superuser"]
 
 
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")

@@ -114,7 +114,9 @@ class Dashboard(TimeStampedModel):
             List of emails that could not be notified.
         """
         not_notified = []
-        inviter_email = shared_by.justice_email if shared_by else None
+        inviter_email = (
+            shared_by.justice_email.lower() if shared_by and shared_by.justice_email else None
+        )
         for email in emails:
             viewer, _ = DashboardViewer.objects.get_or_create(email=email.lower())
             DashboardViewerAccess.objects.get_or_create(

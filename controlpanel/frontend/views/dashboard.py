@@ -204,8 +204,10 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
             )
             dashboard.admins.add(user)
             if preview_data.get("whitelist_domain"):
-                dashboard.whitelist_domains.add(
-                    DashboardDomain.objects.get(name=preview_data.get("whitelist_domain"))
+                DashboardDomainAccess.objects.create(
+                    dashboard=dashboard,
+                    domain=DashboardDomain.objects.get(name=preview_data.get("whitelist_domain")),
+                    added_by=user,
                 )
 
             # Add creator as viewer so they can view it in Dashboard Service
@@ -541,10 +543,15 @@ class GrantDomainAccess(
     def form_valid(self, form):
         domain = form.cleaned_data["whitelist_domain"]
         dashboard = self.get_object()
-        dashboard.whitelist_domains.add(domain)
-        self.request.session["success_message"] = build_success_message(
-            heading=f"You have updated domain access for {dashboard.name}", message=None
+        DashboardDomainAccess.objects.create(
+            dashboard=dashboard,
+            domain=domain,
+            added_by=self.request.user,
         )
+        self.request.session["success_message"] = {
+            "heading": f"You have updated domain access for {dashboard.name}",
+            "message": None,
+        }
         log.info(
             f"{self.request.user.justice_email} granting {domain.name} "
             f"wide access for dashboard {dashboard.name}",
@@ -552,9 +559,9 @@ class GrantDomainAccess(
         )
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        log.warning("Received suspicious invalid grant domain access request")
-        raise Exception(form.errors)
+    # def form_invalid(self, form):
+    #     log.warning("Received suspicious invalid grant domain access request")
+    #     raise Exception(form.errors)
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")

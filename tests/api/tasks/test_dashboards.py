@@ -10,6 +10,7 @@ from controlpanel.api import helm
 from controlpanel.api.models import (
     Dashboard,
     DashboardDomain,
+    DashboardDomainAccess,
     DashboardViewer,
     DashboardViewerAccess,
 )
@@ -86,8 +87,8 @@ def domain(dashboards):
     for i in range(num_domains):
         domains.append(baker.make(DashboardDomain, name=f"test-domain{i + 1}.gov.uk"))
 
-    dashboards[0].whitelist_domains.add(domains[0])
-    dashboards[1].whitelist_domains.add(domains[2])
+    DashboardDomainAccess.objects.create(dashboard=dashboards[0], domain=domains[0])
+    DashboardDomainAccess.objects.create(dashboard=dashboards[1], domain=domains[2])
 
     return domains
 
