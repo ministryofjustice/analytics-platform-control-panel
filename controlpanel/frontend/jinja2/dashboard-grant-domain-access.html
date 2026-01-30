@@ -1,3 +1,4 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
 
 {% extends "base.html" %}
 
@@ -6,11 +7,32 @@
 
 {% block content %}
 
-  <span class="govuk-caption-xl">{{ dashboard.name }}</span>
-  <h1 class="govuk-heading-xl">Add domain</h1>
-
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
+
+      {% if form.errors %}
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+          <div role="alert">
+            <h2 class="govuk-error-summary__title">
+              There is a problem
+            </h2>
+            <div class="govuk-error-summary__body">
+              <ul class="govuk-list govuk-error-summary__list">
+                {% for field, errors in form.errors.items() %}
+                  {% for error in errors %}
+                    <li>
+                      <a href="#{{ field }}">{{ error }}</a>
+                    </li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+      <h1 class="govuk-heading-xl">Add domain</h1>
 
       <p class="govuk-body">Allow all users on a specified email domain to view your dashboard.</p>
 
@@ -23,10 +45,13 @@
       </div>
 
 
-      <p class="govuk-body govuk-!-font-weight-bold">Add a domain</p>
+      <p class="govuk-body govuk-!-font-weight-bold">Add domain access</p>
       <form method="post" action="{{ url('grant-domain-access', kwargs={'pk': dashboard.id}) }}">
         {{ csrf_input }}
-        <div class="govuk-form-group">
+        <div class="govuk-form-group{% if form.whitelist_domain.errors %} govuk-form-group--error{% endif %}">
+          {% if form.whitelist_domain.errors %}
+            {{ govukErrorMessage({"html": form.whitelist_domain.errors | join(". ")}) }}
+          {% endif %}
           {{ form.whitelist_domain }}
           <div class="govuk-button-group govuk-!-margin-top-4">
             <button type="submit" class="govuk-button govuk-!-margin-right-2">
