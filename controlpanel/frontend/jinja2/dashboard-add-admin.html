@@ -1,0 +1,92 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "input/macro.html" import govukInput %}
+{% from "autocomplete/macro.html" import autocomplete %}
+{% from "user/macro.html" import user_name %}
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "Add admin - " ~ dashboard.name %}
+
+{% set back_link_url = url("manage-dashboard-sharing", kwargs={"pk": dashboard.pk}) %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    {% if form.errors %}
+      <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+          <h2 class="govuk-error-summary__title">
+            There is a problem
+          </h2>
+          <div class="govuk-error-summary__body">
+            <ul class="govuk-list govuk-error-summary__list">
+              {% for field, errors in form.errors.items() %}
+                {% for error in errors %}
+                  <li>
+                    <a href="#{{ field }}[0]">{{ error }}</a>
+                  </li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+    <h1 class="govuk-heading-xl">Add admins</h1>
+
+    <p class="govuk-body govuk-!-margin-bottom-0">
+      You can control other Control Panel users to manage access.
+    </p>
+
+    <p class="govuk-body">
+       This does not grant any author permissions in QuickSight.
+    </p>
+
+    <form method="post" action="{{ url("add-dashboard-admin", kwargs={"pk": dashboard.pk}) }}">
+      {{ csrf_input }}
+
+      {% set users_field = form["users"] %}
+      <div class="govuk-form-group{% if users_field.errors %} govuk-form-group--error{% endif %}">
+        <fieldset class="govuk-fieldset">
+          <div data-module="moj-add-another">
+            <div class="moj-add-another__item">
+              {% call(user) autocomplete({
+                "name": users_field.name ~ "[0]",
+                "items": users_field.field.items,
+                "id": users_field.name ~ "[0]",
+                "label": {"text": users_field.label, "classes": "govuk-label--s"},
+                "hint": {"text": users_field.help_text},
+                "formGroup": {"classes": "autocomplete--full-width"},
+                "attributes": {
+                  "data-name": users_field.name ~ "[%index%]",
+                  "data-id": users_field.name ~ "[%index%]"
+                },
+                "errorMessage": {"html": users_field.errors | join(". ")} if users_field.errors else None,
+              }) %}
+                <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
+              {% endcall %}
+            </div>
+
+            <div class="moj-button-action govuk-!-margin-top-4">
+              <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
+                Add another user
+              </button>
+            </div>
+          </div>
+
+        </fieldset>
+      </div>
+
+      <div class="govuk-button-group">
+        <button class="govuk-button" type="submit">Add admins</button>
+        <a class="govuk-link" href="{{ url("manage-dashboard-sharing", kwargs={"pk": dashboard.pk}) }}">Cancel</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

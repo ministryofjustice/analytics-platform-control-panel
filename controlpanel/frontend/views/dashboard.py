@@ -23,12 +23,14 @@ from controlpanel.api.models import (
     Dashboard,
     DashboardAdminAccess,
     DashboardDomain,
+    DashboardDomainAccess,
     DashboardViewer,
     DashboardViewerAccess,
     User,
 )
 from controlpanel.frontend.forms import (
     AddCustomersForm,
+    AddDashboardAdminForm,
     GrantDomainAccessForm,
     RegisterDashboardForm,
     RemoveCustomerByEmailForm,
@@ -258,19 +260,24 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         dashboard = self.get_object()
         context["success_message"] = self.request.session.pop("success_message", None)
 
-        context["dashboard_admins"] = dashboard.admins.all()
+        context["dashboard_admins"] = DashboardAdminAccess.objects.filter(
+            dashboard=dashboard
+        ).select_related("user", "added_by")
         context["num_admins"] = len(context["dashboard_admins"])
-        context["dashboard_viewers"] = dashboard.viewers.all()
+        context["dashboard_viewers"] = DashboardViewerAccess.objects.filter(
+            dashboard=dashboard
+        ).select_related("viewer", "shared_by")
         context["num_viewers"] = len(context["dashboard_viewers"])
-        context["domain_whitelist"] = dashboard.whitelist_domains.all()
+        context["domain_whitelist"] = DashboardDomainAccess.objects.filter(
+            dashboard=dashboard
+        ).select_related("domain", "added_by")
         context["num_domains"] = len(context["domain_whitelist"])
-        context["show_add_domain_button"] = (
-            context["num_domains"] < DashboardDomain.objects.all().count()
-        )
+        context["show_add_domain_button"] = context["num_domains"] < DashboardDomain.objects.count()
         context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
             user=self.request.user,
             dashboard_id=dashboard.quicksight_id,
         )
+
         return context
 
 
@@ -314,13 +321,24 @@ class UpdateDashboardBaseView(
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
     permission_required = "api.add_dashboard_admin"
     template_name = "dashboard-add-admin.html"
+    form_class = AddDashboardAdminForm
 
     def setup(self, request, *args, **kwargs):
         super().setup(request, *args, **kwargs)
         self.dashboard = get_object_or_404(Dashboard, pk=kwargs["pk"])
+
+    def get_permission_object(self):
+        """Return the dashboard for object-level permission checking."""
+        return self.dashboard
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["dashboard"] = self.dashboard
+        kwargs["added_by"] = self.request.user
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -328,20 +346,27 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Templat
         return context
 
     def form_valid(self, form):
-        form.instance.dashboard = self.dashboard
-        form.instance.added_by = self.request.user
-        log.info(
-            f"{self.request.user.justice_email} granted admin access to {form.instance.user.justice_email}",  # noqa
-            audit="dashboard_audit",
-        )
-        form.save()
-        self.dashboard.add_customers(
-            [form.instance.user.justice_email], self.request.user.justice_email
-        )
+        added_users = form.save()
+
+        emails = [user.justice_email for user in added_users if user.justice_email]
+        self.dashboard.add_customers(emails, self.request.user)
+
+        for user in added_users:
+            log.info(
+                f"{self.request.user.justice_email} granted admin access to {user.justice_email}",
+                audit="dashboard_audit",
+            )
+
+        self.request.session["success_message"] = {
+            "heading": f"You have updated admin access for {self.dashboard.name}",
+            "message": None,
+        }
+
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        return reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.dashboard.pk})
+        url = reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.dashboard.pk})
+        return f"{url}#admins"
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")

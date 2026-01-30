@@ -74,11 +74,11 @@
           </tr>
         </thead>
         <tbody class="govuk-table__body">
-          {% for admin in dashboard_admins %}
+          {% for admin_access in dashboard_admins %}
           <tr class="govuk-table__row">
-            <td class="govuk-table__cell">{{ admin.name }}</td>
-            <td class="govuk-table__cell">#TODO</td>
-            <td class="govuk-table__cell">#TODO</td>
+            <td class="govuk-table__cell">{{ admin_access.user.name }}</td>
+            <td class="govuk-table__cell">{{ admin_access.created.strftime("%d %b %Y") }}</td>
+            <td class="govuk-table__cell">{{ admin_access.added_by.name if admin_access.added_by else "-" }}</td>
             <td class="govuk-table__cell">{% if num_admins > 1 %}<a class="govuk-link" href="#TODO">Remove admin</a>{% endif %}</td>
           </tr>
           {% endfor %}
@@ -100,11 +100,11 @@
             </tr>
           </thead>
           <tbody class="govuk-table__body">
-            {% for viewer in dashboard_viewers %}
+            {% for viewer_access in dashboard_viewers %}
               <tr class="govuk-table__row">
-                <td class="govuk-table__cell">{{ viewer.email }}</td>
-                <td class="govuk-table__cell">#TODO</td>
-                <td class="govuk-table__cell">#TODO</td>
+                <td class="govuk-table__cell">{{ viewer_access.viewer.email }}</td>
+                <td class="govuk-table__cell">{{ viewer_access.created.strftime("%d %b %Y") }}</td>
+                <td class="govuk-table__cell">{{ viewer_access.shared_by.name if viewer_access.shared_by else "-" }}</td>
                 <td class="govuk-table__cell"><a class="govuk-link" href="#TODO">Remove viewer</a></td>
               </tr>
             {% endfor %}
@@ -113,52 +113,36 @@
       {% endif %}
     </div>
     <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="domain-access">
-      <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-        <h2 class="govuk-heading-m">
-            Domain access
-        </h2>
-
-        <p class="govuk-body">
-            Allow all users on a specified email domain to view your dashboard.
-        </p>
-
-        <p class="govuk-body govuk-!-font-weight-bold">
-            Do not use for dashboards containing sensitive data.
-        </p>
-
-        {% if show_add_domain_button %}
-        <a class="govuk-button " href="{{ url('grant-domain-access', kwargs={'pk': dashboard.id}) }}">
-            Add domain
-        </a>
-        {% endif %}
-    </div>
-    {% if num_domains > 0 %}
-    <div class="govuk-grid-column-full">
-        <table class="govuk-table">
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header">Domain</th>
-                <th scope="col" class="govuk-table__header">Date added</th>
-                <th scope="col" class="govuk-table__header">
-                    <span class="govuk-visually-hidden">Actions</span>
-                </th>
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                {% for domain in domain_whitelist %}
-                <tr class="govuk-table__row">
-                    <th scope="row" class="govuk-table__header">{{domain.name}}</th>
-                    <td class="govuk-table__cell">Date here</td>
-                    <td class="govuk-table__cell"><a href="{{ url('revoke-domain-access', kwargs={'pk': dashboard.id, 'domain_id': domain.id}) }}" class="govuk-link">Remove domain</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
+      <h2 class="govuk-heading-m">Domain access</h2>
+      <p class="govuk-body">
+        Allow all users on a specified email domain to view your dashboard.<br>
+        <strong>Do not use for dashboards containing sensitive data.</strong>
+      </p>
+      {% if show_add_domain_button %}
+        <a class="govuk-button" href="{{ url('grant-domain-access', kwargs={'pk': dashboard.id}) }}">Add domain</a>
+      {% endif %}
+      {% if num_domains %}
+      <table class="govuk-table">
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Domain</th>
+            <th scope="col" class="govuk-table__header">Date added</th>
+            <th scope="col" class="govuk-table__header">Added by</th>
+            <th scope="col" class="govuk-table__header"></th>
+          </tr>
+        </thead>
+          <tbody class="govuk-table__body">
+            {% for domain_access in domain_whitelist %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell">{{ domain_access.domain.name }}</td>
+              <td class="govuk-table__cell">{{ domain_access.created.strftime("%d %b %Y") }}</td>
+              <td class="govuk-table__cell">{{ domain_access.added_by.name if domain_access.added_by else "-" }}</td>
+              <td class="govuk-table__cell"><a class="govuk-link" href="{{ url('revoke-domain-access', kwargs={'pk': dashboard.id, 'domain_id': domain_access.domain.id}) }}">Remove domain</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
         </table>
-    </div>
-    {% endif %}
-</div>
-
+        {% endif %}
     </div>
   </div>
 

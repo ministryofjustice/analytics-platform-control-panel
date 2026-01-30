@@ -110,7 +110,7 @@ def delete_post(client, dashboard, *args):
 
 def add_admin(client, dashboard, users, *args):
     data = {
-        "user_id": users["other_user"].auth0_id,
+        "users[0]": users["quicksight_compute_author"].auth0_id,
     }
     return client.post(reverse("add-dashboard-admin", kwargs={"pk": dashboard.id}), data)
 
@@ -900,30 +900,43 @@ def test_cancel_dashboard_registration_clears_session(client, users):
 
 
 @pytest.mark.parametrize(
-    "user_id, expected_message, count",
+    "user_id, expected_message",
     [
-        ("invalid_user", "User not found", 0),
-        ("", "User not found", 0),
-        ("github|user_3", "User cannot be added as a dashboard admin", 0),
-        ("github|user_5", "Granted admin access to ", 1),
+        ("invalid_user", "One or more selected users not found"),
+        ("", "Select a user"),
+        ("github|user_3", "One or more selected users cannot be added as admins"),
     ],
 )
-def test_add_admin(
-    user_id, expected_message, count, client, dashboard, users, govuk_notify_send_email
+def test_add_admin_validation_errors(
+    user_id,
+    expected_message,
+    client,
+    dashboard,
+    users,
 ):
     client.force_login(users["superuser"])
     url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
-    data = {
-        "user_id": user_id,
-    }
-    response = client.post(url, data)
+    response = client.post(url, {"users[0]": user_id})
+
+    assert response.status_code == 200
+    assert expected_message in response.content.decode()
+    assert dashboard.admins.filter(auth0_id=user_id).count() == 0
+
+
+def test_add_admin_success(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
+    response = client.post(url, {"users[0]": users["quicksight_compute_author"].auth0_id})
+
     assert response.status_code == 302
-    assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id})
-    assert dashboard.admins.filter(auth0_id=user_id).count() == count
-    messages = [str(m) for m in get_messages(response.wsgi_request)]
-    assert expected_message in messages
-    if count:
-        govuk_notify_send_email.assert_called_once()
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin access for" in client.session["success_message"]["heading"]
+    assert (
+        dashboard.admins.filter(auth0_id=users["quicksight_compute_author"].auth0_id).count() == 1
+    )
+    govuk_notify_send_email.assert_called_once()
 
 
 def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):

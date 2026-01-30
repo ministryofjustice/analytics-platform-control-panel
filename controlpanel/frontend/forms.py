@@ -23,6 +23,7 @@ from controlpanel.api.models import (
     QUICKSIGHT_EMBED_READER_PERMISSION,
     App,
     Dashboard,
+    DashboardAdminAccess,
     DashboardDomain,
     Feedback,
     S3Bucket,
@@ -55,11 +56,11 @@ class DynamicMultiChoiceField(forms.MultipleChoiceField):
             raise ValidationError(self.error_messages["required"], code="required")
 
 
-class MultiEmailWidget(forms.TextInput):
+class IndexedArrayWidgetMixin:
     """
-    Widget that extracts multiple values from array-style form inputs.
+    Mixin for widgets that extract multiple values from array-style form inputs.
 
-    Handles input names like emails[0], emails[1], etc. from the "Add another" component.
+    Handles input names like name[0], name[1], etc. from the "Add another" component.
     """
 
     def value_from_datadict(self, data, files, name):
@@ -72,6 +73,12 @@ class MultiEmailWidget(forms.TextInput):
                 values.append(value)
             index += 1
         return values
+
+
+class MultiEmailWidget(IndexedArrayWidgetMixin, forms.TextInput):
+    """Widget for extracting multiple email addresses from array-style form inputs."""
+
+    pass
 
 
 class MultiEmailField(forms.Field):
@@ -112,6 +119,46 @@ class MultiEmailField(forms.Field):
             raise ValidationError(errors)
 
         return validated_emails
+
+
+class MultiUserWidget(IndexedArrayWidgetMixin, forms.Select):
+    """Widget for extracting multiple user IDs from array-style form inputs."""
+
+    pass
+
+
+class MultiUserField(forms.Field):
+    """
+    A form field that accepts multiple user IDs from array-style form inputs.
+
+    Handles input names like users[0], users[1], etc. from the "Add another" component.
+    Returns a list of validated User objects.
+
+    Usage:
+        users = MultiUserField(required=True)
+    """
+
+    widget = MultiUserWidget
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("required", True)
+        super().__init__(**kwargs)
+
+    def clean(self, value):
+        """Validate that all values are valid user auth0_ids and return User objects."""
+        if not value:
+            if self.required:
+                raise ValidationError("Select a user")
+            return []
+
+        users = list(User.objects.filter(auth0_id__in=value))
+        found_ids = {u.auth0_id for u in users}
+        missing_ids = set(value) - found_ids
+
+        if missing_ids:
+            raise ValidationError("One or more selected users not found")
+
+        return users
 
 
 class CloudPlatformArnValidationMixin:
@@ -569,6 +616,78 @@ class GrantDomainAccessForm(forms.Form):
             )
 
         return queryset
+
+
+class AddDashboardAdminForm(forms.Form):
+    """
+    Form for adding one or more admins to a dashboard.
+
+    Handles indexed field names (users[0], users[1], etc.) from the
+    moj-add-another component.
+    """
+
+    users = MultiUserField(
+        required=True,
+        label="Find a user",
+        help_text="Start typing a name to find a user",
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.dashboard = kwargs.pop("dashboard")
+        self.added_by = kwargs.pop("added_by")
+        super().__init__(*args, **kwargs)
+        self.fields["users"].items = self.get_user_options()
+
+    def get_user_options(self):
+        """Get users who can be added as admins (QuickSight users not already admins)."""
+        return (
+            User.objects.filter(
+                Q(user_permissions__codename="quicksight_embed_author_access")
+                | Q(user_permissions__codename="quicksight_embed_reader_access")
+            )
+            .exclude(
+                auth0_id__in=self.dashboard.admins.values_list("auth0_id", flat=True),
+            )
+            .distinct()
+        )
+
+    def clean_users(self):
+        """Validate users are quicksight users and not already admins."""
+        users = self.cleaned_data["users"]
+
+        # Validate all submitted users are quicksight users (security check)
+        valid_user_ids = set(self.get_user_options().values_list("auth0_id", flat=True))
+        invalid_users = [u for u in users if u.auth0_id not in valid_user_ids]
+        if invalid_users:
+            raise ValidationError("One or more selected users cannot be added as admins")
+
+        # Filter out users who are already admins (in case of race condition)
+        existing_admin_ids = set(
+            DashboardAdminAccess.objects.filter(
+                dashboard=self.dashboard, user__in=users
+            ).values_list("user__auth0_id", flat=True)
+        )
+
+        new_admins = [u for u in users if u.auth0_id not in existing_admin_ids]
+
+        if not new_admins:
+            raise ValidationError("All selected users are already admins of this dashboard")
+
+        return new_admins
+
+    def save(self):
+        """Create DashboardAdminAccess records and return list of added users."""
+        added_users = []
+
+        for user in self.cleaned_data["users"]:
+            DashboardAdminAccess.objects.create(
+                dashboard=self.dashboard,
+                user=user,
+                added_by=self.added_by,
+            )
+            added_users.append(user)
+
+        return added_users
 
 
 class CreateIAMManagedPolicyForm(forms.Form):
