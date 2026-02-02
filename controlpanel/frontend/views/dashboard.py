@@ -322,10 +322,10 @@ class DashboardUpdateDescription(OIDCLoginRequiredMixin, PermissionRequiredMixin
     def form_valid(self, form):
         super().form_valid(form)
         dashboard = self.get_object()
-        self.request.session["success_message"] = {
-            "heading": f"You've updated the description for {dashboard.name}",
-            "message": None,
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You've updated the description for {dashboard.name}", message=None
+        )
+
         return HttpResponseRedirect(self.get_success_url())
 
 
