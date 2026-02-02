@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormView, UpdateView
@@ -27,7 +28,7 @@ from controlpanel.frontend.forms import (
     UpdateDashboardForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.utils import feature_flag_required, get_error_summary
+from controlpanel.utils import build_success_message, feature_flag_required, get_error_summary
 
 log = structlog.getLogger(__name__)
 
@@ -46,8 +47,7 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
-        context["dashboard_deleted"] = self.request.session.pop("dashboard_deleted", None)
+        context["success_message"] = self.request.session.pop("success_message", None)
         return context
 
 
@@ -203,10 +203,15 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                     ),
                 )
 
-        request.session["dashboard_created"] = {
-            "name": dashboard.name,
-            "url": dashboard.get_absolute_url(),
-        }
+        request.session["success_message"] = build_success_message(
+            heading=f"You've shared '{dashboard.name}'",
+            message=format_html(
+                "To share with more people, or grant admin rights, "
+                'go to <a class="govuk-notification-banner__link" href="{}">manage sharing</a>.',
+                dashboard.get_absolute_url(),
+            ),
+        )
+
         return HttpResponseRedirect(reverse_lazy("list-dashboards"))
 
 
@@ -267,10 +272,11 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
     def form_valid(self, form):
         dashboard = self.get_object()
         dashboard.delete()
-        self.request.session["dashboard_deleted"] = {
-            "heading": f"You've removed {dashboard.name}",
-            "message": "The dashboard will no longer appear in the dashboard service.",
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You've removed {dashboard.name}",
+            message="The dashboard will no longer appear in the dashboard service.",
+        )
+
         return HttpResponseRedirect(self.get_success_url())
 
 
@@ -526,10 +532,9 @@ class GrantDomainAccess(
         domain = form.cleaned_data["whitelist_domain"]
         dashboard = self.get_object()
         dashboard.whitelist_domains.add(domain)
-        self.request.session["success_message"] = {
-            "heading": f"You have updated domain access for {dashboard.name}",
-            "message": None,
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated domain access for {dashboard.name}", message=None
+        )
         log.info(
             f"{self.request.user.justice_email} granting {domain.name} "
             f"wide access for dashboard {dashboard.name}",
@@ -572,10 +577,9 @@ class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, Delete
         domain = get_object_or_404(DashboardDomain, pk=self.kwargs["domain_id"])
         dashboard.whitelist_domains.remove(domain)
 
-        self.request.session["success_message"] = {
-            "heading": f"You have updated domain access for {dashboard.name}",
-            "message": None,
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated domain access for {dashboard.name}", message=None
+        )
         log.info(
             f"{self.request.user.justice_email} removing {domain.name} "
             f"domain access to dashboard {dashboard.name}",

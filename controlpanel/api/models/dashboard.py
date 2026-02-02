@@ -31,6 +31,9 @@ class Dashboard(TimeStampedModel):
     def get_absolute_add_viewers_url(self):
         return self.get_absolute_url(viewname="dashboard-customers", page_no=1)
 
+    def get_absolute_delete_url(self):
+        return self.get_absolute_url(viewname="delete-dashboard")
+
     @property
     def url(self):
         return f"{settings.DASHBOARD_SERVICE_URL}{self.quicksight_id}"

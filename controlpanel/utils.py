@@ -344,3 +344,10 @@ def get_error_summary(form):
                 )
 
     return error_summary
+
+
+def build_success_message(heading, message):
+    return {
+        "heading": heading,
+        "message": message,
+    }

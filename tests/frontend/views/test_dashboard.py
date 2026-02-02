@@ -269,21 +269,21 @@ def test_list_dashboards_displays_success_message(client, users):
     """Dashboard list displays success message from session and clears it."""
     client.force_login(users["superuser"])
     session = client.session
-    session["dashboard_created"] = {
-        "name": "My New Dashboard",
-        "url": "/quicksight/dashboards/123/",
+    session["success_message"] = {
+        "heading": "My New Dashboard",
+        "message": "You've created a new dashboard.",
     }
     session.save()
 
     response = client.get(reverse("list-dashboards"))
 
     assert response.status_code == 200
-    assert response.context_data["dashboard_created"] == {
-        "name": "My New Dashboard",
-        "url": "/quicksight/dashboards/123/",
+    assert response.context_data["success_message"] == {
+        "heading": "My New Dashboard",
+        "message": "You've created a new dashboard.",
     }
     # Session should be cleared after displaying
-    assert "dashboard_created" not in client.session
+    assert "success_message" not in client.session
 
 
 def test_list_dashboards_no_success_message(client, users):
@@ -293,7 +293,7 @@ def test_list_dashboards_no_success_message(client, users):
     response = client.get(reverse("list-dashboards"))
 
     assert response.status_code == 200
-    assert response.context_data["dashboard_created"] is None
+    assert response.context_data["success_message"] is None
 
 
 def add_customer_success(client, response):

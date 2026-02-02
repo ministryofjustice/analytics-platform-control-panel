@@ -12,19 +12,19 @@
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
 
-      <p class="govuk-body govuk-!-font-weight-bold">Are you sure you want to remove this dashboard?</p>
+      <h2 class="govuk-heading-m">Are you sure you want to remove this dashboard?</h2>
 
       <p class="govuk-body">You are about to remove this dashboard from the dashboard service and revoke all access.</p>
 
       <p class="govuk-body">This will not delete your dashboard in QuickSight.</p>
 
-      <form method="post" action="{{ url('delete-dashboard', kwargs={'pk': dashboard.id}) }}">
+      <form method="post" action="{{ dashboard.get_absolute_delete_url() }}">
         {{ csrf_input }}
         <div class="govuk-button-group">
           <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-right-2">
             Remove
           </button>
-          <a href="{{ url('manage-dashboard-sharing', kwargs={'pk': dashboard.id}) }}" class="govuk-link">
+          <a href="{{ dashboard.get_absolute_url() }}" class="govuk-link">
             Cancel
           </a>
         </div>
