@@ -27,7 +27,7 @@ from controlpanel.frontend.forms import (
     RemoveCustomerByEmailForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.utils import feature_flag_required
+from controlpanel.utils import build_success_message, feature_flag_required
 
 log = structlog.getLogger(__name__)
 
@@ -214,14 +214,14 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                     ),
                 )
 
-        request.session["success_message"] = {
-            "heading": f"You've shared '{dashboard.name}'",
-            "message": format_html(
+        request.session["success_message"] = build_success_message(
+            heading=f"You've shared '{dashboard.name}'",
+            message=format_html(
                 "To share with more people, or grant admin rights, "
                 'go to <a class="govuk-notification-banner__link" href="{}">manage sharing</a>.',
                 dashboard.get_absolute_url(),
             ),
-        }
+        )
 
         return HttpResponseRedirect(reverse_lazy("list-dashboards"))
 
@@ -283,10 +283,11 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
     def form_valid(self, form):
         dashboard = self.get_object()
         dashboard.delete()
-        self.request.session["success_message"] = {
-            "heading": f"You've removed {dashboard.name}",
-            "message": "The dashboard will no longer appear in the dashboard service.",
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You've removed {dashboard.name}",
+            message="The dashboard will no longer appear in the dashboard service.",
+        )
+
         return HttpResponseRedirect(self.get_success_url())
 
 
@@ -513,10 +514,9 @@ class GrantDomainAccess(
         domain = form.cleaned_data["whitelist_domain"]
         dashboard = self.get_object()
         dashboard.whitelist_domains.add(domain)
-        self.request.session["success_message"] = {
-            "heading": f"You have updated domain access for {dashboard.name}",
-            "message": None,
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated domain access for {dashboard.name}", message=None
+        )
         log.info(
             f"{self.request.user.justice_email} granting {domain.name} "
             f"wide access for dashboard {dashboard.name}",
@@ -559,10 +559,9 @@ class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, Delete
         domain = get_object_or_404(DashboardDomain, pk=self.kwargs["domain_id"])
         dashboard.whitelist_domains.remove(domain)
 
-        self.request.session["success_message"] = {
-            "heading": f"You have updated domain access for {dashboard.name}",
-            "message": None,
-        }
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated domain access for {dashboard.name}", message=None
+        )
         log.info(
             f"{self.request.user.justice_email} removing {domain.name} "
             f"domain access to dashboard {dashboard.name}",

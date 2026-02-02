@@ -324,3 +324,10 @@ def build_tool_url(tool, user):
     if tool.chart_name == tool.VSCODE_CHART_NAME:
         url += "?folder=/home/analyticalplatform/workspace"
     return url
+
+
+def build_success_message(heading, message):
+    return {
+        "heading": heading,
+        "message": message,
+    }
