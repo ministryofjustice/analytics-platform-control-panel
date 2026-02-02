@@ -100,7 +100,11 @@ def create(client, *args):
         return client.get(reverse("register-dashboard"))
 
 
-def delete(client, dashboard, *args):
+def delete_get(client, dashboard, *args):
+    return client.get(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
+
+
+def delete_post(client, dashboard, *args):
     return client.post(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
 
 
@@ -184,9 +188,12 @@ def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args)
         (create, "superuser", status.HTTP_200_OK),
         (create, "dashboard_admin", status.HTTP_200_OK),
         (create, "normal_user", status.HTTP_403_FORBIDDEN),
-        (delete, "superuser", status.HTTP_302_FOUND),
-        (delete, "dashboard_admin", status.HTTP_302_FOUND),
-        (delete, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_get, "superuser", status.HTTP_200_OK),
+        (delete_get, "dashboard_admin", status.HTTP_200_OK),
+        (delete_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_post, "superuser", status.HTTP_302_FOUND),
+        (delete_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (delete_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (add_admin, "superuser", status.HTTP_302_FOUND),
         (add_admin, "dashboard_admin", status.HTTP_302_FOUND),
         (add_admin, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -242,21 +249,21 @@ def test_list_dashboards_displays_success_message(client, users):
     """Dashboard list displays success message from session and clears it."""
     client.force_login(users["superuser"])
     session = client.session
-    session["dashboard_created"] = {
-        "name": "My New Dashboard",
-        "url": "/quicksight/dashboards/123/",
+    session["success_message"] = {
+        "heading": "My New Dashboard",
+        "message": "You've created a new dashboard.",
     }
     session.save()
 
     response = client.get(reverse("list-dashboards"))
 
     assert response.status_code == 200
-    assert response.context_data["dashboard_created"] == {
-        "name": "My New Dashboard",
-        "url": "/quicksight/dashboards/123/",
+    assert response.context_data["success_message"] == {
+        "heading": "My New Dashboard",
+        "message": "You've created a new dashboard.",
     }
     # Session should be cleared after displaying
-    assert "dashboard_created" not in client.session
+    assert "success_message" not in client.session
 
 
 def test_list_dashboards_no_success_message(client, users):
@@ -266,7 +273,7 @@ def test_list_dashboards_no_success_message(client, users):
     response = client.get(reverse("list-dashboards"))
 
     assert response.status_code == 200
-    assert response.context_data["dashboard_created"] is None
+    assert response.context_data["success_message"] is None
 
 
 def add_customer_success(client, response):

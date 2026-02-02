@@ -15,7 +15,7 @@
     </h3>
     {% if message %}
     <p class="govuk-body">
-      {{ message }}
+      {{ message | safe }}
     </p>
     {% endif %}
   </div>
