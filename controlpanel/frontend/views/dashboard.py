@@ -262,17 +262,23 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         dashboard = self.get_object()
         context["success_message"] = self.request.session.pop("success_message", None)
 
-        context["dashboard_admins"] = DashboardAdminAccess.objects.filter(
-            dashboard=dashboard
-        ).select_related("user", "added_by")
+        context["dashboard_admins"] = (
+            DashboardAdminAccess.objects.filter(dashboard=dashboard)
+            .select_related("user", "added_by")
+            .order_by("user__justice_email")
+        )
         context["num_admins"] = len(context["dashboard_admins"])
-        context["dashboard_viewers"] = DashboardViewerAccess.objects.filter(
-            dashboard=dashboard
-        ).select_related("viewer", "shared_by")
+        context["dashboard_viewers"] = (
+            DashboardViewerAccess.objects.filter(dashboard=dashboard)
+            .select_related("viewer", "shared_by")
+            .order_by("viewer__email")
+        )
         context["num_viewers"] = len(context["dashboard_viewers"])
-        context["domain_whitelist"] = DashboardDomainAccess.objects.filter(
-            dashboard=dashboard
-        ).select_related("domain", "added_by")
+        context["domain_whitelist"] = (
+            DashboardDomainAccess.objects.filter(dashboard=dashboard)
+            .select_related("domain", "added_by")
+            .order_by("domain__name")
+        )
         context["num_domains"] = len(context["domain_whitelist"])
         context["show_add_domain_button"] = context["num_domains"] < DashboardDomain.objects.count()
         context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
