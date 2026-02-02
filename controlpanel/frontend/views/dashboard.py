@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.edit import CreateView, DeleteView, FormView, UpdateView
@@ -46,7 +47,7 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
-        context["dashboard_deleted"] = self.request.session.pop("dashboard_deleted", None)
+        context["success_message"] = self.request.session.pop("success_message", None)
         return context
 
 
@@ -214,10 +215,15 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                     ),
                 )
 
-        request.session["dashboard_created"] = {
-            "name": dashboard.name,
-            "url": dashboard.get_absolute_url(),
+        request.session["success_message"] = {
+            "heading": f"You've shared '{dashboard.name}'",
+            "message": format_html(
+                "To share with more people, or grant admin rights, "
+                'go to <a class="govuk-notification-banner__link" href="{}">manage sharing</a>.',
+                dashboard.get_absolute_url(),
+            ),
         }
+
         return HttpResponseRedirect(reverse_lazy("list-dashboards"))
 
 
@@ -278,7 +284,7 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
     def form_valid(self, form):
         dashboard = self.get_object()
         dashboard.delete()
-        self.request.session["dashboard_deleted"] = {
+        self.request.session["success_message"] = {
             "heading": f"You've removed {dashboard.name}",
             "message": "The dashboard will no longer appear in the dashboard service.",
         }
