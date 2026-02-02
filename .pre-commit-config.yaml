@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: isort
         name: isort (python)
-        entry: bash -c 'isort . --check --diff'
+        entry: bash -c 'isort --check-only $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/flake8
     rev: 7.0.0
