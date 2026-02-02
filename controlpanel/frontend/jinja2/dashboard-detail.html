@@ -121,7 +121,7 @@
         <strong>Do not use for dashboards containing sensitive data.</strong>
       </p>
       {% if show_add_domain_button %}
-        <a class="govuk-button" href="{{ url('grant-domain-access', kwargs={'pk': dashboard.id}) }}">Add domain</a>
+        <a class="govuk-button" href="{{ dashboard.get_absolute_grant_domain_url() }}">Add domain</a>
       {% endif %}
       {% if num_domains %}
       <table class="govuk-table">

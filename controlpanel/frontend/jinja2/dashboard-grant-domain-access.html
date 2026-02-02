@@ -46,7 +46,7 @@
 
 
       <p class="govuk-body govuk-!-font-weight-bold">Add domain access</p>
-      <form method="post" action="{{ url('grant-domain-access', kwargs={'pk': dashboard.id}) }}">
+      <form method="post" action="{{ dashboard.get_absolute_grant_domain_url() }}">
         {{ csrf_input }}
         <div class="govuk-form-group{% if form.whitelist_domain.errors %} govuk-form-group--error{% endif %}">
           {% if form.whitelist_domain.errors %}

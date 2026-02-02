@@ -85,6 +85,9 @@ class Dashboard(TimeStampedModel):
     def get_absolute_add_admins_url(self):
         return self.get_absolute_url(viewname="add-dashboard-admin")
 
+    def get_absolute_grant_domain_url(self):
+        return self.get_absolute_url(viewname="grant-domain-access")
+
     @property
     def url(self):
         return f"{settings.DASHBOARD_SERVICE_URL}{self.quicksight_id}"
