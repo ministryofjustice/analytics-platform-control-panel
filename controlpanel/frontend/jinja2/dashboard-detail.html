@@ -62,7 +62,8 @@
     </div>
     <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="admins">
       <h2 class="govuk-heading-m">Dashboard admins</h2>
-      <p class="govuk-body">You can choose other Control Panel users to manage access. <br>This does not grant any author permissions in QuickSight.</p>
+      <p class="govuk-body govuk-!-margin-bottom-0">You can choose other Control Panel users to manage access.</p>
+      <p class="govuk-body">This does not grant any author permissions in QuickSight.</p>
       <a class="govuk-button" href="{{ dashboard.get_absolute_add_admins_url() }}">Add admins</a>
       <table class="govuk-table">
         <thead class="govuk-table__head">
@@ -87,7 +88,8 @@
     </div>
     <div class="govuk-tabs__panel govuk-tabs__panel--hidden" id="viewers">
       <h2 class="govuk-heading-m">Viewers</h2>
-      <p>Allow colleagues and stakeholders to view your dashboards.<br>They'll be able to view even without Analytical Platform access.</p>
+      <p class="govuk-body govuk-!-margin-bottom-0">Allow colleagues and stakeholders to view your dashboards</p>
+      <p class="govuk-body">They'll be able to view even without Analytical Platform access.</p>
       <a class="govuk-button" href="{{ dashboard.get_absolute_add_viewers_url() }}">Add viewers</a>
       {% if num_viewers %}
         <table class="govuk-table">

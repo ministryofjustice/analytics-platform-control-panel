@@ -334,9 +334,9 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
     template_name = "dashboard-add-admin.html"
     form_class = AddDashboardAdminForm
 
-    def setup(self, request, *args, **kwargs):
-        super().setup(request, *args, **kwargs)
+    def dispatch(self, request, *args, **kwargs):
         self.dashboard = get_object_or_404(Dashboard, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
 
     def get_permission_object(self):
         """Return the dashboard for object-level permission checking."""
@@ -373,8 +373,7 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         return HttpResponseRedirect(self.get_success_url())
 
     def get_success_url(self):
-        url = reverse_lazy("manage-dashboard-sharing", kwargs={"pk": self.dashboard.pk})
-        return f"{url}#admins"
+        return f"{self.dashboard.get_absolute_url()}#admins"
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
@@ -540,11 +539,7 @@ class GrantDomainAccess(
         return kwargs
 
     def get_success_url(self):
-        res = reverse_lazy(
-            "manage-dashboard-sharing",
-            kwargs={"pk": self.get_object().pk},
-        )
-        return f"{res}#domain-access"
+        return f"{self.object.get_absolute_url()}#domain-access"
 
     def form_valid(self, form):
         domain = form.cleaned_data["whitelist_domain"]
@@ -564,10 +559,6 @@ class GrantDomainAccess(
             audit="dashboard_audit",
         )
         return super().form_valid(form)
-
-    # def form_invalid(self, form):
-    #     log.warning("Received suspicious invalid grant domain access request")
-    #     raise Exception(form.errors)
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")

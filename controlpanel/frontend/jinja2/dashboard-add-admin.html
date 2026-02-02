@@ -1,4 +1,3 @@
-{% from "error-message/macro.html" import govukErrorMessage %}
 {% from "input/macro.html" import govukInput %}
 {% from "autocomplete/macro.html" import autocomplete %}
 {% from "user/macro.html" import user_name %}
@@ -8,7 +7,7 @@
 {% set page_name = "dashboards" %}
 {% set page_title = "Add admin - " ~ dashboard.name %}
 
-{% set back_link_url = url("manage-dashboard-sharing", kwargs={"pk": dashboard.pk}) %}
+{% set back_link_url = dashboard.get_absolute_url() ~ "#admins" %}
 
 {% block content %}
 <div class="govuk-grid-row">
@@ -46,7 +45,7 @@
        This does not grant any author permissions in QuickSight.
     </p>
 
-    <form method="post" action="{{ url("add-dashboard-admin", kwargs={"pk": dashboard.pk}) }}">
+    <form method="post" action="{{ dashboard.get_absolute_add_admins_url() }}">
       {{ csrf_input }}
 
       {% set users_field = form["users"] %}
@@ -83,7 +82,7 @@
 
       <div class="govuk-button-group">
         <button class="govuk-button" type="submit">Add admins</button>
-        <a class="govuk-link" href="{{ url("manage-dashboard-sharing", kwargs={"pk": dashboard.pk}) }}">Cancel</a>
+        <a class="govuk-link" href="{{ dashboard.get_absolute_url() }}#admins">Cancel</a>
       </div>
     </form>
 
