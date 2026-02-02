@@ -173,6 +173,20 @@ def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args)
     )
 
 
+def update_description_get(client, dashboard, users, *args):
+    return client.get(reverse("update-dashboard-description", kwargs={"pk": dashboard.id}))
+
+
+def update_description_post(client, dashboard, users, *args):
+    data = {
+        "description": "Updated description",
+    }
+    return client.post(
+        reverse("update-dashboard-description", kwargs={"pk": dashboard.id}),
+        data=data,
+    )
+
+
 @pytest.mark.parametrize(
     "view,user,expected_status",
     [
@@ -221,6 +235,12 @@ def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args)
         (revoke_domain_access_post, "superuser", status.HTTP_302_FOUND),
         (revoke_domain_access_post, "dashboard_admin", status.HTTP_302_FOUND),
         (revoke_domain_access_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (update_description_get, "superuser", status.HTTP_200_OK),
+        (update_description_get, "dashboard_admin", status.HTTP_200_OK),
+        (update_description_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (update_description_post, "superuser", status.HTTP_302_FOUND),
+        (update_description_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (update_description_post, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
@@ -960,3 +980,19 @@ def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, 
     assert (
         "Failed to notify viewer@example.com. " "You may wish to email them your dashboard link."
     ) in messages
+
+
+def test_update_description(client, users, dashboard):
+    """Test updating the dashboard description."""
+    client.force_login(users["dashboard_admin"])
+    new_description = "Updated dashboard description"
+
+    url = reverse("update-dashboard-description", kwargs={"pk": dashboard.id})
+    data = {
+        "description": new_description,
+    }
+    response = client.post(url, data)
+
+    dashboard = Dashboard.objects.get(id=dashboard.id)
+    assert response.status_code == 302
+    assert dashboard.description == new_description

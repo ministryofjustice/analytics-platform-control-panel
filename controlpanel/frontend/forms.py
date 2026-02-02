@@ -1041,3 +1041,26 @@ class ToolDeploymentRestartForm(forms.Form):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
         self.fields["tool_deployment"].queryset = self.user.tool_deployments.active()
+
+
+class UpdateDashboardForm(forms.ModelForm):
+    class Meta:
+        model = Dashboard
+        fields = ["description"]
+        widgets = {
+            "description": forms.Textarea(
+                attrs={"class": "govuk-textarea", "rows": 5},
+            ),
+        }
+
+        error_messages = {
+            "description": {
+                "required": "Enter a description",
+            },
+        }
+
+    def clean_description(self):
+        description = self.cleaned_data.get("description")
+        if not description:
+            raise ValidationError("Enter a description")
+        return description

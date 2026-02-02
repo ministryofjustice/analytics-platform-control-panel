@@ -324,3 +324,23 @@ def build_tool_url(tool, user):
     if tool.chart_name == tool.VSCODE_CHART_NAME:
         url += "?folder=/home/analyticalplatform/workspace"
     return url
+
+
+def get_error_summary(form):
+    """Generate a summary of unique error messages from a Django form's errors."""
+
+    error_summary = []
+    seen_messages = set()
+
+    for field_name, errors in form.errors.items():
+        for error in errors:
+            if error not in seen_messages:
+                seen_messages.add(error)
+                error_summary.append(
+                    {
+                        "text": error,
+                        "field": field_name,
+                    }
+                )
+
+    return error_summary

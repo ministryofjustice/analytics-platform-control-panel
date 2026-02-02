@@ -24,9 +24,10 @@ from controlpanel.frontend.forms import (
     GrantDomainAccessForm,
     RegisterDashboardForm,
     RemoveCustomerByEmailForm,
+    UpdateDashboardForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.utils import feature_flag_required
+from controlpanel.utils import feature_flag_required, get_error_summary
 
 log = structlog.getLogger(__name__)
 
@@ -99,19 +100,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
 
     def form_invalid(self, form):
         """Build error summary with deduplicated messages."""
-        error_summary = []
-        seen_messages = set()
-
-        for field_name, errors in form.errors.items():
-            for error in errors:
-                if error not in seen_messages:
-                    seen_messages.add(error)
-                    error_summary.append(
-                        {
-                            "text": error,
-                            "field": field_name,
-                        }
-                    )
+        error_summary = get_error_summary(form)
 
         # Get submitted emails from the bound form field (uses MultiEmailWidget.value_from_datadict)
         submitted_emails = form["emails"].value() or []
@@ -303,6 +292,35 @@ class UpdateDashboardBaseView(
     def post(self, request, *args, **kwargs):
         self.perform_update(**kwargs)
         return super().post(request, *args, **kwargs)
+
+
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
+class DashboardUpdateDescription(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    context_object_name = "dashboard"
+    model = Dashboard
+    form_class = UpdateDashboardForm
+    permission_required = "api.retrieve_dashboard"
+    template_name = "dashboard-update-description.html"
+
+    def form_invalid(self, form):
+        """Build error summary with deduplicated messages."""
+        error_summary = get_error_summary(form)
+
+        return self.render_to_response(
+            self.get_context_data(
+                form=form,
+                error_summary=error_summary,
+            )
+        )
+
+    def form_valid(self, form):
+        super().form_valid(form)
+        dashboard = self.get_object()
+        self.request.session["success_message"] = {
+            "heading": f"You've updated the description for {dashboard.name}",
+            "message": None,
+        }
+        return HttpResponseRedirect(self.get_success_url())
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
