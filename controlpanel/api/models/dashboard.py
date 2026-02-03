@@ -12,15 +12,63 @@ from controlpanel.api.models.dashboard_viewer import DashboardViewer
 from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 
 
+class DashboardAdminAccess(TimeStampedModel):
+    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    added_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_admins_added_set"
+    )
+
+    class Meta:
+        db_table = "control_panel_api_dashboard_admin_access"
+
+
+class DashboardViewerAccess(TimeStampedModel):
+    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    viewer = models.ForeignKey("DashboardViewer", on_delete=models.CASCADE)
+    shared_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_viewers_shared_set"
+    )
+
+    class Meta:
+        db_table = "control_panel_api_dashboard_viewer_access"
+
+
+class DashboardDomainAccess(TimeStampedModel):
+    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    domain = models.ForeignKey("DashboardDomain", on_delete=models.CASCADE)
+    added_by = models.ForeignKey(
+        "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_domains_added_set"
+    )
+
+    class Meta:
+        db_table = "control_panel_api_dashboard_domain_access"
+
+
 class Dashboard(TimeStampedModel):
 
     name = models.CharField(max_length=100, blank=False, unique=True)
     description = models.TextField(blank=True)
     quicksight_id = models.CharField(max_length=100, blank=False, unique=True)
     created_by = models.ForeignKey("User", on_delete=models.SET_NULL, null=True)
-    admins = models.ManyToManyField("User", related_name="dashboards")
-    viewers = models.ManyToManyField("DashboardViewer", related_name="dashboards")
-    whitelist_domains = models.ManyToManyField("DashboardDomain", related_name="dashboards")
+    admins = models.ManyToManyField(
+        "User",
+        related_name="dashboards",
+        through=DashboardAdminAccess,
+        through_fields=("dashboard", "user"),
+    )
+    viewers = models.ManyToManyField(
+        "DashboardViewer",
+        related_name="dashboards",
+        through=DashboardViewerAccess,
+        through_fields=("dashboard", "viewer"),
+    )
+    whitelist_domains = models.ManyToManyField(
+        "DashboardDomain",
+        related_name="dashboards",
+        through=DashboardDomainAccess,
+        through_fields=("dashboard", "domain"),
+    )
 
     class Meta:
         db_table = "control_panel_api_dashboard"
@@ -33,6 +81,12 @@ class Dashboard(TimeStampedModel):
 
     def get_absolute_delete_url(self):
         return self.get_absolute_url(viewname="delete-dashboard")
+
+    def get_absolute_add_admins_url(self):
+        return self.get_absolute_url(viewname="add-dashboard-admin")
+
+    def get_absolute_grant_domain_url(self):
+        return self.get_absolute_url(viewname="grant-domain-access")
 
     @property
     def url(self):
@@ -51,11 +105,28 @@ class Dashboard(TimeStampedModel):
     def is_admin(self, user):
         return self.admins.filter(pk=user.pk).exists()
 
-    def add_customers(self, emails, inviter_email):
+    def add_customers(self, emails, shared_by):
+        """
+        Add viewers to the dashboard and notify them.
+
+        Args:
+            emails: List of email addresses to add as viewers.
+            shared_by: User object representing who shared the dashboard.
+
+        Returns:
+            List of emails that could not be notified.
+        """
         not_notified = []
+        inviter_email = (
+            shared_by.justice_email.lower() if shared_by and shared_by.justice_email else None
+        )
         for email in emails:
             viewer, _ = DashboardViewer.objects.get_or_create(email=email.lower())
-            self.viewers.add(viewer)
+            DashboardViewerAccess.objects.get_or_create(
+                dashboard=self,
+                viewer=viewer,
+                defaults={"shared_by": shared_by},
+            )
 
             try:
                 govuk_notify_send_email(

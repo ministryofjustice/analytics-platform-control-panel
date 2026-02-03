@@ -11,8 +11,15 @@ from django.urls import reverse
 from controlpanel.api import aws
 from controlpanel.api.github import RepositoryNotFound
 from controlpanel.api.models import S3Bucket
+from controlpanel.api.models.user import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
 from controlpanel.frontend import forms
-from controlpanel.frontend.forms import MultiEmailField, MultiEmailWidget
+from controlpanel.frontend.forms import (
+    AddDashboardAdminForm,
+    MultiEmailField,
+    MultiEmailWidget,
+    MultiUserField,
+    MultiUserWidget,
+)
 
 
 class TestMultiEmailWidgetValueFromDatadict:
@@ -581,3 +588,230 @@ def test_clean_namespace(env):
     form.cleaned_data = {"namespace": f"my-namespace-{env}"}
 
     assert form.clean_namespace() == "my-namespace"
+
+
+class TestMultiUserWidgetValueFromDatadict:
+    """Tests for MultiUserWidget.value_from_datadict method."""
+
+    def test_empty_data_returns_empty_list(self):
+        """When no matching keys exist, returns empty list."""
+        widget = MultiUserWidget()
+        data = {}
+        result = widget.value_from_datadict(data, {}, "users")
+        assert result == []
+
+    def test_single_user(self):
+        """Extracts a single user ID from users[0]."""
+        widget = MultiUserWidget()
+        data = {"users[0]": "github|123"}
+        result = widget.value_from_datadict(data, {}, "users")
+        assert result == ["github|123"]
+
+    def test_multiple_users(self):
+        """Extracts multiple user IDs from sequential indices."""
+        widget = MultiUserWidget()
+        data = {
+            "users[0]": "github|1",
+            "users[1]": "github|2",
+            "users[2]": "github|3",
+        }
+        result = widget.value_from_datadict(data, {}, "users")
+        assert result == ["github|1", "github|2", "github|3"]
+
+    def test_strips_whitespace(self):
+        """Strips leading and trailing whitespace from values."""
+        widget = MultiUserWidget()
+        data = {
+            "users[0]": "  github|1  ",
+            "users[1]": "\tgithub|2\n",
+        }
+        result = widget.value_from_datadict(data, {}, "users")
+        assert result == ["github|1", "github|2"]
+
+    def test_skips_empty_values(self):
+        """Empty values (after stripping) are not included."""
+        widget = MultiUserWidget()
+        data = {
+            "users[0]": "github|1",
+            "users[1]": "",
+            "users[2]": "   ",
+            "users[3]": "github|2",
+        }
+        result = widget.value_from_datadict(data, {}, "users")
+        assert result == ["github|1", "github|2"]
+
+    def test_stops_at_first_missing_index(self):
+        """Stops extracting when an index is missing (gap in sequence)."""
+        widget = MultiUserWidget()
+        data = {
+            "users[0]": "github|1",
+            "users[1]": "github|2",
+            # users[2] is missing
+            "users[3]": "github|3",
+        }
+        result = widget.value_from_datadict(data, {}, "users")
+        assert result == ["github|1", "github|2"]
+
+
+class TestMultiUserFieldClean:
+    """Tests for MultiUserField.clean method."""
+
+    def test_empty_value_not_required_returns_empty_list(self, db):
+        """When not required and no value, returns empty list."""
+        field = MultiUserField(required=False)
+        assert field.clean([]) == []
+        assert field.clean(None) == []
+
+    def test_empty_value_required_raises_error(self, db):
+        """When required and no value, raises ValidationError."""
+        field = MultiUserField(required=True)
+        with pytest.raises(ValidationError) as exc_info:
+            field.clean([])
+        assert "Select a user" in str(exc_info.value)
+
+    def test_valid_user_returns_user_objects(self, db):
+        """Valid auth0_ids return User objects."""
+        # Third-party
+        from model_bakery import baker
+
+        user = baker.make("api.User", auth0_id="github|test123")
+        field = MultiUserField()
+        result = field.clean(["github|test123"])
+        assert len(result) == 1
+        assert result[0] == user
+
+    def test_invalid_user_raises_error(self, db):
+        """Invalid auth0_id raises ValidationError."""
+        field = MultiUserField()
+        with pytest.raises(ValidationError) as exc_info:
+            field.clean(["nonexistent|user"])
+        assert "One or more selected users not found" in str(exc_info.value)
+
+    def test_multiple_users_some_invalid(self, db):
+        """If any user is invalid, raises ValidationError."""
+        # Third-party
+        from model_bakery import baker
+
+        baker.make("api.User", auth0_id="github|valid")
+        field = MultiUserField()
+        with pytest.raises(ValidationError) as exc_info:
+            field.clean(["github|valid", "github|invalid"])
+        assert "One or more selected users not found" in str(exc_info.value)
+
+
+class TestAddDashboardAdminForm:
+    """Tests for AddDashboardAdminForm."""
+
+    @pytest.fixture
+    def dashboard(self, db):
+        # Third-party
+        from model_bakery import baker
+
+        return baker.make("api.Dashboard")
+
+    @pytest.fixture
+    def quicksight_user(self, db):
+        # Third-party
+        from django.contrib.auth.models import Permission
+        from model_bakery import baker
+
+        user = baker.make("api.User", auth0_id="github|qs_user")
+        user.user_permissions.add(
+            Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION)
+        )
+        return user
+
+    @pytest.fixture
+    def non_quicksight_user(self, db):
+        # Third-party
+        from model_bakery import baker
+
+        return baker.make("api.User", auth0_id="github|normal_user")
+
+    @pytest.fixture
+    def admin_user(self, db):
+        # Third-party
+        from model_bakery import baker
+
+        return baker.make("api.User", auth0_id="github|admin")
+
+    def test_get_user_options_returns_quicksight_users(
+        self, dashboard, quicksight_user, non_quicksight_user, admin_user
+    ):
+        """get_user_options returns only quicksight users not already admins."""
+        form = AddDashboardAdminForm(dashboard=dashboard, added_by=admin_user)
+        options = list(form.get_user_options())
+
+        assert quicksight_user in options
+        assert non_quicksight_user not in options
+
+    def test_get_user_options_excludes_existing_admins(
+        self, dashboard, quicksight_user, admin_user
+    ):
+        """get_user_options excludes users who are already admins."""
+        # Third-party
+        from django.contrib.auth.models import Permission
+
+        # Make admin_user a quicksight user and add as admin
+        admin_user.user_permissions.add(
+            Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION)
+        )
+        dashboard.admins.add(admin_user)
+
+        form = AddDashboardAdminForm(dashboard=dashboard, added_by=admin_user)
+        options = list(form.get_user_options())
+
+        assert quicksight_user in options
+        assert admin_user not in options
+
+    def test_clean_users_rejects_non_quicksight_users(
+        self, dashboard, quicksight_user, non_quicksight_user, admin_user
+    ):
+        """clean_users rejects users who are not quicksight users."""
+        form = AddDashboardAdminForm(
+            data={"users[0]": non_quicksight_user.auth0_id},
+            dashboard=dashboard,
+            added_by=admin_user,
+        )
+        assert not form.is_valid()
+        assert "One or more selected users cannot be added as admins" in str(form.errors)
+
+    def test_clean_users_rejects_existing_admins(self, dashboard, quicksight_user, admin_user):
+        """clean_users rejects users who are already admins.
+
+        Note: Existing admins are excluded from get_user_options(), so they
+        fail the 'cannot be added as admins' validation check.
+        """
+        # First-party/Local
+        from controlpanel.api.models import DashboardAdminAccess
+
+        DashboardAdminAccess.objects.create(
+            dashboard=dashboard, user=quicksight_user, added_by=admin_user
+        )
+
+        form = AddDashboardAdminForm(
+            data={"users[0]": quicksight_user.auth0_id},
+            dashboard=dashboard,
+            added_by=admin_user,
+        )
+        assert not form.is_valid()
+        assert "One or more selected users cannot be added as admins" in str(form.errors)
+
+    def test_save_creates_dashboard_admin_access(self, dashboard, quicksight_user, admin_user):
+        """save() creates DashboardAdminAccess records."""
+        # First-party/Local
+        from controlpanel.api.models import DashboardAdminAccess
+
+        form = AddDashboardAdminForm(
+            data={"users[0]": quicksight_user.auth0_id},
+            dashboard=dashboard,
+            added_by=admin_user,
+        )
+        assert form.is_valid(), form.errors
+        added_users = form.save()
+
+        assert len(added_users) == 1
+        assert added_users[0] == quicksight_user
+        assert DashboardAdminAccess.objects.filter(
+            dashboard=dashboard, user=quicksight_user, added_by=admin_user
+        ).exists()
