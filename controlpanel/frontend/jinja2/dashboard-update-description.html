@@ -2,7 +2,7 @@
 
 {% set page_name = "dashboards" %}
 {% set page_title = "Update description - " ~ dashboard.name %}
-{% set back_link_url = url("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) %}
+{% set back_link_url = dashboard.get_absolute_url() %}
 
 {% block content %}
 
