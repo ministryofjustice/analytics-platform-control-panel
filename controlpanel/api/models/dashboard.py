@@ -88,6 +88,9 @@ class Dashboard(TimeStampedModel):
     def get_absolute_grant_domain_url(self):
         return self.get_absolute_url(viewname="grant-domain-access")
 
+    def get_absolute_change_description_url(self):
+        return self.get_absolute_url(viewname="update-dashboard-description")
+
     @property
     def url(self):
         return f"{settings.DASHBOARD_SERVICE_URL}{self.quicksight_id}"

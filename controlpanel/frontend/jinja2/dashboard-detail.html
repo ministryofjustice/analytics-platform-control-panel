@@ -44,7 +44,7 @@
     <div class="govuk-tabs__panel" id="overview">
       <h2 class="govuk-heading-m">
         Description
-        <a class="govuk-link govuk-!-font-size-19 govuk-!-font-weight-regular govuk-!-margin-left-2" href="{{ url('update-dashboard-description', kwargs={'pk': dashboard.id}) }}">Change</a>
+        <a class="govuk-link govuk-!-font-size-19 govuk-!-font-weight-regular govuk-!-margin-left-2" href="{{ dashboard.get_absolute_change_description_url() }}">Change</a>
       </h2>
       <p class="govuk-body">
         {{ dashboard.description }}
