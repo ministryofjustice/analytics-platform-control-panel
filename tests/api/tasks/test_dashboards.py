@@ -7,7 +7,13 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import helm
-from controlpanel.api.models import Dashboard, DashboardDomain, DashboardViewer
+from controlpanel.api.models import (
+    Dashboard,
+    DashboardDomain,
+    DashboardDomainAccess,
+    DashboardViewer,
+    DashboardViewerAccess,
+)
 from controlpanel.api.tasks.dashboards import prune_dashboard_viewers
 
 
@@ -66,8 +72,8 @@ def viewers(dashboards):
 
     # only assign 2 so we can check that a user won't be pruned
     # if their domain is linked to a dashboard
-    dashboards[0].viewers.add(viewers[0])
-    dashboards[1].viewers.add(viewers[1])
+    DashboardViewerAccess.objects.create(dashboard=dashboards[0], viewer=viewers[0])
+    DashboardViewerAccess.objects.create(dashboard=dashboards[1], viewer=viewers[1])
 
     return viewers
 
@@ -81,8 +87,8 @@ def domain(dashboards):
     for i in range(num_domains):
         domains.append(baker.make(DashboardDomain, name=f"test-domain{i + 1}.gov.uk"))
 
-    dashboards[0].whitelist_domains.add(domains[0])
-    dashboards[1].whitelist_domains.add(domains[2])
+    DashboardDomainAccess.objects.create(dashboard=dashboards[0], domain=domains[0])
+    DashboardDomainAccess.objects.create(dashboard=dashboards[1], domain=domains[2])
 
     return domains
 

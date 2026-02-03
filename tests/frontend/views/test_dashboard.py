@@ -13,7 +13,12 @@ from rest_framework import status
 # First-party/Local
 from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
-from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
+from controlpanel.api.models.dashboard import (
+    Dashboard,
+    DashboardDomainAccess,
+    DashboardViewer,
+    DashboardViewerAccess,
+)
 from controlpanel.utils import GovukNotifyEmailError
 
 NUM_DASHBOARDS = 3
@@ -63,7 +68,7 @@ def dashboard(users, ExtendedAuth0):
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
     viewer = baker.make(DashboardViewer, email=users["dashboard_admin"].justice_email)
-    dashboard.viewers.add(viewer)
+    DashboardViewerAccess.objects.create(dashboard=dashboard, viewer=viewer)
     return viewer
 
 
@@ -74,9 +79,11 @@ def dashboard_domain():
 
 
 @pytest.fixture
-def add_dashboard_domain(dashboard):
+def add_dashboard_domain(dashboard, users):
     domain = baker.make("api.DashboardDomain", name="test.gov.uk")
-    dashboard.whitelist_domains.add(domain)
+    DashboardDomainAccess.objects.create(
+        dashboard=dashboard, domain=domain, added_by=users["superuser"]
+    )
     return domain
 
 
@@ -110,7 +117,7 @@ def delete_post(client, dashboard, *args):
 
 def add_admin(client, dashboard, users, *args):
     data = {
-        "user_id": users["other_user"].auth0_id,
+        "users[0]": users["quicksight_compute_author"].auth0_id,
     }
     return client.post(reverse("add-dashboard-admin", kwargs={"pk": dashboard.id}), data)
 
@@ -155,7 +162,9 @@ def grant_domain_access_post(client, dashboard, users, dashboard_domain, *args):
 
 
 def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
-    dashboard.whitelist_domains.add(dashboard_domain)
+    DashboardDomainAccess.objects.get_or_create(
+        dashboard=dashboard, domain=dashboard_domain, defaults={"added_by": users["superuser"]}
+    )
     return client.get(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
@@ -164,7 +173,9 @@ def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
 
 
 def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args):
-    dashboard.whitelist_domains.add(dashboard_domain)
+    DashboardDomainAccess.objects.get_or_create(
+        dashboard=dashboard, domain=dashboard_domain, defaults={"added_by": users["superuser"]}
+    )
     return client.post(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
@@ -473,6 +484,11 @@ def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
     assert response.status_code == 302
     updated_dashboard = Dashboard.objects.get(pk=dashboard.id)
     assert updated_dashboard.whitelist_domains.count() == 1
+    # Verify added_by is stored
+    domain_access = DashboardDomainAccess.objects.get(
+        dashboard=updated_dashboard, domain=dashboard_domain
+    )
+    assert domain_access.added_by == users["superuser"]
 
 
 def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain):
@@ -875,6 +891,9 @@ def test_preview_dashboard_confirm_creates_dashboard_with_whitelist_domain(
     assert response.status_code == 302
     assert dashboard.whitelist_domains.count() == 1
     assert dashboard_domain in dashboard.whitelist_domains.all()
+    # Verify added_by is stored
+    domain_access = DashboardDomainAccess.objects.get(dashboard=dashboard, domain=dashboard_domain)
+    assert domain_access.added_by == users["superuser"]
 
 
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
@@ -920,30 +939,43 @@ def test_cancel_dashboard_registration_clears_session(client, users):
 
 
 @pytest.mark.parametrize(
-    "user_id, expected_message, count",
+    "user_id, expected_message",
     [
-        ("invalid_user", "User not found", 0),
-        ("", "User not found", 0),
-        ("github|user_3", "User cannot be added as a dashboard admin", 0),
-        ("github|user_5", "Granted admin access to ", 1),
+        ("invalid_user", "One or more selected users not found"),
+        ("", "Select a user"),
+        ("github|user_3", "One or more selected users cannot be added as admins"),
     ],
 )
-def test_add_admin(
-    user_id, expected_message, count, client, dashboard, users, govuk_notify_send_email
+def test_add_admin_validation_errors(
+    user_id,
+    expected_message,
+    client,
+    dashboard,
+    users,
 ):
     client.force_login(users["superuser"])
     url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
-    data = {
-        "user_id": user_id,
-    }
-    response = client.post(url, data)
+    response = client.post(url, {"users[0]": user_id})
+
+    assert response.status_code == 200
+    assert expected_message in response.content.decode()
+    assert dashboard.admins.filter(auth0_id=user_id).count() == 0
+
+
+def test_add_admin_success(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
+    response = client.post(url, {"users[0]": users["quicksight_compute_author"].auth0_id})
+
     assert response.status_code == 302
-    assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id})
-    assert dashboard.admins.filter(auth0_id=user_id).count() == count
-    messages = [str(m) for m in get_messages(response.wsgi_request)]
-    assert expected_message in messages
-    if count:
-        govuk_notify_send_email.assert_called_once()
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin access for" in client.session["success_message"]["heading"]
+    assert (
+        dashboard.admins.filter(auth0_id=users["quicksight_compute_author"].auth0_id).count() == 1
+    )
+    govuk_notify_send_email.assert_called_once()
 
 
 def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):

@@ -8,7 +8,12 @@ from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.app import App
 from controlpanel.api.models.app_ip_allowlist import AppIPAllowList
 from controlpanel.api.models.apps3bucket import AppS3Bucket
-from controlpanel.api.models.dashboard import Dashboard
+from controlpanel.api.models.dashboard import (
+    Dashboard,
+    DashboardAdminAccess,
+    DashboardDomainAccess,
+    DashboardViewerAccess,
+)
 from controlpanel.api.models.dashboard_domain import DashboardDomain
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
 from controlpanel.api.models.feedback import Feedback

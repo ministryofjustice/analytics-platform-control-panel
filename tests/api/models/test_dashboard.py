@@ -4,9 +4,39 @@ from unittest.mock import MagicMock, patch
 # Third-party
 import pytest
 from django.conf import settings
+from django.urls import reverse
 
 # First-party/Local
 from controlpanel.api.models.dashboard import Dashboard, DashboardViewer, DeleteCustomerError
+
+
+class TestDashboardUrls:
+    """Tests for Dashboard URL helper methods."""
+
+    def test_get_absolute_url_default(self):
+        dashboard = Dashboard(pk=42)
+        expected = reverse("manage-dashboard-sharing", kwargs={"pk": 42})
+        assert dashboard.get_absolute_url() == expected
+
+    def test_get_absolute_url_custom_viewname(self):
+        dashboard = Dashboard(pk=42)
+        expected = reverse("delete-dashboard", kwargs={"pk": 42})
+        assert dashboard.get_absolute_url(viewname="delete-dashboard") == expected
+
+    def test_get_absolute_add_viewers_url(self):
+        dashboard = Dashboard(pk=42)
+        expected = reverse("dashboard-customers", kwargs={"pk": 42, "page_no": 1})
+        assert dashboard.get_absolute_add_viewers_url() == expected
+
+    def test_get_absolute_add_admins_url(self):
+        dashboard = Dashboard(pk=42)
+        expected = reverse("add-dashboard-admin", kwargs={"pk": 42})
+        assert dashboard.get_absolute_add_admins_url() == expected
+
+    def test_get_absolute_grant_domain_url(self):
+        dashboard = Dashboard(pk=42)
+        expected = reverse("grant-domain-access", kwargs={"pk": 42})
+        assert dashboard.get_absolute_grant_domain_url() == expected
 
 
 @patch("controlpanel.api.models.dashboard.Dashboard.viewers")
