@@ -1,0 +1,86 @@
+{% from "input/macro.html" import govukInput %}
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "Add viewers - " ~ dashboard.name %}
+
+{% set back_link_url = dashboard.get_absolute_url() ~ "#viewers" %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    {% if form.errors %}
+      <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+          <h2 class="govuk-error-summary__title">
+            There is a problem
+          </h2>
+          <div class="govuk-error-summary__body">
+            <ul class="govuk-list govuk-error-summary__list">
+              {% for field, errors in form.errors.items() %}
+                {% for error in errors %}
+                  <li>
+                    <a href="#{{ field }}[0]">{{ error }}</a>
+                  </li>
+                {% endfor %}
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+    <h1 class="govuk-heading-xl">Add viewers</h1>
+
+    <p class="govuk-body govuk-!-margin-bottom-0">
+      Add email addresses to grant viewer access to this dashboard.
+    </p>
+
+    <p class="govuk-body">
+       Viewers will receive an email notification with a link to the dashboard.
+    </p>
+
+    <form method="post" action="{{ dashboard.get_absolute_add_viewers_url() }}">
+      {{ csrf_input }}
+
+      {% set emails_field = form["emails"] %}
+      <div class="govuk-form-group{% if emails_field.errors %} govuk-form-group--error{% endif %}">
+        <fieldset class="govuk-fieldset">
+          <div data-module="moj-add-another">
+            <div class="moj-add-another__item">
+              {{ govukInput({
+                "label": {"text": emails_field.label, "classes": "govuk-label--s"},
+                "hint": {"text": emails_field.help_text},
+                "name": emails_field.name ~ "[0]",
+                "id": emails_field.name ~ "[0]",
+                "type": "email",
+                "attributes": {
+                  "data-name": emails_field.name ~ "[%index%]",
+                  "data-id": emails_field.name ~ "[%index%]"
+                },
+                "errorMessage": {"html": emails_field.errors | join(". ")} if emails_field.errors else None
+              }) }}
+            </div>
+
+            <div class="moj-button-action govuk-!-margin-top-4">
+              <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
+                Add another email
+              </button>
+            </div>
+          </div>
+
+        </fieldset>
+      </div>
+
+      <div class="govuk-button-group">
+        <button class="govuk-button" type="submit">Add viewers</button>
+        <a class="govuk-link" href="{{ dashboard.get_absolute_url() }}#viewers">Cancel</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

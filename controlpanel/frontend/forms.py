@@ -698,6 +698,50 @@ class AddDashboardAdminForm(forms.Form):
         return added_users
 
 
+class AddDashboardViewersForm(forms.Form):
+    """
+    Form for adding one or more viewers to a dashboard via email addresses.
+
+    Handles indexed field names (emails[0], emails[1], etc.) from the
+    moj-add-another component.
+    """
+
+    emails = MultiEmailField(
+        required=True,
+        label="Email address",
+        help_text="Enter an email address to invite a viewer",
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.dashboard = kwargs.pop("dashboard")
+        self.shared_by = kwargs.pop("shared_by")
+        super().__init__(*args, **kwargs)
+
+    def clean_emails(self):
+        """Validate and filter emails, removing those already with access."""
+        emails = self.cleaned_data["emails"]
+
+        if not emails:
+            raise ValidationError("Enter at least one email address")
+
+        # Filter out existing viewers
+        existing_viewer_emails = set(self.dashboard.viewers.values_list("email", flat=True))
+        new_emails = [e for e in emails if e.lower() not in existing_viewer_emails]
+
+        if not new_emails:
+            raise ValidationError(
+                "All email addresses entered already have access to this dashboard"
+            )
+
+        return new_emails
+
+    def save(self):
+        """Add viewers to the dashboard and return tuple of (added_emails, not_notified)."""
+        emails = self.cleaned_data["emails"]
+        not_notified = self.dashboard.add_customers(emails, self.shared_by)
+        return emails, not_notified
+
+
 class CreateIAMManagedPolicyForm(forms.Form):
     name = forms.CharField(
         # TODO restrict allowed characters in group policy name

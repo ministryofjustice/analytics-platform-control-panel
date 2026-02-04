@@ -138,9 +138,13 @@ def revoke_admin_post(client, dashboard, users, *args):
     return client.post(reverse("revoke-dashboard-admin", kwargs=kwargs))
 
 
-def add_customers(client, dashboard, *args):
+def add_customers_get(client, dashboard, *args):
+    return client.get(reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}))
+
+
+def add_customers_post(client, dashboard, *args):
     data = {
-        "customer_email": "test@example.com",
+        "emails[0]": "test@example.com",
     }
     return client.post(reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}), data)
 
@@ -236,9 +240,12 @@ def update_description_post(client, dashboard, users, *args):
         (revoke_admin_post, "superuser", status.HTTP_302_FOUND),
         (revoke_admin_post, "dashboard_admin", status.HTTP_302_FOUND),
         (revoke_admin_post, "normal_user", status.HTTP_403_FORBIDDEN),
-        (add_customers, "superuser", status.HTTP_302_FOUND),
-        (add_customers, "dashboard_admin", status.HTTP_302_FOUND),
-        (add_customers, "normal_user", status.HTTP_403_FORBIDDEN),
+        (add_customers_get, "superuser", status.HTTP_200_OK),
+        (add_customers_get, "dashboard_admin", status.HTTP_200_OK),
+        (add_customers_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (add_customers_post, "superuser", status.HTTP_302_FOUND),
+        (add_customers_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (add_customers_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (remove_customers, "superuser", status.HTTP_302_FOUND),
         (remove_customers, "dashboard_admin", status.HTTP_302_FOUND),
         (remove_customers, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -319,29 +326,34 @@ def test_list_dashboards_no_success_message(client, users):
 
 
 def add_customer_success(client, response):
-    return "customer_form_errors" not in client.session
+    return "success_message" in client.session
 
 
 def add_customer_form_error(client, response):
-    return "customer_form_errors" in client.session
+    # New form shows errors on the same page (200 response) instead of redirecting
+    return (
+        response.status_code == 200
+        and response.context_data
+        and response.context_data["form"].errors
+    )
 
 
 @pytest.mark.parametrize(
-    "emails, expected_response, count",
+    "emails_data, expected_response, count",
     [
-        ("foo@example.com", add_customer_success, 1),
-        ("FOO@example.com", add_customer_success, 1),
-        ("foo@example.com, bar@example.com", add_customer_success, 2),
-        ("FOO@EXAMPLE.COM, Bar@example.com", add_customer_success, 2),
-        ("foobar", add_customer_form_error, 0),
-        ("foo@example.com, foobar", add_customer_form_error, 0),
-        ("", add_customer_form_error, 0),
+        ({"emails[0]": "foo@example.com"}, add_customer_success, 1),
+        ({"emails[0]": "FOO@example.com"}, add_customer_success, 1),
+        ({"emails[0]": "foo@example.com", "emails[1]": "bar@example.com"}, add_customer_success, 2),
+        ({"emails[0]": "FOO@EXAMPLE.COM", "emails[1]": "Bar@example.com"}, add_customer_success, 2),
+        ({"emails[0]": "foobar"}, add_customer_form_error, 0),
+        ({"emails[0]": "foo@example.com", "emails[1]": "foobar"}, add_customer_form_error, 0),
+        ({}, add_customer_form_error, 0),
     ],
     ids=[
         "single-valid-email",
         "single-valid-email-uppercase",
-        "multiple-delimited-emails",
-        "multiple-delimited-emails-uppercase",
+        "multiple-emails",
+        "multiple-emails-uppercase",
         "invalid-email",
         "mixed-valid-invalid-emails",
         "no-emails",
@@ -352,19 +364,18 @@ def test_add_customers(
     dashboard,
     dashboard_viewer,
     users,
-    emails,
+    emails_data,
     expected_response,
     count,
     govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
-    data = {"customer_email": emails}
     response = client.post(
         reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
-        data,
+        emails_data,
     )
     assert expected_response(client, response)
-    emails = [email.strip().lower() for email in emails.split(",")]
+    emails = [v.strip().lower() for v in emails_data.values() if v]
     assert dashboard.viewers.filter(email__in=emails).count() == count
 
 
@@ -375,7 +386,7 @@ def test_add_customers_fail_notify(
     users,
 ):
     client.force_login(users["superuser"])
-    data = {"customer_email": ["test.user@justice.gov.uk"]}
+    data = {"emails[0]": "test.user@justice.gov.uk"}
     with patch(
         "controlpanel.api.models.dashboard.govuk_notify_send_email"
     ) as govuk_notify_send_email:

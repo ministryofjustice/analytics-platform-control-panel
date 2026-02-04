@@ -29,8 +29,8 @@ from controlpanel.api.models import (
     User,
 )
 from controlpanel.frontend.forms import (
-    AddCustomersForm,
     AddDashboardAdminForm,
+    AddDashboardViewersForm,
     GrantDomainAccessForm,
     RegisterDashboardForm,
     RemoveCustomerByEmailForm,
@@ -459,30 +459,45 @@ class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, Detail
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardCustomers(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, FormView
-):
-    model = Dashboard
-    form_class = AddCustomersForm
+class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
     permission_required = "api.add_dashboard_customer"
+    template_name = "dashboard-add-viewers.html"
+    form_class = AddDashboardViewersForm
 
-    def form_invalid(self, form):
-        self.request.session["customer_form_errors"] = form.errors
-        messages.error(self.request, "Could not add user(s)")
-        return HttpResponseRedirect(self.get_success_url())
+    def dispatch(self, request, *args, **kwargs):
+        self.dashboard = get_object_or_404(Dashboard, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_permission_object(self):
+        """Return the dashboard for object-level permission checking."""
+        return self.dashboard
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["dashboard"] = self.dashboard
+        kwargs["shared_by"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["dashboard"] = self.dashboard
+        return context
 
     def form_valid(self, form):
-        dashboard = self.get_object()
-        emails = form.cleaned_data["customer_email"]
-        not_notified = dashboard.add_customers(emails, self.request.user)
+        emails, not_notified = form.save()
+
         log.info(
             f"{self.request.user.justice_email} granted {', '.join(emails)} "
-            f"access to dashboard {dashboard.name}",
+            f"access to dashboard {self.dashboard.name}",
             audit="dashboard_audit",
         )
-        messages.success(self.request, "Successfully added users")
 
-        if len(not_notified) > 0:
+        self.request.session["success_message"] = {
+            "heading": f"You have added viewers to {self.dashboard.name}",
+            "message": None,
+        }
+
+        if not_notified:
             messages.error(
                 self.request,
                 (
@@ -490,10 +505,11 @@ class AddDashboardCustomers(
                     "You may wish to email them your dashboard link."
                 ),
             )
+
         return HttpResponseRedirect(self.get_success_url())
 
-    def get_success_url(self, *args, **kwargs):
-        return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+    def get_success_url(self):
+        return f"{self.dashboard.get_absolute_url()}#viewers"
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
