@@ -98,7 +98,7 @@ def list_all(client, *args):
 def detail(client, dashboard, *args):
     with patch("controlpanel.api.aws.AWSQuicksight.get_dashboard_embed_url") as mock_embed:
         mock_embed.return_value = "https://quicksight.aws.amazon.com/embed/test"
-        return client.get(reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}))
+        return client.get(dashboard.get_absolute_url())
 
 
 def create(client, *args):
@@ -108,18 +108,18 @@ def create(client, *args):
 
 
 def delete_get(client, dashboard, *args):
-    return client.get(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
+    return client.get(dashboard.get_absolute_delete_url())
 
 
 def delete_post(client, dashboard, *args):
-    return client.post(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
+    return client.post(dashboard.get_absolute_delete_url())
 
 
 def add_admin(client, dashboard, users, *args):
     data = {
         "users[0]": users["quicksight_compute_author"].auth0_id,
     }
-    return client.post(reverse("add-dashboard-admin", kwargs={"pk": dashboard.id}), data)
+    return client.post(dashboard.get_absolute_add_admins_url(), data)
 
 
 def revoke_admin(client, dashboard, users, *args):
@@ -151,14 +151,14 @@ def remove_customer_by_email(client, dashboard, *args):
 
 
 def grant_domain_access_get(client, dashboard, users, dashboard_domain, *args):
-    return client.get(reverse("grant-domain-access", kwargs={"pk": dashboard.id}))
+    return client.get(dashboard.get_absolute_grant_domain_url())
 
 
 def grant_domain_access_post(client, dashboard, users, dashboard_domain, *args):
     data = {
         "whitelist_domain": dashboard_domain.id,
     }
-    return client.post(reverse("grant-domain-access", kwargs={"pk": dashboard.id}), data=data)
+    return client.post(dashboard.get_absolute_grant_domain_url(), data=data)
 
 
 def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
@@ -185,7 +185,7 @@ def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args)
 
 
 def update_description_get(client, dashboard, users, *args):
-    return client.get(reverse("update-dashboard-description", kwargs={"pk": dashboard.id}))
+    return client.get(dashboard.get_absolute_change_description_url())
 
 
 def update_description_post(client, dashboard, users, *args):
@@ -193,7 +193,7 @@ def update_description_post(client, dashboard, users, *args):
         "description": "Updated description",
     }
     return client.post(
-        reverse("update-dashboard-description", kwargs={"pk": dashboard.id}),
+        dashboard.get_absolute_change_description_url(),
         data=data,
     )
 

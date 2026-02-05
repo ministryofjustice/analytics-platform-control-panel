@@ -325,17 +325,6 @@ class DashboardUpdateDescription(OIDCLoginRequiredMixin, PermissionRequiredMixin
     permission_required = "api.retrieve_dashboard"
     template_name = "dashboard-update-description.html"
 
-    def form_invalid(self, form):
-        """Build error summary with deduplicated messages."""
-        error_summary = get_error_summary(form)
-
-        return self.render_to_response(
-            self.get_context_data(
-                form=form,
-                error_summary=error_summary,
-            )
-        )
-
     def form_valid(self, form):
         super().form_valid(form)
         dashboard = self.get_object()
