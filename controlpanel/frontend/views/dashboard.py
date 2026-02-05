@@ -435,6 +435,7 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
         return HttpResponseRedirect(self.get_success_url())
 
 
+# TODO delete view?
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "dashboard"

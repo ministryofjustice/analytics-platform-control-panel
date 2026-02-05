@@ -708,8 +708,9 @@ class AddDashboardViewersForm(forms.Form):
 
     emails = MultiEmailField(
         required=True,
-        label="Email address",
-        help_text="Enter an email address to invite a viewer",
+        label="Add an email",
+        help_text="Enter an email address to share with.",
+        error_messages={"required": "Enter a valid email address"},
     )
 
     def __init__(self, *args, **kwargs):

@@ -1,4 +1,5 @@
 {% from "input/macro.html" import govukInput %}
+{% from "error-summary/macro.html" import govukErrorSummary -%}
 
 {% extends "base.html" %}
 
@@ -12,58 +13,44 @@
   <div class="govuk-grid-column-two-thirds">
 
     {% if form.errors %}
-      <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-          <h2 class="govuk-error-summary__title">
-            There is a problem
-          </h2>
-          <div class="govuk-error-summary__body">
-            <ul class="govuk-list govuk-error-summary__list">
-              {% for field, errors in form.errors.items() %}
-                {% for error in errors %}
-                  <li>
-                    <a href="#{{ field }}[0]">{{ error }}</a>
-                  </li>
-                {% endfor %}
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
+      {{ govukErrorSummary(titleText="There is a problem", errorList=form.errors.items()) }}
     {% endif %}
 
     <span class="govuk-caption-xl">{{ dashboard.name }}</span>
     <h1 class="govuk-heading-xl">Add viewers</h1>
 
     <p class="govuk-body govuk-!-margin-bottom-0">
-      Add email addresses to grant viewer access to this dashboard.
+      Allow colleagues and stakeholders to view your dashboards.
     </p>
 
     <p class="govuk-body">
-       Viewers will receive an email notification with a link to the dashboard.
+       They'll be able to view even without Analytical Platform access.
     </p>
 
-    <form method="post" action="{{ dashboard.get_absolute_add_viewers_url() }}">
+    <form method="post" action="{{ dashboard.get_absolute_add_viewers_url() }}" novalidate>
       {{ csrf_input }}
 
       {% set emails_field = form["emails"] %}
       <div class="govuk-form-group{% if emails_field.errors %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
           <div data-module="moj-add-another">
-            <div class="moj-add-another__item">
-              {{ govukInput({
-                "label": {"text": emails_field.label, "classes": "govuk-label--s"},
-                "hint": {"text": emails_field.help_text},
-                "name": emails_field.name ~ "[0]",
-                "id": emails_field.name ~ "[0]",
-                "type": "email",
-                "attributes": {
-                  "data-name": emails_field.name ~ "[%index%]",
-                  "data-id": emails_field.name ~ "[%index%]"
-                },
-                "errorMessage": {"html": emails_field.errors | join(". ")} if emails_field.errors else None
-              }) }}
-            </div>
+              {% for email in form.emails.value() or [""]%}
+                <div class="moj-add-another__item">
+                  {{ govukInput({
+                    "label": {"text": emails_field.label, "classes": "govuk-label--s"},
+                    "hint": {"text": emails_field.help_text},
+                    "name": emails_field.name ~ "[" ~ loop.index0 ~ "]",
+                    "id": emails_field.name ~ "[" ~ loop.index0 ~ "]",
+                    "type": "email",
+                    "attributes": {
+                      "data-name": emails_field.name ~ "[%index%]",
+                      "data-id": emails_field.name ~ "[%index%]"
+                    },
+                    "errorMessage": {"html": emails_field.errors[0]} if emails_field.errors else None,
+                    "value": email,
+                  }) }}
+                </div>
+              {% endfor %}
 
             <div class="moj-button-action govuk-!-margin-top-4">
               <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
