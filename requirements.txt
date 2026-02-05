@@ -9,7 +9,7 @@ channels==4.3.2
 channels-redis==4.3.0
 cryptography==46.0.3
 daphne==4.2.1
-Django==5.2.10
+Django==5.2.11
 django-celery-beat==2.8.1
 django-crequest==2018.5.11
 django-extensions==4.1

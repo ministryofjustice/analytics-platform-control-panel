@@ -48,6 +48,7 @@ from controlpanel.frontend.views.dashboard import (
     DashboardCustomers,
     DashboardDetail,
     DashboardList,
+    DashboardUpdateDescription,
     DeleteDashboard,
     GrantDomainAccess,
     RegisterDashboard,

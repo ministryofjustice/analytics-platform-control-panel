@@ -44,7 +44,7 @@
     <div class="govuk-tabs__panel" id="overview">
       <h2 class="govuk-heading-m">
         Description
-        <a class="govuk-link govuk-!-font-size-19 govuk-!-font-weight-regular govuk-!-margin-left-2" href="#TODO">Change</a>
+        <a class="govuk-link govuk-!-font-size-19 govuk-!-font-weight-regular govuk-!-margin-left-2" href="{{ dashboard.get_absolute_change_description_url() }}">Change</a>
       </h2>
       <p class="govuk-body">
         {{ dashboard.description }}
@@ -158,14 +158,33 @@
   <script src="{{ static("assets/js/quicksight-embedding-js-sdk.min.js") }}"></script>
   <script>
   (async function() {
+      const container = document.getElementById('dashboard-container');
+
+      function setContainerHeight() {
+          // Prefer visualViewport (more accurate on mobile), fallback to innerHeight
+          const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+
+          // Calculate 60% of the current viewport height
+          const height = Math.floor(viewportHeight * 0.6);
+
+          container.style.height = `${height}px`;
+      }
+
+      // Initialize
+      setContainerHeight();
+
+      // Listen for both window resize and specific viewport changes (mobile zoom/keyboard)
+      window.addEventListener('resize', setContainerHeight);
+      window.visualViewport?.addEventListener('resize', setContainerHeight);
+
       const { createEmbeddingContext } = QuickSightEmbedding;
 
       const embeddingContext = await createEmbeddingContext();
 
       await embeddingContext.embedDashboard({
           url: "{{ embed_url|safe }}",
-          container: '#dashboard-container',
-          height: window.innerHeight * 0.6,
+          container: container,
+          height: "100%",
           width: "100%",
       });
   })();
