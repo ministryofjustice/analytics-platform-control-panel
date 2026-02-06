@@ -70,7 +70,7 @@ class ErrorSummaryMixin:
         error_summary = {}
         seen_messages = set()
 
-        # First, collect index-specific errors from fields that have them
+        # collect index-specific errors from fields that have them
         for field_name, field in self.fields.items():
             if not hasattr(field, "index_errors") or not field.index_errors:
                 continue
@@ -80,19 +80,18 @@ class ErrorSummaryMixin:
                     continue
 
                 seen_messages.add(error)
-                # Use id_ prefix for consistency with Django's form field ID convention
                 field_key = f"id_{field_name}[{index}]"
                 error_summary.setdefault(field_key, []).append(error)
 
-        # Then, collect form-level errors (skipping already-seen messages)
+        # collect form-level errors, skipping already-seen messages
         for field_name, errors in self.errors.items():
             for error in errors:
                 if error in seen_messages:
                     continue
+
                 seen_messages.add(error)
                 field_key = f"id_{field_name}"
-
-                # For indexed fields, point to the first input
+                # for indexed fields, point to the first input
                 if hasattr(self.fields.get(field_name), "index_errors"):
                     field_key = f"{field_key}[0]"
 
@@ -137,13 +136,47 @@ class IndexedArrayWidgetMixin:
         return values
 
 
+class IndexedFieldMixin:
+    """
+    Mixin for fields that validate multiple indexed values (e.g. emails[0], emails[1]).
+
+    Subclasses must implement clean_field(value) which:
+    - Validates each item and adds errors to self.index_errors[index]
+    - Returns the validated/transformed values
+    """
+
+    index_errors: dict[int, str] = {}
+
+    def clean(self, value):
+        """
+        Initialise index_errors and handle required validation before delegating to clean_field.
+        """
+        self.index_errors = {}
+
+        if not value:
+            if self.required:
+                raise ValidationError(self.error_messages["required"], code="required")
+            return []
+
+        validated = self.clean_field(value)
+
+        if self.index_errors:
+            raise ValidationError(list(self.index_errors.values()))
+
+        return validated
+
+    def clean_field(self, value):
+        """Validate items and populate self.index_errors. Return validated values."""
+        raise NotImplementedError
+
+
 class MultiEmailWidget(IndexedArrayWidgetMixin, forms.TextInput):
     """Widget for extracting multiple email addresses from array-style form inputs."""
 
     pass
 
 
-class MultiEmailField(forms.Field):
+class MultiEmailField(IndexedFieldMixin, forms.Field):
     """
     A form field that accepts multiple email addresses from array-style form inputs.
 
@@ -159,21 +192,8 @@ class MultiEmailField(forms.Field):
 
     widget = MultiEmailWidget
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault("required", False)
-        super().__init__(**kwargs)
-        self.index_errors = {}  # Maps index -> error message
-
-    def clean(self, value):
-        """Validate that all values are valid email addresses."""
-        self.index_errors = {}  # Reset on each clean
-
-        if not value:
-            if self.required:
-                raise ValidationError(self.error_messages["required"], code="required")
-            return []
-
-        errors = []
+    def clean_field(self, value):
+        """Validate emails and return lowercase versions."""
         validated_emails = []
 
         for index, email in enumerate(value):
@@ -181,18 +201,9 @@ class MultiEmailField(forms.Field):
                 validate_email(email)
                 validated_emails.append(email.lower())
             except ValidationError:
-                error_msg = "Enter a valid email address"
-                self.index_errors[index] = error_msg
-                errors.append(error_msg)
-
-        if errors:
-            raise ValidationError(errors)
+                self.index_errors[index] = "Enter a valid email address"
 
         return validated_emails
-
-    def get_error_for_index(self, index):
-        """Get the error message for a specific input index, if any."""
-        return self.index_errors.get(index)
 
 
 class MultiUserWidget(IndexedArrayWidgetMixin, forms.Select):
@@ -201,38 +212,34 @@ class MultiUserWidget(IndexedArrayWidgetMixin, forms.Select):
     pass
 
 
-class MultiUserField(forms.Field):
+class MultiUserField(IndexedFieldMixin, forms.Field):
     """
     A form field that accepts multiple user IDs from array-style form inputs.
 
     Handles input names like users[0], users[1], etc. from the "Add another" component.
     Returns a list of validated User objects.
 
+    When validation fails, stores index-specific errors in `index_errors` dict
+    so templates can display errors on the correct input.
+
     Usage:
         users = MultiUserField(required=True)
     """
 
     widget = MultiUserWidget
+    default_error_messages = {
+        "required": "Select a user",
+    }
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault("required", True)
-        super().__init__(**kwargs)
+    def clean_field(self, value):
+        """Validate user IDs and return User objects."""
+        users_by_id = {u.auth0_id: u for u in User.objects.filter(auth0_id__in=value)}
 
-    def clean(self, value):
-        """Validate that all values are valid user auth0_ids and return User objects."""
-        if not value:
-            if self.required:
-                raise ValidationError("Select a user")
-            return []
+        for index, auth0_id in enumerate(value):
+            if auth0_id not in users_by_id:
+                self.index_errors[index] = "User not found"
 
-        users = list(User.objects.filter(auth0_id__in=value))
-        found_ids = {u.auth0_id for u in users}
-        missing_ids = set(value) - found_ids
-
-        if missing_ids:
-            raise ValidationError("One or more selected users not found")
-
-        return users
+        return list(users_by_id.values())
 
 
 class CloudPlatformArnValidationMixin:
@@ -700,7 +707,7 @@ class GrantDomainAccessForm(forms.Form):
         return queryset
 
 
-class AddDashboardAdminForm(forms.Form):
+class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
     """
     Form for adding one or more admins to a dashboard.
 

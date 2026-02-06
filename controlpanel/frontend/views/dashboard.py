@@ -110,21 +110,6 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         context["dashboards"] = self.get_dashboards()
         return context
 
-    def form_invalid(self, form):
-        """Build error summary with deduplicated messages."""
-        error_summary = form.get_error_summary()
-
-        # Get submitted emails from the bound form field (uses MultiEmailWidget.value_from_datadict)
-        submitted_emails = form["emails"].value() or []
-
-        return self.render_to_response(
-            self.get_context_data(
-                form=form,
-                error_summary=error_summary,
-                submitted_emails=submitted_emails,
-            )
-        )
-
     def form_valid(self, form):
         """Store validated form data in session and redirect to preview."""
         self.request.session["dashboard_preview"] = {
@@ -511,15 +496,6 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
             )
 
         return HttpResponseRedirect(self.get_success_url())
-
-    def form_invalid(self, form):
-        """Build error summary with deduplicated messages."""
-        return self.render_to_response(
-            self.get_context_data(
-                form=form,
-                error_summary=form.get_error_summary(),
-            )
-        )
 
     def get_success_url(self):
         return f"{self.dashboard.get_absolute_url()}#viewers"

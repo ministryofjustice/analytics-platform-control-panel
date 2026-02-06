@@ -16,8 +16,8 @@
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
 
-    {% if error_summary %}
-      {{ govukErrorSummary(titleText="There is a problem", errorList=error_summary.items()) }}
+    {% if form.errors %}
+      {{ govukErrorSummary(titleText="There is a problem", errorList=form.get_error_summary().items()) }}
     {% endif %}
     <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
@@ -63,14 +63,14 @@
       </div>
 
       {% set emails_error = form.errors.get("emails") %}
-      {% set initial_emails = submitted_emails if submitted_emails else form.initial.get("emails", []) %}
+      {% set initial_emails = form.emails.value() or form.initial.get("emails", []) %}
       <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
 
           <div data-module="moj-add-another">
             {% if initial_emails %}
               {% for email in initial_emails %}
-              {% set index_error = form.emails.field.get_error_for_index(loop.index0) %}
+              {% set index_error = form.emails.field.index_errors.get(loop.index0) %}
               <div class="moj-add-another__item">
                 {{ govukInput({
                   "label": {"html": "<b>Add an email</b>"},

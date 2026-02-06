@@ -963,7 +963,7 @@ def test_cancel_dashboard_registration_clears_session(client, users):
 @pytest.mark.parametrize(
     "user_id, expected_message",
     [
-        ("invalid_user", "One or more selected users not found"),
+        ("invalid_user", "User not found"),
         ("", "Select a user"),
         ("github|user_3", "One or more selected users cannot be added as admins"),
     ],

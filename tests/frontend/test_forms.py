@@ -160,11 +160,11 @@ class TestMultiEmailFieldClean:
             field.clean(["valid@example.com", "invalid", "also@valid.com", "bad"])
 
         # Only indices 1 and 3 should have errors
-        assert field.get_error_for_index(0) is None
-        assert field.get_error_for_index(1) == "Enter a valid email address"
-        assert field.get_error_for_index(2) is None
-        assert field.get_error_for_index(3) == "Enter a valid email address"
-        assert field.get_error_for_index(99) is None  # Non-existent index
+        assert field.index_errors.get(0) is None
+        assert field.index_errors.get(1) == "Enter a valid email address"
+        assert field.index_errors.get(2) is None
+        assert field.index_errors.get(3) == "Enter a valid email address"
+        assert field.index_errors.get(99) is None  # Non-existent index
 
 
 @pytest.fixture
@@ -696,14 +696,15 @@ class TestMultiUserFieldClean:
         assert result[0] == user
 
     def test_invalid_user_raises_error(self, db):
-        """Invalid auth0_id raises ValidationError."""
+        """Invalid auth0_id raises ValidationError with index-specific error."""
         field = MultiUserField()
         with pytest.raises(ValidationError) as exc_info:
             field.clean(["nonexistent|user"])
-        assert "One or more selected users not found" in str(exc_info.value)
+        assert "User not found" in str(exc_info.value)
+        assert field.index_errors == {0: "User not found"}
 
     def test_multiple_users_some_invalid(self, db):
-        """If any user is invalid, raises ValidationError."""
+        """If any user is invalid, raises ValidationError with index-specific error."""
         # Third-party
         from model_bakery import baker
 
@@ -711,7 +712,9 @@ class TestMultiUserFieldClean:
         field = MultiUserField()
         with pytest.raises(ValidationError) as exc_info:
             field.clean(["github|valid", "github|invalid"])
-        assert "One or more selected users not found" in str(exc_info.value)
+        assert "User not found" in str(exc_info.value)
+        # Only the invalid user at index 1 should have an error
+        assert field.index_errors == {1: "User not found"}
 
 
 class TestAddDashboardAdminForm:
