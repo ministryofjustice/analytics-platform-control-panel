@@ -80,7 +80,7 @@
             <td class="govuk-table__cell">{{ admin_access.user.name }}</td>
             <td class="govuk-table__cell">{{ admin_access.created.strftime("%d %b %Y") }}</td>
             <td class="govuk-table__cell">{{ admin_access.added_by.name if admin_access.added_by else "-" }}</td>
-            <td class="govuk-table__cell">{% if num_admins > 1 %}<a class="govuk-link" href="#TODO">Remove admin</a>{% endif %}</td>
+            <td class="govuk-table__cell">{% if num_admins > 1 %}<a class="govuk-link" href="{{ url('revoke-dashboard-admin', kwargs={'pk': dashboard.id, 'user_id': admin_access.user.id})}}">Remove admin</a>{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>

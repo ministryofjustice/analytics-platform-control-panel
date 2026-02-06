@@ -361,10 +361,15 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         return context
 
     def form_valid(self, form):
+        dashboard = self.dashboard
         added_users = form.save()
+        absolute_url = self.request.build_absolute_uri(dashboard.get_absolute_url())
+        dashboard.notify_admin_added(
+            new_admins=added_users, admin=self.request.user, manage_url=absolute_url
+        )
 
         emails = [user.justice_email for user in added_users if user.justice_email]
-        self.dashboard.add_customers(emails, self.request.user)
+        dashboard.add_customers(emails, self.request.user)
 
         for user in added_users:
             log.info(
@@ -373,7 +378,7 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
             )
 
         self.request.session["success_message"] = {
-            "heading": f"You have updated admin access for {self.dashboard.name}",
+            "heading": f"You have updated admin rights for {self.dashboard.name}",
             "message": None,
         }
 
@@ -384,18 +389,42 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDashboardAdmin(UpdateDashboardBaseView):
+class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.revoke_dashboard_admin"
+    model = Dashboard
+    template_name = "dashboard-admin-remove-confirm.html"
 
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-        user = get_object_or_404(User, pk=kwargs["user_id"])
-
-        dashboard.admins.remove(user)
-        log.info(
-            f"{self.request.user.justice_email} removed admin access from {user.justice_email}"
+    def get_success_url(self):
+        res = reverse_lazy(
+            "manage-dashboard-sharing",
+            kwargs={"pk": self.get_object().pk},
         )
-        messages.success(self.request, f"Removed admin access from {user.name}")
+        return f"{res}#admins"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        dashboard = self.get_object()
+        admin = dashboard.admins.get(pk=self.kwargs["user_id"])
+        context["admin"] = admin
+        return context
+
+    def form_valid(self, form):
+        dashboard = self.get_object()
+        removed_admin = get_object_or_404(User, pk=self.kwargs["user_id"])
+        dashboard.delete_admin(user=removed_admin, admin=self.request.user)
+
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated admin rights for {dashboard.name}", message=None
+        )
+
+        log.info(
+            f"{self.request.user.justice_email} removing {removed_admin.justice_email} "
+            f"admin from dashboard {dashboard.name}",
+            audit="dashboard_audit",
+        )
+
+        return HttpResponseRedirect(self.get_success_url())
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
