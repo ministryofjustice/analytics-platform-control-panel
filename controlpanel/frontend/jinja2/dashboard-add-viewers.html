@@ -12,8 +12,8 @@
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
 
-    {% if form.errors %}
-      {{ govukErrorSummary(titleText="There is a problem", errorList=form.errors.items()) }}
+    {% if error_summary %}
+      {{ govukErrorSummary(titleText="There is a problem", errorList=error_summary.items()) }}
     {% endif %}
 
     <span class="govuk-caption-xl">{{ dashboard.name }}</span>
@@ -35,18 +35,19 @@
         <fieldset class="govuk-fieldset">
           <div data-module="moj-add-another">
               {% for email in form.emails.value() or [""]%}
+                {% set index_error = form.emails.field.get_error_for_index(loop.index0) %}
                 <div class="moj-add-another__item">
                   {{ govukInput({
                     "label": {"text": emails_field.label, "classes": "govuk-label--s"},
                     "hint": {"text": emails_field.help_text},
                     "name": emails_field.name ~ "[" ~ loop.index0 ~ "]",
-                    "id": emails_field.name ~ "[" ~ loop.index0 ~ "]",
+                    "id": "id_" ~ emails_field.name ~ "[" ~ loop.index0 ~ "]",
                     "type": "email",
                     "attributes": {
                       "data-name": emails_field.name ~ "[%index%]",
-                      "data-id": emails_field.name ~ "[%index%]"
+                      "data-id": "id_" ~ emails_field.name ~ "[%index%]"
                     },
-                    "errorMessage": {"html": emails_field.errors[0]} if emails_field.errors else None,
+                    "errorMessage": {"text": index_error} if index_error else None,
                     "value": email,
                   }) }}
                 </div>

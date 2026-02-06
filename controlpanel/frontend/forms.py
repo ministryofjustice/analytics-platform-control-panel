@@ -39,6 +39,68 @@ from controlpanel.utils import build_tool_url
 CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
 
+class ErrorSummaryMixin:
+    """
+    Mixin for forms with indexed array-style fields (e.g. emails[0], emails[1]).
+
+    Provides get_error_summary() that correctly links errors to specific indexed
+    inputs, rather than just the field name. Required for proper error summary
+    linking when using fields like MultiEmailField with the moj-add-another component.
+
+    For standard forms without indexed fields, use form.errors directly.
+
+    Usage:
+        class MyForm(ErrorSummaryMixin, forms.Form):
+            emails = MultiEmailField()
+
+        # In view:
+        error_summary = form.get_error_summary()
+    """
+
+    def get_error_summary(self):
+        """
+        Generate a summary of unique error messages from form errors.
+
+        Returns a dict mapping field keys to lists of error messages, suitable
+        for use with govukErrorSummary macro via .items().
+
+        Handles fields with index_errors (like MultiEmailField) by expanding
+        them to include the index in the field key for proper error linking.
+        """
+        error_summary = {}
+        seen_messages = set()
+
+        # First, collect index-specific errors from fields that have them
+        for field_name, field in self.fields.items():
+            if not hasattr(field, "index_errors") or not field.index_errors:
+                continue
+
+            for index, error in field.index_errors.items():
+                if error in seen_messages:
+                    continue
+
+                seen_messages.add(error)
+                # Use id_ prefix for consistency with Django's form field ID convention
+                field_key = f"id_{field_name}[{index}]"
+                error_summary.setdefault(field_key, []).append(error)
+
+        # Then, collect form-level errors (skipping already-seen messages)
+        for field_name, errors in self.errors.items():
+            for error in errors:
+                if error in seen_messages:
+                    continue
+                seen_messages.add(error)
+                field_key = f"id_{field_name}"
+
+                # For indexed fields, point to the first input
+                if hasattr(self.fields.get(field_name), "index_errors"):
+                    field_key = f"{field_key}[0]"
+
+                error_summary.setdefault(field_key, []).append(error)
+
+        return error_summary
+
+
 class DatasourceChoiceField(forms.ModelChoiceField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -88,6 +150,9 @@ class MultiEmailField(forms.Field):
     Handles input names like emails[0], emails[1], etc. from the "Add another" component.
     Returns a list of validated, lowercase email addresses.
 
+    When validation fails, stores index-specific errors in `index_errors` dict
+    so templates can display errors on the correct input.
+
     Usage:
         emails = MultiEmailField(required=False)
     """
@@ -97,9 +162,12 @@ class MultiEmailField(forms.Field):
     def __init__(self, **kwargs):
         kwargs.setdefault("required", False)
         super().__init__(**kwargs)
+        self.index_errors = {}  # Maps index -> error message
 
     def clean(self, value):
         """Validate that all values are valid email addresses."""
+        self.index_errors = {}  # Reset on each clean
+
         if not value:
             if self.required:
                 raise ValidationError(self.error_messages["required"], code="required")
@@ -108,17 +176,23 @@ class MultiEmailField(forms.Field):
         errors = []
         validated_emails = []
 
-        for email in value:
+        for index, email in enumerate(value):
             try:
                 validate_email(email)
                 validated_emails.append(email.lower())
             except ValidationError:
-                errors.append("Enter a valid email address")
+                error_msg = "Enter a valid email address"
+                self.index_errors[index] = error_msg
+                errors.append(error_msg)
 
         if errors:
             raise ValidationError(errors)
 
         return validated_emails
+
+    def get_error_for_index(self, index):
+        """Get the error message for a specific input index, if any."""
+        return self.index_errors.get(index)
 
 
 class MultiUserWidget(IndexedArrayWidgetMixin, forms.Select):
@@ -698,7 +772,7 @@ class AddDashboardAdminForm(forms.Form):
         return added_users
 
 
-class AddDashboardViewersForm(forms.Form):
+class AddDashboardViewersForm(ErrorSummaryMixin, forms.Form):
     """
     Form for adding one or more viewers to a dashboard via email addresses.
 
@@ -1049,7 +1123,7 @@ class FeedbackForm(forms.ModelForm):
         ]
 
 
-class RegisterDashboardForm(forms.ModelForm):
+class RegisterDashboardForm(ErrorSummaryMixin, forms.ModelForm):
 
     emails = MultiEmailField(required=False)
     whitelist_domain = forms.ModelChoiceField(

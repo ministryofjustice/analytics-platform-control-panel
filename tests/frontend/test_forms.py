@@ -153,6 +153,19 @@ class TestMultiEmailFieldClean:
         assert "Enter a valid email address" in errors
         assert "Enter a valid email address" in errors
 
+    def test_index_errors_tracks_which_emails_are_invalid(self):
+        """index_errors dict tracks which specific indices had errors."""
+        field = MultiEmailField()
+        with pytest.raises(ValidationError):
+            field.clean(["valid@example.com", "invalid", "also@valid.com", "bad"])
+
+        # Only indices 1 and 3 should have errors
+        assert field.get_error_for_index(0) is None
+        assert field.get_error_for_index(1) == "Enter a valid email address"
+        assert field.get_error_for_index(2) is None
+        assert field.get_error_for_index(3) == "Enter a valid email address"
+        assert field.get_error_for_index(99) is None  # Non-existent index
+
 
 @pytest.fixture
 def release_data():

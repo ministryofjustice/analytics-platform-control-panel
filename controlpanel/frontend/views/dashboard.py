@@ -1,3 +1,6 @@
+# Standard library
+from collections import defaultdict
+
 # Third-party
 import sentry_sdk
 import structlog
@@ -37,7 +40,7 @@ from controlpanel.frontend.forms import (
     UpdateDashboardForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.utils import build_success_message, feature_flag_required, get_error_summary
+from controlpanel.utils import build_success_message, feature_flag_required
 
 log = structlog.getLogger(__name__)
 
@@ -109,7 +112,7 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
 
     def form_invalid(self, form):
         """Build error summary with deduplicated messages."""
-        error_summary = get_error_summary(form)
+        error_summary = form.get_error_summary()
 
         # Get submitted emails from the bound form field (uses MultiEmailWidget.value_from_datadict)
         submitted_emails = form["emails"].value() or []
@@ -508,6 +511,15 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
             )
 
         return HttpResponseRedirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        """Build error summary with deduplicated messages."""
+        return self.render_to_response(
+            self.get_context_data(
+                form=form,
+                error_summary=form.get_error_summary(),
+            )
+        )
 
     def get_success_url(self):
         return f"{self.dashboard.get_absolute_url()}#viewers"
