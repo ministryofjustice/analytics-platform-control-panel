@@ -402,7 +402,7 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
         context = super().get_context_data(**kwargs)
 
         dashboard = self.get_object()
-        admin = dashboard.admins.get(pk=self.kwargs["user_id"])
+        admin = get_object_or_404(dashboard.admins.all(), pk=self.kwargs["user_id"])
         context["admin"] = admin
         return context
 
