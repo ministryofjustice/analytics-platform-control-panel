@@ -408,7 +408,7 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
 
     def form_valid(self, form):
         dashboard = self.get_object()
-        removed_admin = get_object_or_404(User, pk=self.kwargs["user_id"])
+        removed_admin = get_object_or_404(dashboard.admins.all(), pk=self.kwargs["user_id"])
         dashboard.delete_admin(user=removed_admin, admin=self.request.user)
 
         self.request.session["success_message"] = build_success_message(
