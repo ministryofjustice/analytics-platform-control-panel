@@ -1006,6 +1006,18 @@ def test_revoke_admin_success(client, dashboard, users, govuk_notify_send_email)
     govuk_notify_send_email.assert_called_once()
 
 
+def test_revoke_admin_fail(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["quicksight_compute_reader"].auth0_id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404
+    govuk_notify_send_email.assert_not_called()
+
+
 def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):
     """Confirming preview creates dashboard but shows error if notify fails."""
     client.force_login(users["superuser"])
@@ -1056,3 +1068,14 @@ def test_update_description(client, users, dashboard):
     dashboard = Dashboard.objects.get(id=dashboard.id)
     assert response.status_code == 302
     assert dashboard.description == new_description
+
+
+def test_revoke_domain_fail(client, dashboard, users, dashboard_domain):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-domain-access",
+        kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id + 1},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404
