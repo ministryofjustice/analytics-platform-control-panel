@@ -395,10 +395,7 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
     template_name = "dashboard-admin-remove-confirm.html"
 
     def get_success_url(self):
-        res = reverse_lazy(
-            "manage-dashboard-sharing",
-            kwargs={"pk": self.get_object().pk},
-        )
+        res = self.get_object().get_absolute_url()
         return f"{res}#admins"
 
     def get_context_data(self, **kwargs):
