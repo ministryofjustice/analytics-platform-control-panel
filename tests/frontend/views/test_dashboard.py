@@ -122,7 +122,15 @@ def add_admin(client, dashboard, users, *args):
     return client.post(dashboard.get_absolute_add_admins_url(), data)
 
 
-def revoke_admin(client, dashboard, users, *args):
+def revoke_admin_get(client, dashboard, users, *args):
+    kwargs = {
+        "pk": dashboard.id,
+        "user_id": users["dashboard_admin"].auth0_id,
+    }
+    return client.get(reverse("revoke-dashboard-admin", kwargs=kwargs))
+
+
+def revoke_admin_post(client, dashboard, users, *args):
     kwargs = {
         "pk": dashboard.id,
         "user_id": users["dashboard_admin"].auth0_id,
@@ -222,9 +230,12 @@ def update_description_post(client, dashboard, users, *args):
         (add_admin, "superuser", status.HTTP_302_FOUND),
         (add_admin, "dashboard_admin", status.HTTP_302_FOUND),
         (add_admin, "normal_user", status.HTTP_403_FORBIDDEN),
-        (revoke_admin, "superuser", status.HTTP_302_FOUND),
-        (revoke_admin, "dashboard_admin", status.HTTP_302_FOUND),
-        (revoke_admin, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_admin_get, "superuser", status.HTTP_200_OK),
+        (revoke_admin_get, "dashboard_admin", status.HTTP_200_OK),
+        (revoke_admin_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_admin_post, "superuser", status.HTTP_302_FOUND),
+        (revoke_admin_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (revoke_admin_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (add_customers, "superuser", status.HTTP_302_FOUND),
         (add_customers, "dashboard_admin", status.HTTP_302_FOUND),
         (add_customers, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -971,11 +982,40 @@ def test_add_admin_success(client, dashboard, users, govuk_notify_send_email):
     assert (
         response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
     )
-    assert "You have updated admin access for" in client.session["success_message"]["heading"]
+    assert "You have updated admin rights for" in client.session["success_message"]["heading"]
     assert (
         dashboard.admins.filter(auth0_id=users["quicksight_compute_author"].auth0_id).count() == 1
     )
+    govuk_notify_send_email.call_count == 2
+
+
+def test_revoke_admin_success(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["dashboard_admin"].auth0_id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 302
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin rights for" in client.session["success_message"]["heading"]
+    assert dashboard.admins.filter(auth0_id=users["dashboard_admin"].auth0_id).count() == 0
     govuk_notify_send_email.assert_called_once()
+
+
+def test_revoke_admin_fail(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["quicksight_compute_reader"].auth0_id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404
+    govuk_notify_send_email.assert_not_called()
 
 
 def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):
@@ -1028,3 +1068,14 @@ def test_update_description(client, users, dashboard):
     dashboard = Dashboard.objects.get(id=dashboard.id)
     assert response.status_code == 302
     assert dashboard.description == new_description
+
+
+def test_revoke_domain_fail(client, dashboard, users, dashboard_domain):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-domain-access",
+        kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id + 1},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404

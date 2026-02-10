@@ -361,10 +361,15 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         return context
 
     def form_valid(self, form):
+        dashboard = self.dashboard
         added_users = form.save()
+        absolute_url = self.request.build_absolute_uri(dashboard.get_absolute_url())
+        dashboard.notify_admin_added(
+            new_admins=added_users, admin=self.request.user, manage_url=absolute_url
+        )
 
         emails = [user.justice_email for user in added_users if user.justice_email]
-        self.dashboard.add_customers(emails, self.request.user)
+        dashboard.add_customers(emails, self.request.user)
 
         for user in added_users:
             log.info(
@@ -373,7 +378,7 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
             )
 
         self.request.session["success_message"] = {
-            "heading": f"You have updated admin access for {self.dashboard.name}",
+            "heading": f"You have updated admin rights for {self.dashboard.name}",
             "message": None,
         }
 
@@ -384,18 +389,50 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDashboardAdmin(UpdateDashboardBaseView):
+class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.revoke_dashboard_admin"
+    model = DashboardAdminAccess
+    template_name = "dashboard-admin-remove-confirm.html"
 
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-        user = get_object_or_404(User, pk=kwargs["user_id"])
+    def get_success_url(self):
+        res = self.object.dashboard.get_absolute_url()
+        return f"{res}#admins"
 
-        dashboard.admins.remove(user)
-        log.info(
-            f"{self.request.user.justice_email} removed admin access from {user.justice_email}"
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            DashboardAdminAccess.objects.select_related("dashboard", "user"),
+            dashboard__pk=self.kwargs["pk"],
+            user__pk=self.kwargs["user_id"],
         )
-        messages.success(self.request, f"Removed admin access from {user.name}")
+
+    def get_permission_object(self):
+        return self.get_object().dashboard
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["admin"] = self.get_object().user
+        context["dashboard"] = self.get_object().dashboard
+        return context
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        dashboard = self.object.dashboard
+        user = self.object.user
+
+        dashboard.delete_admin(user=user, admin=self.request.user)
+
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated admin rights for {dashboard.name}", message=None
+        )
+
+        log.info(
+            f"{self.request.user.justice_email} removing {user.justice_email} "
+            f"admin from dashboard {dashboard.name}",
+            audit="dashboard_audit",
+        )
+
+        return HttpResponseRedirect(self.get_success_url())
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
@@ -571,32 +608,33 @@ class GrantDomainAccess(
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.remove_dashboard_domain"
-    model = Dashboard
+    model = DashboardDomainAccess
     template_name = "dashboard-domain-remove-confirm.html"
 
     def get_success_url(self):
-        res = reverse_lazy(
-            "manage-dashboard-sharing",
-            kwargs={"pk": self.get_object().pk},
-        )
+        res = self.object.dashboard.get_absolute_url()
         return f"{res}#domain-access"
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            DashboardDomainAccess.objects.select_related("dashboard", "domain"),
+            dashboard__pk=self.kwargs["pk"],
+            domain__pk=self.kwargs["domain_id"],
+        )
+
+    def get_permission_object(self):
+        return self.get_object().dashboard
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        dashboard = self.get_object()
-        domain = dashboard.whitelist_domains.get(pk=self.kwargs["domain_id"])
-
-        if not domain:
-            raise Http404("Domain not found")
-
-        context["domain"] = domain
+        context["dashboard"] = self.get_object().dashboard
+        context["domain"] = self.get_object().domain
         return context
 
     def form_valid(self, form):
-        dashboard = self.get_object()
-        domain = get_object_or_404(DashboardDomain, pk=self.kwargs["domain_id"])
-        dashboard.whitelist_domains.remove(domain)
+        dashboard = self.object.dashboard
+        domain = self.object.domain
 
         self.request.session["success_message"] = build_success_message(
             heading=f"You have updated domain access for {dashboard.name}", message=None
@@ -607,4 +645,4 @@ class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, Delete
             audit="dashboard_audit",
         )
 
-        return HttpResponseRedirect(self.get_success_url())
+        return super().form_valid(form)

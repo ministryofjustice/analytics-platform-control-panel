@@ -167,6 +167,35 @@ class Dashboard(TimeStampedModel):
                 },
             )
 
+    def notify_admin_added(self, new_admins, admin, manage_url):
+
+        for new_admin in new_admins:
+            govuk_notify_send_email(
+                email_address=new_admin.justice_email,
+                template_id=settings.NOTIFY_DASHBOARD_ADMIN_ADDED_TEMPLATE_ID,
+                personalisation={
+                    "dashboard": self.name,
+                    "dashboard_admin": admin.justice_email,
+                    "dashboard_description": self.description,
+                    "dashboard_manage_url": manage_url,
+                },
+            )
+
+    def delete_admin(self, user, admin):
+        """
+        Remove the given admin from the dashboard and notifies them
+        """
+        self.admins.remove(user)
+
+        govuk_notify_send_email(
+            email_address=user.justice_email,
+            template_id=settings.NOTIFY_DASHBOARD_ADMIN_REMOVED_TEMPLATE_ID,
+            personalisation={
+                "dashboard": self.name,
+                "revoked_by": admin.justice_email,
+            },
+        )
+
     def delete_customers_by_id(self, ids, admin):
         viewers = DashboardViewer.objects.filter(pk__in=ids)
         if not viewers:
