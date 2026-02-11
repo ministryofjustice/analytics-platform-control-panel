@@ -1,13 +1,10 @@
-# Standard library
-from collections import defaultdict
-
 # Third-party
 import sentry_sdk
 import structlog
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import Http404, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
