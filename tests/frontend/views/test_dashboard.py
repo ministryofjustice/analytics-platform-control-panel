@@ -138,6 +138,22 @@ def revoke_admin_post(client, dashboard, users, *args):
     return client.post(reverse("revoke-dashboard-admin", kwargs=kwargs))
 
 
+def revoke_viewer_get(client, dashboard, users, dashboard_domain, dashboard_viewer):
+    kwargs = {
+        "pk": dashboard.id,
+        "viewer_id": dashboard_viewer.id,
+    }
+    return client.get(reverse("revoke-dashboard-viewer", kwargs=kwargs))
+
+
+def revoke_viewer_post(client, dashboard, users, dashboard_domain, dashboard_viewer):
+    kwargs = {
+        "pk": dashboard.id,
+        "viewer_id": dashboard_viewer.id,
+    }
+    return client.post(reverse("revoke-dashboard-viewer", kwargs=kwargs))
+
+
 def add_customers_get(client, dashboard, *args):
     return client.get(reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}))
 
@@ -240,6 +256,12 @@ def update_description_post(client, dashboard, users, *args):
         (revoke_admin_post, "superuser", status.HTTP_302_FOUND),
         (revoke_admin_post, "dashboard_admin", status.HTTP_302_FOUND),
         (revoke_admin_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_viewer_get, "superuser", status.HTTP_200_OK),
+        (revoke_viewer_get, "dashboard_admin", status.HTTP_200_OK),
+        (revoke_viewer_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_viewer_post, "superuser", status.HTTP_302_FOUND),
+        (revoke_viewer_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (revoke_viewer_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (add_customers_get, "superuser", status.HTTP_200_OK),
         (add_customers_get, "dashboard_admin", status.HTTP_200_OK),
         (add_customers_get, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -273,10 +295,18 @@ def update_description_post(client, dashboard, users, *args):
     ],
 )
 def test_permissions(
-    client, dashboard, users, dashboard_domain, view, user, expected_status, govuk_notify_send_email
+    client,
+    dashboard,
+    users,
+    dashboard_domain,
+    dashboard_viewer,
+    view,
+    user,
+    expected_status,
+    govuk_notify_send_email,
 ):
     client.force_login(users[user])
-    response = view(client, dashboard, users, dashboard_domain)
+    response = view(client, dashboard, users, dashboard_domain, dashboard_viewer)
     assert response.status_code == expected_status
 
 
@@ -1022,6 +1052,36 @@ def test_revoke_admin_fail(client, dashboard, users, govuk_notify_send_email):
     url = reverse(
         "revoke-dashboard-admin",
         kwargs={"pk": dashboard.id, "user_id": users["quicksight_compute_reader"].auth0_id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404
+    govuk_notify_send_email.assert_not_called()
+
+
+def test_revoke_viewer_success(client, dashboard, dashboard_viewer, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-viewer",
+        kwargs={"pk": dashboard.id, "viewer_id": dashboard_viewer.id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 302
+    assert (
+        response.url
+        == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#viewers"
+    )
+    assert "You have updated viewers for" in client.session["success_message"]["heading"]
+    assert dashboard.viewers.filter(pk=dashboard_viewer.id).count() == 0
+    govuk_notify_send_email.assert_called_once()
+
+
+def test_revoke_viewer_fail(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-viewer",
+        kwargs={"pk": dashboard.id, "viewer_id": 99999},
     )
     response = client.post(url)
 

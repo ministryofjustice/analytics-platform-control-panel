@@ -420,6 +420,53 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
         return HttpResponseRedirect(self.get_success_url())
 
 
+@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
+class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "api.revoke_dashboard_viewer"
+    model = DashboardViewerAccess
+    template_name = "dashboard-viewer-remove-confirm.html"
+
+    def get_success_url(self):
+        res = self.object.dashboard.get_absolute_url()
+        return f"{res}#viewers"
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            DashboardViewerAccess.objects.select_related("dashboard", "viewer"),
+            dashboard__pk=self.kwargs["pk"],
+            viewer__pk=self.kwargs["viewer_id"],
+        )
+
+    def get_permission_object(self):
+        return self.get_object().dashboard
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["viewer"] = self.get_object().viewer
+        context["dashboard"] = self.get_object().dashboard
+        return context
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        dashboard = self.object.dashboard
+        viewer = self.object.viewer
+
+        dashboard.delete_viewers([viewer], admin=self.request.user)
+
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated viewers for {dashboard.name}", message=None
+        )
+
+        log.info(
+            f"{self.request.user.justice_email} removing {viewer.email} "
+            f"viewer access from dashboard {dashboard.name}",
+            audit="dashboard_audit",
+        )
+
+        return HttpResponseRedirect(self.get_success_url())
+
+
 # TODO delete view?
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):

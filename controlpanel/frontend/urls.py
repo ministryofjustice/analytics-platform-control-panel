@@ -337,6 +337,11 @@ urlpatterns = [
         name="revoke-dashboard-admin",
     ),
     path(
+        "quicksight/dashboards/<int:pk>/viewers/<int:viewer_id>/revoke/",
+        views.RevokeDashboardViewer.as_view(),
+        name="revoke-dashboard-viewer",
+    ),
+    path(
         "quicksight/dashboards/<int:pk>/customers/paginate/<int:page_no>/",
         views.DashboardCustomers.as_view(),
         name="dashboard-customers",

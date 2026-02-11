@@ -107,7 +107,7 @@
                 <td class="govuk-table__cell">{{ viewer_access.viewer.email }}</td>
                 <td class="govuk-table__cell">{{ viewer_access.created.strftime("%d %b %Y") }}</td>
                 <td class="govuk-table__cell">{{ viewer_access.shared_by.name if viewer_access.shared_by else "-" }}</td>
-                <td class="govuk-table__cell"><a class="govuk-link" href="#TODO">Remove viewer</a></td>
+                <td class="govuk-table__cell"><a class="govuk-link" href="{{ url('revoke-dashboard-viewer', kwargs={'pk': dashboard.id, 'viewer_id': viewer_access.viewer.id}) }}">Remove viewer</a></td>
               </tr>
             {% endfor %}
           </tbody>

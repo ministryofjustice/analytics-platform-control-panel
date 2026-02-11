@@ -56,6 +56,7 @@ from controlpanel.frontend.views.dashboard import (
     RemoveDashboardCustomerByEmail,
     RemoveDashboardCustomerById,
     RevokeDashboardAdmin,
+    RevokeDashboardViewer,
     RevokeDomainAccess,
 )
 from controlpanel.frontend.views.databases import (
