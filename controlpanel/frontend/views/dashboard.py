@@ -1,12 +1,9 @@
 # Third-party
-import sentry_sdk
 import structlog
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.utils.html import format_html
@@ -18,7 +15,6 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import aws
-from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import (
     Dashboard,
     DashboardAdminAccess,
@@ -33,7 +29,6 @@ from controlpanel.frontend.forms import (
     AddDashboardViewersForm,
     GrantDomainAccessForm,
     RegisterDashboardForm,
-    RemoveCustomerByEmailForm,
     UpdateDashboardForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
@@ -467,30 +462,6 @@ class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, Del
         return HttpResponseRedirect(self.get_success_url())
 
 
-# TODO delete view?
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
-    context_object_name = "dashboard"
-    model = Dashboard
-    permission_required = "api.retrieve_dashboard"
-    template_name = "dashboard-user-list.html"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        dashboard = self.get_object()
-
-        customers = dashboard.viewers.all()
-        paginator = Paginator(customers, 50)
-
-        context["errors"] = self.request.session.pop("customer_form_errors", None)
-        context["page_no"] = page_no = self.kwargs.get("page_no")
-        context["paginator"] = paginator
-        context["elided"] = paginator.get_elided_page_range(page_no)
-        context["customers"] = customers
-        context["remove_customer_form"] = RemoveCustomerByEmailForm()
-        return context
-
-
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
     permission_required = "api.add_dashboard_customer"
@@ -543,66 +514,6 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
 
     def get_success_url(self):
         return f"{self.dashboard.get_absolute_url()}#viewers"
-
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RemoveDashboardCustomerById(UpdateDashboardBaseView):
-    permission_required = "api.remove_dashboard_customer"
-
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
-
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-        user_ids = self.request.POST.getlist("customer")
-        try:
-            viewers = dashboard.delete_customers_by_id(user_ids, admin=self.request.user)
-            emails = viewers.values_list("email", flat=True)
-        except DeleteCustomerError as e:
-            sentry_sdk.capture_exception(e)
-            messages.error(self.request, f"Failed removing user{pluralize(user_ids)}")
-        else:
-            messages.success(self.request, f"Successfully removed user{pluralize(emails)}")
-            log.info(
-                f"{self.request.user.justice_email} removing {', '.join(emails)} "
-                f"access to dashboard {dashboard.name}",
-                audit="dashboard_audit",
-            )
-
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
-    form = None
-    permission_required = "api.remove_dashboard_customer"
-
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
-
-    def perform_update(self, **kwargs):
-        """
-        Attempts to remove a user from a group, based on their email address
-        """
-        self.form = RemoveCustomerByEmailForm(data=self.request.POST)
-        if not self.form.is_valid():
-            self.request.session["customer_form_errors"] = self.form.errors
-            return messages.error(self.request, "Invalid email address entered")
-
-        dashboard = self.get_object()
-        email = self.form.cleaned_data["email"]
-        try:
-            dashboard.delete_customer_by_email(email, admin=self.request.user)
-        except DeleteCustomerError as e:
-            sentry_sdk.capture_exception(e)
-            return messages.error(
-                self.request, str(e) or f"Couldn't remove user with email {email}"
-            )
-
-        messages.success(self.request, f"Successfully removed user {email}")
-        log.info(
-            f"{self.request.user.justice_email} removing {email} "
-            f"access to dashboard {dashboard.name}",
-            audit="dashboard_audit",
-        )
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
