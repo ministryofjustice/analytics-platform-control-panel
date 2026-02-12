@@ -77,7 +77,7 @@ class Dashboard(TimeStampedModel):
         return reverse(viewname, kwargs={"pk": self.pk, **kwargs})
 
     def get_absolute_add_viewers_url(self):
-        return self.get_absolute_url(viewname="dashboard-customers", page_no=1)
+        return self.get_absolute_url(viewname="add-dashboard-customers")
 
     def get_absolute_delete_url(self):
         return self.get_absolute_url(viewname="delete-dashboard")

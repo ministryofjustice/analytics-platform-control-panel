@@ -45,7 +45,6 @@ from controlpanel.frontend.views.dashboard import (
     AddDashboardCustomers,
     AdminDashboardList,
     CancelDashboardRegistration,
-    DashboardCustomers,
     DashboardDetail,
     DashboardList,
     DashboardUpdateDescription,
@@ -53,9 +52,8 @@ from controlpanel.frontend.views.dashboard import (
     GrantDomainAccess,
     RegisterDashboard,
     RegisterDashboardPreview,
-    RemoveDashboardCustomerByEmail,
-    RemoveDashboardCustomerById,
     RevokeDashboardAdmin,
+    RevokeDashboardViewer,
     RevokeDomainAccess,
 )
 from controlpanel.frontend.views.databases import (

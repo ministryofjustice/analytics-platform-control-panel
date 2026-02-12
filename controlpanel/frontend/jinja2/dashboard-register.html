@@ -1,4 +1,5 @@
 {% from "error-message/macro.html" import govukErrorMessage %}
+{% from "error-summary/macro.html" import govukErrorSummary -%}
 {% from "autocomplete/macro.html" import autocomplete %}
 {% from "input/macro.html" import govukInput %}
 {% from "label/macro.html" import govukLabel %}
@@ -16,30 +17,11 @@
   <div class="govuk-grid-column-two-thirds">
 
     {% if form.errors %}
-      <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-          <h2 class="govuk-error-summary__title">
-            There is a problem
-          </h2>
-          <div class="govuk-error-summary__body">
-            <ul class="govuk-list govuk-error-summary__list">
-              {% for error in error_summary %}
-                <li>
-                  {% if error.field == '__all__' or error.field == 'emails' %}
-                    <a href="#emails[0]">{{ error.text }}</a>
-                  {% else %}
-                    <a href="#id_{{ error.field }}">{{ error.text }}</a>
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
-          </div>
-        </div>
-      </div>
+      {{ govukErrorSummary(titleText="There is a problem", errorList=form.get_error_summary().items()) }}
     {% endif %}
     <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
-    <form method="post" action="{{ url("register-dashboard") }}">
+    <form method="post" action="{{ url("register-dashboard") }}" novalidate>
       {{ csrf_input }}
 
       {% set error_qs_msg = form.errors.get("quicksight_id") %}
@@ -81,25 +63,27 @@
       </div>
 
       {% set emails_error = form.errors.get("emails") %}
-      {% set initial_emails = submitted_emails if submitted_emails else form.initial.get("emails", []) %}
+      {% set initial_emails = form.emails.value() or form.initial.get("emails", []) %}
       <div class="govuk-form-group{% if emails_error %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
 
           <div data-module="moj-add-another">
             {% if initial_emails %}
               {% for email in initial_emails %}
+              {% set index_error = form.emails.field.index_errors.get(loop.index0) %}
               <div class="moj-add-another__item">
                 {{ govukInput({
                   "label": {"html": "<b>Add an email</b>"},
                   "hint": {"text": "Enter an email address to share with."},
                   "name": "emails[" ~ loop.index0 ~ "]",
-                  "id": "emails[" ~ loop.index0 ~ "]",
+                  "id": "id_emails[" ~ loop.index0 ~ "]",
                   "type": "email",
                   "value": email,
                   "attributes": {
                     "data-name": "emails[%index%]",
-                    "data-id": "emails[%index%]"
-                  }
+                    "data-id": "id_emails[%index%]"
+                  },
+                  "errorMessage": {"text": index_error} if index_error else None
                 }) }}
                 {# Add remove button when there are multiple emails #}
                 {% if initial_emails|length > 1 %}
@@ -113,11 +97,11 @@
                 "label": {"html": "<b>Add an email</b>"},
                 "hint": {"text": "Enter an email address to share with."},
                 "name": "emails[0]",
-                "id": "emails[0]",
+                "id": "id_emails[0]",
                 "type": "email",
                 "attributes": {
                   "data-name": "emails[%index%]",
-                  "data-id": "emails[%index%]"
+                  "data-id": "id_emails[%index%]"
                 },
                 "errorMessage": {"html": emails_error|join(". ")} if emails_error else None
               }) }}

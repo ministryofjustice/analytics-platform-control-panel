@@ -25,7 +25,7 @@ class TestDashboardUrls:
 
     def test_get_absolute_add_viewers_url(self):
         dashboard = Dashboard(pk=42)
-        expected = reverse("dashboard-customers", kwargs={"pk": 42, "page_no": 1})
+        expected = reverse("add-dashboard-customers", kwargs={"pk": 42})
         assert dashboard.get_absolute_add_viewers_url() == expected
 
     def test_get_absolute_add_admins_url(self):

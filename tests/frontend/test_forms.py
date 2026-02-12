@@ -6,15 +6,17 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.http import QueryDict
 from django.urls import reverse
+from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import aws
 from controlpanel.api.github import RepositoryNotFound
-from controlpanel.api.models import S3Bucket
+from controlpanel.api.models import DashboardViewer, DashboardViewerAccess, S3Bucket
 from controlpanel.api.models.user import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
 from controlpanel.frontend import forms
 from controlpanel.frontend.forms import (
     AddDashboardAdminForm,
+    AddDashboardViewersForm,
     MultiEmailField,
     MultiEmailWidget,
     MultiUserField,
@@ -150,6 +152,19 @@ class TestMultiEmailFieldClean:
         assert len(errors) == 2
         assert "Enter a valid email address" in errors
         assert "Enter a valid email address" in errors
+
+    def test_index_errors_tracks_which_emails_are_invalid(self):
+        """index_errors dict tracks which specific indices had errors."""
+        field = MultiEmailField()
+        with pytest.raises(ValidationError):
+            field.clean(["valid@example.com", "invalid", "also@valid.com", "bad"])
+
+        # Only indices 1 and 3 should have errors
+        assert field.index_errors.get(0) is None
+        assert field.index_errors.get(1) == "Enter a valid email address"
+        assert field.index_errors.get(2) is None
+        assert field.index_errors.get(3) == "Enter a valid email address"
+        assert field.index_errors.get(99) is None  # Non-existent index
 
 
 @pytest.fixture
@@ -681,14 +696,15 @@ class TestMultiUserFieldClean:
         assert result[0] == user
 
     def test_invalid_user_raises_error(self, db):
-        """Invalid auth0_id raises ValidationError."""
+        """Invalid auth0_id raises ValidationError with index-specific error."""
         field = MultiUserField()
         with pytest.raises(ValidationError) as exc_info:
             field.clean(["nonexistent|user"])
-        assert "One or more selected users not found" in str(exc_info.value)
+        assert "User not found" in str(exc_info.value)
+        assert field.index_errors == {0: "User not found"}
 
     def test_multiple_users_some_invalid(self, db):
-        """If any user is invalid, raises ValidationError."""
+        """If any user is invalid, raises ValidationError with index-specific error."""
         # Third-party
         from model_bakery import baker
 
@@ -696,7 +712,9 @@ class TestMultiUserFieldClean:
         field = MultiUserField()
         with pytest.raises(ValidationError) as exc_info:
             field.clean(["github|valid", "github|invalid"])
-        assert "One or more selected users not found" in str(exc_info.value)
+        assert "User not found" in str(exc_info.value)
+        # Only the invalid user at index 1 should have an error
+        assert field.index_errors == {1: "User not found"}
 
 
 class TestAddDashboardAdminForm:
@@ -815,3 +833,120 @@ class TestAddDashboardAdminForm:
         assert DashboardAdminAccess.objects.filter(
             dashboard=dashboard, user=quicksight_user, added_by=admin_user
         ).exists()
+
+
+class TestAddDashboardViewersForm:
+    """Tests for AddDashboardViewersForm."""
+
+    @pytest.fixture
+    def ExtendedAuth0(self):
+        with mock.patch("controlpanel.api.auth0.ExtendedAuth0") as ExtendedAuth0:
+            ExtendedAuth0.return_value.add_dashboard_member_by_email.return_value = None
+            yield ExtendedAuth0.return_value
+
+    @pytest.fixture
+    def dashboard(self, db, ExtendedAuth0):
+        return baker.make("api.Dashboard")
+
+    @pytest.fixture
+    def shared_by_user(self, db):
+        return baker.make(
+            "api.User", auth0_id="github|sharer", justice_email="sharer@justice.gov.uk"
+        )
+
+    @pytest.fixture
+    def existing_viewer(self, db, dashboard, ExtendedAuth0):
+        viewer = baker.make(DashboardViewer, email="existing@example.com")
+        DashboardViewerAccess.objects.create(dashboard=dashboard, viewer=viewer, shared_by=None)
+        return viewer
+
+    def test_valid_single_email(self, dashboard, shared_by_user):
+        """Form accepts a valid single email address."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "test@example.com"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["emails"] == ["test@example.com"]
+
+    def test_valid_multiple_emails(self, dashboard, shared_by_user):
+        """Form accepts multiple valid email addresses."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "test1@example.com", "emails[1]": "test2@example.com"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert form.is_valid(), form.errors
+        assert set(form.cleaned_data["emails"]) == {"test1@example.com", "test2@example.com"}
+
+    def test_emails_lowercased(self, dashboard, shared_by_user):
+        """Form lowercases email addresses."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "TEST@EXAMPLE.COM"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["emails"] == ["test@example.com"]
+
+    def test_invalid_email_rejected(self, dashboard, shared_by_user):
+        """Form rejects invalid email addresses."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "notanemail"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert not form.is_valid()
+        assert "emails" in form.errors
+
+    def test_empty_form_rejected(self, dashboard, shared_by_user):
+        """Form rejects empty submission."""
+        form = AddDashboardViewersForm(
+            data={},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert not form.is_valid()
+        assert "emails" in form.errors
+
+    def test_existing_viewers_filtered_out(self, dashboard, shared_by_user, existing_viewer):
+        """Form filters out emails that are already viewers."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "existing@example.com", "emails[1]": "new@example.com"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert form.is_valid(), form.errors
+        assert form.cleaned_data["emails"] == ["new@example.com"]
+
+    def test_all_existing_viewers_error(self, dashboard, shared_by_user, existing_viewer):
+        """Form errors when all submitted emails are existing viewers."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "existing@example.com"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert not form.is_valid()
+        assert "All email addresses entered already have access" in str(form.errors)
+
+    def test_save_creates_viewer_access(
+        self, dashboard, shared_by_user, ExtendedAuth0, govuk_notify_send_email
+    ):
+        """save() creates DashboardViewerAccess records and notifies viewers."""
+        form = AddDashboardViewersForm(
+            data={"emails[0]": "newviewer@example.com"},
+            dashboard=dashboard,
+            shared_by=shared_by_user,
+        )
+        assert form.is_valid(), form.errors
+        emails, not_notified = form.save()
+
+        assert emails == ["newviewer@example.com"]
+        assert not_notified == []
+        assert DashboardViewerAccess.objects.filter(
+            dashboard=dashboard,
+            viewer__email="newviewer@example.com",
+            shared_by=shared_by_user,
+        ).exists()
+        govuk_notify_send_email.assert_called_once()

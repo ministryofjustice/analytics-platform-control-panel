@@ -337,24 +337,14 @@ urlpatterns = [
         name="revoke-dashboard-admin",
     ),
     path(
-        "quicksight/dashboards/<int:pk>/customers/paginate/<int:page_no>/",
-        views.DashboardCustomers.as_view(),
-        name="dashboard-customers",
+        "quicksight/dashboards/<int:pk>/viewers/<int:viewer_id>/revoke/",
+        views.RevokeDashboardViewer.as_view(),
+        name="revoke-dashboard-viewer",
     ),
     path(
         "quicksight/dashboards/<int:pk>/customers/add/",
         views.AddDashboardCustomers.as_view(),
         name="add-dashboard-customers",
-    ),
-    path(
-        "quicksight/dashboards/<int:pk>/customers/remove/",
-        views.RemoveDashboardCustomerById.as_view(),
-        name="remove-dashboard-customer",
-    ),
-    path(
-        "quicksight/dashboards/<int:pk>/customers/remove/email/",
-        views.RemoveDashboardCustomerByEmail.as_view(),
-        name="remove-dashboard-customer-by-email",
     ),
     path(
         "quicksight/dashboards/<int:pk>/domain/add/",
