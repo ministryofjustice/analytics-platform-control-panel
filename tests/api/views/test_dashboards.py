@@ -32,7 +32,7 @@ def users(users):
                 username="dashboard_admin",
                 justice_email="dashboard.admin@justice.gov.uk",
             ),
-        }
+        },
     )
     return users
 
@@ -53,14 +53,14 @@ def dashboard(users, ExtendedAuth0):
 
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
-    viewer = baker.make("api.DashboardViewer", email=users["dashboard_admin"].justice_email)
+    viewer = baker.make("api.DashboardViewer", email="dashboard.viewer@justice.gov.uk")
     baker.make("api.DashboardViewerAccess", dashboard=dashboard, viewer=viewer)
     return viewer
 
 
 @pytest.fixture
 def dashboard_domain(dashboard):
-    domain = baker.make("api.DashboardDomain", name="justice.gov.uk")
+    domain = baker.make("api.DashboardDomain", name="cica.gov.uk")
     baker.make("api.DashboardDomainAccess", dashboard=dashboard, domain=domain)
     return domain
 
@@ -69,7 +69,8 @@ def dashboard_domain(dashboard):
     "email, expected_status, expected_count",
     [
         ("dashboard.admin@justice.gov.uk", status.HTTP_200_OK, 1),
-        ("domain.viewer@justice.gov.uk", status.HTTP_200_OK, 1),
+        ("dashboard.viewer@justice.gov.uk", status.HTTP_200_OK, 1),
+        ("domain.viewer@cica.gov.uk", status.HTTP_200_OK, 1),
         ("no.access@test.gov.uk", status.HTTP_200_OK, 0),
         (None, status.HTTP_400_BAD_REQUEST, 0),
     ],

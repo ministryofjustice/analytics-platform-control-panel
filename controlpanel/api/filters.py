@@ -73,11 +73,13 @@ class DashboardFilter(DjangoFilterBackend):
         if is_superuser(request.user):
             return queryset
 
-        viewer_email = request.query_params.get("email")
-        domain = get_domain_from_email(viewer_email)
+        email = request.query_params.get("email")
+        domain = get_domain_from_email(email)
 
         return queryset.filter(
-            Q(viewers__email=viewer_email) | Q(whitelist_domains__name=domain)
+            Q(viewers__email=email)
+            | Q(whitelist_domains__name=domain)
+            | Q(admins__justice_email=email)
         ).distinct()
 
 

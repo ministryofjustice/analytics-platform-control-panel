@@ -323,7 +323,7 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["dashboard"] = self.dashboard
-        kwargs["added_by"] = self.request.user
+        kwargs["request"] = self.request
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -332,19 +332,11 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         return context
 
     def form_valid(self, form):
-        dashboard = self.dashboard
-        added_users = form.save()
-        absolute_url = self.request.build_absolute_uri(dashboard.get_absolute_url())
-        dashboard.notify_admin_added(
-            new_admins=added_users, admin=self.request.user, manage_url=absolute_url
-        )
+        form.save()
 
-        emails = [user.justice_email for user in added_users if user.justice_email]
-        dashboard.add_viewers(emails, self.request.user)
-
-        for user in added_users:
+        for user in form.cleaned_data["users"]:
             log.info(
-                f"{self.request.user.justice_email} granted admin access to {user.justice_email}",
+                f"{self.request.user.justice_email} granted {self.dashboard.name} admin access to {user.justice_email}",  # noqa
                 audit="dashboard_audit",
             )
 
