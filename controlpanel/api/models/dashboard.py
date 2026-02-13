@@ -7,7 +7,7 @@ from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
 from controlpanel.api.aws import AWSQuicksight, arn
-from controlpanel.api.exceptions import DeleteCustomerError
+from controlpanel.api.exceptions import DeleteViewerError
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
 from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 
@@ -77,7 +77,7 @@ class Dashboard(TimeStampedModel):
         return reverse(viewname, kwargs={"pk": self.pk, **kwargs})
 
     def get_absolute_add_viewers_url(self):
-        return self.get_absolute_url(viewname="add-dashboard-customers")
+        return self.get_absolute_url(viewname="add-dashboard-viewers")
 
     def get_absolute_delete_url(self):
         return self.get_absolute_url(viewname="delete-dashboard")
@@ -108,7 +108,7 @@ class Dashboard(TimeStampedModel):
     def is_admin(self, user):
         return self.admins.filter(pk=user.pk).exists()
 
-    def add_customers(self, emails, shared_by):
+    def add_viewers(self, emails, shared_by):
         """
         Add viewers to the dashboard and notify them.
 
@@ -195,21 +195,6 @@ class Dashboard(TimeStampedModel):
                 "revoked_by": admin.justice_email,
             },
         )
-
-    def delete_customers_by_id(self, ids, admin):
-        viewers = DashboardViewer.objects.filter(pk__in=ids)
-        if not viewers:
-            raise DeleteCustomerError(f"Customers with IDs {ids} not found.")
-
-        self.delete_viewers(viewers, admin=admin)
-        return viewers
-
-    def delete_customer_by_email(self, email, admin):
-        viewers = DashboardViewer.objects.filter(email=email)
-        if not viewers:
-            raise DeleteCustomerError(f"Customer with email {email} not found.")
-
-        self.delete_viewers(viewers, admin=admin)
 
     def get_embed_url(self):
         """

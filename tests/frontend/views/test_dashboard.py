@@ -153,15 +153,15 @@ def revoke_viewer_post(client, dashboard, users, dashboard_domain, dashboard_vie
     return client.post(reverse("revoke-dashboard-viewer", kwargs=kwargs))
 
 
-def add_customers_get(client, dashboard, *args):
-    return client.get(reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}))
+def add_viewers_get(client, dashboard, *args):
+    return client.get(dashboard.get_absolute_add_viewers_url())
 
 
-def add_customers_post(client, dashboard, *args):
+def add_viewers_post(client, dashboard, *args):
     data = {
         "emails[0]": "test@example.com",
     }
-    return client.post(reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}), data)
+    return client.post(dashboard.get_absolute_add_viewers_url(), data)
 
 
 def grant_domain_access_get(client, dashboard, users, dashboard_domain, *args):
@@ -248,12 +248,12 @@ def update_description_post(client, dashboard, users, *args):
         (revoke_viewer_post, "superuser", status.HTTP_302_FOUND),
         (revoke_viewer_post, "dashboard_admin", status.HTTP_302_FOUND),
         (revoke_viewer_post, "normal_user", status.HTTP_403_FORBIDDEN),
-        (add_customers_get, "superuser", status.HTTP_200_OK),
-        (add_customers_get, "dashboard_admin", status.HTTP_200_OK),
-        (add_customers_get, "normal_user", status.HTTP_403_FORBIDDEN),
-        (add_customers_post, "superuser", status.HTTP_302_FOUND),
-        (add_customers_post, "dashboard_admin", status.HTTP_302_FOUND),
-        (add_customers_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (add_viewers_get, "superuser", status.HTTP_200_OK),
+        (add_viewers_get, "dashboard_admin", status.HTTP_200_OK),
+        (add_viewers_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (add_viewers_post, "superuser", status.HTTP_302_FOUND),
+        (add_viewers_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (add_viewers_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (grant_domain_access_get, "superuser", status.HTTP_200_OK),
         (grant_domain_access_get, "dashboard_admin", status.HTTP_200_OK),
         (grant_domain_access_get, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -335,11 +335,11 @@ def test_list_dashboards_no_success_message(client, users):
     assert response.context_data["success_message"] is None
 
 
-def add_customer_success(client, response):
+def add_viewer_success(client, response):
     return "success_message" in client.session
 
 
-def add_customer_form_error(client, response):
+def add_viewer_form_error(client, response):
     # New form shows errors on the same page (200 response) instead of redirecting
     return (
         response.status_code == 200
@@ -351,13 +351,13 @@ def add_customer_form_error(client, response):
 @pytest.mark.parametrize(
     "emails_data, expected_response, count",
     [
-        ({"emails[0]": "foo@example.com"}, add_customer_success, 1),
-        ({"emails[0]": "FOO@example.com"}, add_customer_success, 1),
-        ({"emails[0]": "foo@example.com", "emails[1]": "bar@example.com"}, add_customer_success, 2),
-        ({"emails[0]": "FOO@EXAMPLE.COM", "emails[1]": "Bar@example.com"}, add_customer_success, 2),
-        ({"emails[0]": "foobar"}, add_customer_form_error, 0),
-        ({"emails[0]": "foo@example.com", "emails[1]": "foobar"}, add_customer_form_error, 0),
-        ({}, add_customer_form_error, 0),
+        ({"emails[0]": "foo@example.com"}, add_viewer_success, 1),
+        ({"emails[0]": "FOO@example.com"}, add_viewer_success, 1),
+        ({"emails[0]": "foo@example.com", "emails[1]": "bar@example.com"}, add_viewer_success, 2),
+        ({"emails[0]": "FOO@EXAMPLE.COM", "emails[1]": "Bar@example.com"}, add_viewer_success, 2),
+        ({"emails[0]": "foobar"}, add_viewer_form_error, 0),
+        ({"emails[0]": "foo@example.com", "emails[1]": "foobar"}, add_viewer_form_error, 0),
+        ({}, add_viewer_form_error, 0),
     ],
     ids=[
         "single-valid-email",
@@ -369,7 +369,7 @@ def add_customer_form_error(client, response):
         "no-emails",
     ],
 )
-def test_add_customers(
+def test_add_viewers(
     client,
     dashboard,
     dashboard_viewer,
@@ -380,16 +380,13 @@ def test_add_customers(
     govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
-    response = client.post(
-        reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
-        emails_data,
-    )
+    response = client.post(dashboard.get_absolute_add_viewers_url(), emails_data)
     assert expected_response(client, response)
     emails = [v.strip().lower() for v in emails_data.values() if v]
     assert dashboard.viewers.filter(email__in=emails).count() == count
 
 
-def test_add_customers_fail_notify(
+def test_add_viewers_fail_notify(
     client,
     dashboard,
     dashboard_viewer,
@@ -401,10 +398,7 @@ def test_add_customers_fail_notify(
         "controlpanel.api.models.dashboard.govuk_notify_send_email"
     ) as govuk_notify_send_email:
         govuk_notify_send_email.side_effect = GovukNotifyEmailError()
-        response = client.post(
-            reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
-            data,
-        )
+        response = client.post(dashboard.get_absolute_add_viewers_url(), data)
         messages = [str(m) for m in get_messages(response.wsgi_request)]
         assert (
             "Failed to notify test.user@justice.gov.uk. "

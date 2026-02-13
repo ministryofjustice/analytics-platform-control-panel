@@ -188,7 +188,7 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
             )
 
             # Add any additional viewers from the emails list
-            not_notified = dashboard.add_customers(preview_data.get("emails", []), user)
+            not_notified = dashboard.add_viewers(preview_data.get("emails", []), user)
             if not_notified:
                 messages.error(
                     request,
@@ -349,7 +349,7 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         )
 
         emails = [user.justice_email for user in added_users if user.justice_email]
-        dashboard.add_customers(emails, self.request.user)
+        dashboard.add_viewers(emails, self.request.user)
 
         for user in added_users:
             log.info(
@@ -463,8 +463,8 @@ class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, Del
 
 
 @method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
-    permission_required = "api.add_dashboard_customer"
+class AddDashboardViewers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
+    permission_required = "api.add_dashboard_viewer"
     template_name = "dashboard-add-viewers.html"
     form_class = AddDashboardViewersForm
 
