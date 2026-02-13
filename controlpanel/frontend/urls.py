@@ -327,7 +327,7 @@ urlpatterns = [
         name="update-dashboard-description",
     ),
     path(
-        "quicksight/dashboards/<int:pk>/admins/",
+        "quicksight/dashboards/<int:pk>/admins/add/",
         views.AddDashboardAdmin.as_view(),
         name="add-dashboard-admin",
     ),
