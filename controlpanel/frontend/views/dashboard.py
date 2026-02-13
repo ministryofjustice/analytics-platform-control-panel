@@ -37,7 +37,6 @@ from controlpanel.utils import build_success_message, feature_flag_required
 log = structlog.getLogger(__name__)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "dashboards"
     model = Dashboard
@@ -55,7 +54,6 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
         return context
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AdminDashboardList(DashboardList):
     template_name = "dashboard-admin-list.html"
 
@@ -66,7 +64,6 @@ class AdminDashboardList(DashboardList):
         return Dashboard.objects.all().prefetch_related("admins")
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = RegisterDashboardForm
     model = Dashboard
@@ -119,7 +116,6 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         return HttpResponseRedirect(reverse_lazy("preview-dashboard"))
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = "dashboard-register-preview.html"
 
@@ -188,7 +184,7 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
             )
 
             # Add any additional viewers from the emails list
-            not_notified = dashboard.add_customers(preview_data.get("emails", []), user)
+            not_notified = dashboard.add_viewers(preview_data.get("emails", []), user)
             if not_notified:
                 messages.error(
                     request,
@@ -210,7 +206,6 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
         return HttpResponseRedirect(reverse_lazy("list-dashboards"))
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class CancelDashboardRegistration(OIDCLoginRequiredMixin, RedirectView):
     url = reverse_lazy("list-dashboards")
 
@@ -219,7 +214,6 @@ class CancelDashboardRegistration(OIDCLoginRequiredMixin, RedirectView):
         return super().get(request, *args, **kwargs)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "dashboard"
     model = Dashboard
@@ -258,7 +252,6 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         return context
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Dashboard
     permission_required = "api.destroy_dashboard"
@@ -297,7 +290,6 @@ class UpdateDashboardBaseView(
         return super().post(request, *args, **kwargs)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardUpdateDescription(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     context_object_name = "dashboard"
     model = Dashboard
@@ -315,7 +307,6 @@ class DashboardUpdateDescription(OIDCLoginRequiredMixin, PermissionRequiredMixin
         return HttpResponseRedirect(self.get_success_url())
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
     permission_required = "api.add_dashboard_admin"
     template_name = "dashboard-add-admin.html"
@@ -349,7 +340,7 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         )
 
         emails = [user.justice_email for user in added_users if user.justice_email]
-        dashboard.add_customers(emails, self.request.user)
+        dashboard.add_viewers(emails, self.request.user)
 
         for user in added_users:
             log.info(
@@ -368,7 +359,6 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         return f"{self.dashboard.get_absolute_url()}#admins"
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.revoke_dashboard_admin"
     model = DashboardAdminAccess
@@ -415,7 +405,6 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
         return HttpResponseRedirect(self.get_success_url())
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.revoke_dashboard_viewer"
     model = DashboardViewerAccess
@@ -462,9 +451,8 @@ class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, Del
         return HttpResponseRedirect(self.get_success_url())
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
-    permission_required = "api.add_dashboard_customer"
+class AddDashboardViewers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
+    permission_required = "api.add_dashboard_viewer"
     template_name = "dashboard-add-viewers.html"
     form_class = AddDashboardViewersForm
 
@@ -516,7 +504,6 @@ class AddDashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, For
         return f"{self.dashboard.get_absolute_url()}#viewers"
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class GrantDomainAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
@@ -565,7 +552,6 @@ class GrantDomainAccess(
         return super().form_valid(form)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.remove_dashboard_domain"
     model = DashboardDomainAccess

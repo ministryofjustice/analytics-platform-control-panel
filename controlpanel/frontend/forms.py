@@ -820,7 +820,7 @@ class AddDashboardViewersForm(ErrorSummaryMixin, forms.Form):
     def save(self):
         """Add viewers to the dashboard and return tuple of (added_emails, not_notified)."""
         emails = self.cleaned_data["emails"]
-        not_notified = self.dashboard.add_customers(emails, self.shared_by)
+        not_notified = self.dashboard.add_viewers(emails, self.shared_by)
         return emails, not_notified
 
 

@@ -42,7 +42,7 @@ from controlpanel.frontend.views.app import (
 # First-party/Local
 from controlpanel.frontend.views.dashboard import (
     AddDashboardAdmin,
-    AddDashboardCustomers,
+    AddDashboardViewers,
     AdminDashboardList,
     CancelDashboardRegistration,
     DashboardDetail,
