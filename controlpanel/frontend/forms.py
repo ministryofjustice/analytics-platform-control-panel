@@ -12,6 +12,7 @@ from django.core.validators import RegexValidator, validate_email
 from django.db.models import Q
 
 # First-party/Local
+from controlpanel import utils
 from controlpanel.api import validators
 from controlpanel.api.aws import AWSIdentityStore, AWSQuicksight
 from controlpanel.api.cluster import AWSRoleCategory
@@ -34,7 +35,6 @@ from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.tool import ToolDeployment
-from controlpanel.utils import build_tool_url
 
 CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -723,7 +723,7 @@ class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.dashboard = kwargs.pop("dashboard")
-        self.added_by = kwargs.pop("added_by")
+        self.request = kwargs.pop("request")
         super().__init__(*args, **kwargs)
         self.fields["users"].items = self.get_user_options()
 
@@ -765,18 +765,27 @@ class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
         return new_admins
 
     def save(self):
-        """Create DashboardAdminAccess records and return list of added users."""
-        added_users = []
-
+        """Create DashboardAdminAccess records, send notify email and return list of added users."""
+        absolute_url = self.request.build_absolute_uri(self.dashboard.get_absolute_url())
+        added_by = self.request.user
         for user in self.cleaned_data["users"]:
             DashboardAdminAccess.objects.create(
                 dashboard=self.dashboard,
                 user=user,
-                added_by=self.added_by,
+                added_by=added_by,
             )
-            added_users.append(user)
 
-        return added_users
+            utils.govuk_notify_send_email(
+                email_address=user.justice_email,
+                template_id=settings.NOTIFY_DASHBOARD_ADMIN_ADDED_TEMPLATE_ID,
+                personalisation={
+                    "dashboard": self.dashboard.name,
+                    "dashboard_admin": added_by.justice_email,
+                    "dashboard_description": self.dashboard.description,
+                    "dashboard_manage_url": absolute_url,
+                },
+            )
+        return self.cleaned_data["users"]
 
 
 class AddDashboardViewersForm(ErrorSummaryMixin, forms.Form):
@@ -1221,7 +1230,9 @@ class ToolChoice(forms.Select):
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
-            option["attrs"]["data-tool-url"] = build_tool_url(tool=value.instance, user=self.user)
+            option["attrs"]["data-tool-url"] = utils.build_tool_url(
+                tool=value.instance, user=self.user
+            )
 
         if value and selected:
             option["attrs"]["label"] = f"{label} (installed)"

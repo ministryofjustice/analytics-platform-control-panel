@@ -1,15 +1,13 @@
 # Third-party
-import sentry_sdk
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django_extensions.db.models import TimeStampedModel
 
 # First-party/Local
+from controlpanel import utils
 from controlpanel.api.aws import AWSQuicksight, arn
-from controlpanel.api.exceptions import DeleteViewerError
 from controlpanel.api.models.dashboard_viewer import DashboardViewer
-from controlpanel.utils import GovukNotifyEmailError, govuk_notify_send_email
 
 
 class DashboardAdminAccess(TimeStampedModel):
@@ -132,7 +130,7 @@ class Dashboard(TimeStampedModel):
             )
 
             try:
-                govuk_notify_send_email(
+                utils.govuk_notify_send_email(
                     email_address=email,
                     template_id=settings.NOTIFY_DASHBOARD_ACCESS_TEMPLATE_ID,
                     personalisation={
@@ -143,7 +141,7 @@ class Dashboard(TimeStampedModel):
                         "dashboard_description": self.description,
                     },
                 )
-            except GovukNotifyEmailError:
+            except utils.GovukNotifyEmailError:
                 not_notified.append(email)
 
         return not_notified
@@ -156,7 +154,7 @@ class Dashboard(TimeStampedModel):
         self.viewers.remove(*viewers)
 
         for email in emails:
-            govuk_notify_send_email(
+            utils.govuk_notify_send_email(
                 email_address=email,
                 template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,
                 personalisation={
@@ -167,27 +165,13 @@ class Dashboard(TimeStampedModel):
                 },
             )
 
-    def notify_admin_added(self, new_admins, admin, manage_url):
-
-        for new_admin in new_admins:
-            govuk_notify_send_email(
-                email_address=new_admin.justice_email,
-                template_id=settings.NOTIFY_DASHBOARD_ADMIN_ADDED_TEMPLATE_ID,
-                personalisation={
-                    "dashboard": self.name,
-                    "dashboard_admin": admin.justice_email,
-                    "dashboard_description": self.description,
-                    "dashboard_manage_url": manage_url,
-                },
-            )
-
     def delete_admin(self, user, admin):
         """
         Remove the given admin from the dashboard and notifies them
         """
         self.admins.remove(user)
 
-        govuk_notify_send_email(
+        utils.govuk_notify_send_email(
             email_address=user.justice_email,
             template_id=settings.NOTIFY_DASHBOARD_ADMIN_REMOVED_TEMPLATE_ID,
             personalisation={

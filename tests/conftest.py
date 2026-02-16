@@ -1,6 +1,6 @@
 # Standard library
 import uuid
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import mock_open, patch
 
 # Third-party
 import pytest
@@ -11,7 +11,6 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api import auth0
-from controlpanel.api.cluster import ToolDeploymentConflictError
 from controlpanel.api.helm import (
     HelmError,
     HelmOperationInProgressError,
@@ -282,5 +281,5 @@ def feedback(db):
 
 @pytest.fixture()
 def govuk_notify_send_email():
-    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
+    with patch("controlpanel.utils.govuk_notify_send_email") as mock_send_email:
         yield mock_send_email

@@ -42,7 +42,11 @@ class DashboardViewSet(ReadOnlyModelViewSet):
 
         dashboard = Dashboard.objects.filter(
             Q(quicksight_id=quicksight_id)
-            & (Q(viewers__email=viewer_email) | Q(whitelist_domains__name=domain))
+            & (
+                Q(viewers__email=viewer_email)
+                | Q(whitelist_domains__name=domain)
+                | Q(admins__justice_email=viewer_email)
+            )
         ).first()
 
         if not dashboard:
