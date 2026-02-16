@@ -12,6 +12,7 @@ from django.core.validators import RegexValidator, validate_email
 from django.db.models import Q
 
 # First-party/Local
+from controlpanel import utils
 from controlpanel.api import validators
 from controlpanel.api.aws import AWSIdentityStore, AWSQuicksight
 from controlpanel.api.cluster import AWSRoleCategory
@@ -34,7 +35,6 @@ from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.tool import ToolDeployment
-from controlpanel.utils import build_tool_url, govuk_notify_send_email
 
 CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
 
@@ -775,7 +775,7 @@ class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
                 added_by=added_by,
             )
 
-            govuk_notify_send_email(
+            utils.govuk_notify_send_email(
                 email_address=user.justice_email,
                 template_id=settings.NOTIFY_DASHBOARD_ADMIN_ADDED_TEMPLATE_ID,
                 personalisation={
@@ -785,6 +785,7 @@ class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
                     "dashboard_manage_url": absolute_url,
                 },
             )
+        return self.cleaned_data["users"]
 
 
 class AddDashboardViewersForm(ErrorSummaryMixin, forms.Form):
@@ -1229,7 +1230,9 @@ class ToolChoice(forms.Select):
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
-            option["attrs"]["data-tool-url"] = build_tool_url(tool=value.instance, user=self.user)
+            option["attrs"]["data-tool-url"] = utils.build_tool_url(
+                tool=value.instance, user=self.user
+            )
 
         if value and selected:
             option["attrs"]["label"] = f"{label} (installed)"

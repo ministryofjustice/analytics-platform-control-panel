@@ -391,19 +391,18 @@ def test_add_viewers_fail_notify(
     dashboard,
     dashboard_viewer,
     users,
+    govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
     data = {"emails[0]": "test.user@justice.gov.uk"}
-    with patch(
-        "controlpanel.api.models.dashboard.govuk_notify_send_email"
-    ) as govuk_notify_send_email:
-        govuk_notify_send_email.side_effect = GovukNotifyEmailError()
-        response = client.post(dashboard.get_absolute_add_viewers_url(), data)
-        messages = [str(m) for m in get_messages(response.wsgi_request)]
-        assert (
-            "Failed to notify test.user@justice.gov.uk. "
-            "You may wish to email them your dashboard link."
-        ) in messages
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
+
+    response = client.post(dashboard.get_absolute_add_viewers_url(), data)
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert (
+        "Failed to notify test.user@justice.gov.uk. "
+        "You may wish to email them your dashboard link."
+    ) in messages
 
 
 def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
@@ -971,7 +970,9 @@ def test_revoke_viewer_fail(client, dashboard, users, govuk_notify_send_email):
     govuk_notify_send_email.assert_not_called()
 
 
-def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):
+def test_preview_dashboard_confirm_creates_dashboard_fail_notify(
+    client, users, ExtendedAuth0, govuk_notify_send_email
+):
     """Confirming preview creates dashboard but shows error if notify fails."""
     client.force_login(users["superuser"])
     session = client.session
@@ -984,11 +985,10 @@ def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, 
     }
     session.save()
 
-    url = reverse("preview-dashboard")
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
 
-    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
-        mock_send_email.side_effect = GovukNotifyEmailError()
-        response = client.post(url)
+    url = reverse("preview-dashboard")
+    response = client.post(url)
 
     # Dashboard should still be created
     dashboard = Dashboard.objects.get(quicksight_id="confirm-123")

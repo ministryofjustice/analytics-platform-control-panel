@@ -3,6 +3,7 @@ from unittest import mock
 
 # Third-party
 import pytest
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from django.http import QueryDict
 from django.urls import reverse
@@ -11,7 +12,12 @@ from model_bakery import baker
 # First-party/Local
 from controlpanel.api import aws
 from controlpanel.api.github import RepositoryNotFound
-from controlpanel.api.models import DashboardViewer, DashboardViewerAccess, S3Bucket
+from controlpanel.api.models import (
+    DashboardAdminAccess,
+    DashboardViewer,
+    DashboardViewerAccess,
+    S3Bucket,
+)
 from controlpanel.api.models.user import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
 from controlpanel.frontend import forms
 from controlpanel.frontend.forms import (
@@ -717,22 +723,16 @@ class TestMultiUserFieldClean:
         assert field.index_errors == {1: "User not found"}
 
 
+@pytest.mark.django_db
 class TestAddDashboardAdminForm:
     """Tests for AddDashboardAdminForm."""
 
     @pytest.fixture
-    def dashboard(self, db):
-        # Third-party
-        from model_bakery import baker
-
+    def dashboard(self):
         return baker.make("api.Dashboard")
 
     @pytest.fixture
-    def quicksight_user(self, db):
-        # Third-party
-        from django.contrib.auth.models import Permission
-        from model_bakery import baker
-
+    def quicksight_user(self):
         user = baker.make("api.User", auth0_id="github|qs_user")
         user.user_permissions.add(
             Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION)
@@ -740,99 +740,76 @@ class TestAddDashboardAdminForm:
         return user
 
     @pytest.fixture
-    def non_quicksight_user(self, db):
-        # Third-party
-        from model_bakery import baker
-
+    def non_quicksight_user(self):
         return baker.make("api.User", auth0_id="github|normal_user")
 
     @pytest.fixture
-    def admin_user(self, db):
-        # Third-party
-        from model_bakery import baker
+    def admin_user(self, dashboard):
+        user = baker.make("api.User", auth0_id="github|admin")
+        user.user_permissions.add(
+            Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION)
+        )
+        dashboard.admins.add(user)
+        return user
 
-        return baker.make("api.User", auth0_id="github|admin")
+    @pytest.fixture
+    def form_kwargs(self, rf, dashboard, admin_user):
+        request = rf.get(dashboard.get_absolute_add_admins_url())
+        request.user = admin_user
+        return {"dashboard": dashboard, "request": request}
 
     def test_get_user_options_returns_quicksight_users(
-        self, dashboard, quicksight_user, non_quicksight_user, admin_user
+        self, quicksight_user, non_quicksight_user, form_kwargs
     ):
         """get_user_options returns only quicksight users not already admins."""
-        form = AddDashboardAdminForm(dashboard=dashboard, added_by=admin_user)
+        form = AddDashboardAdminForm(**form_kwargs)
         options = list(form.get_user_options())
 
         assert quicksight_user in options
         assert non_quicksight_user not in options
 
-    def test_get_user_options_excludes_existing_admins(
-        self, dashboard, quicksight_user, admin_user
-    ):
+    def test_get_user_options_excludes_existing_admins(self, admin_user, form_kwargs):
         """get_user_options excludes users who are already admins."""
-        # Third-party
-        from django.contrib.auth.models import Permission
-
-        # Make admin_user a quicksight user and add as admin
-        admin_user.user_permissions.add(
-            Permission.objects.get(codename=QUICKSIGHT_EMBED_AUTHOR_PERMISSION)
-        )
-        dashboard.admins.add(admin_user)
-
-        form = AddDashboardAdminForm(dashboard=dashboard, added_by=admin_user)
+        form = AddDashboardAdminForm(**form_kwargs)
         options = list(form.get_user_options())
 
-        assert quicksight_user in options
         assert admin_user not in options
 
-    def test_clean_users_rejects_non_quicksight_users(
-        self, dashboard, quicksight_user, non_quicksight_user, admin_user
-    ):
+    def test_clean_users_rejects_non_quicksight_users(self, non_quicksight_user, form_kwargs):
         """clean_users rejects users who are not quicksight users."""
         form = AddDashboardAdminForm(
+            **form_kwargs,
             data={"users[0]": non_quicksight_user.auth0_id},
-            dashboard=dashboard,
-            added_by=admin_user,
         )
         assert not form.is_valid()
         assert "One or more selected users cannot be added as admins" in str(form.errors)
 
-    def test_clean_users_rejects_existing_admins(self, dashboard, quicksight_user, admin_user):
-        """clean_users rejects users who are already admins.
-
-        Note: Existing admins are excluded from get_user_options(), so they
-        fail the 'cannot be added as admins' validation check.
-        """
-        # First-party/Local
-        from controlpanel.api.models import DashboardAdminAccess
-
-        DashboardAdminAccess.objects.create(
-            dashboard=dashboard, user=quicksight_user, added_by=admin_user
-        )
-
+    def test_clean_users_rejects_existing_admins(self, admin_user, form_kwargs):
+        """clean_users rejects users who are already admins."""
         form = AddDashboardAdminForm(
-            data={"users[0]": quicksight_user.auth0_id},
-            dashboard=dashboard,
-            added_by=admin_user,
+            **form_kwargs,
+            data={"users[0]": admin_user.auth0_id},
         )
         assert not form.is_valid()
         assert "One or more selected users cannot be added as admins" in str(form.errors)
 
-    def test_save_creates_dashboard_admin_access(self, dashboard, quicksight_user, admin_user):
+    def test_save_creates_dashboard_admin_access(
+        self, dashboard, quicksight_user, admin_user, form_kwargs, govuk_notify_send_email
+    ):
         """save() creates DashboardAdminAccess records."""
-        # First-party/Local
-        from controlpanel.api.models import DashboardAdminAccess
-
         form = AddDashboardAdminForm(
+            **form_kwargs,
             data={"users[0]": quicksight_user.auth0_id},
-            dashboard=dashboard,
-            added_by=admin_user,
         )
         assert form.is_valid(), form.errors
-        added_users = form.save()
+        new_admins = form.save()
 
-        assert len(added_users) == 1
-        assert added_users[0] == quicksight_user
+        assert len(new_admins) == 1
+        assert new_admins[0] == quicksight_user
         assert DashboardAdminAccess.objects.filter(
             dashboard=dashboard, user=quicksight_user, added_by=admin_user
         ).exists()
+        govuk_notify_send_email.assert_called_once()
 
 
 class TestAddDashboardViewersForm:

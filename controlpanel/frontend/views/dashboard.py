@@ -332,9 +332,9 @@ class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormVie
         return context
 
     def form_valid(self, form):
-        form.save()
+        new_admins = form.save()
 
-        for user in form.cleaned_data["users"]:
+        for user in new_admins:
             log.info(
                 f"{self.request.user.justice_email} granted {self.dashboard.name} admin access to {user.justice_email}",  # noqa
                 audit="dashboard_audit",

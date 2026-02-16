@@ -108,13 +108,19 @@ def test_list(
     "email, embed_url, user_arn, expected_status",
     [
         (
-            "dashboard.admin@justice.gov.uk",
+            "dashboard.viewer@justice.gov.uk",
             "https://quicksight-embed-url-viewer",
             "some:viewer:arn",
             status.HTTP_200_OK,
         ),
         (
-            "domain.viewer@justice.gov.uk",
+            "dashboard.admin@justice.gov.uk",
+            "https://quicksight-embed-url-viewer",
+            "some:admin:arn",
+            status.HTTP_200_OK,
+        ),
+        (
+            "domain.viewer@cica.gov.uk",
             "https://quicksight-embed-url-domain",
             "some:domain:arn",
             status.HTTP_200_OK,
