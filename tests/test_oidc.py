@@ -5,10 +5,27 @@ from unittest.mock import Mock, patch
 import pytest
 from django.conf import settings
 from django.core.exceptions import SuspiciousOperation
+from model_bakery import baker
 from mozilla_django_oidc.views import OIDCAuthenticationCallbackView
 
 # First-party/Local
 from controlpanel.oidc import OIDCSubAuthenticationBackend, StateMismatchHandler
+
+
+@pytest.fixture
+def users(users):
+
+    user = baker.make(
+        "api.User",
+        auth0_id="github|update_user",
+        username="paul",
+        name="Paul Creamhouse",
+        email="Paul.Creamhouse@justice.gov.uk",
+        justice_email="Paul.Creamhouse@justice.gov.uk",
+        is_superuser=False,
+    )
+    users["user_to_update"] = user
+    return users
 
 
 @pytest.mark.parametrize(
@@ -54,6 +71,51 @@ def test_create_user(email, name, expected_name, expected_justice_email):
         )
         assert user.name == expected_name
         assert user.justice_email == expected_justice_email
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "email, name, expected_name, expected_email, expected_save_calls",
+    [
+        (
+            "Paul.Creamhouse@justice.gov.uk",
+            "Creamhouse, Paul",
+            "Paul Creamhouse",
+            "Paul.Creamhouse@justice.gov.uk",
+            0,
+        ),
+        (
+            "Paul.Creamhouse@justice.gov.uk",
+            "Test User",
+            "Test User",
+            "Paul.Creamhouse@justice.gov.uk",
+            1,
+        ),
+        ("email@example.com", "Paul Creamhouse", "Paul Creamhouse", "email@example.com", 1),
+        (None, "Paul Creamhouse", "Paul Creamhouse", "Paul.Creamhouse@justice.gov.uk", 0),
+        (
+            "Paul.Creamhouse@justice.gov.uk",
+            None,
+            "Paul Creamhouse",
+            "Paul.Creamhouse@justice.gov.uk",
+            0,
+        ),
+    ],
+)
+def test_update_user(users, email, name, expected_name, expected_email, expected_save_calls):
+    with patch("controlpanel.api.models.User.save") as user_save:
+        user = OIDCSubAuthenticationBackend().update_user(
+            users["user_to_update"],
+            {
+                "sub": "123",
+                settings.OIDC_FIELD_USERNAME: users["user_to_update"].username,
+                settings.OIDC_FIELD_EMAIL: email,
+                settings.OIDC_FIELD_NAME: name,
+            },
+        )
+        assert user.name == expected_name
+        assert user.email == expected_email
+        assert user_save.call_count == expected_save_calls
 
 
 @pytest.mark.django_db

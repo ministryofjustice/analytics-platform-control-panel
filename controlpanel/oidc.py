@@ -42,7 +42,7 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         """
         Normalise name to be in the format "Firstname Lastname"
         """
-        if "," in name:
+        if name and "," in name:
             parts = [part.strip() for part in name.split(",")]
             name = " ".join(reversed(parts))
         return name
@@ -63,13 +63,21 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         if user.username != claims.get(settings.OIDC_FIELD_USERNAME):
             return user
 
-        if user.email != claims.get(settings.OIDC_FIELD_EMAIL):
-            user.email = claims.get(settings.OIDC_FIELD_EMAIL)
-            user.save()
+        changed = False
+
+        email = claims.get(settings.OIDC_FIELD_EMAIL)
+        if email and user.email != email:
+            user.email = email
+            changed = True
+
         normalised_name = self.normalise_name(claims.get(settings.OIDC_FIELD_NAME))
-        if user.name != normalised_name:
+        if normalised_name and user.name != normalised_name:
             user.name = normalised_name
+            changed = True
+
+        if changed:
             user.save()
+
         return user
 
     def filter_users_by_claims(self, claims):
