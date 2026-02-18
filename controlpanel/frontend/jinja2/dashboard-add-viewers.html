@@ -50,16 +50,17 @@
                     "errorMessage": {"text": index_error} if index_error else None,
                     "value": email,
                   }) }}
+                  {% if (form.emails.value() or [""])|length > 1 %}
+                    <button type="button" class="govuk-button govuk-button--secondary moj-add-another__remove-button">Remove</button>
+                  {% endif %}
                 </div>
               {% endfor %}
-
             <div class="moj-button-action govuk-!-margin-top-4">
               <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
                 Add another email
               </button>
             </div>
           </div>
-
         </fieldset>
       </div>
 
