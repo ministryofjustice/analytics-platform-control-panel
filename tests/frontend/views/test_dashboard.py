@@ -941,6 +941,45 @@ def test_revoke_admin_fail(client, dashboard, users, govuk_notify_send_email):
     govuk_notify_send_email.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    "http_method",
+    ["get", "post"],
+    ids=["GET", "POST"],
+)
+def test_revoke_last_admin_fails(client, users, govuk_notify_send_email, http_method):
+    """Test that revoking the last admin from a dashboard returns 404."""
+    client.force_login(users["superuser"])
+
+    # Create a dashboard with only one admin
+    single_admin_dashboard = baker.make(
+        "api.Dashboard",
+        name="single-admin-dashboard",
+        quicksight_id="single-123",
+        created_by=users["dashboard_admin"],
+    )
+    single_admin_dashboard.admins.add(users["dashboard_admin"])
+
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": single_admin_dashboard.id, "user_id": users["dashboard_admin"].auth0_id},
+    )
+
+    # Make the request using the specified HTTP method
+    response = getattr(client, http_method)(url)
+
+    # Should return 404 since we can't revoke the last admin
+    assert response.status_code == 404
+
+    # Admin should still be there
+    assert (
+        single_admin_dashboard.admins.filter(auth0_id=users["dashboard_admin"].auth0_id).count()
+        == 1
+    )
+
+    # No notification should have been sent
+    govuk_notify_send_email.assert_not_called()
+
+
 def test_revoke_viewer_success(client, dashboard, dashboard_viewer, users, govuk_notify_send_email):
     client.force_login(users["superuser"])
     url = reverse(
