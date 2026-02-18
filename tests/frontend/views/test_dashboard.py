@@ -61,6 +61,7 @@ def dashboard(users, ExtendedAuth0):
     )
 
     dashboard.admins.add(users["dashboard_admin"])
+    dashboard.admins.add(users["superuser"])
     return dashboard
 
 
@@ -293,7 +294,7 @@ def test_permissions(
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list_dashboards, "superuser", 0),
+        (list_dashboards, "superuser", 1),
         (list_dashboards, "dashboard_admin", 1),
         (list_all, "superuser", NUM_DASHBOARDS),
     ],
@@ -968,6 +969,67 @@ def test_revoke_viewer_fail(client, dashboard, users, govuk_notify_send_email):
 
     assert response.status_code == 404
     govuk_notify_send_email.assert_not_called()
+
+
+def test_revoke_admin_notify_error(client, dashboard, users, govuk_notify_send_email):
+    """Test revoking admin but notify email fails."""
+    client.force_login(users["superuser"])
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
+
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["dashboard_admin"].auth0_id},
+    )
+    response = client.post(url)
+
+    # Admin should still be removed despite notification error
+    assert response.status_code == 302
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin rights for" in client.session["success_message"]["heading"]
+    assert dashboard.admins.filter(auth0_id=users["dashboard_admin"].auth0_id).count() == 0
+
+    # Check error message was shown
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert any(
+        "Failed to notify dashboard.admin@justice.gov.uk" in msg
+        and "their admin access has been removed" in msg
+        for msg in messages
+    )
+    govuk_notify_send_email.assert_called_once()
+
+
+def test_revoke_viewer_notify_error(
+    client, dashboard, dashboard_viewer, users, govuk_notify_send_email
+):
+    """Test revoking viewer but notify email fails."""
+    client.force_login(users["superuser"])
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
+
+    url = reverse(
+        "revoke-dashboard-viewer",
+        kwargs={"pk": dashboard.id, "viewer_id": dashboard_viewer.id},
+    )
+    response = client.post(url)
+
+    # Viewer should still be removed despite notification error
+    assert response.status_code == 302
+    assert (
+        response.url
+        == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#viewers"
+    )
+    assert "You have updated viewers for" in client.session["success_message"]["heading"]
+    assert dashboard.viewers.filter(pk=dashboard_viewer.id).count() == 0
+
+    # Check error message was shown
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert any(
+        f"Failed to notify {dashboard_viewer.email}" in msg
+        and "their viewer access has been removed" in msg
+        for msg in messages
+    )
+    govuk_notify_send_email.assert_called_once()
 
 
 def test_preview_dashboard_confirm_creates_dashboard_fail_notify(
