@@ -47,9 +47,15 @@
           Description
           <a class="govuk-link govuk-!-font-size-19 govuk-!-font-weight-regular govuk-!-margin-left-2" href="{{ dashboard.get_absolute_change_description_url() }}">Change</a>
         </h2>
+        {% if dashboard.description %}
         <p class="govuk-body">
           {{ dashboard.description }}
         </p>
+        {% else %}
+        <p class="govuk-body govuk-secondary-text-colour">
+          Add a description to help people understand what your dashboard shows.
+        </p>
+        {% endif %}
         <h2 class="govuk-heading-m">Dashboard URL</h2>
         <p class="govuk-body">
           <a href="{{ dashboard.url }}">{{ dashboard.url }}</a>
