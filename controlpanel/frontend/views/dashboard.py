@@ -2,7 +2,7 @@
 import structlog
 from django.contrib import messages
 from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -14,6 +14,7 @@ from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
+from controlpanel import utils
 from controlpanel.api import aws
 from controlpanel.api.models import (
     Dashboard,
@@ -361,9 +362,13 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
         return f"{res}#admins"
 
     def get_object(self, queryset=None):
+        dashboard = get_object_or_404(Dashboard, pk=self.kwargs["pk"])
+        if not dashboard.admins.count() > 1:
+            raise Http404("Dashboard has no admins that can be revoked")
+
         return get_object_or_404(
             DashboardAdminAccess.objects.select_related("dashboard", "user"),
-            dashboard__pk=self.kwargs["pk"],
+            dashboard__pk=dashboard.pk,
             user__pk=self.kwargs["user_id"],
         )
 
@@ -382,7 +387,16 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
         dashboard = self.object.dashboard
         user = self.object.user
 
-        dashboard.delete_admin(user=user, admin=self.request.user)
+        try:
+            dashboard.delete_admin(user=user, admin=self.request.user)
+        except utils.GovukNotifyEmailError:
+            messages.error(
+                self.request,
+                (
+                    f"Failed to notify {user.justice_email}. "
+                    "You may wish to email them to let them know their admin access has been removed."  # noqa
+                ),
+            )
 
         self.request.session["success_message"] = build_success_message(
             heading=f"You have updated admin rights for {dashboard.name}", message=None
@@ -428,7 +442,16 @@ class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, Del
         dashboard = self.object.dashboard
         viewer = self.object.viewer
 
-        dashboard.delete_viewers([viewer], admin=self.request.user)
+        try:
+            dashboard.delete_viewers([viewer], admin=self.request.user)
+        except utils.GovukNotifyEmailError:
+            messages.error(
+                self.request,
+                (
+                    f"Failed to notify {viewer.email}. "
+                    "You may wish to email them to let them know their viewer access has been removed."  # noqa
+                ),
+            )
 
         self.request.session["success_message"] = build_success_message(
             heading=f"You have updated viewers for {dashboard.name}", message=None

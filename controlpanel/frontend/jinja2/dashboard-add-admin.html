@@ -36,23 +36,30 @@
       <div class="govuk-form-group{% if users_field.errors %} govuk-form-group--error{% endif %}">
         <fieldset class="govuk-fieldset">
           <div data-module="moj-add-another">
-            <div class="moj-add-another__item">
-              {% call(user) autocomplete({
-                "name": users_field.name ~ "[0]",
-                "items": users_field.field.items,
-                "id": "id_" ~ users_field.name ~ "[0]",
-                "label": {"text": users_field.label, "classes": "govuk-label--s"},
-                "hint": {"text": users_field.help_text},
-                "formGroup": {"classes": "autocomplete--full-width"},
-                "attributes": {
-                  "data-name": users_field.name ~ "[%index%]",
-                  "data-id": "id_" ~ users_field.name ~ "[%index%]"
-                },
-                "errorMessage": {"html": users_field.errors | join(". ")} if users_field.errors else None,
-              }) %}
-                <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
-              {% endcall %}
-            </div>
+            {% for user_id in form.users.value() or [""] %}
+              {% set index_error = form.users.field.index_errors.get(loop.index0) %}
+              <div class="moj-add-another__item">
+                {% call(user) autocomplete({
+                  "name": users_field.name ~ "[" ~ loop.index0 ~ "]",
+                  "items": users_field.field.items,
+                  "id": "id_" ~ users_field.name ~ "[" ~ loop.index0 ~ "]",
+                  "label": {"text": users_field.label, "classes": "govuk-label--s"},
+                  "hint": {"text": users_field.help_text},
+                  "formGroup": {"classes": "autocomplete--full-width"},
+                  "attributes": {
+                    "data-name": users_field.name ~ "[%index%]",
+                    "data-id": "id_" ~ users_field.name ~ "[%index%]"
+                  },
+                  "errorMessage": {"text": index_error} if index_error else None,
+                  "value": user_id,
+                }) %}
+                  <option value="{{ user.auth0_id }}">{{ user_name(user) }}</option>
+                {% endcall %}
+                {% if (form.users.value() or [""])|length > 1 %}
+                <button type="button" class="govuk-button govuk-button--secondary moj-add-another__remove-button">Remove</button>
+                {% endif %}
+              </div>
+            {% endfor %}
 
             <div class="moj-button-action govuk-!-margin-top-4">
               <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">

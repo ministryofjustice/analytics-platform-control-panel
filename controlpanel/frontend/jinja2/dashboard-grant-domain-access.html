@@ -40,7 +40,7 @@
             <button type="submit" class="govuk-button govuk-!-margin-right-2">
               Add domain
             </button>
-            <a href="{{ url('manage-dashboard-sharing', kwargs={'pk': dashboard.id}) }}#domain-access" class="govuk-link">
+            <a href="{{ dashboard.get_absolute_url() }}#domain-access" class="govuk-link">
               Cancel
             </a>
           </div>
