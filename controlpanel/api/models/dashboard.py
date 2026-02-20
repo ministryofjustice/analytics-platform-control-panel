@@ -26,9 +26,6 @@ class DashboardAdminAccess(TimeStampedModel):
         ordering = ["-created"]
         verbose_name_plural = "dashboard admin access records"
 
-    def __str__(self):
-        return f"{self.user} admin access to {self.dashboard}"
-
 
 class DashboardViewerAccess(TimeStampedModel):
     dashboard = models.ForeignKey(
@@ -45,9 +42,6 @@ class DashboardViewerAccess(TimeStampedModel):
         ordering = ["-created"]
         verbose_name_plural = "dashboard viewer access records"
 
-    def __str__(self):
-        return f"{self.viewer} viewer access to {self.dashboard}"
-
 
 class DashboardDomainAccess(TimeStampedModel):
     dashboard = models.ForeignKey(
@@ -63,9 +57,6 @@ class DashboardDomainAccess(TimeStampedModel):
         db_table = "control_panel_api_dashboard_domain_access"
         ordering = ["-created"]
         verbose_name_plural = "dashboard domain access records"
-
-    def __str__(self):
-        return f"{self.domain} domain access to {self.dashboard}"
 
 
 class Dashboard(TimeStampedModel):

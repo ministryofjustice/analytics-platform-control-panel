@@ -234,20 +234,10 @@ class StatusPageEventAdmin(admin.ModelAdmin):
 
 
 class HistoricalDashboardAccessAdmin(admin.ModelAdmin):
-    """Admin for browsing dashboard access history including deletions."""
+    """Base admin for browsing dashboard access history including deletions."""
 
-    list_display = ("id", "dashboard", "history_type", "history_date", "history_user")
     list_filter = ("history_type", "history_date")
-    search_fields = ("dashboard__name",)
     ordering = ("-history_date",)
-    readonly_fields = (
-        "id",
-        "dashboard",
-        "history_type",
-        "history_date",
-        "history_user",
-        "history_change_reason",
-    )
 
     def has_add_permission(self, request):
         return False
@@ -262,95 +252,51 @@ class HistoricalDashboardAccessAdmin(admin.ModelAdmin):
 class HistoricalDashboardAdminAccessAdmin(HistoricalDashboardAccessAdmin):
     list_display = (
         "id",
+        "dashboard_id",
         "dashboard",
         "user",
-        "added_by",
         "history_type",
         "history_date",
         "history_user",
     )
-    search_fields = (
-        "dashboard__name",
-        "dashboard__quicksight_id",
-        "user__username",
-        "added_by__username",
-    )
-    readonly_fields = HistoricalDashboardAccessAdmin.readonly_fields + ("user", "added_by")
+    list_select_related = ("dashboard", "user", "history_user")
+    search_fields = ("dashboard__name", "user__username")
 
 
 class HistoricalDashboardViewerAccessAdmin(HistoricalDashboardAccessAdmin):
     list_display = (
         "id",
+        "dashboard_id",
         "dashboard",
         "viewer",
-        "shared_by",
         "history_type",
         "history_date",
         "history_user",
     )
-    search_fields = (
-        "dashboard__name",
-        "dashboard__quicksight_id",
-        "viewer__email",
-        "shared_by__username",
-    )
-    readonly_fields = HistoricalDashboardAccessAdmin.readonly_fields + ("viewer", "shared_by")
+    list_select_related = ("dashboard", "viewer", "history_user")
+    search_fields = ("dashboard__name", "viewer__email")
 
 
 class HistoricalDashboardDomainAccessAdmin(HistoricalDashboardAccessAdmin):
     list_display = (
         "id",
+        "dashboard_id",
         "dashboard",
         "domain",
-        "added_by",
         "history_type",
         "history_date",
         "history_user",
     )
-    search_fields = (
-        "dashboard__name",
-        "dashboard__quicksight_id",
-        "domain__name",
-        "added_by__username",
-    )
-    readonly_fields = HistoricalDashboardAccessAdmin.readonly_fields + ("domain", "added_by")
+    list_select_related = ("dashboard", "domain", "history_user")
+    search_fields = ("dashboard__name", "domain__name")
 
 
-class HistoricalDashboardAdmin(admin.ModelAdmin):
+class HistoricalDashboardAdmin(HistoricalDashboardAccessAdmin):
     """Admin for browsing dashboard history including deletions."""
 
-    list_display = (
-        "id",
-        "name",
-        "quicksight_id",
-        "created_by",
-        "history_type",
-        "history_date",
-        "history_user",
-    )
-    list_filter = ("history_type", "history_date")
-    search_fields = ("name", "quicksight_id")
-    ordering = ("-history_date",)
-    readonly_fields = (
-        "id",
-        "name",
-        "description",
-        "quicksight_id",
-        "created_by",
-        "history_type",
-        "history_date",
-        "history_user",
-        "history_change_reason",
-    )
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
+    list_display = ("id", "name", "quicksight_id", "history_type", "history_date", "history_user")
+    list_select_related = ("history_user",)
+    search_fields = ("name", "quicksight_id", "id")
 
 
 admin.site.register(App, AppAdmin)
@@ -363,6 +309,9 @@ admin.site.register(DashboardDomain, DashboardDomainAdmin)
 admin.site.register(JusticeDomain, JusticeDomainAdmin)
 admin.site.register(StatusPageEvent, StatusPageEventAdmin)
 admin.site.register(Dashboard, SimpleHistoryAdmin)
+admin.site.register(DashboardAdminAccess, SimpleHistoryAdmin)
+admin.site.register(DashboardViewerAccess, SimpleHistoryAdmin)
+admin.site.register(DashboardDomainAccess, SimpleHistoryAdmin)
 admin.site.register(HistoricalDashboardAdminAccess, HistoricalDashboardAdminAccessAdmin)
 admin.site.register(HistoricalDashboardViewerAccess, HistoricalDashboardViewerAccessAdmin)
 admin.site.register(HistoricalDashboardDomainAccess, HistoricalDashboardDomainAccessAdmin)
