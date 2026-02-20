@@ -20,8 +20,20 @@ from controlpanel.api.models import (
     ToolDeployment,
     User,
 )
+from controlpanel.api.models.dashboard import (
+    Dashboard,
+    DashboardAdminAccess,
+    DashboardDomainAccess,
+    DashboardViewerAccess,
+)
 from controlpanel.api.models.status_post import StatusPageEvent
 from controlpanel.api.tasks.user import upgrade_user_helm_chart
+
+# Historical models for browsing audit trail including deletions
+HistoricalDashboard = Dashboard.history.model
+HistoricalDashboardAdminAccess = DashboardAdminAccess.history.model
+HistoricalDashboardViewerAccess = DashboardViewerAccess.history.model
+HistoricalDashboardDomainAccess = DashboardDomainAccess.history.model
 
 
 def make_migration_pending(modeladmin, request, queryset):
@@ -221,6 +233,72 @@ class StatusPageEventAdmin(admin.ModelAdmin):
     date_hierarchy = "reported_at"
 
 
+class HistoricalDashboardAccessAdmin(admin.ModelAdmin):
+    """Base admin for browsing dashboard access history including deletions."""
+
+    list_filter = ("history_type", "history_date")
+    ordering = ("-history_date",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class HistoricalDashboardAdminAccessAdmin(HistoricalDashboardAccessAdmin):
+    list_display = (
+        "id",
+        "dashboard_id",
+        "dashboard",
+        "user",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    list_select_related = ("dashboard", "user", "history_user")
+    search_fields = ("dashboard__name", "user__username")
+
+
+class HistoricalDashboardViewerAccessAdmin(HistoricalDashboardAccessAdmin):
+    list_display = (
+        "id",
+        "dashboard_id",
+        "dashboard",
+        "viewer",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    list_select_related = ("dashboard", "viewer", "history_user")
+    search_fields = ("dashboard__name", "viewer__email")
+
+
+class HistoricalDashboardDomainAccessAdmin(HistoricalDashboardAccessAdmin):
+    list_display = (
+        "id",
+        "dashboard_id",
+        "dashboard",
+        "domain",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    list_select_related = ("dashboard", "domain", "history_user")
+    search_fields = ("dashboard__name", "domain__name")
+
+
+class HistoricalDashboardAdmin(HistoricalDashboardAccessAdmin):
+    """Admin for browsing dashboard history including deletions."""
+
+    list_display = ("id", "name", "quicksight_id", "history_type", "history_date", "history_user")
+    list_select_related = ("history_user",)
+    search_fields = ("name", "quicksight_id", "id")
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
@@ -230,3 +308,11 @@ admin.site.register(ToolDeployment, ToolDeploymentAdmin)
 admin.site.register(DashboardDomain, DashboardDomainAdmin)
 admin.site.register(JusticeDomain, JusticeDomainAdmin)
 admin.site.register(StatusPageEvent, StatusPageEventAdmin)
+admin.site.register(Dashboard, SimpleHistoryAdmin)
+admin.site.register(DashboardAdminAccess, SimpleHistoryAdmin)
+admin.site.register(DashboardViewerAccess, SimpleHistoryAdmin)
+admin.site.register(DashboardDomainAccess, SimpleHistoryAdmin)
+admin.site.register(HistoricalDashboardAdminAccess, HistoricalDashboardAdminAccessAdmin)
+admin.site.register(HistoricalDashboardViewerAccess, HistoricalDashboardViewerAccessAdmin)
+admin.site.register(HistoricalDashboardDomainAccess, HistoricalDashboardDomainAccessAdmin)
+admin.site.register(HistoricalDashboard, HistoricalDashboardAdmin)

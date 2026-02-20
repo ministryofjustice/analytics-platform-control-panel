@@ -40,8 +40,8 @@ class TestDashboardUrls:
         assert dashboard.get_absolute_grant_domain_url() == expected
 
 
-@patch("controlpanel.api.models.dashboard.Dashboard.viewers")
-def test_remove_viewers(mock_viewers, govuk_notify_send_email):
+@patch("controlpanel.api.models.dashboard.Dashboard.viewer_access")
+def test_remove_viewers(mock_viewer_access, govuk_notify_send_email):
     """
     Test the remove_viewers method of the Dashboard model.
     """
@@ -50,9 +50,13 @@ def test_remove_viewers(mock_viewers, govuk_notify_send_email):
     admin = MagicMock()
     admin.justice_email = "admin@example.com"
 
+    mock_access = MagicMock()
+    mock_viewer_access.get.return_value = mock_access
+
     dashboard.delete_viewers([viewer], admin=admin)
 
-    mock_viewers.remove.assert_called_once_with(viewer)
+    mock_viewer_access.get.assert_called_once_with(viewer=viewer)
+    mock_access.delete.assert_called_once()
     govuk_notify_send_email.assert_called_once_with(
         email_address="foo@example.com",
         template_id=settings.NOTIFY_DASHBOARD_REVOKED_TEMPLATE_ID,

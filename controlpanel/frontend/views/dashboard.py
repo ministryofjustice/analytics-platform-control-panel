@@ -5,7 +5,6 @@ from django.db import transaction
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
 from django.utils.html import format_html
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
@@ -23,7 +22,6 @@ from controlpanel.api.models import (
     DashboardDomainAccess,
     DashboardViewer,
     DashboardViewerAccess,
-    User,
 )
 from controlpanel.frontend.forms import (
     AddDashboardAdminForm,
@@ -33,7 +31,7 @@ from controlpanel.frontend.forms import (
     UpdateDashboardForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.utils import build_success_message, feature_flag_required
+from controlpanel.utils import build_success_message
 
 log = structlog.getLogger(__name__)
 
@@ -160,7 +158,6 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
 
         with transaction.atomic():
             user = request.user
-            email = user.justice_email.lower()
 
             dashboard = Dashboard.objects.create(
                 name=preview_data["name"],
@@ -168,21 +165,13 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                 quicksight_id=preview_data["quicksight_id"],
                 created_by=user,
             )
-            dashboard.admins.add(user)
+            dashboard.admin_access.create(user=user, added_by=user)
             if preview_data.get("whitelist_domain"):
                 DashboardDomainAccess.objects.create(
                     dashboard=dashboard,
                     domain=DashboardDomain.objects.get(name=preview_data.get("whitelist_domain")),
                     added_by=user,
                 )
-
-            # Add creator as viewer so they can view it in Dashboard Service
-            viewer, _ = DashboardViewer.objects.get_or_create(email=email)
-            DashboardViewerAccess.objects.get_or_create(
-                dashboard=dashboard,
-                viewer=viewer,
-                defaults={"shared_by": user},
-            )
 
             # Add any additional viewers from the emails list
             not_notified = dashboard.add_viewers(preview_data.get("emails", []), user)
@@ -226,23 +215,11 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
         dashboard = self.get_object()
         context["success_message"] = self.request.session.pop("success_message", None)
 
-        context["dashboard_admins"] = (
-            DashboardAdminAccess.objects.filter(dashboard=dashboard)
-            .select_related("user", "added_by")
-            .order_by("user__justice_email")
-        )
+        context["dashboard_admins"] = dashboard.admin_access.select_related("user", "added_by")
         context["num_admins"] = len(context["dashboard_admins"])
-        context["dashboard_viewers"] = (
-            DashboardViewerAccess.objects.filter(dashboard=dashboard)
-            .select_related("viewer", "shared_by")
-            .order_by("viewer__email")
-        )
+        context["dashboard_viewers"] = dashboard.viewer_access.select_related("viewer", "shared_by")
         context["num_viewers"] = len(context["dashboard_viewers"])
-        context["domain_whitelist"] = (
-            DashboardDomainAccess.objects.filter(dashboard=dashboard)
-            .select_related("domain", "added_by")
-            .order_by("domain__name")
-        )
+        context["domain_whitelist"] = dashboard.domain_access.select_related("domain", "added_by")
         context["num_domains"] = len(context["domain_whitelist"])
         context["show_add_domain_button"] = context["num_domains"] < DashboardDomain.objects.count()
         context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
@@ -367,8 +344,7 @@ class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Dele
             raise Http404("Dashboard has no admins that can be revoked")
 
         return get_object_or_404(
-            DashboardAdminAccess.objects.select_related("dashboard", "user"),
-            dashboard__pk=dashboard.pk,
+            dashboard.admin_access.select_related("dashboard", "user"),
             user__pk=self.kwargs["user_id"],
         )
 
