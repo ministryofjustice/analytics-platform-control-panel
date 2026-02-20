@@ -33,21 +33,9 @@ class DashboardViewSet(ReadOnlyModelViewSet):
         Retrieve a single dashboard by its QuickSight ID and check access for the viewer.
         """
         quicksight_id = self.kwargs.get(self.lookup_field)
-        viewer_email = self.request.query_params.get("email")
 
-        if not viewer_email:
-            raise ValueError("Email parameter is required.")
-
-        domain = get_domain_from_email(viewer_email)
-
-        dashboard = Dashboard.objects.filter(
-            Q(quicksight_id=quicksight_id)
-            & (
-                Q(viewers__email=viewer_email)
-                | Q(whitelist_domains__name=domain)
-                | Q(admins__justice_email=viewer_email)
-            )
-        ).first()
+        queryset = self.filter_queryset(self.get_queryset())
+        dashboard = queryset.filter(Q(quicksight_id=quicksight_id)).first()
 
         if not dashboard:
             raise Dashboard.DoesNotExist(f"Dashboard {quicksight_id} not found.")
@@ -58,9 +46,6 @@ class DashboardViewSet(ReadOnlyModelViewSet):
         """
         Get a paginated list of dashboards that the viewer has access to.
         """
-        if not request.query_params.get("email"):
-            return Response({"error": "Email parameter is required."}, status=400)
-
         try:
             return super().list(request, *args, **kwargs)
         except ValueError as e:

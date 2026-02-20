@@ -73,6 +73,9 @@ def dashboard_domain(dashboard):
         ("domain.viewer@cica.gov.uk", status.HTTP_200_OK, 1),
         ("no.access@test.gov.uk", status.HTTP_200_OK, 0),
         (None, status.HTTP_400_BAD_REQUEST, 0),
+        ("DASHBOARD.ADMIN@JUSTICE.GOV.UK", status.HTTP_200_OK, 1),
+        ("Dashboard.Viewer@Justice.Gov.Uk", status.HTTP_200_OK, 1),
+        ("DOMAIN.VIEWER@CICA.GOV.UK", status.HTTP_200_OK, 1),
     ],
 )
 def test_list(
@@ -127,6 +130,24 @@ def test_list(
         ),
         ("no.access@test.gov.uk", "", "", status.HTTP_404_NOT_FOUND),
         ("", "", "", status.HTTP_400_BAD_REQUEST),
+        (
+            "DASHBOARD.VIEWER@JUSTICE.GOV.UK",
+            "https://quicksight-embed-url-viewer",
+            "some:viewer:arn",
+            status.HTTP_200_OK,
+        ),
+        (
+            "Dashboard.Admin@Justice.Gov.Uk",
+            "https://quicksight-embed-url-viewer",
+            "some:admin:arn",
+            status.HTTP_200_OK,
+        ),
+        (
+            "DOMAIN.VIEWER@CICA.GOV.UK",
+            "https://quicksight-embed-url-domain",
+            "some:domain:arn",
+            status.HTTP_200_OK,
+        ),
     ],
 )
 def test_retrieve(
@@ -141,18 +162,25 @@ def test_retrieve(
 ):
 
     with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
-        get_embed_url.return_value = {
-            "EmbedUrl": embed_url,
-            "AnonymousUserArn": user_arn,
-        }
-        response = client.get(
-            reverse("dashboard-detail", args=[dashboard.quicksight_id]),
-            data={"email": email},
-        )
+        with patch(
+            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
+        ) as has_permission:
+            has_permission.return_value = True
+            get_embed_url.return_value = {
+                "EmbedUrl": embed_url,
+                "AnonymousUserArn": user_arn,
+            }
+            # Ensure no user is logged in for this test
+            client.logout()
 
-        assert response.status_code == expected_status
+            response = client.get(
+                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+                data={"email": email},
+            )
 
-        if expected_status == status.HTTP_200_OK:
-            result = response.data
-            assert result["embed_url"] == embed_url
-            assert result["anonymous_user_arn"] == user_arn
+            assert response.status_code == expected_status
+
+            if expected_status == status.HTTP_200_OK:
+                result = response.data
+                assert result["embed_url"] == embed_url
+                assert result["anonymous_user_arn"] == user_arn
