@@ -70,16 +70,20 @@ class DashboardFilter(DjangoFilterBackend):
     def filter_queryset(self, request, queryset, view):
         queryset = super().filter_queryset(request, queryset, view)
 
-        if is_superuser(request.user):
+        email = request.query_params.get("email")
+
+        if is_superuser(request.user) and not email:
             return queryset
 
-        email = request.query_params.get("email")
+        if not email:
+            raise ValueError("Email parameter is required.")
+
         domain = get_domain_from_email(email)
 
         return queryset.filter(
-            Q(viewers__email=email)
-            | Q(whitelist_domains__name=domain)
-            | Q(admins__justice_email=email)
+            Q(viewers__email__iexact=email)
+            | Q(whitelist_domains__name__iexact=domain)
+            | Q(admins__justice_email__iexact=email)
         ).distinct()
 
 
