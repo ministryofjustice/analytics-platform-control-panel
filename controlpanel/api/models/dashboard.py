@@ -3,6 +3,7 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django_extensions.db.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 # First-party/Local
 from controlpanel import utils
@@ -18,6 +19,7 @@ class DashboardAdminAccess(TimeStampedModel):
     added_by = models.ForeignKey(
         "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_admins_added_set"
     )
+    history = HistoricalRecords(table_name="control_panel_api_dashboard_admin_access_history")
 
     class Meta:
         db_table = "control_panel_api_dashboard_admin_access"
@@ -36,6 +38,7 @@ class DashboardViewerAccess(TimeStampedModel):
     shared_by = models.ForeignKey(
         "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_viewers_shared_set"
     )
+    history = HistoricalRecords(table_name="control_panel_api_dashboard_viewer_access_history")
 
     class Meta:
         db_table = "control_panel_api_dashboard_viewer_access"
@@ -54,6 +57,7 @@ class DashboardDomainAccess(TimeStampedModel):
     added_by = models.ForeignKey(
         "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_domains_added_set"
     )
+    history = HistoricalRecords(table_name="control_panel_api_dashboard_domain_access_history")
 
     class Meta:
         db_table = "control_panel_api_dashboard_domain_access"
@@ -88,9 +92,13 @@ class Dashboard(TimeStampedModel):
         through=DashboardDomainAccess,
         through_fields=("dashboard", "domain"),
     )
+    history = HistoricalRecords(table_name="control_panel_api_dashboard_history")
 
     class Meta:
         db_table = "control_panel_api_dashboard"
+
+    def __str__(self):
+        return self.name
 
     def get_absolute_url(self, viewname="manage-dashboard-sharing", **kwargs):
         return reverse(viewname, kwargs={"pk": self.pk, **kwargs})
@@ -172,7 +180,8 @@ class Dashboard(TimeStampedModel):
         Remove the given viewers from the dashboard.
         """
         emails = [viewer.email for viewer in viewers]
-        self.viewers.remove(*viewers)
+        for viewer in viewers:
+            self.viewer_access.get(viewer=viewer).delete()
 
         for email in emails:
             utils.govuk_notify_send_email(
@@ -190,7 +199,7 @@ class Dashboard(TimeStampedModel):
         """
         Remove the given admin from the dashboard and notifies them
         """
-        self.admins.remove(user)
+        self.admin_access.get(user=user).delete()
 
         utils.govuk_notify_send_email(
             email_address=user.justice_email,

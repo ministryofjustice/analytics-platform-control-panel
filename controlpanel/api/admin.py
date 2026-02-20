@@ -20,8 +20,20 @@ from controlpanel.api.models import (
     ToolDeployment,
     User,
 )
+from controlpanel.api.models.dashboard import (
+    Dashboard,
+    DashboardAdminAccess,
+    DashboardDomainAccess,
+    DashboardViewerAccess,
+)
 from controlpanel.api.models.status_post import StatusPageEvent
 from controlpanel.api.tasks.user import upgrade_user_helm_chart
+
+# Historical models for browsing audit trail including deletions
+HistoricalDashboard = Dashboard.history.model
+HistoricalDashboardAdminAccess = DashboardAdminAccess.history.model
+HistoricalDashboardViewerAccess = DashboardViewerAccess.history.model
+HistoricalDashboardDomainAccess = DashboardDomainAccess.history.model
 
 
 def make_migration_pending(modeladmin, request, queryset):
@@ -221,6 +233,126 @@ class StatusPageEventAdmin(admin.ModelAdmin):
     date_hierarchy = "reported_at"
 
 
+class HistoricalDashboardAccessAdmin(admin.ModelAdmin):
+    """Admin for browsing dashboard access history including deletions."""
+
+    list_display = ("id", "dashboard", "history_type", "history_date", "history_user")
+    list_filter = ("history_type", "history_date")
+    search_fields = ("dashboard__name",)
+    ordering = ("-history_date",)
+    readonly_fields = (
+        "id",
+        "dashboard",
+        "history_type",
+        "history_date",
+        "history_user",
+        "history_change_reason",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class HistoricalDashboardAdminAccessAdmin(HistoricalDashboardAccessAdmin):
+    list_display = (
+        "id",
+        "dashboard",
+        "user",
+        "added_by",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    search_fields = (
+        "dashboard__name",
+        "dashboard__quicksight_id",
+        "user__username",
+        "added_by__username",
+    )
+    readonly_fields = HistoricalDashboardAccessAdmin.readonly_fields + ("user", "added_by")
+
+
+class HistoricalDashboardViewerAccessAdmin(HistoricalDashboardAccessAdmin):
+    list_display = (
+        "id",
+        "dashboard",
+        "viewer",
+        "shared_by",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    search_fields = (
+        "dashboard__name",
+        "dashboard__quicksight_id",
+        "viewer__email",
+        "shared_by__username",
+    )
+    readonly_fields = HistoricalDashboardAccessAdmin.readonly_fields + ("viewer", "shared_by")
+
+
+class HistoricalDashboardDomainAccessAdmin(HistoricalDashboardAccessAdmin):
+    list_display = (
+        "id",
+        "dashboard",
+        "domain",
+        "added_by",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    search_fields = (
+        "dashboard__name",
+        "dashboard__quicksight_id",
+        "domain__name",
+        "added_by__username",
+    )
+    readonly_fields = HistoricalDashboardAccessAdmin.readonly_fields + ("domain", "added_by")
+
+
+class HistoricalDashboardAdmin(admin.ModelAdmin):
+    """Admin for browsing dashboard history including deletions."""
+
+    list_display = (
+        "id",
+        "name",
+        "quicksight_id",
+        "created_by",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    list_filter = ("history_type", "history_date")
+    search_fields = ("name", "quicksight_id")
+    ordering = ("-history_date",)
+    readonly_fields = (
+        "id",
+        "name",
+        "description",
+        "quicksight_id",
+        "created_by",
+        "history_type",
+        "history_date",
+        "history_user",
+        "history_change_reason",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 admin.site.register(App, AppAdmin)
 admin.site.register(S3Bucket, S3Admin)
 admin.site.register(User, UserAdmin)
@@ -230,3 +362,8 @@ admin.site.register(ToolDeployment, ToolDeploymentAdmin)
 admin.site.register(DashboardDomain, DashboardDomainAdmin)
 admin.site.register(JusticeDomain, JusticeDomainAdmin)
 admin.site.register(StatusPageEvent, StatusPageEventAdmin)
+admin.site.register(Dashboard, SimpleHistoryAdmin)
+admin.site.register(HistoricalDashboardAdminAccess, HistoricalDashboardAdminAccessAdmin)
+admin.site.register(HistoricalDashboardViewerAccess, HistoricalDashboardViewerAccessAdmin)
+admin.site.register(HistoricalDashboardDomainAccess, HistoricalDashboardDomainAccessAdmin)
+admin.site.register(HistoricalDashboard, HistoricalDashboardAdmin)
