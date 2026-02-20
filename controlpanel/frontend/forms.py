@@ -752,9 +752,9 @@ class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
 
         # Filter out users who are already admins (in case of race condition)
         existing_admin_ids = set(
-            DashboardAdminAccess.objects.filter(
-                dashboard=self.dashboard, user__in=users
-            ).values_list("user__auth0_id", flat=True)
+            self.dashboard.admin_access.filter(user__in=users).values_list(
+                "user__auth0_id", flat=True
+            )
         )
 
         new_admins = [u for u in users if u.auth0_id not in existing_admin_ids]

@@ -11,7 +11,9 @@ from controlpanel.api.models.dashboard_viewer import DashboardViewer
 
 
 class DashboardAdminAccess(TimeStampedModel):
-    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    dashboard = models.ForeignKey(
+        "Dashboard", on_delete=models.CASCADE, related_name="admin_access"
+    )
     user = models.ForeignKey("User", on_delete=models.CASCADE)
     added_by = models.ForeignKey(
         "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_admins_added_set"
@@ -19,10 +21,17 @@ class DashboardAdminAccess(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_dashboard_admin_access"
+        ordering = ["-created"]
+        verbose_name_plural = "dashboard admin access records"
+
+    def __str__(self):
+        return f"{self.user} admin access to {self.dashboard}"
 
 
 class DashboardViewerAccess(TimeStampedModel):
-    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    dashboard = models.ForeignKey(
+        "Dashboard", on_delete=models.CASCADE, related_name="viewer_access"
+    )
     viewer = models.ForeignKey("DashboardViewer", on_delete=models.CASCADE)
     shared_by = models.ForeignKey(
         "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_viewers_shared_set"
@@ -30,10 +39,17 @@ class DashboardViewerAccess(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_dashboard_viewer_access"
+        ordering = ["-created"]
+        verbose_name_plural = "dashboard viewer access records"
+
+    def __str__(self):
+        return f"{self.viewer} viewer access to {self.dashboard}"
 
 
 class DashboardDomainAccess(TimeStampedModel):
-    dashboard = models.ForeignKey("Dashboard", on_delete=models.CASCADE)
+    dashboard = models.ForeignKey(
+        "Dashboard", on_delete=models.CASCADE, related_name="domain_access"
+    )
     domain = models.ForeignKey("DashboardDomain", on_delete=models.CASCADE)
     added_by = models.ForeignKey(
         "User", on_delete=models.SET_NULL, null=True, related_name="dashboard_domains_added_set"
@@ -41,6 +57,11 @@ class DashboardDomainAccess(TimeStampedModel):
 
     class Meta:
         db_table = "control_panel_api_dashboard_domain_access"
+        ordering = ["-created"]
+        verbose_name_plural = "dashboard domain access records"
+
+    def __str__(self):
+        return f"{self.domain} domain access to {self.dashboard}"
 
 
 class Dashboard(TimeStampedModel):
