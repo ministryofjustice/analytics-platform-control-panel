@@ -158,7 +158,6 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
 
         with transaction.atomic():
             user = request.user
-            email = user.justice_email.lower()
 
             dashboard = Dashboard.objects.create(
                 name=preview_data["name"],
@@ -166,21 +165,13 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                 quicksight_id=preview_data["quicksight_id"],
                 created_by=user,
             )
-            dashboard.admins.add(user)
+            dashboard.admin_access.create(user=user, added_by=user)
             if preview_data.get("whitelist_domain"):
                 DashboardDomainAccess.objects.create(
                     dashboard=dashboard,
                     domain=DashboardDomain.objects.get(name=preview_data.get("whitelist_domain")),
                     added_by=user,
                 )
-
-            # Add creator as viewer so they can view it in Dashboard Service
-            viewer, _ = DashboardViewer.objects.get_or_create(email=email)
-            DashboardViewerAccess.objects.get_or_create(
-                dashboard=dashboard,
-                viewer=viewer,
-                defaults={"shared_by": user},
-            )
 
             # Add any additional viewers from the emails list
             not_notified = dashboard.add_viewers(preview_data.get("emails", []), user)

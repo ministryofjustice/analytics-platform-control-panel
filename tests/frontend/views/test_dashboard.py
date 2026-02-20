@@ -782,10 +782,8 @@ def test_preview_dashboard_confirm_creates_dashboard(
     assert dashboard.description == "Confirmed description"
     assert dashboard.created_by == users["superuser"]
     assert users["superuser"] in dashboard.admins.all()
-    # Check viewers (creator + additional email)
-    viewer_emails = list(dashboard.viewers.values_list("email", flat=True))
-    assert users["superuser"].justice_email.lower() in viewer_emails
-    assert "viewer@example.com" in viewer_emails
+    # Check viewers
+    assert dashboard.viewers.filter(email="viewer@example.com").exists()
     # Session should be cleared
     assert "dashboard_preview" not in client.session
 
