@@ -2,7 +2,7 @@
 {% from "includes/success-panel.html" import success_panel with context %}
 
 {% set page_name = "dashboards" %}
-{% set page_title = "Manage Sharing - " ~ dashboard.name %}
+{% set page_title = "Manage sharing - " ~ dashboard.name %}
 
 {% set back_link_url = url("list-dashboards") %}
 
@@ -14,7 +14,7 @@
     {% endif %}
 
     <span class="govuk-caption-xl">{{ dashboard.name }}</span>
-    <h1 class="govuk-heading-xl">Manage Sharing</h1>
+    <h1 class="govuk-heading-xl">Manage sharing</h1>
 
     <div class="govuk-tabs" data-module="govuk-tabs">
       <h2 class="govuk-tabs__title">
