@@ -76,7 +76,7 @@ def test_delete(aws_delete_role, helm, users):
     cluster.User(user).delete()
     aws_delete_role.assert_called_with(user.iam_role_name)
     expected_calls = [
-        call("user-bob", "chart-release", dry_run=False),
+        call("user-bob", "chart-release", dry_run=False, wait=False),
     ]
     helm.delete.assert_has_calls(expected_calls)
 

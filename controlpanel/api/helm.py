@@ -252,27 +252,31 @@ def upgrade_release(release, chart, *args):
     )
 
 
-def delete(namespace, *args, dry_run=False):
+def delete(namespace, *args, dry_run=False, wait=True):
     """
     Delete helm charts identified by the content of the args list in the
     referenced namespace. Helm 3 version.
 
-    This command blocks, so the old charts are deleted BEFORE the new charts
-    are installed. Will block for a maximum of settings.HELM_DELETE_TIMEOUT
-    seconds.
+    If the wait flag is set to True, this command blocks. This is the default behaviour to ensure
+    that when a different tool is deployed, the old charts are deleted BEFORE the new charts are
+    installed. It will block for a maximum of settings.HELM_DELETE_TIMEOUT seconds.
+
+    Calling with wait=False is useful in cases where synchronous confirmation is not needed, such
+    as when we delete a user.
 
     Logs the stdout result of the command.
     """
     if not namespace:
         raise ValueError("Cannot proceed: a namespace needed for removal of release.")
+
+    wait_args = ["--wait", "--timeout", settings.HELM_DELETE_TIMEOUT] if wait else []
+
     proc = _execute(
         "uninstall",
         *args,
         "--namespace",
         namespace,
-        "--wait",
-        "--timeout",
-        settings.HELM_DELETE_TIMEOUT,
+        *wait_args,
         dry_run=dry_run,
     )
     if proc:

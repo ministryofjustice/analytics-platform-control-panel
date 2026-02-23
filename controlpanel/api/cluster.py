@@ -308,7 +308,7 @@ class User(EntityResource):
         if not hel_charts:
             return
 
-        helm.delete(related_namespace, *hel_charts, dry_run=dry_run)
+        helm.delete(related_namespace, *hel_charts, dry_run=dry_run, wait=False)
 
     def _filter_out_installation_charts(self, helm_charts):
         init_installed_charts = []
