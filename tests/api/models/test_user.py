@@ -30,9 +30,9 @@ def test_helm_delete_user(helm, auth0):
     user.delete()
     helm.delete.assert_has_calls(
         [
-            call("user-bob", "chart-release", dry_run=False),
-            call("user-bob", "provision-user-bob", dry_run=False),
-            call("cpanel", "bootstrap-user-bob", dry_run=False),
+            call("user-bob", "chart-release", dry_run=False, wait=False),
+            call("user-bob", "provision-user-bob", dry_run=False, wait=False),
+            call("cpanel", "bootstrap-user-bob", dry_run=False, wait=False),
         ]
     )
     authz.clear_up_user.assert_called_with(user_id="github|user_2")
