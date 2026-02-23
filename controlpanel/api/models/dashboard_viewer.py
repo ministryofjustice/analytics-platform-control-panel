@@ -18,6 +18,9 @@ class DashboardViewer(TimeStampedModel):
     class Meta:
         db_table = "control_panel_api_dashboard_viewer"
 
+    def __str__(self):
+        return self.email
+
     def save(self, *args, **kwargs):
         self.add_viewer(self.email)
         return super().save(*args, **kwargs)

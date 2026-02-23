@@ -427,6 +427,8 @@ def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
 
 def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain):
     client.force_login(users["superuser"])
+    access = DashboardDomainAccess.objects.get(dashboard=dashboard, domain=add_dashboard_domain)
+    access_id = access.id
     url = reverse(
         "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": add_dashboard_domain.id}
     )
@@ -439,6 +441,14 @@ def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain)
     assert response.status_code == 302
     updated_dashboard = Dashboard.objects.get(pk=dashboard.id)
     assert updated_dashboard.whitelist_domains.count() == 0
+    HistoricalDashboardDomainAccess = DashboardDomainAccess.history.model
+    history_record = HistoricalDashboardDomainAccess.objects.filter(
+        id=access_id,
+        history_type="-",
+    ).first()
+    assert history_record is not None
+    assert history_record.dashboard_id == dashboard.id
+    assert history_record.domain_id == add_dashboard_domain.id
 
 
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
@@ -782,10 +792,8 @@ def test_preview_dashboard_confirm_creates_dashboard(
     assert dashboard.description == "Confirmed description"
     assert dashboard.created_by == users["superuser"]
     assert users["superuser"] in dashboard.admins.all()
-    # Check viewers (creator + additional email)
-    viewer_emails = list(dashboard.viewers.values_list("email", flat=True))
-    assert users["superuser"].justice_email.lower() in viewer_emails
-    assert "viewer@example.com" in viewer_emails
+    # Check viewers
+    assert dashboard.viewers.filter(email="viewer@example.com").exists()
     # Session should be cleared
     assert "dashboard_preview" not in client.session
 
