@@ -324,6 +324,23 @@ def test_delete():
         )
 
 
+def test_delete_without_wait():
+    """
+    The delete function with wait=False does not include --wait or --timeout flags.
+    """
+    with patch("controlpanel.api.helm._execute") as mock_execute:
+        helm.delete("my_namespace", "foo", "bar", "baz", wait=False)
+        mock_execute.assert_called_once_with(
+            "uninstall",
+            "foo",
+            "bar",
+            "baz",
+            "--namespace",
+            "my_namespace",
+            dry_run=False,
+        )
+
+
 def test_list_releases_with_release():
     """
     Given a certain release, returns a list of the results.
