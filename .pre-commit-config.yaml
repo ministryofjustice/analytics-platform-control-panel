@@ -17,7 +17,7 @@ repos:
         entry: bash -c 'black . --config=pyproject.toml --check  $(git diff --name-only --cached --diff-filter=ACMR | grep .py)'
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 6.1.0
     hooks:
       - id: isort
         name: isort (python)

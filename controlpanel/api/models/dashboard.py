@@ -172,6 +172,7 @@ class Dashboard(TimeStampedModel):
         """
         emails = [viewer.email for viewer in viewers]
         for viewer in viewers:
+            # use delete so that django-simple-history keeps a record of it
             self.viewer_access.get(viewer=viewer).delete()
 
         for email in emails:
@@ -190,6 +191,7 @@ class Dashboard(TimeStampedModel):
         """
         Remove the given admin from the dashboard and notifies them
         """
+        # use delete so that django-simple-history keeps a record of it
         self.admin_access.get(user=user).delete()
 
         utils.govuk_notify_send_email(
