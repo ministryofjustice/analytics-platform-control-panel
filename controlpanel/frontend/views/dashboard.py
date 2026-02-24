@@ -430,7 +430,7 @@ class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, Del
             )
 
         self.request.session["success_message"] = build_success_message(
-            heading=f"You have removed viewers for {dashboard.name}", message=None
+            heading=f"You have removed viewers from {dashboard.name}", message=None
         )
 
         log.info(
