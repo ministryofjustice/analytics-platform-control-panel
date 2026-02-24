@@ -1001,7 +1001,7 @@ def test_revoke_viewer_success(client, dashboard, dashboard_viewer, users, govuk
         response.url
         == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#viewers"
     )
-    assert "You have updated viewers for" in client.session["success_message"]["heading"]
+    assert "You have removed viewers from" in client.session["success_message"]["heading"]
     assert dashboard.viewers.filter(pk=dashboard_viewer.id).count() == 0
     govuk_notify_send_email.assert_called_once()
 
@@ -1066,7 +1066,7 @@ def test_revoke_viewer_notify_error(
         response.url
         == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#viewers"
     )
-    assert "You have updated viewers for" in client.session["success_message"]["heading"]
+    assert "You have removed viewers from" in client.session["success_message"]["heading"]
     assert dashboard.viewers.filter(pk=dashboard_viewer.id).count() == 0
 
     # Check error message was shown
