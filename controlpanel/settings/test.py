@@ -51,6 +51,8 @@ DASHBOARD_AUTH0_ROLE_ID = "rol_ab0CdEf1GHiJKlmN"  # gitleaks:allow
 
 NOTIFY_API_KEY = "test-key"
 NOTIFY_DASHBOARD_ACCESS_TEMPLATE_ID = "test-template-id"
+NOTIFY_DASHBOARD_ADMIN_ADDED_TEMPLATE_ID = "test-admin-added-template-id"
+NOTIFY_DASHBOARD_ADMIN_REMOVED_TEMPLATE_ID = "test-admin-removed-template-id"
 
 PAGERDUTY_TOKEN = "test_token"
 PAGERDUTY_WEBHOOK_SECRET = "example-webhook-secret"

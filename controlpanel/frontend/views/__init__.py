@@ -42,19 +42,18 @@ from controlpanel.frontend.views.app import (
 # First-party/Local
 from controlpanel.frontend.views.dashboard import (
     AddDashboardAdmin,
-    AddDashboardCustomers,
+    AddDashboardViewers,
     AdminDashboardList,
     CancelDashboardRegistration,
-    DashboardCustomers,
     DashboardDetail,
     DashboardList,
+    DashboardUpdateDescription,
     DeleteDashboard,
     GrantDomainAccess,
     RegisterDashboard,
     RegisterDashboardPreview,
-    RemoveDashboardCustomerByEmail,
-    RemoveDashboardCustomerById,
     RevokeDashboardAdmin,
+    RevokeDashboardViewer,
     RevokeDomainAccess,
 )
 from controlpanel.frontend.views.databases import (

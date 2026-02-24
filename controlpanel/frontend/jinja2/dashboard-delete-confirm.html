@@ -1,0 +1,34 @@
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "Remove dashboard - " ~ dashboard.name %}
+
+{% block content %}
+
+  <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+  <h1 class="govuk-heading-xl">Remove dashboard</h1>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h2 class="govuk-heading-m">Are you sure you want to remove this dashboard?</h2>
+
+      <p class="govuk-body">You are about to remove this dashboard from the dashboard service and revoke all access.</p>
+
+      <p class="govuk-body">This will not delete your dashboard in QuickSight.</p>
+
+      <form method="post" action="{{ dashboard.get_absolute_delete_url() }}">
+        {{ csrf_input }}
+        <div class="govuk-button-group">
+          <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-right-2">
+            Remove
+          </button>
+          <a href="{{ dashboard.get_absolute_url() }}" class="govuk-link">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

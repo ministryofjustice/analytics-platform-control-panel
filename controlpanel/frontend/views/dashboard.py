@@ -1,37 +1,41 @@
 # Third-party
-import sentry_sdk
 import structlog
 from django.contrib import messages
-from django.core.paginator import Paginator
 from django.db import transaction
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.template.defaultfilters import pluralize
 from django.urls import reverse_lazy
-from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.views.generic.base import RedirectView, TemplateView
 from django.views.generic.detail import DetailView, SingleObjectMixin
-from django.views.generic.edit import CreateView, DeleteView, FormView
+from django.views.generic.edit import CreateView, DeleteView, FormView, UpdateView
 from django.views.generic.list import ListView
 from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
+from controlpanel import utils
 from controlpanel.api import aws
-from controlpanel.api.exceptions import DeleteCustomerError
-from controlpanel.api.models import Dashboard, DashboardDomain, DashboardViewer, User
+from controlpanel.api.models import (
+    Dashboard,
+    DashboardAdminAccess,
+    DashboardDomain,
+    DashboardDomainAccess,
+    DashboardViewer,
+    DashboardViewerAccess,
+)
 from controlpanel.frontend.forms import (
-    AddCustomersForm,
+    AddDashboardAdminForm,
+    AddDashboardViewersForm,
     GrantDomainAccessForm,
     RegisterDashboardForm,
-    RemoveCustomerByEmailForm,
+    UpdateDashboardForm,
 )
 from controlpanel.oidc import OIDCLoginRequiredMixin
-from controlpanel.utils import feature_flag_required
+from controlpanel.utils import build_success_message
 
 log = structlog.getLogger(__name__)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
     context_object_name = "dashboards"
     model = Dashboard
@@ -45,11 +49,10 @@ class DashboardList(OIDCLoginRequiredMixin, PermissionRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
+        context["success_message"] = self.request.session.pop("success_message", None)
         return context
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class AdminDashboardList(DashboardList):
     template_name = "dashboard-admin-list.html"
 
@@ -60,7 +63,6 @@ class AdminDashboardList(DashboardList):
         return Dashboard.objects.all().prefetch_related("admins")
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
     form_class = RegisterDashboardForm
     model = Dashboard
@@ -96,33 +98,6 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         context["dashboards"] = self.get_dashboards()
         return context
 
-    def form_invalid(self, form):
-        """Build error summary with deduplicated messages."""
-        error_summary = []
-        seen_messages = set()
-
-        for field_name, errors in form.errors.items():
-            for error in errors:
-                if error not in seen_messages:
-                    seen_messages.add(error)
-                    error_summary.append(
-                        {
-                            "text": error,
-                            "field": field_name,
-                        }
-                    )
-
-        # Get submitted emails from the bound form field (uses MultiEmailWidget.value_from_datadict)
-        submitted_emails = form["emails"].value() or []
-
-        return self.render_to_response(
-            self.get_context_data(
-                form=form,
-                error_summary=error_summary,
-                submitted_emails=submitted_emails,
-            )
-        )
-
     def form_valid(self, form):
         """Store validated form data in session and redirect to preview."""
         self.request.session["dashboard_preview"] = {
@@ -140,7 +115,6 @@ class RegisterDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateV
         return HttpResponseRedirect(reverse_lazy("preview-dashboard"))
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = "dashboard-register-preview.html"
 
@@ -184,7 +158,6 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
 
         with transaction.atomic():
             user = request.user
-            email = user.justice_email.lower()
 
             dashboard = Dashboard.objects.create(
                 name=preview_data["name"],
@@ -192,18 +165,16 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                 quicksight_id=preview_data["quicksight_id"],
                 created_by=user,
             )
-            dashboard.admins.add(user)
+            dashboard.admin_access.create(user=user, added_by=user)
             if preview_data.get("whitelist_domain"):
-                dashboard.whitelist_domains.add(
-                    DashboardDomain.objects.get(name=preview_data.get("whitelist_domain"))
+                DashboardDomainAccess.objects.create(
+                    dashboard=dashboard,
+                    domain=DashboardDomain.objects.get(name=preview_data.get("whitelist_domain")),
+                    added_by=user,
                 )
 
-            # Add creator as viewer so they can view it in Dashboard Service
-            viewer, _ = DashboardViewer.objects.get_or_create(email=email)
-            dashboard.viewers.add(viewer)
-
             # Add any additional viewers from the emails list
-            not_notified = dashboard.add_customers(preview_data.get("emails", []), email)
+            not_notified = dashboard.add_viewers(preview_data.get("emails", []), user)
             if not_notified:
                 messages.error(
                     request,
@@ -213,14 +184,18 @@ class RegisterDashboardPreview(OIDCLoginRequiredMixin, PermissionRequiredMixin, 
                     ),
                 )
 
-        request.session["dashboard_created"] = {
-            "name": dashboard.name,
-            "url": dashboard.get_absolute_url(),
-        }
+        request.session["success_message"] = build_success_message(
+            heading=f"You've shared '{dashboard.name}'",
+            message=format_html(
+                "To share with more people, or grant admin rights, "
+                'go to <a class="govuk-notification-banner__link" href="{}">manage sharing</a>.',
+                dashboard.get_absolute_url(),
+            ),
+        )
+
         return HttpResponseRedirect(reverse_lazy("list-dashboards"))
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class CancelDashboardRegistration(OIDCLoginRequiredMixin, RedirectView):
     url = reverse_lazy("list-dashboards")
 
@@ -229,7 +204,6 @@ class CancelDashboardRegistration(OIDCLoginRequiredMixin, RedirectView):
         return super().get(request, *args, **kwargs)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
     context_object_name = "dashboard"
     model = Dashboard
@@ -238,38 +212,39 @@ class DashboardDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["dashboard_created"] = self.request.session.pop("dashboard_created", None)
         dashboard = self.get_object()
-        dashboard_admins = dashboard.admins.all()
+        context["success_message"] = self.request.session.pop("success_message", None)
 
-        potential_admins = User.objects.exclude(
-            auth0_id="",
-        ).exclude(
-            auth0_id__in=[user.auth0_id for user in dashboard_admins],
-        )
-
-        context["admin_options"] = [user for user in potential_admins if user.is_quicksight_user()]
-
-        context["dashboard_admins"] = dashboard_admins
-
-        context["grant_access_form"] = GrantDomainAccessForm(
-            dashboard=dashboard,
+        context["dashboard_admins"] = dashboard.admin_access.select_related("user", "added_by")
+        context["num_admins"] = len(context["dashboard_admins"])
+        context["dashboard_viewers"] = dashboard.viewer_access.select_related("viewer", "shared_by")
+        context["num_viewers"] = len(context["dashboard_viewers"])
+        context["domain_whitelist"] = dashboard.domain_access.select_related("domain", "added_by")
+        context["num_domains"] = len(context["domain_whitelist"])
+        context["show_add_domain_button"] = context["num_domains"] < DashboardDomain.objects.count()
+        context["embed_url"] = aws.AWSQuicksight().get_dashboard_embed_url(
+            user=self.request.user,
+            dashboard_id=dashboard.quicksight_id,
         )
 
         return context
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Dashboard
     permission_required = "api.destroy_dashboard"
     success_url = reverse_lazy("list-dashboards")
-    allowed_methods = ["POST"]
+    template_name = "dashboard-delete-confirm.html"
+    allowed_methods = ["GET", "POST"]
 
     def form_valid(self, form):
         dashboard = self.get_object()
         dashboard.delete()
-        messages.success(self.request, f"Successfully deleted {dashboard.name} dashboard")
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You've removed {dashboard.name}",
+            message="The dashboard will no longer appear in the dashboard service.",
+        )
+
         return HttpResponseRedirect(self.get_success_url())
 
 
@@ -293,99 +268,219 @@ class UpdateDashboardBaseView(
         return super().post(request, *args, **kwargs)
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardAdmin(UpdateDashboardBaseView):
-    permission_required = "api.add_dashboard_admin"
-
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-
-        user_id = self.request.POST.get("user_id")
-        if not user_id:
-            messages.error(self.request, "User not found")
-            return
-        try:
-            user = User.objects.get(pk=self.request.POST["user_id"])
-        except User.DoesNotExist:
-            messages.error(self.request, "User not found")
-            return
-
-        if user.is_quicksight_user():
-            dashboard.admins.add(user)
-            dashboard.add_customers([user.justice_email], self.request.user.justice_email)
-            messages.success(self.request, f"Granted admin access to {user.name}")
-            log.info(
-                f"{self.request.user.justice_email} granted admin access to {user.justice_email}",
-                audit="dashboard_audit",
-            )
-            return
-
-        messages.error(self.request, "User cannot be added as a dashboard admin")
-
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDashboardAdmin(UpdateDashboardBaseView):
-    permission_required = "api.revoke_dashboard_admin"
-
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-        user = get_object_or_404(User, pk=kwargs["user_id"])
-
-        dashboard.admins.remove(user)
-        log.info(
-            f"{self.request.user.justice_email} removed admin access from {user.justice_email}"
-        )
-        messages.success(self.request, f"Removed admin access from {user.name}")
-
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class DashboardCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class DashboardUpdateDescription(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     context_object_name = "dashboard"
     model = Dashboard
+    form_class = UpdateDashboardForm
     permission_required = "api.retrieve_dashboard"
-    template_name = "dashboard-user-list.html"
+    template_name = "dashboard-update-description.html"
+
+    def form_valid(self, form):
+        super().form_valid(form)
+        dashboard = self.get_object()
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You've updated the description for {dashboard.name}", message=None
+        )
+
+        return HttpResponseRedirect(self.get_success_url())
+
+
+class AddDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
+    permission_required = "api.add_dashboard_admin"
+    template_name = "dashboard-add-admin.html"
+    form_class = AddDashboardAdminForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.dashboard = get_object_or_404(Dashboard, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_permission_object(self):
+        """Return the dashboard for object-level permission checking."""
+        return self.dashboard
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["dashboard"] = self.dashboard
+        kwargs["request"] = self.request
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        dashboard = self.get_object()
-
-        customers = dashboard.viewers.all()
-        paginator = Paginator(customers, 50)
-
-        context["errors"] = self.request.session.pop("customer_form_errors", None)
-        context["page_no"] = page_no = self.kwargs.get("page_no")
-        context["paginator"] = paginator
-        context["elided"] = paginator.get_elided_page_range(page_no)
-        context["customers"] = customers
-        context["remove_customer_form"] = RemoveCustomerByEmailForm()
+        context["dashboard"] = self.dashboard
         return context
 
+    def form_valid(self, form):
+        new_admins = form.save()
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class AddDashboardCustomers(
-    OIDCLoginRequiredMixin, PermissionRequiredMixin, SingleObjectMixin, FormView
-):
-    model = Dashboard
-    form_class = AddCustomersForm
-    permission_required = "api.add_dashboard_customer"
+        for user in new_admins:
+            log.info(
+                f"{self.request.user.justice_email} granted {self.dashboard.name} admin access to {user.justice_email}",  # noqa
+                audit="dashboard_audit",
+            )
 
-    def form_invalid(self, form):
-        self.request.session["customer_form_errors"] = form.errors
-        messages.error(self.request, "Could not add user(s)")
+        self.request.session["success_message"] = {
+            "heading": f"You have updated admin rights for {self.dashboard.name}",
+            "message": None,
+        }
+
         return HttpResponseRedirect(self.get_success_url())
 
+    def get_success_url(self):
+        return f"{self.dashboard.get_absolute_url()}#admins"
+
+
+class RevokeDashboardAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "api.revoke_dashboard_admin"
+    model = DashboardAdminAccess
+    template_name = "dashboard-admin-remove-confirm.html"
+
+    def get_success_url(self):
+        res = self.object.dashboard.get_absolute_url()
+        return f"{res}#admins"
+
+    def get_object(self, queryset=None):
+        dashboard = get_object_or_404(Dashboard, pk=self.kwargs["pk"])
+        if not dashboard.admins.count() > 1:
+            raise Http404("Dashboard has no admins that can be revoked")
+
+        return get_object_or_404(
+            dashboard.admin_access.select_related("dashboard", "user"),
+            user__pk=self.kwargs["user_id"],
+        )
+
+    def get_permission_object(self):
+        return self.get_object().dashboard
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["admin"] = self.get_object().user
+        context["dashboard"] = self.get_object().dashboard
+        return context
+
     def form_valid(self, form):
-        dashboard = self.get_object()
-        emails = form.cleaned_data["customer_email"]
-        not_notified = dashboard.add_customers(emails, self.request.user.justice_email)
+        self.object = self.get_object()
+        dashboard = self.object.dashboard
+        user = self.object.user
+
+        try:
+            dashboard.delete_admin(user=user, admin=self.request.user)
+        except utils.GovukNotifyEmailError:
+            messages.error(
+                self.request,
+                (
+                    f"Failed to notify {user.justice_email}. "
+                    "You may wish to email them to let them know their admin access has been removed."  # noqa
+                ),
+            )
+
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated admin rights for {dashboard.name}", message=None
+        )
+
         log.info(
-            f"{self.request.user.justice_email} granted {', '.join(emails)} "
-            f"access to dashboard {dashboard.name}",
+            f"{self.request.user.justice_email} removing {user.justice_email} "
+            f"admin from dashboard {dashboard.name}",
             audit="dashboard_audit",
         )
-        messages.success(self.request, "Successfully added users")
 
-        if len(not_notified) > 0:
+        return HttpResponseRedirect(self.get_success_url())
+
+
+class RevokeDashboardViewer(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = "api.revoke_dashboard_viewer"
+    model = DashboardViewerAccess
+    template_name = "dashboard-viewer-remove-confirm.html"
+
+    def get_success_url(self):
+        res = self.object.dashboard.get_absolute_url()
+        return f"{res}#viewers"
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            DashboardViewerAccess.objects.select_related("dashboard", "viewer"),
+            dashboard__pk=self.kwargs["pk"],
+            viewer__pk=self.kwargs["viewer_id"],
+        )
+
+    def get_permission_object(self):
+        return self.get_object().dashboard
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["viewer"] = self.get_object().viewer
+        context["dashboard"] = self.get_object().dashboard
+        return context
+
+    def form_valid(self, form):
+        self.object = self.get_object()
+        dashboard = self.object.dashboard
+        viewer = self.object.viewer
+
+        try:
+            dashboard.delete_viewers([viewer], admin=self.request.user)
+        except utils.GovukNotifyEmailError:
+            messages.error(
+                self.request,
+                (
+                    f"Failed to notify {viewer.email}. "
+                    "You may wish to email them to let them know their viewer access has been removed."  # noqa
+                ),
+            )
+
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have removed viewers from {dashboard.name}", message=None
+        )
+
+        log.info(
+            f"{self.request.user.justice_email} removing {viewer.email} "
+            f"viewer access from dashboard {dashboard.name}",
+            audit="dashboard_audit",
+        )
+
+        return HttpResponseRedirect(self.get_success_url())
+
+
+class AddDashboardViewers(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
+    permission_required = "api.add_dashboard_viewer"
+    template_name = "dashboard-add-viewers.html"
+    form_class = AddDashboardViewersForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.dashboard = get_object_or_404(Dashboard, pk=kwargs["pk"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_permission_object(self):
+        """Return the dashboard for object-level permission checking."""
+        return self.dashboard
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["dashboard"] = self.dashboard
+        kwargs["shared_by"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["dashboard"] = self.dashboard
+        return context
+
+    def form_valid(self, form):
+        emails, not_notified = form.save()
+
+        log.info(
+            f"{self.request.user.justice_email} granted {', '.join(emails)} "
+            f"access to dashboard {self.dashboard.name}",
+            audit="dashboard_audit",
+        )
+
+        self.request.session["success_message"] = {
+            "heading": f"You've shared {self.dashboard.name}",
+            "message": None,
+        }
+
+        if not_notified:
             messages.error(
                 self.request,
                 (
@@ -393,73 +488,13 @@ class AddDashboardCustomers(
                     "You may wish to email them your dashboard link."
                 ),
             )
+
         return HttpResponseRedirect(self.get_success_url())
 
-    def get_success_url(self, *args, **kwargs):
-        return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
+    def get_success_url(self):
+        return f"{self.dashboard.get_absolute_url()}#viewers"
 
 
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RemoveDashboardCustomerById(UpdateDashboardBaseView):
-    permission_required = "api.remove_dashboard_customer"
-
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
-
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-        user_ids = self.request.POST.getlist("customer")
-        try:
-            viewers = dashboard.delete_customers_by_id(user_ids, admin=self.request.user)
-            emails = viewers.values_list("email", flat=True)
-        except DeleteCustomerError as e:
-            sentry_sdk.capture_exception(e)
-            messages.error(self.request, f"Failed removing user{pluralize(user_ids)}")
-        else:
-            messages.success(self.request, f"Successfully removed user{pluralize(emails)}")
-            log.info(
-                f"{self.request.user.justice_email} removing {', '.join(emails)} "
-                f"access to dashboard {dashboard.name}",
-                audit="dashboard_audit",
-            )
-
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RemoveDashboardCustomerByEmail(UpdateDashboardBaseView):
-    form = None
-    permission_required = "api.remove_dashboard_customer"
-
-    def get_redirect_url(self, *args, **kwargs):
-        return reverse_lazy("dashboard-customers", kwargs={"pk": self.kwargs["pk"], "page_no": 1})
-
-    def perform_update(self, **kwargs):
-        """
-        Attempts to remove a user from a group, based on their email address
-        """
-        self.form = RemoveCustomerByEmailForm(data=self.request.POST)
-        if not self.form.is_valid():
-            self.request.session["customer_form_errors"] = self.form.errors
-            return messages.error(self.request, "Invalid email address entered")
-
-        dashboard = self.get_object()
-        email = self.form.cleaned_data["email"]
-        try:
-            dashboard.delete_customer_by_email(email, admin=self.request.user)
-        except DeleteCustomerError as e:
-            sentry_sdk.capture_exception(e)
-            return messages.error(
-                self.request, str(e) or f"Couldn't remove user with email {email}"
-            )
-
-        messages.success(self.request, f"Successfully removed user {email}")
-        log.info(
-            f"{self.request.user.justice_email} removing {email} "
-            f"access to dashboard {dashboard.name}",
-            audit="dashboard_audit",
-        )
-
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
 class GrantDomainAccess(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
@@ -469,21 +504,37 @@ class GrantDomainAccess(
     form_class = GrantDomainAccessForm
     model = Dashboard
     permission_required = "api.add_dashboard_domain"
+    template_name = "dashboard-grant-domain-access.html"
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return super().post(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         if "dashboard" not in kwargs:
-            kwargs["dashboard"] = Dashboard.objects.get(pk=self.kwargs["pk"])
+            kwargs["dashboard"] = self.object
         return kwargs
 
     def get_success_url(self):
-        return self.get_object().get_absolute_url()
+        return f"{self.object.get_absolute_url()}#domain-access"
 
     def form_valid(self, form):
         domain = form.cleaned_data["whitelist_domain"]
         dashboard = self.get_object()
-        dashboard.whitelist_domains.add(domain)
-        messages.success(self.request, f"Successfully granted access to {domain.name}")
+        DashboardDomainAccess.objects.create(
+            dashboard=dashboard,
+            domain=domain,
+            added_by=self.request.user,
+        )
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated domain access for {dashboard.name}", message=None
+        )
+
         log.info(
             f"{self.request.user.justice_email} granting {domain.name} "
             f"wide access for dashboard {dashboard.name}",
@@ -491,22 +542,44 @@ class GrantDomainAccess(
         )
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        log.warning("Received suspicious invalid grant app access request")
-        raise Exception(form.errors)
 
-
-@method_decorator(feature_flag_required("register_dashboard"), name="dispatch")
-class RevokeDomainAccess(UpdateDashboardBaseView):
+class RevokeDomainAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = "api.remove_dashboard_domain"
+    model = DashboardDomainAccess
+    template_name = "dashboard-domain-remove-confirm.html"
 
-    def perform_update(self, **kwargs):
-        dashboard = self.get_object()
-        domain = DashboardDomain.objects.get(pk=kwargs["domain_id"])
-        dashboard.whitelist_domains.remove(domain)
+    def get_success_url(self):
+        res = self.object.dashboard.get_absolute_url()
+        return f"{res}#domain-access"
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            DashboardDomainAccess.objects.select_related("dashboard", "domain"),
+            dashboard__pk=self.kwargs["pk"],
+            domain__pk=self.kwargs["domain_id"],
+        )
+
+    def get_permission_object(self):
+        return self.get_object().dashboard
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context["dashboard"] = self.get_object().dashboard
+        context["domain"] = self.get_object().domain
+        return context
+
+    def form_valid(self, form):
+        dashboard = self.object.dashboard
+        domain = self.object.domain
+
+        self.request.session["success_message"] = build_success_message(
+            heading=f"You have updated domain access for {dashboard.name}", message=None
+        )
         log.info(
-            f"{self.request.user.justice_email} revoking {domain.name} "
-            f"wide access for dashboard {dashboard.name}",
+            f"{self.request.user.justice_email} removing {domain.name} "
+            f"domain access to dashboard {dashboard.name}",
             audit="dashboard_audit",
         )
-        messages.success(self.request, f"Successfully removed {domain.name}")
+
+        return super().form_valid(form)

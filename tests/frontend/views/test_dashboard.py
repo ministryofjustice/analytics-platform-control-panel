@@ -11,9 +11,13 @@ from model_bakery import baker
 from rest_framework import status
 
 # First-party/Local
-from controlpanel.api.exceptions import DeleteCustomerError
 from controlpanel.api.models import QUICKSIGHT_EMBED_AUTHOR_PERMISSION
-from controlpanel.api.models.dashboard import Dashboard, DashboardViewer
+from controlpanel.api.models.dashboard import (
+    Dashboard,
+    DashboardDomainAccess,
+    DashboardViewer,
+    DashboardViewerAccess,
+)
 from controlpanel.utils import GovukNotifyEmailError
 
 NUM_DASHBOARDS = 3
@@ -57,13 +61,14 @@ def dashboard(users, ExtendedAuth0):
     )
 
     dashboard.admins.add(users["dashboard_admin"])
+    dashboard.admins.add(users["superuser"])
     return dashboard
 
 
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
     viewer = baker.make(DashboardViewer, email=users["dashboard_admin"].justice_email)
-    dashboard.viewers.add(viewer)
+    DashboardViewerAccess.objects.create(dashboard=dashboard, viewer=viewer)
     return viewer
 
 
@@ -74,9 +79,11 @@ def dashboard_domain():
 
 
 @pytest.fixture
-def add_dashboard_domain(dashboard):
+def add_dashboard_domain(dashboard, users):
     domain = baker.make("api.DashboardDomain", name="test.gov.uk")
-    dashboard.whitelist_domains.add(domain)
+    DashboardDomainAccess.objects.create(
+        dashboard=dashboard, domain=domain, added_by=users["superuser"]
+    )
     return domain
 
 
@@ -89,7 +96,9 @@ def list_all(client, *args):
 
 
 def detail(client, dashboard, *args):
-    return client.get(reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}))
+    with patch("controlpanel.api.aws.AWSQuicksight.get_dashboard_embed_url") as mock_embed:
+        mock_embed.return_value = "https://quicksight.aws.amazon.com/embed/test"
+        return client.get(dashboard.get_absolute_url())
 
 
 def create(client, *args):
@@ -98,18 +107,30 @@ def create(client, *args):
         return client.get(reverse("register-dashboard"))
 
 
-def delete(client, dashboard, *args):
-    return client.post(reverse("delete-dashboard", kwargs={"pk": dashboard.id}))
+def delete_get(client, dashboard, *args):
+    return client.get(dashboard.get_absolute_delete_url())
+
+
+def delete_post(client, dashboard, *args):
+    return client.post(dashboard.get_absolute_delete_url())
 
 
 def add_admin(client, dashboard, users, *args):
     data = {
-        "user_id": users["other_user"].auth0_id,
+        "users[0]": users["quicksight_compute_author"].auth0_id,
     }
-    return client.post(reverse("add-dashboard-admin", kwargs={"pk": dashboard.id}), data)
+    return client.post(dashboard.get_absolute_add_admins_url(), data)
 
 
-def revoke_admin(client, dashboard, users, *args):
+def revoke_admin_get(client, dashboard, users, *args):
+    kwargs = {
+        "pk": dashboard.id,
+        "user_id": users["dashboard_admin"].auth0_id,
+    }
+    return client.get(reverse("revoke-dashboard-admin", kwargs=kwargs))
+
+
+def revoke_admin_post(client, dashboard, users, *args):
     kwargs = {
         "pk": dashboard.id,
         "user_id": users["dashboard_admin"].auth0_id,
@@ -117,39 +138,78 @@ def revoke_admin(client, dashboard, users, *args):
     return client.post(reverse("revoke-dashboard-admin", kwargs=kwargs))
 
 
-def add_customers(client, dashboard, *args):
-    data = {
-        "customer_email": "test@example.com",
+def revoke_viewer_get(client, dashboard, users, dashboard_domain, dashboard_viewer):
+    kwargs = {
+        "pk": dashboard.id,
+        "viewer_id": dashboard_viewer.id,
     }
-    return client.post(reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}), data)
+    return client.get(reverse("revoke-dashboard-viewer", kwargs=kwargs))
 
 
-def remove_customers(client, dashboard, *args):
-    data = {
-        "customer": "1",
+def revoke_viewer_post(client, dashboard, users, dashboard_domain, dashboard_viewer):
+    kwargs = {
+        "pk": dashboard.id,
+        "viewer_id": dashboard_viewer.id,
     }
-    return client.post(reverse("remove-dashboard-customer", kwargs={"pk": dashboard.id}), data)
+    return client.post(reverse("revoke-dashboard-viewer", kwargs=kwargs))
 
 
-def remove_customer_by_email(client, dashboard, *args):
-    return client.post(
-        reverse("remove-dashboard-customer-by-email", kwargs={"pk": dashboard.id}), data={}
-    )
+def add_viewers_get(client, dashboard, *args):
+    return client.get(dashboard.get_absolute_add_viewers_url())
 
 
-def grant_domain_access(client, dashboard, users, dashboard_domain, *args):
+def add_viewers_post(client, dashboard, *args):
+    data = {
+        "emails[0]": "test@example.com",
+    }
+    return client.post(dashboard.get_absolute_add_viewers_url(), data)
+
+
+def grant_domain_access_get(client, dashboard, users, dashboard_domain, *args):
+    return client.get(dashboard.get_absolute_grant_domain_url())
+
+
+def grant_domain_access_post(client, dashboard, users, dashboard_domain, *args):
     data = {
         "whitelist_domain": dashboard_domain.id,
     }
-    return client.post(reverse("grant-domain-access", kwargs={"pk": dashboard.id}), data=data)
+    return client.post(dashboard.get_absolute_grant_domain_url(), data=data)
 
 
-def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
+def revoke_domain_access_get(client, dashboard, users, dashboard_domain, *args):
+    DashboardDomainAccess.objects.get_or_create(
+        dashboard=dashboard, domain=dashboard_domain, defaults={"added_by": users["superuser"]}
+    )
+    return client.get(
+        reverse(
+            "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
+        )
+    )
+
+
+def revoke_domain_access_post(client, dashboard, users, dashboard_domain, *args):
+    DashboardDomainAccess.objects.get_or_create(
+        dashboard=dashboard, domain=dashboard_domain, defaults={"added_by": users["superuser"]}
+    )
     return client.post(
         reverse(
             "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id}
         ),
         data={},
+    )
+
+
+def update_description_get(client, dashboard, users, *args):
+    return client.get(dashboard.get_absolute_change_description_url())
+
+
+def update_description_post(client, dashboard, users, *args):
+    data = {
+        "description": "Updated description",
+    }
+    return client.post(
+        dashboard.get_absolute_change_description_url(),
+        data=data,
     )
 
 
@@ -168,44 +228,73 @@ def revoke_domain_access(client, dashboard, users, dashboard_domain, *args):
         (create, "superuser", status.HTTP_200_OK),
         (create, "dashboard_admin", status.HTTP_200_OK),
         (create, "normal_user", status.HTTP_403_FORBIDDEN),
-        (delete, "superuser", status.HTTP_302_FOUND),
-        (delete, "dashboard_admin", status.HTTP_302_FOUND),
-        (delete, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_get, "superuser", status.HTTP_200_OK),
+        (delete_get, "dashboard_admin", status.HTTP_200_OK),
+        (delete_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (delete_post, "superuser", status.HTTP_302_FOUND),
+        (delete_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (delete_post, "normal_user", status.HTTP_403_FORBIDDEN),
         (add_admin, "superuser", status.HTTP_302_FOUND),
         (add_admin, "dashboard_admin", status.HTTP_302_FOUND),
         (add_admin, "normal_user", status.HTTP_403_FORBIDDEN),
-        (revoke_admin, "superuser", status.HTTP_302_FOUND),
-        (revoke_admin, "dashboard_admin", status.HTTP_302_FOUND),
-        (revoke_admin, "normal_user", status.HTTP_403_FORBIDDEN),
-        (add_customers, "superuser", status.HTTP_302_FOUND),
-        (add_customers, "dashboard_admin", status.HTTP_302_FOUND),
-        (add_customers, "normal_user", status.HTTP_403_FORBIDDEN),
-        (remove_customers, "superuser", status.HTTP_302_FOUND),
-        (remove_customers, "dashboard_admin", status.HTTP_302_FOUND),
-        (remove_customers, "normal_user", status.HTTP_403_FORBIDDEN),
-        (remove_customer_by_email, "superuser", status.HTTP_302_FOUND),
-        (remove_customer_by_email, "dashboard_admin", status.HTTP_302_FOUND),
-        (remove_customer_by_email, "normal_user", status.HTTP_403_FORBIDDEN),
-        (grant_domain_access, "superuser", status.HTTP_302_FOUND),
-        (grant_domain_access, "dashboard_admin", status.HTTP_302_FOUND),
-        (grant_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
-        (revoke_domain_access, "superuser", status.HTTP_302_FOUND),
-        (revoke_domain_access, "dashboard_admin", status.HTTP_302_FOUND),
-        (revoke_domain_access, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_admin_get, "superuser", status.HTTP_200_OK),
+        (revoke_admin_get, "dashboard_admin", status.HTTP_200_OK),
+        (revoke_admin_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_admin_post, "superuser", status.HTTP_302_FOUND),
+        (revoke_admin_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (revoke_admin_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_viewer_get, "superuser", status.HTTP_200_OK),
+        (revoke_viewer_get, "dashboard_admin", status.HTTP_200_OK),
+        (revoke_viewer_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_viewer_post, "superuser", status.HTTP_302_FOUND),
+        (revoke_viewer_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (revoke_viewer_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (add_viewers_get, "superuser", status.HTTP_200_OK),
+        (add_viewers_get, "dashboard_admin", status.HTTP_200_OK),
+        (add_viewers_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (add_viewers_post, "superuser", status.HTTP_302_FOUND),
+        (add_viewers_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (add_viewers_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (grant_domain_access_get, "superuser", status.HTTP_200_OK),
+        (grant_domain_access_get, "dashboard_admin", status.HTTP_200_OK),
+        (grant_domain_access_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (grant_domain_access_post, "superuser", status.HTTP_302_FOUND),
+        (grant_domain_access_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (grant_domain_access_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_domain_access_get, "superuser", status.HTTP_200_OK),
+        (revoke_domain_access_get, "dashboard_admin", status.HTTP_200_OK),
+        (revoke_domain_access_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (revoke_domain_access_post, "superuser", status.HTTP_302_FOUND),
+        (revoke_domain_access_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (revoke_domain_access_post, "normal_user", status.HTTP_403_FORBIDDEN),
+        (update_description_get, "superuser", status.HTTP_200_OK),
+        (update_description_get, "dashboard_admin", status.HTTP_200_OK),
+        (update_description_get, "normal_user", status.HTTP_403_FORBIDDEN),
+        (update_description_post, "superuser", status.HTTP_302_FOUND),
+        (update_description_post, "dashboard_admin", status.HTTP_302_FOUND),
+        (update_description_post, "normal_user", status.HTTP_403_FORBIDDEN),
     ],
 )
 def test_permissions(
-    client, dashboard, users, dashboard_domain, view, user, expected_status, govuk_notify_send_email
+    client,
+    dashboard,
+    users,
+    dashboard_domain,
+    dashboard_viewer,
+    view,
+    user,
+    expected_status,
+    govuk_notify_send_email,
 ):
     client.force_login(users[user])
-    response = view(client, dashboard, users, dashboard_domain)
+    response = view(client, dashboard, users, dashboard_domain, dashboard_viewer)
     assert response.status_code == expected_status
 
 
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list_dashboards, "superuser", 0),
+        (list_dashboards, "superuser", 1),
         (list_dashboards, "dashboard_admin", 1),
         (list_all, "superuser", NUM_DASHBOARDS),
     ],
@@ -220,21 +309,21 @@ def test_list_dashboards_displays_success_message(client, users):
     """Dashboard list displays success message from session and clears it."""
     client.force_login(users["superuser"])
     session = client.session
-    session["dashboard_created"] = {
-        "name": "My New Dashboard",
-        "url": "/quicksight/dashboards/123/",
+    session["success_message"] = {
+        "heading": "My New Dashboard",
+        "message": "You've created a new dashboard.",
     }
     session.save()
 
     response = client.get(reverse("list-dashboards"))
 
     assert response.status_code == 200
-    assert response.context_data["dashboard_created"] == {
-        "name": "My New Dashboard",
-        "url": "/quicksight/dashboards/123/",
+    assert response.context_data["success_message"] == {
+        "heading": "My New Dashboard",
+        "message": "You've created a new dashboard.",
     }
     # Session should be cleared after displaying
-    assert "dashboard_created" not in client.session
+    assert "success_message" not in client.session
 
 
 def test_list_dashboards_no_success_message(client, users):
@@ -244,172 +333,77 @@ def test_list_dashboards_no_success_message(client, users):
     response = client.get(reverse("list-dashboards"))
 
     assert response.status_code == 200
-    assert response.context_data["dashboard_created"] is None
+    assert response.context_data["success_message"] is None
 
 
-def add_customer_success(client, response):
-    return "customer_form_errors" not in client.session
+def add_viewer_success(client, response):
+    return "success_message" in client.session
 
 
-def add_customer_form_error(client, response):
-    return "customer_form_errors" in client.session
+def add_viewer_form_error(client, response):
+    # New form shows errors on the same page (200 response) instead of redirecting
+    return (
+        response.status_code == 200
+        and response.context_data
+        and response.context_data["form"].errors
+    )
 
 
 @pytest.mark.parametrize(
-    "emails, expected_response, count",
+    "emails_data, expected_response, count",
     [
-        ("foo@example.com", add_customer_success, 1),
-        ("FOO@example.com", add_customer_success, 1),
-        ("foo@example.com, bar@example.com", add_customer_success, 2),
-        ("FOO@EXAMPLE.COM, Bar@example.com", add_customer_success, 2),
-        ("foobar", add_customer_form_error, 0),
-        ("foo@example.com, foobar", add_customer_form_error, 0),
-        ("", add_customer_form_error, 0),
+        ({"emails[0]": "foo@example.com"}, add_viewer_success, 1),
+        ({"emails[0]": "FOO@example.com"}, add_viewer_success, 1),
+        ({"emails[0]": "foo@example.com", "emails[1]": "bar@example.com"}, add_viewer_success, 2),
+        ({"emails[0]": "FOO@EXAMPLE.COM", "emails[1]": "Bar@example.com"}, add_viewer_success, 2),
+        ({"emails[0]": "foobar"}, add_viewer_form_error, 0),
+        ({"emails[0]": "foo@example.com", "emails[1]": "foobar"}, add_viewer_form_error, 0),
+        ({}, add_viewer_form_error, 0),
     ],
     ids=[
         "single-valid-email",
         "single-valid-email-uppercase",
-        "multiple-delimited-emails",
-        "multiple-delimited-emails-uppercase",
+        "multiple-emails",
+        "multiple-emails-uppercase",
         "invalid-email",
         "mixed-valid-invalid-emails",
         "no-emails",
     ],
 )
-def test_add_customers(
+def test_add_viewers(
     client,
     dashboard,
     dashboard_viewer,
     users,
-    emails,
+    emails_data,
     expected_response,
     count,
     govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
-    data = {"customer_email": emails}
-    response = client.post(
-        reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
-        data,
-    )
+    response = client.post(dashboard.get_absolute_add_viewers_url(), emails_data)
     assert expected_response(client, response)
-    emails = [email.strip().lower() for email in emails.split(",")]
+    emails = [v.strip().lower() for v in emails_data.values() if v]
     assert dashboard.viewers.filter(email__in=emails).count() == count
 
 
-def test_add_customers_fail_notify(
+def test_add_viewers_fail_notify(
     client,
     dashboard,
     dashboard_viewer,
     users,
+    govuk_notify_send_email,
 ):
     client.force_login(users["superuser"])
-    data = {"customer_email": ["test.user@justice.gov.uk"]}
-    with patch(
-        "controlpanel.api.models.dashboard.govuk_notify_send_email"
-    ) as govuk_notify_send_email:
-        govuk_notify_send_email.side_effect = GovukNotifyEmailError()
-        response = client.post(
-            reverse("add-dashboard-customers", kwargs={"pk": dashboard.id}),
-            data,
-        )
-        messages = [str(m) for m in get_messages(response.wsgi_request)]
-        assert (
-            "Failed to notify test.user@justice.gov.uk. "
-            "You may wish to email them your dashboard link."
-        ) in messages
+    data = {"emails[0]": "test.user@justice.gov.uk"}
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
 
-
-def remove_customer_success(client, response):
+    response = client.post(dashboard.get_absolute_add_viewers_url(), data)
     messages = [str(m) for m in get_messages(response.wsgi_request)]
-    for message in messages:
-        if "Successfully removed user" in message:
-            return True
-
-    return False
-
-
-def remove_customer_failure(client, response):
-    messages = [str(m) for m in get_messages(response.wsgi_request)]
-    for message in messages:
-        if "Failed removing user" in message:
-            return True
-
-    return False
-    return "" in messages
-
-
-@pytest.mark.parametrize(
-    "side_effect, expected_response",
-    [
-        (None, remove_customer_success),
-        (DeleteCustomerError, remove_customer_failure),
-    ],
-    ids=[
-        "success",
-        "failure",
-    ],
-)
-def test_delete_customers(
-    client,
-    dashboard,
-    users,
-    dashboard_viewer,
-    side_effect,
-    expected_response,
-):
-    with patch(
-        "controlpanel.frontend.views.dashboard.Dashboard.delete_customers_by_id"
-    ) as delete_by_email:
-        delete_by_email.side_effect = side_effect
-        client.force_login(users["superuser"])
-        data = {"customer": [dashboard_viewer.id]}
-
-        response = client.post(
-            reverse("remove-dashboard-customer", kwargs={"pk": dashboard.id}), data
-        )
-        assert expected_response(client, response)
-
-
-def test_delete_cutomer_by_email_invalid_email(client, dashboard, users):
-    client.force_login(users["superuser"])
-    url = reverse("remove-dashboard-customer-by-email", kwargs={"pk": dashboard.id})
-    response = client.post(
-        url,
-        data={
-            "remove-email": "notanemail",
-        },
-    )
-    messages = [str(m) for m in get_messages(response.wsgi_request)]
-    assert response.status_code == 302
-    assert "Invalid email address entered" in messages
-
-
-@pytest.mark.parametrize(
-    "side_effect, expected_message",
-    [
-        (None, "Successfully removed user email@example.com"),
-        # fallback to display generic message if raised without one
-        (DeleteCustomerError(), "Couldn't remove user with email email@example.com"),
-        # specific error message displayed
-        (DeleteCustomerError("API error"), "API error"),
-    ],
-)
-def test_delete_customer_by_email(client, dashboard, users, side_effect, expected_message):
-    client.force_login(users["superuser"])
-    url = reverse("remove-dashboard-customer-by-email", kwargs={"pk": dashboard.id})
-    with patch(
-        "controlpanel.frontend.views.dashboard.Dashboard.delete_customer_by_email"
-    ) as delete_by_email:
-        delete_by_email.side_effect = side_effect
-        response = client.post(
-            url,
-            data={"remove-email": "email@example.com"},
-        )
-        delete_by_email.assert_called_once()
-        messages = [str(m) for m in get_messages(response.wsgi_request)]
-        assert response.status_code == 302
-        assert expected_message in messages
+    assert (
+        "Failed to notify test.user@justice.gov.uk. "
+        "You may wish to email them your dashboard link."
+    ) in messages
 
 
 def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
@@ -424,10 +418,17 @@ def test_add_dashboard_domain(client, dashboard, users, dashboard_domain):
     assert response.status_code == 302
     updated_dashboard = Dashboard.objects.get(pk=dashboard.id)
     assert updated_dashboard.whitelist_domains.count() == 1
+    # Verify added_by is stored
+    domain_access = DashboardDomainAccess.objects.get(
+        dashboard=updated_dashboard, domain=dashboard_domain
+    )
+    assert domain_access.added_by == users["superuser"]
 
 
 def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain):
     client.force_login(users["superuser"])
+    access = DashboardDomainAccess.objects.get(dashboard=dashboard, domain=add_dashboard_domain)
+    access_id = access.id
     url = reverse(
         "revoke-domain-access", kwargs={"pk": dashboard.id, "domain_id": add_dashboard_domain.id}
     )
@@ -440,6 +441,14 @@ def test_revoke_dashboard_domain(client, dashboard, users, add_dashboard_domain)
     assert response.status_code == 302
     updated_dashboard = Dashboard.objects.get(pk=dashboard.id)
     assert updated_dashboard.whitelist_domains.count() == 0
+    HistoricalDashboardDomainAccess = DashboardDomainAccess.history.model
+    history_record = HistoricalDashboardDomainAccess.objects.filter(
+        id=access_id,
+        history_type="-",
+    ).first()
+    assert history_record is not None
+    assert history_record.dashboard_id == dashboard.id
+    assert history_record.domain_id == add_dashboard_domain.id
 
 
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
@@ -783,10 +792,8 @@ def test_preview_dashboard_confirm_creates_dashboard(
     assert dashboard.description == "Confirmed description"
     assert dashboard.created_by == users["superuser"]
     assert users["superuser"] in dashboard.admins.all()
-    # Check viewers (creator + additional email)
-    viewer_emails = list(dashboard.viewers.values_list("email", flat=True))
-    assert users["superuser"].justice_email.lower() in viewer_emails
-    assert "viewer@example.com" in viewer_emails
+    # Check viewers
+    assert dashboard.viewers.filter(email="viewer@example.com").exists()
     # Session should be cleared
     assert "dashboard_preview" not in client.session
 
@@ -826,6 +833,9 @@ def test_preview_dashboard_confirm_creates_dashboard_with_whitelist_domain(
     assert response.status_code == 302
     assert dashboard.whitelist_domains.count() == 1
     assert dashboard_domain in dashboard.whitelist_domains.all()
+    # Verify added_by is stored
+    domain_access = DashboardDomainAccess.objects.get(dashboard=dashboard, domain=dashboard_domain)
+    assert domain_access.added_by == users["superuser"]
 
 
 @patch("controlpanel.api.aws.AWSQuicksight.get_dashboards_for_user")
@@ -871,33 +881,207 @@ def test_cancel_dashboard_registration_clears_session(client, users):
 
 
 @pytest.mark.parametrize(
-    "user_id, expected_message, count",
+    "user_id, expected_message",
     [
-        ("invalid_user", "User not found", 0),
-        ("", "User not found", 0),
-        ("github|user_3", "User cannot be added as a dashboard admin", 0),
-        ("github|user_5", "Granted admin access to ", 1),
+        ("invalid_user", "User not found"),
+        ("", "Select a user"),
+        ("github|user_3", "One or more selected users cannot be added as admins"),
     ],
 )
-def test_add_admin(
-    user_id, expected_message, count, client, dashboard, users, govuk_notify_send_email
+def test_add_admin_validation_errors(
+    user_id,
+    expected_message,
+    client,
+    dashboard,
+    users,
 ):
     client.force_login(users["superuser"])
     url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
-    data = {
-        "user_id": user_id,
-    }
-    response = client.post(url, data)
+    response = client.post(url, {"users[0]": user_id})
+
+    assert response.status_code == 200
+    assert expected_message in response.content.decode()
+    assert dashboard.admins.filter(auth0_id=user_id).count() == 0
+
+
+def test_add_admin_success(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse("add-dashboard-admin", kwargs={"pk": dashboard.id})
+    response = client.post(url, {"users[0]": users["quicksight_compute_author"].auth0_id})
+
     assert response.status_code == 302
-    assert response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id})
-    assert dashboard.admins.filter(auth0_id=user_id).count() == count
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin rights for" in client.session["success_message"]["heading"]
+    assert (
+        dashboard.admins.filter(auth0_id=users["quicksight_compute_author"].auth0_id).count() == 1
+    )
+    govuk_notify_send_email.call_count == 2
+
+
+def test_revoke_admin_success(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["dashboard_admin"].auth0_id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 302
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin rights for" in client.session["success_message"]["heading"]
+    assert dashboard.admins.filter(auth0_id=users["dashboard_admin"].auth0_id).count() == 0
+    govuk_notify_send_email.assert_called_once()
+
+
+def test_revoke_admin_fail(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["quicksight_compute_reader"].auth0_id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404
+    govuk_notify_send_email.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "http_method",
+    ["get", "post"],
+    ids=["GET", "POST"],
+)
+def test_revoke_last_admin_fails(client, users, govuk_notify_send_email, http_method):
+    """Test that revoking the last admin from a dashboard returns 404."""
+    client.force_login(users["superuser"])
+
+    # Create a dashboard with only one admin
+    single_admin_dashboard = baker.make(
+        "api.Dashboard",
+        name="single-admin-dashboard",
+        quicksight_id="single-123",
+        created_by=users["dashboard_admin"],
+    )
+    single_admin_dashboard.admins.add(users["dashboard_admin"])
+
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": single_admin_dashboard.id, "user_id": users["dashboard_admin"].auth0_id},
+    )
+
+    # Make the request using the specified HTTP method
+    response = getattr(client, http_method)(url)
+
+    # Should return 404 since we can't revoke the last admin
+    assert response.status_code == 404
+
+    # Admin should still be there
+    assert (
+        single_admin_dashboard.admins.filter(auth0_id=users["dashboard_admin"].auth0_id).count()
+        == 1
+    )
+
+    # No notification should have been sent
+    govuk_notify_send_email.assert_not_called()
+
+
+def test_revoke_viewer_success(client, dashboard, dashboard_viewer, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-viewer",
+        kwargs={"pk": dashboard.id, "viewer_id": dashboard_viewer.id},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 302
+    assert (
+        response.url
+        == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#viewers"
+    )
+    assert "You have removed viewers from" in client.session["success_message"]["heading"]
+    assert dashboard.viewers.filter(pk=dashboard_viewer.id).count() == 0
+    govuk_notify_send_email.assert_called_once()
+
+
+def test_revoke_viewer_fail(client, dashboard, users, govuk_notify_send_email):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-dashboard-viewer",
+        kwargs={"pk": dashboard.id, "viewer_id": 99999},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404
+    govuk_notify_send_email.assert_not_called()
+
+
+def test_revoke_admin_notify_error(client, dashboard, users, govuk_notify_send_email):
+    """Test revoking admin but notify email fails."""
+    client.force_login(users["superuser"])
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
+
+    url = reverse(
+        "revoke-dashboard-admin",
+        kwargs={"pk": dashboard.id, "user_id": users["dashboard_admin"].auth0_id},
+    )
+    response = client.post(url)
+
+    # Admin should still be removed despite notification error
+    assert response.status_code == 302
+    assert (
+        response.url == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#admins"
+    )
+    assert "You have updated admin rights for" in client.session["success_message"]["heading"]
+    assert dashboard.admins.filter(auth0_id=users["dashboard_admin"].auth0_id).count() == 0
+
+    # Check error message was shown
     messages = [str(m) for m in get_messages(response.wsgi_request)]
-    assert expected_message in messages
-    if count:
-        govuk_notify_send_email.assert_called_once()
+    assert any(
+        "Failed to notify dashboard.admin@justice.gov.uk" in msg
+        and "their admin access has been removed" in msg
+        for msg in messages
+    )
+    govuk_notify_send_email.assert_called_once()
 
 
-def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, ExtendedAuth0):
+def test_revoke_viewer_notify_error(
+    client, dashboard, dashboard_viewer, users, govuk_notify_send_email
+):
+    """Test revoking viewer but notify email fails."""
+    client.force_login(users["superuser"])
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
+
+    url = reverse(
+        "revoke-dashboard-viewer",
+        kwargs={"pk": dashboard.id, "viewer_id": dashboard_viewer.id},
+    )
+    response = client.post(url)
+
+    # Viewer should still be removed despite notification error
+    assert response.status_code == 302
+    assert (
+        response.url
+        == reverse("manage-dashboard-sharing", kwargs={"pk": dashboard.id}) + "#viewers"
+    )
+    assert "You have removed viewers from" in client.session["success_message"]["heading"]
+    assert dashboard.viewers.filter(pk=dashboard_viewer.id).count() == 0
+
+    # Check error message was shown
+    messages = [str(m) for m in get_messages(response.wsgi_request)]
+    assert any(
+        f"Failed to notify {dashboard_viewer.email}" in msg
+        and "their viewer access has been removed" in msg
+        for msg in messages
+    )
+    govuk_notify_send_email.assert_called_once()
+
+
+def test_preview_dashboard_confirm_creates_dashboard_fail_notify(
+    client, users, ExtendedAuth0, govuk_notify_send_email
+):
     """Confirming preview creates dashboard but shows error if notify fails."""
     client.force_login(users["superuser"])
     session = client.session
@@ -910,11 +1094,10 @@ def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, 
     }
     session.save()
 
-    url = reverse("preview-dashboard")
+    govuk_notify_send_email.side_effect = GovukNotifyEmailError()
 
-    with patch("controlpanel.api.models.dashboard.govuk_notify_send_email") as mock_send_email:
-        mock_send_email.side_effect = GovukNotifyEmailError()
-        response = client.post(url)
+    url = reverse("preview-dashboard")
+    response = client.post(url)
 
     # Dashboard should still be created
     dashboard = Dashboard.objects.get(quicksight_id="confirm-123")
@@ -931,3 +1114,30 @@ def test_preview_dashboard_confirm_creates_dashboard_fail_notify(client, users, 
     assert (
         "Failed to notify viewer@example.com. " "You may wish to email them your dashboard link."
     ) in messages
+
+
+def test_update_description(client, users, dashboard):
+    """Test updating the dashboard description."""
+    client.force_login(users["dashboard_admin"])
+    new_description = "Updated dashboard description"
+
+    url = reverse("update-dashboard-description", kwargs={"pk": dashboard.id})
+    data = {
+        "description": new_description,
+    }
+    response = client.post(url, data)
+
+    dashboard = Dashboard.objects.get(id=dashboard.id)
+    assert response.status_code == 302
+    assert dashboard.description == new_description
+
+
+def test_revoke_domain_fail(client, dashboard, users, dashboard_domain):
+    client.force_login(users["superuser"])
+    url = reverse(
+        "revoke-domain-access",
+        kwargs={"pk": dashboard.id, "domain_id": dashboard_domain.id + 1},
+    )
+    response = client.post(url)
+
+    assert response.status_code == 404

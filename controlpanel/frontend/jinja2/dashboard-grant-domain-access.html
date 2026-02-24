@@ -1,0 +1,52 @@
+{% from "error-message/macro.html" import govukErrorMessage %}
+{% from "error-summary/macro.html" import govukErrorSummary -%}
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "Add domain - " ~ dashboard.name %}
+
+{% block content %}
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      {% if form.errors %}
+        {{ govukErrorSummary(titleText="There is a problem", errorList=form.errors.items()) }}
+      {% endif %}
+
+      <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+      <h1 class="govuk-heading-xl">Add domain</h1>
+
+      <p class="govuk-body">Allow all users on a specified email domain to view your dashboard.</p>
+
+      <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+          <span class="govuk-visually-hidden">Warning</span>
+          Do not use for dashboards containing sensitive data.
+        </strong>
+      </div>
+
+
+      <p class="govuk-body govuk-!-font-weight-bold">Add domain</p>
+      <form method="post" action="{{ dashboard.get_absolute_grant_domain_url() }}">
+        {{ csrf_input }}
+        <div class="govuk-form-group{% if form.whitelist_domain.errors %} govuk-form-group--error{% endif %}">
+          {% if form.whitelist_domain.errors %}
+            {{ govukErrorMessage({"html": form.whitelist_domain.errors | join(". ")}) }}
+          {% endif %}
+          {{ form.whitelist_domain }}
+          <div class="govuk-button-group govuk-!-margin-top-4">
+            <button type="submit" class="govuk-button govuk-!-margin-right-2">
+              Add domain
+            </button>
+            <a href="{{ dashboard.get_absolute_url() }}#domain-access" class="govuk-link">
+              Cancel
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

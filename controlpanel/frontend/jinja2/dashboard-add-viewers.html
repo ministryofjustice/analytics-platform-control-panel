@@ -1,0 +1,75 @@
+{% from "input/macro.html" import govukInput %}
+{% from "error-summary/macro.html" import govukErrorSummary -%}
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "Add viewers - " ~ dashboard.name %}
+
+{% set back_link_url = dashboard.get_absolute_url() ~ "#viewers" %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    {% if form.errors %}
+      {{ govukErrorSummary(titleText="There is a problem", errorList=form.get_error_summary().items()) }}
+    {% endif %}
+
+    <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+    <h1 class="govuk-heading-xl">Add viewers</h1>
+
+    <p class="govuk-body govuk-!-margin-bottom-0">
+      Allow colleagues and stakeholders to view your dashboards.
+    </p>
+
+    <p class="govuk-body">
+       They'll be able to view even without Analytical Platform access.
+    </p>
+
+    <form method="post" action="{{ dashboard.get_absolute_add_viewers_url() }}" novalidate>
+      {{ csrf_input }}
+
+      {% set emails_field = form["emails"] %}
+      <div class="govuk-form-group{% if emails_field.errors %} govuk-form-group--error{% endif %}">
+        <fieldset class="govuk-fieldset">
+          <div data-module="moj-add-another">
+              {% for email in form.emails.value() or [""]%}
+                {% set index_error = form.emails.field.index_errors.get(loop.index0) %}
+                <div class="moj-add-another__item">
+                  {{ govukInput({
+                    "label": {"text": emails_field.label, "classes": "govuk-label--s"},
+                    "hint": {"text": emails_field.help_text},
+                    "name": emails_field.name ~ "[" ~ loop.index0 ~ "]",
+                    "id": "id_" ~ emails_field.name ~ "[" ~ loop.index0 ~ "]",
+                    "type": "email",
+                    "attributes": {
+                      "data-name": emails_field.name ~ "[%index%]",
+                      "data-id": "id_" ~ emails_field.name ~ "[%index%]"
+                    },
+                    "errorMessage": {"text": index_error} if index_error else None,
+                    "value": email,
+                  }) }}
+                  {% if (form.emails.value() or [""])|length > 1 %}
+                    <button type="button" class="govuk-button govuk-button--secondary moj-add-another__remove-button">Remove</button>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            <div class="moj-button-action govuk-!-margin-top-4">
+              <button type="button" class="govuk-button govuk-button--secondary moj-add-another__add-button govuk-!-margin-bottom-4">
+                Add another email
+              </button>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="govuk-button-group">
+        <button class="govuk-button" type="submit">Add viewers</button>
+        <a class="govuk-link" href="{{ dashboard.get_absolute_url() }}#viewers">Cancel</a>
+      </div>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

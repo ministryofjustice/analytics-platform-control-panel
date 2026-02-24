@@ -1,0 +1,20 @@
+{% macro govukErrorSummary(titleText="There is a problem", errorList=[]) %}
+  <div class="govuk-error-summary" data-module="govuk-error-summary">
+    <div role="alert">
+      <h2 class="govuk-error-summary__title">
+        {{ titleText }}
+      </h2>
+      <div class="govuk-error-summary__body">
+        <ul class="govuk-list govuk-error-summary__list">
+          {% for field, errors in errorList %}
+            {% for error in errors %}
+              <li>
+                <a href="#{{ field }}">{{ error }}</a>
+              </li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endmacro %}

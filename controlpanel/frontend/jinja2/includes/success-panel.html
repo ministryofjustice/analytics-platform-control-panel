@@ -1,0 +1,28 @@
+{% from "modal-dialog/macro.html" import modal_dialog %}
+{% from "includes/yesno.html" import yes_no %}
+
+{% macro success_panel(heading, message) %}
+
+<div class="govuk-grid-row" id="reset-container">
+  <div class="govuk-grid-column-two-thirds">
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+      <div class="govuk-notification-banner__header">
+        <h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">
+          Success
+        </h2>
+      </div>
+      <div class="govuk-notification-banner__content">
+        <h3 class="govuk-notification-banner__heading">
+          {{heading}}
+        </h3>
+        {% if message %}
+        <p class="govuk-body">
+          {{ message | safe }}
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endmacro %}

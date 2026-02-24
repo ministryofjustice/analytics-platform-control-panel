@@ -12,6 +12,7 @@ from django.core.validators import RegexValidator, validate_email
 from django.db.models import Q
 
 # First-party/Local
+from controlpanel import utils
 from controlpanel.api import validators
 from controlpanel.api.aws import AWSIdentityStore, AWSQuicksight
 from controlpanel.api.cluster import AWSRoleCategory
@@ -23,6 +24,7 @@ from controlpanel.api.models import (
     QUICKSIGHT_EMBED_READER_PERMISSION,
     App,
     Dashboard,
+    DashboardAdminAccess,
     DashboardDomain,
     Feedback,
     S3Bucket,
@@ -33,9 +35,69 @@ from controlpanel.api.models.access_to_s3bucket import S3BUCKET_PATH_REGEX
 from controlpanel.api.models.iam_managed_policy import POLICY_NAME_REGEX
 from controlpanel.api.models.ip_allowlist import IPAllowlist
 from controlpanel.api.models.tool import ToolDeployment
-from controlpanel.utils import build_tool_url
 
 CUSTOMERS_DELIMITERS = re.compile(r"[,; ]+")
+
+
+class ErrorSummaryMixin:
+    """
+    Mixin for forms with indexed array-style fields (e.g. emails[0], emails[1]).
+
+    Provides get_error_summary() that correctly links errors to specific indexed
+    inputs, rather than just the field name. Required for proper error summary
+    linking when using fields like MultiEmailField with the moj-add-another component.
+
+    For standard forms without indexed fields, use form.errors directly.
+
+    Usage:
+        class MyForm(ErrorSummaryMixin, forms.Form):
+            emails = MultiEmailField()
+
+        # In view:
+        error_summary = form.get_error_summary()
+    """
+
+    def get_error_summary(self):
+        """
+        Generate a summary of unique error messages from form errors.
+
+        Returns a dict mapping field keys to lists of error messages, suitable
+        for use with govukErrorSummary macro via .items().
+
+        Handles fields with index_errors (like MultiEmailField) by expanding
+        them to include the index in the field key for proper error linking.
+        """
+        error_summary = {}
+        seen_messages = set()
+
+        # collect index-specific errors from fields that have them
+        for field_name, field in self.fields.items():
+            if not hasattr(field, "index_errors") or not field.index_errors:
+                continue
+
+            for index, error in field.index_errors.items():
+                if error in seen_messages:
+                    continue
+
+                seen_messages.add(error)
+                field_key = f"id_{field_name}[{index}]"
+                error_summary.setdefault(field_key, []).append(error)
+
+        # collect form-level errors, skipping already-seen messages
+        for field_name, errors in self.errors.items():
+            for error in errors:
+                if error in seen_messages:
+                    continue
+
+                seen_messages.add(error)
+                field_key = f"id_{field_name}"
+                # for indexed fields, point to the first input
+                if hasattr(self.fields.get(field_name), "index_errors"):
+                    field_key = f"{field_key}[0]"
+
+                error_summary.setdefault(field_key, []).append(error)
+
+        return error_summary
 
 
 class DatasourceChoiceField(forms.ModelChoiceField):
@@ -55,11 +117,11 @@ class DynamicMultiChoiceField(forms.MultipleChoiceField):
             raise ValidationError(self.error_messages["required"], code="required")
 
 
-class MultiEmailWidget(forms.TextInput):
+class IndexedArrayWidgetMixin:
     """
-    Widget that extracts multiple values from array-style form inputs.
+    Mixin for widgets that extract multiple values from array-style form inputs.
 
-    Handles input names like emails[0], emails[1], etc. from the "Add another" component.
+    Handles input names like name[0], name[1], etc. from the "Add another" component.
     """
 
     def value_from_datadict(self, data, files, name):
@@ -74,12 +136,55 @@ class MultiEmailWidget(forms.TextInput):
         return values
 
 
-class MultiEmailField(forms.Field):
+class IndexedFieldMixin:
+    """
+    Mixin for fields that validate multiple indexed values (e.g. emails[0], emails[1]).
+
+    Subclasses must implement clean_field(value) which:
+    - Validates each item and adds errors to self.index_errors[index]
+    - Returns the validated/transformed values
+    """
+
+    index_errors: dict[int, str] = {}
+
+    def clean(self, value):
+        """
+        Initialise index_errors and handle required validation before delegating to clean_field.
+        """
+        self.index_errors = {}
+
+        if not value:
+            if self.required:
+                raise ValidationError(self.error_messages["required"], code="required")
+            return []
+
+        validated = self.clean_field(value)
+
+        if self.index_errors:
+            raise ValidationError(list(self.index_errors.values()))
+
+        return validated
+
+    def clean_field(self, value):
+        """Validate items and populate self.index_errors. Return validated values."""
+        raise NotImplementedError
+
+
+class MultiEmailWidget(IndexedArrayWidgetMixin, forms.TextInput):
+    """Widget for extracting multiple email addresses from array-style form inputs."""
+
+    pass
+
+
+class MultiEmailField(IndexedFieldMixin, forms.Field):
     """
     A form field that accepts multiple email addresses from array-style form inputs.
 
     Handles input names like emails[0], emails[1], etc. from the "Add another" component.
     Returns a list of validated, lowercase email addresses.
+
+    When validation fails, stores index-specific errors in `index_errors` dict
+    so templates can display errors on the correct input.
 
     Usage:
         emails = MultiEmailField(required=False)
@@ -87,31 +192,54 @@ class MultiEmailField(forms.Field):
 
     widget = MultiEmailWidget
 
-    def __init__(self, **kwargs):
-        kwargs.setdefault("required", False)
-        super().__init__(**kwargs)
-
-    def clean(self, value):
-        """Validate that all values are valid email addresses."""
-        if not value:
-            if self.required:
-                raise ValidationError(self.error_messages["required"], code="required")
-            return []
-
-        errors = []
+    def clean_field(self, value):
+        """Validate emails and return lowercase versions."""
         validated_emails = []
 
-        for email in value:
+        for index, email in enumerate(value):
             try:
                 validate_email(email)
                 validated_emails.append(email.lower())
             except ValidationError:
-                errors.append("Enter a valid email address")
-
-        if errors:
-            raise ValidationError(errors)
+                self.index_errors[index] = "Enter a valid email address"
 
         return validated_emails
+
+
+class MultiUserWidget(IndexedArrayWidgetMixin, forms.Select):
+    """Widget for extracting multiple user IDs from array-style form inputs."""
+
+    pass
+
+
+class MultiUserField(IndexedFieldMixin, forms.Field):
+    """
+    A form field that accepts multiple user IDs from array-style form inputs.
+
+    Handles input names like users[0], users[1], etc. from the "Add another" component.
+    Returns a list of validated User objects.
+
+    When validation fails, stores index-specific errors in `index_errors` dict
+    so templates can display errors on the correct input.
+
+    Usage:
+        users = MultiUserField(required=True)
+    """
+
+    widget = MultiUserWidget
+    default_error_messages = {
+        "required": "Select a user",
+    }
+
+    def clean_field(self, value):
+        """Validate user IDs and return User objects."""
+        users_by_id = {u.auth0_id: u for u in User.objects.filter(auth0_id__in=value)}
+
+        for index, auth0_id in enumerate(value):
+            if auth0_id not in users_by_id:
+                self.index_errors[index] = "User not found"
+
+        return list(users_by_id.values())
 
 
 class CloudPlatformArnValidationMixin:
@@ -548,6 +676,7 @@ class GrantDomainAccessForm(forms.Form):
     whitelist_domain = DatasourceChoiceField(
         empty_label="No domain selected",
         queryset=DashboardDomain.objects.none(),
+        required=False,
     )
 
     def __init__(self, *args, **kwargs):
@@ -557,6 +686,13 @@ class GrantDomainAccessForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         self.fields["whitelist_domain"].queryset = self.get_datasource_queryset()
+
+    def clean_whitelist_domain(self):
+        domain = self.cleaned_data["whitelist_domain"]
+        if not domain:
+            raise ValidationError("Choose a domain")
+
+        return domain
 
     def get_datasource_queryset(self):
         """
@@ -569,6 +705,132 @@ class GrantDomainAccessForm(forms.Form):
             )
 
         return queryset
+
+
+class AddDashboardAdminForm(ErrorSummaryMixin, forms.Form):
+    """
+    Form for adding one or more admins to a dashboard.
+
+    Handles indexed field names (users[0], users[1], etc.) from the
+    moj-add-another component.
+    """
+
+    users = MultiUserField(
+        required=True,
+        label="Find a user",
+        help_text="Start typing a name to find a user",
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.dashboard = kwargs.pop("dashboard")
+        self.request = kwargs.pop("request")
+        super().__init__(*args, **kwargs)
+        self.fields["users"].items = self.get_user_options()
+
+    def get_user_options(self):
+        """Get users who can be added as admins (QuickSight users not already admins)."""
+        return (
+            User.objects.filter(
+                Q(user_permissions__codename="quicksight_embed_author_access")
+                | Q(user_permissions__codename="quicksight_embed_reader_access")
+            )
+            .exclude(
+                auth0_id__in=self.dashboard.admins.values_list("auth0_id", flat=True),
+            )
+            .distinct()
+        )
+
+    def clean_users(self):
+        """Validate users are quicksight users and not already admins."""
+        users = self.cleaned_data["users"]
+
+        # Validate all submitted users are quicksight users (security check)
+        valid_user_ids = set(self.get_user_options().values_list("auth0_id", flat=True))
+        invalid_users = [u for u in users if u.auth0_id not in valid_user_ids]
+        if invalid_users:
+            raise ValidationError("One or more selected users cannot be added as admins")
+
+        # Filter out users who are already admins (in case of race condition)
+        existing_admin_ids = set(
+            self.dashboard.admin_access.filter(user__in=users).values_list(
+                "user__auth0_id", flat=True
+            )
+        )
+
+        new_admins = [u for u in users if u.auth0_id not in existing_admin_ids]
+
+        if not new_admins:
+            raise ValidationError("All selected users are already admins of this dashboard")
+
+        return new_admins
+
+    def save(self):
+        """Create DashboardAdminAccess records, send notify email and return list of added users."""
+        absolute_url = self.request.build_absolute_uri(self.dashboard.get_absolute_url())
+        added_by = self.request.user
+        for user in self.cleaned_data["users"]:
+            DashboardAdminAccess.objects.create(
+                dashboard=self.dashboard,
+                user=user,
+                added_by=added_by,
+            )
+
+            utils.govuk_notify_send_email(
+                email_address=user.justice_email,
+                template_id=settings.NOTIFY_DASHBOARD_ADMIN_ADDED_TEMPLATE_ID,
+                personalisation={
+                    "dashboard": self.dashboard.name,
+                    "dashboard_admin": added_by.justice_email,
+                    "dashboard_description": self.dashboard.description,
+                    "dashboard_manage_url": absolute_url,
+                },
+            )
+        return self.cleaned_data["users"]
+
+
+class AddDashboardViewersForm(ErrorSummaryMixin, forms.Form):
+    """
+    Form for adding one or more viewers to a dashboard via email addresses.
+
+    Handles indexed field names (emails[0], emails[1], etc.) from the
+    moj-add-another component.
+    """
+
+    emails = MultiEmailField(
+        required=True,
+        label="Add an email",
+        help_text="Enter an email address to share with.",
+        error_messages={"required": "Enter a valid email address"},
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.dashboard = kwargs.pop("dashboard")
+        self.shared_by = kwargs.pop("shared_by")
+        super().__init__(*args, **kwargs)
+
+    def clean_emails(self):
+        """Validate and filter emails, removing those already with access."""
+        emails = self.cleaned_data["emails"]
+
+        if not emails:
+            raise ValidationError("Enter at least one email address")
+
+        # Filter out existing viewers
+        existing_viewer_emails = set(self.dashboard.viewers.values_list("email", flat=True))
+        new_emails = [e for e in emails if e.lower() not in existing_viewer_emails]
+
+        if not new_emails:
+            raise ValidationError(
+                "All email addresses entered already have access to this dashboard"
+            )
+
+        return new_emails
+
+    def save(self):
+        """Add viewers to the dashboard and return tuple of (added_emails, not_notified)."""
+        emails = self.cleaned_data["emails"]
+        not_notified = self.dashboard.add_viewers(emails, self.shared_by)
+        return emails, not_notified
 
 
 class CreateIAMManagedPolicyForm(forms.Form):
@@ -877,7 +1139,7 @@ class FeedbackForm(forms.ModelForm):
         ]
 
 
-class RegisterDashboardForm(forms.ModelForm):
+class RegisterDashboardForm(ErrorSummaryMixin, forms.ModelForm):
 
     emails = MultiEmailField(required=False)
     whitelist_domain = forms.ModelChoiceField(
@@ -968,7 +1230,9 @@ class ToolChoice(forms.Select):
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
             option["attrs"]["data-deprecated-message"] = value.instance.get_deprecated_message
-            option["attrs"]["data-tool-url"] = build_tool_url(tool=value.instance, user=self.user)
+            option["attrs"]["data-tool-url"] = utils.build_tool_url(
+                tool=value.instance, user=self.user
+            )
 
         if value and selected:
             option["attrs"]["label"] = f"{label} (installed)"
@@ -1041,3 +1305,26 @@ class ToolDeploymentRestartForm(forms.Form):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
         self.fields["tool_deployment"].queryset = self.user.tool_deployments.active()
+
+
+class UpdateDashboardForm(forms.ModelForm):
+    class Meta:
+        model = Dashboard
+        fields = ["description"]
+        widgets = {
+            "description": forms.Textarea(
+                attrs={"class": "govuk-textarea", "rows": 5},
+            ),
+        }
+
+        error_messages = {
+            "description": {
+                "required": "Enter a description",
+            },
+        }
+
+    def clean_description(self):
+        description = self.cleaned_data.get("description")
+        if not description:
+            raise ValidationError("Enter a description")
+        return description

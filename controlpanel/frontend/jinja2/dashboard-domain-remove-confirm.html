@@ -1,0 +1,36 @@
+
+{% extends "base.html" %}
+
+{% set page_name = "dashboards" %}
+{% set page_title = "Remove domain - " ~ dashboard.name %}
+
+{% block content %}
+
+<header>
+
+  <span class="govuk-caption-xl">{{ dashboard.name }}</span>
+  <h1 class="govuk-heading-xl">Remove domain</h1>
+
+</header>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+      <h2 class="govuk-heading-m">Are you sure you want to remove this domain?</h2>
+
+      <p class="govuk-body">Users on {{ domain.name }} will no longer be able to view this dashboard on the dashboard service.</p>
+
+      <form method="post" action="{{ url('revoke-domain-access', kwargs={'pk': dashboard.id, 'domain_id': domain.id}) }}">
+        {{ csrf_input }}
+        <div class="govuk-button-group">
+          <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-right-2">
+            Remove
+          </button>
+          <a href="{{ dashboard.get_absolute_url() }}#domain-access" class="govuk-link">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
