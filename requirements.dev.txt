@@ -5,7 +5,7 @@ ipdb==0.13.13
 ipython==9.9.0
 isort==6.1.0
 numpy==1.26.4
-pandas==2.3.3
+pandas==3.0.1
 pipdeptree==2.30.0
 pre-commit==4.5.1
 pylint==3.3.9
