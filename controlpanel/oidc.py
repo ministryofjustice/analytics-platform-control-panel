@@ -51,11 +51,13 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
         """
         Check if the email uses a justice domain and return it if it does, otherwise return None
         """
-        if email:
-            email_domain = email.split("@")[-1].lower()
-            justice_domains = JusticeDomain.objects.values_list("domain", flat=True)
-            if email_domain in justice_domains:
-                return email
+        if not email:
+            return None
+
+        email_domain = email.split("@")[-1].lower()
+        justice_domains = JusticeDomain.objects.values_list("domain", flat=True)
+        if email_domain in justice_domains:
+            return email
         return None
 
     def update_user(self, user, claims):
