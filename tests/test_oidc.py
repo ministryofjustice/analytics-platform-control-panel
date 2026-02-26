@@ -127,6 +127,7 @@ def test_update_user(users, email, name, expected_name, expected_email, expected
         ("email@JUSTICE.GOV.UK", "email@JUSTICE.GOV.UK"),
         ("email@cica.gov.uk", "email@cica.gov.uk"),
         ("email@CICA.GOV.UK", "email@CICA.GOV.UK"),
+        (None, None),
     ],
 )
 def test_get_justice_email(email, expected):
