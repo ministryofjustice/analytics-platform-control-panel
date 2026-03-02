@@ -38,4 +38,5 @@ jobs:
         with:
           image-ref: ghcr.io/${{ github.repository }}:${{ github.sha }}
           severity: HIGH,CRITICAL
+          version: "v0.69.2"
           exit-code: 1
