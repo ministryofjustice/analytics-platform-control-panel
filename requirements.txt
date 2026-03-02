@@ -1,6 +1,6 @@
 asgiref==3.11.0
 auth0-python==4.13.0
-authlib==1.6.6
+authlib==1.6.8
 autobahn==25.12.2
 beautifulsoup4==4.14.3
 boto3==1.42.24
@@ -26,8 +26,8 @@ Jinja2==3.1.6
 kubernetes==35.0.0
 MarkupSafe==3.0.3
 model-bakery==1.21.0
-moto[all]==5.1.20
-mozilla-django-oidc==4.0.1
+moto[all]==5.1.21
+mozilla-django-oidc==5.0.2
 notifications-python-client==10.0.1
 pagerduty==6.1.0
 psycopg2-binary==2.9.11
