@@ -2,7 +2,7 @@ black==26.1.0
 django-debug-toolbar==4.4.6
 flake8==7.3.0
 ipdb==0.13.13
-ipython==9.9.0
+ipython==9.10.0
 isort==6.1.0
 numpy==1.26.4
 pandas==2.3.3
