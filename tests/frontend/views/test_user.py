@@ -112,7 +112,7 @@ def test_permission(client, users, view, user, expected_status):
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list, "superuser", 9),
+        (list, "superuser", 10),
     ],
 )
 def test_list(client, users, view, user, expected_count):
