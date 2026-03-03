@@ -139,12 +139,12 @@ class EnableBedrockUser(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     model = User
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"
-    permission_required = "api.update_user"
+    permission_required = "api.update_user_bedrock"
     method_name = "set_bedrock_access"
 
 
 class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
-    permission_required = "api.update_user"
+    permission_required = "api.update_user_quicksight"
     http_method_names = ["post"]
     form_class = forms.QuicksightAccessForm
 

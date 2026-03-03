@@ -53,7 +53,12 @@ def is_iam_user(user):
     return user.is_iam_user
 
 
-add_perm("api.list_app", is_authenticated & is_iam_user)
+@predicate
+def is_not_external_user(user):
+    return not user.is_external_user
+
+
+add_perm("api.list_app", is_authenticated & is_iam_user & is_not_external_user)
 add_perm("api.create_app", is_authenticated & is_superuser)
 add_perm("api.retrieve_app", is_authenticated & is_app_admin)
 add_perm("api.update_app", is_authenticated & is_app_admin)
@@ -163,6 +168,8 @@ add_perm("api.list_user", is_authenticated & is_superuser)
 add_perm("api.create_user", is_authenticated & is_superuser)
 add_perm("api.retrieve_user", is_authenticated & is_self)
 add_perm("api.update_user", is_authenticated & is_self)
+add_perm("api.update_user_quicksight", is_authenticated & is_not_external_user)
+add_perm("api.update_user_bedrock", is_authenticated & is_not_external_user)
 add_perm("api.destroy_user", is_authenticated & is_superuser)
 add_perm("api.add_superuser", is_authenticated & is_superuser)
 add_perm("api.reset_mfa", is_authenticated & is_superuser)

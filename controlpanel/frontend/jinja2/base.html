@@ -116,7 +116,7 @@
         "active": page_name == "webapp-datasource-list",
       },
       {
-        "hide": not request.user.is_iam_user,
+        "hide": not request.user.is_iam_user or request.user.is_external_user,
         "text": "Webapps",
         "href": url("list-apps"),
         "active": page_name == "webapps",
