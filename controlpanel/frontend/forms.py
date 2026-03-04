@@ -397,7 +397,7 @@ class CreateAppForm(CloudPlatformArnValidationMixin, forms.Form):
         self.fields["existing_datasource_id"].queryset = self.get_datasource_queryset()
 
     def get_datasource_queryset(self):
-        queryset = S3Bucket.objects.filter(is_data_warehouse=False, is_deleted=False)
+        queryset = S3Bucket.objects.filter(is_deleted=False)
         if self.request.user.is_superuser:
             return queryset
 
