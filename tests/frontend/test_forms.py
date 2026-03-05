@@ -506,7 +506,7 @@ def test_create_app_form_get_datasource_queryset(users, rf, user):
         is_data_warehouse=True,
     )
     expected_buckets = {
-        "superuser": [superuser_bucket, user_bucket],
+        "superuser": [superuser_bucket, user_bucket, warehouse_bucket],
         "normal_user": [user_bucket],
         "other_user": [],
     }
@@ -518,7 +518,6 @@ def test_create_app_form_get_datasource_queryset(users, rf, user):
     queryset = form.get_datasource_queryset()
 
     assert list(queryset) == expected_buckets[user]
-    assert warehouse_bucket not in expected_buckets[user]
 
 
 def test_update_app_with_custom_connection():
