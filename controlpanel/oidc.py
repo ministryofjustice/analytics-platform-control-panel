@@ -35,6 +35,7 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
             "email": claims.get(settings.OIDC_FIELD_EMAIL),
             "name": self.normalise_name(claims.get(settings.OIDC_FIELD_NAME)),
             "justice_email": self.get_justice_email(claims.get(settings.OIDC_FIELD_EMAIL)),
+            "is_external_user": claims.get(settings.OIDC_FIELD_EXTERNAL_USER, False),
         }
         return User.objects.create(**user_details)
 

@@ -113,6 +113,7 @@ class AdminBucketList(BucketList):
 
 class WebappBucketList(BucketList):
     datasource_type = "webapp"
+    permission_required = "api.list_webapp_bucket"
 
 
 class BucketDetail(
@@ -161,6 +162,10 @@ class CreateDatasource(
     def get_context_data(self, **kwargs):
         if "type" in self.request.GET and self.request.GET["type"] in DATASOURCE_TYPES:
             self.datasource_type = self.request.GET["type"]
+
+        if self.datasource_type == "webapp" and self.request.user.is_external_user:
+            raise PermissionDenied()
+
         return super().get_context_data(**kwargs)
 
     def get_form_kwargs(self):

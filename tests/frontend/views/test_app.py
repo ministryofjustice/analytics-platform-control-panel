@@ -334,6 +334,7 @@ def delete_m2m_client(client, app, *args):
         (list_apps, "superuser", status.HTTP_200_OK),
         (list_apps, "app_admin", status.HTTP_200_OK),
         (list_apps, "normal_user", status.HTTP_200_OK),
+        (list_apps, "external_user", status.HTTP_403_FORBIDDEN),
         (list_all, "superuser", status.HTTP_200_OK),
         (list_all, "app_admin", status.HTTP_403_FORBIDDEN),
         (list_all, "normal_user", status.HTTP_403_FORBIDDEN),

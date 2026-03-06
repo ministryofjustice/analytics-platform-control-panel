@@ -140,10 +140,16 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         app = self.get_object()
 
-        context["admin_options"] = User.objects.exclude(
-            auth0_id="",
-        ).exclude(
-            auth0_id__in=[user.auth0_id for user in app.admins],
+        context["admin_options"] = (
+            User.objects.exclude(
+                auth0_id="",
+            )
+            .exclude(
+                auth0_id__in=[user.auth0_id for user in app.admins],
+            )
+            .exclude(
+                is_external_user=True,
+            )
         )
 
         context["grant_access_form"] = GrantAppAccessForm(

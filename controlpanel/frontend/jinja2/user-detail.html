@@ -72,7 +72,7 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.update_user') and user.is_iam_user %}
+{% if request.user.has_perm('api.update_user_bedrock') and user.is_iam_user %}
 <section class="cpanel-section">
   <form action="{{ url('set-bedrock-user', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
@@ -103,10 +103,10 @@
 {% endif %}
 
 
+{% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
   <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
-    {% if request.user.has_perm('api.add_superuser') %}
     {{ govukCheckboxes({
       "name": "enable_quicksight",
       "fieldset": {
@@ -139,7 +139,15 @@
       ]
     }) }}
     <p class="govuk-body">Note: all super admins have access to the embedded QuickSight.</p>
-    {% elif request.user.has_perm('api.update_user') %}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% elif request.user.has_perm('api.update_user_quicksight')%}
+<section class="cpanel-section">
+  <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
+    {{ csrf_input }}
     {{ govukCheckboxes({
       "name": "enable_quicksight",
       "fieldset": {
@@ -166,12 +174,13 @@
         },
       ]
     }) }}
-    {% endif %}
     <button class="govuk-button govuk-button--secondary">
       Save changes
     </button>
   </form>
 </section>
+{% endif %}
+
 
 
 {% if request.user.has_perm('api.add_superuser') %}
@@ -223,10 +232,12 @@
 </section>
 {% endif %}
 
+{% if not user.is_external_user %}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} apps</h2>
   {{ app_list(user.userapps.all()|map(attribute="app")|list, user) }}
 </section>
+{% endif %}
 
 {% if request.user.has_perm('api.add_superuser') %}
 {# user's datasources #}

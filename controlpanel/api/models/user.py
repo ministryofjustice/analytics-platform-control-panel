@@ -45,6 +45,7 @@ class User(AbstractUser):
     is_database_admin = models.BooleanField(default=False)
     justice_email = models.EmailField(blank=True, null=True, unique=True)
     azure_oid = models.CharField(blank=True, null=True, unique=True)
+    is_external_user = models.BooleanField(default=False)
 
     REQUIRED_FIELDS = ["email", "auth0_id"]
 
@@ -140,6 +141,14 @@ class User(AbstractUser):
         with Entra is fully implemented.
         """
         return self.auth0_id.startswith("github|")
+
+    @property
+    def is_justice_user(self):
+        """
+        Allows us to disable access to QuickSight if user does not have a justice email
+        assigned to them
+        """
+        return bool(self.justice_email)
 
     def is_app_admin(self, app_id):
         return (
