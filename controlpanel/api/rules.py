@@ -54,11 +54,11 @@ def is_iam_user(user):
 
 
 @predicate
-def is_not_external_user(user):
+def is_internal_user(user):
     return not user.is_external_user
 
 
-add_perm("api.list_app", is_authenticated & is_iam_user & is_not_external_user)
+add_perm("api.list_app", is_authenticated & is_iam_user & is_internal_user)
 add_perm("api.create_app", is_authenticated & is_superuser)
 add_perm("api.retrieve_app", is_authenticated & is_app_admin)
 add_perm("api.update_app", is_authenticated & is_app_admin)
@@ -139,6 +139,7 @@ def is_database_admin(user):
 
 
 add_perm("api.list_s3bucket", is_authenticated & is_iam_user)
+add_perm("api.list_webapp_bucket", is_authenticated & is_iam_user & is_internal_user)
 add_perm("api.create_s3bucket", is_authenticated & is_iam_user)
 add_perm("api.retrieve_s3bucket", is_authenticated & has_bucket_access)
 add_perm("api.update_s3bucket", is_authenticated & has_bucket_write_access)
@@ -168,8 +169,8 @@ add_perm("api.list_user", is_authenticated & is_superuser)
 add_perm("api.create_user", is_authenticated & is_superuser)
 add_perm("api.retrieve_user", is_authenticated & is_self)
 add_perm("api.update_user", is_authenticated & is_self)
-add_perm("api.update_user_quicksight", is_authenticated & is_not_external_user)
-add_perm("api.update_user_bedrock", is_authenticated & is_not_external_user)
+add_perm("api.update_user_quicksight", is_authenticated & is_internal_user)
+add_perm("api.update_user_bedrock", is_authenticated & is_internal_user)
 add_perm("api.destroy_user", is_authenticated & is_superuser)
 add_perm("api.add_superuser", is_authenticated & is_superuser)
 add_perm("api.reset_mfa", is_authenticated & is_superuser)
@@ -239,8 +240,8 @@ add_perm("api.update_deployment", is_authenticated & is_owner)
 add_perm("api.destroy_deployment", is_authenticated & is_owner)
 
 
-add_perm("api.list_parameter", is_authenticated & is_iam_user)
-add_perm("api.create_parameter", is_authenticated & is_iam_user)
+add_perm("api.list_parameter", is_authenticated & is_iam_user & is_internal_user)
+add_perm("api.create_parameter", is_authenticated & is_iam_user & is_internal_user)
 add_perm("api.retrieve_parameter", is_authenticated & is_owner)
 add_perm("api.update_parameter", is_authenticated & is_owner)
 add_perm("api.destroy_parameter", is_authenticated & is_owner)
