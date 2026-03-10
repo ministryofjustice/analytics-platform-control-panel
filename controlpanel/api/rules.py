@@ -140,7 +140,7 @@ def is_database_admin(user):
 
 add_perm("api.list_s3bucket", is_authenticated & is_iam_user)
 add_perm("api.list_webapp_bucket", is_authenticated & is_iam_user & is_internal_user)
-add_perm("api.create_s3bucket", is_authenticated & is_iam_user)
+add_perm("api.create_s3bucket", is_authenticated & is_iam_user & is_internal_user)
 add_perm("api.retrieve_s3bucket", is_authenticated & has_bucket_access)
 add_perm("api.update_s3bucket", is_authenticated & has_bucket_write_access)
 add_perm("api.destroy_s3bucket", is_authenticated & is_bucket_admin)

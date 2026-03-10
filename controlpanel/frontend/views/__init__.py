@@ -67,6 +67,7 @@ from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,
     BucketList,
+    ConfirmExternalGrantAccess,
     CreateDatasource,
     DeleteDatasource,
     GrantAccess,

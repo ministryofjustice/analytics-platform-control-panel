@@ -142,14 +142,6 @@ class User(AbstractUser):
         """
         return self.auth0_id.startswith("github|")
 
-    @property
-    def is_justice_user(self):
-        """
-        Allows us to disable access to QuickSight if user does not have a justice email
-        assigned to them
-        """
-        return bool(self.justice_email)
-
     def is_app_admin(self, app_id):
         return (
             self.userapps.filter(
