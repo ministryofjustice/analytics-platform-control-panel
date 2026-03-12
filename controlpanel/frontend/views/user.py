@@ -142,6 +142,16 @@ class EnableBedrockUser(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     permission_required = "api.update_user_bedrock"
     method_name = "set_bedrock_access"
 
+    def form_valid(self, form):
+
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+
+        if user.is_external_user:
+            messages.error(self.request, "Cannot update QuickSight access for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
+        return super().form_valid(form)
+
 
 class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
     permission_required = "api.update_user_quicksight"
@@ -165,6 +175,13 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
         return kwargs
 
     def form_valid(self, form):
+
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+
+        if user.is_external_user:
+            messages.error(self.request, "Cannot update QuickSight access for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
         try:
             form.grant_access()
             messages.success(self.request, "Successfully updated QuickSight access")

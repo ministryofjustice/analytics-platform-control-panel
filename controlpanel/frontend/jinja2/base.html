@@ -110,7 +110,7 @@
         "active": page_name == "warehouse-datasource-list",
       },
       {
-        "hide": not request.user.show_webapp_data_link,
+        "hide": not request.user.show_webapp_data_link or request.user.is_external_user,
         "text": "Webapp data",
         "href": url("list-webapp-datasources"),
         "active": page_name == "webapp-datasource-list",
@@ -128,13 +128,13 @@
         "active": page_name == "databases",
       },
       {
-        "hide": not request.user.is_iam_user,
+        "hide": not request.user.is_iam_user or request.user.is_external_user,
         "text": "Parameters",
         "href": url("list-parameters"),
         "active": page_name == "parameters",
       },
       {
-        "hide": not request.user.is_quicksight_user(),
+        "hide": not request.user.is_quicksight_user() or request.user.is_external_user,
         "text": "QuickSight",
         "href": url("quicksight"),
         "active": page_name == "quicksight",
