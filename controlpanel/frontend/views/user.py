@@ -113,6 +113,10 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         user = get_object_or_404(User, pk=kwargs["pk"])
         is_superuser = "is_superuser" in request.POST
 
+        if is_superuser and user.is_external_user:
+            messages.error(self.request, "Cannot set SuperUser status for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
         identity_store = AWSIdentityStore(
             settings.IDENTITY_CENTER_ASSUMED_ROLE,
             "APCPIdentityCenterAccess",
@@ -221,6 +225,15 @@ class EnableDatabaseAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Updat
     http_method_names = ["post"]
     model = User
     permission_required = "api.add_superuser"
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+
+        if user.is_external_user:
+            messages.error(self.request, "Cannot update database admin access for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
+        return super().post(request, *args, **kwargs)
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated database admin status")
