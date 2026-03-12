@@ -147,7 +147,7 @@ class EnableBedrockUser(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
         user = get_object_or_404(User, pk=self.kwargs["pk"])
 
         if user.is_external_user:
-            messages.error(self.request, "Cannot update QuickSight access for external users")
+            messages.error(self.request, "Cannot update BedRock access for external users")
             return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
         return super().form_valid(form)
