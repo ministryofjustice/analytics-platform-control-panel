@@ -61,7 +61,8 @@
         {
           "value": "True",
           "text": "Super Admin",
-          "checked": user.is_superuser
+          "checked": user.is_superuser,
+          "disabled": user.is_external_user
         }
       ]
     }) }}
@@ -91,7 +92,8 @@
         {
           "value": "True",
           "text": "Bedrock Enabled",
-          "checked": user.is_bedrock_enabled
+          "checked": user.is_bedrock_enabled,
+          "disabled": user.is_external_user
         },
       ]
     }) }}
@@ -122,19 +124,20 @@
         {
           "value": "quicksight_legacy",
           "text": "Legacy QuickSight access enabled (running in the data-" + env + " account)",
-          "checked": user.is_quicksight_enabled
+          "checked": user.is_quicksight_enabled,
+          "disabled": user.is_external_user
         },
         {
           "value": "quicksight_compute_author",
           "text": "Access QuickSight from the Control Panel as an author",
           "checked": user.has_perm("api.quicksight_embed_author_access"),
-          "disabled": user.is_superuser
+          "disabled": user.is_superuser or user.is_external_user
         },
         {
           "value": "quicksight_compute_reader",
           "text": "Access QuickSight from the Control Panel as a reader",
           "checked": user.has_perm("api.quicksight_embed_reader_access"),
-          "disabled": user.is_superuser
+          "disabled": user.is_superuser or user.is_external_user
         },
       ]
     }) }}
@@ -202,7 +205,8 @@
         {
           "value": "True",
           "text": "Database Admin",
-          "checked": user.is_database_admin
+          "checked": user.is_database_admin,
+          "disabled": user.is_external_user
         },
       ]
     }) }}
