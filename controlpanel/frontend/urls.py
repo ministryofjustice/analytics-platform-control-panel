@@ -22,6 +22,11 @@ urlpatterns = [
         name="grant-datasource-access",
     ),
     path(
+        "datasources/<int:pk>/access/confirm/",
+        views.ConfirmExternalGrantAccess.as_view(),
+        name="confirm-external-grant-access",
+    ),
+    path(
         "datasources/<int:pk>/delete/",
         views.DeleteDatasource.as_view(),
         name="delete-datasource",

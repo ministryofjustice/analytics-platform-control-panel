@@ -67,6 +67,7 @@ from controlpanel.frontend.views.datasource import (
     AdminBucketList,
     BucketDetail,
     BucketList,
+    ConfirmExternalGrantAccess,
     CreateDatasource,
     DeleteDatasource,
     GrantAccess,
@@ -138,6 +139,7 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         Returns the template to instruct users to authenticate with their Justice
         account, unless this has already been captured.
         """
+
         if not self.request.user.justice_email:
             return ["justice_email.html"]
 
@@ -155,7 +157,11 @@ class IndexView(OIDCLoginRequiredMixin, TemplateView):
         if request.user.is_superuser:
             return super().get(request, *args, **kwargs)
 
-        if settings.features.justice_auth.enabled and not request.user.justice_email:
+        if (
+            settings.features.justice_auth.enabled
+            and not request.user.justice_email
+            and not request.user.is_external_user
+        ):
             return super().get(request, *args, **kwargs)
 
         # this is temporary change for users authorising via Entra, specifically CICA users

@@ -142,6 +142,7 @@ def delete(client, buckets, *args, bucket=None):
         (create, "superuser", status.HTTP_302_FOUND),
         (create, "bucket_admin", status.HTTP_302_FOUND),
         (create, "normal_user", status.HTTP_302_FOUND),
+        (create, "external_user", status.HTTP_403_FORBIDDEN),
         (delete, "superuser", status.HTTP_302_FOUND),
         (delete, "bucket_admin", status.HTTP_302_FOUND),
         (delete, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -474,3 +475,25 @@ def test_detail_for_deleted_datasource(client, buckets, users, user, bucket, exp
     response = detail(client, user, bucket=bucket)
 
     assert response.status_code == expected_status
+
+
+def test_external_user_redirect(client, users, buckets):
+    """Valid form submission redirects to confirm page and stores data in session."""
+    client.force_login(users["superuser"])
+    url = reverse("grant-datasource-access", kwargs={"pk": buckets["warehouse1"].id})
+    response = client.post(
+        url,
+        data={
+            "access_level": "readonly",
+            "entity_id": users["external_user"].auth0_id,
+            "entity_type": "user",
+        },
+    )
+    assert response.status_code == 302
+    assert response.url == reverse(
+        "confirm-external-grant-access", kwargs={"pk": buckets["warehouse1"].id}
+    )
+    # Check session data
+    values = client.session["external_user_access"]["values"]
+    assert values["user_id"] == users["external_user"].auth0_id
+    assert values["access_level"] == "readonly"

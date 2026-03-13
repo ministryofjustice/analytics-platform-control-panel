@@ -45,6 +45,7 @@ class User(AbstractUser):
     is_database_admin = models.BooleanField(default=False)
     justice_email = models.EmailField(blank=True, null=True, unique=True)
     azure_oid = models.CharField(blank=True, null=True, unique=True)
+    is_external_user = models.BooleanField(default=False)
 
     REQUIRED_FIELDS = ["email", "auth0_id"]
 

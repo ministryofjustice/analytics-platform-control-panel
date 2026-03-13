@@ -61,7 +61,8 @@
         {
           "value": "True",
           "text": "Super Admin",
-          "checked": user.is_superuser
+          "checked": user.is_superuser,
+          "disabled": user.is_external_user
         }
       ]
     }) }}
@@ -72,7 +73,7 @@
 </section>
 {% endif %}
 
-{% if request.user.has_perm('api.update_user') and user.is_iam_user %}
+{% if request.user.has_perm('api.update_user_bedrock') and user.is_iam_user %}
 <section class="cpanel-section">
   <form action="{{ url('set-bedrock-user', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
@@ -91,7 +92,8 @@
         {
           "value": "True",
           "text": "Bedrock Enabled",
-          "checked": user.is_bedrock_enabled
+          "checked": user.is_bedrock_enabled,
+          "disabled": user.is_external_user
         },
       ]
     }) }}
@@ -103,10 +105,10 @@
 {% endif %}
 
 
+{% if request.user.has_perm('api.add_superuser') %}
 <section class="cpanel-section">
   <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
     {{ csrf_input }}
-    {% if request.user.has_perm('api.add_superuser') %}
     {{ govukCheckboxes({
       "name": "enable_quicksight",
       "fieldset": {
@@ -122,24 +124,33 @@
         {
           "value": "quicksight_legacy",
           "text": "Legacy QuickSight access enabled (running in the data-" + env + " account)",
-          "checked": user.is_quicksight_enabled
+          "checked": user.is_quicksight_enabled,
+          "disabled": user.is_external_user
         },
         {
           "value": "quicksight_compute_author",
           "text": "Access QuickSight from the Control Panel as an author",
           "checked": user.has_perm("api.quicksight_embed_author_access"),
-          "disabled": user.is_superuser
+          "disabled": user.is_superuser or user.is_external_user
         },
         {
           "value": "quicksight_compute_reader",
           "text": "Access QuickSight from the Control Panel as a reader",
           "checked": user.has_perm("api.quicksight_embed_reader_access"),
-          "disabled": user.is_superuser
+          "disabled": user.is_superuser or user.is_external_user
         },
       ]
     }) }}
     <p class="govuk-body">Note: all super admins have access to the embedded QuickSight.</p>
-    {% elif request.user.has_perm('api.update_user') %}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% elif request.user.has_perm('api.update_user_quicksight')%}
+<section class="cpanel-section">
+  <form action="{{ url('set-quicksight', kwargs={ "pk": user.auth0_id }) }}" method="post">
+    {{ csrf_input }}
     {{ govukCheckboxes({
       "name": "enable_quicksight",
       "fieldset": {
@@ -166,12 +177,13 @@
         },
       ]
     }) }}
-    {% endif %}
     <button class="govuk-button govuk-button--secondary">
       Save changes
     </button>
   </form>
 </section>
+{% endif %}
+
 
 
 {% if request.user.has_perm('api.add_superuser') %}
@@ -193,7 +205,8 @@
         {
           "value": "True",
           "text": "Database Admin",
-          "checked": user.is_database_admin
+          "checked": user.is_database_admin,
+          "disabled": user.is_external_user
         },
       ]
     }) }}
@@ -223,10 +236,12 @@
 </section>
 {% endif %}
 
+{% if not user.is_external_user %}
 <section class="cpanel-section">
   <h2 class="govuk-heading-m">{{ pronoun }} apps</h2>
   {{ app_list(user.userapps.all()|map(attribute="app")|list, user) }}
 </section>
+{% endif %}
 
 {% if request.user.has_perm('api.add_superuser') %}
 {# user's datasources #}
