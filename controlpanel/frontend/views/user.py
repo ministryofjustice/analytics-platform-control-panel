@@ -113,7 +113,7 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         user = get_object_or_404(User, pk=kwargs["pk"])
         is_superuser = "is_superuser" in request.POST
 
-        if is_superuser and user.is_external_user:
+        if user.is_external_user:
             messages.error(self.request, "Cannot set SuperUser status for external users")
             return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
 
