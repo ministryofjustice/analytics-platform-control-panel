@@ -497,3 +497,20 @@ def test_external_user_redirect(client, users, buckets):
     values = client.session["external_user_access"]["values"]
     assert values["user_id"] == users["external_user"].auth0_id
     assert values["access_level"] == "readonly"
+
+
+def test_external_user_admin_fail(client, users, buckets):
+    """Check admin access cannot be granted to external users."""
+    client.force_login(users["superuser"])
+    url = reverse("grant-datasource-access", kwargs={"pk": buckets["warehouse1"].id})
+    response = client.post(
+        url,
+        data={
+            "access_level": "readwrite",
+            "entity_id": users["external_user"].auth0_id,
+            "entity_type": "user",
+            "is_admin": True,
+        },
+    )
+    assert response.status_code == 200
+    assert "access_level" in response.context_data["form"].errors

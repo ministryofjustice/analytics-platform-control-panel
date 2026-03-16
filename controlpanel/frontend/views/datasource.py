@@ -418,10 +418,16 @@ class GrantAccess(
         if target_user.is_external_user:
             # Store form data in session and redirect to confirm screen
 
+            is_admin = form.cleaned_data["is_admin"]
+
+            if is_admin:
+                form.add_error("access_level", "External users cannot be granted admin access")
+                return self.form_invalid(form)
+
             labels = dict(form.fields["access_level"].choices)
             access_level = form.cleaned_data["access_level"]
-            is_admin = form.cleaned_data["is_admin"]
-            access_level_display = "Admin" if is_admin else labels.get(access_level, access_level)
+
+            access_level_display = labels.get(access_level, access_level)
             self.request.session["external_user_access"] = {
                 "user_id": self.request.user.id,
                 "bucket_pk": self.kwargs["pk"],
