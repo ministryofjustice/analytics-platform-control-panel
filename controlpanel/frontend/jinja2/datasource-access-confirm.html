@@ -17,7 +17,7 @@
 
       <h2 class="govuk-heading-m">Are you sure you want to grant access?</h2>
 
-      <p class="govuk-body">{{ target_user.email }} is from an external government department. Granting access will allow them to view and interact with this data source.</p>
+      <p class="govuk-body">{{ target_user.email }} is from an external government department. They will have <span class="govuk-!-font-weight-bold">{{ access_level_display }}</span> access to this data source.</p>
 
       <form method="post" action="{{ url('confirm-external-grant-access', kwargs={'pk': bucket.id}) }}">
         {{ csrf_input }}

@@ -417,10 +417,16 @@ class GrantAccess(
 
         if target_user.is_external_user:
             # Store form data in session and redirect to confirm screen
+
+            labels = dict(form.fields["access_level"].choices)
+            access_level = form.cleaned_data["access_level"]
+            is_admin = form.cleaned_data["is_admin"]
+            access_level_display = "Admin" if is_admin else labels.get(access_level, access_level)
             self.request.session["external_user_access"] = {
                 "user_id": self.request.user.id,
                 "bucket_pk": self.kwargs["pk"],
                 "values": self.values(form),
+                "access_level_display": access_level_display,
             }
             return HttpResponseRedirect(
                 reverse_lazy("confirm-external-grant-access", kwargs={"pk": self.kwargs["pk"]})
@@ -461,6 +467,7 @@ class ConfirmExternalGrantAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin
         context["bucket"] = get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
         # Look up the target user for display
         context["target_user"] = get_object_or_404(User, pk=access_data["values"]["user_id"])
+        context["access_level_display"] = access_data["access_level_display"]
         return context
 
     def post(self, request, *args, **kwargs):
