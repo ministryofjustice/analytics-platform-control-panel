@@ -163,9 +163,6 @@ class CreateDatasource(
         if "type" in self.request.GET and self.request.GET["type"] in DATASOURCE_TYPES:
             self.datasource_type = self.request.GET["type"]
 
-        if self.datasource_type == "webapp" and self.request.user.is_external_user:
-            raise PermissionDenied()
-
         return super().get_context_data(**kwargs)
 
     def get_form_kwargs(self):
@@ -417,13 +414,6 @@ class GrantAccess(
 
         if target_user.is_external_user:
             # Store form data in session and redirect to confirm screen
-
-            is_admin = form.cleaned_data["is_admin"]
-
-            if is_admin:
-                form.add_error("access_level", "External users cannot be granted admin access")
-                return self.form_invalid(form)
-
             labels = dict(form.fields["access_level"].choices)
             access_level = form.cleaned_data["access_level"]
 
