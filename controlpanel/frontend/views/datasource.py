@@ -426,7 +426,7 @@ class GrantAccess(
                 "user_id": self.request.user.id,
                 "bucket_pk": self.kwargs["pk"],
                 "values": self.values(form),
-                "access_level_display": access_level_display,
+                "access_level_display": access_level_display.lower(),
             }
             return HttpResponseRedirect(
                 reverse_lazy("confirm-external-grant-access", kwargs={"pk": self.kwargs["pk"]})
