@@ -415,7 +415,7 @@ class GrantAccess(
 
         target_user = get_object_or_404(User, pk=form.cleaned_data["user_id"])
 
-        if target_user.is_external_user:
+        if target_user.is_external_user and self.request.POST.get("confirmed") != "true":
             # Store form data in session and redirect to confirm screen
 
             is_admin = form.cleaned_data["is_admin"]
@@ -431,7 +431,7 @@ class GrantAccess(
             self.request.session["external_user_access"] = {
                 "user_id": self.request.user.id,
                 "bucket_pk": self.kwargs["pk"],
-                "values": self.values(form),
+                "values": form.cleaned_data,
                 "access_level_display": access_level_display.lower(),
             }
             return HttpResponseRedirect(
@@ -440,19 +440,25 @@ class GrantAccess(
         # Internal users: normal flow
         return super().form_valid(form)
 
+    def get_form(self, form_class=None):
+        if (
+            self.request.session.get("external_user_access")
+            and self.request.POST.get("confirmed") == "true"
+        ):
+            access_data = self.request.session.pop("external_user_access")
+            form_class = self.get_form_class()
+            return form_class(data=access_data["values"])
+        return super().get_form(form_class)
+
 
 class ConfirmExternalGrantAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = "datasource-access-confirm.html"
     permission_required = "api.create_users3bucket"
 
     def get_access_data(self):
-        """Get preview data only if it belongs to the current user and matches this bucket."""
+        """Get preview data only if it matches this bucket."""
         access_data = self.request.session.get("external_user_access")
-        if (
-            access_data
-            and access_data.get("user_id") == self.request.user.id
-            and str(access_data.get("bucket_pk")) == str(self.kwargs["pk"])
-        ):
+        if access_data and access_data.get("bucket_pk") == self.kwargs["pk"]:
             return access_data
         return None
 
@@ -472,30 +478,9 @@ class ConfirmExternalGrantAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin
         access_data = self.get_access_data()
         context["bucket"] = get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
         # Look up the target user for display
-        context["target_user"] = get_object_or_404(User, pk=access_data["values"]["user_id"])
+        context["target_user"] = get_object_or_404(User, pk=access_data["user_id"])
         context["access_level_display"] = access_data["access_level_display"]
         return context
-
-    def post(self, request, *args, **kwargs):
-        """Create the access grant from session data."""
-        access_data = request.session.pop("external_user_access", None)
-        if not access_data or access_data.get("user_id") != request.user.id:
-            return HttpResponseRedirect(
-                reverse_lazy("grant-datasource-access", kwargs={"pk": kwargs["pk"]})
-            )
-
-        bucket = get_object_or_404(S3Bucket, pk=access_data["bucket_pk"])
-
-        if not request.user.has_perm("api.grant_s3bucket_access", bucket):
-            raise PermissionDenied()
-
-        values = access_data["values"]
-        if values.get("is_admin") and not request.user.has_perm("api.add_s3bucket_admin", bucket):
-            raise PermissionDenied()
-
-        UserS3Bucket.objects.create(current_user=request.user, **values)
-        messages.success(request, "Successfully granted access")
-        return HttpResponseRedirect(reverse_lazy("manage-datasource", kwargs={"pk": bucket.id}))
 
 
 class GrantPolicyAccess(
