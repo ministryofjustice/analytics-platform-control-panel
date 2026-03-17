@@ -20,10 +20,10 @@
 
       <p class="govuk-body">{{ target_user.email }} will have <span class="govuk-!-font-weight-bold">{{ access_level_display }}</span> access to {{ bucket.name }}.</p>
 
-      <form method="post" action="{{ url('confirm-external-grant-access', kwargs={'pk': bucket.id}) }}">
+      <form method="post" action="{{ url('grant-datasource-access', kwargs={'pk': bucket.id}) }}">
         {{ csrf_input }}
         <div class="govuk-button-group">
-          <button type="submit" class="govuk-button govuk-!-margin-right-2">
+          <button type="submit" class="govuk-button govuk-!-margin-right-2" value="true" name="confirmed">
             Grant access
           </button>
           <a href="{{ url('grant-datasource-access', kwargs={'pk': bucket.id}) }}" class="govuk-link">
