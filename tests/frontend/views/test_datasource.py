@@ -506,7 +506,7 @@ def test_external_user_admin_fail(client, users, buckets):
     response = client.post(
         url,
         data={
-            "access_level": "readwrite",
+            "access_level": "admin",
             "entity_id": users["external_user"].auth0_id,
             "entity_type": "user",
             "is_admin": True,
