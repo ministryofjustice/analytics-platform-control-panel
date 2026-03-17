@@ -415,7 +415,7 @@ class GrantAccess(
 
         target_user = get_object_or_404(User, pk=form.cleaned_data["user_id"])
 
-        if target_user.is_external_user and self.request.POST.get("confirmed") != "true":
+        if target_user.is_external_user and "confirmed" not in self.request.POST:
             # Store form data in session and redirect to confirm screen
 
             is_admin = form.cleaned_data["is_admin"]
@@ -440,15 +440,12 @@ class GrantAccess(
         # Internal users: normal flow
         return super().form_valid(form)
 
-    def get_form(self, form_class=None):
-        if (
-            self.request.session.get("external_user_access")
-            and self.request.POST.get("confirmed") == "true"
-        ):
-            access_data = self.request.session.pop("external_user_access")
-            form_class = self.get_form_class()
-            return form_class(data=access_data["values"])
-        return super().get_form(form_class)
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        access_data = self.request.session.pop("external_user_access", None)
+        if access_data and "confirmed" in self.request.POST:
+            kwargs["data"] = access_data["values"]
+        return kwargs
 
 
 class ConfirmExternalGrantAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
