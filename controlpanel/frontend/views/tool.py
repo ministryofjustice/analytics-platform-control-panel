@@ -68,7 +68,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         context["managed_airflow_dev_url"] = self.build_airflow_url("development")
         context["managed_airflow_test_url"] = self.build_airflow_url("test")
         context["managed_airflow_prod_url"] = self.build_airflow_url("production")
-        context["managed_airflow_deprecated_url"] = self.build_airflow_url("deprecated")
         context["tool_forms"] = [
             self.get_tool_release_form(tool_type=tool_type) for tool_type in ToolDeployment.ToolType
         ]
@@ -84,16 +83,6 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         )
 
     def build_airflow_url(self, environment):
-        # TODO remove this and links in template once old prod is removed at end of Jan 2026
-        if environment == "deprecated":
-            destination = "mwaa/home?region=eu-west-1#/environments/prod/sso"
-            args = urlencode(
-                {
-                    "destination": destination,  # noqa: E501
-                }
-            )
-            return f"{settings.AWS_SERVICE_URL}/?{args}"
-
         accounts = {
             "development": "381491960855",
             "test": "767397661611",
