@@ -10,6 +10,7 @@ from django.contrib.postgres.forms import SimpleArrayField
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator, validate_email
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 
 # First-party/Local
 from controlpanel import utils
@@ -569,15 +570,21 @@ class GrantAccessForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        access_level = cleaned_data.get("access_level")
-        if access_level == "admin":
-            cleaned_data["access_level"] = "readwrite"
-            cleaned_data["is_admin"] = True
 
         if cleaned_data["entity_type"] == "user":
             cleaned_data["user_id"] = cleaned_data.get("entity_id")
         elif cleaned_data["entity_type"] == "group":
             cleaned_data["policy_id"] = cleaned_data.get("entity_id")
+
+        access_level = cleaned_data.get("access_level")
+        if access_level == "admin":
+            cleaned_data["access_level"] = "readwrite"
+            cleaned_data["is_admin"] = True
+
+            user = get_object_or_404(User, pk=cleaned_data["user_id"])
+
+            if user.is_external_user:
+                self.add_error("access_level", "External users cannot be granted admin access")
 
         return cleaned_data
 

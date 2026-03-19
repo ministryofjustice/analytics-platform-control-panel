@@ -48,18 +48,25 @@ def test_success_url(users, email, success_url):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize(
-    "email, name, expected_name, expected_justice_email",
+    "email, name, expected_name, expected_justice_email, is_external_user",
     [
-        ("email@example.com", "User, Test", "Test User", None),
-        ("email@example.com", "Test User", "Test User", None),
-        ("email@justice.gov.uk", "User, Test", "Test User", "email@justice.gov.uk"),
-        ("email@justice.gov.uk", "Test User", "Test User", "email@justice.gov.uk"),
-        ("email@cica.gov.uk", "Test User", "Test User", "email@cica.gov.uk"),
-        ("email@CICA.GOV.UK", "Test User", "Test User", "email@CICA.GOV.UK"),
-        ("email@publicguardian.gov.uk", "Test User", "Test User", "email@publicguardian.gov.uk"),
+        ("email@example.com", "User, Test", "Test User", None, False),
+        ("email@example.com", "Test User", "Test User", None, False),
+        ("email@justice.gov.uk", "User, Test", "Test User", "email@justice.gov.uk", False),
+        ("email@justice.gov.uk", "Test User", "Test User", "email@justice.gov.uk", False),
+        ("email@cica.gov.uk", "Test User", "Test User", "email@cica.gov.uk", False),
+        ("email@CICA.GOV.UK", "Test User", "Test User", "email@CICA.GOV.UK", False),
+        (
+            "email@publicguardian.gov.uk",
+            "Test User",
+            "Test User",
+            "email@publicguardian.gov.uk",
+            False,
+        ),
+        ("email@justice.gov.uk", "User, Test", "Test User", "email@justice.gov.uk", True),
     ],
 )
-def test_create_user(email, name, expected_name, expected_justice_email):
+def test_create_user(email, name, expected_name, expected_justice_email, is_external_user):
     with patch("controlpanel.api.cluster.User.create"):
         user = OIDCSubAuthenticationBackend().create_user(
             {
@@ -67,10 +74,12 @@ def test_create_user(email, name, expected_name, expected_justice_email):
                 settings.OIDC_FIELD_USERNAME: "testuser",
                 settings.OIDC_FIELD_EMAIL: email,
                 settings.OIDC_FIELD_NAME: name,
+                settings.OIDC_FIELD_EXTERNAL_USER: is_external_user,
             }
         )
         assert user.name == expected_name
         assert user.justice_email == expected_justice_email
+        assert user.is_external_user == is_external_user
 
 
 @pytest.mark.django_db

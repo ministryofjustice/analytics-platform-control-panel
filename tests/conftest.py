@@ -217,6 +217,13 @@ def users(
         "quicksight_compute_author": quicksight_author_user,
         "quicksight_compute_reader": quicksight_reader_user,
         "non_tool_user": baker.make("api.User"),
+        "external_user": baker.make(
+            "api.User",
+            auth0_id="github|external_user",
+            username="external_user",
+            is_superuser=False,
+            is_external_user=True,
+        ),
     }
 
 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% set page_name = "warehouse-datasource-list" %}
+{% set page_title = "Confirm External Access - " ~ bucket.name %}
+
+{% block content %}
+
+<header>
+
+  <span class="govuk-caption-xl">{{ bucket.name }}</span>
+  <h1 class="govuk-heading-xl">Grant external access</h1>
+
+</header>
+
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+
+      <p class="govuk-body">You're granting data source access to someone outside of Ministry of Justice.</p>
+
+      <p class="govuk-body">{{ target_user.email }} will have <span class="govuk-!-font-weight-bold">{{ access_level_display }}</span> access to {{ bucket.name }}.</p>
+
+      <form method="post" action="{{ url('grant-datasource-access', kwargs={'pk': bucket.id}) }}">
+        {{ csrf_input }}
+        <div class="govuk-button-group">
+          <button type="submit" class="govuk-button govuk-!-margin-right-2" value="true" name="confirmed">
+            Grant access
+          </button>
+          <a href="{{ url('grant-datasource-access', kwargs={'pk': bucket.id}) }}" class="govuk-link">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

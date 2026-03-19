@@ -13,7 +13,7 @@ from django.db.models import Prefetch
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic.base import ContextMixin, View
+from django.views.generic.base import ContextMixin, TemplateView, View
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import CreateView, DeleteView, FormMixin, UpdateView
 from django.views.generic.list import ListView
@@ -113,6 +113,7 @@ class AdminBucketList(BucketList):
 
 class WebappBucketList(BucketList):
     datasource_type = "webapp"
+    permission_required = "api.list_webapp_bucket"
 
 
 class BucketDetail(
@@ -161,6 +162,7 @@ class CreateDatasource(
     def get_context_data(self, **kwargs):
         if "type" in self.request.GET and self.request.GET["type"] in DATASOURCE_TYPES:
             self.datasource_type = self.request.GET["type"]
+
         return super().get_context_data(**kwargs)
 
     def get_form_kwargs(self):
@@ -375,6 +377,7 @@ class GrantAccess(
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        self.request.session.pop("external_user_access", None)
         bucket = get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
         context["bucket"] = bucket
         member_ids = list(
@@ -400,6 +403,71 @@ class GrantAccess(
             "is_admin": form.cleaned_data.get("is_admin"),
             "user_id": form.cleaned_data["user_id"],
         }
+
+    def form_valid(self, form):
+        """
+        Granting access to external users requires an extra confirmation step,
+        so we override form_valid to handle this case
+        """
+
+        target_user = get_object_or_404(User, pk=form.cleaned_data["user_id"])
+
+        if target_user.is_external_user and "confirmed" not in self.request.POST:
+            # Store form data in session and redirect to confirm screen
+            labels = dict(form.fields["access_level"].choices)
+            access_level = form.cleaned_data["access_level"]
+
+            access_level_display = labels.get(access_level, access_level)
+            self.request.session["external_user_access"] = {
+                "user_id": self.request.user.id,
+                "bucket_pk": self.kwargs["pk"],
+                "values": form.cleaned_data,
+                "access_level_display": access_level_display.lower(),
+            }
+            return HttpResponseRedirect(
+                reverse_lazy("confirm-external-grant-access", kwargs={"pk": self.kwargs["pk"]})
+            )
+        # Internal users: normal flow
+        return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        access_data = self.request.session.pop("external_user_access", None)
+        if access_data and "confirmed" in self.request.POST:
+            kwargs["data"] = access_data["values"]
+        return kwargs
+
+
+class ConfirmExternalGrantAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+    template_name = "datasource-access-confirm.html"
+    permission_required = "api.create_users3bucket"
+
+    def get_access_data(self):
+        """Get preview data only if it matches this bucket."""
+        access_data = self.request.session.get("external_user_access")
+        if access_data and access_data.get("bucket_pk") == self.kwargs["pk"]:
+            return access_data
+        return None
+
+    def get_permission_object(self):
+        return get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
+
+    def dispatch(self, request, *args, **kwargs):
+        if not self.get_access_data():
+            request.session.pop("external_user_access", None)
+            return HttpResponseRedirect(
+                reverse_lazy("grant-datasource-access", kwargs={"pk": kwargs["pk"]})
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        access_data = self.get_access_data()
+        context["bucket"] = get_object_or_404(S3Bucket, pk=self.kwargs["pk"])
+        # Look up the target user for display
+        context["target_user"] = get_object_or_404(User, pk=access_data["values"]["user_id"])
+        context["access_level_display"] = access_data["access_level_display"]
+        return context
 
 
 class GrantPolicyAccess(

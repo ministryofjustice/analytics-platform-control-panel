@@ -2,6 +2,8 @@
 {% from "user/macro.html" import user_name %}
 {% from "includes/data-access-level-options.html" import data_access_level_options with context %}
 {% from "includes/datasource-access-form.html" import data_access_paths_textarea %}
+{% from "error-message/macro.html" import govukErrorMessage %}
+
 
 {% extends "base.html" %}
 
@@ -11,6 +13,11 @@
 <h1 class="govuk-heading-xl">{{ page_title }}</h1>
 
 <section class="cpanel-section">
+
+  {% if form.errors.access_level %}
+    {{ govukErrorMessage({"text": form.errors.access_level | join(", ")}) }}
+  {% endif %}
+
   <form action="{{ grant_url }}" method="post">
     {{ csrf_input }}
     <input type="hidden" name="entity_type" value="{{ entity_type }}">

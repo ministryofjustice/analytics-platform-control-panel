@@ -87,11 +87,11 @@ def set_database_admin(client, users, *args):
         (reset_mfa, "normal_user", status.HTTP_403_FORBIDDEN),
         (reset_mfa, "other_user", status.HTTP_403_FORBIDDEN),
         (set_bedrock, "superuser", status.HTTP_302_FOUND),
-        (set_bedrock, "normal_user", status.HTTP_403_FORBIDDEN),
-        (set_bedrock, "other_user", status.HTTP_302_FOUND),
+        (set_bedrock, "normal_user", status.HTTP_302_FOUND),
+        (set_bedrock, "external_user", status.HTTP_403_FORBIDDEN),
         (set_quicksight, "superuser", status.HTTP_302_FOUND),
-        (set_quicksight, "normal_user", status.HTTP_403_FORBIDDEN),
-        (set_quicksight, "other_user", status.HTTP_302_FOUND),
+        (set_quicksight, "normal_user", status.HTTP_302_FOUND),
+        (set_quicksight, "external_user", status.HTTP_403_FORBIDDEN),
         (set_database_admin, "superuser", status.HTTP_302_FOUND),
         (set_database_admin, "normal_user", status.HTTP_403_FORBIDDEN),
         (set_database_admin, "other_user", status.HTTP_403_FORBIDDEN),
@@ -112,7 +112,7 @@ def test_permission(client, users, view, user, expected_status):
 @pytest.mark.parametrize(
     "view,user,expected_count",
     [
-        (list, "superuser", 9),
+        (list, "superuser", 10),
     ],
 )
 def test_list(client, users, view, user, expected_count):

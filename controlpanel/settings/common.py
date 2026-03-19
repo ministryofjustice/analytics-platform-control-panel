@@ -198,6 +198,7 @@ OIDC_RP_SCOPES = "openid email profile"
 OIDC_FIELD_EMAIL = "email"
 OIDC_FIELD_NAME = "name"
 OIDC_FIELD_USERNAME = "nickname"
+OIDC_FIELD_EXTERNAL_USER = "external_user"
 OIDC_STORE_ID_TOKEN = True
 
 # Auth0

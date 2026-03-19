@@ -113,6 +113,10 @@ class SetSuperadmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, View):
         user = get_object_or_404(User, pk=kwargs["pk"])
         is_superuser = "is_superuser" in request.POST
 
+        if user.is_external_user:
+            messages.error(self.request, "Cannot set SuperUser status for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
         identity_store = AWSIdentityStore(
             settings.IDENTITY_CENTER_ASSUMED_ROLE,
             "APCPIdentityCenterAccess",
@@ -139,12 +143,22 @@ class EnableBedrockUser(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     model = User
     fields = ["is_bedrock_enabled"]
     success_message = "Successfully updated bedrock status"
-    permission_required = "api.update_user"
+    permission_required = "api.update_user_bedrock"
     method_name = "set_bedrock_access"
+
+    def form_valid(self, form):
+
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+
+        if user.is_external_user:
+            messages.error(self.request, "Cannot update BedRock access for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
+        return super().form_valid(form)
 
 
 class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormView):
-    permission_required = "api.update_user"
+    permission_required = "api.update_user_quicksight"
     http_method_names = ["post"]
     form_class = forms.QuicksightAccessForm
 
@@ -165,6 +179,13 @@ class SetQuicksightAccess(OIDCLoginRequiredMixin, PermissionRequiredMixin, FormV
         return kwargs
 
     def form_valid(self, form):
+
+        user = get_object_or_404(User, pk=self.kwargs["pk"])
+
+        if user.is_external_user:
+            messages.error(self.request, "Cannot update QuickSight access for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
         try:
             form.grant_access()
             messages.success(self.request, "Successfully updated QuickSight access")
@@ -204,6 +225,15 @@ class EnableDatabaseAdmin(OIDCLoginRequiredMixin, PermissionRequiredMixin, Updat
     http_method_names = ["post"]
     model = User
     permission_required = "api.add_superuser"
+
+    def post(self, request, *args, **kwargs):
+        user = get_object_or_404(User, pk=kwargs["pk"])
+
+        if user.is_external_user:
+            messages.error(self.request, "Cannot update database admin access for external users")
+            return HttpResponseRedirect(reverse_lazy("manage-user", kwargs={"pk": user.auth0_id}))
+
+        return super().post(request, *args, **kwargs)
 
     def get_success_url(self):
         messages.success(self.request, "Successfully updated database admin status")
