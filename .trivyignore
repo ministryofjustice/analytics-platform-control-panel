@@ -5,3 +5,6 @@ CVE-2025-66471
 
 ## CVE-2025-68121 (usr/local/bin/helm)
 CVE-2025-68121
+
+## This is coming from Helm - there is no updated version that fixes this yet
+## CVE-2026-33186 (google.golang.org/grpc)
