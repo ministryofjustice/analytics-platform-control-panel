@@ -8,3 +8,6 @@ CVE-2025-68121
 
 ## This is coming from Helm - there is no updated version that fixes this yet
 ## CVE-2026-33186 (google.golang.org/grpc)
+CVE-2026-33186 exp:2026-03-31
+## CVE-2026-25679 (stdlib - golang)
+CVE-2026-25679 exp:2026-03-31
