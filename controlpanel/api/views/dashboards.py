@@ -57,7 +57,7 @@ class DashboardViewSet(ReadOnlyModelViewSet):
         """
         try:
             dashboard = self.get_object()
-            serializer = DashboardUrlSerializer(dashboard)
+            serializer = DashboardUrlSerializer(dashboard, context={"request": request})
             log.info(
                 f"{dashboard.name} requested by {request.query_params.get('email')}",
                 audit="dashboard_audit",

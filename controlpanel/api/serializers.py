@@ -24,7 +24,7 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.utils import start_background_task
+from controlpanel.utils import get_domain_from_email, start_background_task
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
@@ -567,17 +567,69 @@ class DashboardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Dashboard
-        fields = ("name", "quicksight_id", "admins")
+        fields = ("name", "quicksight_id", "admins", "description")
 
 
 class DashboardUrlSerializer(DashboardSerializer):
+    embed_url = serializers.SerializerMethodField()
+    anonymous_user_arn = serializers.SerializerMethodField()
+    shared_by = serializers.SerializerMethodField()
+    shared_on = serializers.SerializerMethodField()
+    shared_via_domain = serializers.SerializerMethodField()
+
     class Meta(DashboardSerializer.Meta):
-        fields = ("name", "admins")
+        fields = DashboardSerializer.Meta.fields + (
+            "embed_url",
+            "anonymous_user_arn",
+            "shared_by",
+            "shared_on",
+            "shared_via_domain",
+        )
 
-    def to_representation(self, dashboard):
-        data = super().to_representation(dashboard)
+    def _get_access_data(self, dashboard):
+        if getattr(self, "_access_data", None):
+            return self._access_data
 
+        self._access_data = {}
+        email = self.context["request"].query_params.get("email")
+
+        viewer_access = (
+            dashboard.viewer_access.filter(viewer__email__iexact=email)
+            .select_related("shared_by")
+            .first()
+        )
+        if viewer_access and viewer_access.shared_by:
+            self._access_data["shared_by"] = viewer_access.shared_by.justice_email
+            self._access_data["shared_on"] = viewer_access.created
+            return self._access_data
+
+        domain_access = (
+            dashboard.domain_access.filter(domain__name__iexact=get_domain_from_email(email))
+            .select_related("added_by")
+            .first()
+        )
+        if domain_access:
+            self._access_data["shared_by"] = domain_access.added_by.justice_email
+            self._access_data["shared_on"] = domain_access.created
+            self._access_data["shared_via_domain"] = True
+        return self._access_data
+
+    def get_embed_url(self, dashboard):
         response = dashboard.get_embed_url()
-        data["embed_url"] = response["EmbedUrl"]
-        data["anonymous_user_arn"] = response["AnonymousUserArn"]
-        return data
+        return response["EmbedUrl"]
+
+    def get_anonymous_user_arn(self, dashboard):
+        response = dashboard.get_embed_url()
+        return response["AnonymousUserArn"]
+
+    def get_shared_by(self, dashboard):
+        access_data = self._get_access_data(dashboard)
+        return access_data.get("shared_by")
+
+    def get_shared_on(self, dashboard):
+        access_data = self._get_access_data(dashboard)
+        return access_data.get("shared_on")
+
+    def get_shared_via_domain(self, dashboard):
+        access_data = self._get_access_data(dashboard)
+        return access_data.get("shared_via_domain", False)
