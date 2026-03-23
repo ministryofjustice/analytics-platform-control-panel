@@ -54,15 +54,23 @@ def dashboard(users, ExtendedAuth0):
 @pytest.fixture
 def dashboard_viewer(users, dashboard):
     viewer = baker.make("api.DashboardViewer", email="dashboard.viewer@justice.gov.uk")
-    baker.make("api.DashboardViewerAccess", dashboard=dashboard, viewer=viewer)
-    return viewer
+    return baker.make(
+        "api.DashboardViewerAccess",
+        dashboard=dashboard,
+        viewer=viewer,
+        shared_by=users["dashboard_admin"],
+    )
 
 
 @pytest.fixture
 def dashboard_domain(dashboard):
     domain = baker.make("api.DashboardDomain", name="cica.gov.uk")
-    baker.make("api.DashboardDomainAccess", dashboard=dashboard, domain=domain)
-    return domain
+    return baker.make(
+        "api.DashboardDomainAccess",
+        dashboard=dashboard,
+        domain=domain,
+        added_by=dashboard.created_by,
+    )
 
 
 @pytest.mark.parametrize(
@@ -108,49 +116,50 @@ def test_list(
 
 
 @pytest.mark.parametrize(
-    "email, embed_url, user_arn, expected_status",
+    "email, expected_status",
+    [
+        ("no.access@test.gov.uk", status.HTTP_404_NOT_FOUND),
+        ("", status.HTTP_400_BAD_REQUEST),
+    ],
+)
+def test_retrieve_error(
+    client,
+    dashboard,
+    email,
+    expected_status,
+):
+    with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url"):
+        with patch(
+            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
+        ) as has_permission:
+            has_permission.return_value = True
+            client.logout()
+
+            response = client.get(
+                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+                data={"email": email},
+            )
+
+            assert response.status_code == expected_status
+            assert "error" in response.data
+
+
+@pytest.mark.parametrize(
+    "email, embed_url, user_arn",
     [
         (
             "dashboard.viewer@justice.gov.uk",
             "https://quicksight-embed-url-viewer",
             "some:viewer:arn",
-            status.HTTP_200_OK,
         ),
-        (
-            "dashboard.admin@justice.gov.uk",
-            "https://quicksight-embed-url-viewer",
-            "some:admin:arn",
-            status.HTTP_200_OK,
-        ),
-        (
-            "domain.viewer@cica.gov.uk",
-            "https://quicksight-embed-url-domain",
-            "some:domain:arn",
-            status.HTTP_200_OK,
-        ),
-        ("no.access@test.gov.uk", "", "", status.HTTP_404_NOT_FOUND),
-        ("", "", "", status.HTTP_400_BAD_REQUEST),
         (
             "DASHBOARD.VIEWER@JUSTICE.GOV.UK",
             "https://quicksight-embed-url-viewer",
             "some:viewer:arn",
-            status.HTTP_200_OK,
-        ),
-        (
-            "Dashboard.Admin@Justice.Gov.Uk",
-            "https://quicksight-embed-url-viewer",
-            "some:admin:arn",
-            status.HTTP_200_OK,
-        ),
-        (
-            "DOMAIN.VIEWER@CICA.GOV.UK",
-            "https://quicksight-embed-url-domain",
-            "some:domain:arn",
-            status.HTTP_200_OK,
         ),
     ],
 )
-def test_retrieve(
+def test_retrieve_success_shared_as_viewer(
     client,
     dashboard,
     dashboard_viewer,
@@ -158,9 +167,7 @@ def test_retrieve(
     email,
     embed_url,
     user_arn,
-    expected_status,
 ):
-
     with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
         with patch(
             "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
@@ -170,7 +177,6 @@ def test_retrieve(
                 "EmbedUrl": embed_url,
                 "AnonymousUserArn": user_arn,
             }
-            # Ensure no user is logged in for this test
             client.logout()
 
             response = client.get(
@@ -178,9 +184,92 @@ def test_retrieve(
                 data={"email": email},
             )
 
-            assert response.status_code == expected_status
+            assert response.status_code == status.HTTP_200_OK
 
-            if expected_status == status.HTTP_200_OK:
-                result = response.data
-                assert result["embed_url"] == embed_url
-                assert result["anonymous_user_arn"] == user_arn
+            result = response.data
+            assert result["embed_url"] == embed_url
+            assert result["anonymous_user_arn"] == user_arn
+            assert result["shared_by"] == dashboard_viewer.shared_by.justice_email
+            assert result["shared_on"] == dashboard_viewer.created
+            assert result["shared_via_domain"] is False
+
+
+@pytest.mark.parametrize(
+    "email, embed_url, user_arn",
+    [
+        ("domain.viewer@cica.gov.uk", "https://quicksight-embed-url-domain", "some:domain:arn"),
+        ("DOMAIN.VIEWER@CICA.GOV.UK", "https://quicksight-embed-url-domain", "some:domain:arn"),
+    ],
+)
+def test_retrieve_success_shared_as_domain_viewer(
+    client,
+    dashboard,
+    dashboard_domain,
+    email,
+    embed_url,
+    user_arn,
+):
+    with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
+        with patch(
+            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
+        ) as has_permission:
+            has_permission.return_value = True
+            get_embed_url.return_value = {
+                "EmbedUrl": embed_url,
+                "AnonymousUserArn": user_arn,
+            }
+            client.logout()
+
+            response = client.get(
+                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+                data={"email": email},
+            )
+
+            assert response.status_code == status.HTTP_200_OK
+
+            result = response.data
+            assert result["embed_url"] == embed_url
+            assert result["anonymous_user_arn"] == user_arn
+            assert result["shared_by"] == dashboard_domain.added_by.justice_email
+            assert result["shared_on"] == dashboard_domain.created
+            assert result["shared_via_domain"] is True
+
+
+@pytest.mark.parametrize(
+    "email, embed_url, user_arn",
+    [
+        ("dashboard.admin@justice.gov.uk", "https://quicksight-embed-url-viewer", "some:admin:arn"),
+        ("Dashboard.Admin@Justice.Gov.Uk", "https://quicksight-embed-url-viewer", "some:admin:arn"),
+    ],
+)
+def test_retrieve_success_as_admin(
+    client,
+    dashboard,
+    email,
+    embed_url,
+    user_arn,
+):
+    with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
+        with patch(
+            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
+        ) as has_permission:
+            has_permission.return_value = True
+            get_embed_url.return_value = {
+                "EmbedUrl": embed_url,
+                "AnonymousUserArn": user_arn,
+            }
+            client.logout()
+
+            response = client.get(
+                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+                data={"email": email},
+            )
+
+            assert response.status_code == status.HTTP_200_OK
+
+            result = response.data
+            assert result["embed_url"] == embed_url
+            assert result["anonymous_user_arn"] == user_arn
+            assert result["shared_by"] is None
+            assert result["shared_on"] is None
+            assert result["shared_via_domain"] is False
