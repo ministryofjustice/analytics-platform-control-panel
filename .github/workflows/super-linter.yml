@@ -24,29 +24,36 @@ jobs:
     steps:
       - name: Checkout
         id: checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Super-Linter
         id: super_linter
         # yamllint disable-line rule:line-length
-        uses: super-linter/super-linter/slim@9d8128f17796a16326ceed5a607d5639a47feb82 # v6.4.0
+        uses: super-linter/super-linter/slim@61abc07d755095a68f4987d1c2c3d1d64408f1f9 # v8.5.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: main
           VALIDATE_ALL_CODEBASE: false
+          VALIDATE_BIOME_FORMAT: false
+          VALIDATE_BIOME_LINT: false
           VALIDATE_CSS: false
+          VALIDATE_CHECKOV: false
           VALIDATE_GITHUB_ACTIONS: false
           VALIDATE_DOCKERFILE_HADOLINT: false
+          VALIDATE_HTML: false
           VALIDATE_JAVASCRIPT_STANDARD: false
           VALIDATE_JSCPD: false
           VALIDATE_PYTHON_MYPY: false
           VALIDATE_PYTHON_PYLINT: false
           VALIDATE_PYTHON_RUFF: false
+          VALIDATE_PYTHON_RUFF_FORMAT: false
           VALIDATE_SHELL_SHFMT: false
+          VALIDATE_TRIVY: false
+          VALIDATE_YAML: false
           LINTER_RULES_PATH: /
-          VALIDATE_HTML: false
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
           PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
           FILTER_REGEX_EXCLUDE: '.*templates/assume_roles/.*\.json$'
