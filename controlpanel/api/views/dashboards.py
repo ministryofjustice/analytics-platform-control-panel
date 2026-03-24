@@ -1,6 +1,5 @@
 # Third-party
 import structlog
-from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
@@ -9,8 +8,7 @@ from controlpanel.api import permissions
 from controlpanel.api.filters import DashboardFilter
 from controlpanel.api.models.dashboard import Dashboard
 from controlpanel.api.pagination import DashboardPaginator
-from controlpanel.api.serializers import DashboardSerializer, DashboardUrlSerializer
-from controlpanel.utils import get_domain_from_email
+from controlpanel.api.serializers import DashboardDetailSerializer, DashboardListSerializer
 
 log = structlog.getLogger(__name__)
 
@@ -21,49 +19,23 @@ class DashboardViewSet(ReadOnlyModelViewSet):
     """
 
     queryset = Dashboard.objects.all().order_by("name")
-    serializer_class = DashboardSerializer
+    serializer_class = DashboardListSerializer
     resource = "dashboard"
     permission_classes = [permissions.IsSuperuser | permissions.JWTTokenResourcePermissions]
     lookup_field = "quicksight_id"
     pagination_class = DashboardPaginator
     filter_backends = (DashboardFilter,)
 
-    def get_object(self):
-        """
-        Retrieve a single dashboard by its QuickSight ID and check access for the viewer.
-        """
-        quicksight_id = self.kwargs.get(self.lookup_field)
-
-        queryset = self.filter_queryset(self.get_queryset())
-        dashboard = queryset.filter(Q(quicksight_id=quicksight_id)).first()
-
-        if not dashboard:
-            raise Dashboard.DoesNotExist(f"Dashboard {quicksight_id} not found.")
-
-        return dashboard
-
-    def list(self, request, *args, **kwargs):
-        """
-        Get a paginated list of dashboards that the viewer has access to.
-        """
-        try:
-            return super().list(request, *args, **kwargs)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=400)
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return DashboardDetailSerializer
+        return DashboardListSerializer
 
     def retrieve(self, request, *args, **kwargs):
         """
-        Get a dashboard by its QuickSight ID.
+        Require an email, even when viewing as a superuser, as the response includes fields that are
+        specific to a user.
         """
-        try:
-            dashboard = self.get_object()
-            serializer = DashboardUrlSerializer(dashboard, context={"request": request})
-            log.info(
-                f"{dashboard.name} requested by {request.query_params.get('email')}",
-                audit="dashboard_audit",
-            )
-            return Response(serializer.data)
-        except ValueError as e:
-            return Response({"error": str(e)}, status=400)
-        except Dashboard.DoesNotExist as e:
-            return Response({"error": str(e)}, status=404)
+        if not request.query_params.get("email"):
+            return Response({"error": "Email query parameter is required."}, status=400)
+        return super().retrieve(request, *args, **kwargs)

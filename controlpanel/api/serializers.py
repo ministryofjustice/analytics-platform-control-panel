@@ -562,7 +562,7 @@ class DashboardAdminSerializer(serializers.ModelSerializer):
         return obj.email
 
 
-class DashboardSerializer(serializers.ModelSerializer):
+class DashboardListSerializer(serializers.ModelSerializer):
     admins = DashboardAdminSerializer(many=True, read_only=True)
 
     class Meta:
@@ -570,7 +570,7 @@ class DashboardSerializer(serializers.ModelSerializer):
         fields = ("name", "quicksight_id", "admins", "description")
 
 
-class DashboardUrlSerializer(DashboardSerializer):
+class DashboardDetailSerializer(DashboardListSerializer):
     embed_url = serializers.SerializerMethodField()
     anonymous_user_arn = serializers.SerializerMethodField()
     shared_by_email = serializers.SerializerMethodField()
@@ -578,8 +578,8 @@ class DashboardUrlSerializer(DashboardSerializer):
     shared_on = serializers.SerializerMethodField()
     shared_via_domain = serializers.SerializerMethodField()
 
-    class Meta(DashboardSerializer.Meta):
-        fields = DashboardSerializer.Meta.fields + (
+    class Meta(DashboardListSerializer.Meta):
+        fields = DashboardListSerializer.Meta.fields + (
             "embed_url",
             "anonymous_user_arn",
             "shared_by_email",
@@ -601,7 +601,8 @@ class DashboardUrlSerializer(DashboardSerializer):
 
         self._access_data = {}
         email = self.context["request"].query_params.get("email")
-
+        if not email:
+            return self._access_data
         domain_access = (
             dashboard.domain_access.filter(domain__name__iexact=get_domain_from_email(email))
             .select_related("added_by")

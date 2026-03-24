@@ -6,6 +6,10 @@ import pytest
 from django.urls import reverse
 from model_bakery import baker
 from rest_framework import status
+from rest_framework.test import APIClient
+
+# First-party/Local
+from controlpanel.api.jwt_auth import AuthenticatedServiceClient
 
 NUM_DASHBOARDS = 3
 
@@ -20,6 +24,19 @@ def ExtendedAuth0():
 @pytest.fixture(autouse=True)
 def enable_db_for_all_tests(db):
     pass
+
+
+@pytest.fixture
+def m2m_client():
+    payload = {
+        "sub": "abc123@clients",
+        "gty": "client-credentials",
+        "scope": "list:dashboard retrieve:dashboard",
+    }
+    user = AuthenticatedServiceClient(jwt_payload=payload)
+    client = APIClient()
+    client.force_authenticate(user=user)
+    return client
 
 
 @pytest.fixture
@@ -87,7 +104,7 @@ def dashboard_domain(dashboard):
     ],
 )
 def test_list(
-    client,
+    m2m_client,
     users,
     dashboard,
     dashboard_viewer,
@@ -96,23 +113,18 @@ def test_list(
     expected_status,
     expected_count,
 ):
-    with patch(
-        "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
-    ) as has_permission:
-        has_permission.return_value = True
-        data = {"email": email} if email else {}
-        client.force_login(users["dashboard_admin"])
-        response = client.get(reverse("dashboard-list"), data=data)
+    data = {"email": email} if email else {}
+    response = m2m_client.get(reverse("dashboard-list"), data=data)
 
-        assert response.status_code == expected_status
+    assert response.status_code == expected_status
 
-        if expected_status == status.HTTP_200_OK:
-            assert response.data["count"] == expected_count
+    if expected_status == status.HTTP_200_OK:
+        assert response.data["count"] == expected_count
 
-            if expected_count > 0:
-                result = response.data["results"][0]
-                assert result["quicksight_id"] == dashboard.quicksight_id
-                assert result["admins"][0]["email"] == users["dashboard_admin"].justice_email
+        if expected_count > 0:
+            result = response.data["results"][0]
+            assert result["quicksight_id"] == dashboard.quicksight_id
+            assert result["admins"][0]["email"] == users["dashboard_admin"].justice_email
 
 
 @pytest.mark.parametrize(
@@ -123,25 +135,18 @@ def test_list(
     ],
 )
 def test_retrieve_error(
-    client,
+    m2m_client,
     dashboard,
     email,
     expected_status,
 ):
     with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url"):
-        with patch(
-            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
-        ) as has_permission:
-            has_permission.return_value = True
-            client.logout()
+        response = m2m_client.get(
+            reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+            data={"email": email},
+        )
 
-            response = client.get(
-                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
-                data={"email": email},
-            )
-
-            assert response.status_code == expected_status
-            assert "error" in response.data
+        assert response.status_code == expected_status
 
 
 @pytest.mark.parametrize(
@@ -160,7 +165,7 @@ def test_retrieve_error(
     ],
 )
 def test_retrieve_success_shared_as_viewer(
-    client,
+    m2m_client,
     dashboard,
     dashboard_viewer,
     dashboard_domain,
@@ -169,30 +174,25 @@ def test_retrieve_success_shared_as_viewer(
     user_arn,
 ):
     with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
-        with patch(
-            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
-        ) as has_permission:
-            has_permission.return_value = True
-            get_embed_url.return_value = {
-                "EmbedUrl": embed_url,
-                "AnonymousUserArn": user_arn,
-            }
-            client.logout()
+        get_embed_url.return_value = {
+            "EmbedUrl": embed_url,
+            "AnonymousUserArn": user_arn,
+        }
 
-            response = client.get(
-                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
-                data={"email": email},
-            )
+        response = m2m_client.get(
+            reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+            data={"email": email},
+        )
 
-            assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK
 
-            result = response.data
-            assert result["embed_url"] == embed_url
-            assert result["anonymous_user_arn"] == user_arn
-            assert result["shared_by_email"] == dashboard_viewer.shared_by.justice_email
-            assert result["shared_by_name"] == dashboard_viewer.shared_by.name
-            assert result["shared_on"] == dashboard_viewer.created
-            assert result["shared_via_domain"] is False
+        result = response.data
+        assert result["embed_url"] == embed_url
+        assert result["anonymous_user_arn"] == user_arn
+        assert result["shared_by_email"] == dashboard_viewer.shared_by.justice_email
+        assert result["shared_by_name"] == dashboard_viewer.shared_by.name
+        assert result["shared_on"] == dashboard_viewer.created
+        assert result["shared_via_domain"] is False
 
 
 @pytest.mark.parametrize(
@@ -203,7 +203,7 @@ def test_retrieve_success_shared_as_viewer(
     ],
 )
 def test_retrieve_success_shared_as_domain_viewer(
-    client,
+    m2m_client,
     dashboard,
     dashboard_domain,
     email,
@@ -211,30 +211,25 @@ def test_retrieve_success_shared_as_domain_viewer(
     user_arn,
 ):
     with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
-        with patch(
-            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
-        ) as has_permission:
-            has_permission.return_value = True
-            get_embed_url.return_value = {
-                "EmbedUrl": embed_url,
-                "AnonymousUserArn": user_arn,
-            }
-            client.logout()
+        get_embed_url.return_value = {
+            "EmbedUrl": embed_url,
+            "AnonymousUserArn": user_arn,
+        }
 
-            response = client.get(
-                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
-                data={"email": email},
-            )
+        response = m2m_client.get(
+            reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+            data={"email": email},
+        )
 
-            assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK
 
-            result = response.data
-            assert result["embed_url"] == embed_url
-            assert result["anonymous_user_arn"] == user_arn
-            assert result["shared_by_email"] == dashboard_domain.added_by.justice_email
-            assert result["shared_by_name"] == dashboard_domain.added_by.name
-            assert result["shared_on"] == dashboard_domain.created
-            assert result["shared_via_domain"] is True
+        result = response.data
+        assert result["embed_url"] == embed_url
+        assert result["anonymous_user_arn"] == user_arn
+        assert result["shared_by_email"] == dashboard_domain.added_by.justice_email
+        assert result["shared_by_name"] == dashboard_domain.added_by.name
+        assert result["shared_on"] == dashboard_domain.created
+        assert result["shared_via_domain"] is True
 
 
 @pytest.mark.parametrize(
@@ -245,34 +240,29 @@ def test_retrieve_success_shared_as_domain_viewer(
     ],
 )
 def test_retrieve_success_as_admin(
-    client,
+    m2m_client,
     dashboard,
     email,
     embed_url,
     user_arn,
 ):
     with patch("controlpanel.api.models.dashboard.Dashboard.get_embed_url") as get_embed_url:
-        with patch(
-            "controlpanel.api.permissions.JWTTokenResourcePermissions.has_permission"
-        ) as has_permission:
-            has_permission.return_value = True
-            get_embed_url.return_value = {
-                "EmbedUrl": embed_url,
-                "AnonymousUserArn": user_arn,
-            }
-            client.logout()
+        get_embed_url.return_value = {
+            "EmbedUrl": embed_url,
+            "AnonymousUserArn": user_arn,
+        }
 
-            response = client.get(
-                reverse("dashboard-detail", args=[dashboard.quicksight_id]),
-                data={"email": email},
-            )
+        response = m2m_client.get(
+            reverse("dashboard-detail", args=[dashboard.quicksight_id]),
+            data={"email": email},
+        )
 
-            assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_200_OK
 
-            result = response.data
-            assert result["embed_url"] == embed_url
-            assert result["anonymous_user_arn"] == user_arn
-            assert result["shared_by_email"] is None
-            assert result["shared_by_name"] is None
-            assert result["shared_on"] == dashboard.created
-            assert result["shared_via_domain"] is False
+        result = response.data
+        assert result["embed_url"] == embed_url
+        assert result["anonymous_user_arn"] == user_arn
+        assert result["shared_by_email"] is None
+        assert result["shared_by_name"] is None
+        assert result["shared_on"] == dashboard.created
+        assert result["shared_via_domain"] is False

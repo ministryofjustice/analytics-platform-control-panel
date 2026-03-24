@@ -7,6 +7,7 @@ See: http://www.django-rest-framework.org/api-guide/filtering/#custom-generic-fi
 # Third-party
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
 
 # First-party/Local
 from controlpanel.api.models import S3Bucket
@@ -82,12 +83,13 @@ class DashboardFilter(DjangoFilterBackend):
             return queryset
 
         if not email:
-            raise ValueError("Email parameter is required.")
+            raise ValidationError(detail={"email": "Email parameter is required."})
 
         invalid = set(shared_via) - self.SHARED_VIA_CHOICES
         if invalid:
-            raise ValueError(
-                f"Invalid shared_via value. Valid options are: {', '.join(self.SHARED_VIA_CHOICES)}"
+            choices = ", ".join(self.SHARED_VIA_CHOICES)
+            raise ValidationError(
+                detail={"shared_via": f"Invalid shared_via value. Valid options are: {choices}"}
             )
 
         domain = get_domain_from_email(email)
