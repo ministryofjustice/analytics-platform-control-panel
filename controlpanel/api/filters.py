@@ -74,7 +74,7 @@ class DashboardFilter(DjangoFilterBackend):
     SHARED_VIA_CHOICES = {SHARED_VIA_VIEWER, SHARED_VIA_DOMAIN, SHARED_VIA_ADMIN}
 
     def filter_queryset(self, request, queryset, view):
-        queryset = super().filter_queryset(request, queryset, view)
+        queryset = super().filter_queryset(request, queryset, view).order_by("name")
 
         email = request.query_params.get("email")
         shared_via = request.query_params.getlist("shared_via")

@@ -38,4 +38,10 @@ class DashboardViewSet(ReadOnlyModelViewSet):
         """
         if not request.query_params.get("email"):
             return Response({"error": "Email query parameter is required."}, status=400)
-        return super().retrieve(request, *args, **kwargs)
+        response = super().retrieve(request, *args, **kwargs)
+        dashboard_name = response.data["name"]
+        log.info(
+            f"{dashboard_name} requested by {request.query_params.get('email')}",
+            audit="dashboard_audit",
+        )
+        return response
