@@ -189,7 +189,8 @@ def test_retrieve_success_shared_as_viewer(
             result = response.data
             assert result["embed_url"] == embed_url
             assert result["anonymous_user_arn"] == user_arn
-            assert result["shared_by"] == dashboard_viewer.shared_by.justice_email
+            assert result["shared_by_email"] == dashboard_viewer.shared_by.justice_email
+            assert result["shared_by_name"] == dashboard_viewer.shared_by.name
             assert result["shared_on"] == dashboard_viewer.created
             assert result["shared_via_domain"] is False
 
@@ -230,7 +231,8 @@ def test_retrieve_success_shared_as_domain_viewer(
             result = response.data
             assert result["embed_url"] == embed_url
             assert result["anonymous_user_arn"] == user_arn
-            assert result["shared_by"] == dashboard_domain.added_by.justice_email
+            assert result["shared_by_email"] == dashboard_domain.added_by.justice_email
+            assert result["shared_by_name"] == dashboard_domain.added_by.name
             assert result["shared_on"] == dashboard_domain.created
             assert result["shared_via_domain"] is True
 
@@ -270,6 +272,7 @@ def test_retrieve_success_as_admin(
             result = response.data
             assert result["embed_url"] == embed_url
             assert result["anonymous_user_arn"] == user_arn
-            assert result["shared_by"] is None
-            assert result["shared_on"] is None
+            assert result["shared_by_email"] is None
+            assert result["shared_by_name"] is None
+            assert result["shared_on"] == dashboard.created
             assert result["shared_via_domain"] is False
