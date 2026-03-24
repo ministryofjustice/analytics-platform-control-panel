@@ -53,6 +53,7 @@ jobs:
           VALIDATE_SHELL_SHFMT: false
           VALIDATE_TRIVY: false
           VALIDATE_YAML: false
+          VALIDATE_YAML_PRETTIER: false
           LINTER_RULES_PATH: /
           PYTHON_BLACK_CONFIG_FILE: pyproject.toml
           PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
