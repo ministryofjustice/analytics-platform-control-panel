@@ -1220,11 +1220,9 @@ class AWSQuicksight(AWSService):
         assume_role_name = assume_role_name or settings.QUICKSIGHT_ASSUMED_ROLE
         region_name = region_name or settings.QUICKSIGHT_ACCOUNT_REGION
         profile_name = profile_name or "control_panel_api"
-        log.info(
-            f"assume_role_name: {assume_role_name}, \
+        log.info(f"assume_role_name: {assume_role_name}, \
             profile_name: {profile_name}, \
-            region_name: {region_name}"
-        )
+            region_name: {region_name}")
         super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
         log.info(
             f"Init QuicksightService with assume_role_name: {assume_role_name}, profile_name: {profile_name}, region_name: {region_name}"  # noqa

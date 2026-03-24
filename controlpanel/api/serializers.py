@@ -24,7 +24,7 @@ from controlpanel.api.models import (
     UserApp,
     UserS3Bucket,
 )
-from controlpanel.utils import start_background_task
+from controlpanel.utils import get_domain_from_email, start_background_task
 
 
 class AppS3BucketSerializer(serializers.ModelSerializer):
@@ -562,22 +562,88 @@ class DashboardAdminSerializer(serializers.ModelSerializer):
         return obj.email
 
 
-class DashboardSerializer(serializers.ModelSerializer):
+class DashboardListSerializer(serializers.ModelSerializer):
     admins = DashboardAdminSerializer(many=True, read_only=True)
 
     class Meta:
         model = Dashboard
-        fields = ("name", "quicksight_id", "admins")
+        fields = ("name", "quicksight_id", "admins", "description")
 
 
-class DashboardUrlSerializer(DashboardSerializer):
-    class Meta(DashboardSerializer.Meta):
-        fields = ("name", "admins")
+class DashboardDetailSerializer(DashboardListSerializer):
+    embed_url = serializers.SerializerMethodField()
+    anonymous_user_arn = serializers.SerializerMethodField()
+    shared_by_email = serializers.SerializerMethodField()
+    shared_by_name = serializers.SerializerMethodField()
+    shared_on = serializers.SerializerMethodField()
+    shared_via_domain = serializers.SerializerMethodField()
 
-    def to_representation(self, dashboard):
-        data = super().to_representation(dashboard)
+    class Meta(DashboardListSerializer.Meta):
+        fields = DashboardListSerializer.Meta.fields + (
+            "embed_url",
+            "anonymous_user_arn",
+            "shared_by_email",
+            "shared_by_name",
+            "shared_on",
+            "shared_via_domain",
+        )
 
-        response = dashboard.get_embed_url()
-        data["embed_url"] = response["EmbedUrl"]
-        data["anonymous_user_arn"] = response["AnonymousUserArn"]
-        return data
+    def _get_embed_url(self, dashboard):
+        if hasattr(self, "_embed_url"):
+            return self._embed_url
+
+        self._embed_url = dashboard.get_embed_url()
+        return self._embed_url
+
+    def _get_access_data(self, dashboard):
+        if hasattr(self, "_access_data"):
+            return self._access_data
+
+        self._access_data = {}
+        email = self.context["request"].query_params.get("email")
+        if not email:
+            return self._access_data
+        domain_access = (
+            dashboard.domain_access.filter(domain__name__iexact=get_domain_from_email(email))
+            .select_related("added_by")
+            .first()
+        )
+        if domain_access and domain_access.added_by:
+            self._access_data["shared_by_email"] = domain_access.added_by.justice_email
+            self._access_data["shared_by_name"] = domain_access.added_by.name
+            self._access_data["shared_on"] = domain_access.created
+            self._access_data["shared_via_domain"] = True
+            return self._access_data
+
+        viewer_access = (
+            dashboard.viewer_access.filter(viewer__email__iexact=email)
+            .select_related("shared_by")
+            .first()
+        )
+        if viewer_access and viewer_access.shared_by:
+            self._access_data["shared_by_email"] = viewer_access.shared_by.justice_email
+            self._access_data["shared_by_name"] = viewer_access.shared_by.name
+            self._access_data["shared_on"] = viewer_access.created
+            return self._access_data
+
+        return self._access_data
+
+    def get_embed_url(self, dashboard):
+        response = self._get_embed_url(dashboard)
+        return response["EmbedUrl"]
+
+    def get_anonymous_user_arn(self, dashboard):
+        response = self._get_embed_url(dashboard)
+        return response["AnonymousUserArn"]
+
+    def get_shared_by_email(self, dashboard):
+        return self._get_access_data(dashboard).get("shared_by_email")
+
+    def get_shared_by_name(self, dashboard):
+        return self._get_access_data(dashboard).get("shared_by_name")
+
+    def get_shared_on(self, dashboard):
+        return self._get_access_data(dashboard).get("shared_on") or dashboard.created
+
+    def get_shared_via_domain(self, dashboard):
+        return self._get_access_data(dashboard).get("shared_via_domain", False)
