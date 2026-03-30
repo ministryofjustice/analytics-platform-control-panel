@@ -69,6 +69,9 @@ class S3Bucket(TimeStampedModel):
         db_table = "control_panel_api_s3bucket"
         ordering = ("name",)
 
+    def __str__(self):
+        return self.name
+
     def __init__(self, *args, **kwargs):
         """Overwrite this constructor to pass some non-field parameter"""
         self.bucket_owner = kwargs.pop("bucket_owner", cluster.AWSRoleCategory.user)

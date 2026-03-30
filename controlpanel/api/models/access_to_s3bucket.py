@@ -7,6 +7,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.dispatch import receiver
 from django_extensions.db.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 S3BUCKET_PATH_PATTERN = r"[a-zA-Z0-9_/\*-]"
 S3BUCKET_PATH_REGEX = re.compile(S3BUCKET_PATH_PATTERN)
@@ -37,6 +38,7 @@ class AccessToS3Bucket(TimeStampedModel):
         ),
         default=list,
     )
+    history = HistoricalRecords(table_name="control_panel_api_%(class)s_history", inherit=True)
 
     class Meta:
         abstract = True
