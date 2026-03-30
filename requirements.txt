@@ -3,14 +3,14 @@ auth0-python==4.13.0
 authlib==1.6.9
 autobahn==25.12.2
 beautifulsoup4==4.14.3
-boto3==1.42.24
+boto3==1.42.73
 celery[sqs]==5.6.2
 channels==4.3.2
 channels-redis==4.3.0
-cryptography==46.0.5
+cryptography==46.0.6
 daphne==4.2.1
 Django==5.2.12
-django-celery-beat==2.8.1
+django-celery-beat==2.9.0
 django-crequest==2018.5.11
 django-extensions==4.1
 django-filter==25.2
@@ -43,4 +43,4 @@ sentry-sdk==2.53.0
 setuptools==82.0.0
 slackclient==2.9.4
 urllib3==2.6.3
-uvicorn[standard]==0.40.0
+uvicorn[standard]==0.42.0

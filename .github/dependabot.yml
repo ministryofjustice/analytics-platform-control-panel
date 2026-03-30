@@ -7,6 +7,8 @@ updates:
     commit-message:
       prefix: ":dependabot: devcontainers"
       include: "scope"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -14,6 +16,14 @@ updates:
     ignore:
       - dependency-name: "numpy"
         versions: [ ">=2.0.0" ]
+    cooldown:
+      default-days: 7
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 7
     groups:
       support-dependencies:
         patterns:
