@@ -22,7 +22,9 @@ jobs:
       - name: Checkout
         id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      
+        with:
+          persist-credentials: false
+
       - name: Install cosign
         id: install_cosign
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
@@ -46,7 +48,9 @@ jobs:
         id: sign
         shell: bash
         run: |
-          cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build_and_push.outputs.digest }}
+          cosign sign --yes ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}
+        env:
+          STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST: ${{ steps.build_and_push.outputs.digest }}
 
       - name: Generate SBOM
         id: generate_sbom
@@ -79,8 +83,10 @@ jobs:
         run: |
           cosign verify \
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-            --certificate-identity=https://github.com/${{ github.workflow_ref }} \
-            ghcr.io/${{ github.repository }}@${{ steps.build_and_push.outputs.digest }}
+            --certificate-identity=https://github.com/${GITHUB_WORKFLOW_REF} \
+            ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}
+        env:
+          STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST: ${{ steps.build_and_push.outputs.digest }}
 
       - name: GitHub Attestation Verify
         id: gh_attestation_verify
@@ -88,4 +94,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh attestation verify oci://ghcr.io/${{ github.repository }}:${{ github.ref_name }} --repo ${{ github.repository }}
+          gh attestation verify oci://ghcr.io/${{ github.repository }}:${GITHUB_REF_NAME} --repo ${{ github.repository }}
