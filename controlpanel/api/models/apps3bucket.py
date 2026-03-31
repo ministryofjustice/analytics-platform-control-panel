@@ -27,6 +27,8 @@ class AppS3Bucket(AccessToS3Bucket):
         # one record per app/s3bucket
         unique_together = ("app", "s3bucket")
         ordering = ("id",)
+        verbose_name = "S3 App Access"
+        verbose_name_plural = "S3 App Access records"
 
     def __init__(self, *args, **kwargs):
         """Overwrite this constructor to pass some non-field parameter"""

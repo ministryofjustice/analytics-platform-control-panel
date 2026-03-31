@@ -26,6 +26,8 @@ class UserS3Bucket(AccessToS3Bucket):
         # one record per user/s3bucket
         unique_together = ("user", "s3bucket")
         ordering = ("id",)
+        verbose_name = "S3 User Access"
+        verbose_name_plural = "S3 User Access records"
 
     def __init__(self, *args, **kwargs):
         """Overwrite this constructor to pass some non-field parameter"""

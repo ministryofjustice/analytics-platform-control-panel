@@ -12,6 +12,7 @@ from simple_history.admin import SimpleHistoryAdmin
 # First-party/Local
 from controlpanel.api.models import (
     App,
+    AppS3Bucket,
     DashboardDomain,
     Feedback,
     IPAllowlist,
@@ -19,6 +20,7 @@ from controlpanel.api.models import (
     S3Bucket,
     ToolDeployment,
     User,
+    UserS3Bucket,
 )
 from controlpanel.api.models.dashboard import (
     Dashboard,
@@ -34,6 +36,8 @@ HistoricalDashboard = Dashboard.history.model
 HistoricalDashboardAdminAccess = DashboardAdminAccess.history.model
 HistoricalDashboardViewerAccess = DashboardViewerAccess.history.model
 HistoricalDashboardDomainAccess = DashboardDomainAccess.history.model
+HistoricalUserS3Access = UserS3Bucket.history.model
+HistoricalAppS3Access = AppS3Bucket.history.model
 
 
 def make_migration_pending(modeladmin, request, queryset):
@@ -233,8 +237,8 @@ class StatusPageEventAdmin(admin.ModelAdmin):
     date_hierarchy = "reported_at"
 
 
-class HistoricalDashboardAccessAdmin(admin.ModelAdmin):
-    """Base admin for browsing dashboard access history including deletions."""
+class HistoricalAdmin(admin.ModelAdmin):
+    """Base admin for browsing history records including deletions."""
 
     list_filter = ("history_type", "history_date")
     ordering = ("-history_date",)
@@ -249,7 +253,7 @@ class HistoricalDashboardAccessAdmin(admin.ModelAdmin):
         return False
 
 
-class HistoricalDashboardAdminAccessAdmin(HistoricalDashboardAccessAdmin):
+class HistoricalDashboardAdminAccessAdmin(HistoricalAdmin):
     list_display = (
         "id",
         "dashboard_id",
@@ -263,7 +267,7 @@ class HistoricalDashboardAdminAccessAdmin(HistoricalDashboardAccessAdmin):
     search_fields = ("dashboard__name", "user__username")
 
 
-class HistoricalDashboardViewerAccessAdmin(HistoricalDashboardAccessAdmin):
+class HistoricalDashboardViewerAccessAdmin(HistoricalAdmin):
     list_display = (
         "id",
         "dashboard_id",
@@ -277,7 +281,7 @@ class HistoricalDashboardViewerAccessAdmin(HistoricalDashboardAccessAdmin):
     search_fields = ("dashboard__name", "viewer__email")
 
 
-class HistoricalDashboardDomainAccessAdmin(HistoricalDashboardAccessAdmin):
+class HistoricalDashboardDomainAccessAdmin(HistoricalAdmin):
     list_display = (
         "id",
         "dashboard_id",
@@ -291,12 +295,41 @@ class HistoricalDashboardDomainAccessAdmin(HistoricalDashboardAccessAdmin):
     search_fields = ("dashboard__name", "domain__name")
 
 
-class HistoricalDashboardAdmin(HistoricalDashboardAccessAdmin):
+class HistoricalDashboardAdmin(HistoricalAdmin):
     """Admin for browsing dashboard history including deletions."""
 
     list_display = ("id", "name", "quicksight_id", "history_type", "history_date", "history_user")
     list_select_related = ("history_user",)
     search_fields = ("name", "quicksight_id", "id")
+
+
+class HistoricalUserS3AccessAdmin(HistoricalAdmin):
+    list_display = (
+        "id",
+        "s3bucket",
+        "access_level",
+        "is_admin",
+        "user",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    search_fields = ("s3bucket__name", "user__username", "access_level")
+    list_select_related = ("s3bucket", "user", "history_user")
+
+
+class HistoricalAppS3AccessAdmin(HistoricalAdmin):
+    list_display = (
+        "id",
+        "s3bucket",
+        "access_level",
+        "app",
+        "history_type",
+        "history_date",
+        "history_user",
+    )
+    search_fields = ("s3bucket__name", "app__name", "access_level")
+    list_select_related = ("s3bucket", "app", "history_user")
 
 
 admin.site.register(App, AppAdmin)
@@ -316,3 +349,5 @@ admin.site.register(HistoricalDashboardAdminAccess, HistoricalDashboardAdminAcce
 admin.site.register(HistoricalDashboardViewerAccess, HistoricalDashboardViewerAccessAdmin)
 admin.site.register(HistoricalDashboardDomainAccess, HistoricalDashboardDomainAccessAdmin)
 admin.site.register(HistoricalDashboard, HistoricalDashboardAdmin)
+admin.site.register(HistoricalUserS3Access, HistoricalUserS3AccessAdmin)
+admin.site.register(HistoricalAppS3Access, HistoricalAppS3AccessAdmin)
