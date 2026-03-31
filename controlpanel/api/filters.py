@@ -7,6 +7,7 @@ See: http://www.django-rest-framework.org/api-guide/filtering/#custom-generic-fi
 # Third-party
 from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
 
 # First-party/Local
 from controlpanel.api.models import S3Bucket
@@ -67,24 +68,50 @@ class AppS3BucketFilter(DjangoFilterBackend):
 
 
 class DashboardFilter(DjangoFilterBackend):
+    SHARED_VIA_VIEWER = "viewer"
+    SHARED_VIA_DOMAIN = "domain"
+    SHARED_VIA_ADMIN = "admin"
+    SHARED_VIA_CHOICES = {SHARED_VIA_VIEWER, SHARED_VIA_DOMAIN, SHARED_VIA_ADMIN}
+
     def filter_queryset(self, request, queryset, view):
-        queryset = super().filter_queryset(request, queryset, view)
+        queryset = super().filter_queryset(request, queryset, view).order_by("name")
 
         email = request.query_params.get("email")
+        shared_via = request.query_params.getlist("shared_via")
 
         if is_superuser(request.user) and not email:
             return queryset
 
         if not email:
-            raise ValueError("Email parameter is required.")
+            raise ValidationError(detail={"email": "Email parameter is required."})
+
+        invalid = set(shared_via) - self.SHARED_VIA_CHOICES
+        if invalid:
+            choices = ", ".join(self.SHARED_VIA_CHOICES)
+            raise ValidationError(
+                detail={"shared_via": f"Invalid shared_via value. Valid options are: {choices}"}
+            )
 
         domain = get_domain_from_email(email)
 
-        return queryset.filter(
-            Q(viewers__email__iexact=email)
-            | Q(whitelist_domains__name__iexact=domain)
-            | Q(admins__justice_email__iexact=email)
-        ).distinct()
+        if not shared_via:
+            return queryset.filter(
+                Q(viewers__email__iexact=email)
+                | Q(whitelist_domains__name__iexact=domain)
+                | Q(admins__justice_email__iexact=email)
+            ).distinct()
+
+        shared_via_query = Q()
+        if self.SHARED_VIA_VIEWER in shared_via:
+            shared_via_query |= Q(viewers__email__iexact=email)
+
+        if self.SHARED_VIA_DOMAIN in shared_via:
+            shared_via_query |= Q(whitelist_domains__name__iexact=domain)
+
+        if self.SHARED_VIA_ADMIN in shared_via:
+            shared_via_query |= Q(admins__justice_email__iexact=email)
+
+        return queryset.filter(shared_via_query).distinct()
 
 
 class UserS3BucketFilter(DjangoFilterBackend):
