@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
 # Run pre-commit
-pre-commit install
+uv run pre-commit install
+uv run pre-commit install --hook-type commit-msg

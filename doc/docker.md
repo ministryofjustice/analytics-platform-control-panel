@@ -47,8 +47,7 @@ Control Panel needs AWS credentials to change S3 bucket IAM permissions, accordi
 You can test what AWS Account is currently configured on your command-line, like this:
 
 ```shell
-$ pip install boto3
-$ python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
+$ uv run python -c "import boto3; print(boto3.client('sts').get_caller_identity()['Arn'])"
 arn:aws:sts::<aws dev account id>:assumed-role/restricted-admin-dev/botocore-session-1590188888
 ```
 

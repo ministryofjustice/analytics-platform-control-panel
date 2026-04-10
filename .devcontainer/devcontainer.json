@@ -12,7 +12,8 @@
     "./features/src/postgresql": {},
     "./features/src/redis": {},
     "ghcr.io/ministryofjustice/devcontainer-feature/aws:1": {},
-    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {}
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {},
+    "ghcr.io/ministryofjustice/devcontainer-feature/astral:1": {}
   },
   "postCreateCommand": "bash scripts/devcontainer/post-create.sh",
   "postStartCommand": "bash scripts/devcontainer/post-start.sh",

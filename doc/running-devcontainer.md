@@ -161,7 +161,6 @@ The dev account is also used by our development cloud environment, so take care 
 `pre-commit` is a package manager for git hooks that we use during local development.
 
 Current checks are:-
-- requirements.txt library sort and check
 - yaml file check
 - end-of-file must have white line
 - trailing white spaces check
