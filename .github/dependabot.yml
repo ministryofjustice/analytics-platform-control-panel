@@ -10,14 +10,18 @@ updates:
     cooldown:
       default-days: 7
   - package-ecosystem: "uv"
-    directory: "/"
-    schedule:
-      interval: "weekly"
+    commit-message:
+      include: "scope"
+      prefix: ":dependabot: uv"
+    cooldown:
+      default-days: 7
     ignore:
       - dependency-name: "numpy"
         versions: [ ">=2.0.0" ]
-    cooldown:
-      default-days: 7
+    directory: "/"
+    open-pull-requests-limit: 15
+    schedule:
+      interval: "daily"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
