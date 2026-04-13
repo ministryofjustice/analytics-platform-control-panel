@@ -14,6 +14,7 @@ helm repo update
 # Install Python dependencies
 rm -rf .venv
 uv sync --locked
+# shellcheck disable=SC1091
 source .venv/bin/activate
 
 # install npm dependencies and static assets
