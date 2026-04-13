@@ -54,7 +54,7 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chmod -R g+rwX ${HELM_HOME}
 
 COPY pyproject.toml uv.lock manage.py settings.yaml ./
-RUN uv sync --frozen --no-dev --no-install-project && \
+RUN uv sync --locked --no-dev --no-install-project && \
     chown -R controlpanel:controlpanel .venv
 
 USER controlpanel
