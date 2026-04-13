@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-
-# Upgrade NPM
-npm install --global npm@latest
+set -e
 
 # Start Postgres
 docker compose --file contrib/docker-compose-postgres.yml up --detach
@@ -13,12 +11,11 @@ docker compose --file contrib/docker-compose-redis.yml up --detach
 helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
 helm repo update
 
-# Upgrade Pip
-pip install --upgrade pip
-
-# Install dependencies
-pip install -r requirements.txt
-pip install -r requirements.dev.txt
+# Install Python dependencies
+rm -rf .venv
+uv sync --locked
+# shellcheck disable=SC1091
+source .venv/bin/activate
 
 # install npm dependencies and static assets
 npm install

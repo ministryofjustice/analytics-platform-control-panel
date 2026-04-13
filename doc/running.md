@@ -32,12 +32,9 @@ with Python 3.12.2.
 
 Install python dependencies with the following command:
 ```sh
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install -r requirements.dev.txt
-pre-commit install --hook-type commit-msg
-pre-commit install
+uv sync
+uv run pre-commit install --hook-type commit-msg
+uv run pre-commit install
 ```
 
 In addition, you must have:
@@ -441,7 +438,6 @@ The dev account is also used by our development cloud environment, so take care 
 `pre-commit` is a package manager for git hooks that we use during local development.
 
 Current checks are:-
-- requirements.txt library sort and check
 - yaml file check
 - end-of-file must have white line
 - trailing white spaces check

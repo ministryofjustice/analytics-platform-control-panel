@@ -12,6 +12,8 @@ RUN /node_modules/.bin/jest
 
 FROM public.ecr.aws/docker/library/python:3.12-alpine3.21 AS base
 
+COPY --from=ghcr.io/astral-sh/uv:0.11.6@sha256:b1e699368d24c57cda93c338a57a8c5a119009ba809305cc8e86986d4a006754 /uv /usr/local/bin/uv
+
 ARG HELM_VERSION=3.20.0
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz
 ARG HELM_BASEURL=https://get.helm.sh
@@ -20,7 +22,9 @@ ENV DJANGO_SETTINGS_MODULE="controlpanel.settings" \
   HELM_HOME=/tmp/helm \
   HELM_CONFIG_HOME=/tmp/helm/repository \
   HELM_CACHE_HOME=/tmp/helm/cache \
-  HELM_DATA_HOME=/tmp/helm/data
+  HELM_DATA_HOME=/tmp/helm/data \
+  UV_COMPILE_BYTECODE=1 \
+  UV_LINK_MODE=copy
 
 # create a user to run as
 RUN addgroup -g 1000 controlpanel \
@@ -49,18 +53,9 @@ RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
-
-
-RUN pip install -U pip
-
-COPY requirements.txt requirements.dev.txt manage.py settings.yaml ./
-RUN pip install -U --no-cache-dir pip
-RUN pip install -r requirements.txt
-
-# Re-enable dev packages
-RUN python3 -m venv --system-site-packages dev-packages \
-    && dev-packages/bin/pip3 install -U --no-cache-dir pip \
-    && dev-packages/bin/pip3 install -r requirements.dev.txt
+COPY pyproject.toml uv.lock manage.py settings.yaml ./
+RUN uv sync --locked --no-dev --no-install-project && \
+    chown -R controlpanel:controlpanel .venv
 
 USER controlpanel
 COPY controlpanel controlpanel
@@ -85,6 +80,8 @@ COPY --from=build-node node_modules/jquery-ui/dist/ static/jquery-ui
 
 # empty .env file to prevent warning messages
 RUN touch .env
+
+ENV PATH="/home/controlpanel/.venv/bin:$PATH"
 
 # collect static files for deployment
 RUN SLACK_API_TOKEN=dummy python3 manage.py collectstatic --noinput --ignore=*.scss
