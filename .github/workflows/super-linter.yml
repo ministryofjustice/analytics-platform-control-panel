@@ -59,4 +59,3 @@ jobs:
           PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
           FILTER_REGEX_EXCLUDE: '.*templates/assume_roles/.*\.json$'
           PYTHON_ISORT_CONFIG_FILE: pyproject.toml
-          VALIDATE_TRIVY: false
