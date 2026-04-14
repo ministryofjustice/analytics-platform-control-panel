@@ -45,7 +45,6 @@ class Auth0Error(APIException):
 
 
 class ExtendedAuth0(Auth0):
-
     DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
     DEFAULT_APP_TYPE = "regular_web"
     M2M_APP_TYPE = "non_interactive"
@@ -112,7 +111,7 @@ class ExtendedAuth0(Auth0):
             error_detail = f"Access token error: {self.client_id}, {self.domain}, {error}"
             log.error(error_detail)
             sentry_sdk.capture_exception(error)
-            raise Auth0Error(error_detail)
+            raise Auth0Error(error_detail) from error
 
         return token["access_token"]
 
@@ -159,23 +158,23 @@ class ExtendedAuth0(Auth0):
         new_connections = self._create_custom_connection(client_name, connections)
         app_url = "https://{}.{}".format(app_url_name or client_name, app_domain or self.app_domain)
         client = self.clients.create(
-            dict(
-                name=client_name,
-                callbacks=[f"{app_url}/callback"],
-                allowed_origins=[app_url],
-                app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
-                web_origins=[app_url],
-                grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
-                allowed_logout_urls=[app_url],
-            )
+            {
+                "name": client_name,
+                "callbacks": [f"{app_url}/callback"],
+                "allowed_origins": [app_url],
+                "app_type": ExtendedAuth0.DEFAULT_APP_TYPE,
+                "web_origins": [app_url],
+                "grant_types": ExtendedAuth0.DEFAULT_GRANT_TYPES,
+                "allowed_logout_urls": [app_url],
+            }
         )
         client_id = client["client_id"]
 
-        view_app = self.permissions.create(dict(name="view:app", applicationId=client_id))
-        role = self.roles.create(dict(name="app-viewer", applicationId=client_id))
+        view_app = self.permissions.create({"name": "view:app", "applicationId": client_id})
+        role = self.roles.create({"name": "app-viewer", "applicationId": client_id})
         self.roles.add_permission(role, view_app["_id"])
         try:
-            group = self.groups.create(dict(name=client_name))
+            group = self.groups.create({"name": client_name})
         except exceptions.Auth0Error:
             # celery fails to unpickle original exception, but not 100% sure why.
             # Seems to be because __reduce__  method is incorrect? Possible bug.
@@ -184,7 +183,7 @@ class ExtendedAuth0(Auth0):
             #  catch in the worker? e.g.:
             # raise Auth0Error(detail=exc.message, code=exc.error_code)
             # Or get the group ID and continue?
-            group = dict(_id=self.groups.get_group_id(client_name))
+            group = {"_id": self.groups.get_group_id(client_name)}
 
         self.groups.add_role(group["_id"], role["_id"])
 
@@ -214,7 +213,7 @@ class ExtendedAuth0(Auth0):
             # otherwise, raise the error
             if error.status_code != 409:
                 self.clients.delete(client["client_id"])
-                raise Auth0Error(error.__str__(), code=error.status_code)
+                raise Auth0Error(error.__str__(), code=error.status_code) from error
 
         return client
 
@@ -224,14 +223,20 @@ class ExtendedAuth0(Auth0):
         except exceptions.Auth0Error as error:
             if error.status_code == 404:
                 return None
-            raise Auth0Error(error.__str__(), code=error.status_code)
+            raise Auth0Error(error.__str__(), code=error.status_code) from error
 
-    def add_group_members_by_emails(self, emails, user_options={}, group_id=None, group_name=None):
+    def add_group_members_by_emails(
+        self, emails, user_options=None, group_id=None, group_name=None
+    ):
+        if user_options is None:
+            user_options = {}
         user_ids = self.users.add_users_by_emails(emails, user_options=user_options)
         self.groups.add_group_members(user_ids=user_ids, group_id=group_id, group_name=group_name)
         return user_ids
 
-    def add_dashboard_member_by_email(self, email, user_options={}):
+    def add_dashboard_member_by_email(self, email, user_options=None):
+        if user_options is None:
+            user_options = {}
         user_ids = self.users.add_users_by_emails([email], user_options=user_options)
         self.auth0_roles.add_users(settings.DASHBOARD_AUTH0_ROLE_ID, user_ids)
 
@@ -368,7 +373,7 @@ class Auth0API(object):
     def get(self, id, fields=None, include_fields=True):
         params = {"fields": fields and ",".join(fields) or None}
         if include_fields:
-            params.update(dict(include_fields=str(include_fields).lower()))
+            params.update({"include_fields": str(include_fields).lower()})
 
         return self.client.get(self._url(id), params=params)
 
@@ -524,7 +529,7 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
                 settings, "{}_gateway_url".format(connection_name).upper()
             )
 
-    def create_custom_connection(self, connection_name: str, input_values: dict()):
+    def create_custom_connection(self, connection_name: str, input_values: {}):
         """
         This method is only used to create custom connections which has
         configuration file within this repo
@@ -556,7 +561,7 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
         except exceptions.Auth0Error as error:
             # Skip the exception when the connection name existed already
             if error.status_code != 409:
-                raise Auth0Error(error.__str__(), code=error.status_code)
+                raise Auth0Error(error.__str__(), code=error.status_code) from error
         return input_values["name"]
 
 
@@ -615,7 +620,9 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
             return response[0]["user_id"]
         return None
 
-    def add_users_by_emails(self, emails, user_options={}):
+    def add_users_by_emails(self, emails, user_options=None):
+        if user_options is None:
+            user_options = {}
         user_ids_to_add = []
 
         for email in emails:
@@ -693,7 +700,7 @@ class Groups(Auth0API, ExtendedAPIMethods):
         self.client.patch(self._url(id, "roles"), data=[role_id])
 
     def get_group_id(self, group_name):
-        group = self.search_first_match(dict(name=group_name))
+        group = self.search_first_match({"name": group_name})
         if not group:
             return None
         else:

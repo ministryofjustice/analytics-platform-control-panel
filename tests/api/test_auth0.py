@@ -120,7 +120,6 @@ def test_clear_up_group(
     fixture_permission_delete,
     fixture_groups_delete,
 ):
-
     ExtendedAuth0.clear_up_group(group_id="foo-id")
 
     fixture_groups_delete.assert_called_with("foo-id")
@@ -374,14 +373,15 @@ def test_setup_auth0_client(
     fixture_role_add_permission,
     fixture_group_add_role,
 ):
-
     new_client_name = "new_client"
     new_client_id = "new_client_id"
     ExtendedAuth0.setup_auth0_client(client_name=new_client_name)
 
-    fixture_permission_create.assert_called_with(dict(name="view:app", applicationId=new_client_id))
-    fixture_role_create.assert_called_with(dict(name="app-viewer", applicationId=new_client_id))
-    fixture_group_create.assert_called_with(dict(name=new_client_name))
+    fixture_permission_create.assert_called_with(
+        {"name": "view:app", "applicationId": new_client_id}
+    )
+    fixture_role_create.assert_called_with({"name": "app-viewer", "applicationId": new_client_id})
+    fixture_group_create.assert_called_with({"name": new_client_name})
 
     fixture_role_add_permission.assert_called_with(
         "role_001",
@@ -714,7 +714,6 @@ def test_setup_m2m_client_grant_error(ExtendedAuth0):
     ],
 )
 def test_rotate_m2m_client_secret(ExtendedAuth0, side_effect, expected):
-
     with patch.object(ExtendedAuth0.clients, "rotate_secret") as rotate_secret:
         rotate_secret.side_effect = side_effect
 

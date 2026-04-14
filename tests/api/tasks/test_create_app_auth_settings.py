@@ -24,9 +24,7 @@ def test_cluster_not_called_without_valid_app(cluster, complete, users):
 @pytest.mark.django_db
 @patch("controlpanel.api.tasks.handlers.base.BaseModelTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.app.cluster")
-@patch(
-    "controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None)
-)  # noqa
+@patch("controlpanel.api.models.user.User.github_api_token", new=PropertyMock(return_value=None))  # noqa
 def test_cluster_not_called_without_github_api_token(cluster, complete, users):
     app = baker.make("api.App")
 

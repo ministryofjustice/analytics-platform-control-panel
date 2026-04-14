@@ -8,7 +8,6 @@ from pagerduty import RestApiV2Client
 
 
 class PagerdutyClient:
-
     maintenance_colour = "blue"
     incident_colour = "orange"
 

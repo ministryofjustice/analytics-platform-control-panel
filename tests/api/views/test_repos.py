@@ -9,30 +9,30 @@ from rest_framework.reverse import reverse
 from tests.frontend.views.test_app import github_api_token, users  # noqa: F811
 
 BASIC_GOOD_DATA = [
-    dict(html_url="http://example.com", full_name="my-repo"),
-    dict(html_url="http://example.com", full_name="my-repo2"),
-    dict(html_url="http://example.com", full_name="my-repo3"),
+    {"html_url": "http://example.com", "full_name": "my-repo"},
+    {"html_url": "http://example.com", "full_name": "my-repo2"},
+    {"html_url": "http://example.com", "full_name": "my-repo3"},
 ]
 ARCHIVED_GOOD = [dict(**i, archived=False) for i in BASIC_GOOD_DATA]
 FILTERED_ARCHIVED_GOOD = [i.copy() for i in ARCHIVED_GOOD]
 FILTERED_ARCHIVED_GOOD[2]["archived"] = True
-BAD_JSON = dict(data="should expect an array")
-NULL_KEY_ENTRY = [dict(unknow_key="here", full_name="my-repo")]
+BAD_JSON = {"data": "should expect an array"}
+NULL_KEY_ENTRY = [{"unknow_key": "here", "full_name": "my-repo"}]
 
 
 @pytest.mark.parametrize(
     "input,expected_status,expected_result",
     [
-        (dict(status_code=200, json=lambda: []), 200, []),
-        (dict(status_code=404, json=lambda: []), 200, []),
-        (dict(status_code=200, json=lambda: ARCHIVED_GOOD), 200, BASIC_GOOD_DATA),
+        ({"status_code": 200, "json": lambda: []}, 200, []),
+        ({"status_code": 404, "json": lambda: []}, 200, []),
+        ({"status_code": 200, "json": lambda: ARCHIVED_GOOD}, 200, BASIC_GOOD_DATA),
         (
-            dict(status_code=200, json=lambda: FILTERED_ARCHIVED_GOOD),
+            {"status_code": 200, "json": lambda: FILTERED_ARCHIVED_GOOD},
             200,
             BASIC_GOOD_DATA[:2],
         ),
-        (dict(status_code=200, json=lambda: BAD_JSON), 200, []),
-        (dict(status_code=200, json=lambda: NULL_KEY_ENTRY), 400, []),
+        ({"status_code": 200, "json": lambda: BAD_JSON}, 200, []),
+        ({"status_code": 200, "json": lambda: NULL_KEY_ENTRY}, 400, []),
     ],
 )
 def test_github_repo_get(

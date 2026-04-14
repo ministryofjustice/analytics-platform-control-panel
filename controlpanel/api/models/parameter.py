@@ -13,7 +13,6 @@ APP_TYPE_CHOICES = ((APP_TYPE_AIRFLOW, "Airflow"),)
 
 
 class ParameterQuerySet(models.QuerySet):
-
     def airflow(self):
         return self.filter(app_type=APP_TYPE_AIRFLOW)
 

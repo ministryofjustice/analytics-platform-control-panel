@@ -22,7 +22,7 @@ class Command(BaseCommand):
             "--attach",
             "-a",
             default=True,
-            type=lambda x: (str(x).lower() == "true"),
+            type=lambda x: str(x).lower() == "true",
             help="whether to attach or remove policy",
         )
 

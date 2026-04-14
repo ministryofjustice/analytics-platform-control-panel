@@ -55,7 +55,7 @@ def repos(githubapi):
 
 @pytest.fixture
 def oidc_provider_statement(app, settings):
-    statement = dict()
+    statement = {}
     statement["Sid"] = "AllowCloudPlatformOIDCProvider"
     statement["Effect"] = "Allow"
     statement["Action"] = "sts:AssumeRoleWithWebIdentity"
@@ -76,7 +76,7 @@ def oidc_provider_statement(app, settings):
 
 @pytest.fixture
 def cloud_platform_role_statement(app, settings):
-    statement = dict()
+    statement = {}
     statement["Sid"] = "AllowCloudPlatformCrossAccountIAM"
     statement["Effect"] = "Allow"
     statement["Action"] = "sts:AssumeRole"
@@ -341,7 +341,7 @@ def test_rotate_m2m_client(app, authz, client, save_called):
         result = cluster.App(app).rotate_m2m_client_secret()
 
         assert result == client
-        app.save.called is save_called
+        assert app.save.called is save_called
         if save_called:
             assert "m2m" not in app.app_conf
         else:

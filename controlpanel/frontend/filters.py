@@ -6,7 +6,6 @@ from controlpanel.api.models.tool import Tool
 
 
 class InitialFilterSetMixin(django_filters.FilterSet):
-
     def __init__(self, data=None, queryset=None, *, request=None, prefix=None):
         # if filterset is bound, use initial values as defaults
         if data is not None:

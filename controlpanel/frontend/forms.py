@@ -111,7 +111,6 @@ class DatasourceChoiceField(forms.ModelChoiceField):
 
 
 class DynamicMultiChoiceField(forms.MultipleChoiceField):
-
     def validate(self, value):
         """Only validate whether required feature, nothing else"""
         if self.required and not value:
@@ -301,7 +300,7 @@ class AppAuth0Form(forms.Form):
         self.fields["connections"] = forms.MultipleChoiceField(
             required=False,
             initial=self.auth0_connections,
-            choices=list(zip(self.all_connections_names, self.all_connections_names)),
+            choices=list(zip(self.all_connections_names, self.all_connections_names, strict=False)),
         )
         for connection in self.custom_connections:
             self.fields["{}_auth0_client_id".format(connection)] = forms.CharField(
@@ -357,7 +356,6 @@ class AppAuth0Form(forms.Form):
 
 
 class CreateAppForm(CloudPlatformArnValidationMixin, forms.Form):
-
     repo_url = forms.CharField(
         max_length=512,
         validators=[
@@ -441,10 +439,10 @@ class CreateAppForm(CloudPlatformArnValidationMixin, forms.Form):
             GithubAPI(self.request.user.github_api_token, github_org=org_name).get_repository(
                 repo_name
             )
-        except RepositoryNotFound:
+        except RepositoryNotFound as e:
             raise ValidationError(
                 "Github repository not found - it may be private",
-            )
+            ) from e
 
         if App.objects.filter(repo_url=repo_url).exists():
             raise ValidationError("App already exists for this repository URL")
@@ -505,7 +503,6 @@ class CreateDatasourceForm(forms.Form):
 
 
 class CreateDatasourceFolderForm(forms.Form):
-
     name = forms.CharField(
         max_length=100,
         min_length=3,
@@ -622,7 +619,6 @@ class TableGrantAccessForm(forms.Form):
         return user
 
     def clean(self):
-
         permissions = {
             "readonly": {"resource_link": ["DESCRIBE"], "table": ["SELECT"]},
         }
@@ -679,7 +675,6 @@ class GrantAppAccessForm(forms.Form):
 
 
 class GrantDomainAccessForm(forms.Form):
-
     whitelist_domain = DatasourceChoiceField(
         empty_label="No domain selected",
         queryset=DashboardDomain.objects.none(),
@@ -868,11 +863,11 @@ class CustomersField(forms.Field):
         for email in value:
             try:
                 validate_email(email)
-            except ValidationError:
+            except ValidationError as e:
                 raise ValidationError(
                     '"%(value)s" is not a valid email address',
                     params={"value": email},
-                )
+                ) from e
         return value
 
 
@@ -905,9 +900,7 @@ class ToolReleaseForm(forms.ModelForm):
         if not target_users_list:
             return target_users_list
 
-        target_users_list = set(
-            [username.strip().lower() for username in target_users_list.split(",")]
-        )
+        target_users_list = {username.strip().lower() for username in target_users_list.split(",")}
 
         found_users = User.objects.filter(username__in=target_users_list)
         not_found_users = set(target_users_list) - set(
@@ -1147,7 +1140,6 @@ class FeedbackForm(forms.ModelForm):
 
 
 class RegisterDashboardForm(ErrorSummaryMixin, forms.ModelForm):
-
     emails = MultiEmailField(required=False)
     whitelist_domain = forms.ModelChoiceField(
         queryset=DashboardDomain.objects.all(),
@@ -1226,13 +1218,11 @@ class RegisterDashboardForm(ErrorSummaryMixin, forms.ModelForm):
 
 
 class ToolChoice(forms.Select):
-
     def __init__(self, user=None, *args, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
 
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
-
         option = super().create_option(name, value, label, selected, index, subindex, attrs)
         if value:
             option["attrs"]["data-is-deprecated"] = f"{value.instance.is_deprecated}"
@@ -1249,7 +1239,6 @@ class ToolChoice(forms.Select):
 
 
 class ToolDeploymentForm(forms.Form):
-
     tool = forms.ModelChoiceField(
         queryset=Tool.objects.none(),
         empty_label='Select a tool from this list and click "Deploy" to start',

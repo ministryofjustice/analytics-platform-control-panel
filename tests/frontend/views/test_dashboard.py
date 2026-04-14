@@ -401,8 +401,7 @@ def test_add_viewers_fail_notify(
     response = client.post(dashboard.get_absolute_add_viewers_url(), data)
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     assert (
-        "Failed to notify test.user@justice.gov.uk. "
-        "You may wish to email them your dashboard link."
+        "Failed to notify test.user@justice.gov.uk. You may wish to email them your dashboard link."
     ) in messages
 
 
@@ -917,7 +916,7 @@ def test_add_admin_success(client, dashboard, users, govuk_notify_send_email):
     assert (
         dashboard.admins.filter(auth0_id=users["quicksight_compute_author"].auth0_id).count() == 1
     )
-    govuk_notify_send_email.call_count == 2
+    assert govuk_notify_send_email.call_count == 1
 
 
 def test_revoke_admin_success(client, dashboard, users, govuk_notify_send_email):
@@ -1112,7 +1111,7 @@ def test_preview_dashboard_confirm_creates_dashboard_fail_notify(
     # Check error message
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     assert (
-        "Failed to notify viewer@example.com. " "You may wish to email them your dashboard link."
+        "Failed to notify viewer@example.com. You may wish to email them your dashboard link."
     ) in messages
 
 

@@ -63,12 +63,12 @@ def app(users, iam):
     baker.make("api.App", NUM_APPS - 1)
     app = baker.make("api.App")
     app.repo_url = "https://github.com/github_org/testing_repo"
-    dev_auth_settings = dict(client_id="dev_client_id", group_id=str(uuid.uuid4()))
-    prod_auth_settings = dict(client_id="prod_client_id", group_id=str(uuid.uuid4()))
-    env_app_settings = dict(
-        dev_env=dev_auth_settings,
-        prod_env=prod_auth_settings,
-    )
+    dev_auth_settings = {"client_id": "dev_client_id", "group_id": str(uuid.uuid4())}
+    prod_auth_settings = {"client_id": "prod_client_id", "group_id": str(uuid.uuid4())}
+    env_app_settings = {
+        "dev_env": dev_auth_settings,
+        "prod_env": prod_auth_settings,
+    }
     app.app_conf = {App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings}
     app.save()
     AppIPAllowList.objects.update_records(app, "dev_env", ip_allowlists)
@@ -275,7 +275,6 @@ def remove_customer_by_email(client, app, *args):
 
 
 def set_cloud_platform_arn(client, app, *args):
-
     data = {
         "allow_cloud_platform_assume_role": True,
         "cloud_platform_role_arn": "arn:aws:iam::123456789012:role/test-role",
@@ -652,13 +651,13 @@ def app_being_migrated(users):
     app = baker.make("api.App")
     app.repo_url = "https://github.com/new_github_org/testing_repo"
     app_old_repo_url = "https://github.com/github_org/testing_repo"
-    migration_json = dict(
-        app_name="testing_app",
-        repo_url=app_old_repo_url,
-        app_url=f"https://{app.slug}.{settings.APP_DOMAIN}",
-        status="in_progress",
-    )
-    app_info = dict(migration=migration_json)
+    migration_json = {
+        "app_name": "testing_app",
+        "repo_url": app_old_repo_url,
+        "app_url": f"https://{app.slug}.{settings.APP_DOMAIN}",
+        "status": "in_progress",
+    }
+    app_info = {"migration": migration_json}
     app.description = json.dumps(app_info)
     app.save()
     baker.make("api.UserApp", user=users["app_admin"], app=app, is_admin=True)
@@ -795,13 +794,13 @@ def test_register_app_with_xacct_policy(client, users, githubapi):
     test_app_name = "test_app_with_xacct_policy"
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(users["superuser"])
-    data = dict(
-        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
-        namespace="test-app-namespace",
-        connect_bucket="later",
-        allow_cloud_platform_assume_role=True,
-        cloud_platform_role_arn="arn:aws:iam::123456789012:role/test_role",
-    )
+    data = {
+        "repo_url": f"https://github.com/ministryofjustice/{test_app_name}",
+        "namespace": "test-app-namespace",
+        "connect_bucket": "later",
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": "arn:aws:iam::123456789012:role/test_role",
+    }
     response = client.post(reverse("create-app"), data)
 
     assert response.status_code == 302
@@ -823,12 +822,12 @@ def test_register_app_with_creating_datasource(client, users, githubapi):
     test_bucket_name = "test-bucket"
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(users["superuser"])
-    data = dict(
-        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
-        connect_bucket="new",
-        new_datasource_name=test_bucket_name,
-        namespace="test-app-namespace",
-    )
+    data = {
+        "repo_url": f"https://github.com/ministryofjustice/{test_app_name}",
+        "connect_bucket": "new",
+        "new_datasource_name": test_bucket_name,
+        "namespace": "test-app-namespace",
+    }
     response = client.post(reverse("create-app"), data)
 
     assert response.status_code == 302
@@ -850,12 +849,12 @@ def test_register_app_with_existing_datasource(client, users, s3buckets, githuba
     user = users["superuser"]
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(user)
-    data = dict(
-        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
-        connect_bucket="existing",
-        existing_datasource_id=existing_bucket.id,
-        namespace="test-app-namespace",
-    )
+    data = {
+        "repo_url": f"https://github.com/ministryofjustice/{test_app_name}",
+        "connect_bucket": "existing",
+        "existing_datasource_id": existing_bucket.id,
+        "namespace": "test-app-namespace",
+    }
     response = client.post(reverse("create-app"), data)
 
     assert response.status_code == 302
@@ -873,10 +872,10 @@ def test_register_app_with_existing_datasource(client, users, s3buckets, githuba
 def test_register_app_invalid_organisation(client, users):
     client.force_login(users["superuser"])
     app_name = "example-app-old-org"
-    data = dict(
-        repo_url=f"https://github.com/moj-analytical-services/{app_name}",
-        connect_bucket="later",
-    )
+    data = {
+        "repo_url": f"https://github.com/moj-analytical-services/{app_name}",
+        "connect_bucket": "later",
+    }
 
     url = reverse("create-app")
     response = client.post(url, data)
@@ -891,11 +890,11 @@ def test_register_app_invalid_namespace(client, users, githubapi):
     githubapi["views"].get_repository_contents.side_effect = RepositoryNotFound()
     client.force_login(users["superuser"])
     test_app_name = "test-app-with-invalid-namespace"
-    data = dict(
-        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
-        namespace="test-app-namespace",
-        connect_bucket="later",
-    )
+    data = {
+        "repo_url": f"https://github.com/ministryofjustice/{test_app_name}",
+        "namespace": "test-app-namespace",
+        "connect_bucket": "later",
+    }
 
     url = reverse("create-app")
     response = client.post(url, data)
@@ -922,11 +921,11 @@ def test_register_app_with_valid_namespace(client, users, githubapi):
     githubapi["views"].get_repository_contents.return_value = {"repo": "test-app-dev"}
     client.force_login(users["superuser"])
     test_app_name = "test-app"
-    data = dict(
-        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
-        namespace="test-app-namespace",
-        connect_bucket="later",
-    )
+    data = {
+        "repo_url": f"https://github.com/ministryofjustice/{test_app_name}",
+        "namespace": "test-app-namespace",
+        "connect_bucket": "later",
+    }
 
     url = reverse("create-app")
     response = client.post(url, data)
@@ -1179,7 +1178,7 @@ def test_update_cloud_platform_arns_replaces_existing(app, users, client):
     data = {
         "allow_cloud_platform_assume_role": True,
         "cloud_platform_role_arn": (
-            "arn:aws:iam::123456789012:role/new1," "arn:aws:iam::123456789012:role/new2"
+            "arn:aws:iam::123456789012:role/new1,arn:aws:iam::123456789012:role/new2"
         ),  # noqa: E501
     }
 
@@ -1211,15 +1210,15 @@ def test_create_app_with_multiple_arns(client, users, githubapi):
     assert App.objects.filter(name=test_app_name).count() == 0
     client.force_login(users["superuser"])
 
-    data = dict(
-        repo_url=f"https://github.com/ministryofjustice/{test_app_name}",
-        namespace="test-app-namespace",
-        connect_bucket="later",
-        allow_cloud_platform_assume_role=True,
-        cloud_platform_role_arn=(
-            "arn:aws:iam::123456789012:role/create1," "arn:aws:iam::123456789012:role/create2"
+    data = {
+        "repo_url": f"https://github.com/ministryofjustice/{test_app_name}",
+        "namespace": "test-app-namespace",
+        "connect_bucket": "later",
+        "allow_cloud_platform_assume_role": True,
+        "cloud_platform_role_arn": (
+            "arn:aws:iam::123456789012:role/create1,arn:aws:iam::123456789012:role/create2"
         ),  # noqa: E501
-    )
+    }
     response = client.post(reverse("create-app"), data)
 
     assert response.status_code == 302
@@ -1270,7 +1269,7 @@ def test_cloud_platform_arn_whitespace_handling(app, users, client):
     data = {
         "allow_cloud_platform_assume_role": True,
         "cloud_platform_role_arn": (
-            " arn:aws:iam::123456789012:role/role1 , " "arn:aws:iam::123456789012:role/role2 , "
+            " arn:aws:iam::123456789012:role/role1 , arn:aws:iam::123456789012:role/role2 , "
         ),  # noqa: E501
     }
 
@@ -1293,7 +1292,7 @@ def test_cloud_platform_arn_form_validation():
     form_data = {
         "allow_cloud_platform_assume_role": True,
         "cloud_platform_role_arn": (
-            "arn:aws:iam::123456789012:role/role1," "arn:aws:iam::123456789012:role/role2"
+            "arn:aws:iam::123456789012:role/role1,arn:aws:iam::123456789012:role/role2"
         ),  # noqa: E501
     }
     form = CloudPlatformArnForm(data=form_data)
@@ -1303,7 +1302,7 @@ def test_cloud_platform_arn_form_validation():
     form_data_invalid = {
         "allow_cloud_platform_assume_role": True,
         "cloud_platform_role_arn": (
-            "arn:aws:iam::123456789012:role/duplicate," "arn:aws:iam::123456789012:role/duplicate"
+            "arn:aws:iam::123456789012:role/duplicate,arn:aws:iam::123456789012:role/duplicate"
         ),  # noqa: E501
     }
     form_invalid = CloudPlatformArnForm(data=form_data_invalid)

@@ -51,12 +51,12 @@ class Command(BaseCommand):
         for cnt, app in enumerate(apps_list):
             self.stdout.write(f"{cnt + 1}: start to process app {app.slug}")
             client = clients_info.get(self._get_auth0_name(app))
-            auth_settings = dict()
+            auth_settings = {}
             if client:
-                auth_settings.update(dict(client_id=client["client_id"]))
+                auth_settings.update({"client_id": client["client_id"]})
             group = groups_info.get(app.slug)
             if group:
-                auth_settings.update(dict(group_id=group["_id"]))
+                auth_settings.update({"group_id": group["_id"]})
 
             new_auth0_clients = self._get_auth0_client_info(app)
             if not auth_settings and not new_auth0_clients:
@@ -64,14 +64,14 @@ class Command(BaseCommand):
                 continue
             else:
                 if not app.app_conf:
-                    app.app_conf = dict()
+                    app.app_conf = {}
                 if App.KEY_WORD_FOR_AUTH_SETTINGS not in app.app_conf:
                     app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS] = {}
 
             if auth_settings:
-                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][
-                    App.DEFAULT_AUTH_CATEGORY
-                ] = auth_settings
+                app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][App.DEFAULT_AUTH_CATEGORY] = (
+                    auth_settings
+                )
 
             for env_name, env_info in new_auth0_clients.items():
                 app.app_conf[App.KEY_WORD_FOR_AUTH_SETTINGS][env_name] = env_info

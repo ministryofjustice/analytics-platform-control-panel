@@ -31,13 +31,13 @@ class Command(BaseCommand):
         return data
 
     def _update_app_data_records(self, app, app_item):
-        migration_json = dict(
-            app_name=app.slug,
-            repo_url=app_item["repo_url"],
-            app_url=f"https://{app.slug}.{settings.APP_DOMAIN_BEFORE_MIGRATION}",
-            status="in_progress",
-        )
-        app_info = dict(migration=migration_json)
+        migration_json = {
+            "app_name": app.slug,
+            "repo_url": app_item["repo_url"],
+            "app_url": f"https://{app.slug}.{settings.APP_DOMAIN_BEFORE_MIGRATION}",
+            "status": "in_progress",
+        }
+        app_info = {"migration": migration_json}
         app.description = json.dumps(app_info)
         app.name = app_item["migration"]["app_name"]
         app.repo_url = app_item["migration"]["repo_url"]
@@ -91,7 +91,7 @@ class Command(BaseCommand):
         try:
             apps_info = self._load_json_file(options["apps_info"])
             app_conf = self._load_json_file(options.get("app_conf"))
-        except ValueError:
-            raise CommandError("Failed to load inputs file")
+        except ValueError as e:
+            raise CommandError("Failed to load inputs file") from e
         self._create_update_ip_allowlist_records(app_conf["ip_range_lookup_table"])
         self._update_app_with_migration_info(apps_info, app_conf)

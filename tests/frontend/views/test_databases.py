@@ -70,7 +70,7 @@ def revoke_permissions(client):
     ],
 )
 def test_permission(client, users, view, user, expected_status):
-    for key, val in users.items():
+    for _key, val in users.items():
         client.force_login(val)
     client.force_login(users[user])
     with patch("botocore.client.BaseClient._make_api_call", new=mock_make_api_call):

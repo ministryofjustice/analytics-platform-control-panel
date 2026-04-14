@@ -376,8 +376,8 @@ class Command(BaseCommand):
             with open(file_name) as file:
                 data = json.loads(file.read())
             return data
-        except ValueError:
-            raise CommandError("Failed to load domain_conf file")
+        except ValueError as e:
+            raise CommandError("Failed to load domain_conf file") from e
 
     def _save_to_file(self, apps_info, output_file_name):
         with open(output_file_name, "w") as f:

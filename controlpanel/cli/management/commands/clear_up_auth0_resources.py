@@ -49,10 +49,10 @@ class Command(BaseCommand):
                 old_app_name = row[0].strip()
                 new_app_name = row[1].strip()
                 list_apps.append(
-                    dict(
-                        old_app_name=old_app_name,
-                        app_names=[self._get_auth0_client_name(new_app_name, "prod")],
-                    )
+                    {
+                        "old_app_name": old_app_name,
+                        "app_names": [self._get_auth0_client_name(new_app_name, "prod")],
+                    }
                 )
         return list_apps
 
@@ -207,7 +207,7 @@ class Command(BaseCommand):
                 continue
 
             self._log_info(
-                f'group ({group["name"]}) has {len(group.get("members") or [])} number of users.'
+                f"group ({group['name']}) has {len(group.get('members') or [])} number of users."
             )
             ancient_users = []
             non_exist_users = []
@@ -217,7 +217,7 @@ class Command(BaseCommand):
                     if self._is_ancient_user(user_info):
                         ancient_users.append(member_id)
                         self._log_remove_group_member(group, user_info)
-                        self._log_info(f'Removing the member {user_info["email"]}')
+                        self._log_info(f"Removing the member {user_info['email']}")
                         auth0_instance.groups.delete_group_members([member_id], group["_id"])
                 except Auth0Error as error:
                     if error.status_code == 404:
@@ -226,7 +226,7 @@ class Command(BaseCommand):
                         auth0_instance.groups.delete_group_members([member_id], group["_id"])
 
             self._log_info(
-                f'group ({group["name"]}) has {len(ancient_users)} number of ancient users, '
+                f"group ({group['name']}) has {len(ancient_users)} number of ancient users, "
                 f"{len(non_exist_users)} number of non-existed users"
             )
 

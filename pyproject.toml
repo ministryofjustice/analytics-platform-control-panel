@@ -88,7 +88,7 @@ ignore = [
     "F403",  # star imports
     "F401",  # imported but unused
 ]
-per-file-ignores = { "controlpanel/api/migrations/*" = ["E501", "W292"] }
+per-file-ignores = { "controlpanel/api/migrations/*" = ["E501", "W292"], "controlpanel/api/cluster.py" = ["E501"] }
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
