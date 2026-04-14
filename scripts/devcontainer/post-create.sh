@@ -13,9 +13,10 @@ helm repo update
 
 # Install Python dependencies
 rm -rf .venv
+rm -rf "${UV_PROJECT_ENVIRONMENT:-/home/vscode/.venv}"
 uv sync --locked
 # shellcheck disable=SC1091
-source .venv/bin/activate
+source "${UV_PROJECT_ENVIRONMENT:-/home/vscode/.venv}/bin/activate"
 
 # install npm dependencies and static assets
 npm install

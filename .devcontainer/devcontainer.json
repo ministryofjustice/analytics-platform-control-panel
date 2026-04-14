@@ -18,12 +18,20 @@
   "postCreateCommand": "bash scripts/devcontainer/post-create.sh",
   "postStartCommand": "bash scripts/devcontainer/post-start.sh",
   "runArgs": ["--name=analytics-platform-control-panel-devcontainer"],
+  "remoteEnv": {
+    "UV_PROJECT_ENVIRONMENT": "/home/vscode/.venv"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
         "EditorConfig.EditorConfig",
         "GitHub.vscode-github-actions"
-      ]
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/home/vscode/.venv/bin/python",
+        "python.terminal.activateEnvInCurrentTerminal": true,
+        "python.terminal.activateEnvironment": true
+      }
     }
   }
 }
