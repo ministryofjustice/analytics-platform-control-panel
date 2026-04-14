@@ -164,9 +164,7 @@ Current checks are:-
 - yaml file check
 - end-of-file must have white line
 - trailing white spaces check
-- `black` library (formats Python code)
-- `isort` library (standardises the order of Python imports)
-- `flake8` library (formats Python code and also improves code style)
+- `ruff` (formats Python code and checks code style, replacing `black`, `isort`, and `flake8`)
 
 To override the above for whatever reason (maybe you don't have a ticket number and because you are working on hotfix) you can use the following command.
 
