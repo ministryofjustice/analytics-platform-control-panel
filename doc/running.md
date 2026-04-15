@@ -90,7 +90,7 @@ is an example of the sort of thing you'll need to submit (making sure you
 modify it to use your own details). Once the PR is approved, you should merge
 it yourself. Once this happens a pipeline will process your changes and add
 your details to AWS. Remember to follow the remaining instructions in the
-README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
+readme about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
 for which you'll need to ask someone to create an initial password for you.
 
 See [here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
@@ -289,7 +289,7 @@ Check your `.aws/config`, the profile `admin-dev-sso` should look like below
     sso_region=eu-west-2
     sso_role_name=AdministratorAccess
  ```
-*NOTES* boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
+_NOTES_ boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
 `.aws/sso/cache` folder if you mix above setting with `sso_session` together.
 
 #### using aws-vault
@@ -353,7 +353,7 @@ different roles, then
 if you are not sure what the value of role_arn of those two accounts is, you can find them out by
   checking the aws config file.
 
-More detail about the settings for mult-account is [here](architecture.md) (last section)
+More detail about the settings for mult-account is in [architecture.md](architecture.md) (last section)
 - Make sure other AWS boto3 settings e.g. ```AWS_PROFILE``` are NOT defined in your env, otherwise the app will
 end up with root level session under a role, and you may get exception like `couldn't assume this role`
 
@@ -435,10 +435,10 @@ The dev account is also used by our development cloud environment, so take care 
 
 ### pre-commit
 
-`pre-commit` is a package manager for git hooks that we use during local development.
+`pre-commit` is a package manager for Git hooks that we use during local development.
 
 Current checks are:-
-- yaml file check
+- YAML file check
 - end-of-file must have white line
 - trailing white spaces check
 - `ruff` (formats Python code and checks code style, replacing `black`, `isort`, and `flake8`)
