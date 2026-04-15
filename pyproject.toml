@@ -52,7 +52,7 @@ dev = [
     "ipython==9.10.0",
     "numpy==1.26.4",
     "pandas==2.3.3",
-    "pipdeptree==2.30.0",
+    "pipdeptree==2.34.0",
     "pre-commit==4.5.1",
     "pylint==3.3.9",
     "pylint-django==2.7.0",
