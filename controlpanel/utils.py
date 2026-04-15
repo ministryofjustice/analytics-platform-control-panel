@@ -196,7 +196,7 @@ class SettingLoader:
         return actual_value
 
     def _setup_feature_flags(self, feature_flags):
-        setattr(settings, "features", FeatureSet(feature_flags, settings.ENV))
+        settings.features = FeatureSet(feature_flags, settings.ENV)
 
     def _import_conf_into_settings(self):
         if not self.settings_in_json:

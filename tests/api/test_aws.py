@@ -20,7 +20,9 @@ def enable_db_for_all_tests(db):
     pass
 
 
-def stmt_match(stmt, Action="sts:AssumeRole", Condition=None, Effect="Allow", Principal={}):
+def stmt_match(stmt, Action="sts:AssumeRole", Condition=None, Effect="Allow", Principal=None):
+    if Principal is None:
+        Principal = {}
     result = stmt["Action"] == Action
     if Condition:
         result = result and stmt["Condition"] == Condition
@@ -256,8 +258,7 @@ def test_create_bucket(logs_bucket, s3):
 
     # Check logging
     assert (
-        bucket.Logging().logging_enabled["TargetBucket"]
-        == settings.LOGS_BUCKET_NAME  # noqa: F405, E501
+        bucket.Logging().logging_enabled["TargetBucket"] == settings.LOGS_BUCKET_NAME  # noqa: F405, E501
     )
     # Check tagging
     tags = {tag["Key"]: tag["Value"] for tag in bucket.Tagging().tag_set}
@@ -384,10 +385,10 @@ def test_grant_bucket_access(iam, resources):
         assert set(path_arns_object) == set(statements["readonly"]["Resource"])
         assert f"{bucket_arn}/*" not in statements["readonly"]["Resource"]
     else:
-        assert set([f"{bucket_arn}/*"]) == set(statements["readonly"]["Resource"])
+        assert {f"{bucket_arn}/*"} == set(statements["readonly"]["Resource"])
     # no readwrite statement because no readwrite access granted
     assert "readwrite" not in statements
-    assert set([bucket_arn]) == set(statements["list"]["Resource"])
+    assert {bucket_arn} == set(statements["list"]["Resource"])
 
     aws.AWSRole().grant_bucket_access(user["iam_role_name"], f"{bucket_arn}-2", "readonly")
     policy.reload()
@@ -423,8 +424,8 @@ def test_revoke_bucket_path_access(iam, resources):
     policy.reload()
     statements = get_statements_by_sid(policy.policy_document)
 
-    assert set([f"{bucket_arn}/*"]) == set(statements["readonly"]["Resource"])
-    assert set([f"{bucket_arn}"]) == set(statements["list"]["Resource"])
+    assert {f"{bucket_arn}/*"} == set(statements["readonly"]["Resource"])
+    assert {f"{bucket_arn}"} == set(statements["list"]["Resource"])
 
 
 @pytest.mark.parametrize(
@@ -541,8 +542,8 @@ def test_revoke_sub_string_bucket_access(iam):
     statements = get_statements_by_sid(policy.policy_document)
     assert bucket_arn not in statements["readonly"]["Resource"]
     assert bucket_arn not in statements["list"]["Resource"]
-    assert set([f"{bucket_another_arn}/*"]) == set(statements["readonly"]["Resource"])
-    assert set([f"{bucket_another_arn}"]) == set(statements["list"]["Resource"])
+    assert {f"{bucket_another_arn}/*"} == set(statements["readonly"]["Resource"])
+    assert {f"{bucket_another_arn}"} == set(statements["list"]["Resource"])
 
 
 def test_revoke_bucket_access_when_no_role(iam):
@@ -582,9 +583,7 @@ def assert_group_members(policy, role_names):
 @pytest.fixture
 def group(iam):
     aws.AWSPolicy().create_policy("test", "/group/test/")
-    group_arn = (
-        f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test"  # noqa: F405, E501
-    )
+    group_arn = f"arn:aws:iam::{settings.AWS_DATA_ACCOUNT_ID}:policy/group/test/test"  # noqa: F405, E501
     return iam.Policy(group_arn)
 
 
@@ -611,7 +610,7 @@ def test_update_policy_members(iam, group, users, live, stored):
 
 def test_delete_policy(iam, superuser, group):
     role = iam.Role("test_user_alice")
-    aws.AWSPolicy().update_policy_members(group.arn, set([role.name]))
+    aws.AWSPolicy().update_policy_members(group.arn, {role.name})
 
     assert len(list(role.attached_policies.all())) == 6
 
@@ -654,10 +653,10 @@ def test_grant_policy_bucket_access(iam, group, resources):
         assert set(path_arns_object) == set(statements["readonly"]["Resource"])
         assert f"{bucket_arn}/*" not in statements["readonly"]["Resource"]
     else:
-        assert set([f"{bucket_arn}/*"]) == set(statements["readonly"]["Resource"])
+        assert {f"{bucket_arn}/*"} == set(statements["readonly"]["Resource"])
     # no readwrite statement because no readwrite access granted
     assert "readwrite" not in statements
-    assert set([bucket_arn]) == set(statements["list"]["Resource"])
+    assert {bucket_arn} == set(statements["list"]["Resource"])
 
     aws.AWSPolicy().grant_policy_bucket_access(group.arn, f"{bucket_arn}-2", "readonly")
     group.reload()
@@ -682,8 +681,8 @@ def test_revoke_group_bucket_path_access(iam, group, resources):
     group.reload()
     statements = get_statements_by_sid(group.default_version.document)
 
-    assert set([f"{bucket_arn}/*"]) == set(statements["readonly"]["Resource"])
-    assert set([f"{bucket_arn}"]) == set(statements["list"]["Resource"])
+    assert {f"{bucket_arn}/*"} == set(statements["readonly"]["Resource"])
+    assert {f"{bucket_arn}"} == set(statements["list"]["Resource"])
 
 
 @pytest.mark.parametrize(
@@ -809,12 +808,12 @@ def test_delete_app_secret(secretsmanager):
     aws.AWSSecretManager().delete_secret(secret_name)
     try:
         secretsmanager.get_secret_value(SecretId=secret_name)
-        assert False
+        raise AssertionError()
     except Exception as error:
         if "ResourceNotFoundException" in str(error):
             assert True
         else:
-            assert False
+            raise AssertionError() from error
 
 
 def test_aws_folder_create(root_folder_bucket, s3):
@@ -920,9 +919,7 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
     )
 
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
-    assert (
-        f"{bucket_arn}/{folder_name}/*" in s3_access_policy.statements["readonly"]["Resource"]
-    )  # noqa
+    assert f"{bucket_arn}/{folder_name}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Resource"] == [bucket_arn]
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {"s3:prefix": ["", folder_name], "s3:delimiter": ["/"]}
@@ -943,9 +940,7 @@ def test_s3_access_policy_grant_folder_access(s3_access_policy):
 
     # make sure that the policy has not been overwritten, and contains both folders
     assert s3_access_policy.statements["rootFolderBucketMeta"]["Resource"] == [bucket_arn]  # noqa
-    assert (
-        f"{bucket_arn}/{folder_name_2}/*" in s3_access_policy.statements["readonly"]["Resource"]
-    )  # noqa
+    assert f"{bucket_arn}/{folder_name_2}/*" in s3_access_policy.statements["readonly"]["Resource"]  # noqa
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Resource"] == [bucket_arn]
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"] == {
         "StringEquals": {
@@ -1092,9 +1087,7 @@ def test_revoke_access_removes_prefixes(s3_access_policy):
     )
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"][
         "s3:prefix"
-    ] != [
-        ""
-    ]  # noqa
+    ] != [""]  # noqa
     assert (
         s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"][
             "s3:prefix"
@@ -1128,9 +1121,7 @@ def test_revoke_access_doesnt_remove_prefixes(s3_access_policy):
     )
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"][
         "s3:prefix"
-    ] != [
-        ""
-    ]  # noqa
+    ] != [""]  # noqa
     assert (
         s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"][
             "s3:prefix"
@@ -1148,9 +1139,7 @@ def test_revoke_access_doesnt_remove_prefixes(s3_access_policy):
     )
     assert s3_access_policy.statements[f"listFolder{bucket_hash}"]["Condition"]["StringEquals"][
         "s3:prefix"
-    ] != [
-        ""
-    ]  # noqa
+    ] != [""]  # noqa
     assert (
         s3_access_policy.statements[f"listSubFolders{bucket_hash}"]["Condition"]["StringLike"][
             "s3:prefix"
@@ -1309,7 +1298,6 @@ def test_has_update_dashboard_permissions(
         patch.object(quicksight, "client") as mock_client,
         patch("controlpanel.api.aws.arn") as mock_arn,
     ):
-
         mock_arn.return_value = (
             f"arn:aws:quicksight:eu-west-1:123456789012:user/default/{user.justice_email}"
         )
@@ -1354,6 +1342,5 @@ def test_get_name_from_email(email, expected_forename, expected_surname):
     ],
 )
 def test_get_name_from_email_fail(email):
-
     with pytest.raises(ValueError):
         aws.AWSIdentityStore().get_name_from_email(email)

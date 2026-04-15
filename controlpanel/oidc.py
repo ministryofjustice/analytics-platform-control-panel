@@ -100,7 +100,6 @@ class OIDCSubAuthenticationBackend(OIDCAuthenticationBackend):
 
 
 class StateMismatchHandler(OIDCAuthenticationCallbackView):
-
     def get(self, *args, **kwargs):
         try:
             return super().get(*args, **kwargs)

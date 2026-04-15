@@ -16,7 +16,6 @@ class MessageProtocolError(Exception):
 
 
 class MessageProtocol:
-
     def __init__(self, task_id: str, task_name: str, queue_name: str, args=None, kwargs=None):
         self.task_id = task_id
         self.task_name = task_name
@@ -33,7 +32,7 @@ class MessageProtocol:
         try:
             uuid.UUID(str(self.task_id))
         except ValueError:
-            raise TypeError("task id arguments must be a uuid")
+            raise TypeError("task id arguments must be a uuid") from None
         if not self.task_name:
             raise TypeError("task name arguments must not be blank")
         if not self.queue_name:
@@ -68,7 +67,6 @@ class SimpleBase64:
 
 
 class CeleryTaskMessage(MessageProtocol):
-
     #: Default body encoding.
     DEFAULT_BODY_ENCODING = "base64"
     DEFAULT_CONTENT_TYPE = "application/json"
@@ -98,12 +96,12 @@ class CeleryTaskMessage(MessageProtocol):
             "origin": self._anon_nodename(),
         }
 
-        message = dict(
-            headers=headers,
-            properties={
+        message = {
+            "headers": headers,
+            "properties": {
                 "correlation_id": self.task_id,
             },
-            body=(
+            "body": (
                 self.args,
                 self.kwargs,
                 {
@@ -113,7 +111,7 @@ class CeleryTaskMessage(MessageProtocol):
                     "chord": self.DEFAULT_FUNC_SIGNATURE,
                 },
             ),
-        )
+        }
         return message
 
     def prepare_message(self):
@@ -160,9 +158,8 @@ class CeleryTaskMessage(MessageProtocol):
             assert message_body["content-type"] == cls.DEFAULT_CONTENT_TYPE
             assert message_body["headers"]["id"] == message_body["headers"]["root_id"]
             assert message_body["headers"]["id"] == message_body["properties"]["correlation_id"]
-            assert (
-                type(json.loads(cls.decode_body(message_body["body"], cls.DEFAULT_BODY_ENCODING)))
-                == list
+            assert isinstance(
+                json.loads(cls.decode_body(message_body["body"], cls.DEFAULT_BODY_ENCODING)), list
             )
             return True, message_body
         except (ValueError, KeyError):

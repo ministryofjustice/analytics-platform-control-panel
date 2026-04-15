@@ -10,7 +10,6 @@ from controlpanel.api.tasks.utils import send_task
 
 
 class TaskAPIView(GenericAPIView):
-
     http_method_names = ["post"]
     permission_classes = (IsAuthenticated,)
 

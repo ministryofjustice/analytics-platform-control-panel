@@ -1,11 +1,13 @@
 # Running directly on your machine
 
 ---
+
 :construction: _This guide has recently undergone some major changes in order to work with the new cluster. It should include all the changes needed to get from a fresh system to having a local instance of Control Panel, but be aware that the developers who checked the system had some things set up already. If problems arise, please open a PR to revise this documentation._
 
 ---
 
 This guide describes how to run Control Panel locally without Docker, and so that it can interact with the following remote AWS resources:
+
 - AWS Dev account
 - AWS EKS cluster on Dev account
 
@@ -19,7 +21,6 @@ development on your local machine:
 3. Getting hold of the source code for the project and creating a local
    environment in which to be able to work.
 
-
 The third party services used by the application are labelled as either `dev`
 (for use as part of the development / testing process) and `alpha` (which is
 what our users use). Obviously, you should avoid using the `alpha` labelled
@@ -31,6 +32,7 @@ The Control Panel app requires Python 3.12. It has been confirmed to work
 with Python 3.12.2.
 
 Install python dependencies with the following command:
+
 ```sh
 uv sync
 uv run pre-commit install --hook-type commit-msg
@@ -39,24 +41,28 @@ uv run pre-commit install
 
 In addition, you must have:
 
-* [Redis](https://redis.io/) (confirmed to work with v7.0.0)
-* [PostgreSQL](https://www.postgresql.org/) (v14.3)
-* [npm](https://www.npmjs.com/)
-* [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos) (v1.23.4)
-* [helm](https://helm.sh/docs/intro/install/) (v3.6.3, v3.8.0)
-* [direnv](https://direnv.net/) - Optional
+- [Redis](https://redis.io/) (confirmed to work with v7.0.0)
+- [PostgreSQL](https://www.postgresql.org/) (v14.3)
+- [npm](https://www.npmjs.com/)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/#install-with-homebrew-on-macos) (v1.23.4)
+- [helm](https://helm.sh/docs/intro/install/) (v3.6.3, v3.8.0)
+- [direnv](https://direnv.net/) - Optional
 
 We recommend installing these tools via Homebrew.
 
 You may want to set Postgres and Redis to start up automatically, in which case run
+
 ```sh
 brew services start postgres
 brew services start redis
 ```
+
 and you can check their status with
+
 ```sh
 brew services list
 ```
+
 Otherwise, make sure you have started both manually before attempting to run Control Panel locally.
 
 To interact with AWS, you should also set up the [`aws` command
@@ -64,7 +70,6 @@ line interface](https://docs.aws.amazon.com/cli/latest/userguide/getting-started
 
 If you choose to use `direnv`, in order to use it for managing your environment variables, you should
 make sure it is [configured for your shell](https://direnv.net/docs/hook.html).
-
 
 ## 2. Third Party Requirements
 
@@ -75,7 +80,6 @@ then you should be good to go.
 In particular, you'll need to make sure you're [set up with Auth0](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#auth0),
 [added to AWS](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#aws)
 and have [cluster admin access to Kubernetes](https://silver-dollop-30c6a355.pages.github.io/documentation/10-team-practices/new-joiners.html#kubernetes).
-
 
 ### AWS Configuration
 
@@ -90,7 +94,7 @@ is an example of the sort of thing you'll need to submit (making sure you
 modify it to use your own details). Once the PR is approved, you should merge
 it yourself. Once this happens a pipeline will process your changes and add
 your details to AWS. Remember to follow the remaining instructions in the
-README about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
+readme about [first login](https://github.com/ministryofjustice/analytical-platform-iam/#first-login)
 for which you'll need to ask someone to create an initial password for you.
 
 See [here for more information](https://github.com/ministryofjustice/analytical-platform-iam/blob/main/documentation/AWS-CLI.md)
@@ -104,6 +108,7 @@ For Kubernetes, simply follow the instructions (linked above) for the `dev`
 cluster.
 
 Make sure you have the correct kubernetes context set:
+
 ```sh
 kubectl config use-context <dev-cluster-name>   # cluster name as set in ~/.kube/config
 ```
@@ -114,6 +119,7 @@ information about the k8s master and KubeDNS:
 ```sh
 kubectl cluster-info
 ```
+
 The token for accessing the cluser will expire periodically.
 To refresh the token automatically, the following lines can be added into your ~/.kube/config:
 
@@ -135,6 +141,7 @@ To refresh the token automatically, the following lines can be added into your ~
       env: null
       provideClusterInfo: false
 ```
+
 For easy switching between Kubernetes contexts (to connect to dev/prod clusters), you may find it helpful to use [`kubie`](https://blog.sbstp.ca/introducing-kubie/).
 
 ### Helm
@@ -171,6 +178,7 @@ createdb -U controlpanel controlpanel
 ```
 
 Alternatively, if you prefer to use `psql` the following should work:
+
 ```sh
 sudo -u postgres psql
 postgres=# create database controlpanel;
@@ -184,12 +192,14 @@ required privileges to create and delete throw away databases while running the
 unit tests.
 
 You must make sure the following environment variables are set:
+
 ```sh
 export DB_USER=controlpanel
 export DB_PASSWORD=password
 ```
 
 Then you can run migrations:
+
 ```sh
 python3 manage.py migrate
 ```
@@ -220,7 +230,6 @@ When running correctly you will see the output `Connected to redis://localhost:6
 Now when tasks are sent to the message queue by Control Panel they will bypass SQS,
 making sure that tasks are only received by your locally running celery worker.
 
-
 ### Compile Sass and JavaScript
 
 Before the first run (or after changes to static assets), you need to compile
@@ -246,6 +255,7 @@ cp -R node_modules/jquery-ui/dist/ static/jquery-ui
 ```
 
 Then run collectstatic:
+
 ```sh
 python3 manage.py collectstatic
 ```
@@ -265,14 +275,15 @@ unpredictable results.
 By this step, all the tests should pass. If not, re-check all the steps above
 and then ask a colleague for help.
 
-
 ## Run the app
 
 **Assumption**:
+
 - You have completed your local env setup by following the above sections.
 - we use aws with sso login, the name of profile for our aws dev account is `admin-dev-sso`
 
 ### Local AWS profile setup (on first run only)
+
 This app needs to interact with AWS account.
 The AWS resources like IAM, s3 buckets are under our dev account and will be managed by
 app through [boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html).
@@ -288,11 +299,13 @@ Check your `.aws/config`, the profile `admin-dev-sso` should look like below
     sso_start_url=https://moj.awsapps.com/start
     sso_region=eu-west-2
     sso_role_name=AdministratorAccess
- ```
-*NOTES* boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
+```
+
+_NOTES_ boto3 doesn't recognise `sso_session` and it will fail to retrieve the session token from
 `.aws/sso/cache` folder if you mix above setting with `sso_session` together.
 
 #### using aws-vault
+
 If you use aws-vault to manage your aws credential, then the profile should look like
 
 ```ini
@@ -305,7 +318,7 @@ If you use aws-vault to manage your aws credential, then the profile should look
     [profile admin-dev-sso]
     sso_account_id=<admin-dev account id>
     include_profile=sso-default
- ```
+```
 
 ### Check Kubernetes current context
 
@@ -320,42 +333,49 @@ kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/co
 #### General checks
 
 Check whether you have the following 2 in the env file and make sure they are correct
-- ```HELM_REPOSITORY_CACHE```:  the directory for helm repository cache folder.
 
+- `HELM_REPOSITORY_CACHE`: the directory for helm repository cache folder.
 
-if you install helm chart by default settings, please make sure to setup the ```HELM_REPOSITORY_CACHE```
-the default value is ```/tmp/helm/cache/repository```
+if you install helm chart by default settings, please make sure to setup the `HELM_REPOSITORY_CACHE`
+the default value is `/tmp/helm/cache/repository`
 
 ```sh
 export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"
 ```
+
 if you are not sure, can use the following command to find it out
 
 ```shell
 helm env
 ```
+
 Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
 
 #### AWS credential setting for single AWS role
+
 If you want to run the control panel app to manage AWS resources under single role, you can use
 following environment variable to define the profile you want to use
-- ```AWS_PROFILE```: The profile which will be used for ```boto3``` auth
-export AWS_PROFILE = "admin-dev-sso"
+
+- `AWS_PROFILE`: The profile which will be used for `boto3` auth
+  export AWS_PROFILE = "admin-dev-sso"
 - Make sure there is NO other AWS boto3 environment variables defined.
 
 #### AWS credential setting for multiple AWS roles
+
 If you want to run the app to manage the AWS resources cross different AWS accounts by assuming
 different roles, then
+
 - Check whether following 2 more environment variables have been setup in the env file or not
   - `AWS_DATA_ACCOUNT_ROLE`: The role_arn of admin-data account
   - `AWS_DEV_ACCOUNT_ROLE` : The role_arn of admin-dev account
 
 if you are not sure what the value of role_arn of those two accounts is, you can find them out by
-  checking the aws config file.
+checking the aws config file.
 
-More detail about the settings for mult-account is [here](architecture.md) (last section)
-- Make sure other AWS boto3 settings e.g. ```AWS_PROFILE``` are NOT defined in your env, otherwise the app will
-end up with root level session under a role, and you may get exception like `couldn't assume this role`
+More detail about the settings for mult-account is in [architecture.md](architecture.md) (last section)
+
+- Make sure other AWS boto3 settings e.g. `AWS_PROFILE` are NOT defined in your env, otherwise the app will
+  end up with root level session under a role, and you may get exception like `couldn't assume this role`
 
 ### Create superuser (on first run only)
 
@@ -369,7 +389,6 @@ Your `Username` needs to be your GitHub username.
 Your `Auth0 id` needs to be the number associated with you in auth0.com and
 labelled `user_id` (not working for me yet).
 
-
 ### Run the frontend of the app
 
 You can run the app with the Django development server with
@@ -377,20 +396,25 @@ You can run the app with the Django development server with
 ```sh
 python3 manage.py runserver
 ```
+
 Or with Gunicorn WSGI server:
 
 ```sh
 gunicorn -b 0.0.0.0:8000 -k uvicorn.workers.UvicornWorker -w 4 controlpanel.asgi:application
 ```
+
 if you use `aws-vault` to manage the aws-cli, then you need put `aws-vault exec <profile_name e.g. admin-dev-sso> -- <command>`
 before the above command e.g.
+
 ```sh
 aws-vault exec admin-dev-sso -- python3 manage.py runserver
 ```
-If the AWS session token is expired,  you will be redirected to auth-flow to refresh the session token automatically
+
+If the AWS session token is expired, you will be redirected to auth-flow to refresh the session token automatically
 
 if you choose not using `aws-vault`, then in order to reduce the chance of getting sesion_token expiration during
 debugging, make sure you run the following command in advance
+
 ```sh
 aws sso login --profile <profile_name e.g. admin-dev-sso>
 ```
@@ -400,6 +424,7 @@ aws sso login --profile <profile_name e.g. admin-dev-sso>
 To run with Django Debug Toolbar, add `ENABLE_DJANGO_DEBUG_TOOLBAR=True` to your local .env file.
 
 ### Run the worker of the app
+
 Open another terminal to run the following line
 
 ```sh
@@ -417,9 +442,11 @@ which is normal.
 
 When you load up your local Control Panel for the first time, there will be no tools available on the Tools page.
 To pre-populate the database, run the following management command:
+
 ```sh
 python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
 ```
+
 You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
 
 Note that you will need to have the RStudio and JupyterLab Auth0 environment variables present in your `.env` file in order for the missing values in the `tools.yaml` fixture file to be filled in.
@@ -430,20 +457,18 @@ Check that you have `<TOOL>_AUTH_CLIENT_DOMAIN`, `<TOOL>_AUTH_CLIENT_ID` and `<T
 Even though your instance of Control Panel is running locally, it will still interact with the remote AWS dev account and development Kubernetes cluster.
 The dev account is also used by our development cloud environment, so take care when interacting with our AWS resources directly.
 
-
 ## Development Practices
 
 ### pre-commit
 
-`pre-commit` is a package manager for git hooks that we use during local development.
+`pre-commit` is a package manager for Git hooks that we use during local development.
 
 Current checks are:-
-- yaml file check
+
+- YAML file check
 - end-of-file must have white line
 - trailing white spaces check
-- `black` library (formats Python code)
-- `isort` library (standardises the order of Python imports)
-- `flake8` library (formats Python code and also improves code style)
+- `ruff` (formats Python code and checks code style, replacing `black`, `isort`, and `flake8`)
 
 To override the above for whatever reason (maybe you don't have a ticket number and because you are working on hotfix) you can use the following command.
 

@@ -85,7 +85,6 @@ class ParameterDelete(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
 
 
 class ParameterFormRoleList(OIDCLoginRequiredMixin, View):
-
     def get(self, *args, **kwargs):
         roles = cluster.App(None).list_role_names()
         prefixes = tuple(choice[0] for choice in APP_TYPE_CHOICES)

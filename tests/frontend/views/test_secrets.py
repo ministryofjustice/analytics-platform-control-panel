@@ -101,7 +101,7 @@ def fixture_delete_secret():
 
 
 def add_update_secret(client, app, data):
-    return client.post(reverse("create-app-secret", kwargs=dict(pk=app.id)), data)
+    return client.post(reverse("create-app-secret", kwargs={"pk": app.id}), data)
 
 
 def delete_secret_post(client, app, key, data):

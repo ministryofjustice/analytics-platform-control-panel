@@ -328,8 +328,8 @@ class RevokeAccessSelf(RevokeAccess):
     def get_object(self, queryset=None):
         try:
             obj = self.request.user.users3buckets.get(s3bucket_id=self.kwargs["pk"])
-        except self.model.DoesNotExist:
-            raise Http404()
+        except self.model.DoesNotExist as e:
+            raise Http404() from e
         return obj
 
     def get_success_url(self):

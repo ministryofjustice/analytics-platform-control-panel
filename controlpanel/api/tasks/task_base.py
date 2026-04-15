@@ -14,7 +14,6 @@ class TaskError(Exception):
 
 
 class TaskBase:
-
     QUEUE_NAME = settings.DEFAULT_QUEUE
     ENTITY_CLASS = None
 

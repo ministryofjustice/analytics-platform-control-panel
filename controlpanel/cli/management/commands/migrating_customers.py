@@ -39,10 +39,10 @@ class Command(BaseCommand):
                 old_app_name = row[0].strip().lower().replace("_", "-")
                 new_app_name = row[1].strip()
                 list_apps.append(
-                    dict(
-                        old_app_name=old_app_name,
-                        app_names=[self._get_auth0_client_name(new_app_name, "prod")],
-                    )
+                    {
+                        "old_app_name": old_app_name,
+                        "app_names": [self._get_auth0_client_name(new_app_name, "prod")],
+                    }
                 )
         return list_apps
 
@@ -110,6 +110,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             list_apps = self._get_pre_defined_app_list(options["chosen_apps"])
-        except ValueError:
-            raise CommandError("Failed to load inputs file")
+        except ValueError as e:
+            raise CommandError("Failed to load inputs file") from e
         self._migrating_customers(list_apps)

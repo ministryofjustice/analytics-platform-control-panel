@@ -72,13 +72,13 @@ class AWSServiceCredentialSettings:
     class for now, only the json object will be pass in. The assumed json
     structure is 2 level dictionary as below:
     AWS_ROLES_MAP:
-        DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
+        DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa: E501
         <Entity category>
-            DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
-            <AWS service name>: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa : E501
-    Entity category: by default, it will be same as the entity class name, but each entity class can define their own # noqa : E501
-    DEFAULT: is the default role which will be used if an lower level config couldn't be found # noqa : E501
-    AWS service name: by default, it will be same as the class name of AWS service but aws service can define their own # noqa : E501
+            DEFAULT: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa: E501
+            <AWS service name>: <The name of the environment variable which contains the actual name of the aws-assumed-role> # noqa: E501
+    Entity category: by default, it will be same as the entity class name, but each entity class can define their own # noqa: E501
+    DEFAULT: is the default role which will be used if an lower level config couldn't be found # noqa: E501
+    AWS service name: by default, it will be same as the class name of AWS service but aws service can define their own # noqa: E501
     one example would be
     AWS_ROLES_MAP:
       DEFAULT_ROLE: AWS_DATA_ACCOUNT_ROLE
@@ -123,7 +123,6 @@ class AWSServiceCredentialSettings:
 
 
 class EntityResource:
-
     ENTITY_ASSUME_ROLE_CATEGORY = None
 
     def __init__(self):
@@ -212,7 +211,7 @@ class User(EntityResource):
         but if the number of charts grows, we should consider refactoring to store them in a
         way that allows a more efficient lookup.
         """
-        for chart_type, charts in self.user_helm_charts.items():
+        for _chart_type, charts in self.user_helm_charts.items():
             for chart in charts:
                 if chart["chart"] == chart_name:
                     return chart
@@ -620,7 +619,7 @@ class App(EntityResource):
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
-                raise Exception(str(error))
+                raise Exception(str(error)) from error
 
     def get_env_var(self, env_name, key_name):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
@@ -642,7 +641,7 @@ class App(EntityResource):
             )
         except requests.exceptions.HTTPError as error:
             if error.response.status_code != 404:
-                raise Exception(str(error))
+                raise Exception(str(error)) from error
 
     def get_deployment_envs(self):
         org_name, repo_name = extract_repo_info_from_url(self.app.repo_url)
@@ -924,7 +923,6 @@ class RoleGroup(EntityResource):
 
 
 class AppParameter(EntityResource):
-
     ENTITY_ASSUME_ROLE_CATEGORY = AWSRoleCategory.app
 
     def __init__(self, parameter):

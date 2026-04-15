@@ -60,7 +60,6 @@ class DashboardDomainAccess(TimeStampedModel):
 
 
 class Dashboard(TimeStampedModel):
-
     name = models.CharField(max_length=100, blank=False, unique=True)
     description = models.TextField(blank=True)
     quicksight_id = models.CharField(max_length=100, blank=False, unique=True)

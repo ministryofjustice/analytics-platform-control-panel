@@ -1,2 +1,4 @@
 # Fix black, flake8 and isort errors
 9fd80baecb68f395010acdacb4c4ba22bbdf0b3d
+# Migrate code style to ruff
+fe7fe881a12574add05c0a53691241a839bb33ea

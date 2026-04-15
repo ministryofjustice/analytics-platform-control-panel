@@ -86,8 +86,8 @@ class Command(BaseCommand):
     def validate_date_string(self, date_string):
         try:
             datetime.strptime(date_string, "%Y-%m-%d")
-        except ValueError:
-            raise CommandError("date string is not valid format, it should be YYYY-MM-DD")
+        except ValueError as e:
+            raise CommandError("date string is not valid format, it should be YYYY-MM-DD") from e
 
     def handle(self, *args, **options):
         self.validate_date_string(options["start_date"])

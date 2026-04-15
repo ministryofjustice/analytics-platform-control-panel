@@ -74,10 +74,10 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             app.add_customers(
                 serializer.validated_data["emails"], env_name=serializer.validated_data["env_name"]
             )
-        except app.AddCustomerError:
+        except app.AddCustomerError as error:
             raise ValidationError(
                 "An error occurred trying to add customers, check that the environment exists."
-            )
+            ) from error
 
         return Response(
             {"message": "Successfully added customers."}, status=status.HTTP_201_CREATED
@@ -97,6 +97,6 @@ class AppByNameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
                 serializer.validated_data["email"], env_name=serializer.validated_data["env_name"]
             )
         except app.DeleteCustomerError as error:
-            raise ValidationError({"email": error.args[0]})
+            raise ValidationError({"email": error.args[0]}) from error
 
         return Response(status=status.HTTP_204_NO_CONTENT)

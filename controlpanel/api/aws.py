@@ -491,7 +491,6 @@ class AWSRole(AWSService):
         role.delete()
 
     def attach_policy(self, iam_role_name, attach_policies):
-
         try:
             role = self.boto3_session.resource("iam").Role(iam_role_name)
             role.load()
@@ -506,7 +505,6 @@ class AWSRole(AWSService):
             )
 
     def remove_policy(self, iam_role_name, remove_policies):
-
         try:
             role = self.boto3_session.resource("iam").Role(iam_role_name)
             role.load()
@@ -545,7 +543,6 @@ class AWSRole(AWSService):
         policy.put()
 
     def grant_folder_access(self, role_name, root_folder_path, access_level, paths):
-
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
@@ -602,7 +599,6 @@ class AWSRole(AWSService):
             raise e
 
     def update_assume_role_policy(self, iam_role_name, assume_role_policy):
-
         iam = self.boto3_session.client("iam")
         try:
             iam.update_assume_role_policy(
@@ -624,7 +620,6 @@ class AWSRole(AWSService):
             return False
 
     def add_inline_policy(self, iam_role_name, policy_name, policy):
-
         iam = self.boto3_session.client("iam")
         try:
             if not self._policy_exists(iam_role_name, policy_name):
@@ -641,7 +636,6 @@ class AWSRole(AWSService):
             raise e
 
     def delete_inline_policy(self, iam_role_name, policy_name):
-
         iam = self.boto3_session.client("iam")
         try:
             if self._policy_exists(iam_role_name, policy_name):
@@ -787,7 +781,7 @@ class AWSBucket(AWSService):
         tls_statement = deepcopy(BUCKET_TLS_STATEMENT)
         arns: list(str) = [arn.format(bucket_arn=bucket_name) for arn in tls_statement["Resource"]]
         tls_statement["Resource"] = arns
-        bucket_policy = dict(Version="2012-10-17", Statement=[tls_statement])
+        bucket_policy = {"Version": "2012-10-17", "Statement": [tls_statement]}
         client.put_bucket_policy(Bucket=bucket_name, Policy=json.dumps(bucket_policy))
 
     def _tag_bucket(self, boto_bucket, tags):
@@ -900,7 +894,6 @@ class AWSPolicy(AWSService):
         policy.delete()
 
     def grant_folder_access(self, policy_arn, root_folder_path, access_level, paths=None):
-
         if access_level not in ("readonly", "readwrite"):
             raise ValueError("access_level must be one of 'readwrite' or 'readonly'")
 
@@ -1008,7 +1001,7 @@ class AWSSecretManager(AWSService):
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
-                raise AWSSecretManagerError(self._format_error_message(error.response))
+                raise AWSSecretManagerError(self._format_error_message(error.response)) from error
 
     def create_secret(self, secret_name: str, secret_data):
         try:
@@ -1019,7 +1012,7 @@ class AWSSecretManager(AWSService):
                 kwargs["SecretBinary"] = base64.b64encode(secret_data)
             return self.client.create_secret(**kwargs)
         except botocore.exceptions.ClientError as error:
-            raise AWSSecretManagerError(self._format_error_message(error.response))
+            raise AWSSecretManagerError(self._format_error_message(error.response)) from error
 
     def get_secret(self, secret_name):
         try:
@@ -1030,7 +1023,7 @@ class AWSSecretManager(AWSService):
                 secret_data = base64.b64decode(response["SecretBinary"])
             return secret_data
         except botocore.exceptions.ClientError as error:
-            raise AWSSecretManagerError(self._format_error_message(error.response))
+            raise AWSSecretManagerError(self._format_error_message(error.response)) from error
 
     def update_secret(self, secret_name, secret_data):
         try:
@@ -1050,7 +1043,7 @@ class AWSSecretManager(AWSService):
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
-                raise AWSSecretManagerError(self._format_error_message(error.response))
+                raise AWSSecretManagerError(self._format_error_message(error.response)) from error
 
     def delete_keys_in_secret(self, secret_name, keys_to_delete):
         """
@@ -1075,7 +1068,7 @@ class AWSSecretManager(AWSService):
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 return False
             else:
-                raise AWSSecretManagerError(self._format_error_message(error.response))
+                raise AWSSecretManagerError(self._format_error_message(error.response)) from error
 
     def delete_secret(self, secret_name, without_recovery=True):
         """
@@ -1093,7 +1086,7 @@ class AWSSecretManager(AWSService):
             )
             return response
         except botocore.exceptions.ClientError as error:
-            raise AWSSecretManagerError(self._format_error_message(error.response))
+            raise AWSSecretManagerError(self._format_error_message(error.response)) from error
 
     def create_or_update(self, secret_name, secret_data):
         if not self.has_existed(secret_name):
@@ -1108,7 +1101,6 @@ class AWSSecretManager(AWSService):
 
 
 class AWSSQS(AWSService):
-
     def __init__(self, assume_role_name=None, profile_name=None):
         super(AWSSQS, self).__init__(
             assume_role_name=assume_role_name,
@@ -1213,16 +1205,17 @@ class AWSSQS(AWSService):
 
 
 class AWSQuicksight(AWSService):
-
     service_name = "quicksight"
 
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         assume_role_name = assume_role_name or settings.QUICKSIGHT_ASSUMED_ROLE
         region_name = region_name or settings.QUICKSIGHT_ACCOUNT_REGION
         profile_name = profile_name or "control_panel_api"
-        log.info(f"assume_role_name: {assume_role_name}, \
+        log.info(
+            f"assume_role_name: {assume_role_name}, \
             profile_name: {profile_name}, \
-            region_name: {region_name}")
+            region_name: {region_name}"
+        )
         super().__init__(assume_role_name, profile_name, region_name or "eu-west-1")
         log.info(
             f"Init QuicksightService with assume_role_name: {assume_role_name}, profile_name: {profile_name}, region_name: {region_name}"  # noqa
@@ -1242,7 +1235,6 @@ class AWSQuicksight(AWSService):
         return user_arn
 
     def get_embed_url(self, user):
-
         user_arn = self.get_user_arn(user)
         if not user_arn:
             return None
@@ -1345,7 +1337,6 @@ class AWSQuicksight(AWSService):
 
 
 class AWSLakeFormation(AWSService):
-
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         super().__init__(assume_role_name, profile_name, region_name)
         self.client = self.boto3_session.client("lakeformation")
@@ -1516,7 +1507,6 @@ class AWSLakeFormation(AWSService):
 
 
 class AWSGlue(AWSService):
-
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         super().__init__(assume_role_name, profile_name, region_name)
         self.client = self.boto3_session.client("glue")
@@ -1569,7 +1559,6 @@ class AWSGlue(AWSService):
 
 
 class AWSSSOAdmin(AWSService):
-
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         super().__init__(assume_role_name, profile_name, region_name)
         region = region_name or settings.AWS_DEFAULT_REGION
@@ -1577,7 +1566,6 @@ class AWSSSOAdmin(AWSService):
         self.identity_store_id = None
 
     def get_identity_store_id(self):
-
         if self.identity_store_id:
             return self.identity_store_id
 
@@ -1587,7 +1575,6 @@ class AWSSSOAdmin(AWSService):
 
 
 class AWSIdentityStore(AWSService):
-
     def __init__(self, assume_role_name=None, profile_name=None, region_name=None):
         super().__init__(assume_role_name, profile_name, region_name)
         region = region_name or settings.AWS_DEFAULT_REGION
@@ -1669,7 +1656,6 @@ class AWSIdentityStore(AWSService):
         return forename.title(), surname.title()
 
     def create_user(self, user_email):
-
         if self.get_user_id(user_email):
             log.info(f"User {user_email} already exists in Identity Store.")
             return
@@ -1694,7 +1680,6 @@ class AWSIdentityStore(AWSService):
             raise error
 
     def create_group_membership(self, user_email, group_name):
-
         log.info(f"Attempting to add {user_email} to group {group_name}")
         group_id = self.get_group_id(group_name)
         user_id = self.get_user_id(user_email)
@@ -1715,7 +1700,6 @@ class AWSIdentityStore(AWSService):
         return response
 
     def delete_group_membership(self, user_email, group_name):
-
         log.info(f"Attempting to remove {user_email} from group {group_name}")
         membership_id = self.get_group_membership_id(group_name, user_email)
 
@@ -1730,7 +1714,6 @@ class AWSIdentityStore(AWSService):
         log.info(f"User {user_email} removed from group {group_name}")
 
     def add_user_to_group(self, justice_email, quicksight_group):
-
         log.info(f"Attempting to add {justice_email} to azure and {quicksight_group} groups")
 
         if not justice_email:

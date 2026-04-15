@@ -78,7 +78,6 @@ class Auth0Paginator(Paginator):
 
 
 class Auth0ApiPagination(Auth0Paginator):
-
     def __init__(self, request, page_number, *args, **kwargs):
         self.request = request
         super().__init__(*args, **kwargs)

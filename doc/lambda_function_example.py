@@ -8,7 +8,7 @@ import requests
 
 def _get_access_token():
     request_headers = {"content-type": "application/x-www-form-urlencoded"}
-    token_url = f'https://{os.environ["AUTH0_OIDC_DOMAIN"]}/oauth/token'
+    token_url = f"https://{os.environ['AUTH0_OIDC_DOMAIN']}/oauth/token"
     data = {
         "client_id": os.environ["CLIENT_ID"],
         "client_secret": os.environ["CLIENT_SECRET"],
@@ -23,8 +23,8 @@ def _get_access_token():
             return content.get("access_token")
         else:
             raise Exception(response.text)
-    except ValueError:
-        raise Exception("No result is returned")
+    except ValueError as e:
+        raise Exception("No result is returned") from e
 
 
 def _get_user_info(access_token, user_id):
@@ -32,21 +32,21 @@ def _get_user_info(access_token, user_id):
         "content-type": "application/json",
         "Authorization": f"Bearer {access_token}",
     }
-    user_api_url = f'{os.environ["CPANEL_API_URL"]}/users/{user_id}'
+    user_api_url = f"{os.environ['CPANEL_API_URL']}/users/{user_id}"
     response = requests.get(url=user_api_url, headers=request_headers)
     try:
         print("getting user_info from cpanel.")
         return json.loads(response.text)
-    except ValueError:
-        raise Exception("No result is returned")
+    except ValueError as e:
+        raise Exception("No result is returned") from e
 
 
 def create_user_in_data_catalogue(user_info):
     request_headers = {
         "content-type": "application/json",
-        "Authorization": f'Bearer {os.environ["OPEN_METADATA_JWT_TOKEN"]}',
+        "Authorization": f"Bearer {os.environ['OPEN_METADATA_JWT_TOKEN']}",
     }
-    api_url = f'{os.environ["OPEN_METADATA_API_DOMAIN"]}/users'
+    api_url = f"{os.environ['OPEN_METADATA_API_DOMAIN']}/users"
     data = {
         "displayName": user_info.get("username"),
         "email": user_info.get("email"),
@@ -61,8 +61,8 @@ def create_user_in_data_catalogue(user_info):
         else:
             print(response.text)
             raise Exception(response.text)
-    except ValueError:
-        raise Exception("No result is returned")
+    except ValueError as e:
+        raise Exception("No result is returned") from e
 
 
 def process_user(user_id):

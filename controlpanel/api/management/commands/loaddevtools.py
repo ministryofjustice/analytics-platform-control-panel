@@ -18,7 +18,6 @@ class Command(loaddata.Command):
     def handle(self, *args, **options):
 
         for filename in args:
-
             if not filename.lower().endswith((".yaml", ".yml")):
                 raise CommandError("loaddevtools expects to receive fixture(s) in YAML format")
 
@@ -28,7 +27,6 @@ class Command(loaddata.Command):
             fixture_skip_inds = []
 
             for ind, tool in enumerate(fixture_yaml):
-
                 if tool["model"] != "api.tool":
                     raise CommandError("loaddevtools should only be used for loading Tools")
 

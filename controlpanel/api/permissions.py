@@ -33,7 +33,6 @@ class JWTTokenResourcePermissions(BasePermission):
 
 
 class AppJwtPermissions(JWTTokenResourcePermissions):
-
     def has_object_permission(self, request, view, obj):
         if not super().has_object_permission(request, view, obj):
             return False
@@ -96,7 +95,6 @@ class UserS3BucketPermissions(RulesBasePermissions):
             return False
 
         if view.action == "create":
-
             serializer = UserS3BucketSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
 

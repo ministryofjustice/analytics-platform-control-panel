@@ -41,7 +41,7 @@ class UserS3Bucket(AccessToS3Bucket):
     def __repr__(self):
         return (
             f"<UserS3Bucket: {self.user!r} {self.s3bucket!r} {self.access_level}"
-            f'{" admin" if self.is_admin else ""}>'
+            f"{' admin' if self.is_admin else ''}>"
         )
 
     def grant_bucket_access(self):
