@@ -25,7 +25,7 @@ dependencies = [
     "django-structlog==10.0.0",
     "djangorestframework==3.16.1",
     "djproxy==2.3.6",
-    "elasticsearch-dsl==7.4.1",
+    "elasticsearch-dsl==8.18.0",
     "gunicorn==25.1.0",
     "Jinja2==3.1.6",
     "kubernetes==35.0.0",
