@@ -39,7 +39,7 @@ jobs:
 
       - name: Build and Push
         id: build_and_push
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
@@ -48,7 +48,7 @@ jobs:
         id: sign
         shell: bash
         run: |
-          cosign sign --yes ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}
+          cosign sign --yes "ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}"
         env:
           STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST: ${{ steps.build_and_push.outputs.digest }}
 
@@ -83,8 +83,8 @@ jobs:
         run: |
           cosign verify \
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-            --certificate-identity=https://github.com/${GITHUB_WORKFLOW_REF} \
-            ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}
+            --certificate-identity="https://github.com/${GITHUB_WORKFLOW_REF}" \
+            "ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}"
         env:
           STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST: ${{ steps.build_and_push.outputs.digest }}
 
@@ -94,4 +94,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh attestation verify oci://ghcr.io/${{ github.repository }}:${GITHUB_REF_NAME} --repo ${{ github.repository }}
+          gh attestation verify "oci://ghcr.io/${{ github.repository }}:${GITHUB_REF_NAME}" --repo ${{ github.repository }}
