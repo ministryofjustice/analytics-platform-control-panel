@@ -629,6 +629,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = App
     form_class = AddCustomersForm
     permission_required = "api.add_app_customer"
+    http_method_names = ["post"]
 
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors

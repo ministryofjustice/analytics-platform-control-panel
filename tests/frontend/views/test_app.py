@@ -483,6 +483,18 @@ def test_add_customers(client, app, users, emails, expected_response):
     assert expected_response(client, response)
 
 
+def test_add_customers_get(client, app, users):
+    client.force_login(users["superuser"])
+    data = {"customer_email": "foo@example.com", "env_name": "dev_env"}
+    response = client.get(
+        reverse(
+            "add-app-customers", kwargs={"pk": app.id, "group_id": app.get_group_id("dev_env")}
+        ),
+        data,
+    )
+    assert response.status_code == 405
+
+
 def remove_customer_success(client, response):
     messages = [str(m) for m in get_messages(response.wsgi_request)]
     return "Successfully removed customer" in messages
