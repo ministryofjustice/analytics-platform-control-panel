@@ -107,11 +107,11 @@ def validate_ip_ranges(value):
         ip_range = ip_range.strip()
         try:
             ipaddress.ip_network(ip_range)
-        except ValueError:
+        except ValueError as e:
             raise ValidationError(
                 (
                     "%(ip_r)s should be an IPv4 or IPv6 address (in a comma-separated list if several IP addresses are provided)."  # noqa: E501
                 ),
                 code="invalid",
                 params={"ip_r": ip_range},
-            )
+            ) from e

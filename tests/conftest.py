@@ -228,7 +228,6 @@ def users(
 
 
 class Helpers:
-
     @staticmethod
     def validate_task_with_sqs_messages(
         messages,

@@ -88,11 +88,11 @@ class JWTAuthentication(authentication.BaseAuthentication):
             if self._is_m2m(jwt.payload):
                 return AuthenticatedServiceClient(jwt.payload)
             else:
-                raise exceptions.AuthenticationFailed()
-        except DecodeError:
+                raise exceptions.AuthenticationFailed() from None
+        except DecodeError as error:
             raise exceptions.AuthenticationFailed(
                 "Failed to be authenticated due to JWT decoder error!"
-            )
+            ) from error
 
     @staticmethod
     def requires_scope(required_scope):

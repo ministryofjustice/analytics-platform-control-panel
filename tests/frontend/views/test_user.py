@@ -101,7 +101,7 @@ def set_database_admin(client, users, *args):
     ],
 )
 def test_permission(client, users, view, user, expected_status):
-    for key, val in users.items():
+    for _key, val in users.items():
         client.force_login(val)
 
     client.force_login(users[user])

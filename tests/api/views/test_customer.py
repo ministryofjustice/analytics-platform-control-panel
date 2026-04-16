@@ -17,12 +17,12 @@ from controlpanel.api.models import App
 @pytest.fixture
 def app():
     app = baker.make("api.App")
-    dev_auth_settings = dict(client_id="dev_client_id", group_id=str(uuid.uuid4()))
-    prod_auth_settings = dict(client_id="prod_client_id", group_id=str(uuid.uuid4()))
-    env_app_settings = dict(
-        dev_env=dev_auth_settings,
-        prod_env=prod_auth_settings,
-    )
+    dev_auth_settings = {"client_id": "dev_client_id", "group_id": str(uuid.uuid4())}
+    prod_auth_settings = {"client_id": "prod_client_id", "group_id": str(uuid.uuid4())}
+    env_app_settings = {
+        "dev_env": dev_auth_settings,
+        "prod_env": prod_auth_settings,
+    }
     app.app_conf = {App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings}
     app.save()
     return app
@@ -126,7 +126,10 @@ def test_post(client, app, ExtendedAuth0):
     )
 
 
-def remove_chars(item_to_replace=[]):
+def remove_chars(item_to_replace=None):
+    if item_to_replace is None:
+        item_to_replace = []
+
     def wrap(item: str) -> str:
         for fltr in item_to_replace:
             _from, to = fltr

@@ -99,7 +99,6 @@ class UserDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
 
 
 class UserDetailRedirect(OIDCLoginRequiredMixin, RedirectView):
-
     def get_redirect_url(self, *args, **kwargs):
         user = self.request.user
         return reverse_lazy("manage-user", kwargs={"pk": user.auth0_id})

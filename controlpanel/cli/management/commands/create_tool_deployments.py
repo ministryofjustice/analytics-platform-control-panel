@@ -8,7 +8,6 @@ from controlpanel.api.models import Tool, ToolDeployment, User
 
 
 class Command(BaseCommand):
-
     MEMORY_DEFAULT = "12Gi"
     CPU_DEFAULT = "1"
 

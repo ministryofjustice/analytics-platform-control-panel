@@ -30,8 +30,8 @@ def update_aws_secrets_manager():
 def app():
     app = baker.make("api.App")
     app.repo_url = "https://github.com/example.com/repo_name"
-    auth_settings = dict(client_id="testing_client_id", group_id="testing_group_id")
-    env_app_settings = dict(test_env=auth_settings)
+    auth_settings = {"client_id": "testing_client_id", "group_id": "testing_group_id"}
+    env_app_settings = {"test_env": auth_settings}
     app.app_conf = {App.KEY_WORD_FOR_AUTH_SETTINGS: env_app_settings}
     app.save()
     return app

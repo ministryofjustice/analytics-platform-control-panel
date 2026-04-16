@@ -41,7 +41,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
                    "url: "https://john-rstudio.tools.example.com",
                    "deployment": {
                        "chart_name": "rstudio",
-                       "description": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",  # noqa: E501
+                       "description": "RStudio: 1.2.1335, R: 3.5.1, Python: 3.7.1, patch: 10",
                        "image_tag": "4.0.5",
                        "chart_version": <chart_version>,
                        "tool_id": <id of the tool in table>,
@@ -50,7 +50,7 @@ class ToolList(OIDCLoginRequiredMixin, PermissionRequiredMixin, TemplateView):
                    "releases": {
                        "<tool_id>": {
                            "chart_name": "rstudio",
-                           "description": "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",  # noqa: E501
+                           "description": "RStudio: 1.2.1335, R: 3.5.1, Python: 3.7.1, patch: 10",
                            "image_tag": "4.0.5",
                            "chart_version": <chart_version>,
                            "tool_id": <id of the tool in table>

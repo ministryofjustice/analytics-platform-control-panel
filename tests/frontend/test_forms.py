@@ -241,7 +241,7 @@ def test_tool_release_form_clean_target_users():
         result = f.clean_target_users_list()
 
         mock_user.objects.filter.assert_called_once_with(
-            username__in=set(["aldo", "nicholas", "cal", "michael"])
+            username__in={"aldo", "nicholas", "cal", "michael"}
         )
         mock_user.objects.filter.return_value.values_list.assert_called_once_with(
             "username", flat=True
@@ -266,7 +266,7 @@ def test_tool_release_form_clean_target_users_not_found():
             assert excinfo.value.message == "Users not found: another_missing_user, missing_user"
 
         mock_user.objects.filter.assert_called_once_with(
-            username__in=set(["missing_user", "another_missing_user"]),
+            username__in={"missing_user", "another_missing_user"},
         )
         mock_user.objects.filter.return_value.values_list.assert_called_once_with(
             "username", flat=True

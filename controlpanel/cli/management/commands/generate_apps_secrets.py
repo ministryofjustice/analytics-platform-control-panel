@@ -62,6 +62,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             app_info = self._load_json_file(options["app_info"])
-        except ValueError:
-            raise CommandError("Failed to load domain_conf file")
+        except ValueError as e:
+            raise CommandError("Failed to load domain_conf file") from e
         self._generate_apps_aws_secrets(app_info)

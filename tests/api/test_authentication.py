@@ -79,7 +79,11 @@ def api_request(client):
     return make_request
 
 
-def token(private_key, claims={}, headers={}):
+def token(private_key, claims=None, headers=None):
+    if headers is None:
+        headers = {}
+    if claims is None:
+        claims = {}
     header = {
         "kid": TEST_KID,
         **headers,

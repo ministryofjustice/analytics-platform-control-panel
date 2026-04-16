@@ -9,7 +9,6 @@ from controlpanel.api import serializers
 
 
 class ToolDeploymentAPIView(GenericAPIView):
-
     http_method_names = ["post"]
     serializer_class = serializers.ToolDeploymentSerializer
     permission_classes = (IsAuthenticated,)

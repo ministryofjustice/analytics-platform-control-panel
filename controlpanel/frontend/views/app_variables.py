@@ -47,7 +47,7 @@ class AppVariableMixin(OIDCLoginRequiredMixin, PermissionRequiredMixin):
                 if error.response.status_code == 404:
                     var_info = {}
                 else:
-                    raise Exception(str(error))
+                    raise Exception(str(error)) from error
             kwargs["initial"]["value"] = var_info.get("value", "")
         return kwargs
 

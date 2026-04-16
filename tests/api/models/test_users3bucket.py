@@ -33,7 +33,6 @@ def users3bucket(user, bucket):
 @pytest.mark.django_db
 def test_one_record_per_user_per_s3bucket(user, bucket, users3bucket):
     with pytest.raises(IntegrityError):
-
         user.users3buckets.create(
             s3bucket=bucket,
             access_level=AccessToS3Bucket.READWRITE,

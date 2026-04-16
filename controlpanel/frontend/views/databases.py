@@ -67,7 +67,6 @@ class TablesListView(
 
 
 class GetTableDataMixin(ContextMixin):
-
     @property
     def base_table_data(self):
         return {
@@ -237,7 +236,7 @@ class RevokeTableAccessView(
     def post(self, request, *args, **kwargs):
         table_data = self.get_table_data()
         lake_formation = AWSLakeFormation(region_name=table_data["region"])
-        principal_arn = iam_arn(f'role/{settings.ENV}_user_{kwargs["user"]}')
+        principal_arn = iam_arn(f"role/{settings.ENV}_user_{kwargs['user']}")
 
         try:
             # only revokes access on the shared table, not the resource link

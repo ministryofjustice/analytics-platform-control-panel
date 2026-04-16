@@ -19,13 +19,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             validate_slug(options["slug"])
-        except ValidationError:
-            raise CommandError("App name should be a valid slug")
+        except ValidationError as e:
+            raise CommandError("App name should be a valid slug") from e
 
         try:
             app = App.objects.get(slug=options["slug"])
-        except App.DoesNotExist:
-            raise CommandError("This app does not exist")
+        except App.DoesNotExist as e:
+            raise CommandError("This app does not exist") from e
 
         do_delete = options["yes"]
         if not options["yes"]:

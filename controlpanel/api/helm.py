@@ -205,7 +205,7 @@ def get_helm_entries():
     except Exception as ex:
         error = HelmError(ex)
         error.detail = f"Error while opening/parsing helm repository cache: '{repo_path}'"
-        raise HelmError(error)
+        raise HelmError(error) from ex
 
     if not repository:
         # Metadata not available, so bail with empty dictionary.

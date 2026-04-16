@@ -44,7 +44,7 @@ class GithubAPI:
         }
 
     def get_repos(self, page: int) -> List[dict]:
-        params = dict(page=page, per_page=100, sort="created", direction="desc")
+        params = {"page": page, "per_page": 100, "sort": "created", "direction": "desc"}
         response = requests.get(
             self._get_org_api_url(api_call="repos"), params, headers=self.headers
         )
@@ -120,8 +120,7 @@ class GithubAPI:
             repo_info = self.get_repository(repo_name)
             repo_id = repo_info.get("id", "")
         return (
-            f"{settings.GITHUB_BASE_URL}/repositories/{repo_id}/"
-            f"environments/{env_name}/{api_call}"
+            f"{settings.GITHUB_BASE_URL}/repositories/{repo_id}/environments/{env_name}/{api_call}"
         )
 
     def get_repo_envs(self, repo_name: str) -> list:

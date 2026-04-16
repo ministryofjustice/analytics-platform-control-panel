@@ -16,7 +16,6 @@ QUICKSIGHT_EMBED_READER_PERMISSION = "quicksight_embed_reader_access"
 
 
 class User(AbstractUser):
-
     # States in which a user can be in while migrating to the new platform.
     VOID = "v"  # Default value. Not involved in the migration process.
     PENDING = "p"  # User is ready to migrate to the new platform.
@@ -74,7 +73,7 @@ class User(AbstractUser):
         request = CrequestMiddleware.get_request()
         if not request:
             raise Exception(
-                "request not found: have you called get_id_token() in a " "background worker?"
+                "request not found: have you called get_id_token() in a background worker?"
             )
 
         if request.user == self:

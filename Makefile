@@ -98,3 +98,7 @@ db-migrate:
 
 db-drop:
 	python manage.py reset_db
+
+lint:
+	ruff check --fix
+	ruff format

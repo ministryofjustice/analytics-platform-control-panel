@@ -8,7 +8,6 @@ from django.urls import reverse
 
 
 class TestAccess:
-
     @pytest.mark.parametrize(
         "method, status_code",
         [
@@ -41,7 +40,6 @@ class TestAccess:
 
 
 class TestGetAsSuperuser:
-
     def test_without_justice_email(self, client, no_justice_superuser):
         client.force_login(no_justice_superuser)
         assert no_justice_superuser.justice_email is None
@@ -95,7 +93,6 @@ class TestGetAsNormalUser:
 
 
 class TestPost:
-
     @patch("controlpanel.frontend.views.get_code_challenge", new=MagicMock(return_value="codeabc"))
     @pytest.mark.parametrize("user", ["superuser", "normal_user"])
     def test_superuser_authorize_redirect_called(self, user, client, users):

@@ -102,7 +102,7 @@ class S3Bucket(TimeStampedModel):
 
     @property
     def is_used_for_app(self):
-        return not (AppS3Bucket.objects.filter(s3bucket_id=self.id).first() is None)
+        return AppS3Bucket.objects.filter(s3bucket_id=self.id).first() is not None
 
     @property
     def is_folder(self):

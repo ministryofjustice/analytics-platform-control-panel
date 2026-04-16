@@ -18,7 +18,6 @@ log = structlog.getLogger(__name__)
 
 @method_decorator(csrf_exempt, name="dispatch")
 class PagerDutyWebhookView(View):
-
     def post(self, request, *args, **kwargs):
         if not self._validate_token(request):
             log.warning("pagerduty.invalid_token")

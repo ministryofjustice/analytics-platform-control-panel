@@ -57,7 +57,6 @@ class CloudPlatformRole(TimeStampedModel):
 
 
 class App(TimeStampedModel):
-
     name = models.CharField(max_length=100, blank=False)
     description = models.TextField(blank=True)
     slug = AutoSlugField(populate_from="_repo_name", slugify_function=s3_slugify)
@@ -164,15 +163,15 @@ class App(TimeStampedModel):
         for env_name, client_info in (
             (self.app_conf or {}).get(self.KEY_WORD_FOR_AUTH_SETTINGS) or {}
         ).items():
-            connections[env_name] = dict(client_id=client_info.get("client_id"))
+            connections[env_name] = {"client_id": client_info.get("client_id")}
             if client_info.get("client_id"):
                 client_env_mapping[client_info["client_id"]] = env_name
                 client_ids.append(client_info.get("client_id"))
         returned_connections = auth0.ExtendedAuth0().get_client_enabled_connections(client_ids)
-        for client_id, client_connections in returned_connections.items():
+        for client_id, _client_connections in returned_connections.items():
             env_name = client_env_mapping.get(client_id)
             if env_name:
-                connections[env_name].update(dict(connections=returned_connections.get(client_id)))
+                connections[env_name].update({"connections": returned_connections.get(client_id)})
         return connections
 
     def auth0_clients_status(self):
@@ -272,7 +271,7 @@ class App(TimeStampedModel):
         except auth0.Auth0Error as e:
             raise DeleteCustomerError(str(e)) from e
         except IndexError:
-            raise DeleteCustomerError(f"Couldn't find user with email {email}")
+            raise DeleteCustomerError(f"Couldn't find user with email {email}") from None
 
         for group in auth0_client.users.get_user_groups(user_id=user["user_id"]):
             if group_id == group["_id"]:
@@ -358,9 +357,9 @@ class App(TimeStampedModel):
     def save_auth_settings(self, env_name, client=None, group=None):
         auth_client_info = {}
         if client:
-            auth_client_info.update(dict(client_id=client.get("client_id")))
+            auth_client_info.update({"client_id": client.get("client_id")})
         if group:
-            auth_client_info.update(dict(group_id=group.get("_id")))
+            auth_client_info.update({"group_id": group.get("_id")})
         if auth_client_info:
             self._init_app_conf(env_name)
             self.app_conf[self.KEY_WORD_FOR_AUTH_SETTINGS][env_name].update(auth_client_info)
@@ -416,12 +415,12 @@ def trigger_app_create_related_messages(sender, instance, created, **kwargs):
         tasks.AppCreateAuth(
             instance,
             instance.current_user,
-            extra_data=dict(
-                deployment_envs=instance.deployment_envs,
-                disable_authentication=instance.disable_authentication,
-                connections=instance.connections,
-                has_ip_ranges=instance.has_ip_ranges,
-            ),
+            extra_data={
+                "deployment_envs": instance.deployment_envs,
+                "disable_authentication": instance.disable_authentication,
+                "connections": instance.connections,
+                "has_ip_ranges": instance.has_ip_ranges,
+            },
         ).create_task()
 
 

@@ -7,8 +7,10 @@ This guide describes how to run Control Panel locally with a Dev Container. This
 Visual Studio Code with the Dev Container [extension](https://www.google.com/search?q=dev+container+extension&sourceid=chrome&ie=UTF-8) and Docker Desktop are required. You will also need to be able to access AWS. The Python Dev Container [extension](https://code.visualstudio.com/docs/languages/python) is recommended.
 
 ### Git
-In order to get git to recognise your SSH key while working in the Dev Container:
-- Add your SSH keys to your ssh agent by running `ssh-add <.ssh-location>/<ssh-key-filename-without-extension>` e.g. `ssh-add ~/.ssh/id_ed25519`
+
+In order to get Git to recognise your SSH key while working in the Dev Container:
+
+- Add your SSH keys to your SSH agent by running `ssh-add <.ssh-location>/<ssh-key-filename-without-extension>` e.g. `ssh-add ~/.ssh/id_ed25519`
 - Set your signing key in your `.gitconfig` file to the contents of your public key by running `git config --global user.signingkey key::<your-key-here>`
 
 ### Environment Variables
@@ -20,6 +22,7 @@ If you have an existing local `.env` file, there are slight differences. Notably
 See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
 
 ## 1. Building the Dev Container
+
 You will need Docker Desktop along with Visual Studio Code and the Dev Container [extension](https://www.google.com/search?q=dev+container+extension&sourceid=chrome&ie=UTF-8) installed to build the container.
 
 To build the Dev Container, ensure Docker Desktop is running, then open the Analytical Platform Control Panel project in Visual Studio Code. Open the Command Pallete by hitting `Cmd + Shift + p` and search then select `Dev Containers: Reopen in container` to build the Dev Container.
@@ -57,10 +60,10 @@ unpredictable results.
 By this step, all the tests should pass. If not, re-check all the steps above
 and then ask a colleague for help.
 
-
 ## Run the Application
 
 **Assumption**:
+
 - You have completed your local env setup by following the above sections.
 - we use aws with sso login, the name of profile for our aws dev account is `analytical-platform-development:AdministratorAccess`
 
@@ -84,7 +87,6 @@ Your `Username` needs to be your GitHub username.
 Your `Auth0 id` needs to be the number associated with you in auth0.com and
 labelled `user_id` (not working for me yet).
 
-
 ### Run the frontend of the Application
 
 You can run the Application, in a separate terminal, with the Django development server by running:
@@ -106,14 +108,13 @@ or use the included example files to get started immediately by following these 
 
 - In the project root create a `.vscode` folder if it does not already exist.
 - Copy the [`launch.json.example`](./launch.json.example) and [`tasks.json.example`](./tasks.json.example)
-files to the `.vscode` directory, removing the `.example` suffix.
+  files to the `.vscode` directory, removing the `.example` suffix.
 - In the Visual Studio Code sidebar select the "Run and debug" icon, choose the `Runserver/Celery`
-configuration and click the start button or use the F5 shortcut. Note: if you are not already logged
-in with `aws-sso` check the terminal output for a link to do so.
+  configuration and click the start button or use the F5 shortcut. Note: if you are not already logged
+  in with `aws-sso` check the terminal output for a link to do so.
 
 The Django server and Celery should now both be running, and you can set breakpoints to help debug
 your code. [See the Visual Studio Code documentation for more details about using the debugger.](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
-
 
 ### Visual Studio Code - Debugging Unit Tests
 
@@ -125,6 +126,7 @@ Visual Studio Code also allows you to debug individual unit tests. Select the `P
 This will then load all the tests in that window. From here you can run all tests, run individual tests and debug tests. To debug an individual test, find the test you want to debug and click the debug icon to the right of the test. This will run through the test with the debugger attached.
 
 ### Run the worker of the app
+
 Open another terminal to run the following line
 
 ```sh
@@ -144,6 +146,7 @@ To pre-populate the database, run the following management command:
 ```sh
 python manage.py loaddevtools controlpanel/api/fixtures_dev/tools.yaml
 ```
+
 You can also use this command to load up your own tools fixture files if you want to add more tools to the database.
 
 Note: that you will need to have the RStudio and JupyterLab Auth0 environment variables present in your `.env` file in order for the missing values in the `tools.yaml` fixture file to be filled in.
@@ -158,15 +161,14 @@ The dev account is also used by our development cloud environment, so take care 
 
 ### pre-commit
 
-`pre-commit` is a package manager for git hooks that we use during local development.
+`pre-commit` is a package manager for Git hooks that we use during local development.
 
 Current checks are:-
-- yaml file check
+
+- YAML file check
 - end-of-file must have white line
 - trailing white spaces check
-- `black` library (formats Python code)
-- `isort` library (standardises the order of Python imports)
-- `flake8` library (formats Python code and also improves code style)
+- `ruff` (formats Python code and checks code style, replacing `black`, `isort`, and `flake8`)
 
 To override the above for whatever reason (maybe you don't have a ticket number and because you are working on hotfix) you can use the following command.
 

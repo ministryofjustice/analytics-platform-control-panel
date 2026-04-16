@@ -19,7 +19,6 @@ class AppCreateRole(TaskBase):
 
 
 class AppCreateAuth(AppCreateRole):
-
     QUEUE_NAME = settings.AUTH_QUEUE_NAME
 
     @property

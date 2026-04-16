@@ -58,7 +58,7 @@ class AppManager:
             )
 
     def _format_ip_string_to_list(self, ip_range_string):
-        return set([item.strip() for item in ip_range_string.split(",")])
+        return {item.strip() for item in ip_range_string.split(",")}
 
     def _has_ip_ranges_changed(self, old_ip_string, new_ip_string):
         old_set = self._format_ip_string_to_list(old_ip_string)

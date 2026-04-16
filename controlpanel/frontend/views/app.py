@@ -169,7 +169,7 @@ class AppDetail(OIDCLoginRequiredMixin, PermissionRequiredMixin, DetailView):
         )
         auth0_clients_status = app.auth0_clients_status()
         context["deployments_settings"] = AppAuthSettingsSerializer(
-            dict(auth_settings=auth_settings, auth0_clients_status=auth0_clients_status)
+            {"auth_settings": auth_settings, "auth0_clients_status": auth0_clients_status}
         ).data
         context["repo_access_error_msg"] = access_repo_error_msg
         context["github_settings_access_error_msg"] = github_settings_access_error_msg
@@ -246,7 +246,6 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
 
 
 class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-
     form_class = UpdateAppAuth0ConnectionsForm
     model = App
     permission_required = "api.create_connections"
@@ -287,7 +286,6 @@ class UpdateAppAuth0Connections(OIDCLoginRequiredMixin, PermissionRequiredMixin,
 
 
 class UpdateAppIPAllowlists(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
-
     model = App
     template_name = "webapp-update-ip-allowlists.html"
     permission_required = "api.update_app_ip_allowlists"
@@ -553,7 +551,6 @@ class M2MClientMixin(
 
 
 class SetupM2MClient(M2MClientMixin, RedirectView):
-
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         client = cluster.App(app, self.request.user.github_api_token).create_m2m_client()
@@ -567,7 +564,6 @@ class SetupM2MClient(M2MClientMixin, RedirectView):
 
 
 class RotateM2MCredentials(M2MClientMixin, RedirectView):
-
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         client = cluster.App(app, self.request.user.github_api_token).rotate_m2m_client_secret()
@@ -588,7 +584,6 @@ class RotateM2MCredentials(M2MClientMixin, RedirectView):
 
 
 class DeleteM2MClient(M2MClientMixin, RedirectView):
-
     def post(self, request, *args, **kwargs):
         app = self.get_object()
         cluster.App(app, self.request.user.github_api_token).delete_m2m_client()

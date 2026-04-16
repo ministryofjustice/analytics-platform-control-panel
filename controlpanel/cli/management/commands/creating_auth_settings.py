@@ -11,7 +11,6 @@ from controlpanel.api import auth0, cluster
 
 
 class DummyApp:
-
     def __init__(self, app_detail):
         self.app_detail = app_detail
         self.repo_url = app_detail["repo_url"]
@@ -193,7 +192,7 @@ class Command(BaseCommand):
         try:
             apps_info = self._load_json_file(options["apps_info"])
             app_conf = self._load_json_file(options.get("app_conf"))
-        except ValueError:
-            raise CommandError("Failed to load inputs file")
+        except ValueError as e:
+            raise CommandError("Failed to load inputs file") from e
         self._migration_apps(apps_info, options["token"], app_conf)
         self._save_to_file(apps_info, self._default_output_file())
