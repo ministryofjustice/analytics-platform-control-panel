@@ -8,7 +8,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-04-09T12:56:58.599417085Z"
+exclude-newer = "2026-04-10T01:26:04.071627686Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -139,18 +139,22 @@ wheels = [
 
 [[package]]
 name = "auth0-python"
-version = "4.13.0"
+version = "5.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "cryptography" },
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
     { name = "pyjwt" },
     { name = "requests" },
+    { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/87/3c54624c8fe121a68d36dd9f9158fa6878e4be378487b8f787ddc2fa2f3d/auth0_python-4.13.0.tar.gz", hash = "sha256:72f58bd26b078e3b493e4d24928cc75fa41842aae35cef488ed6f8db0fb701fb", size = 76115, upload-time = "2025-09-17T19:26:31.643Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/ee/f089c178cefdc9fe7a82f46365967229b0e5917b42d3abf1890a57630e4f/auth0_python-5.3.0.tar.gz", hash = "sha256:9a3b4f209e9e35d64466551f8615d8ff7762f5213b2659149e3978766c276a9c", size = 680982, upload-time = "2026-04-09T13:27:05.528Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c0/01/3f52cf8ee6aa6e62f48020703ac3c67cf8a36ddc927dfde54b42c59a6e00/auth0_python-4.13.0-py3-none-any.whl", hash = "sha256:8e3266fcfc2e3cc4f477e01f964c0a6c9a3563653a2feb226355bc825cd4932c", size = 142088, upload-time = "2025-09-17T19:26:29.689Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/83/65ecd7449fbdc5b91de15e6a9fcb4766076da8c4b117d3eb1194582e4de4/auth0_python-5.3.0-py3-none-any.whl", hash = "sha256:251fb2f524f7bc4f88b69e48b0444d05f71769aef4f61076f2ba3573ca69dae6", size = 2038474, upload-time = "2026-04-09T13:27:03.808Z" },
 ]
 
 [[package]]
@@ -557,7 +561,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asgiref", specifier = "==3.11.1" },
-    { name = "auth0-python", specifier = "==4.13.0" },
+    { name = "auth0-python", specifier = "==5.3.0" },
     { name = "authlib", specifier = "==1.6.9" },
     { name = "boto3", specifier = "==1.42.86" },
     { name = "celery", extras = ["sqs"], specifier = "==5.6.2" },
