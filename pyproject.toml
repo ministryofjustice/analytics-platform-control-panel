@@ -7,7 +7,7 @@ dependencies = [
     "auth0-python==4.13.0",
     "authlib==1.6.9",
     "boto3==1.42.86",
-    "celery[sqs]==5.6.2",
+    "celery[sqs]==5.6.3",
     "channels==4.3.2",
     "channels-redis==4.3.0",
     "cryptography==46.0.7",
