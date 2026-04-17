@@ -6,7 +6,7 @@ dependencies = [
     "asgiref==3.11.1",
     "auth0-python==4.13.0",
     "authlib==1.6.9",
-    "boto3==1.42.86",
+    "boto3==1.42.87",
     "celery[sqs]==5.6.2",
     "channels==4.3.2",
     "channels-redis==4.3.0",
