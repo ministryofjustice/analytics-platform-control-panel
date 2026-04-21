@@ -5,7 +5,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "asgiref==3.11.1",
     "auth0-python==4.13.0",
-    "authlib==1.6.9",
+    "authlib==1.6.10",
     "boto3==1.42.86",
     "celery[sqs]==5.6.2",
     "channels==4.3.2",
