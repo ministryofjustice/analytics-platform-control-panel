@@ -6,6 +6,7 @@ import pytest
 from model_bakery import baker
 
 # First-party/Local
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.models import AppS3Bucket, S3Bucket, UserS3Bucket
 from controlpanel.api.tasks.handlers import (
     create_s3bucket,
@@ -156,3 +157,22 @@ def test_revoke_all_access(complete, users):
     app_access.revoke_bucket_access.assert_called_once()
     policy_access.revoke_bucket_access.assert_called_once()
     complete.assert_called_once()
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access", new=MagicMock())
+@patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access", new=MagicMock())
+@patch("controlpanel.api.cluster.AWSBucket.tag_bucket")
+@patch("controlpanel.api.cluster.AWSBucket.create")
+@patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
+def test_bucket_create_already_exists_deletes_record(complete, mock_aws_create, tag_bucket, users):
+    """When the Celery handler encounters BucketAlreadyExistsError,
+    it should delete the database record and not mark the task as complete."""
+    s3bucket = baker.make("api.S3Bucket", dispatch_task=False)
+    mock_aws_create.side_effect = BucketAlreadyExistsError("Bucket name is not available")
+
+    create_s3bucket(s3bucket.pk, users["superuser"].pk, bucket_owner="USER")
+
+    mock_aws_create.assert_called_once()
+    complete.assert_not_called()
+    assert S3Bucket.objects.filter(pk=s3bucket.pk).exists() is False

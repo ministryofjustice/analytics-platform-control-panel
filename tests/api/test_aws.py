@@ -12,6 +12,7 @@ from botocore.exceptions import ClientError
 # First-party/Local
 from controlpanel.api import aws
 from controlpanel.api.cluster import BASE_ASSUME_ROLE_POLICY, User
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from tests.api.fixtures.aws import *
 
 
@@ -318,6 +319,35 @@ def test_bucket_exists(s3):
         }
     )
     assert aws.AWSBucket().exists("example") is True
+
+
+@pytest.mark.parametrize(
+    "exception_name",
+    ["BucketAlreadyOwnedByYou", "BucketAlreadyExists"],
+    ids=["owned_by_you", "other_account"],
+)
+def test_create_bucket_raises_when_already_exists(exception_name):
+    mock_s3_resource = MagicMock()
+    mock_s3_resource.meta.client.exceptions.BucketAlreadyOwnedByYou = type(
+        "BucketAlreadyOwnedByYou", (ClientError,), {}
+    )
+    mock_s3_resource.meta.client.exceptions.BucketAlreadyExists = type(
+        "BucketAlreadyExists", (ClientError,), {}
+    )
+    # Make create_bucket raise the appropriate exception
+    exc = getattr(mock_s3_resource.meta.client.exceptions, exception_name)(
+        error_response={"Error": {"Code": exception_name}},
+        operation_name="CreateBucket",
+    )
+    mock_s3_resource.create_bucket.side_effect = exc
+
+    with patch(
+        "controlpanel.api.aws.AWSBucket.boto3_session", new_callable=PropertyMock
+    ) as session:
+        session.return_value.resource.return_value = mock_s3_resource
+        session.return_value.client.return_value = MagicMock()
+        with pytest.raises(BucketAlreadyExistsError):
+            aws.AWSBucket().create("test-bucket")
 
 
 def test_create_parameter(ssm):

@@ -9,6 +9,7 @@ from model_bakery import baker
 from rest_framework import status
 
 # First-party/Local
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.models import S3Bucket, UserS3Bucket
 from controlpanel.frontend.forms import CreateDatasourceFolderForm, CreateDatasourceForm
 from controlpanel.frontend.views import CreateDatasource
@@ -291,9 +292,9 @@ def test_list_other_datasources_admins(client, buckets, users):
 
 
 @patch("controlpanel.api.models.users3bucket.tasks.S3BucketGrantToUser")
-@patch("controlpanel.api.models.s3bucket.tasks.S3BucketCreate")
+@patch("controlpanel.api.cluster.AWSBucket.create")
 def test_bucket_creator_has_readwrite_and_admin_access(
-    create_bucket_task, grant_user_task, client, users
+    mock_aws_create, grant_user_task, client, users
 ):
     user = users["normal_user"]
     client.force_login(user)
@@ -302,7 +303,7 @@ def test_bucket_creator_has_readwrite_and_admin_access(
     ub = user.users3buckets.all()[0]
     assert ub.access_level == UserS3Bucket.READWRITE
     assert ub.is_admin
-    create_bucket_task.assert_called_once()
+    mock_aws_create.assert_called_once()
     grant_user_task.assert_called_once()
 
 
@@ -326,12 +327,10 @@ def test_create_get_form_class(rf, folders_enabled, datasource_type, form_class)
 
 
 @patch("controlpanel.api.models.users3bucket.tasks.S3BucketGrantToUser")
-@patch("controlpanel.api.models.s3bucket.tasks.S3BucketCreate")
+@patch("controlpanel.api.aws.AWSFolder.create")
 @patch("django.conf.settings.features.s3_folders.enabled", True)
 @pytest.mark.parametrize("user", ["superuser", "normal_user", "other_user"])
-def test_create_folders(
-    create_bucket_task, grant_user_task, user, client, users, root_folder_bucket
-):
+def test_create_folders(mock_aws_create, grant_user_task, user, client, users, root_folder_bucket):
     """
     Check that all users can create a folder datasource
     """
@@ -345,12 +344,12 @@ def test_create_folders(
     assert user.users3buckets.filter(
         s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
     ).exists()
-    # make sure tasks are sent
-    create_bucket_task.assert_called_once()
+    # make sure AWS create is called
+    mock_aws_create.assert_called_once()
     grant_user_task.assert_called_once()
 
     # create another folder to catch any errors updating IAM policy
-    create_bucket_task.reset_mock()
+    mock_aws_create.reset_mock()
     grant_user_task.reset_mock()
     folder_name = f"test-{user.username}-folder-2"
     response = create(client, name=folder_name)
@@ -360,8 +359,8 @@ def test_create_folders(
     assert user.users3buckets.filter(
         s3bucket__name=f"{root_folder_bucket.name}/{folder_name}"
     ).exists()
-    # tasks to create are sent again for the second folder
-    create_bucket_task.assert_called_once()
+    # AWS create is called again for the second folder
+    mock_aws_create.assert_called_once()
     grant_user_task.assert_called_once()
 
 
@@ -514,3 +513,40 @@ def test_external_user_admin_fail(client, users, buckets):
     )
     assert response.status_code == 200
     assert "access_level" in response.context_data["form"].errors
+
+
+@patch("controlpanel.api.cluster.AWSBucket.create")
+def test_create_datasource_bucket_already_exists_shows_error(mock_aws_create, client, users):
+    """When AWS reports the bucket name is unavailable, the user sees an error
+    and no database record is persisted."""
+    mock_aws_create.side_effect = BucketAlreadyExistsError(
+        "Bucket name 'test-taken' is not available"
+    )
+
+    user = users["normal_user"]
+    client.force_login(user)
+    response = create(client, name="test-taken")
+
+    assert response.status_code == 200
+    assert S3Bucket.objects.filter(name="test-taken").exists() is False
+    assert UserS3Bucket.objects.filter(user=user, s3bucket__name="test-taken").exists() is False
+    assert "name" in response.context_data["form"].errors
+
+
+@patch("controlpanel.api.cluster.AWSBucket.create")
+def test_create_datasource_success_no_celery_task(mock_aws_create, client, users, sqs, helpers):
+    """Successful synchronous creation should NOT dispatch a Celery task."""
+    # Drain any messages sent by the autouse buckets fixture
+    helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+
+    user = users["normal_user"]
+    client.force_login(user)
+    response = create(client, name="test-sync-bucket")
+
+    assert response.status_code == 302
+    assert S3Bucket.objects.filter(name="test-sync-bucket").exists()
+    mock_aws_create.assert_called_once()
+
+    # Verify no S3 bucket creation task was sent for the new bucket
+    messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
+    assert len(messages) == 0
