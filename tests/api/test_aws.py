@@ -334,7 +334,6 @@ def test_create_bucket_raises_when_already_exists(exception_name):
     mock_s3_resource.meta.client.exceptions.BucketAlreadyExists = type(
         "BucketAlreadyExists", (ClientError,), {}
     )
-    # Make create_bucket raise the appropriate exception
     exc = getattr(mock_s3_resource.meta.client.exceptions, exception_name)(
         error_response={"Error": {"Code": exception_name}},
         operation_name="CreateBucket",

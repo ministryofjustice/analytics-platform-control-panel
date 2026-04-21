@@ -39,11 +39,11 @@ def users(users):
 def buckets(db):
     with patch("controlpanel.api.aws.AWSBucket.create"):
         return {
-            "app_data1": baker.make("api.S3Bucket", is_data_warehouse=False),
-            "app_data2": baker.make("api.S3Bucket", is_data_warehouse=False),
-            "warehouse1": baker.make("api.S3Bucket", is_data_warehouse=True),
-            "warehouse2": baker.make("api.S3Bucket", is_data_warehouse=True),
-            "other": baker.make("api.S3Bucket"),
+            "app_data1": baker.make("api.S3Bucket", is_data_warehouse=False, dispatch_task=False),
+            "app_data2": baker.make("api.S3Bucket", is_data_warehouse=False, dispatch_task=False),
+            "warehouse1": baker.make("api.S3Bucket", is_data_warehouse=True, dispatch_task=False),
+            "warehouse2": baker.make("api.S3Bucket", is_data_warehouse=True, dispatch_task=False),
+            "other": baker.make("api.S3Bucket", dispatch_task=False),
         }
 
 
@@ -517,8 +517,6 @@ def test_external_user_admin_fail(client, users, buckets):
 
 @patch("controlpanel.api.cluster.AWSBucket.create")
 def test_create_datasource_bucket_already_exists_shows_error(mock_aws_create, client, users):
-    """When AWS reports the bucket name is unavailable, the user sees an error
-    and no database record is persisted."""
     mock_aws_create.side_effect = BucketAlreadyExistsError(
         "Bucket name 'test-taken' is not available"
     )
@@ -535,10 +533,6 @@ def test_create_datasource_bucket_already_exists_shows_error(mock_aws_create, cl
 
 @patch("controlpanel.api.cluster.AWSBucket.create")
 def test_create_datasource_success_no_celery_task(mock_aws_create, client, users, sqs, helpers):
-    """Successful synchronous creation should NOT dispatch a Celery task."""
-    # Drain any messages sent by the autouse buckets fixture
-    helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
-
     user = users["normal_user"]
     client.force_login(user)
     response = create(client, name="test-sync-bucket")
@@ -547,6 +541,5 @@ def test_create_datasource_success_no_celery_task(mock_aws_create, client, users
     assert S3Bucket.objects.filter(name="test-sync-bucket").exists()
     mock_aws_create.assert_called_once()
 
-    # Verify no S3 bucket creation task was sent for the new bucket
     messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
     assert len(messages) == 0

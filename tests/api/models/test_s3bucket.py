@@ -153,7 +153,6 @@ def test_soft_delete_folder(users, sqs, helpers):
 
 
 def test_bucket_create_dispatch_task_false(sqs, superuser, helpers):
-    """When dispatch_task=False, no Celery task message should be sent."""
     bucket = S3Bucket.objects.create(
         name="test-no-task-bucket",
         created_by=superuser,
@@ -161,5 +160,4 @@ def test_bucket_create_dispatch_task_false(sqs, superuser, helpers):
     )
     messages = helpers.retrieve_messages(sqs, queue_name=settings.S3_QUEUE_NAME)
     assert len(messages) == 0
-    # UserS3Bucket should still be created
     assert UserS3Bucket.objects.filter(user=superuser, s3bucket=bucket).exists()

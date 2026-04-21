@@ -166,8 +166,6 @@ def test_revoke_all_access(complete, users):
 @patch("controlpanel.api.cluster.AWSBucket.create")
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 def test_bucket_create_already_exists_deletes_record(complete, mock_aws_create, tag_bucket, users):
-    """When the Celery handler encounters BucketAlreadyExistsError,
-    it should delete the database record and not mark the task as complete."""
     s3bucket = baker.make("api.S3Bucket", dispatch_task=False)
     mock_aws_create.side_effect = BucketAlreadyExistsError("Bucket name is not available")
 
