@@ -6,6 +6,7 @@ import pytest
 from model_bakery import baker
 
 # First-party/Local
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.models import AppS3Bucket, S3Bucket, UserS3Bucket
 from controlpanel.api.tasks.handlers import (
     create_s3bucket,
@@ -38,7 +39,7 @@ def test_exception_raised_when_called_without_valid_app(complete, users, task_me
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 @patch("controlpanel.api.models.s3bucket.cluster")
 def test_bucket_created(cluster, complete, users):
-    s3bucket = baker.make("api.S3Bucket", bucket_owner="APP")
+    s3bucket = baker.make("api.S3Bucket", bucket_owner="APP")  # gitleaks:allow
 
     create_s3bucket(s3bucket.pk, users["superuser"].pk, bucket_owner=s3bucket.bucket_owner)
 
@@ -51,8 +52,8 @@ def test_bucket_created(cluster, complete, users):
 @pytest.mark.parametrize(
     "task_method, model_class, cluster_class",
     [
-        (grant_app_s3bucket_access, "api.AppS3Bucket", "App"),
-        (grant_user_s3bucket_access, "api.UserS3Bucket", "User"),
+        (grant_app_s3bucket_access, "api.AppS3Bucket", "App"),  # gitleaks:allow
+        (grant_user_s3bucket_access, "api.UserS3Bucket", "User"),  # gitleaks:allow
     ],
 )
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
@@ -125,7 +126,7 @@ def test_revoke_user_access_user_does_not_exist(cluster, complete, bucket_name, 
 @patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
 @patch("controlpanel.api.tasks.handlers.s3.cluster")
 def test_revoke_app_access(cluster, complete):
-    app_bucket_access = baker.make("api.AppS3Bucket")
+    app_bucket_access = baker.make("api.AppS3Bucket")  # gitleaks:allow
     revoke_app_s3bucket_access(
         bucket_arn=app_bucket_access.s3bucket.arn,
         app_pk=app_bucket_access.app.pk,
@@ -146,8 +147,8 @@ def test_revoke_app_access(cluster, complete):
 def test_revoke_all_access(complete, users):
     bucket = baker.make("api.S3Bucket")
     user_access = baker.make("api.UserS3Bucket", s3bucket=bucket)
-    app_access = baker.make("api.AppS3Bucket", s3bucket=bucket)
-    policy_access = baker.make("api.PolicyS3Bucket", s3bucket=bucket)
+    app_access = baker.make("api.AppS3Bucket", s3bucket=bucket)  # gitleaks:allow
+    policy_access = baker.make("api.PolicyS3Bucket", s3bucket=bucket)  # gitleaks:allow
     task = baker.make("api.Task", user_id=users["superuser"].pk)
 
     revoke_all_access_s3bucket(bucket.pk, task.user_id)
@@ -156,3 +157,20 @@ def test_revoke_all_access(complete, users):
     app_access.revoke_bucket_access.assert_called_once()
     policy_access.revoke_bucket_access.assert_called_once()
     complete.assert_called_once()
+
+
+@pytest.mark.django_db
+@patch("controlpanel.api.models.UserS3Bucket.revoke_bucket_access", new=MagicMock())
+@patch("controlpanel.api.models.AppS3Bucket.revoke_bucket_access", new=MagicMock())
+@patch("controlpanel.api.cluster.AWSBucket.tag_bucket")
+@patch("controlpanel.api.cluster.AWSBucket.create")
+@patch("controlpanel.api.tasks.handlers.base.BaseTaskHandler.complete")
+def test_bucket_create_already_exists_deletes_record(complete, mock_aws_create, tag_bucket, users):
+    s3bucket = baker.make("api.S3Bucket", dispatch_task=False)
+    mock_aws_create.side_effect = BucketAlreadyExistsError("Bucket name is not available")
+
+    create_s3bucket(s3bucket.pk, users["superuser"].pk, bucket_owner="USER")
+
+    mock_aws_create.assert_called_once()
+    complete.assert_not_called()
+    assert S3Bucket.objects.filter(pk=s3bucket.pk).exists() is False

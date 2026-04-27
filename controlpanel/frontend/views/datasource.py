@@ -22,6 +22,7 @@ from rules.contrib.views import PermissionRequiredMixin
 # First-party/Local
 from controlpanel.api import cluster, tasks
 from controlpanel.api.elasticsearch import bucket_hits_aggregation
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.models import IAMManagedPolicy, PolicyS3Bucket, S3Bucket, User, UserS3Bucket
 from controlpanel.api.serializers import ESBucketHitsSerializer
 from controlpanel.frontend.forms import (
@@ -186,15 +187,21 @@ class CreateDatasource(
         datasource_type = self.request.GET.get("type")
 
         try:
-            self.object = S3Bucket.objects.create(
-                name=name,
-                created_by=self.request.user,
-                is_data_warehouse=datasource_type == "warehouse",
-            )
+            with transaction.atomic():
+                self.object = S3Bucket.objects.create(
+                    name=name,
+                    created_by=self.request.user,
+                    is_data_warehouse=datasource_type == "warehouse",
+                    dispatch_task=False,
+                )
+                self.object.cluster.create()
             messages.success(
                 self.request,
                 f"Successfully created {name} {datasource_type} data source",
             )
+        except BucketAlreadyExistsError:
+            form.add_error("name", f"Bucket name '{name}' is not available")
+            return FormMixin.form_invalid(self, form)
         except Exception as ex:
             form.add_error("name", str(ex))
             return FormMixin.form_invalid(self, form)

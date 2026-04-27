@@ -26,6 +26,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.github import GithubAPI, RepositoryNotFound
 from controlpanel.api.models import (
     App,
@@ -231,6 +232,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
             self.object = AppManager().register_app(self.request.user, form.cleaned_data)
         except RepositoryNotFound as ex:
             form.add_error("namespace", str(ex))
+            return FormMixin.form_invalid(self, form)
+        except BucketAlreadyExistsError:
+            form.add_error("new_datasource_name", "Bucket name is not available")
             return FormMixin.form_invalid(self, form)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
