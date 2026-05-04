@@ -20,10 +20,10 @@
       "resolved": "ghcr.io/devcontainers/features/python@sha256:f5e1557b5745bcc3aa8f12eaa1084b8d63952d73e776c406214d65f593aae6d8",
       "integrity": "sha256:f5e1557b5745bcc3aa8f12eaa1084b8d63952d73e776c406214d65f593aae6d8"
     },
-    "ghcr.io/ministryofjustice/devcontainer-feature/astral:1": {
-      "version": "1.0.0",
-      "resolved": "ghcr.io/ministryofjustice/devcontainer-feature/astral@sha256:a6df118c6475e79fe15e63b815a5df591a24b0d25517ea941114cb6bee1af9a8",
-      "integrity": "sha256:a6df118c6475e79fe15e63b815a5df591a24b0d25517ea941114cb6bee1af9a8"
+    "ghcr.io/ministryofjustice/devcontainer-feature/astral:": {
+      "version": "1.0.1",
+      "resolved": "ghcr.io/ministryofjustice/devcontainer-feature/astral@sha256:8ee1cd600c19e2c6ac841dccdebd135a628680ca4aeca70f1ff74b1afe153645",
+      "integrity": "sha256:8ee1cd600c19e2c6ac841dccdebd135a628680ca4aeca70f1ff74b1afe153645"
     },
     "ghcr.io/ministryofjustice/devcontainer-feature/aws:1": {
       "version": "1.1.0",
