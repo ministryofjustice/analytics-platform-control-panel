@@ -10,10 +10,10 @@
       "resolved": "ghcr.io/devcontainers/features/kubectl-helm-minikube@sha256:ff50f0f68095dc2dadeb9bfd7e509b21b9fcfe012d708b303c55f7bedfa462d0",
       "integrity": "sha256:ff50f0f68095dc2dadeb9bfd7e509b21b9fcfe012d708b303c55f7bedfa462d0"
     },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "1.6.1",
-      "resolved": "ghcr.io/devcontainers/features/node@sha256:71590121aaf7b2040f3e1e2dfc4bb9a1389277fd5a88a7199094542b82ce5340",
-      "integrity": "sha256:71590121aaf7b2040f3e1e2dfc4bb9a1389277fd5a88a7199094542b82ce5340"
+    "ghcr.io/devcontainers/features/node:": {
+      "version": "2.0.0",
+      "resolved": "ghcr.io/devcontainers/features/node@sha256:fedd4c11f7adfb64283b578dddc7da906728daa25fa293351c9d913231acf12f",
+      "integrity": "sha256:fedd4c11f7adfb64283b578dddc7da906728daa25fa293351c9d913231acf12f"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "1.6.5",
