@@ -14,6 +14,7 @@ from django.conf import settings
 
 # First-party/Local
 from controlpanel.api.aws_auth import AWSCredentialSessionSet
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.models.justice_domain import JusticeDomain
 
 log = structlog.getLogger(__name__)
@@ -710,9 +711,16 @@ class AWSBucket(AWSService):
             if is_data_warehouse:
                 self._tag_bucket(bucket, {"buckettype": "datawarehouse"})
 
-        except s3_resource.meta.client.exceptions.BucketAlreadyOwnedByYou:
+        except s3_resource.meta.client.exceptions.BucketAlreadyOwnedByYou as error:
             log.warning(f"Skipping creating Bucket {bucket_name}: Already exists")
-            return
+            raise BucketAlreadyExistsError(
+                f"Bucket name '{bucket_name}' is not available"
+            ) from error
+        except s3_resource.meta.client.exceptions.BucketAlreadyExists as error:
+            log.warning(f"Skipping creating Bucket {bucket_name}: Already exists (other account)")
+            raise BucketAlreadyExistsError(
+                f"Bucket name '{bucket_name}' is not available"
+            ) from error
 
         bucket.Logging().put(
             BucketLoggingStatus={

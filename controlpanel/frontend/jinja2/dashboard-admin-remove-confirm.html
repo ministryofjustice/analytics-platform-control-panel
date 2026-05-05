@@ -13,7 +13,7 @@
 
       <h2 class="govuk-heading-m">Are you sure you want to remove this admin?</h2>
 
-      <p class="govuk-body">{{ admin.justice_email }} will receive an email telling them they are no longer an admin. They will no longer be able to manage user access or remove the dashboard from the dashboard service.</p>
+      <p class="govuk-body">{{ admin.justice_email }} will receive an email telling them they are no longer an admin. They will no longer be able to manage user access or remove the dashboard from View MOJ dashboards.</p>
 
       <form method="post" action="{{ url('revoke-dashboard-admin', kwargs={'pk': dashboard.id, 'user_id': admin.id}) }}">
         {{ csrf_input }}

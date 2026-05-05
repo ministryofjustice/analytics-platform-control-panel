@@ -1,7 +1,7 @@
 # Standard library
 import json
 import uuid
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import botocore
@@ -34,14 +34,9 @@ def enable_db_for_all_tests(db):
 @pytest.fixture(autouse=True)
 def github_api_token():
     with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
-        ExtendedAuth0.return_value.users.get.return_value = {
-            "identities": [
-                {
-                    "provider": "github",
-                    "access_token": "dummy-access-token",
-                },
-            ],
-        }
+        mock_identity = MagicMock()
+        mock_identity.identites = [MagicMock(provider="github", access_token="dummy-access-token")]
+        ExtendedAuth0.return_value.users.get.return_value = mock_identity
         yield ExtendedAuth0.return_value
 
 
@@ -311,6 +306,14 @@ def set_textract(client, app, *args):
     return client.post(reverse("set-textract-app", kwargs=kwargs), data)
 
 
+def set_comprehend(client, app, *args):
+    data = {
+        "is_comprehend_enabled": True,
+    }
+    kwargs = {"pk": app.id}
+    return client.post(reverse("set-comprehend-app", kwargs=kwargs), data)
+
+
 @patch("controlpanel.api.cluster.App.create_m2m_client")
 def setup_m2m_client(client, app, *args):
     kwargs = {"pk": app.id}
@@ -379,6 +382,9 @@ def delete_m2m_client(client, app, *args):
         (set_textract, "superuser", status.HTTP_302_FOUND),
         (set_textract, "app_admin", status.HTTP_302_FOUND),
         (set_textract, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_comprehend, "superuser", status.HTTP_302_FOUND),
+        (set_comprehend, "app_admin", status.HTTP_302_FOUND),
+        (set_comprehend, "normal_user", status.HTTP_403_FORBIDDEN),
         (setup_m2m_client, "superuser", status.HTTP_302_FOUND),
         (setup_m2m_client, "app_admin", status.HTTP_302_FOUND),
         (setup_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -481,6 +487,18 @@ def test_add_customers(client, app, users, emails, expected_response):
         data,
     )
     assert expected_response(client, response)
+
+
+def test_add_customers_get(client, app, users):
+    client.force_login(users["superuser"])
+    data = {"customer_email": "foo@example.com", "env_name": "dev_env"}
+    response = client.get(
+        reverse(
+            "add-app-customers", kwargs={"pk": app.id, "group_id": app.get_group_id("dev_env")}
+        ),
+        data,
+    )
+    assert response.status_code == 405
 
 
 def remove_customer_success(client, response):
@@ -971,10 +989,8 @@ def test_create_m2m_client_success(app, users, client, user):
     url = reverse("create-m2m-client", kwargs={"pk": app.id})
 
     with patch("controlpanel.api.cluster.App.create_m2m_client") as m2m_client:
-        m2m_client.return_value = {
-            "client_id": "test-client-id",
-            "client_secret": "test-client-secret",
-        }
+        mock_client = MagicMock(client_id="test-client-id", client_secret="test-client-secret")
+        m2m_client.return_value = mock_client
         response = client.post(url)
 
     m2m_client.assert_called_once()
@@ -1001,10 +1017,8 @@ def test_rotate_m2m_credentials_success(app, users, client, user):
     url = reverse("rotate-m2m-credentials", kwargs={"pk": app.id})
 
     with patch("controlpanel.api.cluster.App.rotate_m2m_client_secret") as m2m_client:
-        m2m_client.return_value = {
-            "client_id": "test-client-id",
-            "client_secret": "test-client-secret",
-        }
+        mock_client = MagicMock(client_id="test-client-id", client_secret="test-client-secret")
+        m2m_client.return_value = mock_client
         response = client.post(url)
 
     m2m_client.assert_called_once()

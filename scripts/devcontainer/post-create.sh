@@ -7,10 +7,6 @@ docker compose --file contrib/docker-compose-postgres.yml up --detach
 # Start Redis
 docker compose --file contrib/docker-compose-redis.yml up --detach
 
-# Add helm repo
-helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
-helm repo update
-
 # Install Python dependencies
 rm -rf .venv
 rm -rf "${UV_PROJECT_ENVIRONMENT:-/home/vscode/.venv}"

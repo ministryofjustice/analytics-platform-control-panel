@@ -26,3 +26,9 @@ class QuicksightAccessError(Exception):
     """Raised when granting or revoking QuickSight access fails."""
 
     pass
+
+
+class BucketAlreadyExistsError(Exception):
+    """Raised when an S3 bucket name is not available."""
+
+    pass

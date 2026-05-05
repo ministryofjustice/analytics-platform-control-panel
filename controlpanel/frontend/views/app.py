@@ -6,7 +6,7 @@ import botocore
 import requests
 import sentry_sdk
 import structlog
-from auth0.rest import Auth0Error
+from auth0.management.core.api_error import ApiError
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.postgres.aggregates import StringAgg
@@ -26,6 +26,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.github import GithubAPI, RepositoryNotFound
 from controlpanel.api.models import (
     App,
@@ -232,6 +233,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         except RepositoryNotFound as ex:
             form.add_error("namespace", str(ex))
             return FormMixin.form_invalid(self, form)
+        except BucketAlreadyExistsError:
+            form.add_error("new_datasource_name", "Bucket name is not available")
+            return FormMixin.form_invalid(self, form)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
@@ -403,6 +407,14 @@ class EnableTextractApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     permission_required = "api.update_app"
 
 
+class EnableComprehendApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
+    model = App
+    fields = ["is_comprehend_enabled"]
+    success_message = "Successfully updated comprehend status"
+    method_name = "set_comprehend_access"
+    permission_required = "api.update_app"
+
+
 class UpdateCloudPlatformRoleArn(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
@@ -558,8 +570,8 @@ class SetupM2MClient(M2MClientMixin, RedirectView):
             self.request,
             f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
         )
-        messages.info(self.request, f"Client ID: {client['client_id']}")
-        messages.info(self.request, f"Client Secret: {client['client_secret']}")
+        messages.info(self.request, f"Client ID: {client.client_id}")
+        messages.info(self.request, f"Client Secret: {client.client_secret}")
         return super().post(request, *args, **kwargs)
 
 
@@ -578,8 +590,8 @@ class RotateM2MCredentials(M2MClientMixin, RedirectView):
             self.request,
             f"Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
         )
-        messages.info(self.request, f"Client ID: {client['client_id']}")
-        messages.info(self.request, f"Client Secret: {client['client_secret']}")
+        messages.info(self.request, f"Client ID: {client.client_id}")
+        messages.info(self.request, f"Client Secret: {client.client_secret}")
         return super().post(request, *args, **kwargs)
 
 
@@ -629,6 +641,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = App
     form_class = AddCustomersForm
     permission_required = "api.add_app_customer"
+    http_method_names = ["post"]
 
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors
@@ -668,7 +681,7 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         if group_id:
             try:
                 customers = app.customer_paginated(page_no, group_id)
-            except Auth0Error as error:
+            except ApiError as error:
                 customers = {}
                 read_customer_error_msg = error.__str__()
         else:

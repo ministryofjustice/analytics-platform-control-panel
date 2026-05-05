@@ -18,7 +18,7 @@
 
       <h2 class="govuk-heading-m">Are you sure you want to remove this domain?</h2>
 
-      <p class="govuk-body">Users on {{ domain.name }} will no longer be able to view this dashboard on the dashboard service.</p>
+      <p class="govuk-body">Users on {{ domain.name }} will no longer be able to view this dashboard on View MOJ dashboards.</p>
 
       <form method="post" action="{{ url('revoke-domain-access', kwargs={'pk': dashboard.id, 'domain_id': domain.id}) }}">
         {{ csrf_input }}

@@ -215,6 +215,11 @@ urlpatterns = [
         name="set-textract-app",
     ),
     path(
+        "webapps/<int:pk>/comprehend/",
+        views.EnableComprehendApp.as_view(),
+        name="set-comprehend-app",
+    ),
+    path(
         "webapps/<int:pk>/cloud-platform/",
         views.UpdateCloudPlatformRoleArn.as_view(),
         name="set-cloud-platform-arn",

@@ -227,13 +227,13 @@ class User(EntityResource):
                 {
                     "namespace": self.eks_cpanel_namespace,
                     "release": f"bootstrap-user-{self.user.slug}",
-                    "chart": f"{settings.HELM_REPO}/bootstrap-user",
+                    "chart": helm.get_chart_reference("bootstrap-user"),
                     "values": {"Username": self.user.slug},
                 },
                 {
                     "namespace": self.k8s_namespace,
                     "release": f"provision-user-{self.user.slug}",
-                    "chart": f"{settings.HELM_REPO}/provision-user",
+                    "chart": helm.get_chart_reference("provision-user"),
                     "values": {
                         "Username": self.user.slug,
                         "Efsvolume": settings.EFS_VOLUME,
@@ -247,7 +247,7 @@ class User(EntityResource):
                 {
                     "namespace": self.k8s_namespace,
                     "release": f"reset-user-efs-home-{self.user.slug}",
-                    "chart": f"{settings.HELM_REPO}/reset-user-efs-home",
+                    "chart": helm.get_chart_reference("reset-user-efs-home"),
                     "values": {"Username": self.user.slug},
                 }
             ],
@@ -426,8 +426,10 @@ class App(EntityResource):
             App.APP_ROLE_ARN: self.app.iam_role_arn,
         }
         if client:
-            secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
-            secret_data[App.AUTH0_CLIENT_SECRET] = client["client_secret"]
+            client_id = client.client_id
+            client_secret = client.client_secret
+            secret_data[App.AUTH0_CLIENT_ID] = client_id
+            secret_data[App.AUTH0_CLIENT_SECRET] = client_secret
 
         self.create_or_update_secrets(env_name=env_name, secret_data=secret_data)
 
@@ -736,7 +738,7 @@ class App(EntityResource):
 
         # save the client ID, which we can use to retrieve the client secret
         self.app.app_conf["m2m"] = {
-            "client_id": m2m_client["client_id"],
+            "client_id": m2m_client.client_id,
         }
         self.app.save()
         return m2m_client
@@ -1026,8 +1028,7 @@ class ToolDeployment:
 
             return helm.upgrade_release(
                 self.release_name,  # release
-                # XXX assumes repo name
-                f"{settings.HELM_REPO}/{self.chart_name}",  # chart
+                helm.get_chart_reference(self.chart_name),  # chart
                 "--version",
                 self.tool.version,
                 "--namespace",

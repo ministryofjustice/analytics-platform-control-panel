@@ -25,7 +25,7 @@ def test_deploy_for_generic(helm, tool, users):
     # install new release
     helm.upgrade_release.assert_called_with(
         f"{tool.chart_name}-{user.slug}"[: settings.MAX_RELEASE_NAME_LEN],
-        f"mojanalytics/{tool.chart_name}",
+        f"{settings.HELM_CHART_REPOSITORY}/{tool.chart_name}",
         "--version",
         tool.version,
         "--namespace",
@@ -47,28 +47,6 @@ def test_deploy_for_generic(helm, tool, users):
 def cluster():
     with patch("controlpanel.api.models.tool.cluster") as cluster:
         yield cluster
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "chart_version, expected_description",
-    [
-        ("unknown-version", ""),
-        ("1.0.0", ""),
-        ("2.2.5", "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"),
-    ],
-    ids=[
-        "unknown-version",
-        "chart-with-no-appVersion",
-        "chart-with-appVersion",
-    ],
-)
-def test_tool_description_from_helm_chart(
-    helm_repository_index, chart_version, expected_description
-):
-    tool = Tool(chart_name="rstudio", version=chart_version).save()
-
-    assert tool.description == expected_description
 
 
 @pytest.mark.parametrize(
@@ -157,9 +135,8 @@ def test_uninstall_deployments(task, clocked, mock_now):
 
 
 @pytest.mark.django_db
-@patch("controlpanel.api.models.tool.helm")
 @pytest.mark.parametrize("is_retired", [True, False])
-def test_save(mock_helm, is_retired):
+def test_save(is_retired):
     tool = Tool(
         chart_name="rstudio",
         version="1.0.0",
@@ -171,5 +148,4 @@ def test_save(mock_helm, is_retired):
     with patch.object(Tool, "uninstall_deployments") as uninstall_deployments:
         tool.save()
 
-        mock_helm.update_helm_repository.assert_called_once_with(force=True)
         assert bool(uninstall_deployments.mock_calls) == is_retired

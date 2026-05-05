@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 
 # Third-party
-from auth0.exceptions import Auth0Error
+from auth0.management.core.api_error import ApiError
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete, post_save
@@ -72,6 +72,7 @@ class App(TimeStampedModel):
     res_id = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     is_bedrock_enabled = models.BooleanField(default=False)
     is_textract_enabled = models.BooleanField(default=False)
+    is_comprehend_enabled = models.BooleanField(default=False)
 
     # The app_conf mainly for storing the auth settings related and those information
     # are not within the fields which will be searched frequently
@@ -184,7 +185,7 @@ class App(TimeStampedModel):
                 try:
                     auth0.ExtendedAuth0().clients.get(client_info.get("client_id"))
                     status[env_name] = {"client_id": client_info.get("client_id"), "ok": True}
-                except Auth0Error as error:
+                except ApiError as error:
                     status[env_name] = {
                         "client_id": client_info.get("client_id"),
                         "ok": False,
@@ -273,9 +274,9 @@ class App(TimeStampedModel):
         except IndexError:
             raise DeleteCustomerError(f"Couldn't find user with email {email}") from None
 
-        for group in auth0_client.users.get_user_groups(user_id=user["user_id"]):
+        for group in auth0_client.users.get_user_groups(user_id=user.user_id):
             if group_id == group["_id"]:
-                return self.delete_customers(user_ids=[user["user_id"]], group_id=group_id)
+                return self.delete_customers(user_ids=[user.user_id], group_id=group_id)
 
         raise DeleteCustomerError(f"User {email} not found for this application and environment")
 
@@ -318,6 +319,12 @@ class App(TimeStampedModel):
             attach=self.is_textract_enabled,
         )
 
+    def set_comprehend_access(self):
+        return cluster.App(self).update_policy_attachment(
+            policy=cluster.COMPREHEND_POLICY_NAME,
+            attach=self.is_comprehend_enabled,
+        )
+
     @property
     def cloud_platform_role_arns(self):
         """Returns list of all ARNs for this app"""
@@ -357,7 +364,7 @@ class App(TimeStampedModel):
     def save_auth_settings(self, env_name, client=None, group=None):
         auth_client_info = {}
         if client:
-            auth_client_info.update({"client_id": client.get("client_id")})
+            auth_client_info.update({"client_id": client.client_id})
         if group:
             auth_client_info.update({"group_id": group.get("_id")})
         if auth_client_info:

@@ -100,7 +100,7 @@
   <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
 {% endfor %}
 
-
+{% if not request.user.is_external_user %}
 <h2 class="govuk-heading-m">Airflow</h2>
 <div class="govuk-grid-row tool sse-listener" data-tool-name="airflow">
   <div class="govuk-grid-column-two-thirds">
@@ -134,6 +134,7 @@
   </div>
 </div>
 <hr class="govuk-section-break govuk-section-break--visible govuk-!-margin-bottom-4">
+{% endif %}
 <p class="govuk-body">
   You can <a href="{{ aws_service_url }}" target="_blank" rel="noopener"> access AWS services such as S3 and Athena via the AWS Console (opens in new tab).</a>
 </p>
