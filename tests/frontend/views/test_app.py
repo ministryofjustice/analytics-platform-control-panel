@@ -1,7 +1,7 @@
 # Standard library
 import json
 import uuid
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import botocore
@@ -34,14 +34,9 @@ def enable_db_for_all_tests(db):
 @pytest.fixture(autouse=True)
 def github_api_token():
     with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
-        ExtendedAuth0.return_value.users.get.return_value = {
-            "identities": [
-                {
-                    "provider": "github",
-                    "access_token": "dummy-access-token",
-                },
-            ],
-        }
+        mock_identity = MagicMock()
+        mock_identity.identites = [MagicMock(provider="github", access_token="dummy-access-token")]
+        ExtendedAuth0.return_value.users.get.return_value = mock_identity
         yield ExtendedAuth0.return_value
 
 
@@ -971,10 +966,8 @@ def test_create_m2m_client_success(app, users, client, user):
     url = reverse("create-m2m-client", kwargs={"pk": app.id})
 
     with patch("controlpanel.api.cluster.App.create_m2m_client") as m2m_client:
-        m2m_client.return_value = {
-            "client_id": "test-client-id",
-            "client_secret": "test-client-secret",
-        }
+        mock_client = MagicMock(client_id="test-client-id", client_secret="test-client-secret")
+        m2m_client.return_value = mock_client
         response = client.post(url)
 
     m2m_client.assert_called_once()
@@ -1001,10 +994,8 @@ def test_rotate_m2m_credentials_success(app, users, client, user):
     url = reverse("rotate-m2m-credentials", kwargs={"pk": app.id})
 
     with patch("controlpanel.api.cluster.App.rotate_m2m_client_secret") as m2m_client:
-        m2m_client.return_value = {
-            "client_id": "test-client-id",
-            "client_secret": "test-client-secret",
-        }
+        mock_client = MagicMock(client_id="test-client-id", client_secret="test-client-secret")
+        m2m_client.return_value = mock_client
         response = client.post(url)
 
     m2m_client.assert_called_once()

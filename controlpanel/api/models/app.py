@@ -4,7 +4,7 @@ import uuid
 from copy import deepcopy
 
 # Third-party
-from auth0.exceptions import Auth0Error
+from auth0.management.core.api_error import ApiError
 from django.conf import settings
 from django.db import models
 from django.db.models.signals import post_delete, post_save
@@ -184,7 +184,7 @@ class App(TimeStampedModel):
                 try:
                     auth0.ExtendedAuth0().clients.get(client_info.get("client_id"))
                     status[env_name] = {"client_id": client_info.get("client_id"), "ok": True}
-                except Auth0Error as error:
+                except ApiError as error:
                     status[env_name] = {
                         "client_id": client_info.get("client_id"),
                         "ok": False,
@@ -273,9 +273,9 @@ class App(TimeStampedModel):
         except IndexError:
             raise DeleteCustomerError(f"Couldn't find user with email {email}") from None
 
-        for group in auth0_client.users.get_user_groups(user_id=user["user_id"]):
+        for group in auth0_client.users.get_user_groups(user_id=user.user_id):
             if group_id == group["_id"]:
-                return self.delete_customers(user_ids=[user["user_id"]], group_id=group_id)
+                return self.delete_customers(user_ids=[user.user_id], group_id=group_id)
 
         raise DeleteCustomerError(f"User {email} not found for this application and environment")
 
@@ -357,7 +357,7 @@ class App(TimeStampedModel):
     def save_auth_settings(self, env_name, client=None, group=None):
         auth_client_info = {}
         if client:
-            auth_client_info.update({"client_id": client.get("client_id")})
+            auth_client_info.update({"client_id": client.client_id})
         if group:
             auth_client_info.update({"group_id": group.get("_id")})
         if auth_client_info:

@@ -4,11 +4,20 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 # Third-party
 import pytest
-from auth0 import exceptions
+from auth0.management.core.api_error import ApiError
 from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import auth0
+from tests.test_oidc import users
+
+
+def mock_connection(name, id, enabled_clients=None):
+    conn = MagicMock()
+    conn.name = name
+    conn.id = id
+    conn.enabled_clients = enabled_clients or []
+    return conn
 
 
 @pytest.fixture()
@@ -20,20 +29,18 @@ def ExtendedAuth0():
 
 @pytest.fixture
 def fixture_users_200(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.users, "all") as request:
+    with patch.object(ExtendedAuth0.users.users_client, "list") as request:
         request.side_effect = [
             {
-                "total": 200,
                 "users": [
                     {
-                        "name": f"Test User {(i * 100) + j}",
-                        "email": f"test{(i * 100) + j}@example.com",
-                        "user_id": f"github|{(i * 100) + j}",
+                        "name": f"Test User {i}",
+                        "email": f"test{i}@example.com",
+                        "user_id": f"github|{i}",
                     }
-                    for j in range(100)
+                    for i in range(200)
                 ],
             }
-            for i in range(2)
         ]
         yield
 
@@ -46,32 +53,8 @@ def fixture_users_create(ExtendedAuth0):
 
 
 def test_get_all_with_more_than_100(ExtendedAuth0, fixture_users_200):
-    users = ExtendedAuth0.users.get_all()
-    assert len(users) == 200
-
-
-def test_search_first_match_by_name_exist(ExtendedAuth0, fixture_users_200):
-    user = ExtendedAuth0.users.search_first_match({"name": "Test User 1"})
-    assert user["name"] == "Test User 1"
-
-
-def test_search_first_match_by_name_not(ExtendedAuth0, fixture_users_200):
-    user = ExtendedAuth0.users.search_first_match({"name": "Different User"})
-    assert user is None
-
-
-def test_get_or_create_new(ExtendedAuth0, fixture_users_200, fixture_users_create):
-    user, created = ExtendedAuth0.users.get_or_create({"name": "bob"})
-    assert user["name"] == "create-testing-bob"
-    assert created is True
-    fixture_users_create.assert_called_once_with({"name": "bob"})
-
-
-def test_get_or_create_existed(ExtendedAuth0, fixture_users_200, fixture_users_create):
-    user, created = ExtendedAuth0.users.get_or_create({"name": "Test User 1"})
-    assert user["name"] == "Test User 1"
-    assert created is False
-    fixture_users_create.assert_not_called()
+    all_users = ExtendedAuth0.users.get_all()
+    assert len(all_users["users"]) == 200
 
 
 @pytest.fixture
@@ -128,7 +111,7 @@ def test_clear_up_group(
 
 
 def test_create_user(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.users, "create") as request:
+    with patch.object(ExtendedAuth0.users.users_client, "create") as request:
         email = "foo@test.com"
         nickname = "foo"
         request.return_value = {
@@ -152,12 +135,10 @@ def test_create_user(ExtendedAuth0):
         request.assert_has_calls(
             [
                 call(
-                    {
-                        "email": email,
-                        "email_verified": True,
-                        "connection": "email",
-                        "nickname": nickname,
-                    },
+                    email=email,
+                    email_verified=True,
+                    connection="email",
+                    nickname=nickname,
                 )
             ]
         )
@@ -173,44 +154,42 @@ def fixture_get_users_email_search_empty(ExtendedAuth0):
 @pytest.fixture
 def fixture_get_users_email_search(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "get_users_email_search") as get_users_email_search:
-        get_users_email_search.return_value = [
+        mock_user = MagicMock()
+        mock_user.email = "new@test.com"
+        mock_user.email_verified = True
+        mock_user.identities = [
             {
-                "email": "new@test.com",
-                "email_verified": True,
-                "identities": [
-                    {
-                        "connection": "email",
-                        "user_id": "new_id",
-                        "provider": "email",
-                        "isSocial": False,
-                    }
-                ],
-                "name": "foot@test.com",
-                "nickname": "foo",
-                "user_id": "email|existing_id",
+                "connection": "email",
+                "user_id": "new_id",
+                "provider": "email",
+                "isSocial": False,
             }
         ]
+        mock_user.name = "foot@test.com"
+        mock_user.nickname = "foo"
+        mock_user.user_id = "email|existing_id"
+        get_users_email_search.return_value = [mock_user]
         yield get_users_email_search
 
 
 @pytest.fixture
 def fixture_create_user(ExtendedAuth0):
     with patch.object(ExtendedAuth0.users, "create_user") as create_user:
-        create_user.return_value = {
-            "email": "foo@test.com",
-            "email_verified": True,
-            "identities": [
-                {
-                    "connection": "email",
-                    "user_id": "new_id",
-                    "provider": "email",
-                    "isSocial": False,
-                }
-            ],
-            "name": "foot@test.com",
-            "nickname": "foo",
-            "user_id": "email|new_id",
-        }
+        mock_user = MagicMock()
+        mock_user.email = "foo@test.com"
+        mock_user.email_verified = True
+        mock_user.identities = [
+            {
+                "connection": "email",
+                "user_id": "new_id",
+                "provider": "email",
+                "isSocial": False,
+            }
+        ]
+        mock_user.name = "foot@test.com"
+        mock_user.nickname = "foo"
+        mock_user.user_id = "email|new_id"
+        create_user.return_value = mock_user
         yield create_user
 
 
@@ -259,23 +238,11 @@ def test_existing_user_add_to_group(
 @pytest.fixture
 def fixture_client_create(ExtendedAuth0):
     with patch.object(ExtendedAuth0.clients, "create") as client_create:
-        client_create.return_value = {
-            "client_id": "new_client_id",
-            "name": "new_client",
-        }
+        mock_client = MagicMock()
+        mock_client.name = "new_client"
+        mock_client.client_id = "new_client_id"
+        client_create.return_value = mock_client
         yield client_create
-
-
-@pytest.fixture
-def fixture_connection_search_first_match(ExtendedAuth0):
-    with patch.object(
-        ExtendedAuth0.connections, "search_first_match"
-    ) as connection_search_first_match:
-        connection_search_first_match.return_value = {
-            "name": "email",
-            "id": "con_0000000000000001",
-        }
-        yield connection_search_first_match
 
 
 @pytest.fixture
@@ -296,21 +263,9 @@ def fixture_connection_enable_client(ExtendedAuth0):
 def fixture_connection_get_all(ExtendedAuth0):
     with patch.object(ExtendedAuth0.connections, "get_all") as connection_get_all:
         connection_get_all.return_value = [
-            {
-                "name": "email",
-                "id": "con_0000000000000001",
-                "enabled_clients": ["new_client_id"],
-            },
-            {
-                "name": "connection 1",
-                "id": "con_0000000000000002",
-                "enabled_clients": ["new_client_id"],
-            },
-            {
-                "name": "connection 2",
-                "id": "con_0000000000000003",
-                "enabled_clients": ["new_client_id"],
-            },
+            mock_connection("email", "con_0000000000000001", ["new_client_id"]),
+            mock_connection("connection 1", "con_0000000000000002", ["new_client_id"]),
+            mock_connection("connection 2", "con_0000000000000003", ["new_client_id"]),
         ]
         yield connection_get_all
 
@@ -365,7 +320,6 @@ def test_setup_auth0_client(
     fixture_client_create,
     fixture_connection_disable_client,
     fixture_connection_enable_client,
-    fixture_connection_search_first_match,
     fixture_connection_get_all,
     fixture_permission_create,
     fixture_role_create,
@@ -424,7 +378,7 @@ def fixture_group_delete_member(ExtendedAuth0):
 
 @pytest.fixture
 def fixture_user_delete(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.users.client, "delete") as user_delete:
+    with patch.object(ExtendedAuth0.users.users_client, "delete") as user_delete:
         user_delete.return_value = {}
         yield user_delete
 
@@ -459,7 +413,7 @@ def test_clear_up_user(
         ]
     )
     domain = settings.AUTH0["domain"]
-    fixture_user_delete.assert_called_with(f"https://{domain}/api/v2/users/{user_id}")
+    fixture_user_delete.assert_called_with(id=user_id)
 
 
 @pytest.fixture
@@ -488,10 +442,12 @@ def test_group_member_more_than_100(ExtendedAuth0, fixture_group_members_200):
 
 
 @pytest.fixture
-def fixture_client_search_first_match(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.clients, "search_first_match") as client_search_first_match:
-        client_search_first_match.return_value = {"client_id": "new_client_id"}
-        yield client_search_first_match
+def fixture_client_get_connections(ExtendedAuth0):
+    with patch.object(ExtendedAuth0.clients, "get_connections") as get_connections:
+        get_connections.return_value = [
+            mock_connection("connection 2", "con_0000000000000003", ["new_client_id"]),
+        ]
+        yield get_connections
 
 
 def test_update_client_auth_connections(
@@ -499,20 +455,13 @@ def test_update_client_auth_connections(
     fixture_connection_disable_client,
     fixture_connection_enable_client,
     fixture_connection_get_all,
-    fixture_client_search_first_match,
+    fixture_client_get_connections,
 ):
-    new_client_id = "new_client_id"
 
-    connection1 = {
-        "name": "connection 1",
-        "id": "con_0000000000000002",
-        "enabled_clients": ["new_client_id"],
-    }
-    connection2 = {
-        "name": "connection 2",
-        "id": "con_0000000000000003",
-        "enabled_clients": ["new_client_id"],
-    }
+    connection1 = fixture_connection_get_all.return_value[1]
+    connection2 = fixture_client_get_connections.return_value[0]
+
+    new_client_id = "new_client_id"
 
     ExtendedAuth0.update_client_auth_connections(
         app_name="test",
@@ -531,12 +480,12 @@ def test_update_client_auth_connections(
 
 @pytest.fixture
 def fixture_connection_create(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.connections, "create") as connection_create:
-        connection_create.return_value = {
-            "name": "test_nomis_connection",
-            "id": "new_connection",
-            "client_id": "test_nomis_connection_id",
-        }
+    with patch.object(ExtendedAuth0.connections.connections_client, "create") as connection_create:
+        mock_connection = MagicMock()
+        mock_connection.name = "test_nomis_connection"
+        mock_connection.id = "new_connection"
+        mock_connection.client_id = "test_nomis_connection_id"
+        connection_create.return_value = mock_connection
         yield connection_create
 
 
@@ -552,14 +501,14 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
             "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
         },
     )
-    fixture_connection_create.assert_called_once_with(ANY)
+    fixture_connection_create.assert_called_once()
     with open("./tests/api/fixtures/nomis_body.json") as body_file:
         expected = json.loads(body_file.read())
 
     # Check whether the json argument passed into connection.create is expected
-    call = fixture_connection_create.call_args
-    call_args, call_kwargs = call
-    actual_arg = call_args[0]
+    call_obj = fixture_connection_create.call_args
+    _, call_kwargs = call_obj
+    actual_arg = call_kwargs
 
     actual_arg["options"]["scripts"]["fetchUserProfile"] = _clean_string(
         actual_arg["options"]["scripts"]["fetchUserProfile"]
@@ -571,9 +520,9 @@ def test_create_custom_connection(ExtendedAuth0, fixture_connection_create):
 
 
 def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.connections, "create") as connection_create:
-        connection_create.side_effect = exceptions.Auth0Error(
-            409, 409, "The connection name existed already"
+    with patch.object(ExtendedAuth0.connections.connections_client, "create") as connection_create:
+        connection_create.side_effect = ApiError(
+            status_code=409, body="The connection name existed already"
         )
         ExtendedAuth0.connections.create_custom_connection(
             "auth0_nomis",
@@ -583,13 +532,13 @@ def test_create_custom_connection_with_allowed_error(ExtendedAuth0):
                 "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
             },
         )
-        connection_create.assert_called_once_with(ANY)
+        connection_create.assert_called_once()
 
 
 def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
-    with patch.object(ExtendedAuth0.connections, "create") as connection_create:
-        connection_create.side_effect = exceptions.Auth0Error(400, 400, "Error")
-        with pytest.raises(auth0.Auth0Error, match="400: Error"):
+    with patch.object(ExtendedAuth0.connections.connections_client, "create") as connection_create:
+        connection_create.side_effect = ApiError(status_code=400, body="Error")
+        with pytest.raises(auth0.Auth0Error, match="headers: None, status_code: 400, body: Error"):
             ExtendedAuth0.connections.create_custom_connection(
                 "auth0_nomis",
                 input_values={
@@ -598,7 +547,7 @@ def test_create_custom_connection_with_notallowed_error(ExtendedAuth0):
                     "client_secret": "WNXFkM3FCTXJhUWs0Q1NwcKFu",  # gitleaks:allow
                 },
             )
-        connection_create.assert_called_once_with(ANY)
+        connection_create.assert_called_once()
 
 
 def test_setup_m2m_client(ExtendedAuth0):
@@ -607,31 +556,27 @@ def test_setup_m2m_client(ExtendedAuth0):
     scopes = ["test:scope"]
 
     with (
-        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
-        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+        patch.object(ExtendedAuth0, "_get_or_create") as client_create,
+        patch.object(ExtendedAuth0._management.client_grants, "create") as client_grants_create,
     ):
-        client_create.return_value = (
-            {
-                "client_id": client_id,
-                "name": client_name,
-            },
-            True,
-        )
+        mock_client = MagicMock()
+        mock_client.client_id = client_id
+        mock_client.name = client_name
+        client_create.return_value = (mock_client, True)
         ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
 
     client_create.assert_called_once_with(
+        ExtendedAuth0.clients.clients_client,
         {
             "name": client_name,
             "app_type": "non_interactive",
             "grant_types": ["client_credentials"],
-        }
+        },
     )
     client_grants_create.assert_called_once_with(
-        body={
-            "client_id": client_id,
-            "scope": scopes,
-            "audience": "test-audience",
-        }
+        client_id=client_id,
+        scope=scopes,
+        audience="test-audience",
     )
 
 
@@ -641,24 +586,25 @@ def test_setup_m2m_client_already_exists(ExtendedAuth0):
     scopes = ["test:scope"]
 
     with (
-        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
-        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+        patch.object(ExtendedAuth0, "_get_or_create") as client_create,
+        patch.object(ExtendedAuth0._management.client_grants, "create") as client_grants_create,
     ):
+        mock_client = MagicMock()
+        mock_client.client_id = client_id
+        mock_client.name = client_name
         client_create.return_value = (
-            {
-                "client_id": client_id,
-                "name": client_name,
-            },
+            mock_client,
             False,
         )
         ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
 
     client_create.assert_called_once_with(
+        ExtendedAuth0.clients.clients_client,
         {
             "name": client_name,
             "app_type": "non_interactive",
             "grant_types": ["client_credentials"],
-        }
+        },
     )
     client_grants_create.assert_not_called()
 
@@ -669,48 +615,47 @@ def test_setup_m2m_client_grant_error(ExtendedAuth0):
     scopes = ["test:scope"]
 
     with (
-        patch.object(ExtendedAuth0.clients, "get_or_create") as client_create,
-        patch.object(ExtendedAuth0.client_grants, "create") as client_grants_create,
+        patch.object(ExtendedAuth0, "_get_or_create") as client_create,
+        patch.object(ExtendedAuth0._management.client_grants, "create") as client_grants_create,
         patch.object(ExtendedAuth0.clients, "delete") as client_delete,
     ):
+        mock_client = MagicMock()
+        mock_client.client_id = client_id
+        mock_client.name = client_name
         client_create.return_value = (
-            {
-                "client_id": client_id,
-                "name": client_name,
-            },
+            mock_client,
             True,
         )
-        client_grants_create.side_effect = exceptions.Auth0Error(400, 400, "Error")
+        client_grants_create.side_effect = ApiError(status_code=400, body="Error")
 
-        with pytest.raises(auth0.Auth0Error, match="400: Error"):
+        with pytest.raises(auth0.Auth0Error, match="headers: None, status_code: 400, body: Error"):
             ExtendedAuth0.setup_m2m_client(client_name, scopes=scopes)
 
     client_create.assert_called_once_with(
+        ExtendedAuth0.clients.clients_client,
         {
             "name": client_name,
             "app_type": "non_interactive",
             "grant_types": ["client_credentials"],
-        }
+        },
     )
     client_grants_create.assert_called_once_with(
-        body={
-            "client_id": client_id,
-            "scope": scopes,
-            "audience": "test-audience",
-        }
+        client_id=client_id,
+        scope=scopes,
+        audience="test-audience",
     )
-    client_delete.assert_called_once_with(client_id)
+    client_delete.assert_called_once_with(id=client_id)
 
 
 @pytest.mark.parametrize(
     "side_effect, expected",
     [
         (MagicMock(return_value=None), None),
-        (exceptions.Auth0Error(404, 404, "Error"), None),
-        (exceptions.Auth0Error(400, 400, "Error"), "400: Error"),
-        (exceptions.Auth0Error(401, 401, "Error"), "401: Error"),
-        (exceptions.Auth0Error(403, 403, "Error"), "403: Error"),
-        (exceptions.Auth0Error(429, 429, "Error"), "429: Error"),
+        (ApiError(status_code=404, body="Error"), None),
+        (ApiError(status_code=400, body="Error"), "headers: None, status_code: 400, body: Error"),
+        (ApiError(status_code=401, body="Error"), "headers: None, status_code: 401, body: Error"),
+        (ApiError(status_code=403, body="Error"), "headers: None, status_code: 403, body: Error"),
+        (ApiError(status_code=429, body="Error"), "headers: None, status_code: 429, body: Error"),
     ],
 )
 def test_rotate_m2m_client_secret(ExtendedAuth0, side_effect, expected):
