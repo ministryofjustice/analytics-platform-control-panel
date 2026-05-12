@@ -24,7 +24,7 @@ dependencies = [
     "djangorestframework==3.17.1",
     "djproxy==2.3.6",
     "elasticsearch-dsl==7.4.1",
-    "gunicorn==25.3.0",
+    "gunicorn==26.0.0",
     "Jinja2==3.1.6",
     "kubernetes==35.0.0",
     "mozilla-django-oidc==5.0.2",
