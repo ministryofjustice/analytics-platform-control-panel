@@ -30,6 +30,7 @@ jobs:
           "VALIDATE_JSCPD": false,
           "VALIDATE_JUPYTER_NBQA_RUFF": false,
           "VALIDATE_KUBERNETES_KUBECONFORM": false,
+          "VALIDATE_JSON_PRETTIER": false,
           "VALIDATE_PRETTIER": false,
           "VALIDATE_PYTHON_BLACK": false,
           "VALIDATE_PYTHON_FLAKE8": false,
