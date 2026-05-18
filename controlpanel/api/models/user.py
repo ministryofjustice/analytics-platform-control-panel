@@ -1,5 +1,4 @@
 # Third-party
-from crequest.middleware import CrequestMiddleware
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.signals import user_logged_in
 from django.db import models
@@ -9,6 +8,7 @@ from django.utils.functional import cached_property
 # First-party/Local
 from controlpanel.api import auth0, cluster, slack
 from controlpanel.api.signals import prometheus_login_event
+from controlpanel.middleware.current_request import get_current_request
 from controlpanel.utils import sanitize_dns_label
 
 QUICKSIGHT_EMBED_AUTHOR_PERMISSION = "quicksight_embed_author_access"
@@ -70,11 +70,9 @@ class User(AbstractUser):
         """
         Retrieve the user's Id token if they are the logged in user
         """
-        request = CrequestMiddleware.get_request()
+        request = get_current_request()
         if not request:
-            raise Exception(
-                "request not found: have you called get_id_token() in a background worker?"
-            )
+            return None
 
         if request.user == self:
             return request.session.get("oidc_id_token")
@@ -193,7 +191,7 @@ class User(AbstractUser):
 
         already_superuser = existing and existing.is_superuser
         if self.is_superuser and not already_superuser:
-            request = CrequestMiddleware.get_request()
+            request = get_current_request()
             slack.notify_superuser_created(
                 self.username,
                 by_username=request.user.username if request else None,
