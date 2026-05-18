@@ -12,7 +12,7 @@ dependencies = [
     "channels-redis==4.3.0",
     "cryptography==48.0.0",
     "daphne==4.2.1",
-    "django==5.2.13",
+    "django==5.2.14",
     "django-celery-beat==2.9.0",
     "django-crequest==2018.5.11",
     "django-extensions==4.1",
