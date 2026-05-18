@@ -513,7 +513,6 @@ dependencies = [
     { name = "daphne" },
     { name = "django" },
     { name = "django-celery-beat" },
-    { name = "django-crequest" },
     { name = "django-extensions" },
     { name = "django-filter" },
     { name = "django-prometheus" },
@@ -568,7 +567,6 @@ requires-dist = [
     { name = "daphne", specifier = "==4.2.1" },
     { name = "django", specifier = "==5.2.14" },
     { name = "django-celery-beat", specifier = "==2.9.0" },
-    { name = "django-crequest", specifier = "==2018.5.11" },
     { name = "django-extensions", specifier = "==4.1" },
     { name = "django-filter", specifier = "==25.2" },
     { name = "django-prometheus", specifier = "==2.4.1" },
@@ -720,15 +718,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/05/45/fc97bc1d9af8e7dc0
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/ae/9befa7ae37f5e5c41be636a254fcf47ff30dd5c88bd115070e252f6b9162/django_celery_beat-2.9.0-py3-none-any.whl", hash = "sha256:4a9e5ebe26d6f8d7215e1fc5c46e466016279dc102435a28141108649bdf2157", size = 105013, upload-time = "2026-02-28T16:45:32.822Z" },
 ]
-
-[[package]]
-name = "django-crequest"
-version = "2018.5.11"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/61/d2e95ff46d2d117b79873d6922665d711b35357b50b854a0e9cf42806431/django-crequest-2018.5.11.tar.gz", hash = "sha256:e623ec6b2933790717307d5a59cf9db39ff4928b53c506948e1d05776ef4a034", size = 4357, upload-time = "2018-05-11T09:37:55.361Z" }
 
 [[package]]
 name = "django-debug-toolbar"
