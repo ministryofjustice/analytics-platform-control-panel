@@ -18,6 +18,8 @@ updates:
     ignore:
       - dependency-name: "numpy"
         versions: [ ">=2.0.0" ]
+      - dependency-name: "django"
+        versions: [ ">=6.0.0" ]
     directory: "/"
     open-pull-requests-limit: 15
     schedule:
