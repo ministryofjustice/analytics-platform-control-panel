@@ -47,7 +47,7 @@ dev = [
     "django-debug-toolbar==6.3.0",
     "ipdb==0.13.13",
     "ipython==9.13.0",
-    "pandas==3.0.2",
+    "pandas==3.0.3",
     "pre-commit==4.6.0",
     "model-bakery==1.23.4",
     "moto[all]==5.2.1",
