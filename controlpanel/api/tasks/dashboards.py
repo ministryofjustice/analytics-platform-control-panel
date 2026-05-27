@@ -16,7 +16,7 @@ def prune_dashboard_viewers():
     Remove dashboard viewers that are not associated with any dashboards.
     This also checks that the viewer can still access dashboards if they
     have a valid domain. This will remove the auth0 role required to access
-    the dashboard service.
+    View MOJ dashboards.
     """
     domains = (
         DashboardDomain.objects.filter(dashboards__isnull=False)

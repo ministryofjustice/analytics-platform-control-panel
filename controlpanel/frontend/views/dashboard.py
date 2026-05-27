@@ -242,7 +242,7 @@ class DeleteDashboard(OIDCLoginRequiredMixin, PermissionRequiredMixin, DeleteVie
         dashboard.delete()
         self.request.session["success_message"] = build_success_message(
             heading=f"You've removed {dashboard.name}",
-            message="The dashboard will no longer appear in the dashboard service.",
+            message="The dashboard will no longer appear on View MOJ dashboards.",
         )
 
         return HttpResponseRedirect(self.get_success_url())
