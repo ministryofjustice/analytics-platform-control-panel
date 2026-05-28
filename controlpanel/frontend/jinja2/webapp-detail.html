@@ -342,6 +342,37 @@
 </section>
 {% endif %}
 
+
+{% if request.user.has_perm('api.update_app') %}
+<section class="cpanel-section">
+  <form action="{{ url('set-comprehend-app', kwargs={ "pk": app.id }) }}" method="post">
+    {{ csrf_input }}
+    {{ govukCheckboxes({
+      "name": "is_comprehend_enabled",
+      "fieldset": {
+        "legend": {
+          "text": "Enable Comprehend",
+          "classes": "govuk-fieldset__legend--m",
+        },
+      },
+      "hint": {
+        "text": "Toggle access to Comprehend for this application."
+      },
+      "items": [
+        {
+          "value": "True",
+          "text": "Comprehend Enabled",
+          "checked": app.is_comprehend_enabled
+        },
+      ]
+    }) }}
+    <button class="govuk-button govuk-button--secondary">
+      Save changes
+    </button>
+  </form>
+</section>
+{% endif %}
+
 {% if show_cloud_platform_assume_role and request.user.has_perm('api.add_cloud_platform_arn') %}
 <section class="cpanel-section">
   <form action="{{ url('set-cloud-platform-arn', kwargs={ "pk": app.id }) }}" method="post">
