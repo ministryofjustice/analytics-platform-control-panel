@@ -407,6 +407,14 @@ class EnableTextractApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     permission_required = "api.update_app"
 
 
+class EnableComprehendApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
+    model = App
+    fields = ["is_comprehend_enabled"]
+    success_message = "Successfully updated comprehend status"
+    method_name = "set_comprehend_access"
+    permission_required = "api.update_app"
+
+
 class UpdateCloudPlatformRoleArn(
     OIDCLoginRequiredMixin,
     PermissionRequiredMixin,
