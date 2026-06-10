@@ -18,7 +18,7 @@ dependencies = [
     "django-extensions==4.1",
     "django-filter==25.2",
     "django-prometheus==2.4.1",
-    "django-redis==6.0.0",
+    "django-redis==7.0.0",
     "django-simple-history==3.11.0",
     "django-structlog==10.0.0",
     "djangorestframework==3.17.1",
