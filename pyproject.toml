@@ -43,7 +43,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "beautifulsoup4==4.14.3",
+    "beautifulsoup4==4.15.0",
     "django-debug-toolbar==6.3.0",
     "ipdb==0.13.13",
     "ipython==9.13.0",
