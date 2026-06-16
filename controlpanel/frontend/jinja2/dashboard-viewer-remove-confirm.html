@@ -13,7 +13,7 @@
 
       <h2 class="govuk-heading-m">Are you sure you want to remove this viewer?</h2>
 
-      <p class="govuk-body">{{ viewer.email }} will receive an email telling them they no longer have access. They will no longer be able to view this dashboard in the dashboard service.</p>
+      <p class="govuk-body">{{ viewer.email }} will receive an email telling them they no longer have access. They will no longer be able to view this dashboard on View MOJ dashboards.</p>
 
       <form method="post" action="{{ url('revoke-dashboard-viewer', kwargs={'pk': dashboard.id, 'viewer_id': viewer.id}) }}">
         {{ csrf_input }}

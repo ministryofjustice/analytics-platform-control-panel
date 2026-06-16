@@ -4,6 +4,7 @@ from django.db.models.deletion import Collector
 
 # First-party/Local
 from controlpanel.api import cluster, tasks
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.models import App, AppS3Bucket, S3Bucket, User, UserS3Bucket
 from controlpanel.api.models.access_to_s3bucket import AccessToS3Bucket
 from controlpanel.api.tasks.handlers.base import BaseModelTaskHandler, BaseTaskHandler
@@ -17,7 +18,12 @@ class CreateS3Bucket(BaseModelTaskHandler):
 
     def handle(self, bucket_owner=None):
         bucket_owner = bucket_owner or "USER"
-        self.object.cluster.create(owner=bucket_owner)
+        try:
+            self.object.cluster.create(owner=bucket_owner)
+        except BucketAlreadyExistsError:
+            log.warning(f"Bucket '{self.object.name}' already exists, cleaning up database record")
+            self.object.delete()
+            return
         self.complete()
 
 

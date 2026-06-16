@@ -27,11 +27,11 @@ jobs:
 
       - name: Install cosign
         id: install_cosign
-        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Log in to GitHub Container Registry
         id: ghcr_login
-        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -39,7 +39,7 @@ jobs:
 
       - name: Build and Push
         id: build_and_push
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
@@ -48,7 +48,7 @@ jobs:
         id: sign
         shell: bash
         run: |
-          cosign sign --yes ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}
+          cosign sign --yes "ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}"
         env:
           STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST: ${{ steps.build_and_push.outputs.digest }}
 
@@ -83,8 +83,8 @@ jobs:
         run: |
           cosign verify \
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-            --certificate-identity=https://github.com/${GITHUB_WORKFLOW_REF} \
-            ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}
+            --certificate-identity="https://github.com/${GITHUB_WORKFLOW_REF}" \
+            "ghcr.io/${{ github.repository }}@${STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST}"
         env:
           STEPS_BUILD_AND_PUSH_OUTPUTS_DIGEST: ${{ steps.build_and_push.outputs.digest }}
 
@@ -94,4 +94,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh attestation verify oci://ghcr.io/${{ github.repository }}:${GITHUB_REF_NAME} --repo ${{ github.repository }}
+          gh attestation verify "oci://ghcr.io/${{ github.repository }}:${GITHUB_REF_NAME}" --repo ${{ github.repository }}

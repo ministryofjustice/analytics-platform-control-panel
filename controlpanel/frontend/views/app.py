@@ -26,6 +26,7 @@ from rules.contrib.views import PermissionRequiredMixin
 
 # First-party/Local
 from controlpanel.api import auth0, cluster
+from controlpanel.api.exceptions import BucketAlreadyExistsError
 from controlpanel.api.github import GithubAPI, RepositoryNotFound
 from controlpanel.api.models import (
     App,
@@ -232,6 +233,9 @@ class CreateApp(OIDCLoginRequiredMixin, PermissionRequiredMixin, CreateView):
         except RepositoryNotFound as ex:
             form.add_error("namespace", str(ex))
             return FormMixin.form_invalid(self, form)
+        except BucketAlreadyExistsError:
+            form.add_error("new_datasource_name", "Bucket name is not available")
+            return FormMixin.form_invalid(self, form)
         except Exception as ex:
             form.add_error("repo_url", str(ex))
             return FormMixin.form_invalid(self, form)
@@ -400,6 +404,14 @@ class EnableTextractApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
     fields = ["is_textract_enabled"]
     success_message = "Successfully updated textract status"
     method_name = "set_textract_access"
+    permission_required = "api.update_app"
+
+
+class EnableComprehendApp(OIDCLoginRequiredMixin, PolicyAccessMixin, UpdateView):
+    model = App
+    fields = ["is_comprehend_enabled"]
+    success_message = "Successfully updated comprehend status"
+    method_name = "set_comprehend_access"
     permission_required = "api.update_app"
 
 
@@ -629,6 +641,7 @@ class AddCustomers(OIDCLoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = App
     form_class = AddCustomersForm
     permission_required = "api.add_app_customer"
+    http_method_names = ["post"]
 
     def form_invalid(self, form):
         self.request.session["add_customer_form_errors"] = form.errors

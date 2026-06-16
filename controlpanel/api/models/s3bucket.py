@@ -75,6 +75,7 @@ class S3Bucket(TimeStampedModel):
     def __init__(self, *args, **kwargs):
         """Overwrite this constructor to pass some non-field parameter"""
         self.bucket_owner = kwargs.pop("bucket_owner", cluster.AWSRoleCategory.user)
+        self._dispatch_create_task_on_save = kwargs.pop("dispatch_task", True)
         super().__init__(*args, **kwargs)
 
     def __repr__(self):
@@ -147,6 +148,13 @@ class S3Bucket(TimeStampedModel):
         if not is_create:
             return self
 
+        if self._dispatch_create_task_on_save:
+            self._dispatch_create_task(**kwargs)
+        self._grant_creator_access()
+
+        return self
+
+    def _dispatch_create_task(self, **kwargs):
         tasks.S3BucketCreate(
             entity=self,
             user=self.created_by,
@@ -155,6 +163,7 @@ class S3Bucket(TimeStampedModel):
             },
         ).create_task()
 
+    def _grant_creator_access(self):
         # created_by should always be set, but this is a failsafe
         if self.created_by:
             UserS3Bucket.objects.create(

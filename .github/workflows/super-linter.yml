@@ -15,7 +15,7 @@ jobs:
       contents: read
       packages: read
       statuses: write
-    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-super-linter.yml@8465086d84a8ae8fb993ef582f00cf13b8ceb9c8 # v7.1.0
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-super-linter.yml@f3b2ed398ec5c17e2f59d983bc01c79c73632246 # v7.3.0
     with:
       super-linter-variables: |
         {
@@ -30,6 +30,7 @@ jobs:
           "VALIDATE_JSCPD": false,
           "VALIDATE_JUPYTER_NBQA_RUFF": false,
           "VALIDATE_KUBERNETES_KUBECONFORM": false,
+          "VALIDATE_JSON_PRETTIER": false,
           "VALIDATE_PRETTIER": false,
           "VALIDATE_PYTHON_BLACK": false,
           "VALIDATE_PYTHON_FLAKE8": false,

@@ -306,6 +306,14 @@ def set_textract(client, app, *args):
     return client.post(reverse("set-textract-app", kwargs=kwargs), data)
 
 
+def set_comprehend(client, app, *args):
+    data = {
+        "is_comprehend_enabled": True,
+    }
+    kwargs = {"pk": app.id}
+    return client.post(reverse("set-comprehend-app", kwargs=kwargs), data)
+
+
 @patch("controlpanel.api.cluster.App.create_m2m_client")
 def setup_m2m_client(client, app, *args):
     kwargs = {"pk": app.id}
@@ -374,6 +382,9 @@ def delete_m2m_client(client, app, *args):
         (set_textract, "superuser", status.HTTP_302_FOUND),
         (set_textract, "app_admin", status.HTTP_302_FOUND),
         (set_textract, "normal_user", status.HTTP_403_FORBIDDEN),
+        (set_comprehend, "superuser", status.HTTP_302_FOUND),
+        (set_comprehend, "app_admin", status.HTTP_302_FOUND),
+        (set_comprehend, "normal_user", status.HTTP_403_FORBIDDEN),
         (setup_m2m_client, "superuser", status.HTTP_302_FOUND),
         (setup_m2m_client, "app_admin", status.HTTP_302_FOUND),
         (setup_m2m_client, "normal_user", status.HTTP_403_FORBIDDEN),
@@ -476,6 +487,18 @@ def test_add_customers(client, app, users, emails, expected_response):
         data,
     )
     assert expected_response(client, response)
+
+
+def test_add_customers_get(client, app, users):
+    client.force_login(users["superuser"])
+    data = {"customer_email": "foo@example.com", "env_name": "dev_env"}
+    response = client.get(
+        reverse(
+            "add-app-customers", kwargs={"pk": app.id, "group_id": app.get_group_id("dev_env")}
+        ),
+        data,
+    )
+    assert response.status_code == 405
 
 
 def remove_customer_success(client, response):

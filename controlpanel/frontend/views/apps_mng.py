@@ -88,11 +88,14 @@ class AppManager:
 
     def _create_or_link_datasource(self, app, user, bucket_data):
         if bucket_data.get("new_datasource_name"):
-            bucket = S3Bucket.objects.create(
-                name=bucket_data["new_datasource_name"],
-                bucket_owner="APP",
-                created_by=user,
-            )
+            with transaction.atomic():
+                bucket = S3Bucket.objects.create(
+                    name=bucket_data["new_datasource_name"],
+                    bucket_owner="APP",
+                    created_by=user,
+                    dispatch_task=False,
+                )
+                bucket.cluster.create(owner="APP")
             AppS3Bucket.objects.create(
                 app=app,
                 s3bucket=bucket,
