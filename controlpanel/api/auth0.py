@@ -11,6 +11,7 @@ from auth0.authentication.get_token import GetToken
 from auth0.authentication.rest import RestClient
 from auth0.management import ManagementClient
 from auth0.management.core.api_error import ApiError
+from auth0.management.core.parse_error import ParsingError
 from auth0.management.types import UpdateEnabledClientConnectionsRequestContentItem
 from auth0.management.types.user_identity_schema import UserIdentitySchema
 from django.conf import settings
@@ -637,7 +638,32 @@ class ExtendedUsers:
         self.auth_extension_users = AuthExtensionUsers(auth_extension_url, auth_extension_token)
 
     def get(self, id):
-        return self.users_client.get(id=id)
+        try:
+            return self.users_client.get(id=id)
+        except ParsingError as e:
+            # Workaround for auth0-python v5 Pydantic validation bug
+            # where identities[].user_id comes back as int instead of string
+            if "identities" in str(e) and "user_id" in str(e):
+                try:
+                    raw_body = e.body
+                    if isinstance(raw_body, dict) and "identities" in raw_body:
+                        # Fix: convert all integer user_id values to strings
+                        for identity in raw_body.get("identities", []):
+                            if isinstance(identity, dict) and "user_id" in identity:
+                                identity["user_id"] = str(identity["user_id"])
+
+                        log.warning(
+                            "auth0_identity_user_id_workaround",
+                            user_id=id,
+                            message="Applied workaround for identities.user_id Pydantic validation",
+                        )
+                        return raw_body
+                except Exception as fix_error:
+                    log.error("Failed to apply identities workaround", error=fix_error)
+                    raise e from fix_error
+
+            # Re-raise if it's a different error
+            raise
 
     def get_all(self):
         return self.users_client.list()
