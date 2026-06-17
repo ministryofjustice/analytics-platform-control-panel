@@ -20,7 +20,7 @@ dependencies = [
     "django-prometheus==2.4.1",
     "django-redis==6.0.0",
     "django-simple-history==3.11.0",
-    "django-structlog==10.0.0",
+    "django-structlog==10.1.0",
     "djangorestframework==3.17.1",
     "djproxy==2.3.6",
     "elasticsearch-dsl==7.4.1",
