@@ -15,7 +15,7 @@ jobs:
       contents: read
       packages: read
       statuses: write
-    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-super-linter.yml@f3b2ed398ec5c17e2f59d983bc01c79c73632246 # v7.3.0
+    uses: ministryofjustice/analytical-platform-github-actions/.github/workflows/reusable-super-linter.yml@bc0d450d55cc014693437d793b797b7b0e281db4 # v7.3.1
     with:
       super-linter-variables: |
         {
