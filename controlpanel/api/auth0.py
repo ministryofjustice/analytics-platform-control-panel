@@ -652,11 +652,6 @@ class ExtendedUsers:
                             if isinstance(identity, dict) and "user_id" in identity:
                                 identity["user_id"] = str(identity["user_id"])
 
-                        log.warning(
-                            "auth0_identity_user_id_workaround",
-                            user_id=id,
-                            message="Applied workaround for identities.user_id Pydantic validation",
-                        )
                         return raw_body
                 except Exception as fix_error:
                     log.error("Failed to apply identities workaround", error=fix_error)
