@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 # Third-party
 import pytest
-from auth0.rest import Auth0Error
+from auth0.management.core.api_error import ApiError
 from bs4 import BeautifulSoup
 from model_bakery import baker
 from rest_framework import status
@@ -195,9 +195,7 @@ def test_no_exist_auth0_clients_on_customers_page(client, app, users, ExtendedAu
         group_id = app.get_group_id("dev_env")
         url_dict = {"group_id": group_id}
         error_msg = "Testing auth0 client call"
-        get_group_members_paginated.side_effect = Auth0Error(
-            status_code=404, error_code=404, message=error_msg
-        )
+        get_group_members_paginated.side_effect = ApiError(status_code=404, body=error_msg)
 
         client.force_login(users["superuser"])
         response = client.get(reverse("appcustomers-page", args=(app.id, 1)), url_dict)

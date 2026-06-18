@@ -6,7 +6,7 @@ import botocore
 import requests
 import sentry_sdk
 import structlog
-from auth0.rest import Auth0Error
+from auth0.management.core.api_error import ApiError
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.postgres.aggregates import StringAgg
@@ -570,8 +570,8 @@ class SetupM2MClient(M2MClientMixin, RedirectView):
             self.request,
             f"Successfully created machine-to-machine client. Your client credentials are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
         )
-        messages.info(self.request, f"Client ID: {client['client_id']}")
-        messages.info(self.request, f"Client Secret: {client['client_secret']}")
+        messages.info(self.request, f"Client ID: {client.client_id}")
+        messages.info(self.request, f"Client Secret: {client.client_secret}")
         return super().post(request, *args, **kwargs)
 
 
@@ -590,8 +590,8 @@ class RotateM2MCredentials(M2MClientMixin, RedirectView):
             self.request,
             f"Successfully rotated machine-to-machine client secret. Your client ID and new client secret are shown below, ensure to store them securely as you will not be able to view them again.",  # noqa
         )
-        messages.info(self.request, f"Client ID: {client['client_id']}")
-        messages.info(self.request, f"Client Secret: {client['client_secret']}")
+        messages.info(self.request, f"Client ID: {client.client_id}")
+        messages.info(self.request, f"Client Secret: {client.client_secret}")
         return super().post(request, *args, **kwargs)
 
 
@@ -681,7 +681,7 @@ class AppCustomersPageView(OIDCLoginRequiredMixin, PermissionRequiredMixin, Deta
         if group_id:
             try:
                 customers = app.customer_paginated(page_no, group_id)
-            except Auth0Error as error:
+            except ApiError as error:
                 customers = {}
                 read_customer_error_msg = error.__str__()
         else:

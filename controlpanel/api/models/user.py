@@ -93,9 +93,10 @@ class User(AbstractUser):
             self._github_api_token = None
         if not getattr(self, "_github_api_token", None):
             auth0_user = auth0.ExtendedAuth0().users.get(self.auth0_id)
+            # When auth0 fixes ParsingError, change from dict notation to . notation
             for identity in auth0_user["identities"]:
                 if identity["provider"] == "github":
-                    self._github_api_token = identity.get("access_token")
+                    self._github_api_token = identity["access_token"]
         return self._github_api_token
 
     @github_api_token.setter

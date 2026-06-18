@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 # Third-party
 import pytest
@@ -21,14 +21,9 @@ def enable_db_for_all_tests(db):
 @pytest.fixture(autouse=True)  # noqa: F405
 def github_api_token():
     with patch("controlpanel.api.models.user.auth0.ExtendedAuth0") as ExtendedAuth0:
-        ExtendedAuth0.return_value.users.get.return_value = {
-            "identities": [
-                {
-                    "provider": "github",
-                    "access_token": "dummy-access-token",
-                },
-            ],
-        }
+        mock_identity = MagicMock()
+        mock_identity.identites = [MagicMock(provider="github", access_token="dummy-access-token")]
+        ExtendedAuth0.return_value.users.get.return_value = mock_identity
         yield ExtendedAuth0.return_value
 
 

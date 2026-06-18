@@ -426,8 +426,10 @@ class App(EntityResource):
             App.APP_ROLE_ARN: self.app.iam_role_arn,
         }
         if client:
-            secret_data[App.AUTH0_CLIENT_ID] = client["client_id"]
-            secret_data[App.AUTH0_CLIENT_SECRET] = client["client_secret"]
+            client_id = client.client_id
+            client_secret = client.client_secret
+            secret_data[App.AUTH0_CLIENT_ID] = client_id
+            secret_data[App.AUTH0_CLIENT_SECRET] = client_secret
 
         self.create_or_update_secrets(env_name=env_name, secret_data=secret_data)
 
@@ -736,7 +738,7 @@ class App(EntityResource):
 
         # save the client ID, which we can use to retrieve the client secret
         self.app.app_conf["m2m"] = {
-            "client_id": m2m_client["client_id"],
+            "client_id": m2m_client.client_id,
         }
         self.app.save()
         return m2m_client

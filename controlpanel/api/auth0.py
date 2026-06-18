@@ -7,14 +7,13 @@ from pathlib import Path
 import sentry_sdk
 import structlog
 import yaml
-from auth0 import authentication, exceptions
-from auth0.management import Auth0
-from auth0.management.clients import Clients
-from auth0.management.connections import Connections
-from auth0.management.device_credentials import DeviceCredentials
-from auth0.management.roles import Roles as Auth0Roles
-from auth0.management.users import Users
-from auth0.rest import RestClient
+from auth0.authentication.get_token import GetToken
+from auth0.authentication.rest import RestClient
+from auth0.management import ManagementClient
+from auth0.management.core.api_error import ApiError
+from auth0.management.core.parse_error import ParsingError
+from auth0.management.types import UpdateEnabledClientConnectionsRequestContentItem
+from auth0.management.types.user_identity_schema import UserIdentitySchema
 from django.conf import settings
 from jinja2 import Environment
 from rest_framework.exceptions import APIException
@@ -44,7 +43,7 @@ class Auth0Error(APIException):
     default_detail = "Error querying Auth0 API"
 
 
-class ExtendedAuth0(Auth0):
+class ExtendedAuth0:
     DEFAULT_GRANT_TYPES = ["authorization_code", "client_credentials"]
     DEFAULT_APP_TYPE = "regular_web"
     M2M_APP_TYPE = "non_interactive"
@@ -59,19 +58,19 @@ class ExtendedAuth0(Auth0):
         self.app_domain = kwargs.get("domain", settings.APP_DOMAIN)
         self.audience = "https://{domain}/api/v2/".format(domain=self.domain)
 
+        self._management = ManagementClient(
+            domain=self.domain,
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            timeout=DEFAULT_TIMEOUT,
+        )
+
         self._init_mng_apis()
         self._init_authorization_extension_apis()
 
     def _init_mng_apis(self):
-        self._token = self._access_token(audience=self.audience)
-        super(ExtendedAuth0, self).__init__(self.domain, self._token)
-
-        self.clients = ExtendedClients(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
-        self.connections = ExtendedConnections(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
-        self.device_credentials = ExtendedDeviceCredentials(
-            self.domain, self._token, timeout=DEFAULT_TIMEOUT
-        )
-        self.auth0_roles = ExtendedRoles(self.domain, self._token, timeout=DEFAULT_TIMEOUT)
+        self.connections = ExtendedConnections(self._management.connections)
+        self.clients = ExtendedClients(self._management.clients)
 
     def _init_authorization_extension_apis(self):
         self.authorization_extension_url = settings.AUTH0["authorization_extension_url"]
@@ -94,20 +93,18 @@ class ExtendedAuth0(Auth0):
             timeout=DEFAULT_TIMEOUT,
         )
         self.users = ExtendedUsers(
-            self.domain,
-            self._token,
+            self._management.users,
             self.authorization_extension_url,
             self._extension_token,
-            timeout=DEFAULT_TIMEOUT,
         )
 
     def _access_token(self, audience):
-        get_token = authentication.GetToken(
+        get_token = GetToken(
             self.domain, client_id=self.client_id, client_secret=self.client_secret
         )
         try:
             token = get_token.client_credentials(audience)
-        except exceptions.Auth0Error as error:
+        except ApiError as error:
             error_detail = f"Access token error: {self.client_id}, {self.domain}, {error}"
             log.error(error_detail)
             sentry_sdk.capture_exception(error)
@@ -123,9 +120,8 @@ class ExtendedAuth0(Auth0):
         unchosen connections to diable the client from it, then enable nomis
         login if nomis login has been chosen
         """
-        connections = self.connections.get_all()
-        for connection in connections:
-            if connection["name"] in chosen_connections:
+        for connection in self.connections.get_all():
+            if connection.name in chosen_connections:
                 self.connections.enable_client(connection, client_id)
 
     def _create_custom_connection(self, app_name, connections):
@@ -158,24 +154,22 @@ class ExtendedAuth0(Auth0):
         new_connections = self._create_custom_connection(client_name, connections)
         app_url = "https://{}.{}".format(app_url_name or client_name, app_domain or self.app_domain)
         client = self.clients.create(
-            {
-                "name": client_name,
-                "callbacks": [f"{app_url}/callback"],
-                "allowed_origins": [app_url],
-                "app_type": ExtendedAuth0.DEFAULT_APP_TYPE,
-                "web_origins": [app_url],
-                "grant_types": ExtendedAuth0.DEFAULT_GRANT_TYPES,
-                "allowed_logout_urls": [app_url],
-            }
+            name=client_name,
+            callbacks=[f"{app_url}/callback"],
+            allowed_origins=[app_url],
+            app_type=ExtendedAuth0.DEFAULT_APP_TYPE,
+            web_origins=[app_url],
+            grant_types=ExtendedAuth0.DEFAULT_GRANT_TYPES,
+            allowed_logout_urls=[app_url],
         )
-        client_id = client["client_id"]
+        client_id = client.client_id
 
         view_app = self.permissions.create({"name": "view:app", "applicationId": client_id})
         role = self.roles.create({"name": "app-viewer", "applicationId": client_id})
         self.roles.add_permission(role, view_app["_id"])
         try:
             group = self.groups.create({"name": client_name})
-        except exceptions.Auth0Error:
+        except ApiError:
             # celery fails to unpickle original exception, but not 100% sure why.
             # Seems to be because __reduce__  method is incorrect? Possible bug.
             # https://github.com/celery/celery/issues/6990#issuecomment-1433689294
@@ -191,36 +185,37 @@ class ExtendedAuth0(Auth0):
         return client, group
 
     def setup_m2m_client(self, client_name, scopes):
-        client, created = self.clients.get_or_create(
+        client, created = self._get_or_create(
+            self.clients.clients_client,
             {
                 "name": client_name,
                 "app_type": "non_interactive",
                 "grant_types": ExtendedAuth0.M2M_GRANT_TYPES,
-            }
+            },
         )
         if not created:
             return client
 
         try:
-            body = {
-                "client_id": client["client_id"],
+            kwargs = {
+                "client_id": client.client_id,
                 "scope": scopes,
                 "audience": settings.OIDC_CPANEL_API_AUDIENCE,
             }
-            self.client_grants.create(body=body)
-        except exceptions.Auth0Error as error:
+            self._management.client_grants.create(**kwargs)
+        except ApiError as error:
             # if the client grant already exists, it will raise 409 error, so we can ignore it.
             # otherwise, raise the error
             if error.status_code != 409:
-                self.clients.delete(client["client_id"])
+                self.clients.delete(id=client.client_id)
                 raise Auth0Error(error.__str__(), code=error.status_code) from error
 
         return client
 
     def rotate_m2m_client_secret(self, client_id):
         try:
-            return self.clients.rotate_secret(client_id)
-        except exceptions.Auth0Error as error:
+            return self.clients.rotate_secret(id=client_id)
+        except ApiError as error:
             if error.status_code == 404:
                 return None
             raise Auth0Error(error.__str__(), code=error.status_code) from error
@@ -237,12 +232,22 @@ class ExtendedAuth0(Auth0):
     def add_dashboard_member_by_email(self, email, user_options=None):
         if user_options is None:
             user_options = {}
-        user_ids = self.users.add_users_by_emails([email], user_options=user_options)
-        self.auth0_roles.add_users(settings.DASHBOARD_AUTH0_ROLE_ID, user_ids)
+
+        try:
+            user_ids = self.users.add_users_by_emails([email], user_options=user_options)
+            self._management.roles.users.assign(id=settings.DASHBOARD_AUTH0_ROLE_ID, users=user_ids)
+        except ApiError as e:
+            raise Auth0Error() from e
 
     def remove_dashboard_role(self, email):
         user_id = self.users.get_user_id_by_email(email, "email")
-        self.users.remove_role(user_id, settings.DASHBOARD_AUTH0_ROLE_ID)
+
+        try:
+            self._management.users.roles.delete(
+                id=user_id, roles=[settings.DASHBOARD_AUTH0_ROLE_ID]
+            )
+        except ApiError as e:
+            raise Auth0Error() from e
 
     def clear_up_group(self, group_id):
         """
@@ -289,7 +294,7 @@ class ExtendedAuth0(Auth0):
         groups = self.users.get_user_groups(user_id)
         for group in groups:
             self.groups.delete_group_members(user_ids=[user_id], group_id=group["_id"])
-        self.users.delete(user_id)
+        self.users.delete_user(user_id)
 
     def clear_up_app(self, auth_client):
         client_id = auth_client.get("client_id")
@@ -297,25 +302,17 @@ class ExtendedAuth0(Auth0):
         if group_id:
             self.clear_up_group(group_id)
         if client_id:
-            self.clients.delete(client_id)
+            self.clients.delete(id=client_id)
 
     def get_client_enabled_connections(self, client_ids):
-        """
-        There is no Auth0 API to get the list of enabled connection for a client,
-        so we have to get all social connections, then check whether the client
-        (client_id) is in the list of enabled_clients
-        """
+
         if not client_ids:
             return {}
-        connections = self.connections.get_all()
         enabled_connections = {}
-        for connection in connections:
-            for client_id in client_ids:
-                if client_id not in connection["enabled_clients"]:
-                    continue
-                if client_id not in enabled_connections:
-                    enabled_connections[client_id] = []
-                enabled_connections[client_id].append(connection["name"])
+        for client_id in client_ids:
+            connection_names = self.clients.get_connection_names(id=client_id)
+            if connection_names:
+                enabled_connections[client_id] = connection_names
         return enabled_connections
 
     def update_client_auth_connections(
@@ -329,15 +326,33 @@ class ExtendedAuth0(Auth0):
         connections = {self.DEFAULT_CONNECTION_OPTION: {}} if new_conns is None else new_conns
         new_connections = self._create_custom_connection(app_name, connections)
 
+        client_connections = {
+            conn.name: conn for conn in self.clients.get_connections(id=client_id)
+        }
+
         # Get the list of  removed connections based on the existing connections
         removed_connections = list(set(existing_conns) - set(new_connections))
         real_new_connections = list(set(new_connections) - set(existing_conns))
 
-        for connection in self.connections.get_all():
-            if connection["name"] in removed_connections:
-                self.connections.disable_client(connection, client_id)
-            if connection["name"] in real_new_connections:
-                self.connections.enable_client(connection, client_id)
+        for name in removed_connections:
+            if name in client_connections:
+                self.connections.disable_client(client_connections[name], client_id)
+
+        if real_new_connections:
+            all_conns = {conn.name: conn for conn in self.connections.get_all()}
+            for name in real_new_connections:
+                if name not in client_connections and name in all_conns:
+                    self.connections.enable_client(all_conns[name], client_id)
+
+    def _get_or_create(self, client, resource):
+        for item in client.list():
+            item_dict = item.model_dump()
+
+            if all(pair in item_dict.items() for pair in resource.items()):
+                return item, False
+
+        result = client.create(**resource)
+        return result, True
 
 
 class Auth0API(object):
@@ -478,47 +493,97 @@ class ExtendedAPIMethods(object):
         return result, created
 
 
-class ExtendedClients(ExtendedAPIMethods, Clients):
+class ExtendedClients:
     endpoint = "clients"
 
+    def __init__(
+        self,
+        clients_client,
+    ):
+        self.clients_client = clients_client
 
-class ExtendedDeviceCredentials(ExtendedAPIMethods, DeviceCredentials):
-    endpoint = "device-credentials"
+    def get(self, id):
+        return self.clients_client.get(id=id)
+
+    def get_all(self):
+        return self.clients_client.list()
+
+    def create(self, **kwargs):
+        return self.clients_client.create(**kwargs)
+
+    def delete(self, id):
+        return self.clients_client.delete(id=id)
+
+    def rotate_secret(self, id):
+        return self.clients_client.rotate_secret(id=id)
+
+    def get_connections(self, id):
+        return self.clients_client.connections.get(id=id)
+
+    def get_connection_names(self, id):
+        connections = self.get_connections(id)
+        connection_names = [conn.name for conn in connections]
+        return connection_names
 
 
-class ExtendedRoles(ExtendedAPIMethods, Auth0Roles):
-    endpoint = "roles"
-
-
-class ExtendedConnections(ExtendedAPIMethods, Connections):
+class ExtendedConnections:
     endpoint = "connections"
+
+    def __init__(
+        self,
+        connections_client,
+    ):
+        self.connections_client = connections_client
 
     @staticmethod
     def custom_connections():
         return (settings.CUSTOM_AUTH_CONNECTIONS or "").split()
 
+    def get_all(self):
+        return self.connections_client.list()
+
+    def get_enabled_clients(self, connection):
+        result = []
+        enabled_clients = self.connections_client.clients.get(id=connection.id)
+
+        for client in enabled_clients:
+            result.append(client.client_id)
+        return result
+
     def disable_client(self, connection, client_id):
-        if client_id in connection["enabled_clients"]:
-            connection["enabled_clients"].remove(client_id)
-            self.update(
-                connection["id"],
-                body={"enabled_clients": connection["enabled_clients"]},
+        try:
+            self.connections_client.clients.update(
+                id=connection.id,
+                request=[
+                    UpdateEnabledClientConnectionsRequestContentItem(
+                        client_id=client_id,
+                        status=False,
+                    )
+                ],
             )
+        except ApiError as e:
+            raise Auth0Error() from e
 
     def enable_client(self, connection, client_id):
-        if client_id not in connection["enabled_clients"]:
-            connection["enabled_clients"].append(client_id)
-            self.update(
-                connection["id"],
-                body={"enabled_clients": connection["enabled_clients"]},
+        try:
+            self.connections_client.clients.update(
+                id=connection.id,
+                request=[
+                    UpdateEnabledClientConnectionsRequestContentItem(
+                        client_id=client_id,
+                        status=True,
+                    )
+                ],
             )
+        except ApiError as e:
+            raise Auth0Error() from e
 
     def _get_template_path_for_custom_connection(self, connection_name: str):
         return Path(__file__).parents[0] / Path("auth0_conns") / Path(connection_name)
 
     def get_all_connection_names(self):
-        connections = super(ExtendedConnections, self).get_all()
-        connection_names = [connection["name"] for connection in connections]
+        connections = self.get_all()
+        connection_names = [connection.name for connection in connections]
         connection_names.extend(ExtendedConnections.custom_connections())
         return connection_names
 
@@ -529,7 +594,7 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
                 settings, "{}_gateway_url".format(connection_name).upper()
             )
 
-    def create_custom_connection(self, connection_name: str, input_values: {}):
+    def create_custom_connection(self, connection_name: str, input_values: dict):
         """
         This method is only used to create custom connections which has
         configuration file within this repo
@@ -557,43 +622,75 @@ class ExtendedConnections(ExtendedAPIMethods, Connections):
             body["options"]["scripts"] = scripts_rendered
 
         try:
-            self.create(body)
-        except exceptions.Auth0Error as error:
+            self.connections_client.create(**body)
+        except ApiError as error:
             # Skip the exception when the connection name existed already
             if error.status_code != 409:
                 raise Auth0Error(error.__str__(), code=error.status_code) from error
         return input_values["name"]
 
 
-class ExtendedUsers(ExtendedAPIMethods, Users):
+class ExtendedUsers:
     endpoint = "users"
 
-    def __init__(
-        self,
-        domain,
-        token,
-        auth_extension_url,
-        auth_extension_token,
-        telemetry=True,
-        timeout=5.0,
-    ):
-        super(ExtendedUsers, self).__init__(domain, token, telemetry=telemetry, timeout=timeout)
+    def __init__(self, users_client, auth_extension_url, auth_extension_token):
+        self.users_client = users_client
         self.auth_extension_users = AuthExtensionUsers(auth_extension_url, auth_extension_token)
+
+    def get(self, id):
+        try:
+            return self.users_client.get(id=id)
+        except ParsingError as e:
+            # Workaround for auth0-python v5 Pydantic validation bug
+            # where identities[].user_id comes back as int instead of string
+            if "identities" in str(e) and "user_id" in str(e):
+                try:
+                    raw_body = e.body
+                    if isinstance(raw_body, dict) and "identities" in raw_body:
+                        # Fix: convert all integer user_id values to strings
+                        for identity in raw_body.get("identities", []):
+                            if isinstance(identity, dict) and "user_id" in identity:
+                                identity["user_id"] = str(identity["user_id"])
+
+                        return raw_body
+                except Exception as fix_error:
+                    log.error("Failed to apply identities workaround", error=fix_error)
+                    raise e from fix_error
+
+            # Re-raise if it's a different error
+            raise
+
+    def get_all(self):
+        return self.users_client.list()
 
     def create_user(self, email, email_verified=False, **kwargs):
         if "nickname" not in kwargs:
             kwargs["nickname"], _, _ = email.partition("@")
 
-        response = self.create({"email": email, "email_verified": email_verified, **kwargs})
-        if "error" in response:
-            raise Auth0Error("create_user", response)
+        try:
+            response = self.users_client.create(
+                email=email, email_verified=email_verified, **kwargs
+            )
+        except ApiError as e:
+            raise Auth0Error("create_user", response) from e
+
+        return response
+
+    def delete_user(self, id):
+
+        try:
+            response = self.users_client.delete(id=id)
+        except ApiError as e:
+            raise Auth0Error("delete_user", response) from e
         return response
 
     def reset_mfa(self, id):
         provider = "google-authenticator"
-        response = self.delete_multifactor(id, provider)
-        if "error" in response:
-            raise Auth0Error("reset_mfa", response)
+
+        try:
+            response = self.users_client.multifactor.delete_provider(id=id, provider=provider)
+        except ApiError as e:
+            raise Auth0Error("reset_mfa", response) from e
 
         return response
 
@@ -608,16 +705,18 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         search_engine = "v3"
         if connection:
             query_string = f'{query_string} AND identities.connection:"{connection}"'
-        response = self.list(q=query_string, search_engine=search_engine)
-        if "error" in response:
-            raise Auth0Error("get_users_email_search", response)
 
-        return response.get(self.endpoint, [])
+        try:
+            response = self.users_client.list(q=query_string, search_engine=search_engine)
+        except ApiError as e:
+            raise Auth0Error("get_users_email_search", response) from e
+
+        return response.items
 
     def get_user_id_by_email(self, email, connection=None):
         response = self.get_users_email_search(email, connection)
         if response:
-            return response[0]["user_id"]
+            return response[0].user_id
         return None
 
     def add_users_by_emails(self, emails, user_options=None):
@@ -628,12 +727,10 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
         for email in emails:
             lookup_response = self.get_users_email_search(email=email, connection="email")
             if lookup_response:
-                user_ids_to_add.append(lookup_response[0]["user_id"])
+                user_ids_to_add.append(lookup_response[0].user_id)
             else:
                 user_ids_to_add.append(
-                    self.create_user(email=email, email_verified=True, **user_options).get(
-                        "user_id"
-                    )
+                    self.create_user(email=email, email_verified=True, **user_options).user_id
                 )
         return user_ids_to_add
 
@@ -642,20 +739,22 @@ class ExtendedUsers(ExtendedAPIMethods, Users):
 
     def has_existed(self, user_id):
         query_string = f'user_id:"{user_id}"'
-        response = self.list(q=query_string, search_engine="v3")
-        if "error" in response:
-            raise Auth0Error("get_users_email_search", response)
 
-        return len(response["users"]) > 0
+        try:
+            response = self.users_client.list(q=query_string, search_engine="v3")
+        except ApiError as e:
+            raise Auth0Error("get_users_email_search", response) from e
+
+        return len(response.items) > 0
 
     def remove_role(self, user_id, role_id):
         try:
-            response = self.remove_roles(user_id, [role_id])
+            response = self.users_client.roles.delete(id=user_id, roles=[role_id])
 
             return response
-        except Auth0Error as e:
+        except ApiError as e:
             sentry_sdk.capture_exception(e)
-            raise e
+            raise Auth0Error("remove_role", response) from e
 
 
 class AuthExtensionUsers(Auth0API, ExtendedAPIMethods):
@@ -767,7 +866,7 @@ class Groups(Auth0API, ExtendedAPIMethods):
         try:
             self.get(group_id, include_fields=False)
             return True
-        except exceptions.Auth0Error as error:
+        except ApiError as error:
             if "does not exist" in error.__str__():
                 return False
             else:
