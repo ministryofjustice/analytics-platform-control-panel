@@ -585,7 +585,7 @@ requires-dist = [
     { name = "kubernetes", specifier = "==35.0.0" },
     { name = "mozilla-django-oidc", specifier = "==5.0.2" },
     { name = "notifications-python-client", specifier = "==12.1.0" },
-    { name = "pagerduty", specifier = "==6.2.1" },
+    { name = "pagerduty", specifier = "==6.3.0" },
     { name = "psycopg2-binary", specifier = "==2.9.12" },
     { name = "pyjwt", specifier = "==2.12.0" },
     { name = "pynacl", specifier = "==1.6.2" },
@@ -1580,14 +1580,14 @@ wheels = [
 
 [[package]]
 name = "pagerduty"
-version = "6.2.1"
+version = "6.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/df/c04b48f1a572fba4fbdd30df5ee84231adddaa60adf73915e0f7b34188de/pagerduty-6.2.1.tar.gz", hash = "sha256:ccab9cc14cb78fef9d1a33919662d620259406c5d764737af09f4b0e9a9264d7", size = 44798, upload-time = "2026-03-03T22:24:11.401Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/fb/8b16048bb50555152b0272bc609b198c4ac6f69b9514e580e984541c4987/pagerduty-6.3.0.tar.gz", hash = "sha256:80d32cd91f27214878cc91ba23eabb6d393d4a434d883936a0387a58a041e4e0", size = 45242, upload-time = "2026-06-17T21:47:07.15Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1f/5f/32170240e7cb5dfd78a68b82047a598c77b810d2e3083ce8317d4f67df7a/pagerduty-6.2.1-py3-none-any.whl", hash = "sha256:38433bf2ec9bd74b2deffef2f9b0e88b897f4d9785646b776c53d88f279e948f", size = 55580, upload-time = "2026-03-03T22:24:10.115Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/e4/fae94157355aa6f20143cd9fd346b43cd6e9a937a01cad9421ef5ee51859/pagerduty-6.3.0-py3-none-any.whl", hash = "sha256:d963e4560c8ece38dfb03dcec191c5297bdc077612a37956ee3112044f021f58", size = 55968, upload-time = "2026-06-17T21:47:08.012Z" },
 ]
 
 [[package]]
