@@ -49,7 +49,7 @@ dev = [
     "ipython==9.14.1",
     "pandas==3.0.3",
     "pre-commit==4.6.0",
-    "model-bakery==1.23.5",
+    "model-bakery==1.24.0",
     "moto[all]==5.2.2",
     "pytest==9.0.3",
     "pytest-django==4.12.0",
