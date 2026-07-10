@@ -141,7 +141,7 @@ wheels = [
 
 [[package]]
 name = "auth0-python"
-version = "5.6.0"
+version = "5.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -154,9 +154,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/76/b0/482b066a0789bd48299fbd7f28ba06b73ff78c1fe354d75dd998d563a042/auth0_python-5.6.0.tar.gz", hash = "sha256:0efa08d72a80e2fe284227d4c660e996e28a6677df8a8593802c8cd17216193b", size = 803980, upload-time = "2026-05-28T14:02:16.039Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/43/47/c60ed90740dad256700585164e22e07776c8e556c23aa6f43fc6dc4e25df/auth0_python-5.8.0.tar.gz", hash = "sha256:22ae43d97fa2dedfc0ab4cef298904927bac465526b290db7196a9461fcb24ed", size = 810165, upload-time = "2026-06-29T13:13:12.874Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/57/7d27b5c9270048e77ca5927f55e99de88de9de24853dc8297229d7248b2b/auth0_python-5.6.0-py3-none-any.whl", hash = "sha256:f29df24b1eb57c3917bdfa157b0240bdff36192fcb1cee58baaf00f50b8bafc3", size = 2432819, upload-time = "2026-05-28T14:02:14.165Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/11/8e4c76c0f2cc2429a03354685aea82d7d66062043d8895ac20d658cc3776/auth0_python-5.8.0-py3-none-any.whl", hash = "sha256:9c77d427a946028500853aa53305b10d76539ab5c91703dc222a05e8d9e5dc1b", size = 2452697, upload-time = "2026-06-29T13:13:10.917Z" },
 ]
 
 [[package]]
@@ -564,7 +564,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asgiref", specifier = "==3.11.1" },
-    { name = "auth0-python", specifier = "==5.6.0" },
+    { name = "auth0-python", specifier = "==5.8.0" },
     { name = "authlib", specifier = "==1.7.2" },
     { name = "boto3", specifier = "==1.43.25" },
     { name = "celery", extras = ["sqs"], specifier = "==5.6.3" },
@@ -1644,7 +1644,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [

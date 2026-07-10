@@ -640,25 +640,9 @@ class ExtendedUsers:
     def get(self, id):
         try:
             return self.users_client.get(id=id)
-        except ParsingError as e:
-            # Workaround for auth0-python v5 Pydantic validation bug
-            # where identities[].user_id comes back as int instead of string
-            if "identities" in str(e) and "user_id" in str(e):
-                try:
-                    raw_body = e.body
-                    if isinstance(raw_body, dict) and "identities" in raw_body:
-                        # Fix: convert all integer user_id values to strings
-                        for identity in raw_body.get("identities", []):
-                            if isinstance(identity, dict) and "user_id" in identity:
-                                identity["user_id"] = str(identity["user_id"])
-
-                        return raw_body
-                except Exception as fix_error:
-                    log.error("Failed to apply identities workaround", error=fix_error)
-                    raise e from fix_error
-
-            # Re-raise if it's a different error
-            raise
+        except Exception as error:
+            log.error("failed to get user", error=error)
+            raise Auth0Error("get_user", error) from error
 
     def get_all(self):
         return self.users_client.list()
