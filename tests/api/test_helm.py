@@ -1,6 +1,5 @@
 # Standard library
 import subprocess
-import time
 from unittest.mock import MagicMock, patch
 
 # Third-party
@@ -10,76 +9,14 @@ from django.conf import settings
 # First-party/Local
 from controlpanel.api import helm
 
-# ------ Original unit tests
 
-
-def test_chart_app_version():
-    app_version = "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
-    chart = helm.HelmChart(
-        "rstudio",
-        "RStudio with Auth0 authentication proxy",
-        "2.2.5",
-        app_version,
-        "https://testing/rstudio.tgz",
-    )
-
-    assert chart.app_version == app_version
-
-
-def test_helm_repository(helm_repository_index):
-    with patch("builtins.open", helm_repository_index):
-        # See tests/api/fixtures/helm_mojanalytics_index.py
-        entries = helm.get_helm_entries()
-        rstudio_info = entries.get("rstudio")
-
-        rstudio_2_2_5_app_version = "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10"
-
-        assert len(rstudio_info) == 2
-        assert "2.2.5" in rstudio_info[0]["version"]
-        assert "1.0.0" in rstudio_info[1]["version"]
-
-        assert rstudio_info[0].get("appVersion") == rstudio_2_2_5_app_version
-        # Helm added `appVersion` field in metadata only
-        # "recently" so for testing that for old chart
-        # version this returns `None`
-        assert rstudio_info[1].get("appVersion") is None
-
-
-@pytest.mark.parametrize(
-    "chart_name, version, expected_app_version",
-    [
-        ("notfound", "v42", None),
-        ("rstudio", "unknown-version", None),
-        ("rstudio", "1.0.0", None),
-        (
-            "rstudio",
-            "2.2.5",
-            "RStudio: 1.2.1335+conda, R: 3.5.1, Python: 3.7.1, patch: 10",
-        ),
-    ],
-    ids=[
-        "unknown-chart",
-        "unknown-version",
-        "chart-with-no-appVersion",
-        "chart-with-appVersion",
-    ],
-)
-def test_helm_repository_get_chart_app_version(
-    helm_repository_index, chart_name, version, expected_app_version
-):
-    # See tests/api/fixtures/helm_mojanalytics_index.py
-    with patch("builtins.open", helm_repository_index):
-        app_version = helm.get_chart_app_version(chart_name, version)
-        assert app_version == expected_app_version
+def test_get_chart_reference():
+    assert helm.get_chart_reference("rstudio") == f"{settings.HELM_CHART_REPOSITORY}/rstudio"
 
 
 def test_helm_upgrade_release():
     mock_execute = MagicMock()
-    mock_update = MagicMock()
-    with (
-        patch("controlpanel.api.helm._execute", mock_execute),
-        patch("controlpanel.api.helm.update_helm_repository", mock_update),
-    ):
+    with patch("controlpanel.api.helm._execute", mock_execute):
         upgrade_args = (
             "release-name",
             "helm-chart-name",
@@ -87,8 +24,6 @@ def test_helm_upgrade_release():
             "--set=username=alice",
         )
         helm.upgrade_release(*upgrade_args)
-
-        mock_update.assert_called_once_with()
 
         mock_execute.assert_called_with(
             "upgrade",
@@ -269,38 +204,6 @@ def test_execute_with_transient_error_but_no_wait_flag():
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
             # No --wait flag, so should still fail
             helm._execute("upgrade", "--install", "my-release", "my-chart")
-
-
-def test_update_helm_repository_non_existent_cache(helm_repository_index):
-    """
-    If this is a fresh instance and there's no existing helm repository cache,
-    ensure the function updates the helm repository, then returns the YAML
-    parsed helm repository cache.
-    """
-    with (
-        patch("builtins.open", helm_repository_index),
-        patch("controlpanel.api.helm._execute") as mock_execute,
-        patch("controlpanel.api.helm.os.path.getmtime", return_value=time.time()),
-        patch("controlpanel.api.helm.os.path.exists", return_value=False),
-    ):
-        helm.update_helm_repository()
-        mock_execute.assert_called_once_with("repo", "update")
-
-
-def test_update_helm_repository_valid_cache(helm_repository_index):
-    """
-    Ensure the function does NOT update the helm repository, because the helm
-    cache is still within the valid age, then returns the YAML
-    parsed helm repository cache.
-    """
-    with (
-        patch("builtins.open", helm_repository_index),
-        patch("controlpanel.api.helm._execute") as mock_execute,
-        patch("controlpanel.api.helm.os.path.getmtime", return_value=time.time() - 1),
-        patch("controlpanel.api.helm.os.path.exists", return_value=True),
-    ):
-        helm.update_helm_repository()
-        assert mock_execute.call_count == 0
 
 
 def test_delete():

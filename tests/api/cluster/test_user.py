@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import pytest
+from django.conf import settings
 
 # First-party/Local
 from controlpanel.api import cluster
@@ -25,13 +26,13 @@ def test_create(helm, settings, users):
         expected_calls = [
             call(
                 f"bootstrap-user-{user.slug}",
-                "mojanalytics/bootstrap-user",
+                f"{settings.HELM_CHART_REPOSITORY}/bootstrap-user",
                 "--namespace=cpanel",
                 f"--set=Username={user.slug}",
             ),
             call(
                 f"provision-user-{user.slug}",
-                "mojanalytics/provision-user",
+                f"{settings.HELM_CHART_REPOSITORY}/provision-user",
                 f"--namespace=user-{user.slug}",
                 (
                     f"--set=Username={user.slug},Efsvolume={settings.EFS_VOLUME},"
@@ -50,7 +51,7 @@ def test_reset_home(helm, users):
     expected_calls = [
         call(
             f"reset-user-efs-home-{user.slug}",
-            "mojanalytics/reset-user-efs-home",
+            f"{settings.HELM_CHART_REPOSITORY}/reset-user-efs-home",
             f"--namespace=user-{user.slug}",
             f"--set=Username={user.slug}",
         ),
