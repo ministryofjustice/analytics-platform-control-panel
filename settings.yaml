@@ -34,10 +34,8 @@ GOOGLE_ANALYTICS_ID:
   _HOST_prod: 'G-65W1XWEH5G'
   _HOST_alpha: 'UA-151666116-2'
 
-# Helm repo where tool charts are hosted
-HELM_REPO: 'mojanalytics'
-
-HELM_REPOSITORY_CACHE: "/tmp/helm/cache/repository"
+# OCI registry base for Helm charts
+HELM_CHART_REPOSITORY: 'oci://ghcr.io/ministryofjustice/analytics-platform-helm-charts'
 
 # The number of seconds helm should wait for helm delete to complete.
 HELM_DELETE_TIMEOUT: "30s"
