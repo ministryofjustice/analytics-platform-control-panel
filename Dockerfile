@@ -46,10 +46,8 @@ RUN apk update && apk upgrade \
 WORKDIR /home/controlpanel
 
 # download and install helm
-COPY docker/helm-repositories.yaml /tmp/helm/repository/repositories.yaml
 RUN wget ${HELM_BASEURL}/${HELM_TARBALL} -nv -O - | \
   tar xz -C /usr/local/bin --strip 1 linux-amd64/helm && \
-  helm repo update && \
   chown -R root:controlpanel ${HELM_HOME} && \
   chmod -R g+rwX ${HELM_HOME}
 
