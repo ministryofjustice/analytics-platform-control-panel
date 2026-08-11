@@ -9,6 +9,8 @@ from django.utils import timezone
 from django.utils.translation import ngettext
 from simple_history.admin import SimpleHistoryAdmin
 
+from controlpanel.api.helm import get_chart_reference
+
 # First-party/Local
 from controlpanel.api.models import (
     App,
@@ -132,11 +134,11 @@ class UserAdmin(admin.ModelAdmin):
 
     @admin.action(description="Upgrade bootstrap-user helm chart")
     def upgrade_bootstrap_user_helm_chart(self, request, queryset):
-        self._upgrade_helm_chart(request, queryset, f"{settings.HELM_REPO}/bootstrap-user")
+        self._upgrade_helm_chart(request, queryset, get_chart_reference("bootstrap-user"))
 
     @admin.action(description="Reset users home directory")
     def reset_home_directory(self, request, queryset):
-        self._upgrade_helm_chart(request, queryset, f"{settings.HELM_REPO}/reset-user-efs-home")
+        self._upgrade_helm_chart(request, queryset, get_chart_reference("reset-user-efs-home"))
 
     @admin.action(description="Export selected users as CSV")
     def export_as_csv(self, request, queryset):

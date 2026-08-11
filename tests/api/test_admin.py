@@ -13,6 +13,7 @@ from model_bakery import baker
 
 # First-party/Local
 from controlpanel.api.admin import ToolDeploymentAdmin, UserAdmin, export_as_csv
+from controlpanel.api.helm import get_chart_reference
 from controlpanel.api.models import Tool, ToolDeployment, User
 
 
@@ -332,3 +333,40 @@ class TestAdminIntegration:
         assert "testuser" in content
         assert "rstudio" in content
         assert "latest" in content
+
+
+@pytest.mark.django_db
+class TestUserAdminHelmActions:
+    def setup_method(self):
+        self.site = AdminSite()
+        self.admin = UserAdmin(User, self.site)
+        self.request = HttpRequest()
+        self.request._messages = Mock()  # satisfies message_user without middleware
+
+    def test_upgrade_bootstrap_user_helm_chart_calls_task_with_oci_ref(self):
+        user = baker.make(User, auth0_id="github|user_1")
+        queryset = User.objects.filter(pk=user.pk)
+
+        with patch("controlpanel.api.admin.upgrade_user_helm_chart") as mock_task:
+            self.admin.upgrade_bootstrap_user_helm_chart(self.request, queryset)
+            mock_task.delay.assert_called_once_with(
+                user.username, get_chart_reference("bootstrap-user")
+            )
+
+    def test_reset_home_directory_calls_task_with_oci_ref(self):
+        user = baker.make(User, auth0_id="github|user_1")
+        queryset = User.objects.filter(pk=user.pk)
+
+        with patch("controlpanel.api.admin.upgrade_user_helm_chart") as mock_task:
+            self.admin.reset_home_directory(self.request, queryset)
+            mock_task.delay.assert_called_once_with(
+                user.username, get_chart_reference("reset-user-efs-home")
+            )
+
+    def test_non_iam_users_are_skipped(self):
+        user = baker.make(User, auth0_id="entra|user_1")
+        queryset = User.objects.filter(pk=user.pk)
+
+        with patch("controlpanel.api.admin.upgrade_user_helm_chart") as mock_task:
+            self.admin.upgrade_bootstrap_user_helm_chart(self.request, queryset)
+            mock_task.delay.assert_not_called()
