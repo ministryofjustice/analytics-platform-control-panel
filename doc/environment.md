@@ -68,7 +68,7 @@ in django settings.
 | `ELASTICSEARCH_PORT` | | `9243` |
 | `ELASTICSEARCH_USERNAME` | | |
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
-| `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
+| `GITHUB_ORGS` | Comma-separated list of GitHub organisations searched for webapp repositories |
 | `GOOGLE_ANALYTICS_ID` | Key for Google Analytics account | |
 | `HELM_CHART_REPOSITORY` | OCI repository where the tool charts are hosted | `oci://ghcr.io/ministryofjustice/analytical-platform-charts` |
 | `KIBANA_BASE_URL` | Kibana endpoint for Elastic logs | `https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana` |
