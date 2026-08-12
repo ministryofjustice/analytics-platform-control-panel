@@ -150,10 +150,11 @@ def test_execute_with_operation_in_progress_error():
             helm._execute("upgrade", "--install", "my-release", "my-chart")
 
 
-def test_execute_with_not_found_during_upgrade_raises_error():
+def test_execute_with_not_found_during_upgrade_is_treated_as_transient():
     """
-    Ensure 'not found' errors during upgrade raise HelmError so failures surface to the user.
-    Previously treated as transient; removed to observe real production error messages.
+    K8s resource not-found errors (e.g. services "foo" not found) during upgrade --wait
+    are treated as transient. OCI chart not-found errors end with ": not found" (colon)
+    and are not matched by this pattern, so they surface as HelmError.
     """
     mock_proc = MagicMock()
     mock_proc.returncode = 1
@@ -163,9 +164,9 @@ def test_execute_with_not_found_during_upgrade_raises_error():
     )
     mock_Popen = MagicMock(return_value=mock_proc)
 
-    with pytest.raises(helm.HelmError):
-        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-            helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
+    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+        result = helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
+        assert result is None
 
 
 def test_execute_with_transient_error_not_during_upgrade():

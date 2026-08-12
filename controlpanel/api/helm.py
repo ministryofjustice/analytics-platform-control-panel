@@ -11,7 +11,10 @@ log = structlog.getLogger(__name__)
 
 
 # Patterns for errors that appear during upgrades but don't prevent the deployment from succeeding.
+# OCI chart-not-found errors end with ": not found" (colon before not found), not matched here.
+# K8s resource errors end with '"<name>" not found' (quote before not found), which are matched.
 TRANSIENT_ERROR_PATTERNS = [
+    '" not found',  # e.g., services "foo" not found - K8s race conditions during resource updates
     "already exists",  # resource already created
 ]
 
