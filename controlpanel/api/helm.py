@@ -10,9 +10,8 @@ from rest_framework.exceptions import APIException
 log = structlog.getLogger(__name__)
 
 
-# Patterns for errors that appear during upgrades but don't prevent the deployment from succeeding
+# Patterns for errors that appear during upgrades but don't prevent the deployment from succeeding.
 TRANSIENT_ERROR_PATTERNS = [
-    "not found",  # e.g., "services X not found" during resource updates
     "already exists",  # resource already created
 ]
 

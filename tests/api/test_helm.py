@@ -150,25 +150,22 @@ def test_execute_with_operation_in_progress_error():
             helm._execute("upgrade", "--install", "my-release", "my-chart")
 
 
-def test_execute_with_transient_error_during_upgrade():
+def test_execute_with_not_found_during_upgrade_raises_error():
     """
-    Ensure transient errors during upgrade operations with --wait are treated as warnings
-    rather than failures. These are timing/race condition issues that don't prevent
-    the deployment from succeeding (verified later by wait_for_deployment).
+    Ensure 'not found' errors during upgrade raise HelmError so failures surface to the user.
+    Previously treated as transient; removed to observe real production error messages.
     """
     mock_proc = MagicMock()
-    mock_proc.returncode = 1  # Non-zero exit code
+    mock_proc.returncode = 1
     mock_proc.communicate.return_value = (
-        "",  # Stdout may be empty with --wait
-        'Error: services "vscode-user-scheduler" not found',  # Transient error
+        "",
+        'Error: services "vscode-user-scheduler" not found',
     )
     mock_Popen = MagicMock(return_value=mock_proc)
 
-    with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
-        # Should NOT raise an error for transient issues during upgrade --wait
-        # Returns None because streams are closed, forcing Kubernetes status check
-        result = helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
-        assert result is None
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
 
 
 def test_execute_with_transient_error_not_during_upgrade():
@@ -204,6 +201,24 @@ def test_execute_with_transient_error_but_no_wait_flag():
         with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
             # No --wait flag, so should still fail
             helm._execute("upgrade", "--install", "my-release", "my-chart")
+
+
+def test_execute_chart_not_found_is_not_treated_as_transient():
+    """
+    Ensure that a helm chart resolution failure (e.g. chart not in OCI registry)
+    raises HelmError and is not silently swallowed as a transient error.
+    """
+    mock_proc = MagicMock()
+    mock_proc.returncode = 1
+    mock_proc.communicate.return_value = (
+        "Release does not exist. Installing it now.",
+        'Error: chart "vscode" matching 3.3.1 not found in mojanalytics index.',
+    )
+    mock_Popen = MagicMock(return_value=mock_proc)
+
+    with pytest.raises(helm.HelmError):
+        with patch("controlpanel.api.helm.subprocess.Popen", mock_Popen):
+            helm._execute("upgrade", "--install", "--wait", "my-release", "my-chart")
 
 
 def test_delete():
