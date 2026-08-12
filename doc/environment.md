@@ -70,7 +70,7 @@ in django settings.
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
 | `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
 | `GOOGLE_ANALYTICS_ID` | Key for Google Analytics account | |
-| `HELM_CHART_REPOSITORY` | OCI repository where the tool charts are hosted | `oci://ghcr.io/ministryofjustice/analytics-platform-helm-charts` |
+| `HELM_CHART_REPOSITORY` | OCI repository where the tool charts are hosted | `oci://ghcr.io/ministryofjustice/analytical-platform-charts` |
 | `KIBANA_BASE_URL` | Kibana endpoint for Elastic logs | `https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana` |
 | `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
 | `LOGS_BUCKET_NAME` | Name of S3 bucket where logs are stored | `moj-analytics-s3-logs` |

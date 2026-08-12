@@ -35,7 +35,7 @@ GOOGLE_ANALYTICS_ID:
   _HOST_alpha: 'UA-151666116-2'
 
 # OCI registry base for Helm charts
-HELM_CHART_REPOSITORY: 'oci://ghcr.io/ministryofjustice/analytics-platform-helm-charts'
+HELM_CHART_REPOSITORY: 'oci://ghcr.io/ministryofjustice/analytical-platform-charts'
 
 # The number of seconds helm should wait for helm delete to complete.
 HELM_DELETE_TIMEOUT: "30s"
