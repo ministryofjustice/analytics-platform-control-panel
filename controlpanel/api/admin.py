@@ -9,9 +9,8 @@ from django.utils import timezone
 from django.utils.translation import ngettext
 from simple_history.admin import SimpleHistoryAdmin
 
-from controlpanel.api.helm import get_chart_reference
-
 # First-party/Local
+from controlpanel.api.helm import get_chart_reference
 from controlpanel.api.models import (
     App,
     AppS3Bucket,
