@@ -306,7 +306,7 @@ def test_create_m2m_client(app, authz):
         patch.object(authz, "setup_m2m_client") as setup_m2m_client,
         patch.object(app, "save"),
     ):
-        m2mclient = {"client_id": "test-client-id", "client_secret": "test-client-secret"}
+        m2mclient = MagicMock(client_id="test-client-id", client_secret="test-client-secret")
         setup_m2m_client.return_value = m2mclient
 
         assert cluster.App(app).create_m2m_client() == m2mclient

@@ -1,5 +1,5 @@
 # Standard library
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 # Third-party
 import pytest
@@ -145,11 +145,12 @@ def test_delete_customer_by_email_error_getting_user(auth0, side_effect, error_m
 
 
 def test_delete_customer_by_email_user_missing_group(auth0):
-    user = {"user_id": "1"}
+    mock_user = MagicMock()
+    mock_user.user_id = 1
     user_groups = {"_id": "wrong_group"}
 
     authz = auth0.ExtendedAuth0.return_value
-    authz.users.get_users_email_search.return_value = [user]
+    authz.users.get_users_email_search.return_value = [mock_user]
     authz.users.get_user_groups.return_value = [user_groups]
 
     app = baker.prepare("api.App")
@@ -161,11 +162,12 @@ def test_delete_customer_by_email_user_missing_group(auth0):
 
 
 def test_delete_customer_by_email_success(auth0):
-    user = {"user_id": "1"}
+    mock_user = MagicMock()
+    mock_user.user_id = 1
     user_groups = {"_id": "123"}
 
     authz = auth0.ExtendedAuth0.return_value
-    authz.users.get_users_email_search.return_value = [user]
+    authz.users.get_users_email_search.return_value = [mock_user]
     authz.users.get_user_groups.return_value = [user_groups]
 
     app = baker.prepare("api.App")
@@ -173,7 +175,7 @@ def test_delete_customer_by_email_success(auth0):
     with patch.object(app, "delete_customers") as delete_customers:
         app.delete_customer_by_email("foo@email.com", group_id="123")
         delete_customers.assert_called_once_with(
-            user_ids=[user["user_id"]],
+            user_ids=[mock_user.user_id],
             group_id=user_groups["_id"],
         )
 
