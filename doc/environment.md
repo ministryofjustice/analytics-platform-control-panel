@@ -3,7 +3,7 @@
 There are several ways to set up the settings required for running this app which
 are explained in the following sub sections
 
-## Django settings 
+## Django settings
 Official guide [here](https://docs.djangoproject.com/en/4.0/topics/settings/)
 In general, all system level settings related to important app logic are defined here,
 it is the primary entry point for defining global settings. An app normally has different
@@ -25,7 +25,7 @@ different values under different running environments and slightly more complica
 Also this yaml can give us easy option to define some simple constants.
 
 This file is on the top of django settings, so the variables which define in the settings/*.py has higher
-priority than the ones in the settings.yaml. If the same variable has been defined in the django settings file, the same one in 
+priority than the ones in the settings.yaml. If the same variable has been defined in the django settings file, the same one in
 the settings.yaml will be ignored
 
 The format for defining a variable with different value under different envs
@@ -48,8 +48,8 @@ All those variables in this file can be overwritten by the environment variable 
 ## environment variables
 
 The variables defined below are the minimum ones which are required to be provided. As being
-mentioned from previous sections, you can overwrite any variable in settings.yaml, some of them 
-in django settings. 
+mentioned from previous sections, you can overwrite any variable in settings.yaml, some of them
+in django settings.
 
 | Name | Description | Default |
 | ---- | ----------- | ------- |
@@ -68,9 +68,9 @@ in django settings.
 | `ELASTICSEARCH_PORT` | | `9243` |
 | `ELASTICSEARCH_USERNAME` | | |
 | `ENV` | Environment name - either `dev` or `alpha` | `dev` |
-| `GITHUB_ORGS` | Comma-separated list of Github organisations searched for webapp repositories |
+| `GITHUB_ORGS` | Comma-separated list of GitHub organisations searched for webapp repositories |
 | `GOOGLE_ANALYTICS_ID` | Key for Google Analytics account | |
-| `HELM_REPOS` | Helm repository where the tool charts are hosted | `mojanalytics` |
+| `HELM_CHART_REPOSITORY` | OCI repository where the tool charts are hosted | `oci://ghcr.io/ministryofjustice/analytical-platform-charts` |
 | `KIBANA_BASE_URL` | Kibana endpoint for Elastic logs | `https://kibana.services.{ENV}.mojanalytics.xyz/app/kibana` |
 | `LOG_LEVEL` | The level of logging output - in increasing levels of verbosity: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | `DEBUG` |
 | `LOGS_BUCKET_NAME` | Name of S3 bucket where logs are stored | `moj-analytics-s3-logs` |

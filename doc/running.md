@@ -146,12 +146,7 @@ For easy switching between Kubernetes contexts (to connect to dev/prod clusters)
 
 ### Helm
 
-You will need to tell Helm to use the Analytical Platform chart repository:
-
-```sh
-helm repo add mojanalytics http://moj-analytics-helm-repo.s3-website-eu-west-1.amazonaws.com
-helm repo update
-```
+Control Panel now uses OCI charts from GHCR directly, so no Helm repo setup is required for the application charts.
 
 ## 3. Local Environment
 
@@ -329,27 +324,6 @@ kubectl config use-context <dev_cluster_name>    # get name from your ~/.kube/co
 ```
 
 ### Check the environment file
-
-#### General checks
-
-Check whether you have the following 2 in the env file and make sure they are correct
-
-- `HELM_REPOSITORY_CACHE`: the directory for helm repository cache folder.
-
-if you install helm chart by default settings, please make sure to setup the `HELM_REPOSITORY_CACHE`
-the default value is `/tmp/helm/cache/repository`
-
-```sh
-export HELM_REPOSITORY_CACHE="/Users/<user name>/Library/Caches/helm/repository"
-```
-
-if you are not sure, can use the following command to find it out
-
-```shell
-helm env
-```
-
-Note that even if the variable is set correctly in the output of the above command, you still need to export it as an environment variable.
 
 #### AWS credential setting for single AWS role
 

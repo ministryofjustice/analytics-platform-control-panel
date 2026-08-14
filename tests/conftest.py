@@ -1,10 +1,9 @@
 # Standard library
 import uuid
-from unittest.mock import mock_open, patch
+from unittest.mock import patch
 
 # Third-party
 import pytest
-import yaml
 from django.conf import settings
 from django.contrib.auth.models import Permission
 from model_bakery import baker
@@ -16,6 +15,7 @@ from controlpanel.api.helm import (
     HelmOperationInProgressError,
     HelmReleaseNotFound,
     HelmTimeoutError,
+    get_chart_reference,
 )
 from controlpanel.api.models import (
     QUICKSIGHT_EMBED_AUTHOR_PERMISSION,
@@ -23,7 +23,6 @@ from controlpanel.api.models import (
 )
 from controlpanel.utils import load_app_conf_from_file
 from tests.api.fixtures.aws import *
-from tests.api.fixtures.helm_mojanalytics_index import HELM_MOJANALYTICS_INDEX
 
 
 @pytest.fixture()
@@ -103,16 +102,8 @@ def helm():
         helm.HelmError = HelmError
         helm.HelmTimeoutError = HelmTimeoutError
         helm.HelmOperationInProgressError = HelmOperationInProgressError
+        helm.get_chart_reference.side_effect = get_chart_reference
         yield helm
-
-
-@pytest.fixture
-def helm_repository_index(autouse=True):
-    """
-    Mock the helm repository with some data
-    """
-    content = yaml.dump(HELM_MOJANALYTICS_INDEX)
-    return mock_open(read_data=content)
 
 
 @pytest.fixture(autouse=True)

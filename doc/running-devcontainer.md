@@ -17,7 +17,7 @@ In order to get Git to recognise your SSH key while working in the Dev Container
 
 Download a copy of a working `.env` file from the Analytical Platform Vault in [1Password](https://ministryofjustice.1password.eu/vaults/skgdudwgk3ojqiwigoxrmpngle/tags/fioo45n5zohrdsf6mkdikito4d/osqkxdboemvpsgl4g2zt3kyuia). Copy the contents into a `.env` file in the root directory of the project.
 
-If you have an existing local `.env` file, there are slight differences. Notably `AWS_CONFIG_FILE` needs to be added and `AWS_PROFILE` and `HELM_REPOSITORY_CACHE` need changing to reference dev-container directories.
+If you have an existing local `.env` file, there are slight differences. Notably `AWS_CONFIG_FILE` needs to be added and `AWS_PROFILE` needs changing to reference dev-container directories.
 
 See [Control Panel settings and environment variables](environment.md) for details of other settings and environment variables.
 
