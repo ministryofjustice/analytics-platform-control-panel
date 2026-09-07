@@ -1,5 +1,6 @@
 # Standard library
 import json
+import hmac
 
 # Third-party
 import structlog
@@ -47,7 +48,9 @@ class PagerDutyWebhookView(View):
         return JsonResponse({"status": "ok", "action": "Created" if created else "Updated"})
 
     def _validate_token(self, request):
-        return request.GET.get("token") == settings.PAGERDUTY_WEBHOOK_SECRET
+        provided_token = request.GET.get("token", "")
+        expected_token = settings.PAGERDUTY_WEBHOOK_SECRET or ""
+        return hmac.compare_digest(provided_token, expected_token)
 
     def _parse_payload(self, request):
         try:
