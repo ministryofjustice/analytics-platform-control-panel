@@ -48,7 +48,7 @@ dev = [
     "ipdb==0.13.13",
     "ipython==9.15.0",
     "pandas==3.0.3",
-    "pre-commit==4.6.0",
+    "pre-commit==4.6.2",
     "model-bakery==1.24.0",
     "moto[all]==5.2.2",
     "pytest==9.1.1",
