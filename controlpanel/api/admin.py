@@ -21,6 +21,7 @@ from controlpanel.api.models import (
     S3Bucket,
     ToolDeployment,
     User,
+    UserApp,
     UserS3Bucket,
 )
 from controlpanel.api.models.dashboard import (
@@ -68,13 +69,28 @@ def export_as_csv(filename, row_data):
 
 
 class AppAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "created_by", "created")
+    list_display = (
+        "name",
+        "slug",
+        "created_by",
+        "created",
+    )
     list_filter = ("created_by",)
     search_fields = (
         "name",
         "description",
         "slug",
     )
+    readonly_fields = ("admin_emails",)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("userapps__user")
+
+    @admin.display(description="Admin emails")
+    def admin_emails(self, obj):
+        return ", ".join(
+            user_app.user.justice_email for user_app in obj.userapps.all() if user_app.is_admin
+        )
 
 
 class S3Admin(admin.ModelAdmin):
