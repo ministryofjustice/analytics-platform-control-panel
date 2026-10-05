@@ -24,6 +24,13 @@ updates:
     open-pull-requests-limit: 15
     schedule:
       interval: "daily"
+    groups:
+      uv-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
