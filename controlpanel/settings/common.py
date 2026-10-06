@@ -55,8 +55,6 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     # Django collect static files into a single location
     "django.contrib.staticfiles",
-    # Make current request available anywhere
-    "crequest",
     # Provides shell_plus, runserver_plus, etc
     "django_extensions",
     # Provides filter backend for use with Django REST Framework
@@ -94,7 +92,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # Make current request available anywhere
-    "crequest.middleware.CrequestMiddleware",
+    "controlpanel.middleware.current_request.CurrentRequestMiddleware",
     # Check user's OIDC token is still valid
     "mozilla_django_oidc.middleware.SessionRefresh",
     # Structured logging

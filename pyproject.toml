@@ -14,7 +14,6 @@ dependencies = [
     "daphne==4.2.3",
     "django==5.2.17",
     "django-celery-beat==2.9.0",
-    "django-crequest==2018.5.11",
     "django-extensions==4.1",
     "django-filter==26.1",
     "django-prometheus==2.5.0",
