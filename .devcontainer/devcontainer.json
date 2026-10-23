@@ -3,7 +3,7 @@
   "image": "ghcr.io/ministryofjustice/devcontainer-base:latest",
   "features": {
     "ghcr.io/devcontainers/features/node:": {
-      "version": "20.11.1"
+      "version": "24.22.1"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
