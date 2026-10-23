@@ -11,8 +11,9 @@ WORKDIR /src
 RUN /node_modules/.bin/jest
 
 FROM public.ecr.aws/docker/library/python:3.12-alpine3.21 AS base
+FROM ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
 
-COPY --from=ghcr.io/astral-sh/uv:0.11.6@sha256:b1e699368d24c57cda93c338a57a8c5a119009ba809305cc8e86986d4a006754 /uv /usr/local/bin/uv
+COPY --from=uv /uv /usr/local/bin/uv
 
 ARG HELM_VERSION=3.20.0
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz

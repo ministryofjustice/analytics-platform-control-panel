@@ -88,3 +88,6 @@ max-complexity = 18
 
 [tool.uv]
 exclude-newer = "1 week"
+
+[tool.uv.exclude-newer-package]
+certifi = "P0D"
