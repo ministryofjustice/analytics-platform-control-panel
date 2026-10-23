@@ -9,9 +9,8 @@ RUN mkdir -p dist &&\
 RUN ./node_modules/.bin/sass --load-path=./ --style=compressed src/app.scss:dist/app.css
 WORKDIR /src
 RUN /node_modules/.bin/jest
-
-FROM public.ecr.aws/docker/library/python:3.12-alpine3.21 AS base
 FROM ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
+FROM public.ecr.aws/docker/library/python:3.12-alpine3.21 AS base
 
 COPY --from=uv /uv /usr/local/bin/uv
 
