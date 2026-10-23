@@ -1,5 +1,5 @@
 # checkov:skip=CKV_DOCKER_2:Healthcheck instructions have not been added to container images
-FROM public.ecr.aws/docker/library/node:20.11.1 AS build-node
+FROM docker.io/library/node:24.22.1@sha256:6449e19d8184d84062525b6a7524def03146c2cb04a7f08b076680d0e8e4240a AS build-node
 COPY package.json package-lock.json ./
 COPY jest.config.js controlpanel/frontend/static /src/
 
@@ -9,10 +9,10 @@ RUN mkdir -p dist &&\
 RUN ./node_modules/.bin/sass --load-path=./ --style=compressed src/app.scss:dist/app.css
 WORKDIR /src
 RUN /node_modules/.bin/jest
+FROM ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
+FROM docker.io/library/python:3.12.15-alpine3.23@sha256:b658b05ce9c4eb97ec6fc19424818a1f31993659c2b505a532f470e83807815d AS base
 
-FROM public.ecr.aws/docker/library/python:3.12-alpine3.21 AS base
-
-COPY --from=ghcr.io/astral-sh/uv:0.11.6@sha256:b1e699368d24c57cda93c338a57a8c5a119009ba809305cc8e86986d4a006754 /uv /usr/local/bin/uv
+COPY --from=uv /uv /usr/local/bin/uv
 
 ARG HELM_VERSION=3.20.0
 ARG HELM_TARBALL=helm-v${HELM_VERSION}-linux-amd64.tar.gz

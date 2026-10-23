@@ -9,6 +9,16 @@ updates:
       include: "scope"
     cooldown:
       default-days: 7
+  - package-ecosystem: "docker"
+    commit-message:
+      include: "scope"
+      prefix: ":dependabot: docker"
+    cooldown:
+      default-days: 7
+    directory: "/contrib"
+    open-pull-requests-limit: 15
+    schedule:
+      interval: "daily"
   - package-ecosystem: "uv"
     commit-message:
       include: "scope"
