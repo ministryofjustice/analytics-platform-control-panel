@@ -148,7 +148,7 @@ wheels = [
 
 [[package]]
 name = "auth0-python"
-version = "5.8.0"
+version = "6.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -161,9 +161,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/43/47/c60ed90740dad256700585164e22e07776c8e556c23aa6f43fc6dc4e25df/auth0_python-5.8.0.tar.gz", hash = "sha256:22ae43d97fa2dedfc0ab4cef298904927bac465526b290db7196a9461fcb24ed", size = 810165, upload-time = "2026-06-29T13:13:12.874Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/13/0d6dc36f49e4b667cc756581e8f57684dfde7bd4fec063bde6fb78a00d3c/auth0_python-6.9.0.tar.gz", hash = "sha256:60cd3ca248a28c092d36c536d846f8362674c1acb1e62b4566b56a42529976e7", size = 1186156, upload-time = "2026-11-04T14:47:58.491Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/11/8e4c76c0f2cc2429a03354685aea82d7d66062043d8895ac20d658cc3776/auth0_python-5.8.0-py3-none-any.whl", hash = "sha256:9c77d427a946028500853aa53305b10d76539ab5c91703dc222a05e8d9e5dc1b", size = 2452697, upload-time = "2026-06-29T13:13:10.917Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/16/ac695b070ebdb4e11b77ef81e64441f432b024f24e19806bead84c6cf73f/auth0_python-6.9.0-py3-none-any.whl", hash = "sha256:e57cef4ef009950a29e2bd30471f2ff596902c43e491a214bcff0311d3f5e947", size = 3569469, upload-time = "2026-11-04T14:47:56.397Z" },
 ]
 
 [[package]]
@@ -600,7 +600,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "asgiref", specifier = "==3.13.0" },
-    { name = "auth0-python", specifier = "==5.8.0" },
+    { name = "auth0-python", specifier = "==6.9.0" },
     { name = "authlib", specifier = "==1.9.5" },
     { name = "boto3", specifier = "==1.43.125" },
     { name = "celery", extras = ["sqs"], specifier = "==5.7.0" },
