@@ -624,7 +624,7 @@ requires-dist = [
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "kubernetes", specifier = "==35.0.0" },
     { name = "mozilla-django-oidc", specifier = "==5.0.2" },
-    { name = "notifications-python-client", specifier = "==12.2.0" },
+    { name = "notifications-python-client", specifier = "==13.0.0" },
     { name = "pagerduty", specifier = "==7.2.0" },
     { name = "psycopg2-binary", specifier = "==2.9.13" },
     { name = "pyjwt", specifier = "==2.15.1" },
@@ -1592,7 +1592,7 @@ wheels = [
 
 [[package]]
 name = "notifications-python-client"
-version = "12.2.0"
+version = "13.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docopt" },
@@ -1600,7 +1600,7 @@ dependencies = [
     { name = "requests" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/30/c17ecfc359407126c9460abe91a5c4c71be687e64955ff98ba8ba815fe3c/notifications_python_client-12.2.0-py3-none-any.whl", hash = "sha256:5552f83d26ca0bba2b69b8477c8db691645bfd53fd6e591421318c81fa077b7a", size = 9556, upload-time = "2026-09-08T09:29:53.007Z" },
+    { url = "https://files.pythonhosted.org/packages/38/ce/6db302178ff5987288c57f88cd1cc2e9dd2c54996eba0ae062072e56345a/notifications_python_client-13.0.0-py3-none-any.whl", hash = "sha256:8754baab8f0372a528978fcadffd17345979a3879fc6883eb11cbebd72e8e8ae", size = 9592, upload-time = "2026-10-23T13:52:30.509Z" },
 ]
 
 [[package]]

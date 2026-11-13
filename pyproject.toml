@@ -28,7 +28,7 @@ dependencies = [
     "Jinja2==3.1.6",
     "kubernetes==35.0.0",
     "mozilla-django-oidc==5.0.2",
-    "notifications-python-client==12.2.0",
+    "notifications-python-client==13.0.0",
     "pagerduty==7.2.0",
     "psycopg2-binary==2.9.13",
     "PyJWT==2.15.1",
