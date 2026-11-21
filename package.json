@@ -5,7 +5,7 @@
   "repository": "https://github.com/ministryofjustice/analytics-platform-control-panel.git",
   "license": "MIT",
   "dependencies": {
-    "@ministryofjustice/frontend": "5.1.0",
+    "@ministryofjustice/frontend": "12.0.0",
     "accessible-autocomplete": "2.0.4",
     "amazon-quicksight-embedding-sdk": "2.11.0",
     "core-js": "3.26.1",
