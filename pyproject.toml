@@ -5,8 +5,8 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "asgiref==3.13.0",
     "auth0-python==5.8.0",
-    "authlib==1.9.5",
-    "boto3==1.43.126",
+    "authlib==1.9.6",
+    "boto3==1.44.3",
     "celery[sqs]==5.7.0",
     "channels==4.3.2",
     "channels-redis==4.3.0",
@@ -36,7 +36,7 @@ dependencies = [
     "python-dotenv==1.2.4",
     "pyyaml==6.0.3",
     "rules==3.5",
-    "sentry-sdk==2.74.0",
+    "sentry-sdk==2.75.0",
     "slackclient==2.9.4",
     "uvicorn[standard]==0.54.0",
 ]
